@@ -770,9 +770,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     srcSender_,
                     srcChainId_
                 ) returns (uint256 dstAmount) {
-                    if (!fulfilment) fulfilment = true;
-                    /// @dev marks the indexes that require a callback mint of shares (successful)
-                    dstAmounts[i] = dstAmount;
+                    if (dstAmount > 0) {
+                        if (!fulfilment) fulfilment = true;
+                        /// @dev marks the indexes that require a callback mint of shares (successful)
+                        dstAmounts[i] = dstAmount;
+                    }
                 } catch {
                     /// @dev cleaning unused approval
                     underlying.safeDecreaseAllowance(superforms[i], multiVaultData.amounts[i]);
@@ -870,15 +872,17 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             try IBaseForm(superform_).xChainDepositIntoVault(singleVaultData, srcSender_, srcChainId_) returns (
                 uint256 dstAmount
             ) {
-                return _constructSingleReturnData(
-                    srcSender_,
-                    singleVaultData.payloadId,
-                    singleVaultData.superformRouterId,
-                    TransactionType.DEPOSIT,
-                    CallbackType.RETURN,
-                    singleVaultData.superformId,
-                    dstAmount
-                );
+                if (dstAmount > 0) {
+                    return _constructSingleReturnData(
+                        srcSender_,
+                        singleVaultData.payloadId,
+                        singleVaultData.superformRouterId,
+                        TransactionType.DEPOSIT,
+                        CallbackType.RETURN,
+                        singleVaultData.superformId,
+                        dstAmount
+                    );
+                }
             } catch {
                 /// @dev cleaning unused approval
                 underlying.safeDecreaseAllowance(superform_, singleVaultData.amount);

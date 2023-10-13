@@ -116,6 +116,15 @@ struct InitSingleVaultData {
     bytes extraFormData;
 }
 
+/// @dev struct for Emergency Queue
+struct QueuedWithdrawal {
+    address refundAddress;
+    uint256 superformId;
+    uint256 amount;
+    uint256 srcPayloadId;
+    bool isProcessed;
+}
+
 /// @dev all statuses of the two steps payload
 enum TwoStepsStatus {
     UNAVAILABLE,

@@ -25,14 +25,15 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         vm.prank(deployer);
         uint256[] memory amounts = new uint256[](1);
-        amounts[0] = 1e18 - 1;
+        /// @dev 1e18 after decimal corrections and bridge slippage would give the following value
+        amounts[0] = 999_900_000_000_000_000;
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, amounts);
 
         uint256[] memory gasPerAMB = new uint256[](1);
         gasPerAMB[0] = 5 ether;
 
         vm.prank(getContract(AVAX, "CoreStateRegistry"));
-        MockERC20(getContract(AVAX, "DAI")).transfer(deployer, 1e18);
+        MockERC20(getContract(AVAX, "DAI")).transfer(deployer, 999_900_000_000_000_000);
 
         vm.prank(deployer);
         vm.expectRevert(Error.BRIDGE_TOKENS_PENDING.selector);
@@ -110,7 +111,7 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         vm.prank(deployer);
         uint256[] memory amounts = new uint256[](1);
-        amounts[0] = 1e18 - 1;
+        amounts[0] = 999_900_000_000_000_000;
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, amounts);
 
         uint256[] memory gasPerAMB = new uint256[](1);
@@ -148,7 +149,8 @@ contract CoreStateRegistryTest is ProtocolActions {
         _successfulSingleDeposit(ambIds);
 
         uint256[] memory amounts = new uint256[](1);
-        amounts[0] = 1e18 - 1;
+        /// @dev 1e18 after decimal corrections and bridge slippage would give the following value
+        amounts[0] = 999_900_000_000_000_000;
 
         vm.selectFork(FORKS[AVAX]);
         vm.prank(deployer);
@@ -218,10 +220,12 @@ contract CoreStateRegistryTest is ProtocolActions {
             uint256(ETH),
             /// @dev amount is 1 less than (actualWithdrawAmount * 0.9) => slippage > 10% => should revert
             ((actualWithdrawAmount * 9) / 10) - 1,
-            ((actualWithdrawAmount * 9) / 10) - 1,
             true,
             /// @dev currently testing with 0 bridge slippage
-            0
+            0,
+            1,
+            1,
+            1
         );
 
         txData[0] = _buildLiqBridgeTxData(liqBridgeTxDataArgs, false);
@@ -298,15 +302,20 @@ contract CoreStateRegistryTest is ProtocolActions {
             getContract(AVAX, "CoreStateRegistry"),
             uint256(AVAX),
             1e18,
-            1e18,
+            //1e18,
             false,
             /// @dev placeholder value, not used
-            0
+            1,
+            /// @dev assuming same price of DAI on ETH and AVAX for this test
+            1,
+            1,
+            1
         );
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
-            1e18,
+            /// @dev 1e18 after decimal corrections and bridge slippage would give the following value
+            999_900_000_000_000_000,
             100,
             false,
             LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), AVAX, 0),
@@ -427,10 +436,13 @@ contract CoreStateRegistryTest is ProtocolActions {
             getContract(AVAX, "CoreStateRegistry"),
             uint256(AVAX),
             420,
-            420,
+            //420,
             false,
             /// @dev placeholder value, not used
-            0
+            0,
+            1,
+            1,
+            1
         );
 
         liqReqArr[0] =
@@ -495,10 +507,13 @@ contract CoreStateRegistryTest is ProtocolActions {
             getContract(AVAX, "CoreStateRegistry"),
             uint256(AVAX),
             420,
-            420,
+            //420,
             false,
             /// @dev placeholder value, not used
-            0
+            0,
+            1,
+            1,
+            1
         );
 
         liqReqArr[0] =

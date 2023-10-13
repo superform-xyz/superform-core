@@ -8,7 +8,7 @@ import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 import "./MockERC20.sol";
 
-/// @title Socket Router Mock
+/// @title LiFi Router Mock
 /// @dev eventually replace this by using a fork of the real registry contract
 
 contract LiFiMock is Test {
@@ -61,12 +61,12 @@ contract LiFiMock is Test {
     struct BridgeLocalVars {
         address from;
         uint256 toForkId;
-        address outputToken;
         int256 slippage;
         bool isMultiTx;
         uint256 multiTxSlippageShare;
-        uint256 amount;
         bool isDirect;
+        uint256 prevForkId;
+        uint256 amountOut;
         uint256 finalAmountDst;
     }
 
@@ -75,52 +75,78 @@ contract LiFiMock is Test {
         address receiver_,
         address inputToken_,
         bytes memory data_,
-        bool prevSwap
+        bool prevSwap_
     )
         internal
     {
         BridgeLocalVars memory v;
-        /// @dev encapsulating from
-        (
-            v.from,
-            v.toForkId,
-            v.outputToken,
-            v.slippage,
-            v.isMultiTx,
-            v.multiTxSlippageShare,
-            v.isDirect,
-            v.finalAmountDst
-        ) = abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool, uint256));
+        (v.from, v.toForkId,, v.slippage, v.isMultiTx, v.multiTxSlippageShare, v.isDirect,,) =
+            abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool, uint256, uint256));
 
-        // if underlyingTokenn
         if (inputToken_ != NATIVE) {
-            if (!prevSwap) MockERC20(inputToken_).transferFrom(v.from, address(this), amount_);
+            if (!prevSwap_) MockERC20(inputToken_).transferFrom(v.from, address(this), amount_);
         } else {
             require(msg.value == amount_);
         }
 
-        uint256 prevForkId = vm.activeFork();
+        v.prevForkId = vm.activeFork();
         vm.selectFork(v.toForkId);
-
-        uint256 decimal2 = v.outputToken == NATIVE ? 18 : MockERC20(v.outputToken).decimals();
 
         if (v.isDirect) v.slippage = 0;
         else if (v.isMultiTx) v.slippage = (v.slippage * int256(v.multiTxSlippageShare)) / 100;
         else v.slippage = (v.slippage * int256(100 - v.multiTxSlippageShare)) / 100;
 
-        /// @dev amount provided by a previous swap is effectively ignored
-        v.amount = (v.finalAmountDst * uint256(10_000 - v.slippage)) / 10_000;
+        v.amountOut = (amount_ * uint256(10_000 - v.slippage)) / 10_000;
 
-        if (v.outputToken != NATIVE) {
-            deal(v.outputToken, receiver_, MockERC20(v.outputToken).balanceOf(receiver_) + v.amount);
+        console.log("amount pre-bridge", v.amountOut);
+
+        _sendOutputTokenToReceiver(data_, inputToken_, receiver_, v.amountOut, v.prevForkId, v.toForkId);
+
+        vm.selectFork(v.prevForkId);
+    }
+
+    function _sendOutputTokenToReceiver(
+        bytes memory data_,
+        address inputToken_,
+        address receiver_,
+        uint256 amountOut_,
+        uint256 prevForkId_,
+        uint256 toForkId_
+    )
+        internal
+    {
+        uint256 decimal1;
+        uint256 decimal2;
+        uint256 finalAmount;
+        address outputToken;
+        uint256 USDPerUnderlyingToken;
+        uint256 USDPerUnderlyingTokenDst;
+
+        (,, outputToken,,,,,, USDPerUnderlyingToken, USDPerUnderlyingTokenDst) =
+            abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool, uint256, uint256, uint256));
+
+        vm.selectFork(prevForkId_);
+        decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
+        vm.selectFork(toForkId_);
+        decimal2 = outputToken == NATIVE ? 18 : MockERC20(outputToken).decimals();
+
+        if (decimal1 > decimal2) {
+            finalAmount =
+                (amountOut_ * USDPerUnderlyingToken) / (10 ** (decimal1 - decimal2) * USDPerUnderlyingTokenDst);
         } else {
-            if (prevForkId != v.toForkId) vm.deal(address(this), v.amount);
+            finalAmount =
+                ((amountOut_ * USDPerUnderlyingToken) * 10 ** (decimal2 - decimal1)) / USDPerUnderlyingTokenDst;
+        }
 
-            (bool success,) = payable(receiver_).call{ value: v.amount }("");
+        console.log("amount post-bridge", finalAmount);
 
+        if (outputToken != NATIVE) {
+            deal(outputToken, receiver_, MockERC20(outputToken).balanceOf(receiver_) + finalAmount);
+        } else {
+            if (prevForkId_ != toForkId_) vm.deal(address(this), finalAmount);
+            (bool success,) = payable(receiver_).call{ value: finalAmount }("");
             require(success);
         }
-        vm.selectFork(prevForkId);
     }
 
     function _swap(
@@ -133,23 +159,36 @@ contract LiFiMock is Test {
         internal
         returns (uint256)
     {
-        /// @dev encapsulating from
-        address from = abi.decode(data_, (address));
+        address from;
+        uint256 USDPerExternalToken;
+        uint256 USDPerUnderlyingToken;
+
+        (from,,,,,,, USDPerExternalToken, USDPerUnderlyingToken,) =
+            abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool, uint256, uint256, uint256));
+
         if (inputToken_ != NATIVE) {
             MockERC20(inputToken_).transferFrom(from, address(this), amount_);
         }
 
+        /// @dev TODO: simulate dstSwap slippage here (currently in ProtocolActions._buildLiqBridgeTxDataDstSwap()), and
+        /// remove from _bridge() above
+        // if (isDstSwap) slippage = (slippage * int256(multiTxSlippageShare)) / 100;
+        // amount_ = (amount_ * uint256(10_000 - slippage)) / 10_000;
+
         uint256 decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
         uint256 decimal2 = outputToken_ == NATIVE ? 18 : MockERC20(outputToken_).decimals();
 
-        /// input token decimals are greater than output
+        console.log("amount pre-swap", amount_);
         /// @dev the results of this amount if there is a bridge are effectively ignored
         if (decimal1 > decimal2) {
-            amount_ = amount_ / 10 ** (decimal1 - decimal2);
+            amount_ = (amount_ * USDPerExternalToken) / (USDPerUnderlyingToken * 10 ** (decimal1 - decimal2));
         } else {
-            amount_ = amount_ * 10 ** (decimal2 - decimal1);
+            amount_ = (amount_ * USDPerExternalToken) * 10 ** (decimal2 - decimal1) / USDPerUnderlyingToken;
         }
-        /// @dev assume no swap slippage
+        console.log("amount post-swap", amount_);
+        /// @dev swap slippage if any, is applied in ProtocolActions._stage1_buildReqData() for direct
+        /// actions and in ProtocolActions._buildLiqBridgeTxDataDstSwap() for dstSwaps.
+        /// @dev Could allocate swap slippage share separately like for ProtocolActions.MULTI_TX_SLIPPAGE_SHARE
         deal(outputToken_, receiver_, MockERC20(outputToken_).balanceOf(receiver_) + amount_);
         return amount_;
     }

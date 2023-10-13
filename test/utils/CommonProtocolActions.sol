@@ -9,6 +9,8 @@ import { LiFiMock } from "../mocks/LiFiMock.sol";
 abstract contract CommonProtocolActions is BaseSetup {
     /// @dev percentage of total slippage that is used for dstSwap
     uint256 MULTI_TX_SLIPPAGE_SHARE;
+    /// out of 10000
+    int256 totalSlippage = 200;
 
     struct LiqBridgeTxDataArgs {
         uint256 liqBridgeKind;
@@ -23,9 +25,12 @@ abstract contract CommonProtocolActions is BaseSetup {
         address toDst;
         uint256 liqBridgeToChainId;
         uint256 amount;
-        uint256 finalAmountDst;
+        //uint256 finalAmountDst;
         bool withdraw;
         int256 slippage;
+        uint256 USDPerExternalToken;
+        uint256 USDPerUnderlyingTokenDst;
+        uint256 USDPerUnderlyingToken;
     }
 
     function _buildLiqBridgeTxData(
@@ -33,6 +38,7 @@ abstract contract CommonProtocolActions is BaseSetup {
         bool sameChain
     )
         internal
+        view
         returns (bytes memory txData)
     {
         if (args.liqBridgeKind == 1) {
@@ -59,7 +65,9 @@ abstract contract CommonProtocolActions is BaseSetup {
                         false,
                         MULTI_TX_SLIPPAGE_SHARE,
                         args.srcChainId == args.toChainId,
-                        args.finalAmountDst
+                        args.USDPerExternalToken,
+                        args.USDPerUnderlyingToken,
+                        args.USDPerUnderlyingTokenDst
                     ),
                     //decimalsDstUnderlyingToken
                     /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not
@@ -141,7 +149,9 @@ abstract contract CommonProtocolActions is BaseSetup {
                         false,
                         MULTI_TX_SLIPPAGE_SHARE,
                         args.srcChainId == args.toChainId,
-                        args.finalAmountDst
+                        args.USDPerExternalToken,
+                        args.USDPerUnderlyingToken,
+                        args.USDPerUnderlyingTokenDst
                     ),
                     /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not
                     /// resemble
@@ -169,12 +179,15 @@ abstract contract CommonProtocolActions is BaseSetup {
         view
         returns (bytes memory txData)
     {
-        /// @dev amount_ adjusted after bridge slippage
-        amount_ = (amount_ * uint256(10_000 - slippage_)) / 10_000;
-
         /// @dev amount_ adjusted after swap slippage
         int256 swapSlippage = (slippage_ * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
         amount_ = (amount_ * uint256(10_000 - swapSlippage)) / 10_000;
+
+        /// @dev already on target chain, so need to vm.selectFork() to it
+        (, int256 USDPerSendingTokenDst,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[toChainId_][sendingTokenDst_]).latestRoundData();
+        (, int256 USDPerReceivingTokenDst,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[toChainId_][receivingTokenDst_]).latestRoundData();
 
         if (liqBridgeKind_ == 1) {
             /// @dev for lifi
@@ -192,7 +205,18 @@ abstract contract CommonProtocolActions is BaseSetup {
                 amount_,
                 /// @dev _buildLiqBridgeTxDataMultiTx() will only be called when multiTx is true
                 /// @dev and multiTx means cross-chain (last arg)
-                abi.encode(from_),
+                abi.encode(
+                    from_,
+                    FORKS[toChainId_],
+                    receivingTokenDst_,
+                    slippage_,
+                    true,
+                    MULTI_TX_SLIPPAGE_SHARE,
+                    false,
+                    uint256(USDPerSendingTokenDst),
+                    uint256(USDPerReceivingTokenDst),
+                    1
+                ),
                 false // arbitrary
             );
 
@@ -219,9 +243,27 @@ abstract contract CommonProtocolActions is BaseSetup {
         bool sameChain_
     )
         internal
-        view
         returns (bytes memory txData)
     {
+        int256 USDPerUnderlyingTokenDst;
+        int256 USDPerUnderlyingToken;
+
+        if (underlyingTokenDst_ != address(0)) {
+            vm.selectFork(FORKS[toChainId_]);
+            (, USDPerUnderlyingTokenDst,,,) =
+                AggregatorV3Interface(tokenPriceFeeds[toChainId_][underlyingTokenDst_]).latestRoundData();
+        } else {
+            USDPerUnderlyingTokenDst = 1;
+        }
+
+        if (underlyingToken_ != address(0)) {
+            vm.selectFork(FORKS[ETH]);
+            (, USDPerUnderlyingToken,,,) =
+                AggregatorV3Interface(tokenPriceFeeds[ETH][underlyingToken_]).latestRoundData();
+        } else {
+            USDPerUnderlyingToken = 1;
+        }
+
         if (liqBridgeKind_ == 1) {
             if (!sameChain_) {
                 ILiFi.BridgeData memory bridgeData;
@@ -235,7 +277,18 @@ abstract contract CommonProtocolActions is BaseSetup {
                     underlyingToken_,
                     underlyingToken_,
                     amount_,
-                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, 200, false, 0, false, amount_),
+                    abi.encode(
+                        from_,
+                        FORKS[toChainId_],
+                        underlyingTokenDst_,
+                        totalSlippage,
+                        false,
+                        0,
+                        false,
+                        uint256(USDPerUnderlyingToken),
+                        uint256(USDPerUnderlyingToken),
+                        uint256(USDPerUnderlyingTokenDst)
+                    ),
                     false // arbitrary
                 );
 
@@ -266,7 +319,7 @@ abstract contract CommonProtocolActions is BaseSetup {
                     underlyingToken_,
                     underlyingToken_,
                     amount_,
-                    abi.encode(from_),
+                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, totalSlippage, false, 0, false),
                     false // arbitrary
                 );
 

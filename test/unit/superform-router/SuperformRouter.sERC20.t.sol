@@ -794,7 +794,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         superformRouterSERC20.singleDirectSingleVaultDeposit(req);
     }
 
-    function test_withdrawWithPausedImplementation() public {
+    function test_withdrawWithPausedImplementationsa() public {
         _pauseFormImplementation();
 
         /// scenario: withdraw from an paused form form id (which doesn't exist on the chain)
@@ -829,8 +829,9 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         uint256[] memory maxSlippages = new uint256[](1);
         maxSlippages[0] = 100;
 
-        uint8[] memory ambIds = new uint8[](1);
+        uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
+        ambIds[1] = 2;
 
         LiqRequest[] memory liqReq = new LiqRequest[](1);
         liqReq[0] = LiqRequest(1, "", getContract(ARBI, "DAI"), ETH, 0);
@@ -840,8 +841,29 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
 
-        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
-        superformRouterSERC20.singleXChainMultiVaultWithdraw(req);
+        vm.recordLogs();
+        superformRouterSERC20.singleXChainMultiVaultWithdraw{ value: 2 ether }(req);
+        vm.stopPrank();
+
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        /// @dev mocks the cross-chain payload delivery
+        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).helpWithEstimates(
+            LZ_ENDPOINTS[ARBI],
+            5_000_000,
+            /// note: using some max limit
+            FORKS[ARBI],
+            logs
+        );
+
+        HyperlaneHelper(getContract(ETH, "HyperlaneHelper")).help(
+            address(HyperlaneMailbox), address(HyperlaneMailbox), FORKS[ARBI], logs
+        );
+
+        vm.selectFork(FORKS[ARBI]);
+        vm.prank(deployer);
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload(1);
+        assertEq(EmergencyQueue(getContract(ARBI, "EmergencyQueue")).queueCounter(), 1);
     }
 
     function test_depositWithPausedImplementation() public {
@@ -1085,9 +1107,12 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     getContract(ARBI, "CoreStateRegistry"),
                     uint256(ARBI),
                     1e18,
-                    1e18,
+                    //1e18,
                     false,
-                    0
+                    0,
+                    1,
+                    1,
+                    1
                 ),
                 false
             ),
@@ -1111,9 +1136,12 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     getContract(ARBI, "CoreStateRegistry"),
                     uint256(ARBI),
                     1e18,
-                    1e18,
+                    //1e18,
                     false,
-                    0
+                    0,
+                    1,
+                    1,
+                    1
                 ),
                 false
             ),
@@ -1219,9 +1247,12 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     superform1,
                     uint256(ETH),
                     1e18,
-                    1e18,
+                    //1e18,
                     false,
-                    0
+                    0,
+                    1,
+                    1,
+                    1
                 ),
                 true
             ),
@@ -1245,9 +1276,12 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     superform2,
                     uint256(ETH),
                     1e18,
-                    1e18,
+                    //1e18,
                     false,
-                    0
+                    0,
+                    1,
+                    1,
+                    1
                 ),
                 true
             ),
@@ -1305,9 +1339,12 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     getContract(ARBI, "CoreStateRegistry"),
                     uint256(ARBI),
                     1e18,
-                    1e18,
+                    //1e18,
                     false,
-                    0
+                    0,
+                    1,
+                    1,
+                    1
                 ),
                 false
             ),

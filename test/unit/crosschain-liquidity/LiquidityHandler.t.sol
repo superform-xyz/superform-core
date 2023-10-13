@@ -68,24 +68,20 @@ contract LiquidityHandlerTest is ProtocolActions {
         vm.prank(deployer);
         MockERC20(token).approve(address(liquidityHandler), transferAmount);
 
-        vm.prank(deployer);
-        vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA.selector);
-        liquidityHandler.dispatchTokensTest(
-            bridgeAddress,
-            _buildDummyTxDataUnitTests(
-                1,
-                address(token),
-                tokenDst,
-                address(liquidityHandler),
-                ARBI,
-                transferAmount,
-                address(liquidityHandler),
-                false
-            ),
-            token,
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            1,
+            address(token),
+            tokenDst,
+            address(liquidityHandler),
+            ARBI,
             transferAmount,
-            0
+            address(liquidityHandler),
+            false
         );
+        vm.prank(deployer);
+
+        vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA.selector);
+        liquidityHandler.dispatchTokensTest(bridgeAddress, txData, token, transferAmount, 0);
     }
 
     function test_dispatchNativeTokensWithInsufficientNativeAmount() public {
@@ -93,34 +89,24 @@ contract LiquidityHandlerTest is ProtocolActions {
         address token = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
         address bridgeAddress = SuperRegistry(getContract(ETH, "SuperRegistry")).getBridgeAddress(1);
 
-        vm.prank(deployer);
-        vm.expectRevert(Error.INSUFFICIENT_NATIVE_AMOUNT.selector);
-        liquidityHandler.dispatchTokensTest(
-            bridgeAddress,
-            _buildDummyTxDataUnitTests(
-                1, token, token, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler), false
-            ),
-            token,
-            transferAmount,
-            0
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            1, token, token, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler), false
         );
+        vm.prank(deployer);
+
+        vm.expectRevert(Error.INSUFFICIENT_NATIVE_AMOUNT.selector);
+        liquidityHandler.dispatchTokensTest(bridgeAddress, txData, token, transferAmount, 0);
     }
 
     function test_dispatchNativeTokensWithInvalidTxData() public {
         uint256 transferAmount = 1e18; // 1 token
         address token = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
         address bridgeAddress = address(new LiquidityHandlerUser());
-
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            1, token, token, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler), false
+        );
         vm.prank(deployer);
         vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA_NATIVE.selector);
-        liquidityHandler.dispatchTokensTest{ value: 1e18 }(
-            bridgeAddress,
-            _buildDummyTxDataUnitTests(
-                1, token, token, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler), false
-            ),
-            token,
-            transferAmount,
-            transferAmount
-        );
+        liquidityHandler.dispatchTokensTest{ value: 1e18 }(bridgeAddress, txData, token, transferAmount, transferAmount);
     }
 }

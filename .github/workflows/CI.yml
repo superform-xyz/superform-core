@@ -43,8 +43,11 @@ jobs:
       - name: "Cache the build so that it can be re-used by the other jobs"
         uses: "actions/cache/save@v3"
         with:
-          path: "out"
           key: "foundry-build-${{ github.sha }}"
+          path: |
+            cache
+            out
+            out-optimized
 
       - name: "Add build summary"
         run: |
@@ -68,7 +71,10 @@ jobs:
         with:
           fail-on-cache-miss: true
           key: "foundry-build-${{ github.sha }}"
-          path: "out"
+          path: |
+            cache
+            out
+            out-optimized
 
       - name: "Generate fuzz seed that changes weekly to avoid burning through RPC allowance"
         run: |
@@ -99,7 +105,10 @@ jobs:
         with:
           fail-on-cache-miss: true
           key: "foundry-build-${{ github.sha }}"
-          path: "out"
+          path: |
+            cache
+            out
+            out-optimized
 
       - name: "Generate fuzz seed that changes weekly to avoid burning through RPC allowance"
         run: |
@@ -131,7 +140,10 @@ jobs:
         with:
           fail-on-cache-miss: true
           key: "foundry-build-${{ github.sha }}"
-          path: "out"
+          path: |
+            cache
+            out
+            out-optimized
 
       - name: "Generate fuzz seed that changes weekly to avoid burning through RPC allowance"
         run: |
@@ -146,7 +158,6 @@ jobs:
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
                 
   coverage:
-    needs: ["build"]
     runs-on: "SuperformCore2"
     steps:
       - name: "Check out the repo"
@@ -157,20 +168,28 @@ jobs:
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
 
-      - name: "Generate the coverage report using the unit and the integration tests"
-        run: "FOUNDRY_PROFILE=coverage forge coverage --match-path \"test/(unit|fuzz)/**/*.sol\" --report lcov"
-
-      - name: "Upload coverage report to Codecov"
-        uses: "codecov/codecov-action@v3"
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: "Restore the cached build"
+        uses: "actions/cache/restore@v3"
         with:
-          files: "./lcov.info"
+          fail-on-cache-miss: true
+          key: "foundry-build-${{ github.sha }}"
+          path: |
+            cache
+            out
+            out-optimized
 
-      - name: "Add coverage summary"
+      - name: "Generate fuzz seed that changes weekly to avoid burning through RPC allowance"
         run: |
-          echo "## Coverage result" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Uploaded to Codecov" >> $GITHUB_STEP_SUMMARY
+          echo "FOUNDRY_FUZZ_SEED=$(echo $(($EPOCHSECONDS / 604800)))" >> $GITHUB_ENV
+
+      - name: "Run fuzz tests against the optimized build"
+        run: "forge test --match-path \"test/fuzz/**/*.sol\""
+
+      - name: "Add test summary"
+        run: |
+          echo "## Fork tests result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+
 
   slither:
    needs: ["build"]
@@ -191,7 +210,10 @@ jobs:
       with:
         fail-on-cache-miss: true
         key: "foundry-build-${{ github.sha }}"
-        path: "out"
+        path: |
+          cache
+          out
+          out-optimized
 
     - name: "Run Slither"
       uses: crytic/slither-action@v0.3.0

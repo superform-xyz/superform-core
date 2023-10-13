@@ -19,7 +19,7 @@ import "./crosschain-liquidity/LiquidityHandler.sol";
 import "./types/DataTypes.sol";
 
 /// @title BaseRouterImplementation
-/// @author Zeropoint Labs.
+/// @author Zeropoint Labs
 /// @dev Extends BaseRouter with standard internal execution functions (based on SuperPositions)
 abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRouter, LiquidityHandler {
     using SafeERC20 for IERC20;
@@ -337,7 +337,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformData.maxSlippages,
             new bool[](req_.superformData.superformIds.length),
             req_.superformData.liqRequests,
-            address(0),
+            req_.superformData.dstRefundAddress,
             req_.superformData.extraFormData
         );
 
@@ -405,7 +405,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             superformData_.maxSlippage,
             false,
             superformData_.liqRequest,
-            address(0),
+            superformData_.dstRefundAddress,
             superformData_.extraFormData
         );
     }
@@ -508,16 +508,19 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             srcSender_
         );
 
-        /// @dev mint super positions at the end of the deposit action
-        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).mintSingle(
-            srcSender_, vaultData_.superformId, dstAmount
-        );
+        if (dstAmount != 0) {
+            /// @dev mint super positions at the end of the deposit action
+            IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).mintSingle(
+                srcSender_, vaultData_.superformId, dstAmount
+            );
+        }
     }
 
     struct MultiDepositLocalVars {
         uint256 len;
         address[] superforms;
         uint256[] dstAmounts;
+        bool mint;
     }
 
     /// @notice deposits to multiple vaults on the same chain
@@ -556,15 +559,21 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 srcSender_
             );
 
+            if (v.dstAmounts[i] > 0 && !v.mint) {
+                v.mint = true;
+            }
+
             unchecked {
                 ++i;
             }
         }
 
-        /// @dev in direct deposits, SuperPositions are minted right after depositing to vaults
-        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).mintBatch(
-            srcSender_, vaultData_.superformIds, v.dstAmounts
-        );
+        if (v.mint) {
+            /// @dev in direct deposits, SuperPositions are minted right after depositing to vaults
+            IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).mintBatch(
+                srcSender_, vaultData_.superformIds, v.dstAmounts
+            );
+        }
     }
 
     /// @notice fulfils the final stage of same chain deposit action
@@ -633,7 +642,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             vaultData_.maxSlippage,
             vaultData_.liqData,
             vaultData_.extraFormData,
-            srcSender_
+            srcSender_,
+            vaultData_.dstRefundAddress
         );
     }
 
@@ -655,7 +665,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 vaultData_.maxSlippage[i],
                 vaultData_.liqData[i],
                 vaultData_.extraFormData,
-                srcSender_
+                srcSender_,
+                vaultData_.dstRefundAddress
             );
 
             unchecked {
@@ -674,7 +685,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         uint256 maxSlippage_,
         LiqRequest memory liqData_,
         bytes memory extraFormData_,
-        address srcSender_
+        address srcSender_,
+        address refundAddress_
     )
         internal
         virtual
@@ -697,7 +709,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 maxSlippage_,
                 false,
                 liqData_,
-                address(0),
+                refundAddress_,
                 extraFormData_
             ),
             srcSender_
@@ -724,11 +736,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev 10000 = 100% slippage
         if (superformData_.maxSlippage > 10_000) return false;
 
-        (, uint32 formImplementationId_,) = superformData_.superformId.getSuperform();
-
-        return !ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
-            formImplementationId_
-        );
+        /// if it reaches this point then is valid
+        return true;
     }
 
     function _validateSuperformsDepositData(
@@ -811,14 +820,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         for (uint256 i; i < len;) {
             /// @dev 10000 = 100% slippage
             if (superformsData_.maxSlippages[i] > 10_000) return false;
-            (, uint32 formImplementationId_, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
+            (,, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
             if (dstChainId_ != sfDstChainId) return false;
-
-            if (
-                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
-                    formImplementationId_
-                )
-            ) return false;
 
             unchecked {
                 ++i;

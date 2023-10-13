@@ -21,6 +21,9 @@ library Error {
     /// @dev thrown when msg.sender is not core state registry
     error NOT_CORE_STATE_REGISTRY();
 
+    /// @dev thrown when msg.sender is not emergency queue
+    error NOT_EMERGENCY_QUEUE();
+
     /// @dev thrown when msg.sender is not form
     error NOT_SUPERFORM();
 
@@ -98,6 +101,9 @@ library Error {
 
     /// @dev thrown when not possible to revoke last admin
     error CANNOT_REVOKE_LAST_ADMIN();
+
+    /// @dev thrown when not possible to revoke last admin
+    error CANNOT_REVOKE_BROADCAST();
 
     /// @dev thrown if the delay is invalid
     error INVALID_TIMELOCK_DELAY();
@@ -296,6 +302,12 @@ library Error {
     /*///////////////////////////////////////////////////////////////
                             FORM ERRORS
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev thrown when the form has insufficient balance for emergency withdraw
+    error EMERGENCY_WITHDRAW_INSUFFICIENT_BALANCE();
+
+    /// @dev thrown when emergency withdraw is already processed
+    error EMERGENCY_WITHDRAW_PROCESSED_ALREADY();
 
     /// @dev thrown when the allowance in direct deposit is not correct
     error DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();

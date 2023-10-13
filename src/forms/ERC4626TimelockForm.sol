@@ -185,6 +185,11 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         return 0;
     }
 
+    /// @inheritdoc BaseForm
+    function _emergencyWithdraw(address refundAddress_, uint256 amount_) internal override {
+        _processEmergencyWithdraw(refundAddress_, amount_);
+    }
+
     /// @dev calls the vault to request unlock
     /// @notice superPositions are already burned at this point
     function _requestUnlock(uint256 amount_) internal returns (uint256 lockedTill_) {

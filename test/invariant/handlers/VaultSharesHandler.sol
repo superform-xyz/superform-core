@@ -1,17 +1,16 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.19;
 
-import "../VaultShares.invariant.t.sol";
 import "test/utils/InvariantProtocolActions.sol";
 import { VaultSharesStore } from "../stores/VaultSharesStore.sol";
 import { TimestampStore } from "../stores/TimestampStore.sol";
-import { CommonBase } from "forge-std/Base.sol";
-import { StdCheats } from "forge-std/StdCheats.sol";
-import { StdUtils } from "forge-std/StdUtils.sol";
 
-contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtocolActions {
+contract VaultSharesHandler is InvariantProtocolActions {
     VaultSharesStore public vaultSharesStore;
     TimestampStore public timestampStore;
+
+    uint256 public vaultShares;
+    uint256 public superPositionsSum;
 
     /// @dev Simulates the passage of time.
     /// See https://github.com/foundry-rs/foundry/issues/4994.
@@ -28,7 +27,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
 
     constructor(
         uint64[] memory chainIds,
-        string[28] memory contractNames,
+        string[29] memory contractNames,
         address[][] memory coreContracts,
         address[][] memory underlyingAddresses,
         address[][][] memory vaultAddresses,
@@ -83,23 +82,24 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
     function singleDirectSingleVaultDeposit(
         uint256 timeJumpSeed,
         uint256 amount1,
-        uint256 underlying1,
+        uint256, /*underlying1*/
         uint256 inputToken,
         uint256 slippage,
         uint64 chain0,
-        uint64 dstChain1,
         uint256 actionType,
         uint256 user
     )
         public
         adjustTimestamp(timeJumpSeed)
     {
+        console.log("## Handler call direct ##");
         HandlerLocalVars memory v;
         v.AMBs = new uint8[](2);
         v.AMBs[0] = 1;
         v.AMBs[1] = 2;
 
         v.chain0Index = bound(chain0, 0, chainIds.length - 1);
+        v.dstChainIndex = v.chain0Index;
         v.CHAIN_0 = chainIds[v.chain0Index];
 
         v.DST_CHAINS = new uint64[](1);
@@ -120,7 +120,10 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         inputToken = bound(inputToken, 0, 2);
 
         vm.selectFork(FORKS[v.CHAIN_0]);
-        uint256 inputDecimals = MockERC20(getContract(v.CHAIN_0, UNDERLYING_TOKENS[inputToken])).decimals();
+        address input = getContract(v.CHAIN_0, UNDERLYING_TOKENS[inputToken]);
+        console.log("inputToken", input);
+        uint256 inputDecimals = MockERC20(input).decimals();
+        console.log("A");
         if (inputToken == 0) {
             amount1 = bound(amount1, 1 * 10 ** inputDecimals, 1 * 10 ** (inputDecimals + 2));
             console.log("amount1 dai", amount1);
@@ -175,15 +178,16 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
             chainIds[v.dstChainIndex], v.targetUnderlyingsPerDst, v.targetVaultsPerDst, v.targetFormKindsPerDst
         );
         v.vaultShares = _getSingleVaultShares(chainIds[v.dstChainIndex], v.targetUnderlyingsPerDst);
-
         vm.selectFork(FORKS[0]);
-        vaultSharesStore.setInvariantToAssert(v.superPositionsSum, v.vaultShares);
+
+        vaultSharesStore.setSuperPositions(v.superPositionsSum);
+        vaultSharesStore.setVaultShares(v.vaultShares);
     }
 
     function singleXChainSingleVaultDeposit(
         uint256 timeJumpSeed,
         uint256 amount1,
-        uint256 underlying1,
+        uint256, /*underlying1*/
         uint256 inputToken,
         uint256 slippage,
         uint64 chain0,
@@ -194,6 +198,8 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         public
         adjustTimestamp(timeJumpSeed)
     {
+        console.log("## Handler call xChain ##");
+
         HandlerLocalVars memory v;
         v.AMBs = new uint8[](2);
         v.AMBs[0] = 1;
@@ -280,9 +286,10 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
             chainIds[v.dstChainIndex], v.targetUnderlyingsPerDst, v.targetVaultsPerDst, v.targetFormKindsPerDst
         );
         v.vaultShares = _getSingleVaultShares(chainIds[v.dstChainIndex], v.targetUnderlyingsPerDst);
-
         vm.selectFork(FORKS[0]);
-        vaultSharesStore.setInvariantToAssert(v.superPositionsSum, v.vaultShares);
+
+        vaultSharesStore.setSuperPositions(v.superPositionsSum);
+        vaultSharesStore.setVaultShares(v.vaultShares);
     }
     /*
     function singleDirectSingleVaultWithdraw() public {
@@ -435,7 +442,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
 
     struct InitHandlerSetupVars {
         uint64[] chainIds;
-        string[28] contractNames;
+        string[29] contractNames;
         address[][] coreContracts;
         address[][] underlyingAddresses;
         address[][][] vaultAddresses;
@@ -483,6 +490,8 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
                 }
             }
         }
+
+        _setTokenPriceFeeds();
     }
 
     /// @dev overrides basesetup _preDeploymentSetup so that forks are not created again
@@ -608,6 +617,65 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
                 VAULT_NAMES[i].push(string.concat(underlyingTokens[j], VAULT_KINDS[i]));
             }
         }
+
+        mapping(uint64 chainId => mapping(string underlying => address realAddress)) storage existingTokens =
+            UNDERLYING_EXISTING_TOKENS;
+
+        existingTokens[43_114]["DAI"] = 0xd586E7F844cEa2F87f50152665BCbc2C279D8d70;
+        existingTokens[43_114]["USDC"] = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
+        existingTokens[43_114]["WETH"] = 0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB;
+
+        existingTokens[42_161]["DAI"] = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
+        existingTokens[42_161]["USDC"] = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
+        existingTokens[42_161]["WETH"] = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+
+        existingTokens[10]["DAI"] = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
+        existingTokens[10]["USDC"] = 0x7F5c764cBc14f9669B88837ca1490cCa17c31607;
+        existingTokens[10]["WETH"] = 0x4200000000000000000000000000000000000006;
+
+        existingTokens[1]["DAI"] = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+        existingTokens[1]["USDC"] = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+        existingTokens[1]["WETH"] = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+
+        existingTokens[137]["DAI"] = 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063;
+        existingTokens[137]["USDC"] = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
+        existingTokens[137]["WETH"] = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619;
+
+        existingTokens[56]["DAI"] = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
+        existingTokens[56]["USDC"] = 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d;
+        existingTokens[56]["WETH"] = address(0);
+
+        mapping(
+            uint64 chainId
+                => mapping(
+                    uint32 formBeaconId
+                        => mapping(string underlying => mapping(uint256 vaultKindIndex => address realVault))
+                )
+            ) storage existingVaults = REAL_VAULT_ADDRESS;
+
+        existingVaults[43_114][1]["DAI"][0] = 0x75A8cFB425f366e424259b114CaeE5f634C07124;
+        existingVaults[43_114][1]["USDC"][0] = 0xB4001622c02F1354A3CfF995b7DaA15b1d47B0fe;
+        existingVaults[43_114][1]["WETH"][0] = 0x1a225008efffB6e07D01671127c9E40f6f787c8C;
+
+        existingVaults[42_161][1]["DAI"][0] = 0x105bdc0990947318FA1c873623730F332A6f6203;
+        existingVaults[42_161][1]["USDC"][0] = address(0);
+        existingVaults[42_161][1]["WETH"][0] = 0xe4c2A17f38FEA3Dcb3bb59CEB0aC0267416806e2;
+
+        existingVaults[1][1]["DAI"][0] = 0x36F8d0D0573ae92326827C4a82Fe4CE4C244cAb6;
+        existingVaults[1][1]["USDC"][0] = 0x6bAD6A9BcFdA3fd60Da6834aCe5F93B8cFed9598;
+        existingVaults[1][1]["WETH"][0] = 0x490BBbc2485e99989Ba39b34802faFa58e26ABa4;
+
+        existingVaults[10][1]["DAI"][0] = address(0);
+        existingVaults[10][1]["USDC"][0] = 0x81C9A7B55A4df39A9B7B5F781ec0e53539694873;
+        existingVaults[10][1]["WETH"][0] = 0xc4d4500326981eacD020e20A81b1c479c161c7EF;
+
+        existingVaults[137][1]["DAI"][0] = 0x4A7CfE3ccE6E88479206Fefd7b4dcD738971e723;
+        existingVaults[137][1]["USDC"][0] = 0x277ba089b4CF2AF32589D98aA839Bf8c35A30Da3;
+        existingVaults[137][1]["WETH"][0] = 0x0D0188268D0693e2494989dc3DA5e64F0D6BA972;
+
+        existingVaults[56][1]["DAI"][0] = 0x6A354D50fC2476061F378390078e30F9782C5266;
+        existingVaults[56][1]["USDC"][0] = 0x32307B89a1c59Ea4EBaB1Fde6bD37b1139D06759;
+        existingVaults[56][1]["WETH"][0] = address(0);
     }
 
     function _getSuperpositionsForDstChainFromSrcChain(
@@ -644,16 +712,22 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         uint32[] memory formKinds_
     )
         internal
-        returns (uint256 superPositionsSum)
+        returns (uint256 superPositionsSum_)
     {
         /// @dev sum up superposition owned by all users on all chains
         for (uint256 i = 0; i < chainIds.length; i++) {
+            // ETH - SuperPositions amount of superform X on BSC
+            // BSC - SuperPositions amount of superform X on BSC
+            // AVAX - SuperPositions amount of superform X on BSC
+            // POLY - SuperPositions amount of superform X on BSC
+            // ARBI - SuperPositions amount of superform X on BSC
+            // OP - SuperPositions amount of superform X on BSC
             uint256[] memory superPositions = _getSuperpositionsForDstChainFromSrcChain(
                 underlyingTokens_, vaultIds_, formKinds_, chainIds[i], dstChain
             );
 
             if (superPositions.length > 0) {
-                superPositionsSum += superPositions[0];
+                superPositionsSum_ += superPositions[0];
             }
         }
     }
@@ -663,7 +737,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         uint256[] memory underlyingTokens_
     )
         internal
-        returns (uint256 vaultShares)
+        returns (uint256 vaultShares_)
     {
         /// @dev FIXME currently hardcoded to vault kind and form beacon id 0
         address superform = getContract(
@@ -678,6 +752,6 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
 
         vm.selectFork(FORKS[dstChain]);
 
-        vaultShares = IBaseForm(superform).getVaultShareBalance();
+        vaultShares_ = IBaseForm(superform).getVaultShareBalance();
     }
 }

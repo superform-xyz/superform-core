@@ -15,6 +15,8 @@ import "pigeon/wormhole/specialized-relayer/WormholeHelper.sol" as WormholeBroad
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 
+import { AggregatorV3Interface } from "../../src/vendor/chainlink/AggregatorV3Interface.sol";
+
 /// @dev test utils & mocks
 import { LiFiMock } from "../mocks/LiFiMock.sol";
 import { MockERC20 } from "../mocks/MockERC20.sol";
@@ -37,6 +39,7 @@ import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
+import { EmergencyQueue } from "src/emergency/EmergencyQueue.sol";
 import { SuperRegistry } from "src/settings/SuperRegistry.sol";
 import { SuperRBAC } from "src/settings/SuperRBAC.sol";
 import { SuperPositions } from "src/SuperPositions.sol";
@@ -93,7 +96,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[28] public contractNames = [
+    string[29] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -121,7 +124,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         "WormholeBroadcastHelper",
         "LiFiMock",
         "KYCDAOMock",
-        "CanonicalPermit2"
+        "CanonicalPermit2",
+        "EmergencyQueue"
     ];
 
     /*//////////////////////////////////////////////////////////////
@@ -270,6 +274,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     //////////////////////////////////////////////////////////////*/
 
     mapping(uint64 => mapping(uint64 => address)) public PRICE_FEEDS;
+    mapping(uint64 => mapping(address => address)) public tokenPriceFeeds;
 
     /*//////////////////////////////////////////////////////////////
                         RPC VARIABLES
@@ -312,11 +317,11 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         _fundUnderlyingTokens(100);
     }
 
-    function getContract(uint64 chainId, string memory _name) public view returns (address) {
+    function getContract(uint64 chainId, string memory _name) internal view returns (address) {
         return contracts[chainId][bytes32(bytes(_name))];
     }
 
-    function getAccessControlErrorMsg(address _addr, bytes32 _role) public pure returns (bytes memory errorMsg) {
+    function getAccessControlErrorMsg(address _addr, bytes32 _role) internal pure returns (bytes memory errorMsg) {
         errorMsg = abi.encodePacked(
             "AccessControl: account ",
             Strings.toHexString(uint160(_addr), 20),
@@ -710,6 +715,11 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.superRegistryC.setAddress(vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR(), deployer, vars.chainId);
             vars.superRegistryC.setAddress(vars.superRegistryC.TIMELOCK_REGISTRY_PROCESSOR(), deployer, vars.chainId);
 
+            /// @dev 17 deploy emergency queue
+            vars.emergencyQueue = address(new EmergencyQueue(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("EmergencyQueue"))] = vars.emergencyQueue;
+            vars.superRegistryC.setAddress(vars.superRegistryC.EMERGENCY_QUEUE(), vars.emergencyQueue, vars.chainId);
+
             delete bridgeAddresses;
             delete bridgeValidators;
         }
@@ -942,12 +952,58 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[2]);
         }
 
+        _setTokenPriceFeeds();
+
         vm.stopPrank();
     }
 
     /*//////////////////////////////////////////////////////////////
                         MISC. HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+    function _setTokenPriceFeeds() internal {
+        /// @dev set chainlink price feeds
+        /// ETH
+        tokenPriceFeeds[ETH][getContract(ETH, "DAI")] = 0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9;
+        tokenPriceFeeds[ETH][getContract(ETH, "USDC")] = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
+        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH), also coz chainlink doesn't provide
+        tokenPriceFeeds[ETH][getContract(ETH, "WETH")] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        tokenPriceFeeds[ETH][NATIVE_TOKEN] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+
+        /// BSC
+        tokenPriceFeeds[BSC][getContract(BSC, "DAI")] = 0x132d3C0B1D2cEa0BC552588063bdBb210FDeecfA;
+        tokenPriceFeeds[BSC][getContract(BSC, "USDC")] = 0x51597f405303C4377E36123cBc172b13269EA163;
+        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
+        tokenPriceFeeds[BSC][getContract(BSC, "WETH")] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+        tokenPriceFeeds[BSC][NATIVE_TOKEN] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+
+        /// AVAX
+        tokenPriceFeeds[AVAX][getContract(AVAX, "DAI")] = 0x51D7180edA2260cc4F6e4EebB82FEF5c3c2B8300;
+        tokenPriceFeeds[AVAX][getContract(AVAX, "USDC")] = 0xF096872672F44d6EBA71458D74fe67F9a77a23B9;
+        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
+        tokenPriceFeeds[AVAX][getContract(AVAX, "WETH")] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+        tokenPriceFeeds[AVAX][NATIVE_TOKEN] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+
+        /// POLYGON
+        tokenPriceFeeds[POLY][getContract(POLY, "DAI")] = 0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D;
+        tokenPriceFeeds[POLY][getContract(POLY, "USDC")] = 0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7;
+        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
+        tokenPriceFeeds[POLY][getContract(POLY, "WETH")] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+        tokenPriceFeeds[POLY][NATIVE_TOKEN] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+
+        /// OPTIMISM
+        tokenPriceFeeds[OP][getContract(OP, "DAI")] = 0x8dBa75e83DA73cc766A7e5a0ee71F656BAb470d6;
+        tokenPriceFeeds[OP][getContract(OP, "USDC")] = 0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3;
+        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
+        tokenPriceFeeds[OP][getContract(OP, "WETH")] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+        tokenPriceFeeds[OP][NATIVE_TOKEN] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+
+        /// ARBITRUM
+        tokenPriceFeeds[ARBI][getContract(ARBI, "DAI")] = 0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB;
+        tokenPriceFeeds[ARBI][getContract(ARBI, "USDC")] = 0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3;
+        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
+        tokenPriceFeeds[ARBI][getContract(ARBI, "WETH")] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+        tokenPriceFeeds[ARBI][NATIVE_TOKEN] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+    }
 
     function _preDeploymentSetup() internal virtual {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
@@ -984,7 +1040,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             wormholeChainIdsStorage[chainIds[i]] = wormhole_chainIds[i];
         }
 
-        /// price feeds on all chains, for paymentHelper
+        /// price feeds on all chains, for paymentHelper: chain => asset => priceFeed (against USD)
         mapping(uint64 => mapping(uint64 => address)) storage priceFeeds = PRICE_FEEDS;
 
         /// ETH
@@ -1018,7 +1074,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         priceFeeds[POLY][ETH] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][OP] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][ARBI] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
-
         /// OPTIMISM
         priceFeeds[OP][OP] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         priceFeeds[OP][POLY] = address(0);
@@ -1272,7 +1327,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     }
 
     ///@dev Compute the address of the contract to be deployed
-    function getAddress(bytes memory bytecode_, bytes32 salt_, address deployer_) public pure returns (address) {
+    function getAddress(bytes memory bytecode_, bytes32 salt_, address deployer_) internal pure returns (address) {
         bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), deployer_, salt_, keccak256(bytecode_)));
 
         // NOTE: cast last 20 bytes of hash to address

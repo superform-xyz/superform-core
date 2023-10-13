@@ -141,6 +141,9 @@ interface ISuperRegistry {
     /// @dev returns the id of the dst swapper keeper
     function DST_SWAPPER() external view returns (bytes32);
 
+    /// @dev returns the id of the emergency queue
+    function EMERGENCY_QUEUE() external view returns (bytes32);
+
     /// @dev returns the id of the payment admin keeper
     function PAYMENT_ADMIN() external view returns (bytes32);
 
@@ -161,6 +164,9 @@ interface ISuperRegistry {
 
     /// @dev returns the id of the core state registry updater keeper
     function CORE_REGISTRY_DISPUTER() external view returns (bytes32);
+
+    /// @dev returns the id of the core state registry updater keeper
+    function DST_SWAPPER_PROCESSOR() external view returns (bytes32);
 
     /// @dev gets the address of a contract on current chain
     /// @param id_ is the id of the contract

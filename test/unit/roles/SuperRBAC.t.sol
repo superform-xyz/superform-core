@@ -200,6 +200,32 @@ contract SuperRBACTest is BaseSetup {
         superRBAC.setRoleAdmin(keccak256("NEW_ROLE"), keccak256("PROTOCOL_ADMIN_ROLE"));
     }
 
+    function test_revokeSuperBroadcast_CannotRevoke() public {
+        vm.deal(deployer, 1 ether);
+        vm.startPrank(deployer);
+        bytes32 id = keccak256("id");
+        vm.expectRevert(Error.CANNOT_REVOKE_BROADCAST.selector);
+        /// @dev setting the status as false in chain id = ETH
+        superRBAC.revokeRoleSuperBroadcast{ value: 1 ether }(
+            keccak256("BROADCASTER_ROLE"), deployer, generateBroadcastParams(5, 1), id
+        );
+        vm.expectRevert(Error.CANNOT_REVOKE_BROADCAST.selector);
+        /// @dev setting the status as false in chain id = ETH
+        superRBAC.revokeRoleSuperBroadcast{ value: 1 ether }(
+            keccak256("PROTOCOL_ADMIN_ROLE"), deployer, generateBroadcastParams(5, 1), id
+        );
+        vm.expectRevert(Error.CANNOT_REVOKE_BROADCAST.selector);
+        /// @dev setting the status as false in chain id = ETH
+        superRBAC.revokeRoleSuperBroadcast{ value: 1 ether }(
+            keccak256("EMERGENCY_ADMIN_ROLE"), deployer, generateBroadcastParams(5, 1), id
+        );
+        vm.expectRevert(Error.CANNOT_REVOKE_BROADCAST.selector);
+        /// @dev setting the status as false in chain id = ETH
+        superRBAC.revokeRoleSuperBroadcast{ value: 1 ether }(
+            keccak256("WORMHOLE_VAA_RELAYER_ROLE"), deployer, generateBroadcastParams(5, 1), id
+        );
+    }
+
     function _revokeAndCheck(
         bytes32 superRBACRole_,
         bytes32 superRegistryAddressId_,

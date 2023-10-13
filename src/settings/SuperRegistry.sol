@@ -86,17 +86,19 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @dev accessed in CSR and validators. can be used to alter behaviour of update deposit payloads
     /// @dev probably should NOT be allowed to be changed
     bytes32 public constant override DST_SWAPPER = keccak256("DST_SWAPPER");
-
+    /// @dev accessed in base form to send payloads to emergency queue
+    /// @dev probably should NOT be allowed to be changed
+    bytes32 public constant override EMERGENCY_QUEUE = keccak256("EMERGENCY_QUEUE");
     /// @dev default keepers - identifiers
     /// @dev could be allowed to be changed
     bytes32 public constant override PAYMENT_ADMIN = keccak256("PAYMENT_ADMIN");
     bytes32 public constant override CORE_REGISTRY_PROCESSOR = keccak256("CORE_REGISTRY_PROCESSOR");
     bytes32 public constant override BROADCAST_REGISTRY_PROCESSOR = keccak256("BROADCAST_REGISTRY_PROCESSOR");
     bytes32 public constant override TIMELOCK_REGISTRY_PROCESSOR = keccak256("TIMELOCK_REGISTRY_PROCESSOR");
-    /// @dev propose to delete this id here as revoke broadcast wouldn't operate with updater
     bytes32 public constant override CORE_REGISTRY_UPDATER = keccak256("CORE_REGISTRY_UPDATER");
     bytes32 public constant override CORE_REGISTRY_RESCUER = keccak256("CORE_REGISTRY_RESCUER");
     bytes32 public constant override CORE_REGISTRY_DISPUTER = keccak256("CORE_REGISTRY_DISPUTER");
+    bytes32 public constant override DST_SWAPPER_PROCESSOR = keccak256("DST_SWAPPER_PROCESSOR");
 
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(registry[SUPER_RBAC][CHAIN_ID]).hasProtocolAdminRole(msg.sender)) {
@@ -155,6 +157,8 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             } else if (id_ == keccak256("SUPER_RBAC")) {
                 revert Error.DISABLED();
             } else if (id_ == keccak256("DST_SWAPPER")) {
+                revert Error.DISABLED();
+            } else if (id_ == keccak256("EMERGENCY_QUEUE")) {
                 revert Error.DISABLED();
             }
         }
