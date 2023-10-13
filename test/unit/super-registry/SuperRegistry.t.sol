@@ -157,6 +157,12 @@ contract SuperRegistryTest is BaseSetup {
 
         vm.prank(deployer);
         superRegistry.setBridgeAddresses(bridgeId, bridgeAddress, bridgeValidator);
+        /// @dev set same address
+        vm.prank(deployer);
+        vm.expectRevert(Error.DISABLED.selector);
+        superRegistry.setBridgeAddresses(bridgeId, bridgeAddress, bridgeValidator);
+        vm.prank(deployer);
+
         assertEq(superRegistry.getBridgeAddress(6), address(0x3));
         assertEq(superRegistry.getBridgeValidator(7), address(0x6));
 
@@ -216,6 +222,15 @@ contract SuperRegistryTest is BaseSetup {
         vm.startPrank(deployer);
         superRegistry.setAmbAddress(ambId, ambAddress, broadcastAMB);
         assertEq(superRegistry.getAmbAddress(6), address(0x3));
+
+        ///@dev set same address
+        vm.expectRevert(Error.DISABLED.selector);
+        superRegistry.setAmbAddress(ambId, ambAddress, broadcastAMB);
+
+        /// @dev 0 address
+        ambAddress[0] = address(0);
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        superRegistry.setAmbAddress(ambId, ambAddress, broadcastAMB);
         vm.stopPrank();
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
@@ -278,8 +293,6 @@ contract SuperRegistryTest is BaseSetup {
 
         assertEq(superRegistry.getStateRegistry(5), address(0x3));
 
-        registryAddress[1] = address(0);
-
         vm.expectRevert(Error.DISABLED.selector);
         vm.startPrank(deployer);
         superRegistry.setStateRegistryAddress(registryId, registryAddress);
@@ -337,6 +350,15 @@ contract SuperRegistryTest is BaseSetup {
         routers[1] = address(0x4);
 
         vm.prank(deployer);
+        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.DISABLED.selector);
+        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
+
+        superformRouterIds[0] = 5;
+        vm.prank(deployer);
+        vm.expectRevert(Error.DISABLED.selector);
         superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
 
         address router1 = superRegistry.getRouter(4);
