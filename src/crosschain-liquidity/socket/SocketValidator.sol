@@ -31,7 +31,7 @@ contract SocketValidator is BridgeValidator {
 
     /// @inheritdoc BridgeValidator
     function validateReceiver(bytes calldata txData_, address receiver) external pure override returns (bool) {
-        return (receiver == _decodeTxData(txData_).receiverAddress);
+        return (receiver == _decodeTxData(txData_).recipient);
     }
 
     /// @inheritdoc BridgeValidator
@@ -66,13 +66,19 @@ contract SocketValidator is BridgeValidator {
                             INTERNAL HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev try to decode the txData_
+    /// @dev helps decode socket user request
     /// returns the user request
     function _decodeTxData(bytes calldata txData_)
         internal
         pure
-        returns (ISocketRegistry.UserRequest memory userRequest)
+        returns (ISocketRegistry.SocketRequest memory socketRequest)
     {
-        userRequest = abi.decode(txData_[4:], (ISocketRegistry.UserRequest));
+        socketRequest = abi.decode(_parseCallData(txData_), (ISocketRegistry.SocketRequest));
+    }
+
+    /// @dev helps parsing socket calldata and return the socket request
+    function _parseCallData(bytes calldata callData) internal pure returns (bytes memory) {
+        ISocketRegistry.UserRequest memory userRequest = abi.decode(callData[4:], (ISocketRegistry.UserRequest));
+        return userRequest.socketRequest;
     }
 }
