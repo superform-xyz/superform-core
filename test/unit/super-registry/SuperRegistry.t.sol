@@ -4,8 +4,7 @@ pragma solidity ^0.8.19;
 import "test/utils/BaseSetup.sol";
 import "test/utils/Utilities.sol";
 
-import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
-import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { SuperRegistry } from "src/settings/SuperRegistry.sol";
 import { Error } from "src/utils/Error.sol";
 
@@ -21,7 +20,19 @@ contract SuperRegistryTest is BaseSetup {
 
         vm.selectFork(FORKS[ETH]);
         superRegistry = SuperRegistry(getContract(ETH, "SuperRegistry"));
-        fakeRBAC = new SuperRBAC(address(deployer));
+        fakeRBAC = new SuperRBAC(ISuperRBAC.InitialRoleSetup({
+                        admin: deployer,
+                        emergencyAdmin: deployer,
+                        paymentAdmin: deployer,
+                        csrProcessor: deployer,
+                        tlProcessor: deployer,
+                        brProcessor: deployer,
+                        csrUpdater: deployer,
+                        srcVaaRelayer: deployer,
+                        dstSwapper: deployer,
+                        csrRescuer: deployer,
+                        csrDisputer: deployer
+                    }));
         fakeRegistry = new SuperRegistry(address(fakeRBAC));
 
         /// @dev malicious caller

@@ -64,13 +64,24 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
 
     ISuperRegistry public superRegistry;
 
-    constructor(address admin_) {
-        _setupRole(PROTOCOL_ADMIN_ROLE, admin_);
+    constructor(InitialRoleSetup memory roles) {
+        _setupRole(PROTOCOL_ADMIN_ROLE, roles.admin);
+        _setupRole(EMERGENCY_ADMIN_ROLE, roles.emergencyAdmin);
+        _setupRole(PAYMENT_ADMIN_ROLE, roles.paymentAdmin);
+        _setupRole(BROADCASTER_ROLE, address(this));
+        _setupRole(CORE_STATE_REGISTRY_PROCESSOR_ROLE, roles.csrProcessor);
+        _setupRole(TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE, roles.tlProcessor);
+        _setupRole(BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE, roles.brProcessor);
+        _setupRole(CORE_STATE_REGISTRY_UPDATER_ROLE, roles.csrUpdater);
+        _setupRole(WORMHOLE_VAA_RELAYER_ROLE, roles.srcVaaRelayer);
+        _setupRole(DST_SWAPPER_ROLE, roles.dstSwapper);
+        _setupRole(CORE_STATE_REGISTRY_RESCUER_ROLE, roles.csrRescuer);
+        _setupRole(CORE_STATE_REGISTRY_DISPUTER_ROLE, roles.csrDisputer);
 
         /// @dev manually set role admin to PROTOCOL_ADMIN_ROLE on all roles
-        _setRoleAdmin(PAYMENT_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(PROTOCOL_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(EMERGENCY_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(PAYMENT_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(CORE_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);

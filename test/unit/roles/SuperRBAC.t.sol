@@ -176,6 +176,39 @@ contract SuperRBACTest is BaseSetup {
         );
     }
 
+    function test_revokeCoreStateRegistryRescuerRole() public {
+        _revokeAndCheck(
+            superRBAC.CORE_STATE_REGISTRY_RESCUER_ROLE(),
+            superRegistry.CORE_REGISTRY_RESCUER(),
+            deployer,
+            "",
+            generateBroadcastParams(5, 1),
+            0
+        );
+    }
+
+    function test_revokeCoreStateRegistryDisputerRole() public {
+        _revokeAndCheck(
+            superRBAC.CORE_STATE_REGISTRY_DISPUTER_ROLE(),
+            superRegistry.CORE_REGISTRY_DISPUTER(),
+            deployer,
+            "",
+            generateBroadcastParams(5, 1),
+            0
+        );
+    }
+
+    function test_revokeDstSwapperProcessorRole() public {
+        _revokeAndCheck(
+            superRBAC.DST_SWAPPER_ROLE(),
+            superRegistry.DST_SWAPPER_PROCESSOR(),
+            deployer,
+            "",
+            generateBroadcastParams(5, 1),
+            0
+        );
+    }
+
     function test_stateSync_invalidCaller() public {
         vm.expectRevert(Error.NOT_BROADCAST_REGISTRY.selector);
         superRBAC.stateSyncBroadcast("");
