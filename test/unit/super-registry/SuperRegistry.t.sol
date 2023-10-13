@@ -352,6 +352,19 @@ contract SuperRegistryTest is BaseSetup {
         vm.prank(deployer);
         superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
 
+        routers[0] = address(0);
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
+        routers[0] = address(0x2);
+        stateSyncers[0] = address(0);
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
+        stateSyncers[0] = address(0x1);
+
         vm.prank(deployer);
         vm.expectRevert(Error.DISABLED.selector);
         superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);

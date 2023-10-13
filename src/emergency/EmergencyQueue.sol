@@ -114,8 +114,12 @@ contract EmergencyQueue is IEmergencyQueue {
     }
 
     function batchExecuteQueuedWithdrawal(uint256[] memory ids_) external override onlyEmergencyAdmin {
-        for (uint256 i = 0; i < ids_.length; i++) {
+        for (uint256 i; i < ids_.length;) {
             executeQueuedWithdrawal(ids_[i]);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
