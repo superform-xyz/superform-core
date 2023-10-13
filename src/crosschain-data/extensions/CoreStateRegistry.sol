@@ -257,6 +257,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             revert Error.RESCUE_ALREADY_PROPOSED();
         }
 
+        /// @dev note: should set this value to dstSwapper.failedSwap().amount for interim rescue
         failedDeposits[payloadId_].amounts = proposedAmounts_;
         failedDeposits[payloadId_].lastProposedTimestamp = block.timestamp;
 
@@ -302,7 +303,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     /// @inheritdoc ICoreStateRegistry
     /// @notice is an open function & can be executed by anyone
-    function finalizeRescueFailedDeposits(uint256 payloadId_) external override {
+    function finalizeRescueFailedDeposits(uint256 payloadId_, bool rescueInterim_) external override {
         uint256 lastProposedTimestamp = failedDeposits[payloadId_].lastProposedTimestamp;
 
         /// @dev the timelock is elapsed
@@ -320,7 +321,14 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         for (uint256 i; i < superformIds.length;) {
             (address form_,,) = DataLib.getSuperform(superformIds[i]);
             /// @dev refunds the amount to user specified refund address
-            IERC20(IERC4626Form(form_).getVaultAsset()).safeTransfer(refundAddress, amounts[i]);
+            if (rescueInterim_) {
+                IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
+                IERC20(dstSwapper.failedSwap(payloadId_, superformIds[i]).interimToken).safeTransfer(
+                    refundAddress, amounts[i]
+                );
+            } else {
+                IERC20(IERC4626Form(form_).getVaultAsset()).safeTransfer(refundAddress, amounts[i]);
+            }
             unchecked {
                 ++i;
             }
@@ -524,27 +532,35 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             revert Error.ZERO_AMOUNT();
         }
 
+        bool failedSwapQueued;
         if (singleVaultData.hasDstSwap) {
             if (dstSwapper.swappedAmount(payloadId_, 0) != finalAmount_) {
-                revert Error.INVALID_DST_SWAP_AMOUNT();
-            }
+                if (dstSwapper.failedSwap(payloadId_, singleVaultData.superformId).amount != finalAmount_) {
+                    revert Error.INVALID_DST_SWAP_AMOUNT();
+                } else {
+                    failedSwapQueued = true;
+                    failedDeposits[payloadId_].superformIds.push(singleVaultData.superformId);
 
-            // if (dstSwap.failedSwapAmount(payloadId_, 0) != finalAmount_) {
-            //     revert Error.INVALID_FAILED_DST_SWAP_AMOUNT();
-            // }
+                    /// @dev sets amount to zero and will mark the payload as PROCESSED
+                    singleVaultData.amount = 0;
+                    finalState_ = PayloadState.PROCESSED;
+                }
+            }
         }
 
         /// @dev validate payload update
-        if (PayloadUpdaterLib.validateSlippage(finalAmount_, singleVaultData.amount, singleVaultData.maxSlippage)) {
-            /// @dev sets amount to zero and will mark the payload as UPDATED
-            singleVaultData.amount = finalAmount_;
-            finalState_ = PayloadState.UPDATED;
-        } else {
-            failedDeposits[payloadId_].superformIds.push(singleVaultData.superformId);
+        if (!failedSwapQueued) {
+            if (PayloadUpdaterLib.validateSlippage(finalAmount_, singleVaultData.amount, singleVaultData.maxSlippage)) {
+                /// @dev sets amount to zero and will mark the payload as UPDATED
+                singleVaultData.amount = finalAmount_;
+                finalState_ = PayloadState.UPDATED;
+            } else {
+                failedDeposits[payloadId_].superformIds.push(singleVaultData.superformId);
 
-            /// @dev sets amount to zero and will mark the payload as PROCESSED
-            singleVaultData.amount = 0;
-            finalState_ = PayloadState.PROCESSED;
+                /// @dev sets amount to zero and will mark the payload as PROCESSED
+                singleVaultData.amount = 0;
+                finalState_ = PayloadState.PROCESSED;
+            }
         }
 
         newPayloadBody_ = abi.encode(singleVaultData);

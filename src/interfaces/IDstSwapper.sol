@@ -7,6 +7,15 @@ pragma solidity ^0.8.19;
 /// @notice all write functions can only be accessed by superform keepers.
 interface IDstSwapper {
     /*///////////////////////////////////////////////////////////////
+                               STRUCTS
+    //////////////////////////////////////////////////////////////*/
+
+    struct FailedSwap {
+        address interimToken;
+        uint256 amount;
+    }
+
+    /*///////////////////////////////////////////////////////////////
                                 Events
     //////////////////////////////////////////////////////////////*/
 
@@ -55,10 +64,18 @@ interface IDstSwapper {
         uint256 payloadId_,
         uint256[] calldata indices_,
         uint8[] calldata bridgeIds_,
-        bytes[] calldata txDatas_
+        bytes[] calldata txDatas_,
+        uint256[] calldata underlyingsWith0Slippage_
     )
         external;
 
     /// FIMXE: add natspec
     function swappedAmount(uint256 payloadId_, uint256 index_) external view returns (uint256 amount_);
+    function failedSwap(
+        uint256 payloadId_,
+        uint256 superformId_
+    )
+        external
+        view
+        returns (FailedSwap calldata failedSwap_);
 }

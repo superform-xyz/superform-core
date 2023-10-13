@@ -32,7 +32,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     //////////////////////////////////////////////////////////////*/
 
     mapping(uint256 payloadId => mapping(uint256 index => uint256 amount)) public swappedAmount;
-    mapping(uint256 payloadId => mapping(uint256 index => uint256 amount)) public failedSwapAmount;
+    mapping(uint256 payloadId => mapping(uint256 superformId => FailedSwap)) public failedSwap;
 
     modifier onlySwapper() {
         if (
@@ -135,9 +135,10 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
 
         /// @dev if actual underlying is less than underlyingWith0Slippage_ adjusted with maxSlippage, invariant breaks
         if (balanceAfter - balanceBefore < ((underlyingWith0Slippage_ * (10_000 - v.maxSlippage)) / 10_000)) {
-            /// @dev updates swapped amount
             revert Error.MAX_SLIPPAGE_INVARIANT_BROKEN();
         }
+
+        /// @dev updates swapped amount
         swappedAmount[payloadId_][index_] = balanceAfter - balanceBefore;
 
         /// @dev emits final event
@@ -149,7 +150,8 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         uint256 payloadId_,
         uint256[] calldata indices,
         uint8[] calldata bridgeIds_,
-        bytes[] calldata txData_
+        bytes[] calldata txData_,
+        uint256[] calldata underlyingsWith0Slippage_
     )
         external
         override
@@ -157,7 +159,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     {
         uint256 len = txData_.length;
         for (uint256 i; i < len;) {
-            processTx(payloadId_, indices[i], bridgeIds_[i], txData_[i]);
+            processTx(payloadId_, indices[i], bridgeIds_[i], txData_[i], underlyingsWith0Slippage_[i]);
 
             unchecked {
                 ++i;
@@ -168,9 +170,8 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     /// @inheritdoc IDstSwapper
     function failTx(
         uint256 payloadId_,
-        uint256 index_,
-        uint8 bridgeId_,
-        address intermediaryToken_,
+        uint256 superformId_,
+        address interimToken_,
         uint256 amount_
     )
         public
@@ -178,24 +179,24 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         onlySwapper
         nonReentrant
     {
-        if (failedSwapAmount[payloadId_][index_] != 0) {
+        if (failedSwap[payloadId_][superformId_].amount != 0) {
             revert Error.FAILED_DST_SWAP_ALREADY_PROCESSED();
         }
 
+        /// @dev updates swapped amount
+        failedSwap[payloadId_][superformId_].amount = amount_;
+        failedSwap[payloadId_][superformId_].interimToken = interimToken_;
+
         address finalDst = superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY"));
 
-        if (intermediaryToken_ != NATIVE) {
-            IERC20(intermediaryToken_).safeTransfer(finalDst, amount_);
+        if (interimToken_ != NATIVE) {
+            IERC20(interimToken_).safeTransfer(finalDst, amount_);
         } else {
-            (bool success,) = payable(finalDst).call{ value: amount_ }();
+            (bool success,) = payable(finalDst).call{ value: amount_ }("");
             if (!success) revert Error.FAILED_TO_SEND_NATIVE();
         }
-
-        /// @dev updates swapped amount
-        failedSwapAmount[payloadId_][index_] = amount_;
-
         /// @dev emits final event
-        emit SwapFailed(payloadId_, index_, intermediaryToken_, amount_);
+        emit SwapFailed(payloadId_, superformId_, interimToken_, amount_);
     }
 
     /*///////////////////////////////////////////////////////////////
