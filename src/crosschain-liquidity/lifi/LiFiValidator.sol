@@ -13,20 +13,8 @@ import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 /// @dev To assert input txData is valid
 contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
     /*///////////////////////////////////////////////////////////////
-                              Modifiers
+                                CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-
-    modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
-            revert Error.NOT_PROTOCOL_ADMIN();
-        }
-        _;
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                                Constructor
-    //////////////////////////////////////////////////////////////*/
-
     constructor(address superRegistry_) BridgeValidator(superRegistry_) { }
 
     /// @inheritdoc BridgeValidator
