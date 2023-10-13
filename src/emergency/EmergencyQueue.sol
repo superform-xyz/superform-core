@@ -98,7 +98,7 @@ contract EmergencyQueue is IEmergencyQueue {
     }
 
     /// @inheritdoc IEmergencyQueue
-    function executeQueuedWithdrawal(uint256 id_) external override onlyEmergencyAdmin {
+    function executeQueuedWithdrawal(uint256 id_) public override onlyEmergencyAdmin {
         QueuedWithdrawal storage data = queuedWithdrawal[id_];
 
         if (data.isProcessed) {
@@ -111,6 +111,16 @@ contract EmergencyQueue is IEmergencyQueue {
         IBaseForm(superform).emergencyWithdraw(data.refundAddress, data.amount);
 
         emit WithdrawalProcessed(data.refundAddress, id_, data.superformId, data.amount);
+    }
+
+    function batchExecuteQueuedWithdrawal(uint256[] memory ids_) external override onlyEmergencyAdmin {
+        for (uint256 i; i < ids_.length;) {
+            executeQueuedWithdrawal(ids_[i]);
+
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     /*///////////////////////////////////////////////////////////////

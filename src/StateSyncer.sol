@@ -131,9 +131,9 @@ abstract contract StateSyncer is IStateSyncer {
             return;
         }
 
-        (, uint32 formBeaconId,) = DataLib.getSuperform(superformId_);
+        (, uint32 formImplementationId,) = DataLib.getSuperform(superformId_);
 
-        if (uint32(registryId_) != formBeaconId) {
+        if (uint32(registryId_) != formImplementationId) {
             revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
         }
     }

@@ -5,10 +5,10 @@ import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { QuorumManager } from "../crosschain-data/utils/QuorumManager.sol";
 import { Error } from "../utils/Error.sol";
-
 /// @title SuperRegistry
 /// @author Zeropoint Labs.
 /// @dev Keeps information on all addresses used in the Superforms ecosystem.
+
 contract SuperRegistry is ISuperRegistry, QuorumManager {
     /*///////////////////////////////////////////////////////////////
                           Constants
@@ -46,26 +46,59 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     mapping(address router => uint8 superformRouterId) public superformRouterIds;
 
     /// @dev core protocol - identifiers
+    /// @notice SUPERFORM_FACTORY, CORE_STATE_REGISTRY, TIMELOCK_STATE_REGISTRY, BROADCAST_REGISTRY, SUPER_RBAC,
+    /// DST_SWAPPER
+    /// @notice should not be allowed to be changed
+    /// @dev not accessed in protocol
+    /// @dev could be allowed to be changed
     bytes32 public constant override SUPERFORM_ROUTER = keccak256("SUPERFORM_ROUTER");
+    /// @dev can be used to set a new factory that has form ids paused
+    /// @dev probably should NOT be allowed to be changed
     bytes32 public constant override SUPERFORM_FACTORY = keccak256("SUPERFORM_FACTORY");
+    /// @dev not accessed in protocol
+    /// @dev could be allowed to be changed
     bytes32 public constant override SUPER_TRANSMUTER = keccak256("SUPER_TRANSMUTER");
+    /// @dev can be used to set a new paymaster to forward payments to
+    /// @dev could be allowed to be changed
     bytes32 public constant override PAYMASTER = keccak256("PAYMASTER");
+    /// @dev accessed in some areas of the protocol to calculate AMB fees. Already has a function to alter the
+    /// configuration
+    /// @dev could be allowed to be changed
     bytes32 public constant override PAYMENT_HELPER = keccak256("PAYMENT_HELPER");
+    /// @dev accessed in many areas of the protocol. has direct access to superforms
+    /// @dev should NOT be allowed to be changed
     bytes32 public constant override CORE_STATE_REGISTRY = keccak256("CORE_STATE_REGISTRY");
+    /// @dev accessed in many areas of the protocol. has direct access to timelock form
+    /// @dev should NOT be allowed to be changed
     bytes32 public constant override TIMELOCK_STATE_REGISTRY = keccak256("TIMELOCK_STATE_REGISTRY");
+    /// @dev used to sync messages for pausing superforms or deploying transmuters
+    /// @dev probably should NOT be allowed to be changed
     bytes32 public constant override BROADCAST_REGISTRY = keccak256("BROADCAST_REGISTRY");
+    /// @dev not accessed in protocol
+    /// @dev could be allowed to be changed
     bytes32 public constant override SUPER_POSITIONS = keccak256("SUPER_POSITIONS");
+    /// @dev accessed in many areas of the protocol
+    /// @dev probably should NOT be allowed to be changed
     bytes32 public constant override SUPER_RBAC = keccak256("SUPER_RBAC");
+    /// @dev not accessed in protocol
+    /// @dev could be allowed to be changed
     bytes32 public constant override PAYLOAD_HELPER = keccak256("PAYLOAD_HELPER");
-
-    /// @dev default keepers - identifiers
-    bytes32 public constant override PAYMENT_ADMIN = keccak256("PAYMENT_ADMIN");
+    /// @dev accessed in CSR and validators. can be used to alter behaviour of update deposit payloads
+    /// @dev probably should NOT be allowed to be changed
+    bytes32 public constant override DST_SWAPPER = keccak256("DST_SWAPPER");
+    /// @dev accessed in base form to send payloads to emergency queue
+    /// @dev probably should NOT be allowed to be changed
     bytes32 public constant override EMERGENCY_QUEUE = keccak256("EMERGENCY_QUEUE");
-    bytes32 public constant override CORE_REGISTRY_UPDATER = keccak256("CORE_REGISTRY_UPDATER");
+    /// @dev default keepers - identifiers
+    /// @dev could be allowed to be changed
+    bytes32 public constant override PAYMENT_ADMIN = keccak256("PAYMENT_ADMIN");
     bytes32 public constant override CORE_REGISTRY_PROCESSOR = keccak256("CORE_REGISTRY_PROCESSOR");
     bytes32 public constant override BROADCAST_REGISTRY_PROCESSOR = keccak256("BROADCAST_REGISTRY_PROCESSOR");
-    bytes32 public constant override TWO_STEPS_REGISTRY_PROCESSOR = keccak256("TWO_STEPS_REGISTRY_PROCESSOR");
-    bytes32 public constant override DST_SWAPPER = keccak256("DST_SWAPPER");
+    bytes32 public constant override TIMELOCK_REGISTRY_PROCESSOR = keccak256("TIMELOCK_REGISTRY_PROCESSOR");
+    bytes32 public constant override CORE_REGISTRY_UPDATER = keccak256("CORE_REGISTRY_UPDATER");
+    bytes32 public constant override CORE_REGISTRY_RESCUER = keccak256("CORE_REGISTRY_RESCUER");
+    bytes32 public constant override CORE_REGISTRY_DISPUTER = keccak256("CORE_REGISTRY_DISPUTER");
+    bytes32 public constant override DST_SWAPPER_PROCESSOR = keccak256("DST_SWAPPER_PROCESSOR");
 
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(registry[SUPER_RBAC][CHAIN_ID]).hasProtocolAdminRole(msg.sender)) {
@@ -110,7 +143,28 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @inheritdoc ISuperRegistry
     function setAddress(bytes32 id_, address newAddress_, uint64 chainId_) external override onlyProtocolAdmin {
         address oldAddress = registry[id_][chainId_];
+        if (oldAddress != address(0)) {
+            /// @notice SUPERFORM_FACTORY, CORE_STATE_REGISTRY, TIMELOCK_STATE_REGISTRY, BROADCAST_REGISTRY, SUPER_RBAC,
+            /// DST_SWAPPER cannot be changed once set
+            if (id_ == keccak256("SUPERFORM_FACTORY")) {
+                revert Error.DISABLED();
+            } else if (id_ == keccak256("CORE_STATE_REGISTRY")) {
+                revert Error.DISABLED();
+            } else if (id_ == keccak256("TIMELOCK_STATE_REGISTRY")) {
+                revert Error.DISABLED();
+            } else if (id_ == keccak256("BROADCAST_REGISTRY")) {
+                revert Error.DISABLED();
+            } else if (id_ == keccak256("SUPER_RBAC")) {
+                revert Error.DISABLED();
+            } else if (id_ == keccak256("DST_SWAPPER")) {
+                revert Error.DISABLED();
+            } else if (id_ == keccak256("EMERGENCY_QUEUE")) {
+                revert Error.DISABLED();
+            }
+        }
+
         registry[id_][chainId_] = newAddress_;
+
         emit AddressUpdated(id_, chainId_, oldAddress, newAddress_);
     }
 
@@ -131,6 +185,8 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             uint8 bridgeId = bridgeId_[i];
             address bridgeAddress = bridgeAddress_[i];
             address bridgeValidatorT = bridgeValidator_[i];
+
+            if (bridgeAddresses[bridgeId] != address(0)) revert Error.DISABLED();
 
             bridgeAddresses[bridgeId] = bridgeAddress;
             bridgeValidator[bridgeId] = bridgeValidatorT;
@@ -161,6 +217,9 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             uint8 ambId = ambId_[i];
             bool broadcastAMB = isBroadcastAMB_[i];
 
+            if (ambAddress == address(0)) revert Error.ZERO_ADDRESS();
+            if (ambAddresses[ambId] != address(0)) revert Error.DISABLED();
+
             ambAddresses[ambId] = ambAddress;
             ambIds[ambAddress] = ambId;
             isBroadcastAMB[ambId] = broadcastAMB;
@@ -188,6 +247,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             address registryAddress = registryAddress_[i];
             uint8 registryId = registryId_[i];
             if (registryAddress == address(0)) revert Error.ZERO_ADDRESS();
+            if (registryAddresses[registryId] != address(0)) revert Error.DISABLED();
 
             registryAddresses[registryId] = registryAddress;
             stateRegistryIds[registryAddress] = registryId;
@@ -216,6 +276,10 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             address stateSyncer = stateSyncers_[i];
             address router = routers_[i];
             uint8 superFormRouterId = superformRouterIds_[i];
+            if (stateSyncer == address(0)) revert Error.ZERO_ADDRESS();
+            if (router == address(0)) revert Error.ZERO_ADDRESS();
+            if (stateSyncers[superFormRouterId] != address(0)) revert Error.DISABLED();
+            if (superformRouterIds[router] != 0) revert Error.DISABLED();
 
             stateSyncers[superFormRouterId] = stateSyncer;
             routers[superFormRouterId] = router;

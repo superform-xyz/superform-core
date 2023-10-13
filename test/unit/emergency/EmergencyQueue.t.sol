@@ -22,7 +22,7 @@ contract EmergencyQueueTest is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev tries to process emergency queue by random user
-    function test_emergencyQueueProcessingPrevilages() public {
+    function test_emergencyQueueProcessingPrivilleges() public {
         /// user deposits successfully to a form
         _successfulDeposit();
 
@@ -42,7 +42,7 @@ contract EmergencyQueueTest is ProtocolActions {
     }
 
     /// @dev tries to queue emergency transaction by invalid caller
-    function test_emergencyQueueAdditionPrevilages() public {
+    function test_emergencyQueueAdditionPrivilleges() public {
         vm.selectFork(FORKS[ETH]);
         address emergencyQueue = getContract(ETH, "EmergencyQueue");
 

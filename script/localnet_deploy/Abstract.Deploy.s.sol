@@ -32,6 +32,8 @@ import { PaymentHelper } from "src/payments/PaymentHelper.sol";
 import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
 import { SuperTransmuter } from "src/SuperTransmuter.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { EmergencyQueue } from "src/emergency/EmergencyQueue.sol";
 
 struct SetupVars {
     uint64 chainId;
@@ -71,6 +73,7 @@ struct SetupVars {
     address PayloadHelper;
     address paymentHelper;
     address payMaster;
+    address emergencyQueue;
     SuperRegistry superRegistryC;
     SuperRBAC superRBACC;
 }
@@ -83,7 +86,7 @@ abstract contract AbstractDeploy is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[21] public contractNames = [
+    string[22] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -104,7 +107,8 @@ abstract contract AbstractDeploy is Script {
         "SuperTransmuter",
         "PayloadHelper",
         "PaymentHelper",
-        "PayMaster"
+        "PayMaster",
+        "EmergencyQueue"
     ];
 
     bytes32 constant salt = "SUPERFORM_4RD_TEST";
@@ -313,50 +317,31 @@ abstract contract AbstractDeploy is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         /// @dev 1 - Deploy SuperRBAC
-        vars.superRBAC = address(new SuperRBAC{salt: salt}(ownerAddress));
+        vars.superRBAC = address(
+            new SuperRBAC{salt: salt}(ISuperRBAC.InitialRoleSetup({
+                        admin: ownerAddress,
+                        emergencyAdmin: ownerAddress,
+                        paymentAdmin: 0xD911673eAF0D3e15fe662D58De15511c5509bAbB,
+                        csrProcessor: 0x23c658FE050B4eAeB9401768bF5911D11621629c,
+                        tlProcessor: ownerAddress,
+                        brProcessor: ownerAddress,
+                        csrUpdater: 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f,
+                        srcVaaRelayer: ownerAddress,
+                        dstSwapper: 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C,
+                        csrRescuer: 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5,
+                        csrDisputer: ownerAddress
+                    }))
+        );
         contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars.superRBAC;
         vars.superRBACC = SuperRBAC(vars.superRBAC);
 
-        /// @dev 2 - Deploy SuperRegistry and assign roles
+        /// @dev 2 - Deploy SuperRegistry
         vars.superRegistry = address(new SuperRegistry{salt: salt}(vars.superRBAC));
         contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars.superRegistry;
         vars.superRegistryC = SuperRegistry(vars.superRegistry);
 
         vars.superRBACC.setSuperRegistry(vars.superRegistry);
         vars.superRegistryC.setPermit2(CANONICAL_PERMIT2);
-
-        /// @dev FIXME: in reality who should have the WORMHOLE_VAA_RELAYER_ROLE?
-        vars.superRBACC.grantRole(vars.superRBACC.WORMHOLE_VAA_RELAYER_ROLE(), ownerAddress);
-
-        /// @dev FIXME: in reality who should have the EMERGENCY_ADMIN_ROLE?
-        vars.superRBACC.grantRole(vars.superRBACC.EMERGENCY_ADMIN_ROLE(), ownerAddress);
-
-        /// @dev FIXME: in reality who should have the PAYMENT_ADMIN_ROLE?
-        vars.superRBACC.grantRole(vars.superRBACC.PAYMENT_ADMIN_ROLE(), ownerAddress);
-
-        /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_PROCESSOR_ROLE?
-        vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
-
-        /// @dev FIXME: in reality who should have the TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE?
-        vars.superRBACC.grantRole(vars.superRBACC.TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
-
-        /// @dev FIXME: in reality who should have the BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE?
-        vars.superRBACC.grantRole(vars.superRBACC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
-
-        /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_UPDATER_ROLE?
-        vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), ownerAddress);
-
-        /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_RESCUER_ROLE?
-        vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_RESCUER_ROLE(), ownerAddress);
-
-        /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_DISPUTER_ROLE?
-        vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_DISPUTER_ROLE(), ownerAddress);
-
-        /// @dev FIXME: in reality who should have the DST_SWAPPER_ROLE?
-        vars.superRBACC.grantRole(vars.superRBACC.DST_SWAPPER_ROLE(), ownerAddress);
-
-        /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_UPDATER_ROLE?
-        vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), ownerAddress);
 
         /// @dev 3.1 - deploy Core State Registry
 
@@ -448,6 +433,7 @@ abstract contract AbstractDeploy is Script {
         contracts[vars.chainId][bytes32(bytes("SuperformFactory"))] = vars.factory;
 
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_FACTORY(), vars.factory, vars.chainId);
+        vars.superRBACC.grantRole(vars.superRBACC.BROADCASTER_ROLE(), vars.factory);
 
         /// @dev 8 - Deploy 4626Form implementations
         // Standard ERC4626 Form
@@ -534,13 +520,30 @@ abstract contract AbstractDeploy is Script {
             ambIds, vars.ambAddresses, broadcastAMB
         );
 
-        /// @dev 15 setup setup srcChain keepers
-        vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), ownerAddress, vars.chainId);
-        vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
-        vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_UPDATER(), ownerAddress, vars.chainId);
+        /// @dev 16 setup setup srcChain keepers
+        vars.superRegistryC.setAddress(
+            vars.superRegistryC.PAYMENT_ADMIN(), 0xD911673eAF0D3e15fe662D58De15511c5509bAbB, vars.chainId
+        );
+        vars.superRegistryC.setAddress(
+            vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), 0x23c658FE050B4eAeB9401768bF5911D11621629c, vars.chainId
+        );
+        vars.superRegistryC.setAddress(
+            vars.superRegistryC.CORE_REGISTRY_UPDATER(), 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f, vars.chainId
+        );
         vars.superRegistryC.setAddress(vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
-        vars.superRegistryC.setAddress(vars.superRegistryC.TWO_STEPS_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
+        vars.superRegistryC.setAddress(vars.superRegistryC.TIMELOCK_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
+        vars.superRegistryC.setAddress(
+            vars.superRegistryC.CORE_REGISTRY_RESCUER(), 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5, vars.chainId
+        );
+        vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_DISPUTER(), ownerAddress, vars.chainId);
+        vars.superRegistryC.setAddress(
+            vars.superRegistryC.DST_SWAPPER_PROCESSOR(), 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C, vars.chainId
+        );
 
+        /// @dev 17 deploy emergency queue
+        vars.emergencyQueue = address(new EmergencyQueue(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("EmergencyQueue"))] = vars.emergencyQueue;
+        vars.superRegistryC.setAddress(vars.superRegistryC.EMERGENCY_QUEUE(), vars.emergencyQueue, vars.chainId);
         vm.stopBroadcast();
 
         /// @dev Exports
@@ -706,20 +709,45 @@ abstract contract AbstractDeploy is Script {
                 vars.superRegistryC.setAddress(
                     vars.superRegistryC.PAYLOAD_HELPER(), getContract(vars.dstChainId, "PayloadHelper"), vars.dstChainId
                 );
+                vars.superRegistryC.setAddress(
+                    vars.superRegistryC.EMERGENCY_QUEUE(),
+                    getContract(vars.dstChainId, "EmergencyQueue"),
+                    vars.dstChainId
+                );
 
                 /// @dev FIXME - in mainnet who is this?
-                vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), ownerAddress, vars.dstChainId);
                 vars.superRegistryC.setAddress(
-                    vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), ownerAddress, vars.dstChainId
+                    vars.superRegistryC.PAYMENT_ADMIN(), 0xD911673eAF0D3e15fe662D58De15511c5509bAbB, vars.dstChainId
                 );
                 vars.superRegistryC.setAddress(
-                    vars.superRegistryC.CORE_REGISTRY_UPDATER(), ownerAddress, vars.dstChainId
+                    vars.superRegistryC.CORE_REGISTRY_PROCESSOR(),
+                    0x23c658FE050B4eAeB9401768bF5911D11621629c,
+                    vars.dstChainId
+                );
+                vars.superRegistryC.setAddress(
+                    vars.superRegistryC.CORE_REGISTRY_UPDATER(),
+                    0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f,
+                    vars.dstChainId
                 );
                 vars.superRegistryC.setAddress(
                     vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR(), ownerAddress, vars.dstChainId
                 );
                 vars.superRegistryC.setAddress(
-                    vars.superRegistryC.TWO_STEPS_REGISTRY_PROCESSOR(), ownerAddress, vars.dstChainId
+                    vars.superRegistryC.TIMELOCK_REGISTRY_PROCESSOR(), ownerAddress, vars.dstChainId
+                );
+
+                vars.superRegistryC.setAddress(
+                    vars.superRegistryC.CORE_REGISTRY_RESCUER(),
+                    0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5,
+                    vars.dstChainId
+                );
+                vars.superRegistryC.setAddress(
+                    vars.superRegistryC.CORE_REGISTRY_DISPUTER(), ownerAddress, vars.dstChainId
+                );
+                vars.superRegistryC.setAddress(
+                    vars.superRegistryC.DST_SWAPPER_PROCESSOR(),
+                    0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C,
+                    vars.dstChainId
                 );
             } else {
                 /// ack gas cost: 40000

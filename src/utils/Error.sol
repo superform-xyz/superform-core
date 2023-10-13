@@ -102,6 +102,9 @@ library Error {
     /// @dev thrown when not possible to revoke last admin
     error CANNOT_REVOKE_LAST_ADMIN();
 
+    /// @dev thrown when not possible to revoke last admin
+    error CANNOT_REVOKE_BROADCAST();
+
     /// @dev thrown if the delay is invalid
     error INVALID_TIMELOCK_DELAY();
 

@@ -25,6 +25,7 @@ contract LayerzeroImplementationTest is BaseSetup {
 
     address public constant LZ_ENDPOINT_ETH = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
     address public constant LZ_ENDPOINT_OP = 0x3c2269811836af69497E5F486A85D7316753cf62;
+    address public constant LZ_ENDPOINT_ARBI = 0x3c2269811836af69497E5F486A85D7316753cf62;
 
     address public constant CHAINLINK_lzOracle = 0x150A58e9E6BF69ccEb1DBA5ae97C166DC8792539;
     ISuperRegistry public superRegistry;
@@ -239,9 +240,7 @@ contract LayerzeroImplementationTest is BaseSetup {
 
         vm.selectFork(FORKS[ETH]);
 
-        Vm.Log[] memory logs = _depositFromETHtoOP(500_000);
-
-        _resetCoreStateRegistry(FORKS[OP], true);
+        Vm.Log[] memory logs = _depositFromETHtoOPNewStateRegistry(500_000);
 
         bytes memory payload;
         for (uint256 i; i < logs.length; i++) {
@@ -253,6 +252,7 @@ contract LayerzeroImplementationTest is BaseSetup {
                 payload = _packet.payload;
             }
         }
+        vm.selectFork(FORKS[OP]);
 
         LayerzeroImplementation lzImplOP = LayerzeroImplementation(payable(getContract(OP, "LayerzeroImplementation")));
 
@@ -264,9 +264,44 @@ contract LayerzeroImplementationTest is BaseSetup {
         vm.expectRevert(Error.INVALID_PAYLOAD_HASH.selector);
         lzImplOP.retryMessage(101, srcAddressOP, 2, invalidPayload);
 
-        vm.expectEmit(false, false, false, true, getContract(OP, "CoreStateRegistry"));
-        emit PayloadReceived(ETH, OP, 1);
-        lzImplOP.retryMessage(101, srcAddressOP, 2, payload);
+        /// @dev simulating now the call passing on another chain
+
+        vm.selectFork(FORKS[ETH]);
+
+        address sr = getContract(ARBI, "SuperRegistry");
+
+        vm.mockCall(
+            getContract(ARBI, "SuperRegistry"),
+            abi.encodeWithSelector(SuperRegistry(sr).isValidAmbImpl.selector),
+            abi.encode(false)
+        );
+
+        logs = _depositFromETHtoARBI(500_000);
+
+        vm.clearMockedCalls();
+
+        LayerzeroImplementation lzImplARBI =
+            LayerzeroImplementation(payable(getContract(ARBI, "LayerzeroImplementation")));
+
+        for (uint256 i; i < logs.length; i++) {
+            Vm.Log memory log = logs[i];
+
+            if (log.topics[0] == 0xe9bded5f24a4168e4f3bf44e00298c993b22376aad8c58c7dda9718a54cbea82) {
+                bytes memory _data = abi.decode(log.data, (bytes));
+                LayerZeroPacket.Packet memory _packet = LayerZeroPacket.getPacket(_data);
+                payload = _packet.payload;
+            }
+        }
+        vm.selectFork(FORKS[ARBI]);
+
+        vm.expectEmit(false, false, false, true, getContract(ARBI, "CoreStateRegistry"));
+        emit PayloadReceived(ETH, ARBI, 1);
+        lzImplARBI.retryMessage(
+            101,
+            abi.encodePacked(getContract(ETH, "LayerzeroImplementation"), getContract(ARBI, "LayerzeroImplementation")),
+            2,
+            payload
+        );
     }
 
     function test_revert_dispatchPayload_invalidCaller_invalidSrcChainId(
@@ -345,6 +380,52 @@ contract LayerzeroImplementationTest is BaseSetup {
         layerzeroImplementation.nonblockingLzReceive(lzChainId, srcAddressOP, "");
     }
 
+    function _depositFromETHtoOPNewStateRegistry(uint256 gasLimit_) internal returns (Vm.Log[] memory) {
+        bytes memory crossChainMsg = abi.encode(AMBMessage(DataLib.packTxInfo(0, 1, 1, 4, deployer, ETH), bytes("")));
+
+        address coreStateRegistryETH = getContract(ETH, "CoreStateRegistry");
+        vm.deal(coreStateRegistryETH, 1 ether);
+        vm.prank(coreStateRegistryETH);
+
+        vm.recordLogs();
+        layerzeroImplementation.dispatchPayload{ value: 1 ether }(bond, OP, crossChainMsg, bytes(""));
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        /// @dev payload will fail in _nonblockLzReceive
+        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).help(
+            LZ_ENDPOINT_OP,
+            gasLimit_,
+            /// note: using `0` to get the payload stored in LZ_ENDPOINT
+            FORKS[OP],
+            logs
+        );
+
+        return logs;
+    }
+
+    function _depositFromETHtoARBI(uint256 gasLimit_) internal returns (Vm.Log[] memory) {
+        bytes memory crossChainMsg = abi.encode(AMBMessage(DataLib.packTxInfo(0, 1, 1, 1, deployer, ETH), bytes("")));
+
+        address coreStateRegistryETH = getContract(ETH, "CoreStateRegistry");
+        vm.deal(coreStateRegistryETH, 1 ether);
+        vm.prank(coreStateRegistryETH);
+
+        vm.recordLogs();
+        layerzeroImplementation.dispatchPayload{ value: 1 ether }(bond, ARBI, crossChainMsg, bytes(""));
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        /// @dev payload will fail in _nonblockLzReceive
+        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).help(
+            LZ_ENDPOINT_ARBI,
+            gasLimit_,
+            /// note: using `0` to get the payload stored in LZ_ENDPOINT
+            FORKS[ARBI],
+            logs
+        );
+
+        return logs;
+    }
+
     function _depositFromETHtoOP(uint256 gasLimit_) internal returns (Vm.Log[] memory) {
         bytes memory crossChainMsg = abi.encode(AMBMessage(DataLib.packTxInfo(0, 1, 1, 1, deployer, ETH), bytes("")));
 
@@ -376,7 +457,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         vm.prank(deployer);
 
         uint8[] memory registryId_ = new uint8[](1);
-        registryId_[0] = 1;
+        registryId_[0] = 4;
 
         address[] memory registryAddress_ = new address[](1);
         registryAddress_[0] = isReset ? getContract(OP, "CoreStateRegistry") : address(1);
