@@ -600,9 +600,13 @@ contract EmergencyQueueTest is ProtocolActions {
 
         CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(payloadId, amounts);
 
+        (uint256 nativeAmount,) = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(1);
+
         vm.recordLogs();
         vm.prank(deployer);
-        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: 1 ether }(payloadId);
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(
+            payloadId
+        );
 
         logs = vm.getRecordedLogs();
 

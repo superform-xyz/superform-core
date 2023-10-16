@@ -232,7 +232,8 @@ contract DstSwapperTest is ProtocolActions {
         if (!success) revert();
         SuperRegistry(getContract(ETH, "SuperRegistry")).setRequiredMessagingQuorum(POLY, 0);
 
-        CoreStateRegistry(coreStateRegistry).processPayload{ value: 10 ether }(1);
+        (uint256 nativeAmount,) = PaymentHelper(getContract(ETH, "PaymentHelper")).estimateAckCost(1);
+        CoreStateRegistry(coreStateRegistry).processPayload{ value: nativeAmount }(1);
 
         vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
         DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData);

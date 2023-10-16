@@ -29,15 +29,14 @@ contract CoreStateRegistryTest is ProtocolActions {
         amounts[0] = 999_900_000_000_000_000;
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, amounts);
 
-        uint256[] memory gasPerAMB = new uint256[](1);
-        gasPerAMB[0] = 5 ether;
-
         vm.prank(getContract(AVAX, "CoreStateRegistry"));
         MockERC20(getContract(AVAX, "DAI")).transfer(deployer, 999_900_000_000_000_000);
 
+        (uint256 nativeAmount,) = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
+
         vm.prank(deployer);
         vm.expectRevert(Error.BRIDGE_TOKENS_PENDING.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: 5 ether }(1);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(1);
     }
 
     /// @dev test processPayload reverts with insufficient collateral for multi vault case
@@ -58,15 +57,14 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.prank(deployer);
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
 
-        uint256[] memory gasPerAMB = new uint256[](1);
-        gasPerAMB[0] = 5 ether;
-
         vm.prank(getContract(AVAX, "CoreStateRegistry"));
         MockERC20(getContract(AVAX, "DAI")).transfer(deployer, 840);
 
+        (uint256 nativeValue,) = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
+
         vm.prank(deployer);
         vm.expectRevert(Error.BRIDGE_TOKENS_PENDING.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: 5 ether }(1);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: nativeValue }(1);
     }
 
     /// @dev test processPayload with just 1 AMB
@@ -114,15 +112,14 @@ contract CoreStateRegistryTest is ProtocolActions {
         amounts[0] = 999_900_000_000_000_000;
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, amounts);
 
-        uint256[] memory gasPerAMB = new uint256[](1);
-        gasPerAMB[0] = 5 ether;
+        (uint256 nativeValue,) = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
 
         vm.prank(deployer);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: 5 ether }(1);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: nativeValue }(1);
 
         vm.prank(deployer);
         vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: 5 ether }(1);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: nativeValue }(1);
     }
 
     /// @dev test processPayload without updating multi vault deposit payload

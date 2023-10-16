@@ -2123,11 +2123,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vm.selectFork(FORKS[targetChainId_]);
 
         uint256 nativeFee;
-        bytes memory ackAmbParams;
 
         /// @dev only generate if acknowledgement is needed
         if (targetChainId_ != CHAIN_0) {
-            (nativeFee, ackAmbParams) = _generateAckGasFeesAndParams(CHAIN_0, targetChainId_, AMBs, payloadId_);
+            (nativeFee,) = PaymentHelper(getContract(targetChainId_, "PaymentHelper")).estimateAckCost(payloadId_);
         }
 
         vm.prank(deployer);
