@@ -10,6 +10,7 @@ import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
 import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
 import { Error } from "../utils/Error.sol";
 import { DataLib } from "../libraries/DataLib.sol";
+import { ProofLib } from "../libraries/ProofLib.sol";
 import { ArrayCastLib } from "../libraries/ArrayCastLib.sol";
 import "../types/DataTypes.sol";
 import "../types/LiquidityTypes.sol";
@@ -25,6 +26,7 @@ interface ReadOnlyBaseRegistry is IBaseStateRegistry {
 contract PaymentHelper is IPaymentHelper {
     using DataLib for uint256;
     using ArrayCastLib for LiqRequest;
+    using ProofLib for bytes;
 
     /*///////////////////////////////////////////////////////////////
                                CONSTANTS
@@ -479,7 +481,11 @@ contract PaymentHelper is IPaymentHelper {
     {
         uint256 len = ambIds_.length;
         uint256 totalDstGasReqInWei = message_.length * gasPerKB[dstChainId_];
-        uint256 totalDstGasReqInWeiForProof = 32 * gasPerKB[dstChainId_];
+
+        AMBMessage memory decodedMessage = abi.decode(message_, (AMBMessage));
+        decodedMessage.params = message_.computeProofBytes();
+
+        uint256 totalDstGasReqInWeiForProof = abi.encode(decodedMessage).length * gasPerKB[dstChainId_];
 
         extraDataPerAMB = new bytes[](len);
 
