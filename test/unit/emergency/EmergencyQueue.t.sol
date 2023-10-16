@@ -245,6 +245,25 @@ contract EmergencyQueueTest is ProtocolActions {
         assertEq(balanceBefore + 1e18, balanceAfter);
     }
 
+    function test_emergencyWithdraw() public {
+        /// user deposits successfully to a form
+        _successfulDepositXChain(1, "VaultMock", 0);
+
+        /// processing the queued withdrawal and assert
+        vm.selectFork(FORKS[ARBI]);
+
+        /// @dev deployer has emergency admin role
+        address emergencyQueue = getContract(ARBI, "EmergencyQueue");
+
+        address superform = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        vm.prank(emergencyQueue);
+        vm.expectRevert(Error.EMERGENCY_WITHDRAW_INSUFFICIENT_BALANCE.selector);
+        IBaseForm(superform).emergencyWithdraw(address(0), 10e20);
+    }
+
     function test_emergencyQueueProcessingXChainMultiVault() public {
         string[] memory vaultKinds = new string[](2);
         vaultKinds[0] = "ERC4626TimelockMock";

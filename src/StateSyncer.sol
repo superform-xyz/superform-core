@@ -120,7 +120,7 @@ abstract contract StateSyncer is IStateSyncer {
         }
     }
 
-    function _isValidStateSyncer(uint8 registryId_, uint256 superformId_) internal view {
+    function _isValidStateSyncer(uint8 registryId_, uint256 superformId_) internal pure {
         // Directly check if the registryId is 0 or doesn't match the allowed cases.
         if (registryId_ == 0) {
             revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
