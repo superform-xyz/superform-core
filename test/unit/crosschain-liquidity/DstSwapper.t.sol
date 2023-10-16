@@ -100,7 +100,7 @@ contract DstSwapperTest is ProtocolActions {
 
         if (success) {
             DstSwapper(dstSwapper).processTx(
-                1, 0, 1, _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0)
+                1, 0, 1, _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0), 1
             );
 
             bytes memory txData =
@@ -108,19 +108,19 @@ contract DstSwapperTest is ProtocolActions {
 
             /// @dev try with a non-existent index
             vm.expectRevert(Error.INVALID_INDEX.selector);
-            DstSwapper(dstSwapper).processTx(1, 420, 1, txData);
+            DstSwapper(dstSwapper).processTx(1, 420, 1, txData, 1);
 
             txData = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
 
             /// @dev retry the same payload id and indices
             vm.expectRevert(Error.DST_SWAP_ALREADY_PROCESSED.selector);
-            DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
+            DstSwapper(dstSwapper).processTx(1, 0, 1, txData, 1);
 
             txData = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
 
             /// @dev no funds in multi-tx processor at this point; should revert
             vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA_NATIVE.selector);
-            DstSwapper(dstSwapper).processTx(2, 0, 1, txData);
+            DstSwapper(dstSwapper).processTx(2, 0, 1, txData, 1);
         } else {
             revert();
         }
@@ -138,7 +138,7 @@ contract DstSwapperTest is ProtocolActions {
             _buildLiqBridgeTxDataDstSwap(1, getContract(ETH, "WETH"), getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
         /// @dev no funds in multi-tx processor at this point; should revert
         vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA.selector);
-        DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
+        DstSwapper(dstSwapper).processTx(1, 0, 1, txData, 1);
     }
 
     function test_failed_batch_process_tx() public {
@@ -177,24 +177,24 @@ contract DstSwapperTest is ProtocolActions {
         if (!success) revert();
 
         vm.expectRevert(Error.INVALID_INDEX.selector);
-        DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData);
+        DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData, indices);
         indices[0] = 0;
         indices[1] = 1;
-        DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData);
+        DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData, indices);
 
         /// @dev retry the same payload id and indices
         vm.expectRevert(Error.DST_SWAP_ALREADY_PROCESSED.selector);
-        DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData);
+        DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData, indices);
 
         /// @dev retry the same payload id and indices in reversed manner
         vm.expectRevert(Error.DST_SWAP_ALREADY_PROCESSED.selector);
         indices[0] = 1;
         indices[1] = 0;
-        DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData);
+        DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData, indices);
 
         /// @dev no funds in multi-tx processor at this point; should revert
         vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA_NATIVE.selector);
-        DstSwapper(dstSwapper).batchProcessTx(2, indices, bridgeId, txData);
+        DstSwapper(dstSwapper).batchProcessTx(2, indices, bridgeId, txData, indices);
     }
 
     function test_failed_batch_process_tx_INVALID_PAYLOAD_STATUS() public {
@@ -235,7 +235,7 @@ contract DstSwapperTest is ProtocolActions {
         CoreStateRegistry(coreStateRegistry).processPayload{ value: 10 ether }(1);
 
         vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
-        DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData);
+        DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData, indices);
     }
 
     function test_failed_INVALID_SWAP_OUTPUT() public {
@@ -251,7 +251,7 @@ contract DstSwapperTest is ProtocolActions {
             _buildLiqBridgeTxDataDstSwap(1, getContract(ETH, "WETH"), getContract(ETH, "DAI"), dstSwapper, ETH, 0, 0);
         /// @dev txData with amount 0 should revert
         vm.expectRevert(Error.INVALID_SWAP_OUTPUT.selector);
-        DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
+        DstSwapper(dstSwapper).processTx(1, 0, 1, txData, 1);
     }
 
     function _simulateSingleVaultExistingPayload(address payable coreStateRegistry) internal {

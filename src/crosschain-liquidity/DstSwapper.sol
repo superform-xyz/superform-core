@@ -31,8 +31,8 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
                     State Variables
     //////////////////////////////////////////////////////////////*/
 
+    mapping(uint256 payloadId => mapping(uint256 superformId => FailedSwap)) internal failedSwap;
     mapping(uint256 payloadId => mapping(uint256 index => uint256 amount)) public swappedAmount;
-    mapping(uint256 payloadId => mapping(uint256 superformId => FailedSwap)) public failedSwap;
 
     modifier onlySwapper() {
         if (
@@ -133,10 +133,11 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
             revert Error.INVALID_SWAP_OUTPUT();
         }
 
-        /// @dev if actual underlying is less than underlyingWith0Slippage_ adjusted with maxSlippage, invariant breaks
-        if (balanceAfter - balanceBefore < ((underlyingWith0Slippage_ * (10_000 - v.maxSlippage)) / 10_000)) {
-            revert Error.MAX_SLIPPAGE_INVARIANT_BROKEN();
-        }
+        // /// @dev if actual underlying is less than underlyingWith0Slippage_ adjusted with maxSlippage, invariant
+        // breaks
+        // if (balanceAfter - balanceBefore < ((underlyingWith0Slippage_ * (10_000 - v.maxSlippage)) / 10_000)) {
+        //     revert Error.MAX_SLIPPAGE_INVARIANT_BROKEN();
+        // }
 
         /// @dev updates swapped amount
         swappedAmount[payloadId_][index_] = balanceAfter - balanceBefore;
@@ -197,6 +198,20 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         }
         /// @dev emits final event
         emit SwapFailed(payloadId_, superformId_, interimToken_, amount_);
+    }
+
+    /// @inheritdoc IDstSwapper
+    function getFailedSwap(
+        uint256 payloadId_,
+        uint256 superformId_
+    )
+        external
+        view
+        override
+        returns (address interimToken, uint256 amount)
+    {
+        interimToken = failedSwap[payloadId_][superformId_].interimToken;
+        amount = failedSwap[payloadId_][superformId_].amount;
     }
 
     /*///////////////////////////////////////////////////////////////

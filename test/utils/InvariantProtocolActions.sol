@@ -1553,7 +1553,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         vm.prank(deployer);
 
-        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).processTx(1, 0, liqBridgeKind_, txData);
+        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).processTx(1, 0, liqBridgeKind_, txData, 1);
         vm.selectFork(initialFork);
     }
 
@@ -1593,7 +1593,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         }
 
         DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).batchProcessTx(
-            1, indices, liqBridgeKinds_, txDatas
+            1, indices, liqBridgeKinds_, txDatas, indices
         );
         vm.selectFork(initialFork);
     }

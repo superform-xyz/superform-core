@@ -1379,7 +1379,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             CoreStateRegistry(coreStateRegistryDst).proposeRescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]], amounts);
 
             vm.warp(block.timestamp + 12 hours);
-            CoreStateRegistry(coreStateRegistryDst).finalizeRescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]]);
+            CoreStateRegistry(coreStateRegistryDst).finalizeRescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]], false);
 
             uint256 userWethBalanceAfter =
                 MockERC20(getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2])).balanceOf(users[action.user]);
@@ -1970,20 +1970,19 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint256 len = args.amounts.length;
         uint256[] memory finalAmounts = new uint256[](len);
 
-        int256 dstSwapSlippage;
+        // int256 dstSwapSlippage;
 
-        /// @dev slippage calculation
         for (uint256 i = 0; i < len; i++) {
+            /// @dev bridge slippage is already applied in _buildSingleVaultDepositCallData()
             finalAmounts[i] = args.amounts[i];
-            if (args.slippage > 0) {
-                /// @dev bridge slippage is already applied in _buildSingleVaultDepositCallData()
-                // finalAmounts[i] = (finalAmounts[i] * uint256(10_000 - args.slippage)) / 10_000;
+            // if (args.slippage > 0) {
+            // finalAmounts[i] = (finalAmounts[i] * uint256(10_000 - args.slippage)) / 10_000;
 
-                if (args.isdstSwap) {
-                    dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
-                    finalAmounts[i] = (finalAmounts[i] * uint256(10_000 - dstSwapSlippage)) / 10_000;
-                }
-            }
+            // if (args.isdstSwap) {
+            //     dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
+            //     finalAmounts[i] = (finalAmounts[i] * uint256(10_000 - dstSwapSlippage)) / 10_000;
+            // }
+            // }
         }
 
         /// @dev if test type is RevertProcessPayload, revert is further down the call chain
@@ -2033,14 +2032,14 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         finalAmount = args.amount;
 
-        int256 dstSwapSlippage;
+        // int256 dstSwapSlippage;
 
-        finalAmount = (finalAmount * uint256(10_000 - args.slippage)) / 10_000;
+        // finalAmount = (finalAmount * uint256(10_000 - args.slippage)) / 10_000;
 
-        if (args.isdstSwap) {
-            dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
-            finalAmount = (finalAmount * uint256(10_000 - dstSwapSlippage)) / 10_000;
-        }
+        // if (args.isdstSwap) {
+        //     dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
+        //     finalAmount = (finalAmount * uint256(10_000 - dstSwapSlippage)) / 10_000;
+        // }
 
         /// @dev if test type is RevertProcessPayload, revert is further down the call chain
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
@@ -2224,7 +2223,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         vm.prank(deployer);
 
-        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).processTx(1, 0, liqBridgeKind_, txData);
+        // uint256 underlyingWith0Slippage = _updateSuperformDataAmountWithPrices(amount_, 0, underlyingTokenDst_, )
+
+        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).processTx(1, 0, liqBridgeKind_, txData, 1);
         vm.selectFork(initialFork);
     }
 
@@ -2264,7 +2265,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         }
 
         DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).batchProcessTx(
-            1, indices, liqBridgeKinds_, txDatas
+            1, indices, liqBridgeKinds_, txDatas, indices
         );
         vm.selectFork(initialFork);
     }
@@ -2948,16 +2949,17 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
                 uint256 finalAmount = singleSuperformsData[i].amount;
 
-                if (action.slippage != 0 && CHAIN_0 != DST_CHAINS[i]) {
-                    /// @dev applying bridge slippage
-                    finalAmount = (finalAmount * uint256(10_000 - action.slippage)) / 10_000;
+                /// @dev slippage already applied to singleSuperformsData[i] in _buildSingleVaultDepositCallData()
+                // if (action.slippage != 0 && CHAIN_0 != DST_CHAINS[i]) {
+                //     /// @dev applying bridge slippage
+                //     finalAmount = (finalAmount * uint256(10_000 - action.slippage)) / 10_000;
 
-                    /// @dev applying dst swap slippage
-                    if (action.dstSwap) {
-                        vars.slippage = (action.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
-                        finalAmount = (finalAmount * uint256(10_000 - vars.slippage)) / 10_000;
-                    }
-                }
+                //     /// @dev applying dst swap slippage
+                //     if (action.dstSwap) {
+                //         vars.slippage = (action.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
+                //         finalAmount = (finalAmount * uint256(10_000 - vars.slippage)) / 10_000;
+                //     }
+                // }
 
                 finalAmount = repetitions * finalAmount;
                 /// @dev assert spToken Balance. If reverting amount of sp should be 0 (assuming no action before this

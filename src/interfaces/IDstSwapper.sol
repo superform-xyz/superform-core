@@ -44,14 +44,7 @@ interface IDstSwapper {
     )
         external;
 
-    function failTx(
-        uint256 payloadId_,
-        uint256 index_,
-        uint8 bridgeId_,
-        address intermediaryToken_,
-        uint256 amount_
-    )
-        external;
+    function failTx(uint256 payloadId_, uint256 index_, address intermediaryToken_, uint256 amount_) external;
 
     /// @dev would interact with liquidity bridge contract to process multi-tx transactions and move the funds into
     /// destination
@@ -71,11 +64,11 @@ interface IDstSwapper {
 
     /// FIMXE: add natspec
     function swappedAmount(uint256 payloadId_, uint256 index_) external view returns (uint256 amount_);
-    function failedSwap(
+    function getFailedSwap(
         uint256 payloadId_,
         uint256 superformId_
     )
         external
         view
-        returns (FailedSwap calldata failedSwap_);
+        returns (address interimToken, uint256 amount);
 }
