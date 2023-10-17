@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import "./BaseSetup.sol";
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";

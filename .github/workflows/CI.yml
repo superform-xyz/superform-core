@@ -158,6 +158,7 @@ jobs:
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
                 
   coverage:
+    needs: ["build"]
     runs-on: "SuperformCore2"
     steps:
       - name: "Check out the repo"

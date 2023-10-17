@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import { Script } from "forge-std/Script.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";

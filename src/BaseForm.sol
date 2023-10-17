@@ -1,5 +1,5 @@
 ///SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import { Initializable } from "openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import { ERC165 } from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";

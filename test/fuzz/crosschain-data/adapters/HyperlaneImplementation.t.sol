@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import "../../../utils/BaseSetup.sol";
 import { TransactionType, CallbackType, AMBMessage } from "src/types/DataTypes.sol";
