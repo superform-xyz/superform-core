@@ -13,3 +13,6 @@
 [submodule "lib/super-vaults"]
 	path = lib/super-vaults
 	url = https://github.com/superform-xyz/super-vaults
+[submodule "lib/clones-with-immutable-args"]
+	path = lib/clones-with-immutable-args
+	url = https://github.com/wighawag/clones-with-immutable-args
