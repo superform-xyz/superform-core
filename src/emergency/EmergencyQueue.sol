@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import { DataLib } from "../libraries/DataLib.sol";
 import { IBaseForm } from "../interfaces/IBaseForm.sol";

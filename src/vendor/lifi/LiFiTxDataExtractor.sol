@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 /// @title LiFiTxDataExtractor
 /// @author LI.FI (https://li.fi)
 /// @notice Provides functionality for extracting calldata
-/// @notice upgraded to solidity 0.8.19 and adapted from CalldataVerificationFacet and LibBytes without any changes to
+/// @notice upgraded to solidity 0.8.21 and adapted from CalldataVerificationFacet and LibBytes without any changes to
 /// used functions (just stripped down functionality and renamed contract name)
 /// @notice taken from LiFi contracts https://github.com/lifinance/contracts
 /// @custom:version 1.1.0
