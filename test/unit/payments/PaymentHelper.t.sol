@@ -338,14 +338,14 @@ contract PaymentHelperTest is ProtocolActions {
 
     function test_calculateAMBData() public {
         /// @dev scenario: when the source native fee oracle is zero address
-
         vm.prank(deployer);
         uint8[] memory ambIds = new uint8[](3);
 
         ambIds[0] = 1;
         ambIds[1] = 2;
         ambIds[2] = 3;
-        (uint256 totalFees,) = paymentHelper.calculateAMBData(137, ambIds, "0x");
+        (uint256 totalFees,) =
+            paymentHelper.calculateAMBData(137, ambIds, abi.encode(AMBMessage(type(uint256).max, "0x")));
 
         assertGt(totalFees, 0);
     }

@@ -10,6 +10,7 @@ import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
 import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
 import { Error } from "../utils/Error.sol";
 import { DataLib } from "../libraries/DataLib.sol";
+import { ProofLib } from "../libraries/ProofLib.sol";
 import { ArrayCastLib } from "../libraries/ArrayCastLib.sol";
 import "../types/DataTypes.sol";
 import "../types/LiquidityTypes.sol";
@@ -25,6 +26,8 @@ interface ReadOnlyBaseRegistry is IBaseStateRegistry {
 contract PaymentHelper is IPaymentHelper {
     using DataLib for uint256;
     using ArrayCastLib for LiqRequest;
+    using ProofLib for bytes;
+    using ProofLib for AMBMessage;
 
     /*///////////////////////////////////////////////////////////////
                                CONSTANTS
@@ -470,7 +473,7 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev helps generate extra data per amb
     function _generateExtraData(
         uint64 dstChainId_,
-        uint8[] calldata ambIds_,
+        uint8[] memory ambIds_,
         bytes memory message_
     )
         public
@@ -479,7 +482,11 @@ contract PaymentHelper is IPaymentHelper {
     {
         uint256 len = ambIds_.length;
         uint256 totalDstGasReqInWei = message_.length * gasPerKB[dstChainId_];
-        uint256 totalDstGasReqInWeiForProof = 32 * gasPerKB[dstChainId_];
+
+        AMBMessage memory decodedMessage = abi.decode(message_, (AMBMessage));
+        decodedMessage.params = message_.computeProofBytes();
+
+        uint256 totalDstGasReqInWeiForProof = abi.encode(decodedMessage).length * gasPerKB[dstChainId_];
 
         extraDataPerAMB = new bytes[](len);
 
@@ -498,6 +505,63 @@ contract PaymentHelper is IPaymentHelper {
                 ++i;
             }
         }
+    }
+
+    struct EstimateAckCostVars {
+        uint256 currPayloadId;
+        uint256 payloadHeader;
+        uint8 callbackType;
+        bytes payloadBody;
+        bytes32 proof;
+        uint8[] ackAmbIds;
+        uint8[] proofIds;
+        uint8 isMulti;
+        uint64 srcChainId;
+        bytes message;
+    }
+
+    /// @dev helps estimate the acknowledgement costs for amb processing
+    function estimateAckCost(uint256 payloadId_) external view returns (uint256 totalFees, uint256[] memory) {
+        EstimateAckCostVars memory v;
+        IBaseStateRegistry coreStateRegistry =
+            IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
+        v.currPayloadId = coreStateRegistry.payloadsCount();
+
+        if (payloadId_ > v.currPayloadId) revert Error.INVALID_PAYLOAD_ID();
+
+        v.payloadHeader = coreStateRegistry.payloadHeader(payloadId_);
+        v.payloadBody = coreStateRegistry.payloadBody(payloadId_);
+
+        v.proof = AMBMessage(v.payloadHeader, v.payloadBody).computeProof();
+
+        (, v.callbackType, v.isMulti,,, v.srcChainId) = DataLib.decodeTxInfo(v.payloadHeader);
+
+        /// if callback type is return then return 0
+        if (v.callbackType != 0) return (0, new uint256[](0));
+
+        if (v.isMulti == 1) {
+            InitMultiVaultData memory data = abi.decode(v.payloadBody, (InitMultiVaultData));
+            v.payloadBody =
+                abi.encode(ReturnMultiData(data.superformRouterId, v.currPayloadId, data.superformIds, data.amounts));
+        } else {
+            InitSingleVaultData memory data = abi.decode(v.payloadBody, (InitSingleVaultData));
+            v.payloadBody =
+                abi.encode(ReturnSingleData(data.superformRouterId, v.currPayloadId, data.superformId, data.amount));
+        }
+
+        v.proofIds = coreStateRegistry.getProofAMB(v.proof);
+        v.ackAmbIds = new uint8[](v.proofIds.length + 1);
+        v.ackAmbIds[0] = coreStateRegistry.msgAMB(payloadId_);
+
+        for (uint256 i; i < v.proofIds.length; i++) {
+            v.ackAmbIds[i + 1] = v.proofIds[i];
+        }
+
+        v.message = abi.encode(AMBMessage(coreStateRegistry.payloadHeader(payloadId_), v.payloadBody));
+
+        return estimateAMBFees(
+            v.ackAmbIds, v.srcChainId, v.message, _generateExtraData(v.srcChainId, v.ackAmbIds, v.message)
+        );
     }
 
     /// @dev helps estimate the cross-chain message costs
