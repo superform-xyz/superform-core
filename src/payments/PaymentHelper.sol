@@ -527,10 +527,7 @@ contract PaymentHelper is IPaymentHelper {
             IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
         v.currPayloadId = coreStateRegistry.payloadsCount();
 
-        /// FIXME: add explicit revert message here
-        if (payloadId_ > v.currPayloadId) {
-            revert();
-        }
+        if (payloadId_ > v.currPayloadId) revert Error.INVALID_PAYLOAD_ID();
 
         v.payloadHeader = coreStateRegistry.payloadHeader(payloadId_);
         v.payloadBody = coreStateRegistry.payloadBody(payloadId_);
