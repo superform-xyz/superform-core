@@ -125,7 +125,6 @@ abstract contract StateSyncer is IStateSyncer {
         if (registryId_ == 0) {
             revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
         }
-
         // If registryId is 1, no further checks are necessary.
         if (registryId_ == 1) {
             return;
