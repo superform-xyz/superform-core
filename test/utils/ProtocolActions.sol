@@ -941,29 +941,71 @@ abstract contract ProtocolActions is CommonProtocolActions {
                             if (action.dstSwap) {
                                 /// @dev calling state variables again to obtain fresh memory values corresponding to
                                 /// DST
-                                (,, vars.underlyingDstToken,,) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
+                                (, vars.underlyingSrcToken, vars.underlyingDstToken,,) =
+                                    _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
                                 vars.liqBridges = LIQ_BRIDGES[DST_CHAINS[i]][actionIndex];
+                                console.log("1");
 
                                 /// @dev dst swap is performed to ensure tokens reach CoreStateRegistry on deposits
                                 if (action.multiVaults) {
                                     vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
+
+                                    vars.underlyingWith0Slippages = new uint256[](vars.amounts.length);
+                                    for (uint256 j = 0; j < vars.amounts.length; j++) {
+                                        console.log("1", j);
+                                        console.log("vars.underlyingDstToken[j]", vars.underlyingDstToken[j]);
+                                        console.log("vars.underlyingSrcToken[j]", vars.underlyingSrcToken[j]);
+                                        console.log(
+                                            "AMOUNTS[DST_CHAINS[i]][actionIndex][j]",
+                                            AMOUNTS[DST_CHAINS[i]][actionIndex][j]
+                                        );
+                                        vars.underlyingWith0Slippages[j] = _updateAmountWithPricedSwapsAndSlippage(
+                                            AMOUNTS[DST_CHAINS[i]][actionIndex][j],
+                                            0,
+                                            vars.underlyingDstToken[j],
+                                            action.externalToken == 3
+                                                ? NATIVE_TOKEN
+                                                : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
+                                            vars.underlyingSrcToken[j],
+                                            CHAIN_0,
+                                            DST_CHAINS[i]
+                                        );
+                                        console.log("2", j);
+                                    }
                                     _batchProcessDstSwap(
                                         vars.liqBridges,
                                         CHAIN_0,
                                         aV[i].toChainId,
                                         vars.underlyingDstToken,
                                         vars.multiVaultsPayloadArg.amounts,
-                                        action.slippage
+                                        action.slippage,
+                                        vars.underlyingWith0Slippages
                                     );
+                                    console.log("3");
                                 } else {
+                                    console.log("4");
+                                    vars.underlyingWith0Slippage = _updateAmountWithPricedSwapsAndSlippage(
+                                        AMOUNTS[DST_CHAINS[i]][actionIndex][0],
+                                        0,
+                                        vars.underlyingDstToken[0],
+                                        action.externalToken == 3
+                                            ? NATIVE_TOKEN
+                                            : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
+                                        vars.underlyingSrcToken[0],
+                                        CHAIN_0,
+                                        DST_CHAINS[i]
+                                    );
+                                    console.log("5");
                                     _processDstSwap(
                                         vars.liqBridges[0],
                                         CHAIN_0,
                                         aV[i].toChainId,
                                         vars.underlyingDstToken[0],
                                         vars.singleVaultsPayloadArg.amount,
-                                        action.slippage
+                                        action.slippage,
+                                        vars.underlyingWith0Slippage
                                     );
+                                    console.log("6");
                                 }
                             }
 
@@ -1257,7 +1299,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         int256 slippage;
     }
 
-    function _updateSuperformDataAmountWithPrices(
+    function _updateAmountWithPricedSwapsAndSlippage(
         uint256 amount_,
         int256 slippage_,
         address underlyingTokenDst_,
@@ -1354,7 +1396,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             (rescueSuperforms,,) = DataLib.getSuperforms(rescueSuperformIds);
 
             for (uint256 i = 0; i < rescueSuperformIds.length; ++i) {
-                amounts[i] = _updateSuperformDataAmountWithPrices(
+                amounts[i] = _updateAmountWithPricedSwapsAndSlippage(
                     AMOUNTS[DST_CHAINS[0]][actionIndex][i],
                     action.slippage,
                     /// @dev TODO: generalise these tokens beyond WETH (which is the only token used for the 2 rescue
@@ -1637,12 +1679,12 @@ abstract contract ProtocolActions is CommonProtocolActions {
             console.log("test amount post-swap", args.amount);
         }
 
+        /// @dev applying only bridge slippage here as dstSwap slippage is applied in _updateSingleVaultDepositPayload()
+        /// and _updateMultiVaultDepositPayload()
         int256 slippage = args.slippage;
         if (args.srcChainId == args.toChainId) slippage = 0;
+        else if (args.dstSwap) slippage = (slippage * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
 
-        /// @dev applying 100% x-chain slippage at once i.e. bridge + dstSwap slippage (as opposed to 2 steps in
-        /// LiFiMock) coz this code will only be executed once (as opposed to twice in LiFiMock, once for bridge and
-        /// other for dstSwap)
         args.amount = (args.amount * uint256(10_000 - slippage)) / 10_000;
         console.log("test amount pre-bridge, post-slippage", v.amount);
 
@@ -1970,19 +2012,19 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint256 len = args.amounts.length;
         uint256[] memory finalAmounts = new uint256[](len);
 
-        // int256 dstSwapSlippage;
+        int256 dstSwapSlippage;
 
         for (uint256 i = 0; i < len; i++) {
-            /// @dev bridge slippage is already applied in _buildSingleVaultDepositCallData()
             finalAmounts[i] = args.amounts[i];
-            // if (args.slippage > 0) {
-            // finalAmounts[i] = (finalAmounts[i] * uint256(10_000 - args.slippage)) / 10_000;
+            if (args.slippage > 0) {
+                /// @dev bridge slippage is already applied in _buildSingleVaultDepositCallData()
+                // finalAmounts[i] = (finalAmounts[i] * uint256(10_000 - args.slippage)) / 10_000;
 
-            // if (args.isdstSwap) {
-            //     dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
-            //     finalAmounts[i] = (finalAmounts[i] * uint256(10_000 - dstSwapSlippage)) / 10_000;
-            // }
-            // }
+                if (args.isdstSwap) {
+                    dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
+                    finalAmounts[i] = (finalAmounts[i] * uint256(10_000 - dstSwapSlippage)) / 10_000;
+                }
+            }
         }
 
         /// @dev if test type is RevertProcessPayload, revert is further down the call chain
@@ -2032,14 +2074,14 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         finalAmount = args.amount;
 
-        // int256 dstSwapSlippage;
+        int256 dstSwapSlippage;
 
         // finalAmount = (finalAmount * uint256(10_000 - args.slippage)) / 10_000;
 
-        // if (args.isdstSwap) {
-        //     dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
-        //     finalAmount = (finalAmount * uint256(10_000 - dstSwapSlippage)) / 10_000;
-        // }
+        if (args.isdstSwap) {
+            dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
+            finalAmount = (finalAmount * uint256(10_000 - dstSwapSlippage)) / 10_000;
+        }
 
         /// @dev if test type is RevertProcessPayload, revert is further down the call chain
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
@@ -2203,7 +2245,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint64 targetChainId_,
         address underlyingTokenDst_,
         uint256 amount_,
-        int256 slippage_
+        int256 slippage_,
+        uint256 underlyingWith0Slippage
     )
         internal
     {
@@ -2222,10 +2265,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
         );
 
         vm.prank(deployer);
-
-        // uint256 underlyingWith0Slippage = _updateSuperformDataAmountWithPrices(amount_, 0, underlyingTokenDst_, )
-
-        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).processTx(1, 0, liqBridgeKind_, txData, 1);
+        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).processTx(
+            1, 0, liqBridgeKind_, txData, underlyingWith0Slippage
+        );
         vm.selectFork(initialFork);
     }
 
@@ -2235,7 +2277,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint64 targetChainId_,
         address[] memory underlyingTokensDst_,
         uint256[] memory amounts_,
-        int256 slippage_
+        int256 slippage_,
+        uint256[] memory underlyingWith0Slippages
     )
         internal
     {
@@ -2265,7 +2308,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         }
 
         DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).batchProcessTx(
-            1, indices, liqBridgeKinds_, txDatas, indices
+            1, indices, liqBridgeKinds_, txDatas, underlyingWith0Slippages
         );
         vm.selectFork(initialFork);
     }

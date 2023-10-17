@@ -203,7 +203,7 @@ contract PayMasterTest is ProtocolActions {
         /// @dev amount received will be bridge-slippage-adjusted
         assertEq(
             txProcessorARBI.balance,
-            _updateSuperformDataAmountWithPrices(1 ether, totalSlippage, NATIVE, NATIVE, NATIVE, ETH, ARBI)
+            _updateAmountWithPricedSwapsAndSlippage(1 ether, totalSlippage, NATIVE, NATIVE, NATIVE, ETH, ARBI)
         );
     }
 
@@ -257,7 +257,7 @@ contract PayMasterTest is ProtocolActions {
         /// @dev amount received will be bridge-slippage-adjusted
         assertEq(
             txUpdaterARBI.balance,
-            _updateSuperformDataAmountWithPrices(1 ether, totalSlippage, NATIVE, NATIVE, NATIVE, ETH, ARBI)
+            _updateAmountWithPricedSwapsAndSlippage(1 ether, totalSlippage, NATIVE, NATIVE, NATIVE, ETH, ARBI)
         );
     }
 

@@ -69,6 +69,8 @@ struct StagesLocalVars {
     uint8[] AMBs;
     uint64 CHAIN_0;
     uint64[] DST_CHAINS;
+    uint256 underlyingWith0Slippage;
+    uint256[] underlyingWith0Slippages;
 }
 
 struct MessagingAssertVars {

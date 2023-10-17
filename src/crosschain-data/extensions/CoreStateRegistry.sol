@@ -460,6 +460,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 revert Error.ZERO_AMOUNT();
             }
 
+            console.log("dstSwapper.swappedAmount(payloadId_, i)", dstSwapper.swappedAmount(payloadId_, i));
+            console.log("finalAmounts_[i]", finalAmounts_[i]);
             if (multiVaultData.hasDstSwaps[i]) {
                 if (dstSwapper.swappedAmount(payloadId_, i) != finalAmounts_[i]) {
                     revert Error.INVALID_DST_SWAP_AMOUNT();

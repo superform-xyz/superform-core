@@ -13,6 +13,7 @@ import { IERC4626Form } from "../forms/interfaces/IERC4626Form.sol";
 import { Error } from "../utils/Error.sol";
 import { DataLib } from "../libraries/DataLib.sol";
 import "../types/DataTypes.sol";
+import "forge-std/console.sol";
 
 /// @title DstSwapper
 /// @author Zeropoint Labs.
@@ -133,11 +134,16 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
             revert Error.INVALID_SWAP_OUTPUT();
         }
 
-        // /// @dev if actual underlying is less than underlyingWith0Slippage_ adjusted with maxSlippage, invariant
-        // breaks
-        // if (balanceAfter - balanceBefore < ((underlyingWith0Slippage_ * (10_000 - v.maxSlippage)) / 10_000)) {
-        //     revert Error.MAX_SLIPPAGE_INVARIANT_BROKEN();
-        // }
+        /// @dev if actual underlying is less than underlyingWith0Slippage_ adjusted
+        /// with maxSlippage, invariant breaks
+        console.log("balanceAfter - balanceBefore", balanceAfter - balanceBefore);
+        console.log(
+            "((underlyingWith0Slippage_ * (10_000 - v.maxSlippage)) / 10_000)",
+            ((underlyingWith0Slippage_ * (10_000 - v.maxSlippage)) / 10_000)
+        );
+        if (balanceAfter - balanceBefore < ((underlyingWith0Slippage_ * (10_000 - v.maxSlippage)) / 10_000)) {
+            revert Error.MAX_SLIPPAGE_INVARIANT_BROKEN();
+        }
 
         /// @dev updates swapped amount
         swappedAmount[payloadId_][index_] = balanceAfter - balanceBefore;
