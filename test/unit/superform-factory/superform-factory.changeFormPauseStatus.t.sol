@@ -23,7 +23,7 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
         address superRegistry = getContract(chainId, "SuperRegistry");
 
         /// @dev Deploying Forms
-        address formImplementation1 = address(new ERC4626Form(superRegistry));
+        address formImplementation1 = address(new ERC4626Form());
         uint32 formImplementationId = 0;
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
@@ -50,7 +50,7 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
         address superRegistry = getContract(chainId, "SuperRegistry");
 
         /// @dev Deploying Forms
-        address formImplementation1 = address(new ERC4626Form(superRegistry));
+        address formImplementation1 = address(new ERC4626Form());
         uint32 formImplementationId = 0;
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
@@ -77,7 +77,7 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
         address superRegistry = getContract(chainId, "SuperRegistry");
 
         /// @dev Deploying Forms
-        address formImplementation1 = address(new ERC4626Form(superRegistry));
+        address formImplementation1 = address(new ERC4626Form());
         uint32 formImplementationId = 0;
         uint32 formImplementationId_invalid = 999;
 

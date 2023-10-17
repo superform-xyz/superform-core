@@ -24,7 +24,7 @@ contract SuperTransmuterTest is BaseSetup {
 
         address superRegistry = getContract(ETH, "SuperRegistry");
 
-        formImplementation = address(new ERC4626Form(superRegistry));
+        formImplementation = address(new ERC4626Form());
         vault = getContract(ETH, VAULT_NAMES[0][0]);
         vm.prank(deployer);
         SuperformFactory(getContract(ETH, "SuperformFactory")).addFormImplementation(

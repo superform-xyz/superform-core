@@ -439,15 +439,15 @@ abstract contract AbstractDeploySingle is Script {
 
         /// @dev 8 - Deploy 4626Form implementations
         // Standard ERC4626 Form
-        vars.erc4626Form = address(new ERC4626Form{salt: salt}(vars.superRegistry));
+        vars.erc4626Form = address(new ERC4626Form{salt: salt}());
         contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars.erc4626Form;
 
         // Timelock + ERC4626 Form
-        vars.erc4626TimelockForm = address(new ERC4626TimelockForm{salt: salt}(vars.superRegistry));
+        vars.erc4626TimelockForm = address(new ERC4626TimelockForm{salt: salt}());
         contracts[vars.chainId][bytes32(bytes("ERC4626TimelockForm"))] = vars.erc4626TimelockForm;
 
         /// 9 KYCDao ERC4626 Form
-        vars.kycDao4626Form = address(new ERC4626KYCDaoForm{salt: salt}(vars.superRegistry));
+        vars.kycDao4626Form = address(new ERC4626KYCDaoForm{salt: salt}());
         contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
 
         /// @dev 9 - Add newly deployed form implementations to Factory, formBeaconId 1

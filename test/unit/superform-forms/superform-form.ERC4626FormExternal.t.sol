@@ -23,7 +23,7 @@ contract SuperformERC4626FormExternalTest is BaseSetup {
         address superRegistry = getContract(chainId, "SuperRegistry");
 
         /// @dev Deploying Forms
-        address formImplementation = address(new ERC4626FormExternal(superRegistry));
+        address formImplementation = address(new ERC4626FormExternal());
         uint32 formImplementationId = 0;
 
         /// @dev Vaults For The Superforms
@@ -57,7 +57,7 @@ contract SuperformERC4626FormExternalTest is BaseSetup {
         address superRegistry = getContract(chainId, "SuperRegistry");
 
         /// @dev Deploying Forms
-        address formImplementation = address(new ERC4626FormExternal(superRegistry));
+        address formImplementation = address(new ERC4626FormExternal());
         uint32 formImplementationId = 0;
 
         /// @dev Vaults For The Superforms
@@ -91,7 +91,7 @@ contract SuperformERC4626FormExternalTest is BaseSetup {
         address superRegistry = getContract(chainId, "SuperRegistry");
 
         /// @dev Deploying Forms
-        address formImplementation = address(new ERC4626FormExternal(superRegistry));
+        address formImplementation = address(new ERC4626FormExternal());
         uint32 formImplementationId = 0;
 
         /// @dev Vaults For The Superforms

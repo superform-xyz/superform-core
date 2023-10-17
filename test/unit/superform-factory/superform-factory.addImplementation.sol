@@ -22,7 +22,7 @@ contract SuperformFactoryAddImplementationTest is BaseSetup {
     function test_addForm() public {
         vm.selectFork(FORKS[chainId]);
 
-        address formImplementation = address(new ERC4626Form(getContract(chainId, "SuperRegistry")));
+        address formImplementation = address(new ERC4626Form());
         uint32 formImplementationId = 0;
 
         vm.startPrank(deployer);
@@ -40,8 +40,8 @@ contract SuperformFactoryAddImplementationTest is BaseSetup {
     function test_revert_addForm_sameformImplementationId() public {
         vm.selectFork(FORKS[chainId]);
 
-        address formImplementation1 = address(new ERC4626Form(getContract(chainId, "SuperRegistry")));
-        address formImplementation2 = address(new ERC4626Form(getContract(chainId, "SuperRegistry")));
+        address formImplementation1 = address(new ERC4626Form());
+        address formImplementation2 = address(new ERC4626Form());
         uint32 formImplementationId = 0;
 
         vm.startPrank(deployer);

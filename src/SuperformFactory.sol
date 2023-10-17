@@ -2,7 +2,6 @@
 pragma solidity ^0.8.21;
 
 import { ERC165Checker } from "openzeppelin-contracts/contracts/utils/introspection/ERC165Checker.sol";
-import { BaseForm } from "./BaseForm.sol";
 import { BroadcastMessage } from "./types/DataTypes.sol";
 import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
 import { IBaseForm } from "./interfaces/IBaseForm.sol";
@@ -11,14 +10,14 @@ import { ISuperRBAC } from "./interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
 import { Error } from "./utils/Error.sol";
 import { DataLib } from "./libraries/DataLib.sol";
-import { Clones } from "openzeppelin-contracts/contracts/proxy/Clones.sol";
+import { ClonesWithImmutableArgs } from "clones-with-immutable-args/ClonesWithImmutableArgs.sol";
 
 /// @title Superforms Factory
 /// @dev A secure, and easily queryable central point of access for all Superforms on any given chain,
 /// @author Zeropoint Labs.
 contract SuperformFactory is ISuperformFactory {
     using DataLib for uint256;
-    using Clones for address;
+    using ClonesWithImmutableArgs for address;
 
     /*///////////////////////////////////////////////////////////////
                             Constants
@@ -124,8 +123,8 @@ contract SuperformFactory is ISuperformFactory {
         }
 
         /// @dev instantiate the superform.
-        superform_ = tFormImplementation.clone();
-        BaseForm(payable(superform_)).initialize(address(superRegistry), vault_, formImplementationId_);
+        bytes memory data = abi.encodePacked(address(superRegistry), vault_, CHAIN_ID, formImplementationId_);
+        superform_ = tFormImplementation.clone(data);
 
         /// @dev this will always be unique because all chainIds are unique
         superformId_ = DataLib.packSuperform(superform_, formImplementationId_, CHAIN_ID);

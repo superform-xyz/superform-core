@@ -22,16 +22,16 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_, 1) { }
+    constructor() ERC4626FormImplementation(1) { }
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL OVERRIDES
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev this function calls the kycDAO vault kycCheck function to verify if the beneficiary holds a kycDAO token
+    /// @dev this function calls the kycDAO vault() kycCheck function to verify if the beneficiary holds a kycDAO token
     /// @dev note that this form must also be a holder of a kycDAO NFT
     function _kycCheck(address srcSender_) internal view {
-        if (!kycDAO4626(vault).kycCheck(srcSender_)) revert NO_VALID_KYC_TOKEN();
+        if (!kycDAO4626(vault()).kycCheck(srcSender_)) revert NO_VALID_KYC_TOKEN();
     }
 
     /// @inheritdoc BaseForm

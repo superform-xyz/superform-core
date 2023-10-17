@@ -10,6 +10,7 @@ import { ERC4626FormImplementation } from "./ERC4626FormImplementation.sol";
 import { BaseForm } from "../BaseForm.sol";
 import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
 import { ITimelockStateRegistry } from "../interfaces/ITimelockStateRegistry.sol";
+import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { DataLib } from "../libraries/DataLib.sol";
 import { Error } from "../utils/Error.sol";
 
@@ -23,7 +24,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
                             MODIFIER
     //////////////////////////////////////////////////////////////*/
     modifier onlyTwoStepStateRegistry() {
-        if (msg.sender != superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY"))) {
+        if (msg.sender != ISuperRegistry(superRegistry()).getAddress(keccak256("TIMELOCK_STATE_REGISTRY"))) {
             revert Error.NOT_TWO_STEP_STATE_REGISTRY();
         }
         _;
@@ -32,7 +33,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_, 2) { }
+    constructor() ERC4626FormImplementation(2) { }
 
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL FUNCTIONS
@@ -59,7 +60,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         returns (uint256 dstAmount)
     {
         withdrawAfterCoolDownLocalVars memory vars;
-        IERC4626TimelockVault v = IERC4626TimelockVault(vault);
+        IERC4626TimelockVault v = IERC4626TimelockVault(vault());
 
         vars.liqData = p_.data.liqData;
         vars.len1 = vars.liqData.txData.length;
@@ -77,16 +78,16 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         dstAmount = v.redeem(amount_, vars.receiver, address(this));
         /// @dev validate and dispatches the tokens
         if (vars.len1 != 0) {
-            vars.bridgeValidator = superRegistry.getBridgeValidator(vars.liqData.bridgeId);
+            vars.bridgeValidator = ISuperRegistry(superRegistry()).getBridgeValidator(vars.liqData.bridgeId);
             vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(vars.liqData.txData, false);
 
-            /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
+            /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault()
             if (vars.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
-            vars.chainId = CHAIN_ID;
+            vars.chainId = CHAIN_ID();
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
-            IBridgeValidator(superRegistry.getBridgeValidator(vars.liqData.bridgeId)).validateTxData(
+            IBridgeValidator(ISuperRegistry(superRegistry()).getBridgeValidator(vars.liqData.bridgeId)).validateTxData(
                 IBridgeValidator.ValidateTxDataArgs(
                     vars.liqData.txData,
                     vars.chainId,
@@ -100,7 +101,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
             );
 
             dispatchTokens(
-                superRegistry.getBridgeAddress(vars.liqData.bridgeId),
+                ISuperRegistry(superRegistry()).getBridgeAddress(vars.liqData.bridgeId),
                 vars.liqData.txData,
                 vars.liqData.token,
                 vars.amount,
@@ -143,7 +144,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to the two
         /// step
         /// @dev state registry for re-processing at a later date
-        _storePayload(0, srcSender_, CHAIN_ID, lockedTill, singleVaultData_);
+        _storePayload(0, srcSender_, CHAIN_ID(), lockedTill, singleVaultData_);
 
         return 0;
     }
@@ -193,7 +194,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     /// @dev calls the vault to request unlock
     /// @notice superPositions are already burned at this point
     function _requestUnlock(uint256 amount_) internal returns (uint256 lockedTill_) {
-        IERC4626TimelockVault v = IERC4626TimelockVault(vault);
+        IERC4626TimelockVault v = IERC4626TimelockVault(vault());
 
         v.requestUnlock(amount_, address(this));
         lockedTill_ = block.timestamp + v.getLockPeriod();
@@ -210,7 +211,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         internal
     {
         ITimelockStateRegistry registry =
-            ITimelockStateRegistry(superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY")));
+            ITimelockStateRegistry(ISuperRegistry(superRegistry()).getAddress(keccak256("TIMELOCK_STATE_REGISTRY")));
         registry.receivePayload(type_, srcSender_, srcChainId_, lockedTill_, data_);
     }
 }

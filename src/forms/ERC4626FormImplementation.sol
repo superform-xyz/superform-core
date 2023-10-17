@@ -9,6 +9,7 @@ import { LiquidityHandler } from "../crosschain-liquidity/LiquidityHandler.sol";
 import { InitSingleVaultData } from "../types/DataTypes.sol";
 import { BaseForm } from "../BaseForm.sol";
 import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
+import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { Error } from "../utils/Error.sol";
 import { DataLib } from "../libraries/DataLib.sol";
 
@@ -24,7 +25,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
-    constructor(address superRegistry_, uint256 stateRegistryId_) BaseForm(superRegistry_) {
+    constructor(uint256 stateRegistryId_) BaseForm() {
         STATE_REGISTRY_ID = stateRegistryId_;
     }
 
@@ -34,59 +35,59 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
     /// @inheritdoc BaseForm
     function getVaultAsset() public view virtual override returns (address) {
-        return address(IERC4626(vault).asset());
+        return address(IERC4626(vault()).asset());
     }
 
     /// @inheritdoc BaseForm
     function getVaultName() public view virtual override returns (string memory) {
-        return IERC4626(vault).name();
+        return IERC4626(vault()).name();
     }
 
     /// @inheritdoc BaseForm
     function getVaultSymbol() public view virtual override returns (string memory) {
-        return IERC4626(vault).symbol();
+        return IERC4626(vault()).symbol();
     }
 
     /// @inheritdoc BaseForm
     function getVaultDecimals() public view virtual override returns (uint256) {
-        return uint256(IERC4626(vault).decimals());
+        return uint256(IERC4626(vault()).decimals());
     }
 
     /// @inheritdoc BaseForm
     function getPricePerVaultShare() public view virtual override returns (uint256) {
-        uint256 vaultDecimals = IERC4626(vault).decimals();
-        return IERC4626(vault).convertToAssets(10 ** vaultDecimals);
+        uint256 vaultDecimals = IERC4626(vault()).decimals();
+        return IERC4626(vault()).convertToAssets(10 ** vaultDecimals);
     }
 
     /// @inheritdoc BaseForm
     function getVaultShareBalance() public view virtual override returns (uint256) {
-        return IERC4626(vault).balanceOf(address(this));
+        return IERC4626(vault()).balanceOf(address(this));
     }
 
     /// @inheritdoc BaseForm
     function getTotalAssets() public view virtual override returns (uint256) {
-        return IERC4626(vault).totalAssets();
+        return IERC4626(vault()).totalAssets();
     }
 
     /// @inheritdoc BaseForm
     function getPreviewPricePerVaultShare() public view virtual override returns (uint256) {
-        uint256 vaultDecimals = IERC4626(vault).decimals();
-        return IERC4626(vault).previewRedeem(10 ** vaultDecimals);
+        uint256 vaultDecimals = IERC4626(vault()).decimals();
+        return IERC4626(vault()).previewRedeem(10 ** vaultDecimals);
     }
 
     /// @inheritdoc BaseForm
     function previewDepositTo(uint256 assets_) public view virtual override returns (uint256) {
-        return IERC4626(vault).convertToShares(assets_);
+        return IERC4626(vault()).convertToShares(assets_);
     }
 
     /// @inheritdoc BaseForm
     function previewWithdrawFrom(uint256 assets_) public view virtual override returns (uint256) {
-        return IERC4626(vault).previewWithdraw(assets_);
+        return IERC4626(vault()).previewWithdraw(assets_);
     }
 
     /// @inheritdoc BaseForm
     function previewRedeemFrom(uint256 shares_) public view virtual override returns (uint256) {
-        return IERC4626(vault).previewRedeem(shares_);
+        return IERC4626(vault()).previewRedeem(shares_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -110,7 +111,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     function _processDirectDeposit(InitSingleVaultData memory singleVaultData_) internal returns (uint256 dstAmount) {
         directDepositLocalVars memory vars;
 
-        IERC4626 v = IERC4626(vault);
+        IERC4626 v = IERC4626(vault());
         vars.collateral = address(v.asset());
         vars.balanceBefore = IERC20(vars.collateral).balanceOf(address(this));
         IERC20 token = IERC20(singleVaultData_.liqData.token);
@@ -130,9 +131,9 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// @dev non empty txData means there is a swap needed before depositing (input asset not the same as vault
         /// asset)
         if (singleVaultData_.liqData.txData.length > 0) {
-            vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
+            vars.bridgeValidator = ISuperRegistry(superRegistry()).getBridgeValidator(singleVaultData_.liqData.bridgeId);
 
-            vars.chainId = CHAIN_ID;
+            vars.chainId = CHAIN_ID();
 
             vars.inputAmount =
                 IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
@@ -161,7 +162,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             );
 
             dispatchTokens(
-                superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
+                ISuperRegistry(superRegistry()).getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 address(token),
                 vars.inputAmount,
@@ -180,7 +181,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// @dev this is always the estimated value post any swaps (if they exist)
         /// @dev the balance check above implies that a certain dust may be left in the superform after depositing
         /// @dev the vault asset (collateral) is approved and deposited to the vault
-        IERC20(vars.collateral).safeIncreaseAllowance(vault, singleVaultData_.amount);
+        IERC20(vars.collateral).safeIncreaseAllowance(vault(), singleVaultData_.amount);
 
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
     }
@@ -209,7 +210,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// is this contract (before swap)
         v.receiver = v.len1 == 0 ? srcSender_ : address(this);
 
-        v.v = IERC4626(vault);
+        v.v = IERC4626(vault());
         v.collateral = address(v.v.asset());
 
         /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same as
@@ -220,13 +221,13 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         dstAmount = v.v.redeem(singleVaultData_.amount, v.receiver, address(this));
 
         if (v.len1 != 0) {
-            v.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
+            v.bridgeValidator = ISuperRegistry(superRegistry()).getBridgeValidator(singleVaultData_.liqData.bridgeId);
             v.amount = IBridgeValidator(v.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
             if (v.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
-            v.chainId = CHAIN_ID;
+            v.chainId = CHAIN_ID();
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(v.bridgeValidator).validateTxData(
@@ -243,7 +244,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             );
 
             dispatchTokens(
-                superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
+                ISuperRegistry(superRegistry()).getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
                 v.amount,
@@ -260,7 +261,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         returns (uint256 dstAmount)
     {
         (,, uint64 dstChainId) = singleVaultData_.superformId.getSuperform();
-        address vaultLoc = vault;
+        address vaultLoc = vault();
 
         IERC4626 v = IERC4626(vaultLoc);
 
@@ -308,7 +309,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// is this contract (before swap)
         vars.receiver = len == 0 ? srcSender_ : address(this);
 
-        IERC4626 v = IERC4626(vault);
+        IERC4626 v = IERC4626(vault());
         vars.collateral = v.asset();
 
         /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same as
@@ -319,7 +320,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         dstAmount = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
 
         if (len != 0) {
-            vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
+            vars.bridgeValidator = ISuperRegistry(superRegistry()).getBridgeValidator(singleVaultData_.liqData.bridgeId);
             vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
@@ -340,7 +341,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             );
 
             dispatchTokens(
-                superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
+                ISuperRegistry(superRegistry()).getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
                 vars.amount,
@@ -348,11 +349,11 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             );
         }
 
-        emit Processed(srcChainId_, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
+        emit Processed(srcChainId_, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault());
     }
 
     function _processEmergencyWithdraw(address refundAddress_, uint256 amount_) internal {
-        IERC4626 vaultContract = IERC4626(vault);
+        IERC4626 vaultContract = IERC4626(vault());
 
         if (vaultContract.balanceOf(address(this)) < amount_) {
             revert Error.EMERGENCY_WITHDRAW_INSUFFICIENT_BALANCE();
@@ -368,12 +369,12 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
     /// @inheritdoc BaseForm
     function superformYieldTokenName() external view virtual override returns (string memory) {
-        return string(abi.encodePacked("Superform ", IERC20Metadata(vault).name()));
+        return string(abi.encodePacked("Superform ", IERC20Metadata(vault()).name()));
     }
 
     /// @inheritdoc BaseForm
     function superformYieldTokenSymbol() external view virtual override returns (string memory) {
-        return string(abi.encodePacked("SUP-", IERC20Metadata(vault).symbol()));
+        return string(abi.encodePacked("SUP-", IERC20Metadata(vault()).symbol()));
     }
 
     /// @inheritdoc BaseForm
@@ -396,7 +397,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         override
         returns (uint256)
     {
-        return IERC4626(vault).convertToAssets(vaultSharesAmount_);
+        return IERC4626(vault()).convertToAssets(vaultSharesAmount_);
     }
 
     /// @inheritdoc BaseForm
@@ -410,7 +411,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         override
         returns (uint256)
     {
-        return IERC4626(vault).previewMint(vaultSharesAmount_);
+        return IERC4626(vault()).previewMint(vaultSharesAmount_);
     }
 
     /// @inheritdoc BaseForm
@@ -424,6 +425,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         override
         returns (uint256)
     {
-        return IERC4626(vault).convertToShares(underlyingAmount_);
+        return IERC4626(vault()).convertToShares(underlyingAmount_);
     }
 }

@@ -34,7 +34,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         address superRegistry = getContract(chainId, "SuperRegistry");
 
         /// @dev Deploying Forms
-        address formImplementation = address(new ERC4626Form(superRegistry));
+        address formImplementation = address(new ERC4626Form());
         uint32 formImplementationId = 0;
 
         /// @dev Vaults For The Superforms
@@ -65,7 +65,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         address superRegistry = getContract(chainId, "SuperRegistry");
 
         /// @dev Deploying Forms
-        address formImplementation = address(new ERC4626Form(superRegistry));
+        address formImplementation = address(new ERC4626Form());
         uint32 formImplementationId = 0;
 
         /// @dev Vaults For The Superforms
@@ -95,7 +95,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         address superRegistry = getContract(chainId, "SuperRegistry");
 
         /// @dev Deploying Forms
-        address formImplementation = address(new ERC4626Form(superRegistry));
+        address formImplementation = address(new ERC4626Form());
         uint32 formImplementationId = 0;
 
         /// @dev Vaults For The Superforms
@@ -126,7 +126,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         address superRegistry = getContract(chainId, "SuperRegistry");
 
         /// @dev Deploying Forms
-        address formImplementation = address(new ERC4626Form(superRegistry));
+        address formImplementation = address(new ERC4626Form());
         uint32 formImplementationId = 0;
 
         /// @dev Vaults For The Superforms
@@ -156,7 +156,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         address superRegistry = getContract(chainId, "SuperRegistry");
 
         /// @dev Deploying Forms
-        address formImplementation = address(new ERC4626Form(superRegistry));
+        address formImplementation = address(new ERC4626Form());
         uint32 formImplementationId = 0;
 
         /// @dev Vaults For The Superforms
@@ -186,7 +186,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         address superRegistry = getContract(chainId, "SuperRegistry");
 
         /// @dev Deploying Forms
-        address formImplementation = address(new ERC4626Form(superRegistry));
+        address formImplementation = address(new ERC4626Form());
         uint32 formImplementationId = 0;
 
         /// @dev Vaults For The Superforms
@@ -216,7 +216,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         address superRegistry = getContract(chainId, "SuperRegistry");
 
         /// @dev Deploying Forms
-        address formImplementation = address(new ERC4626Form(superRegistry));
+        address formImplementation = address(new ERC4626Form());
         uint32 formImplementationId = 0;
 
         /// @dev Vaults For The Superforms
@@ -246,7 +246,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         address superRegistry = getContract(chainId, "SuperRegistry");
 
         /// @dev Deploying Forms
-        address formImplementation = address(new ERC4626Form(superRegistry));
+        address formImplementation = address(new ERC4626Form());
         uint32 formImplementationId = 0;
 
         /// @dev Vaults For The Superforms
@@ -276,7 +276,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         address superRegistry = getContract(chainId, "SuperRegistry");
 
         /// @dev Deploying Forms
-        address formImplementation = address(new ERC4626Form(superRegistry));
+        address formImplementation = address(new ERC4626Form());
         uint32 formImplementationId = 0;
 
         /// @dev Vaults For The Superforms
@@ -306,7 +306,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         address superRegistry = getContract(chainId, "SuperRegistry");
 
         /// @dev Deploying Forms
-        address formImplementation = address(new ERC4626Form(superRegistry));
+        address formImplementation = address(new ERC4626Form());
         uint32 formImplementationId = 0;
 
         /// @dev Vaults For The Superforms
@@ -623,30 +623,6 @@ contract SuperformERC4626FormTest is ProtocolActions {
         IBaseForm(superform).xChainWithdrawFromVault(data, deployer, ARBI);
 
         vm.stopPrank();
-    }
-
-    function test_revert_baseForm_notSuperRegistry() public {
-        vm.startPrank(deployer);
-
-        vm.selectFork(FORKS[chainId]);
-
-        SuperformFactory superformFactory = SuperformFactory(getContract(chainId, "SuperformFactory"));
-
-        /// @dev Deploying Form with incorrect SuperRegistry
-        address formImplementation = address(new ERC4626Form(address(0x1)));
-        uint32 formImplementationId = 0;
-
-        /// @dev Vaults For The Superforms
-        MockERC20 asset = new MockERC20("Mock ERC20 Token", "Mock", address(this), uint256(1000));
-        VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
-
-        /// @dev Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
-        superformFactory.addFormImplementation(formImplementation, formImplementationId);
-
-        /// @dev should revert as superRegistry coming from SuperformFactory does not
-        /// match the one set in the ERC4626Form
-        vm.expectRevert(Error.NOT_SUPER_REGISTRY.selector);
-        superformFactory.createSuperform(formImplementationId, address(vault));
     }
 
     function test_directDepositInvalidData() public {

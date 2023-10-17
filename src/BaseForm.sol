@@ -1,7 +1,6 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.21;
 
-import { Initializable } from "openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import { ERC165 } from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
 import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 import { InitSingleVaultData } from "./types/DataTypes.sol";
@@ -11,11 +10,12 @@ import { Error } from "./utils/Error.sol";
 import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
 import { IEmergencyQueue } from "./interfaces/IEmergencyQueue.sol";
 import { DataLib } from "./libraries/DataLib.sol";
+import { Clone } from "clones-with-immutable-args/Clone.sol";
 
 /// @title BaseForm
 /// @author Zeropoint Labs.
 /// @dev Abstract contract to be inherited by different form implementations
-abstract contract BaseForm is Initializable, ERC165, IBaseForm {
+abstract contract BaseForm is Clone, ERC165, IBaseForm {
     using DataLib for uint256;
 
     /*///////////////////////////////////////////////////////////////
@@ -26,20 +26,6 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
 
     uint256 internal constant PRECISION = 10 ** PRECISION_DECIMALS;
 
-    uint64 public immutable CHAIN_ID;
-
-    /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev The superRegistry address is used to access relevant protocol addresses
-    ISuperRegistry public immutable superRegistry;
-
-    /// @dev the vault this form pertains to
-    address public vault;
-
-    uint32 public formImplementationId;
-
     /*///////////////////////////////////////////////////////////////
                             MODIFIERS
     //////////////////////////////////////////////////////////////*/
@@ -47,54 +33,56 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     modifier notPaused(InitSingleVaultData memory singleVaultData_) {
         (, uint32 formImplementationId_,) = singleVaultData_.superformId.getSuperform();
 
-        if (formImplementationId != formImplementationId_) revert Error.INVALID_SUPERFORMS_DATA();
+        if (formImplementationId() != formImplementationId_) revert Error.INVALID_SUPERFORMS_DATA();
 
         if (
-            ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
-                formImplementationId_
-            )
+            ISuperformFactory(ISuperRegistry(superRegistry()).getAddress(keccak256("SUPERFORM_FACTORY")))
+                .isFormImplementationPaused(formImplementationId_)
         ) revert Error.PAUSED();
         _;
     }
 
     modifier onlySuperRouter() {
-        if (superRegistry.getSuperformRouterId(msg.sender) == 0) revert Error.NOT_SUPER_ROUTER();
+        if (ISuperRegistry(superRegistry()).getSuperformRouterId(msg.sender) == 0) revert Error.NOT_SUPER_ROUTER();
         _;
     }
 
     modifier onlyCoreStateRegistry() {
-        if (superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")) != msg.sender) {
+        if (ISuperRegistry(superRegistry()).getAddress(keccak256("CORE_STATE_REGISTRY")) != msg.sender) {
             revert Error.NOT_CORE_STATE_REGISTRY();
         }
         _;
     }
 
     modifier onlyEmergencyQueue() {
-        if (msg.sender != superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))) {
+        if (msg.sender != ISuperRegistry(superRegistry()).getAddress(keccak256("EMERGENCY_QUEUE"))) {
             revert Error.NOT_EMERGENCY_QUEUE();
         }
         _;
     }
 
     /*///////////////////////////////////////////////////////////////
-                            INITIALIZATION
+                            IMMUTABLES
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address superRegistry_) {
-        CHAIN_ID = uint64(block.chainid);
-        superRegistry = ISuperRegistry(superRegistry_);
-
-        _disableInitializers();
+    /// @dev The superRegistry address is used to access relevant protocol addresses
+    function superRegistry() public pure returns (address) {
+        return _getArgAddress(0);
     }
 
-    /// @param superRegistry_        ISuperRegistry address deployed
-    /// @param vault_         The vault address this form pertains to
-    /// @dev sets caller as the admin of the contract.
-    function initialize(address superRegistry_, address vault_, uint32 formImplementationId_) external initializer {
-        if (ISuperRegistry(superRegistry_) != superRegistry) revert Error.NOT_SUPER_REGISTRY();
+    /// @dev the vault this form pertains to
+    function vault() public pure returns (address) {
+        return _getArgAddress(20);
+    }
 
-        formImplementationId = formImplementationId_;
-        vault = vault_;
+    /// @dev The chainId
+    function CHAIN_ID() public pure returns (uint64) {
+        return _getArgUint64(40);
+    }
+
+    /// @dev The formImplementationId
+    function formImplementationId() public pure returns (uint32) {
+        return _getArgUint32(48);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -134,7 +122,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         if (!_isPaused(singleVaultData_.superformId)) {
             dstAmount = _directWithdrawFromVault(singleVaultData_, srcSender_);
         } else {
-            IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
+            IEmergencyQueue(ISuperRegistry(superRegistry()).getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
                 singleVaultData_, srcSender_
             );
         }
@@ -169,7 +157,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         if (!_isPaused(singleVaultData_.superformId)) {
             dstAmount = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
         } else {
-            IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
+            IEmergencyQueue(ISuperRegistry(superRegistry()).getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
                 singleVaultData_, srcSender_
             );
         }
@@ -204,7 +192,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
 
     // @inheritdoc IBaseForm
     function getVaultAddress() external view override returns (address) {
-        return vault;
+        return vault();
     }
 
     /// @inheritdoc IBaseForm
@@ -283,11 +271,10 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     function _isPaused(uint256 superformId) internal view returns (bool) {
         (, uint32 formImplementationId_,) = superformId.getSuperform();
 
-        if (formImplementationId != formImplementationId_) revert Error.INVALID_SUPERFORMS_DATA();
+        if (formImplementationId() != formImplementationId_) revert Error.INVALID_SUPERFORMS_DATA();
 
-        return ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
-            formImplementationId_
-        );
+        return ISuperformFactory(ISuperRegistry(superRegistry()).getAddress(keccak256("SUPERFORM_FACTORY")))
+            .isFormImplementationPaused(formImplementationId_);
     }
 
     /// @dev Converts a vault share amount into an equivalent underlying asset amount
@@ -319,4 +306,19 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         view
         virtual
         returns (uint256);
+
+    /*///////////////////////////////////////////////////////////////
+                    INTERNAL EXTENSION TO CLONES
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Reads an immutable arg with type uint32
+    /// @param argOffset The offset of the arg in the packed data
+    /// @return arg The arg value
+    function _getArgUint32(uint256 argOffset) internal pure returns (uint32 arg) {
+        uint256 offset = _getImmutableArgsOffset();
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            arg := shr(0xe0, calldataload(add(offset, argOffset)))
+        }
+    }
 }

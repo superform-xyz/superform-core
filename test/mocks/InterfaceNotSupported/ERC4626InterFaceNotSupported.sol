@@ -11,7 +11,7 @@ contract ERC4626FormInterfaceNotSupported is ERC4626FormImplementationInterfaceN
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
-    constructor(address superRegistry_) ERC4626FormImplementationInterfaceNotSupported(superRegistry_, 1) { }
+    constructor() ERC4626FormImplementationInterfaceNotSupported(1) { }
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL OVERRIDES

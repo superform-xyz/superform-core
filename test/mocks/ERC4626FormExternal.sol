@@ -11,7 +11,7 @@ contract ERC4626FormExternal is ERC4626FormImplementation {
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
-    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_, 1) { }
+    constructor() ERC4626FormImplementation(1) { }
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL OVERRIDES
