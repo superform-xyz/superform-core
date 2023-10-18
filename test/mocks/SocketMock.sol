@@ -99,6 +99,6 @@ contract SocketMock is ISocketRegistry, Test {
             MockERC20(inputToken_).burn(address(this), amount_);
         }
         /// @dev assume no swap slippage
-        MockERC20(bridgeToken_).mint(address(this), amount_);
+        deal(bridgeToken_, address(this), amount_);
     }
 }
