@@ -119,17 +119,14 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         override
         onlyRole(PROTOCOL_ADMIN_ROLE)
     {
-        /// @dev revokeRoleSuperBroadcast cannot update the PROTOCOL_ADMIN_ROLE and EMERGENCY_ADMIN_ROLE
+        /// @dev revokeRoleSuperBroadcast cannot update the PROTOCOL_ADMIN_ROLE, EMERGENCY_ADMIN_ROLE, BROADCASTER_ROLE
+        /// and WORMHOLE_VAA_RELAYER_ROLE
         if (
-            !(
-                role_ == PROTOCOL_ADMIN_ROLE || role_ == EMERGENCY_ADMIN_ROLE || role_ == BROADCASTER_ROLE
-                    || role_ == WORMHOLE_VAA_RELAYER_ROLE
-            )
-        ) {
-            revokeRole(role_, addressToRevoke_);
-        } else {
-            revert Error.CANNOT_REVOKE_BROADCAST();
-        }
+            role_ == PROTOCOL_ADMIN_ROLE || role_ == EMERGENCY_ADMIN_ROLE || role_ == BROADCASTER_ROLE
+                || role_ == WORMHOLE_VAA_RELAYER_ROLE
+        ) revert Error.CANNOT_REVOKE_NON_BROADCASTABLE_ROLES();
+
+        revokeRole(role_, addressToRevoke_);
 
         if (extraData_.length > 0) {
             BroadcastMessage memory rolesPayload =
