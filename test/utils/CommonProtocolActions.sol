@@ -422,6 +422,55 @@ abstract contract CommonProtocolActions is BaseSetup {
                     LiFiMock.swapTokensGeneric.selector, bytes32(0), "", "", receiver_, 0, swapData
                 );
             }
+        } else if (liqBridgeKind_ == 2) {
+            /// @notice bridge id 2 doesn't support same chain swaps
+            if (sameChain_) {
+                revert();
+            }
+
+            ISocketRegistry.BridgeRequest memory bridgeRequest;
+            ISocketRegistry.MiddlewareRequest memory middlewareRequest;
+
+            /// @dev middlware request is used if there is a swap involved before the bridging action (external !=
+            /// underlying)
+            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of
+            /// bridging request
+            middlewareRequest = ISocketRegistry.MiddlewareRequest(
+                1,
+                /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
+                0,
+                /// @dev unused in tests
+                underlyingToken_,
+                abi.encode(from_)
+            );
+
+            /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
+            /// mainnet
+            bridgeRequest = ISocketRegistry.BridgeRequest(
+                1,
+                /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
+                0,
+                /// @dev unused in tests
+                underlyingToken_,
+                /// @dev initial token to extract will be externalToken in args, which is the actual
+                /// underlyingTokenDst for withdraws (check how the call is made in
+                /// _buildSingleVaultWithdrawCallData )
+                abi.encode(
+                    from_,
+                    FORKS[toChainId_],
+                    underlyingToken_,
+                    totalSlippage,
+                    false,
+                    0,
+                    uint256(USDPerUnderlyingToken),
+                    uint256(USDPerUnderlyingTokenDst)
+                )
+            );
+
+            txData = abi.encodeWithSelector(
+                SocketMock.outboundTransferTo.selector,
+                ISocketRegistry.UserRequest(receiver_, toChainId_, amount_, middlewareRequest, bridgeRequest)
+            );
         }
     }
 }
