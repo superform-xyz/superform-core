@@ -2246,6 +2246,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vm.selectFork(FORKS[targetChainId_]);
         bytes[] memory txDatas = new bytes[](underlyingTokensDst_.length);
 
+        for (uint256 i; i < liqBridgeKinds_.length; i++) {
+            liqBridgeKinds_[i] = 1;
+        }
+
         /// @dev liqData is rebuilt here to perform to send the tokens from dstSwapProcessor to CoreStateRegistry
         for (uint256 i = 0; i < underlyingTokensDst_.length; i++) {
             txDatas[i] = _buildLiqBridgeTxDataDstSwap(
@@ -2985,13 +2989,15 @@ abstract contract ProtocolActions is CommonProtocolActions {
         /// for xChain it should be less since some is used for xChain message
         assertLe(getContract(CHAIN_0, "PayMaster").balance, msgValue - liqValue);
 
-        for (uint256 i; i < vars.liqBridges.length; i++) {
+        uint256 bridgesNativeBal;
+        for (uint256 i; i < 3; i++) {
             /// asserting balance of lifi mock || socket mock || socket oneinch mock
-            address addressToCheck = vars.liqBridges[i] == 1
+            address addressToCheck = i == 1
                 ? getContract(CHAIN_0, "LiFiMock")
-                : vars.liqBridges[i] == 2 ? getContract(CHAIN_0, "SocketMock") : getContract(CHAIN_0, "SocketOneInchMock");
-            assertEq(addressToCheck.balance, liqValue);
+                : i == 2 ? getContract(CHAIN_0, "SocketMock") : getContract(CHAIN_0, "SocketOneInchMock");
+            bridgesNativeBal += addressToCheck.balance;
         }
+        assertEq(bridgesNativeBal, liqValue);
     }
 
     struct AssertAfterWithdrawVars {

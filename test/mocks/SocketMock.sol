@@ -7,8 +7,6 @@ import "forge-std/Test.sol";
 import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
 import "./MockERC20.sol";
 
-import "forge-std/console.sol";
-
 /// @title Socket Mock
 /// @dev eventually replace this by using a fork of the real registry contract
 contract SocketMock is ISocketRegistry, Test {
@@ -78,8 +76,6 @@ contract SocketMock is ISocketRegistry, Test {
         BridgeLocalVars memory vars;
         vars.prevForkId = vm.activeFork();
 
-        console.log(vars.prevForkId, "<---- fork id ---->");
-
         /// @dev decoding the data_
         (
             vars.from,
@@ -100,24 +96,13 @@ contract SocketMock is ISocketRegistry, Test {
             }
         }
 
-        console.log(amount_, "<--- initial amount --->");
-        console.log(vars.USDPerUnderlyingToken, "<--- usd per underlying token --->");
-        console.log(vars.USDPerUnderlyingTokenDst, "<--- usd per dst underlying token --->");
-
         vm.selectFork(vars.prevForkId);
         vars.decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
         vm.selectFork(vars.toForkId);
         vars.decimal2 = vars.outputToken == NATIVE ? 18 : MockERC20(vars.outputToken).decimals();
 
-        console.log(vars.decimal1, "<--- decimal 1 --->");
-        console.log(vars.decimal2, "<--- decimal 2 --->");
-
         if (vars.isMultiTx) vars.slippage = (vars.slippage * int256(vars.multiTxSlippageShare)) / 100;
         else vars.slippage = (vars.slippage * int256(100 - vars.multiTxSlippageShare)) / 100;
-
-        console.log(uint256(vars.slippage), "<--- slippage --->");
-
-        amount_ = (amount_ * uint256(10_000 - vars.slippage)) / 10_000;
 
         if (vars.decimal1 > vars.decimal2) {
             vars.finalAmount = (amount_ * vars.USDPerUnderlyingToken)
@@ -127,8 +112,8 @@ contract SocketMock is ISocketRegistry, Test {
                 / vars.USDPerUnderlyingTokenDst;
         }
 
-        console.log(vars.finalAmount, "<--- final amount after slippage --->");
-        console.log(vars.finalAmount, "<--- final amount --->");
+        /// @dev adding 1 for some rounding-off issues
+        vars.finalAmount = ((vars.finalAmount * uint256(10_000 - vars.slippage)) / 10_000 + 1);
         vm.selectFork(vars.toForkId);
 
         if (vars.outputToken != NATIVE) {
