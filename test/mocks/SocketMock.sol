@@ -7,9 +7,9 @@ import "forge-std/Test.sol";
 import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
 import "./MockERC20.sol";
 
-/// @title Socket Router Mock
+/// @title Socket Mock
 /// @dev eventually replace this by using a fork of the real registry contract
-contract SocketRouterMock is ISocketRegistry, Test {
+contract SocketMock is ISocketRegistry, Test {
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     receive() external payable { }

@@ -19,6 +19,7 @@ import { AggregatorV3Interface } from "../../src/vendor/chainlink/AggregatorV3In
 
 /// @dev test utils & mocks
 import { LiFiMock } from "../mocks/LiFiMock.sol";
+import { SocketMock } from "../mocks/SocketMock.sol";
 import { MockERC20 } from "../mocks/MockERC20.sol";
 import { VaultMock } from "../mocks/VaultMock.sol";
 import { VaultMockRevertDeposit } from "../mocks/VaultMockRevertDeposit.sol";
@@ -49,6 +50,7 @@ import { ERC4626TimelockForm } from "src/forms/ERC4626TimelockForm.sol";
 import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
 import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
+import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
 import { WormholeARImplementation } from
@@ -97,7 +99,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[29] public contractNames = [
+    string[30] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -106,6 +108,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         "WormholeARImplementation",
         "WormholeSRImplementation",
         "LiFiValidator",
+        "SocketValidator",
         "DstSwapper",
         "SuperformFactory",
         "ERC4626Form",
@@ -503,23 +506,35 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.ambAddresses[2] = vars.wormholeImplementation;
             vars.ambAddresses[3] = vars.wormholeSRImplementation;
 
-            /// @dev 7.1 deploy  LiFiRouterMock. This mock is a very minimal versions to allow
+            /// @dev 7.1.1 deploy  LiFiRouterMock. This mock is a very minimal versions to allow
             /// liquidity bridge testing
-
             vars.lifiRouter = address(new LiFiMock{salt: salt}());
             contracts[vars.chainId][bytes32(bytes("LiFiMock"))] = vars.lifiRouter;
             vm.allowCheatcodes(vars.lifiRouter);
 
-            /// @dev 7.2- deploy  lifi validator
+            /// @dev 7.1.2 deploy SocketRouterMock. This mock is a very minimal versions to allow
+            /// liquidity bridge testing
+            vars.socketRouter = address(new SocketMock{salt:salt}());
+            contracts[vars.chainId][bytes32(bytes("SocketMock"))] = vars.socketRouter;
+            vm.allowCheatcodes(vars.socketRouter);
+
+            /// @dev 7.2.1- deploy  lifi validator
             vars.lifiValidator = address(new LiFiValidator{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
+
+            /// @dev 7.2.2- deploy socket validator
+            vars.socketValidator = address(new SocketValidator{salt: salt}(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars.socketValidator;
 
             /// @dev 7.3- kycDAO NFT used to test kycDAO vaults
             vars.kycDAOMock = address(new KYCDaoNFTMock{salt: salt}());
             contracts[vars.chainId][bytes32(bytes("KYCDAOMock"))] = vars.kycDAOMock;
 
             bridgeAddresses.push(vars.lifiRouter);
+            bridgeAddresses.push(vars.socketRouter);
+
             bridgeValidators.push(vars.lifiValidator);
+            bridgeValidators.push(vars.socketValidator);
 
             /// @dev 8.1 - Deploy UNDERLYING_TOKENS and VAULTS
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
@@ -1083,8 +1098,11 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         priceFeeds[ARBI][BSC] = address(0);
         priceFeeds[ARBI][ETH] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
 
-        /// @dev setup bridges. 1 is lifi
+        /// @dev setup bridges.
+        /// 1 is lifi
+        /// 2 is socket
         bridgeIds.push(1);
+        bridgeIds.push(2);
 
         /// @dev setup users
         userKeys.push(1);
