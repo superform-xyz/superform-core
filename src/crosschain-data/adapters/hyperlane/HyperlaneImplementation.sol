@@ -21,21 +21,22 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
+    // this should hopefully never change again
     IMailbox public mailbox;
-    IInterchainGasPaymaster public igp;
     ISuperRegistry public immutable superRegistry;
 
+    // do you still need this? we are using chain ID everywhere now?
     mapping(uint64 => uint32) public ambChainId;
     mapping(uint32 => uint64) public superChainId;
     mapping(uint32 => address) public authorizedImpl;
 
+    // can you reuse mailbox.delivered() ?
     mapping(bytes32 => bool) public processedMessages;
 
     /*///////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
     event MailboxAdded(address _newMailbox);
-    event GasPayMasterAdded(address _igp);
 
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
@@ -60,13 +61,10 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
 
     /// @dev allows protocol admin to configure hyperlane mailbox and gas paymaster
     /// @param mailbox_ is the address of hyperlane mailbox
-    /// @param igp_ is the address of hyperlane gas paymaster
-    function setHyperlaneConfig(IMailbox mailbox_, IInterchainGasPaymaster igp_) external onlyProtocolAdmin {
+    function setHyperlaneConfig(IMailbox mailbox_) external onlyProtocolAdmin {
         mailbox = mailbox_;
-        igp = igp_;
 
         emit MailboxAdded(address(mailbox_));
-        emit GasPayMasterAdded(address(igp_));
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -90,11 +88,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         }
 
         uint32 domain = ambChainId[dstChainId_];
-        bytes32 messageId = mailbox.dispatch(domain, _castAddr(authorizedImpl[domain]), message_);
-
-        igp.payForGas{ value: msg.value }(
-            messageId, domain, extraData_.length > 0 ? abi.decode(extraData_, (uint256)) : 0, srcSender_
-        );
+        bytes32 messageId = mailbox.dispatch{msg.value}(domain, _castAddr(authorizedImpl[domain]), message_, extraData_);
     }
 
     /// @dev allows protocol admin to add new chain ids in future
@@ -150,18 +144,21 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
             revert Error.CALLER_NOT_MAILBOX();
         }
 
+        // why not reuse Router contract?
         if (sender_ != _castAddr(authorizedImpl[origin_])) {
             revert Error.INVALID_SRC_SENDER();
         }
 
         bytes32 hash = keccak256(body_);
 
+        // why not use mailbox.delivered() ?
         if (processedMessages[hash]) {
             revert Error.DUPLICATE_PAYLOAD();
         }
 
         processedMessages[hash] = true;
 
+        // you can use calldata slicing and possibly avoid memory copies
         /// @dev decoding payload
         AMBMessage memory decoded = abi.decode(body_, (AMBMessage));
 
@@ -180,7 +177,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /// @inheritdoc IAmbImplementation
     function estimateFees(
         uint64 dstChainId_,
-        bytes memory,
+        bytes memory message_,
         bytes memory extraData_
     )
         external
@@ -191,7 +188,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         uint32 domain = ambChainId[dstChainId_];
 
         if (domain != 0) {
-            fees = igp.quoteGasPayment(domain, abi.decode(extraData_, (uint256)));
+            fees = mailbox.quoteDispatch(dstChainId_, _message, extraData_);
         }
     }
 
