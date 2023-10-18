@@ -2210,6 +2210,11 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[targetChainId_]);
 
+        /// FIXME: for now all dst swaps go through LIFI
+        if (liqBridgeKind_ != 1) {
+            liqBridgeKind_ = 1;
+        }
+
         /// @dev liqData is rebuilt here to perform to send the tokens from dstSwapProcessor to CoreStateRegistry
         bytes memory txData = _buildLiqBridgeTxDataDstSwap(
             liqBridgeKind_,
@@ -2980,8 +2985,13 @@ abstract contract ProtocolActions is CommonProtocolActions {
         /// for xChain it should be less since some is used for xChain message
         assertLe(getContract(CHAIN_0, "PayMaster").balance, msgValue - liqValue);
 
-        /// asserting balance of lifi mock
-        assertEq(getContract(CHAIN_0, "LiFiMock").balance, liqValue);
+        for (uint256 i; i < vars.liqBridges.length; i++) {
+            /// asserting balance of lifi mock || socket mock || socket oneinch mock
+            address addressToCheck = vars.liqBridges[i] == 1
+                ? getContract(CHAIN_0, "LiFiMock")
+                : vars.liqBridges[i] == 2 ? getContract(CHAIN_0, "SocketMock") : getContract(CHAIN_0, "SocketOneInchMock");
+            assertEq(addressToCheck.balance, liqValue);
+        }
     }
 
     struct AssertAfterWithdrawVars {
@@ -3282,3 +3292,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
         console.log("Asserted after failed timelock withdraw");
     }
 }
+
+// 16807397149968096809680
+// 11001100110011001100
+// 10647964796479647964
+
+/// 11000000000000000000
+/// 11208418375469740126

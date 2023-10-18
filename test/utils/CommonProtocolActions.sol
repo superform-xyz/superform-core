@@ -167,9 +167,15 @@ abstract contract CommonProtocolActions is BaseSetup {
                 );
             }
         } else if (args.liqBridgeKind == 2) {
+            /// @notice bridge id 2 doesn't support same chain swaps
+            if (args.toChainId == args.srcChainId) {
+                revert();
+            }
+
             ISocketRegistry.BridgeRequest memory bridgeRequest;
             ISocketRegistry.MiddlewareRequest memory middlewareRequest;
             ISocketRegistry.UserRequest memory userRequest;
+
             /// @dev middlware request is used if there is a swap involved before the bridging action (external !=
             /// underlying)
             /// @dev the input token should be the token the user deposits, which will be swapped to the input token of
@@ -180,7 +186,7 @@ abstract contract CommonProtocolActions is BaseSetup {
                     /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
                     0,
                     /// @dev unused in tests
-                    args.underlyingToken,
+                    args.externalToken,
                     abi.encode(args.from)
                 );
                 /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
@@ -191,11 +197,20 @@ abstract contract CommonProtocolActions is BaseSetup {
                     /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
                     0,
                     /// @dev unused in tests
-                    args.withdraw ? args.externalToken : args.underlyingToken,
+                    args.externalToken,
                     /// @dev initial token to extract will be externalToken in args, which is the actual
                     /// underlyingTokenDst for withdraws (check how the call is made in
                     /// _buildSingleVaultWithdrawCallData )
-                    abi.encode(args.from, FORKS[args.liqDstChainId], args.underlyingTokenDst)
+                    abi.encode(
+                        args.from,
+                        FORKS[args.liqDstChainId],
+                        args.underlyingTokenDst,
+                        args.slippage,
+                        args.dstSwap,
+                        MULTI_TX_SLIPPAGE_SHARE,
+                        args.USDPerExternalToken,
+                        args.USDPerUnderlyingTokenDst
+                    )
                 );
                 /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
                 /// mainnet
@@ -204,21 +219,28 @@ abstract contract CommonProtocolActions is BaseSetup {
                     1,
                     /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
                     0,
-                    args.withdraw ? args.externalToken : args.underlyingToken,
+                    args.externalToken,
                     /// @dev initial token to extract will be externalToken in args, which is the actual
                     /// underlyingTokenDst for withdraws (check how the call is made in
                     /// _buildSingleVaultWithdrawCallData )
-                    abi.encode(args.from, FORKS[args.liqDstChainId], args.underlyingTokenDst)
+                    abi.encode(
+                        args.from,
+                        FORKS[args.liqDstChainId],
+                        args.underlyingTokenDst,
+                        args.slippage,
+                        args.dstSwap,
+                        MULTI_TX_SLIPPAGE_SHARE,
+                        args.USDPerExternalToken,
+                        args.USDPerUnderlyingTokenDst
+                    )
                 );
                 /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
                 /// mainnet
             }
 
+            /// @dev for cross-chain dstSwap actions, 1st liquidity dst is DstSwapper
             userRequest = ISocketRegistry.UserRequest(
-                args.dstSwap && args.srcChainId != args.toChainId
-                    ? getContract(args.toChainId, "DstSwapper")
-                    : args.toDst,
-                /// @dev for cross-chain multiTx actions, 1st liquidity dst is MultiTxProcessor
+                args.dstSwap ? getContract(args.toChainId, "DstSwapper") : args.toDst,
                 args.toChainId,
                 args.amount,
                 middlewareRequest,

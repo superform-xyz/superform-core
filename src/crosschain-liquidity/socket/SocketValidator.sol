@@ -41,7 +41,7 @@ contract SocketValidator is BridgeValidator {
         ISocketRegistry.UserRequest memory decodedReq = _decodeTxData(args_.txData);
 
         /// @dev 1. chain id validation (only allow xChain with this)
-        if (decodedReq.toChainId == uint256(args_.liqDstChainId)) revert Error.INVALID_TXDATA_CHAIN_ID();
+        if (decodedReq.toChainId != uint256(args_.liqDstChainId)) revert Error.INVALID_TXDATA_CHAIN_ID();
 
         /// @dev 2. receiver address validation
         if (args_.deposit) {
