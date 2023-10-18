@@ -52,6 +52,14 @@ interface IDstSwapper {
     )
         external;
 
+    function batchProcessFailedTx(
+        uint256 payloadId_,
+        uint256[] calldata superformIds_,
+        address[] calldata interimTokens_,
+        uint256[] calldata amounts_
+    )
+        external;
+
     /// @dev would interact with liquidity bridge contract to process multi-tx transactions and move the funds into
     /// destination
     /// contract.
