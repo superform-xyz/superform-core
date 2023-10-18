@@ -31,6 +31,10 @@ abstract contract LiquidityHandler {
         internal
         virtual
     {
+        if (bridge_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
+
         if (token_ != NATIVE) {
             IERC20 token = IERC20(token_);
 
