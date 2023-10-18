@@ -97,7 +97,9 @@ contract SocketOneInchValidator is BridgeValidator {
         pure
         returns (ISocketOneInchImpl.SwapInput memory swapInput)
     {
-        swapInput = abi.decode(_parseCallData(txData_), (ISocketOneInchImpl.SwapInput));
+        (address fromToken, address toToken, address receiver, uint256 amount, bytes memory swapExtraData) =
+            abi.decode(_parseCallData(txData_), (address, address, address, uint256, bytes));
+        swapInput = ISocketOneInchImpl.SwapInput(fromToken, toToken, receiver, amount, swapExtraData);
     }
 
     /// @dev helps parsing socket calldata and return the socket request
