@@ -8,8 +8,6 @@ import "test/utils/ProtocolActions.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
 import { SuperTransmuter } from "src/SuperTransmuter.sol";
 
-import "forge-std/console.sol";
-
 contract SuperformRouterSERC20Test is ProtocolActions {
     SuperformRouter superformRouterSERC20;
     SuperformRouter superformRouterSERC20Arbi;
@@ -561,9 +559,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         uint256 superformId1 = DataLib.packSuperform(superform1, FORM_IMPLEMENTATION_IDS[0], ARBI);
         uint256 superformId2 = DataLib.packSuperform(superform2, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
-        console.log(superformId1, "---- superform id 1 <inside public function>----");
-        console.log(superformId2, "---- superform id 2 <inside public function>----");
-
         uint256[] memory superformIds = new uint256[](2);
         superformIds[0] = superformId1;
         superformIds[1] = superformId2;
@@ -573,9 +568,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         SuperTransmuter transmuter = SuperTransmuter(getContract(ETH, "SuperTransmuter"));
 
         amounts[0] = sERC20(transmuter.synthethicTokenId(superformId1)).balanceOf(deployer);
-        console.log(amounts[0], "---- amounts 1 ----");
         amounts[1] = sERC20(transmuter.synthethicTokenId(superformId2)).balanceOf(deployer);
-        console.log(amounts[1], "---- amounts 2 ----");
 
         uint256[] memory maxSlippages = new uint256[](2);
         maxSlippages[0] = 1000;
@@ -1052,9 +1045,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         uint256 superformId1 = DataLib.packSuperform(superform1, FORM_IMPLEMENTATION_IDS[0], ARBI);
         uint256 superformId2 = DataLib.packSuperform(superform2, FORM_IMPLEMENTATION_IDS[0], ARBI);
-
-        console.log(superformId1, "---- superform id 1 <inside internal function>----");
-        console.log(superformId2, "---- superform id 2 <inside internal function>----");
 
         vm.selectFork(FORKS[ARBI]);
         _registerTransmuter(ARBI, superformId1, 1);
