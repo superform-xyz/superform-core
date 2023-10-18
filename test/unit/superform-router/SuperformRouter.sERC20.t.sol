@@ -919,9 +919,10 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
 
-        vm.selectFork(FORKS[ETH]);
+        _registerTransmuter(ETH, superformId, 1);
 
         vm.selectFork(FORKS[ETH]);
+
         vm.startPrank(deployer);
 
         SingleVaultSFData memory data = SingleVaultSFData(
@@ -969,9 +970,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         /// @dev incorrect chainId (should be ARBI)
         uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], POLY);
 
-        vm.selectFork(FORKS[ARBI]);
-
         vm.selectFork(FORKS[ETH]);
+
         vm.startPrank(deployer);
 
         SingleVaultSFData memory data = SingleVaultSFData(
@@ -1017,10 +1017,10 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         );
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
-
-        vm.selectFork(FORKS[ARBI]);
+        _registerTransmuter(ARBI, superformId, 1);
 
         vm.selectFork(FORKS[ETH]);
+
         vm.startPrank(deployer);
 
         SingleVaultSFData memory data = SingleVaultSFData(

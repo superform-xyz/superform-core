@@ -99,6 +99,9 @@ abstract contract StateSyncer is IStateSyncer {
     /// @inheritdoc IStateSyncer
     function stateSync(AMBMessage memory data_) external virtual override returns (uint64 srcChainId_);
 
+    function validateSingleIdExists(uint256 superformId_) public view virtual override;
+
+    function validateBatchIdsExist(uint256[] memory superformIds_) public view virtual override;
     /*///////////////////////////////////////////////////////////////
                         INTERNAL/HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/

@@ -58,6 +58,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
+        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).validateBatchIdsExist(req_.superformsData.superformIds);
+
         ActionLocalVars memory vars;
         InitMultiVaultData memory ambData;
 
@@ -179,6 +181,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     /// @dev handles same-chain single vault deposit
     function _singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq memory req_) internal virtual {
+        /// @dev for direct we don't check if stateSyncer has the correct superform share already created (e.g in
+        /// sERC20)
+        /// @dev the check is made when directly minting
+
         ActionLocalVars memory vars;
         vars.srcChainId = CHAIN_ID;
         vars.currentPayloadId = ++payloadIds;
@@ -202,6 +208,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     /// @dev handles same-chain multi vault deposit
     function _singleDirectMultiVaultDeposit(SingleDirectMultiVaultStateReq memory req_) internal virtual {
+        /// @dev for direct we don't check if stateSyncer has the correct superform share already created (e.g in
+        /// sERC20)
+        /// @dev the check is made when directly minting
+
         ActionLocalVars memory vars;
         vars.srcChainId = CHAIN_ID;
         vars.currentPayloadId = ++payloadIds;
@@ -361,6 +371,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     {
         /// @dev validate superformsData
         if (!_validateSuperformData(dstChainId_, superformData_)) revert Error.INVALID_SUPERFORMS_DATA();
+        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).validateSingleIdExists(superformData_.superformId);
 
         currentPayloadId = ++payloadIds;
 

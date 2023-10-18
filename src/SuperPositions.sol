@@ -241,6 +241,10 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
         emit Completed(returnData.payloadId);
     }
 
+    function validateSingleIdExists(uint256 superformId_) public view override(IStateSyncer, StateSyncer) { }
+
+    function validateBatchIdsExist(uint256[] memory superformIds_) public view override(IStateSyncer, StateSyncer) { }
+
     /*///////////////////////////////////////////////////////////////
                         PRIVILEGED FUNCTIONS
     //////////////////////////////////////////////////////////////*/
