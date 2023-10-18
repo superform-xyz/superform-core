@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
+
+import { Error } from "src/utils/Error.sol";
 
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
 import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
@@ -31,11 +33,44 @@ contract SocketValidator is BridgeValidator {
 
     /// @inheritdoc BridgeValidator
     function validateReceiver(bytes calldata txData_, address receiver) external pure override returns (bool) {
-        return (receiver == _decodeTxData(txData_).recipient);
+        return (receiver == _decodeTxData(txData_).receiverAddress);
     }
 
     /// @inheritdoc BridgeValidator
-    function validateTxData(ValidateTxDataArgs calldata args_) external view override { }
+    function validateTxData(ValidateTxDataArgs calldata args_) external view override {
+        ISocketRegistry.UserRequest memory decodedReq = _decodeTxData(args_.txData);
+
+        /// @dev 1. chain id validation
+        if (decodedReq.toChainId == uint256(args_.liqDstChainId)) revert Error.INVALID_TXDATA_CHAIN_ID();
+
+        /// @dev 2. receiver address validation
+        if (args_.deposit) {
+            if (args_.srcChainId == args_.dstChainId) {
+                revert Error.INVALID_ACTION();
+            } else {
+                /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry (or) Dst Swapper
+                if (
+                    !(
+                        decodedReq.receiverAddress
+                            == superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY"), args_.dstChainId)
+                            || decodedReq.receiverAddress
+                                == superRegistry.getAddressByChainId(keccak256("DST_SWAPPER"), args_.dstChainId)
+                    )
+                ) {
+                    revert Error.INVALID_TXDATA_RECEIVER();
+                }
+            }
+        } else {
+            /// @dev if withdraws, then receiver address must be the srcSender
+            if (decodedReq.receiverAddress != args_.srcSender) revert Error.INVALID_TXDATA_RECEIVER();
+        }
+
+        /// @dev FIXME: add  3. token validations
+        if (
+            (decodedReq.middlewareRequest.id == 0 && args_.liqDataToken != decodedReq.bridgeRequest.inputToken)
+                || (decodedReq.middlewareRequest.id != 0 && args_.liqDataToken != decodedReq.middlewareRequest.inputToken)
+        ) revert Error.INVALID_TXDATA_TOKEN();
+    }
 
     /// @inheritdoc BridgeValidator
     function decodeMinAmountOut(
@@ -71,14 +106,13 @@ contract SocketValidator is BridgeValidator {
     function _decodeTxData(bytes calldata txData_)
         internal
         pure
-        returns (ISocketRegistry.SocketRequest memory socketRequest)
+        returns (ISocketRegistry.UserRequest memory userRequest)
     {
-        socketRequest = abi.decode(_parseCallData(txData_), (ISocketRegistry.SocketRequest));
+        userRequest = abi.decode(_parseCallData(txData_), (ISocketRegistry.UserRequest));
     }
 
     /// @dev helps parsing socket calldata and return the socket request
     function _parseCallData(bytes calldata callData) internal pure returns (bytes memory) {
-        ISocketRegistry.UserRequest memory userRequest = abi.decode(callData[4:], (ISocketRegistry.UserRequest));
-        return userRequest.socketRequest;
+        return callData[4:];
     }
 }
