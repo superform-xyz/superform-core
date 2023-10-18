@@ -4,7 +4,10 @@ pragma solidity ^0.8.21;
 import "./BaseSetup.sol";
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
+import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
+
 import { LiFiMock } from "../mocks/LiFiMock.sol";
+import { SocketMock } from "../mocks/SocketMock.sol";
 
 abstract contract CommonProtocolActions is BaseSetup {
     /// @dev percentage of total slippage that is used for dstSwap
@@ -163,6 +166,66 @@ abstract contract CommonProtocolActions is BaseSetup {
                     LiFiMock.swapTokensGeneric.selector, bytes32(0), "", "", args.toDst, 0, swapData
                 );
             }
+        } else if (args.liqBridgeKind == 2) {
+            ISocketRegistry.BridgeRequest memory bridgeRequest;
+            ISocketRegistry.MiddlewareRequest memory middlewareRequest;
+            ISocketRegistry.UserRequest memory userRequest;
+            /// @dev middlware request is used if there is a swap involved before the bridging action (external !=
+            /// underlying)
+            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of
+            /// bridging request
+            if (args.externalToken != args.underlyingToken) {
+                middlewareRequest = ISocketRegistry.MiddlewareRequest(
+                    1,
+                    /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
+                    0,
+                    /// @dev unused in tests
+                    args.underlyingToken,
+                    abi.encode(args.from)
+                );
+                /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
+                /// mainnet
+
+                bridgeRequest = ISocketRegistry.BridgeRequest(
+                    1,
+                    /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
+                    0,
+                    /// @dev unused in tests
+                    args.withdraw ? args.externalToken : args.underlyingToken,
+                    /// @dev initial token to extract will be externalToken in args, which is the actual
+                    /// underlyingTokenDst for withdraws (check how the call is made in
+                    /// _buildSingleVaultWithdrawCallData )
+                    abi.encode(args.from, FORKS[args.liqDstChainId], args.underlyingTokenDst)
+                );
+                /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
+                /// mainnet
+            } else {
+                bridgeRequest = ISocketRegistry.BridgeRequest(
+                    1,
+                    /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
+                    0,
+                    args.withdraw ? args.externalToken : args.underlyingToken,
+                    /// @dev initial token to extract will be externalToken in args, which is the actual
+                    /// underlyingTokenDst for withdraws (check how the call is made in
+                    /// _buildSingleVaultWithdrawCallData )
+                    abi.encode(args.from, FORKS[args.liqDstChainId], args.underlyingTokenDst)
+                );
+                /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
+                /// mainnet
+            }
+
+            userRequest = ISocketRegistry.UserRequest(
+                args.dstSwap && args.srcChainId != args.toChainId
+                    ? getContract(args.toChainId, "DstSwapper")
+                    : args.toDst,
+                /// @dev for cross-chain multiTx actions, 1st liquidity dst is MultiTxProcessor
+                args.toChainId,
+                args.amount,
+                middlewareRequest,
+                bridgeRequest
+            );
+
+            txData = abi.encodeWithSelector(SocketMock.outboundTransferTo.selector, userRequest);
         }
     }
 
