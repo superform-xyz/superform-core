@@ -17,7 +17,6 @@ import { IERC4626Form } from "../../forms/interfaces/IERC4626Form.sol";
 import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
 import { Error } from "../../utils/Error.sol";
 import "../../interfaces/ICoreStateRegistry.sol";
-import "forge-std/console.sol";
 
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
@@ -26,6 +25,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     using SafeERC20 for IERC20;
     using DataLib for uint256;
     using ProofLib for AMBMessage;
+
+    /*///////////////////////////////////////////////////////////////
+                    Constants
+    //////////////////////////////////////////////////////////////*/
+    address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
@@ -325,7 +329,12 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             if (rescueInterim_) {
                 IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
                 (address interimToken,) = dstSwapper.getFailedSwap(payloadId_, superformIds[i]);
-                IERC20(interimToken).safeTransfer(refundAddress, amounts[i]);
+                if (interimToken == NATIVE) {
+                    (bool success,) = payable(refundAddress).call{ value: amounts[i] }("");
+                    if (!success) revert Error.NATIVE_TOKEN_TRANSFER_FAILURE();
+                } else {
+                    IERC20(interimToken).safeTransfer(refundAddress, amounts[i]);
+                }
             } else {
                 IERC20(IERC4626Form(form_).getVaultAsset()).safeTransfer(refundAddress, amounts[i]);
             }
@@ -453,6 +462,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         }
 
         uint256 validLen;
+        bool failedSwapQueued;
         uint256 arrLen = finalAmounts_.length;
 
         for (uint256 i; i < arrLen;) {
@@ -460,25 +470,33 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 revert Error.ZERO_AMOUNT();
             }
 
-            console.log("dstSwapper.swappedAmount(payloadId_, i)", dstSwapper.swappedAmount(payloadId_, i));
-            console.log("finalAmounts_[i]", finalAmounts_[i]);
+            failedSwapQueued = false;
             if (multiVaultData.hasDstSwaps[i]) {
                 if (dstSwapper.swappedAmount(payloadId_, i) != finalAmounts_[i]) {
-                    revert Error.INVALID_DST_SWAP_AMOUNT();
+                    (, uint256 amount) = dstSwapper.getFailedSwap(payloadId_, multiVaultData.superformIds[i]);
+                    if (amount != finalAmounts_[i]) {
+                        revert Error.INVALID_DST_SWAP_AMOUNT();
+                    } else {
+                        failedSwapQueued = true;
+                        multiVaultData.amounts[i] = 0;
+                        failedDeposits[payloadId_].superformIds.push(multiVaultData.superformIds[i]);
+                    }
                 }
             }
 
-            /// @dev validate payload update
-            if (
-                PayloadUpdaterLib.validateSlippage(
-                    finalAmounts_[i], multiVaultData.amounts[i], multiVaultData.maxSlippage[i]
-                )
-            ) {
-                multiVaultData.amounts[i] = finalAmounts_[i];
-                validLen++;
-            } else {
-                multiVaultData.amounts[i] = 0;
-                failedDeposits[payloadId_].superformIds.push(multiVaultData.superformIds[i]);
+            if (!failedSwapQueued) {
+                /// @dev validate payload update
+                if (
+                    PayloadUpdaterLib.validateSlippage(
+                        finalAmounts_[i], multiVaultData.amounts[i], multiVaultData.maxSlippage[i]
+                    )
+                ) {
+                    multiVaultData.amounts[i] = finalAmounts_[i];
+                    validLen++;
+                } else {
+                    multiVaultData.amounts[i] = 0;
+                    failedDeposits[payloadId_].superformIds.push(multiVaultData.superformIds[i]);
+                }
             }
 
             unchecked {
@@ -768,8 +786,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         for (uint256 i; i < numberOfVaults;) {
             underlying = IERC20(IBaseForm(superforms[i]).getVaultAsset());
 
-            console.log("underlying.balanceOf(address(this))", underlying.balanceOf(address(this)));
-            console.log("singleVaultData.amount", multiVaultData.amounts[i]);
             if (underlying.balanceOf(address(this)) >= multiVaultData.amounts[i]) {
                 underlying.safeIncreaseAllowance(superforms[i], multiVaultData.amounts[i]);
                 LiqRequest memory emptyRequest;
@@ -888,8 +904,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         IERC20 underlying = IERC20(IBaseForm(superform_).getVaultAsset());
 
-        console.log("underlying.balanceOf(address(this))", underlying.balanceOf(address(this)));
-        console.log("singleVaultData.amount", singleVaultData.amount);
         if (underlying.balanceOf(address(this)) >= singleVaultData.amount) {
             underlying.safeIncreaseAllowance(superform_, singleVaultData.amount);
 

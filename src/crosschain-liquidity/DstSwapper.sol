@@ -13,7 +13,6 @@ import { IERC4626Form } from "../forms/interfaces/IERC4626Form.sol";
 import { Error } from "../utils/Error.sol";
 import { DataLib } from "../libraries/DataLib.sol";
 import "../types/DataTypes.sol";
-import "forge-std/console.sol";
 
 /// @title DstSwapper
 /// @author Zeropoint Labs.
@@ -136,11 +135,6 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
 
         /// @dev if actual underlying is less than underlyingWith0Slippage_ adjusted
         /// with maxSlippage, invariant breaks
-        console.log("balanceAfter - balanceBefore", balanceAfter - balanceBefore);
-        console.log(
-            "((underlyingWith0Slippage_ * (10_000 - v.maxSlippage)) / 10_000)",
-            ((underlyingWith0Slippage_ * (10_000 - v.maxSlippage)) / 10_000)
-        );
         if (balanceAfter - balanceBefore < ((underlyingWith0Slippage_ * (10_000 - v.maxSlippage)) / 10_000)) {
             revert Error.MAX_SLIPPAGE_INVARIANT_BROKEN();
         }
@@ -175,7 +169,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     }
 
     /// @inheritdoc IDstSwapper
-    function failTx(
+    function processFailedTx(
         uint256 payloadId_,
         uint256 superformId_,
         address interimToken_,
@@ -204,6 +198,27 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         }
         /// @dev emits final event
         emit SwapFailed(payloadId_, superformId_, interimToken_, amount_);
+    }
+
+    /// @inheritdoc IDstSwapper
+    function batchProcessFailedTx(
+        uint256 payloadId_,
+        uint256[] calldata superformIds_,
+        address[] calldata interimTokens_,
+        uint256[] calldata amounts_
+    )
+        external
+        override
+        onlySwapper
+    {
+        uint256 len = superformIds_.length;
+        for (uint256 i; i < len;) {
+            processFailedTx(payloadId_, superformIds_[i], interimTokens_[i], amounts_[i]);
+
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     /// @inheritdoc IDstSwapper

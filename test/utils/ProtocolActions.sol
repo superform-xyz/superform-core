@@ -128,7 +128,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
     {
         console.log("new-action");
 
-        console.log("CHAIN_0", CHAIN_0);
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[CHAIN_0]);
         address token;
@@ -907,12 +906,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
                             payable(getContract(aV[i].toChainId, "CoreStateRegistry"))
                         ).payloadsCount();
 
-                        console.log("payloadCount", payloadCount);
-                        console.log("usedDSTs[aV[i].toChainId].payloadNumber", usedDSTs[aV[i].toChainId].payloadNumber);
-
                         PAYLOAD_ID[aV[i].toChainId] = payloadCount - usedDSTs[aV[i].toChainId].payloadNumber + 1;
 
-                        console.log("payloadId", PAYLOAD_ID[aV[i].toChainId]);
                         --usedDSTs[aV[i].toChainId].payloadNumber;
 
                         vars.multiVaultsPayloadArg = updateMultiVaultDepositPayloadArgs(
@@ -944,7 +939,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                                 (, vars.underlyingSrcToken, vars.underlyingDstToken,,) =
                                     _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
                                 vars.liqBridges = LIQ_BRIDGES[DST_CHAINS[i]][actionIndex];
-                                console.log("1");
 
                                 /// @dev dst swap is performed to ensure tokens reach CoreStateRegistry on deposits
                                 if (action.multiVaults) {
@@ -952,13 +946,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
                                     vars.underlyingWith0Slippages = new uint256[](vars.amounts.length);
                                     for (uint256 j = 0; j < vars.amounts.length; j++) {
-                                        console.log("1", j);
-                                        console.log("vars.underlyingDstToken[j]", vars.underlyingDstToken[j]);
-                                        console.log("vars.underlyingSrcToken[j]", vars.underlyingSrcToken[j]);
-                                        console.log(
-                                            "AMOUNTS[DST_CHAINS[i]][actionIndex][j]",
-                                            AMOUNTS[DST_CHAINS[i]][actionIndex][j]
-                                        );
                                         vars.underlyingWith0Slippages[j] = _updateAmountWithPricedSwapsAndSlippage(
                                             AMOUNTS[DST_CHAINS[i]][actionIndex][j],
                                             0,
@@ -970,7 +957,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                                             CHAIN_0,
                                             DST_CHAINS[i]
                                         );
-                                        console.log("2", j);
                                     }
                                     _batchProcessDstSwap(
                                         vars.liqBridges,
@@ -981,9 +967,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                                         action.slippage,
                                         vars.underlyingWith0Slippages
                                     );
-                                    console.log("3");
                                 } else {
-                                    console.log("4");
                                     vars.underlyingWith0Slippage = _updateAmountWithPricedSwapsAndSlippage(
                                         AMOUNTS[DST_CHAINS[i]][actionIndex][0],
                                         0,
@@ -995,7 +979,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                                         CHAIN_0,
                                         DST_CHAINS[i]
                                     );
-                                    console.log("5");
                                     _processDstSwap(
                                         vars.liqBridges[0],
                                         CHAIN_0,
@@ -1005,7 +988,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                                         action.slippage,
                                         vars.underlyingWith0Slippage
                                     );
-                                    console.log("6");
                                 }
                             }
 
@@ -1374,58 +1356,96 @@ abstract contract ProtocolActions is CommonProtocolActions {
         return amount_;
     }
 
+    struct RescueFailedDepositsVars {
+        address rescueToken;
+        uint256 userBalanceBefore;
+        address payable coreStateRegistryDst;
+        uint256[] rescueSuperformIds;
+        uint256[] amounts;
+        uint256 stuckAmount;
+        uint256 userBalanceAfter;
+    }
+
     /// @dev 'n' deposits rescued per payloadId per destination chain
     /// @dev TODO - Smit to add better comments
-    function _rescueFailedDeposits(TestAction memory action, uint256 actionIndex) internal {
+    /// @dev FIXME: asserts (stuckAmount) assume same underlyingTokenDsts for multi vaults
+    function _rescueFailedDeposits(
+        TestAction memory action,
+        uint256 actionIndex,
+        uint256 payloadId,
+        bool rescueInterim
+    )
+        internal
+    {
+        RescueFailedDepositsVars memory v;
+
         if (action.action == Actions.RescueFailedDeposit && action.testType == TestType.Pass) {
-            /// @dev currently testing rescuing deposits with dstSwap false
-            MULTI_TX_SLIPPAGE_SHARE = 0;
+            if (!action.dstSwap) {
+                MULTI_TX_SLIPPAGE_SHARE = 0;
+            } else {
+                MULTI_TX_SLIPPAGE_SHARE = 40;
+            }
 
             vm.selectFork(FORKS[DST_CHAINS[0]]);
-            uint256 userWethBalanceBefore =
-                MockERC20(getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2])).balanceOf(users[action.user]);
-            address payable coreStateRegistryDst = payable(getContract(DST_CHAINS[0], "CoreStateRegistry"));
 
-            uint256[] memory rescueSuperformIds;
-            (rescueSuperformIds,) = CoreStateRegistry(coreStateRegistryDst).getFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]]);
+            /// @dev interimToken can only be NATIVE for rescuing failedSwaps via DstSwapper
+            /// (which has rescueInterim true)
+            if (rescueInterim) {
+                v.rescueToken = action.externalToken == 3
+                    ? NATIVE_TOKEN
+                    : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[0]][0][0]]);
+                v.userBalanceBefore = action.externalToken == 3
+                    ? users[action.user].balance
+                    : MockERC20(v.rescueToken).balanceOf(users[action.user]);
+            } else {
+                v.rescueToken = getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[0]][0][0]]);
+                v.userBalanceBefore = MockERC20(v.rescueToken).balanceOf(users[action.user]);
+            }
+            v.coreStateRegistryDst = payable(getContract(DST_CHAINS[0], "CoreStateRegistry"));
 
-            uint256[] memory amounts = new uint256[](rescueSuperformIds.length);
+            if (payloadId == 0) {
+                payloadId = PAYLOAD_ID[DST_CHAINS[0]];
+            }
+            (v.rescueSuperformIds,) = CoreStateRegistry(v.coreStateRegistryDst).getFailedDeposits(payloadId);
+            v.amounts = new uint256[](v.rescueSuperformIds.length);
 
-            uint256 stuckAmount;
-            address[] memory rescueSuperforms;
-            (rescueSuperforms,,) = DataLib.getSuperforms(rescueSuperformIds);
-
-            for (uint256 i = 0; i < rescueSuperformIds.length; ++i) {
-                amounts[i] = _updateAmountWithPricedSwapsAndSlippage(
+            for (uint256 i = 0; i < v.rescueSuperformIds.length; ++i) {
+                v.amounts[i] = _updateAmountWithPricedSwapsAndSlippage(
                     AMOUNTS[DST_CHAINS[0]][actionIndex][i],
                     action.slippage,
-                    /// @dev TODO: generalise these tokens beyond WETH (which is the only token used for the 2 rescue
-                    /// cases, hence tests pass)
-                    getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2]),
-                    getContract(CHAIN_0, UNDERLYING_TOKENS[2]),
-                    getContract(CHAIN_0, UNDERLYING_TOKENS[2]),
+                    v.rescueToken,
+                    /// @dev note: assuming no src swaps i.e externalToken == underlyingToken
+                    action.externalToken == 3
+                        ? NATIVE_TOKEN
+                        : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
+                    action.externalToken == 3
+                        ? NATIVE_TOKEN
+                        : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
                     CHAIN_0,
                     DST_CHAINS[0]
                 );
-                stuckAmount += amounts[i];
+                v.stuckAmount += v.amounts[i];
             }
 
             vm.prank(deployer);
             vm.expectRevert(Error.INVALID_RESCUE_DATA.selector);
-            CoreStateRegistry(coreStateRegistryDst).proposeRescueFailedDeposits(
-                PAYLOAD_ID[DST_CHAINS[0]], new uint256[](0)
-            );
+            CoreStateRegistry(v.coreStateRegistryDst).proposeRescueFailedDeposits(payloadId, new uint256[](0));
 
             vm.prank(deployer);
-
-            CoreStateRegistry(coreStateRegistryDst).proposeRescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]], amounts);
+            CoreStateRegistry(v.coreStateRegistryDst).proposeRescueFailedDeposits(payloadId, v.amounts);
 
             vm.warp(block.timestamp + 12 hours);
-            CoreStateRegistry(coreStateRegistryDst).finalizeRescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]], false);
+            CoreStateRegistry(v.coreStateRegistryDst).finalizeRescueFailedDeposits(payloadId, rescueInterim);
 
-            uint256 userWethBalanceAfter =
-                MockERC20(getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2])).balanceOf(users[action.user]);
-            assertEq(userWethBalanceAfter, userWethBalanceBefore + stuckAmount);
+            if (rescueInterim) {
+                v.userBalanceAfter = action.externalToken == 3
+                    ? users[action.user].balance
+                    : MockERC20(v.rescueToken).balanceOf(users[action.user]);
+            } else {
+                v.userBalanceAfter = MockERC20(v.rescueToken).balanceOf(users[action.user]);
+            }
+
+            assertEq(v.userBalanceAfter, v.userBalanceBefore + v.stuckAmount);
         }
     }
 
@@ -2511,10 +2531,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     v.assertAmnt /= 10 ** (v.decimal2 - v.decimal1);
                 }
                 amounts[superformIds[i]] += v.assertAmnt;
-                console.log("amounts[superformIds[i]]", amounts[superformIds[i]]);
             }
         }
-        console.log("amounts[superformIds[0]]", amounts[superformIds[0]]);
 
         vm.selectFork(FORKS[CHAIN_0]);
         // 2. Perform your assertion logic
