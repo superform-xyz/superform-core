@@ -541,6 +541,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 if (amount != finalAmount_) {
                     revert Error.INVALID_DST_SWAP_AMOUNT();
                 } else {
+                    console.log("swappedAmount");
                     failedSwapQueued = true;
                     failedDeposits[payloadId_].superformIds.push(singleVaultData.superformId);
 
@@ -551,15 +552,18 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             }
         }
 
+        console.log("outside");
         /// @dev validate payload update
         if (!failedSwapQueued) {
             if (PayloadUpdaterLib.validateSlippage(finalAmount_, singleVaultData.amount, singleVaultData.maxSlippage)) {
+                console.log("validateSlippage");
                 /// @dev sets amount to zero and will mark the payload as UPDATED
                 singleVaultData.amount = finalAmount_;
                 finalState_ = PayloadState.UPDATED;
             } else {
                 failedDeposits[payloadId_].superformIds.push(singleVaultData.superformId);
 
+                console.log("failedSwapQueued");
                 /// @dev sets amount to zero and will mark the payload as PROCESSED
                 singleVaultData.amount = 0;
                 finalState_ = PayloadState.PROCESSED;

@@ -141,6 +141,72 @@ contract DstSwapperTest is ProtocolActions {
         DstSwapper(dstSwapper).processTx(1, 0, 1, txData, 1);
     }
 
+    function test_non_native_processFailedTx() public {
+        address payable dstSwapper = payable(getContract(OP, "DstSwapper"));
+        address payable coreStateRegistry = payable(getContract(OP, "CoreStateRegistry"));
+
+        vm.selectFork(FORKS[OP]);
+        // _simulateSingleVaultExistingPayload(coreStateRegistry);
+        uint256 superformId = _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry);
+
+        vm.startPrank(deployer);
+        // address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+        address weth = getContract(OP, "WETH");
+
+        // (bool success,) = payable(dstSwapper).call{ value: 1e18 }("");
+        deal(weth, dstSwapper, 1e18);
+
+        // if (success) {
+        // console.log("BEEF", coreStateRegistry.balance);
+        console.log("BEEF", IERC20(weth).balanceOf(coreStateRegistry));
+        DstSwapper(dstSwapper).processFailedTx(1, superformId, weth, 1e18);
+        console.log("AAAF", IERC20(weth).balanceOf(coreStateRegistry));
+        // console.log("AAAF", coreStateRegistry.balance);
+
+        /// @dev set quorum to 0 for simplicity in testing setup
+        SuperRegistry(getContract(OP, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
+
+        uint256[] memory finalAmounts = new uint256[](1);
+        finalAmounts[0] = 1e18;
+        CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, finalAmounts);
+        // } else {
+        //     revert();
+        // }
+
+        vm.stopPrank();
+
+        AMBs = [2, 3];
+        CHAIN_0 = ETH;
+        DST_CHAINS = [OP];
+
+        /// @dev define vaults amounts and slippage for every destination chain and for every action
+        TARGET_UNDERLYINGS[OP][0] = [2];
+        TARGET_VAULTS[OP][0] = [0];
+
+        /// @dev id 0 is normal 4626
+        TARGET_FORM_KINDS[OP][0] = [0];
+
+        AMOUNTS[OP][0] = [1e18];
+        MAX_SLIPPAGE = 1000;
+        LIQ_BRIDGES[OP][0] = [1];
+
+        actions.push(
+            TestAction({
+                action: Actions.RescueFailedDeposit,
+                multiVaults: false, //!!WARNING turn on or off multi vaults
+                user: 0,
+                testType: TestType.Pass,
+                revertError: "",
+                revertRole: "",
+                slippage: 100, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: true,
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
+             })
+        );
+
+        _rescueFailedDeposits(actions[0], 0);
+    }
+
     function test_failed_batch_process_tx() public {
         address payable dstSwapper = payable(getContract(ETH, "DstSwapper"));
         address payable coreStateRegistry = payable(getContract(ETH, "CoreStateRegistry"));
@@ -254,10 +320,13 @@ contract DstSwapperTest is ProtocolActions {
         DstSwapper(dstSwapper).processTx(1, 0, 1, txData, 1);
     }
 
-    function _simulateSingleVaultExistingPayload(address payable coreStateRegistry) internal {
+    function _simulateSingleVaultExistingPayload(address payable coreStateRegistry)
+        internal
+        returns (uint256 superformId)
+    {
         /// simulate an existing payload in csr
         address superform = getContract(ETH, string.concat("DAI", "VaultMock", "Superform", "1"));
-        uint256 superformId = DataLib.packSuperform(superform, 1, ETH);
+        superformId = DataLib.packSuperform(superform, 1, ETH);
 
         LiqRequest memory liq;
         vm.prank(getContract(ETH, "LayerzeroImplementation"));
@@ -270,6 +339,68 @@ contract DstSwapperTest is ProtocolActions {
                 )
             )
         );
+    }
+
+    function _simulateSingleVaultExistingPayloadOnOP(address payable coreStateRegistry)
+        internal
+        returns (uint256 superformId)
+    {
+        /// simulate an existing payload in csr
+        address superform = getContract(OP, string.concat("WETH", "VaultMock", "Superform", "1"));
+        superformId = DataLib.packSuperform(superform, 1, OP);
+
+        LiqRequest memory liq;
+        bytes memory message = abi.encode(
+            AMBMessage(
+                DataLib.packTxInfo(
+                    uint8(TransactionType.DEPOSIT),
+                    /// @dev TransactionType
+                    uint8(CallbackType.INIT),
+                    0,
+                    /// @dev isMultiVaults
+                    1,
+                    /// @dev STATE_REGISTRY_TYPE,
+                    getContract(ETH, "LayerzeroImplementation"),
+                    /// @dev srcSender,
+                    ETH
+                ),
+                abi.encode(InitSingleVaultData(1, 1, superformId, 1e18, 1000, true, liq, dstRefundAddress, bytes("")))
+            )
+        );
+
+        // bytes memory proof = abi.encode(
+        //     AMBMessage(
+        //         DataLib.packTxInfo(
+        //             uint8(TransactionType.DEPOSIT),
+        //             /// @dev TransactionType
+        //             uint8(CallbackType.INIT),
+        //             0,
+        //             /// @dev isMultiVaults
+        //             1,
+        //             /// @dev STATE_REGISTRY_TYPE,
+        //             getContract(ETH, "LayerzeroImplementation"),
+        //             /// @dev srcSender,
+        //             ETH
+        //         ),
+        //         abi.encode(
+        //             keccak256(
+        //                 abi.encode(
+        //                     InitSingleVaultData(1, 1, superformId, 1e18, 1000, true, liq, dstRefundAddress,
+        // bytes(""))
+        //                 )
+        //             )
+        //         )
+        //     )
+        // );
+
+        vm.prank(getContract(OP, "LayerzeroImplementation"));
+        CoreStateRegistry(coreStateRegistry).receivePayload(1, message);
+        // vm.prank(getContract(OP, "LayerzeroImplementation"));
+        // CoreStateRegistry(coreStateRegistry).receivePayload(1, proof);
+        // vm.prank(getContract(OP, "LayerzeroImplementation"));
+        // CoreStateRegistry(coreStateRegistry).receivePayload(1, proof);
+        // vm.prank(getContract(OP, "LayerzeroImplementation"));
+        // CoreStateRegistry(coreStateRegistry).receivePayload(1, proof);
     }
 
     function _simulateMultiVaultExistingPayload(address payable coreStateRegistry) internal {

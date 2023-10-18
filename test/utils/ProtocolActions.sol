@@ -1378,8 +1378,11 @@ abstract contract ProtocolActions is CommonProtocolActions {
     /// @dev TODO - Smit to add better comments
     function _rescueFailedDeposits(TestAction memory action, uint256 actionIndex) internal {
         if (action.action == Actions.RescueFailedDeposit && action.testType == TestType.Pass) {
-            /// @dev currently testing rescuing deposits with dstSwap false
-            MULTI_TX_SLIPPAGE_SHARE = 0;
+            if (!action.dstSwap) {
+                MULTI_TX_SLIPPAGE_SHARE = 0;
+            } else {
+                MULTI_TX_SLIPPAGE_SHARE = 40;
+            }
 
             vm.selectFork(FORKS[DST_CHAINS[0]]);
             uint256 userWethBalanceBefore =
@@ -1395,6 +1398,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             address[] memory rescueSuperforms;
             (rescueSuperforms,,) = DataLib.getSuperforms(rescueSuperformIds);
 
+            console.log("rescueSuperformIds.length", rescueSuperformIds.length);
             for (uint256 i = 0; i < rescueSuperformIds.length; ++i) {
                 amounts[i] = _updateAmountWithPricedSwapsAndSlippage(
                     AMOUNTS[DST_CHAINS[0]][actionIndex][i],

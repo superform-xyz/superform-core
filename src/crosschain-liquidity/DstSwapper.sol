@@ -175,7 +175,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     }
 
     /// @inheritdoc IDstSwapper
-    function failTx(
+    function processFailedTx(
         uint256 payloadId_,
         uint256 superformId_,
         address interimToken_,
