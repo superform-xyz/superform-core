@@ -8,6 +8,8 @@ import "test/utils/ProtocolActions.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
 import { SuperTransmuter } from "src/SuperTransmuter.sol";
 
+import "forge-std/console.sol";
+
 contract SuperformRouterSERC20Test is ProtocolActions {
     SuperformRouter superformRouterSERC20;
     SuperformRouter superformRouterSERC20Arbi;
@@ -559,21 +561,29 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         uint256 superformId1 = DataLib.packSuperform(superform1, FORM_IMPLEMENTATION_IDS[0], ARBI);
         uint256 superformId2 = DataLib.packSuperform(superform2, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
+        console.log(superformId1, "---- superform id 1 <inside public function>----");
+        console.log(superformId2, "---- superform id 2 <inside public function>----");
+
         uint256[] memory superformIds = new uint256[](2);
         superformIds[0] = superformId1;
         superformIds[1] = superformId2;
 
         uint256[] memory amounts = new uint256[](2);
-        amounts[0] = SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(deployer, superformId1);
-        amounts[1] = SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(deployer, superformId2);
+
+        SuperTransmuter transmuter = SuperTransmuter(getContract(ETH, "SuperTransmuter"));
+
+        amounts[0] = sERC20(transmuter.synthethicTokenId(superformId1)).balanceOf(deployer);
+        console.log(amounts[0], "---- amounts 1 ----");
+        amounts[1] = sERC20(transmuter.synthethicTokenId(superformId2)).balanceOf(deployer);
+        console.log(amounts[1], "---- amounts 2 ----");
 
         uint256[] memory maxSlippages = new uint256[](2);
         maxSlippages[0] = 1000;
         maxSlippages[1] = 1000;
 
         LiqRequest[] memory liqReqs = new LiqRequest[](2);
-        liqReqs[0] = LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0);
-        liqReqs[1] = LiqRequest(1, "", getContract(ETH, "WETH"), ETH, 0);
+        liqReqs[0] = LiqRequest(1, "", address(0), ETH, 0);
+        liqReqs[1] = LiqRequest(1, "", address(0), ETH, 0);
 
         MultiVaultSFData memory data =
             MultiVaultSFData(superformIds, amounts, maxSlippages, new bool[](2), liqReqs, "", refundAddress, "");
@@ -589,7 +599,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         vm.recordLogs();
 
         superformRouterSERC20.singleXChainMultiVaultWithdraw{ value: 2 ether }(req);
-
         vm.stopPrank();
 
         /// @dev mocks the cross-chain payload delivery
@@ -607,22 +616,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         vm.startPrank(deployer);
         vm.recordLogs();
         CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(2);
-        vm.stopPrank();
-
-        LayerZeroHelper(getContract(ARBI, "LayerZeroHelper")).helpWithEstimates(
-            LZ_ENDPOINTS[ETH],
-            1_000_000,
-            /// note: using some max limit
-            FORKS[ETH],
-            vm.getRecordedLogs()
-        );
-
-        vm.selectFork(FORKS[ETH]);
-
-        vm.startPrank(deployer);
-
-        (nativeAmount,) = PaymentHelper(getContract(ETH, "PaymentHelper")).estimateAckCost(2);
-        CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(2);
         vm.stopPrank();
     }
 
@@ -649,9 +642,9 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         superformIds[1] = superformId2;
 
         uint256[] memory amounts = new uint256[](2);
-        amounts[0] = MockERC20(SuperTransmuter(getContract(ETH, "SuperTransmuter")).synthethicTokenId(superformId1))
+        amounts[0] = sERC20(SuperTransmuter(getContract(ETH, "SuperTransmuter")).synthethicTokenId(superformId1))
             .balanceOf(deployer);
-        amounts[1] = MockERC20(SuperTransmuter(getContract(ETH, "SuperTransmuter")).synthethicTokenId(superformId2))
+        amounts[1] = sERC20(SuperTransmuter(getContract(ETH, "SuperTransmuter")).synthethicTokenId(superformId2))
             .balanceOf(deployer);
 
         uint256[] memory maxSlippages = new uint256[](2);
@@ -689,7 +682,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
-        uint256 amount = SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(deployer, superformId);
+        uint256 amount = sERC20(SuperTransmuter(getContract(ETH, "SuperTransmuter")).synthethicTokenId(superformId))
+            .balanceOf(deployer);
 
         uint256 maxSlippage = 1000;
         LiqRequest memory liqReq = LiqRequest(1, "", address(0), ETH, 0);
@@ -724,22 +718,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         vm.recordLogs();
         (uint256 nativeAmount,) = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(2);
         CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(2);
-        vm.stopPrank();
-
-        LayerZeroHelper(getContract(ARBI, "LayerZeroHelper")).helpWithEstimates(
-            LZ_ENDPOINTS[ETH],
-            1_000_000,
-            /// note: using some max limit
-            FORKS[ETH],
-            vm.getRecordedLogs()
-        );
-
-        vm.selectFork(FORKS[ETH]);
-
-        vm.startPrank(deployer);
-
-        (nativeAmount,) = PaymentHelper(getContract(ETH, "PaymentHelper")).estimateAckCost(2);
-        CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(2);
         vm.stopPrank();
     }
 
@@ -1074,6 +1052,9 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         uint256 superformId1 = DataLib.packSuperform(superform1, FORM_IMPLEMENTATION_IDS[0], ARBI);
         uint256 superformId2 = DataLib.packSuperform(superform2, FORM_IMPLEMENTATION_IDS[0], ARBI);
+
+        console.log(superformId1, "---- superform id 1 <inside internal function>----");
+        console.log(superformId2, "---- superform id 2 <inside internal function>----");
 
         vm.selectFork(FORKS[ARBI]);
         _registerTransmuter(ARBI, superformId1, 1);

@@ -603,13 +603,14 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         MockERC20(getContract(ETH, "DAI")).transfer(superform, 1e18);
         vm.stopPrank();
+
         bytes memory invalidTxData = abi.encode(1);
 
         InitSingleVaultData memory data = InitSingleVaultData(
             1,
             1,
             superformId,
-            1e18,
+            0.9e18,
             100,
             false,
             LiqRequest(1, invalidTxData, getContract(ETH, "WETH"), ARBI, 0),
