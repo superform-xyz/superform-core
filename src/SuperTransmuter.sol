@@ -351,6 +351,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
     function _deployTransmuter(bytes memory message_) internal {
         (,, uint256 superformId, string memory name, string memory symbol, uint8 decimal) =
             abi.decode(message_, (uint64, uint256, uint256, string, string, uint8));
+        if (synthethicTokenId[superformId] != address(0)) revert TRANSMUTER_ALREADY_REGISTERED();
 
         address syntheticToken = address(
             new sERC20(
