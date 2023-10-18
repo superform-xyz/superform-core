@@ -14,6 +14,15 @@ contract SocketOneInchMock is ISocketOneInchImpl, Test {
 
     receive() external payable { }
 
+    struct SwapLocalVars {
+        uint256 decimal1;
+        uint256 decimal2;
+        uint256 finalAmount;
+        address from;
+        uint256 USDPerUnderlyingToken;
+        uint256 USDPerUnderlyingTokenDst;
+    }
+
     function performDirectAction(
         address fromToken,
         address toToken,
@@ -24,15 +33,27 @@ contract SocketOneInchMock is ISocketOneInchImpl, Test {
         external
         payable
     {
-        (address from) = abi.decode(swapExtraData, (address));
+        SwapLocalVars memory vars;
+        (vars.from, vars.USDPerUnderlyingToken, vars.USDPerUnderlyingTokenDst) =
+            abi.decode(swapExtraData, (address, uint256, uint256));
 
         if (fromToken != NATIVE) {
-            MockERC20(fromToken).transferFrom(from, address(this), amount);
+            MockERC20(fromToken).transferFrom(vars.from, address(this), amount);
         } else {
             require(msg.value == amount);
         }
 
-        /// FIXME: account for slippage
-        deal(toToken, receiver, MockERC20(toToken).balanceOf(receiver) + amount);
+        vars.decimal1 = fromToken == NATIVE ? 18 : MockERC20(fromToken).decimals();
+        vars.decimal2 = toToken == NATIVE ? 18 : MockERC20(toToken).decimals();
+
+        if (vars.decimal1 > vars.decimal2) {
+            vars.finalAmount = (amount * vars.USDPerUnderlyingToken)
+                / (10 ** (vars.decimal1 - vars.decimal2) * vars.USDPerUnderlyingTokenDst);
+        } else {
+            vars.finalAmount = ((amount * vars.USDPerUnderlyingToken) * 10 ** (vars.decimal2 - vars.decimal1))
+                / vars.USDPerUnderlyingTokenDst;
+        }
+
+        deal(toToken, receiver, MockERC20(toToken).balanceOf(receiver) + vars.finalAmount);
     }
 }

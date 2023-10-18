@@ -150,6 +150,3 @@ contract SocketMock is ISocketRegistry, Test {
         }
     }
 }
-
-/// 16807397149968096809680
-/// 10647964796479647964

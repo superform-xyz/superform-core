@@ -8,6 +8,7 @@ import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
 
 import { LiFiMock } from "../mocks/LiFiMock.sol";
 import { SocketMock } from "../mocks/SocketMock.sol";
+import { SocketOneInchMock } from "../mocks/SocketOneInchMock.sol";
 
 abstract contract CommonProtocolActions is BaseSetup {
     /// @dev percentage of total slippage that is used for dstSwap
@@ -248,6 +249,15 @@ abstract contract CommonProtocolActions is BaseSetup {
             );
 
             txData = abi.encodeWithSelector(SocketMock.outboundTransferTo.selector, userRequest);
+        } else if (args.liqBridgeKind == 3) {
+            txData = abi.encodeWithSelector(
+                SocketOneInchMock.performDirectAction.selector,
+                args.externalToken,
+                args.underlyingToken,
+                args.toDst,
+                args.amount,
+                abi.encode(args.from, args.USDPerExternalToken, args.USDPerUnderlyingToken)
+            );
         }
     }
 
