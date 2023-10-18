@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 /// @dev lib imports
 import "forge-std/Test.sol";
@@ -63,6 +63,7 @@ import { TimelockStateRegistry } from "src/crosschain-data/extensions/TimelockSt
 import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
 import { PaymentHelper } from "src/payments/PaymentHelper.sol";
 import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { SuperTransmuter } from "src/SuperTransmuter.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import "src/types/DataTypes.sol";
@@ -385,11 +386,26 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             contracts[vars.chainId][bytes32(bytes("WormholeBroadcastHelper"))] = vars.wormholeBroadcastHelper;
 
             /// @dev 2 - Deploy SuperRBAC
-            vars.superRBAC = address(new SuperRBAC{salt: salt}(deployer));
+            vars.superRBAC = address(
+                new SuperRBAC{salt: salt}(ISuperRBAC.InitialRoleSetup({
+                        admin: deployer,
+                        emergencyAdmin: deployer,
+                        paymentAdmin: deployer,
+                        csrProcessor: deployer,
+                        tlProcessor: deployer,
+                        brProcessor: deployer,
+                        csrUpdater: deployer,
+                        srcVaaRelayer: vars.wormholeBroadcastHelper,
+                        dstSwapper: deployer,
+                        csrRescuer: deployer,
+                        csrDisputer: deployer
+                    }))
+            );
             contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars.superRBAC;
 
             vars.superRBACC = SuperRBAC(vars.superRBAC);
-            /// @dev 3 - Deploy SuperRegistry and assign roles
+
+            /// @dev 3 - Deploy SuperRegistry
             vars.superRegistry = address(new SuperRegistry{salt: salt}(vars.superRBAC));
             contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars.superRegistry;
             vars.superRegistryC = SuperRegistry(vars.superRegistry);
@@ -398,48 +414,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.superRegistryC.setPermit2(vars.canonicalPermit2);
 
             assert(vars.superRBACC.hasProtocolAdminRole(deployer));
-
-            vars.superRBACC.grantRole(vars.superRBACC.WORMHOLE_VAA_RELAYER_ROLE(), vars.wormholeBroadcastHelper);
-            assert(vars.superRBACC.hasRole(vars.superRBACC.WORMHOLE_VAA_RELAYER_ROLE(), vars.wormholeBroadcastHelper));
-
-            /// @dev FIXME: in reality who should have the EMERGENCY_ADMIN_ROLE?
-            vars.superRBACC.grantRole(vars.superRBACC.EMERGENCY_ADMIN_ROLE(), deployer);
-            assert(vars.superRBACC.hasEmergencyAdminRole(deployer));
-
-            /// @dev FIXME: in reality who should have the PAYMENT_ADMIN_ROLE?
-            vars.superRBACC.grantRole(vars.superRBACC.PAYMENT_ADMIN_ROLE(), deployer);
-            assert(vars.superRBACC.hasRole(vars.superRBACC.PAYMENT_ADMIN_ROLE(), deployer));
-
-            /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
-            vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), deployer);
-            assert(vars.superRBACC.hasRole(vars.superRBACC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), deployer));
-
-            /// @dev FIXME: in reality who should have the TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
-            vars.superRBACC.grantRole(vars.superRBACC.TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE(), deployer);
-            assert(vars.superRBACC.hasRole(vars.superRBACC.TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE(), deployer));
-
-            /// @dev FIXME: in reality who should have the BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
-            vars.superRBACC.grantRole(vars.superRBACC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), deployer);
-            assert(vars.superRBACC.hasRole(vars.superRBACC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), deployer));
-
-            /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_UPDATER_ROLE for state registry?
-            vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), deployer);
-            assert(vars.superRBACC.hasRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), deployer));
-
-            /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_RESCUER_ROLE for state registry?
-            vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_RESCUER_ROLE(), deployer);
-            assert(vars.superRBACC.hasRole(vars.superRBACC.CORE_STATE_REGISTRY_RESCUER_ROLE(), deployer));
-
-            /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_DISPUTER_ROLE for state registry?
-            vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_DISPUTER_ROLE(), deployer);
-            assert(vars.superRBACC.hasRole(vars.superRBACC.CORE_STATE_REGISTRY_DISPUTER_ROLE(), deployer));
-
-            /// @dev FIXME: in reality who should have the DST_SWAPPER_ROLE for dst swapper?
-            vars.superRBACC.grantRole(vars.superRBACC.DST_SWAPPER_ROLE(), deployer);
-            assert(vars.superRBACC.hasRole(vars.superRBACC.DST_SWAPPER_ROLE(), deployer));
-
-            vars.superRBACC.grantRole(vars.superRBACC.BROADCASTER_ROLE(), vars.superRBAC);
-            assert(vars.superRBACC.hasRole(vars.superRBACC.BROADCASTER_ROLE(), vars.superRBAC));
 
             /// @dev 4.1 - deploy Core State Registry
             vars.coreStateRegistry = address(
@@ -711,9 +685,12 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             /// @dev 16 setup setup srcChain keepers
             vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), deployer, vars.chainId);
             vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), deployer, vars.chainId);
-            vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_UPDATER(), deployer, vars.chainId);
             vars.superRegistryC.setAddress(vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR(), deployer, vars.chainId);
-            vars.superRegistryC.setAddress(vars.superRegistryC.TWO_STEPS_REGISTRY_PROCESSOR(), deployer, vars.chainId);
+            vars.superRegistryC.setAddress(vars.superRegistryC.TIMELOCK_REGISTRY_PROCESSOR(), deployer, vars.chainId);
+            vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_UPDATER(), deployer, vars.chainId);
+            vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_RESCUER(), deployer, vars.chainId);
+            vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_DISPUTER(), deployer, vars.chainId);
+            vars.superRegistryC.setAddress(vars.superRegistryC.DST_SWAPPER_PROCESSOR(), deployer, vars.chainId);
 
             /// @dev 17 deploy emergency queue
             vars.emergencyQueue = address(new EmergencyQueue(vars.superRegistry));
@@ -880,6 +857,12 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                         vars.dstChainId
                     );
 
+                    vars.superRegistryC.setAddress(
+                        vars.superRegistryC.EMERGENCY_QUEUE(),
+                        getContract(vars.dstChainId, "EmergencyQueue"),
+                        vars.dstChainId
+                    );
+
                     /// @dev FIXME - in mainnet who is this?
                     vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), deployer, vars.dstChainId);
                     vars.superRegistryC.setAddress(
@@ -892,7 +875,17 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                         vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR(), deployer, vars.dstChainId
                     );
                     vars.superRegistryC.setAddress(
-                        vars.superRegistryC.TWO_STEPS_REGISTRY_PROCESSOR(), deployer, vars.dstChainId
+                        vars.superRegistryC.TIMELOCK_REGISTRY_PROCESSOR(), deployer, vars.dstChainId
+                    );
+
+                    vars.superRegistryC.setAddress(
+                        vars.superRegistryC.CORE_REGISTRY_RESCUER(), deployer, vars.dstChainId
+                    );
+                    vars.superRegistryC.setAddress(
+                        vars.superRegistryC.CORE_REGISTRY_DISPUTER(), deployer, vars.dstChainId
+                    );
+                    vars.superRegistryC.setAddress(
+                        vars.superRegistryC.DST_SWAPPER_PROCESSOR(), deployer, vars.dstChainId
                     );
                 } else {
                     /// ack gas cost: 40000
@@ -1371,48 +1364,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         PaymentHelper paymentHelper;
         PayloadHelper payloadHelper;
         bytes message;
-    }
-
-    /// @dev Generates the acknowledgement amb params for the entire action
-    /// @dev TODO - Sujith to comment further
-    function _generateAckGasFeesAndParams(
-        uint64 srcChainId,
-        uint64 dstChainId,
-        uint8[] memory selectedAmbIds,
-        uint256 payloadId
-    )
-        internal
-        view
-        returns (uint256 msgValue, bytes memory ackData)
-    {
-        LocalAckVars memory vars;
-
-        vars.ambCount = selectedAmbIds.length;
-
-        bytes[] memory paramsPerAMB = new bytes[](vars.ambCount);
-        paramsPerAMB = _generateExtraData(selectedAmbIds);
-
-        uint256[] memory gasPerAMB = new uint256[](vars.ambCount);
-
-        address _payloadHelper = contracts[dstChainId][bytes32(bytes("PayloadHelper"))];
-        vars.payloadHelper = PayloadHelper(_payloadHelper);
-
-        (,,,, uint256[] memory amounts,, uint256[] memory superformIds,,) =
-            vars.payloadHelper.decodeCoreStateRegistryPayload(payloadId);
-
-        vars.message = abi.encode(
-            AMBMessage(2 ** 256 - 1, abi.encode(ReturnMultiData(2 ** 8 - 1, payloadId, superformIds, amounts)))
-        );
-
-        address _paymentHelper = contracts[dstChainId][bytes32(bytes("PaymentHelper"))];
-        vars.paymentHelper = PaymentHelper(_paymentHelper);
-
-        (vars.totalFees, gasPerAMB) =
-            vars.paymentHelper.estimateAMBFees(selectedAmbIds, srcChainId, abi.encode(vars.message), paramsPerAMB);
-
-        AMBExtraData memory extraData = AMBExtraData(gasPerAMB, paramsPerAMB);
-
-        return (vars.totalFees, abi.encode(AckAMBData(selectedAmbIds, abi.encode(extraData))));
     }
 
     /// @dev Generates the acknowledgement amb params for the entire action

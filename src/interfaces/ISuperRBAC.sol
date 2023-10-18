@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import { IAccessControl } from "openzeppelin-contracts/contracts/access/IAccessControl.sol";
 
@@ -7,6 +7,20 @@ import { IAccessControl } from "openzeppelin-contracts/contracts/access/IAccessC
 /// @author Zeropoint Labs.
 /// @dev interface for Super RBAC
 interface ISuperRBAC is IAccessControl {
+    struct InitialRoleSetup {
+        address admin;
+        address emergencyAdmin;
+        address paymentAdmin;
+        address csrProcessor;
+        address tlProcessor;
+        address brProcessor;
+        address csrUpdater;
+        address srcVaaRelayer;
+        address dstSwapper;
+        address csrRescuer;
+        address csrDisputer;
+    }
+
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/

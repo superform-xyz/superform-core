@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import { BaseRouter } from "./BaseRouter.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
@@ -508,16 +508,19 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             srcSender_
         );
 
-        /// @dev mint super positions at the end of the deposit action
-        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).mintSingle(
-            srcSender_, vaultData_.superformId, dstAmount
-        );
+        if (dstAmount != 0) {
+            /// @dev mint super positions at the end of the deposit action
+            IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).mintSingle(
+                srcSender_, vaultData_.superformId, dstAmount
+            );
+        }
     }
 
     struct MultiDepositLocalVars {
         uint256 len;
         address[] superforms;
         uint256[] dstAmounts;
+        bool mint;
     }
 
     /// @notice deposits to multiple vaults on the same chain
@@ -556,15 +559,21 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 srcSender_
             );
 
+            if (v.dstAmounts[i] > 0 && !v.mint) {
+                v.mint = true;
+            }
+
             unchecked {
                 ++i;
             }
         }
 
-        /// @dev in direct deposits, SuperPositions are minted right after depositing to vaults
-        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).mintBatch(
-            srcSender_, vaultData_.superformIds, v.dstAmounts
-        );
+        if (v.mint) {
+            /// @dev in direct deposits, SuperPositions are minted right after depositing to vaults
+            IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).mintBatch(
+                srcSender_, vaultData_.superformIds, v.dstAmounts
+            );
+        }
     }
 
     /// @notice fulfils the final stage of same chain deposit action
@@ -811,7 +820,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         for (uint256 i; i < len;) {
             /// @dev 10000 = 100% slippage
             if (superformsData_.maxSlippages[i] > 10_000) return false;
-            (, uint32 formImplementationId_, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
+            (,, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
             if (dstChainId_ != sfDstChainId) return false;
 
             unchecked {

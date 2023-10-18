@@ -1,5 +1,5 @@
 ///SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import { Initializable } from "openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import { ERC165 } from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
@@ -34,9 +34,6 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
 
     /// @dev The superRegistry address is used to access relevant protocol addresses
     ISuperRegistry public immutable superRegistry;
-
-    /// @dev The emergency queue is used to help users exit after forms are paused
-    IEmergencyQueue public emergencyQueue;
 
     /// @dev the vault this form pertains to
     address public vault;
@@ -73,7 +70,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     }
 
     modifier onlyEmergencyQueue() {
-        if (msg.sender != address(emergencyQueue)) {
+        if (msg.sender != superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))) {
             revert Error.NOT_EMERGENCY_QUEUE();
         }
         _;
@@ -96,10 +93,6 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     function initialize(address superRegistry_, address vault_, uint32 formImplementationId_) external initializer {
         if (ISuperRegistry(superRegistry_) != superRegistry) revert Error.NOT_SUPER_REGISTRY();
 
-        address emergencyQueue_ = superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"));
-        if (emergencyQueue_ == address(0)) revert Error.ZERO_ADDRESS();
-
-        emergencyQueue = IEmergencyQueue(emergencyQueue_);
         formImplementationId = formImplementationId_;
         vault = vault_;
     }
@@ -141,7 +134,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         if (!_isPaused(singleVaultData_.superformId)) {
             dstAmount = _directWithdrawFromVault(singleVaultData_, srcSender_);
         } else {
-            emergencyQueue.queueWithdrawal(singleVaultData_, srcSender_);
+            IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
+                singleVaultData_, srcSender_
+            );
         }
     }
 
@@ -174,7 +169,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         if (!_isPaused(singleVaultData_.superformId)) {
             dstAmount = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
         } else {
-            emergencyQueue.queueWithdrawal(singleVaultData_, srcSender_);
+            IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
+                singleVaultData_, srcSender_
+            );
         }
     }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import "test/utils/BaseSetup.sol";
 import "test/utils/Utilities.sol";
@@ -51,16 +51,6 @@ contract SuperTransmuterTest is BaseSetup {
             SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
         vm.expectRevert();
         superTransmuter.registerTransmuter(superformId, abi.encode(ambId, 1));
-    }
-
-    function test_registerTransmuter_invalidBroadcastRegistryAddress() public {
-        vm.prank(deployer);
-        SuperRegistry(getContract(ETH, "SuperRegistry")).setAddress(keccak256("BROADCAST_REGISTRY"), address(0), ETH);
-
-        (uint256 superformId,) =
-            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
-        vm.expectRevert();
-        superTransmuter.registerTransmuter(superformId, generateBroadcastParams(5, 1));
     }
 
     function test_withdrawFromInvalidChainId() public {

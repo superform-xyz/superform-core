@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 import { sERC20 } from "ERC1155A/transmuter/sERC20.sol";
@@ -40,17 +40,14 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         superRegistryC.setAddress(keccak256("SUPERFORM_ROUTER_SERC20"), address(superformRouterSERC20), ETH);
         superRegistryC.setAddress(keccak256("SUPER_TRANSMUTER_SYNCER"), address(superTransmuterSyncer), ETH);
 
-        uint8[] memory superformRouterIds = new uint8[](2);
-        superformRouterIds[0] = 1;
-        superformRouterIds[1] = 2;
+        uint8[] memory superformRouterIds = new uint8[](1);
+        superformRouterIds[0] = 2;
 
-        address[] memory stateSyncers = new address[](2);
-        stateSyncers[0] = getContract(ETH, "SuperPositions");
-        stateSyncers[1] = address(superTransmuterSyncer);
+        address[] memory stateSyncers = new address[](1);
+        stateSyncers[0] = address(superTransmuterSyncer);
 
-        address[] memory routers = new address[](2);
-        routers[0] = getContract(ETH, "SuperformRouter");
-        routers[1] = address(superformRouterSERC20);
+        address[] memory routers = new address[](1);
+        routers[0] = address(superformRouterSERC20);
 
         superRegistryC.setRouterInfo(superformRouterIds, stateSyncers, routers);
 
@@ -62,14 +59,11 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         superRegistryC.setAddress(keccak256("SUPERFORM_ROUTER_SERC20"), address(superformRouterSERC20Arbi), ARBI);
         superRegistryC.setAddress(keccak256("SUPER_TRANSMUTER_SYNCER"), address(superTransmuterSyncerArbi), ARBI);
 
-        superformRouterIds[0] = 1;
-        superformRouterIds[1] = 2;
+        superformRouterIds[0] = 2;
 
-        stateSyncers[0] = getContract(ARBI, "SuperPositions");
-        stateSyncers[1] = address(superTransmuterSyncerArbi);
+        stateSyncers[0] = address(superTransmuterSyncerArbi);
 
-        routers[0] = getContract(ARBI, "SuperformRouter");
-        routers[1] = address(superformRouterSERC20Arbi);
+        routers[0] = address(superformRouterSERC20Arbi);
 
         superRegistryC.setRouterInfo(superformRouterIds, stateSyncers, routers);
 
@@ -608,11 +602,13 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         );
         vm.selectFork(FORKS[ARBI]);
 
-        vm.startPrank(deployer);
+        (uint256 nativeAmount,) = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(2);
 
+        vm.startPrank(deployer);
         vm.recordLogs();
-        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: 10 ether }(2);
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(2);
         vm.stopPrank();
+
         LayerZeroHelper(getContract(ARBI, "LayerZeroHelper")).helpWithEstimates(
             LZ_ENDPOINTS[ETH],
             1_000_000,
@@ -625,7 +621,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         vm.startPrank(deployer);
 
-        CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload{ value: 10 ether }(2);
+        (nativeAmount,) = PaymentHelper(getContract(ETH, "PaymentHelper")).estimateAckCost(2);
+        CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(2);
         vm.stopPrank();
     }
 
@@ -695,7 +692,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         uint256 amount = SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(deployer, superformId);
 
         uint256 maxSlippage = 1000;
-        LiqRequest memory liqReq = LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0);
+        LiqRequest memory liqReq = LiqRequest(1, "", address(0), ETH, 0);
 
         SingleVaultSFData memory data =
             SingleVaultSFData(superformId, amount, maxSlippage, false, liqReq, "", refundAddress, "");
@@ -721,12 +718,12 @@ contract SuperformRouterSERC20Test is ProtocolActions {
             FORKS[ARBI],
             vm.getRecordedLogs()
         );
+
         vm.selectFork(FORKS[ARBI]);
-
         vm.startPrank(deployer);
-
         vm.recordLogs();
-        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: 10 ether }(2);
+        (uint256 nativeAmount,) = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(2);
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(2);
         vm.stopPrank();
 
         LayerZeroHelper(getContract(ARBI, "LayerZeroHelper")).helpWithEstimates(
@@ -741,7 +738,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         vm.startPrank(deployer);
 
-        CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload{ value: 10 ether }(2);
+        (nativeAmount,) = PaymentHelper(getContract(ETH, "PaymentHelper")).estimateAckCost(2);
+        CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(2);
         vm.stopPrank();
     }
 
@@ -1185,8 +1183,10 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(1, amounts);
 
         vm.recordLogs();
-        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: 10 ether }(1);
+        (uint256 nativeAmount,) = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(1);
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(1);
         vm.stopPrank();
+
         LayerZeroHelper(getContract(ARBI, "LayerZeroHelper")).helpWithEstimates(
             LZ_ENDPOINTS[ETH],
             1_000_000,
@@ -1200,7 +1200,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         vm.startPrank(deployer);
         SuperRegistry(getContract(ETH, "SuperRegistry")).setRequiredMessagingQuorum(ARBI, 0);
 
-        CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload{ value: 10 ether }(1);
+        (nativeAmount,) = PaymentHelper(getContract(ETH, "PaymentHelper")).estimateAckCost(1);
+        CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(1);
         vm.stopPrank();
     }
 
@@ -1392,7 +1393,9 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(1, updatedAmounts);
 
         vm.recordLogs();
-        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: 10 ether }(1);
+
+        (uint256 nativeAmount,) = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(1);
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(1);
         vm.stopPrank();
         LayerZeroHelper(getContract(ARBI, "LayerZeroHelper")).helpWithEstimates(
             LZ_ENDPOINTS[ETH],
@@ -1407,7 +1410,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         vm.startPrank(deployer);
         SuperRegistry(getContract(ETH, "SuperRegistry")).setRequiredMessagingQuorum(ARBI, 0);
 
-        CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload{ value: 10 ether }(1);
+        (nativeAmount,) = PaymentHelper(getContract(ETH, "PaymentHelper")).estimateAckCost(1);
+        CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(1);
         vm.stopPrank();
     }
 

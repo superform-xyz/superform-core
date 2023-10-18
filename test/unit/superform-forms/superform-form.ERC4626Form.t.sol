@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import { Error } from "src/utils/Error.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
@@ -7,7 +7,7 @@ import { MockERC20 } from "test/mocks/MockERC20.sol";
 import { VaultMock } from "test/mocks/VaultMock.sol";
 import { SuperformFactory } from "src/SuperformFactory.sol";
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
-import { ProtocolActions } from "test/utils/ProtocolActions.sol";
+import "test/utils/ProtocolActions.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
 import { SuperPositions } from "src/SuperPositions.sol";
@@ -693,6 +693,68 @@ contract SuperformERC4626FormTest is ProtocolActions {
         vm.expectRevert(Error.DIRECT_DEPOSIT_INVALID_DATA.selector);
         SuperformRouter(payable(superformRouter)).singleDirectMultiVaultDeposit{ value: 10 ether }(req);
         vm.stopPrank();
+    }
+
+    function test_successfulDeposit_insufficientAllowance() public {
+        /// scenario: user deposits with his own collateral and has approved enough tokens
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
+
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId, 1e18, 100, false, LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0), "", refundAddress, ""
+        );
+
+        SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
+
+        address router = getContract(ETH, "SuperformRouter");
+
+        vm.mockCall(
+            getContract(ETH, "DAI"),
+            abi.encodeWithSelector(IERC20(getContract(ETH, "DAI")).allowance.selector, router, superform),
+            abi.encode(0)
+        );
+        /// @dev approves before call
+        MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
+        vm.expectRevert(Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE.selector);
+        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
+
+        data = SingleVaultSFData(
+            superformId,
+            1e18,
+            100,
+            false,
+            LiqRequest(
+                1,
+                _buildDummyTxDataUnitTests(
+                    1,
+                    getContract(ETH, "DAI"),
+                    getContract(ETH, "DAI"),
+                    superform,
+                    ETH,
+                    1e18,
+                    getContract(ETH, "CoreStateRegistry"),
+                    false
+                ),
+                getContract(ETH, "DAI"),
+                ETH,
+                0
+            ),
+            "",
+            refundAddress,
+            ""
+        );
+        req = SingleDirectSingleVaultStateReq(data);
+        MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
+        vm.expectRevert(Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE.selector);
+        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
+
+        vm.clearMockedCalls();
     }
 
     /*///////////////////////////////////////////////////////////////

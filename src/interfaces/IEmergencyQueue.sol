@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import { InitSingleVaultData } from "../types/DataTypes.sol";
 
@@ -29,6 +29,10 @@ interface IEmergencyQueue {
     /// @dev alled by emergency admin to processed queued withdrawal
     /// @param id_ is the identifier of the queued action
     function executeQueuedWithdrawal(uint256 id_) external;
+
+    /// @dev called by emergency admin to batch process queued withdrawals
+    /// @param ids_ is the array of identifiers of the queued actions
+    function batchExecuteQueuedWithdrawal(uint256[] memory ids_) external;
 
     /*///////////////////////////////////////////////////////////////
                         VIEW/HELPER FUNCTIONS

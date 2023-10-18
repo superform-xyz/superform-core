@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import { BaseRouterImplementation } from "./BaseRouterImplementation.sol";
 import { BaseRouter } from "./BaseRouter.sol";

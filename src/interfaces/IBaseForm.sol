@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 import { InitSingleVaultData } from "../types/DataTypes.sol";
@@ -54,6 +54,7 @@ interface IBaseForm is IERC165 {
     /// @param srcSender_ The address of the sender of the transaction
     /// @param srcChainId_ The chain id of the source chain
     /// @return dstAmount  The amount of tokens deposited in same chain action
+    /// @dev is dstAmoutn is `0` then no further action/acknowledgement needs to be sent
     function xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,

@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import "test/utils/BaseSetup.sol";
 import "test/utils/Utilities.sol";
 
 import { DataLib } from "src/libraries/DataLib.sol";
-import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
-import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { SuperPositions } from "src/SuperPositions.sol";
 import { Error } from "src/utils/Error.sol";
 
@@ -60,6 +58,32 @@ contract SuperPositionsTest is BaseSetup {
 
         vm.broadcast(getContract(ETH, "CoreStateRegistry"));
         vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
+        superPositions.stateSync(maliciousMessage);
+    }
+
+    function test_revert_stateSync_NotMinterStateRegistry() public {
+        uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
+        ReturnSingleData memory maliciousReturnData = ReturnSingleData(1, 0, 1, 100);
+        AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
+
+        vm.broadcast(getContract(ETH, "SuperformRouter"));
+        vm.expectRevert(Error.NOT_MINTER_STATE_REGISTRY_ROLE.selector);
+        superPositions.stateSync(maliciousMessage);
+    }
+
+    function test_revert_stateSync_NotMinterStateRegistry_InvalidRegistryId() public {
+        uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
+        address superform = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
+
+        ReturnSingleData memory maliciousReturnData = ReturnSingleData(1, 0, superformId, 100);
+        AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
+
+        vm.broadcast(getContract(ETH, "TimelockStateRegistry"));
+        vm.expectRevert(Error.NOT_MINTER_STATE_REGISTRY_ROLE.selector);
         superPositions.stateSync(maliciousMessage);
     }
 

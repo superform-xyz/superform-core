@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 /// @title ISuperRegistry
 /// @author Zeropoint Labs.
@@ -54,6 +54,7 @@ interface ISuperRegistry {
     function setAddress(bytes32 id_, address newAddress_, uint64 chainId_) external;
 
     /// @dev allows admin to set the bridge address for an bridge id.
+    /// @notice this function operates in an APPEND-ONLY fashion.
     /// @param bridgeId_         represents the bridge unqiue identifier.
     /// @param bridgeAddress_    represents the bridge address.
     /// @param bridgeValidator_  represents the bridge validator address.
@@ -65,6 +66,7 @@ interface ISuperRegistry {
         external;
 
     /// @dev allows admin to set the amb address for an amb id.
+    /// @notice this function operates in an APPEND-ONLY fashion.
     /// @param ambId_         represents the bridge unqiue identifier.
     /// @param ambAddress_    represents the bridge address.
     /// @param isBroadcastAMB_ represents whether the amb implementation supports broadcasting
@@ -76,11 +78,13 @@ interface ISuperRegistry {
         external;
 
     /// @dev allows admin to set the state registry address for an state registry id.
+    /// @notice this function operates in an APPEND-ONLY fashion.
     /// @param registryId_    represents the state registry's unqiue identifier.
     /// @param registryAddress_    represents the state registry's address.
     function setStateRegistryAddress(uint8[] memory registryId_, address[] memory registryAddress_) external;
 
     /// @dev allows admin to set the superform routers info
+    /// @notice this function operates in an APPEND-ONLY fashion.
     /// @param superformRouterIds_    represents the superform router's unqiue identifier.
     /// @param stateSyncers_    represents the state syncer's address.
     /// @param routers_    represents the router's address.
@@ -134,11 +138,14 @@ interface ISuperRegistry {
     /// @dev returns the id of the payload helper module
     function PAYLOAD_HELPER() external view returns (bytes32);
 
+    /// @dev returns the id of the dst swapper keeper
+    function DST_SWAPPER() external view returns (bytes32);
+
+    /// @dev returns the id of the emergency queue
+    function EMERGENCY_QUEUE() external view returns (bytes32);
+
     /// @dev returns the id of the payment admin keeper
     function PAYMENT_ADMIN() external view returns (bytes32);
-
-    /// @dev returns the id of the core state registry updater keeper
-    function CORE_REGISTRY_UPDATER() external view returns (bytes32);
 
     /// @dev returns the id of the core state registry processor keeper
     function CORE_REGISTRY_PROCESSOR() external view returns (bytes32);
@@ -147,13 +154,19 @@ interface ISuperRegistry {
     function BROADCAST_REGISTRY_PROCESSOR() external view returns (bytes32);
 
     /// @dev returns the id of the two steps form state registry processor keeper
-    function TWO_STEPS_REGISTRY_PROCESSOR() external view returns (bytes32);
+    function TIMELOCK_REGISTRY_PROCESSOR() external view returns (bytes32);
 
-    /// @dev returns the id of the emergency queue
-    function EMERGENCY_QUEUE() external view returns (bytes32);
+    /// @dev returns the id of the core state registry updater keeper
+    function CORE_REGISTRY_UPDATER() external view returns (bytes32);
 
-    /// @dev returns the id of the dst swapper keeper
-    function DST_SWAPPER() external view returns (bytes32);
+    /// @dev returns the id of the core state registry updater keeper
+    function CORE_REGISTRY_RESCUER() external view returns (bytes32);
+
+    /// @dev returns the id of the core state registry updater keeper
+    function CORE_REGISTRY_DISPUTER() external view returns (bytes32);
+
+    /// @dev returns the id of the core state registry updater keeper
+    function DST_SWAPPER_PROCESSOR() external view returns (bytes32);
 
     /// @dev gets the address of a contract on current chain
     /// @param id_ is the id of the contract

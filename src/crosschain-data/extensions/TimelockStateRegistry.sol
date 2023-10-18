@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
-import { ReentrancyGuard } from "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
+import { ReentrancyGuard } from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 import { IBaseForm } from "../../interfaces/IBaseForm.sol";
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
 import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
