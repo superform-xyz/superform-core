@@ -112,7 +112,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         "WormholeSRImplementation",
         "LiFiValidator",
         "SocketValidator",
-        "SocketOneInchValidator",
         "DstSwapper",
         "SuperformFactory",
         "ERC4626Form",
@@ -133,7 +132,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         "LiFiMock",
         "KYCDAOMock",
         "CanonicalPermit2",
-        "EmergencyQueue"
+        "EmergencyQueue",
+        "SocketOneInchValidator"
     ];
 
     /*//////////////////////////////////////////////////////////////
