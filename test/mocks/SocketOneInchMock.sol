@@ -9,7 +9,7 @@ import { ISocketOneInchImpl } from "src/vendor/socket/ISocketOneInchImpl.sol";
 
 /// @title Socket OneInch Mock
 /// @dev eventually replace this by using a fork of the real registry contract
-contract SockeOneInchMock is ISocketOneInchImpl, Test {
+contract SocketOneInchMock is ISocketOneInchImpl, Test {
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     receive() external payable { }
