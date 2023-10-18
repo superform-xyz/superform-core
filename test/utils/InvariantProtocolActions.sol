@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import "./CommonProtocolActions.sol";
 import { IPermit2 } from "src/vendor/dragonfly-xyz/IPermit2.sol";
@@ -1451,7 +1451,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         uint256 payloadId_,
         uint64 srcChainId_,
         uint64 targetChainId_,
-        uint8[] memory AMBs,
+        uint8[] memory,
         TestType testType
     )
         internal
@@ -1461,11 +1461,10 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         vm.selectFork(FORKS[targetChainId_]);
 
         uint256 nativeFee;
-        bytes memory ackAmbParams;
 
         /// @dev only generate if acknowledgement is needed
         if (targetChainId_ != srcChainId_) {
-            (nativeFee, ackAmbParams) = _generateAckGasFeesAndParams(srcChainId_, targetChainId_, AMBs, payloadId_);
+            (nativeFee,) = PaymentHelper(getContract(targetChainId_, "PaymentHelper")).estimateAckCost(payloadId_);
         }
 
         vm.prank(deployer);

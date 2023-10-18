@@ -1,9 +1,9 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import { ReentrancyGuard } from "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
+import { ReentrancyGuard } from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 import { IDstSwapper } from "../interfaces/IDstSwapper.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";

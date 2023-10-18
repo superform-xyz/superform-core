@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { AMBExtraData, BroadCastAMBExtraData } from "src/types/DataTypes.sol";
 
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 function generateBroadcastParams(uint256 dstCount, uint256 ambCount) pure returns (bytes memory) {
     /// @dev TODO - Sujith to comment

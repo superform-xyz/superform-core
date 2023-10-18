@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -272,7 +272,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         /// @dev This makes ERC4626Form (address(this)) owner of v.shares
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
-        
+
         emit Processed(srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
     }
 

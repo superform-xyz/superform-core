@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import { SuperformFactory } from "src/SuperformFactory.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
@@ -48,7 +48,9 @@ contract SuperformFactoryAddImplementationTest is BaseSetup {
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
             formImplementation1, formImplementationId
         );
-
+        address imp =
+            SuperformFactory(getContract(chainId, "SuperformFactory")).getFormImplementation(formImplementationId);
+        assertEq(imp, formImplementation1);
         vm.expectRevert(Error.FORM_IMPLEMENTATION_ID_ALREADY_EXISTS.selector);
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
             formImplementation2, formImplementationId

@@ -1,5 +1,5 @@
 ///SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import { AMBMessage } from "./types/DataTypes.sol";
 import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
@@ -125,7 +125,6 @@ abstract contract StateSyncer is IStateSyncer {
         if (registryId_ == 0) {
             revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
         }
-
         // If registryId is 1, no further checks are necessary.
         if (registryId_ == 1) {
             return;

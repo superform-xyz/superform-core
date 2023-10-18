@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 /// @dev lib imports
 import "forge-std/Test.sol";
@@ -1364,48 +1364,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         PaymentHelper paymentHelper;
         PayloadHelper payloadHelper;
         bytes message;
-    }
-
-    /// @dev Generates the acknowledgement amb params for the entire action
-    /// @dev TODO - Sujith to comment further
-    function _generateAckGasFeesAndParams(
-        uint64 srcChainId,
-        uint64 dstChainId,
-        uint8[] memory selectedAmbIds,
-        uint256 payloadId
-    )
-        internal
-        view
-        returns (uint256 msgValue, bytes memory ackData)
-    {
-        LocalAckVars memory vars;
-
-        vars.ambCount = selectedAmbIds.length;
-
-        bytes[] memory paramsPerAMB = new bytes[](vars.ambCount);
-        paramsPerAMB = _generateExtraData(selectedAmbIds);
-
-        uint256[] memory gasPerAMB = new uint256[](vars.ambCount);
-
-        address _payloadHelper = contracts[dstChainId][bytes32(bytes("PayloadHelper"))];
-        vars.payloadHelper = PayloadHelper(_payloadHelper);
-
-        (,,,, uint256[] memory amounts,, uint256[] memory superformIds,,) =
-            vars.payloadHelper.decodeCoreStateRegistryPayload(payloadId);
-
-        vars.message = abi.encode(
-            AMBMessage(2 ** 256 - 1, abi.encode(ReturnMultiData(2 ** 8 - 1, payloadId, superformIds, amounts)))
-        );
-
-        address _paymentHelper = contracts[dstChainId][bytes32(bytes("PaymentHelper"))];
-        vars.paymentHelper = PaymentHelper(_paymentHelper);
-
-        (vars.totalFees, gasPerAMB) =
-            vars.paymentHelper.estimateAMBFees(selectedAmbIds, srcChainId, abi.encode(vars.message), paramsPerAMB);
-
-        AMBExtraData memory extraData = AMBExtraData(gasPerAMB, paramsPerAMB);
-
-        return (vars.totalFees, abi.encode(AckAMBData(selectedAmbIds, abi.encode(extraData))));
     }
 
     /// @dev Generates the acknowledgement amb params for the entire action
