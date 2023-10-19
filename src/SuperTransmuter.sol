@@ -156,6 +156,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         override(IStateSyncer, StateSyncer)
         onlyMinter(id_)
     {
+        validateSingleIdExists(id_);
         sERC20(synthethicTokenId[id_]).mint(srcSender_, amount_);
     }
 
@@ -170,6 +171,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         onlyBatchMinter(ids_)
     {
         uint256 len = ids_.length;
+        validateBatchIdsExist(ids_);
         for (uint256 i; i < len;) {
             sERC20(synthethicTokenId[ids_[i]]).mint(srcSender_, amounts_[i]);
 
@@ -189,6 +191,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         override(IStateSyncer, StateSyncer)
         onlyBurner
     {
+        validateSingleIdExists(id_);
         sERC20(synthethicTokenId[id_]).burn(srcSender_, amount_);
     }
 
@@ -203,6 +206,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         onlyBurner
     {
         uint256 len = ids_.length;
+        validateBatchIdsExist(ids_);
 
         /// @dev note each allowance check in burn needs to pass. Since we burn atomically (on SuperformRouter level),
         /// if this loop fails, tx reverts right in the 1st stage
@@ -234,6 +238,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         ReturnMultiData memory returnData = abi.decode(data_.params, (ReturnMultiData));
         if (returnData.superformRouterId != ROUTER_TYPE) revert Error.INVALID_PAYLOAD();
         _validateStateSyncer(returnData.superformIds);
+        validateBatchIdsExist(returnData.superformIds);
 
         uint256 txInfo = txHistory[returnData.payloadId];
         address srcSender;
@@ -288,6 +293,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         ReturnSingleData memory returnData = abi.decode(data_.params, (ReturnSingleData));
         if (returnData.superformRouterId != ROUTER_TYPE) revert Error.INVALID_PAYLOAD();
         _validateStateSyncer(returnData.superformId);
+        validateSingleIdExists(returnData.superformId);
 
         uint256 txInfo = txHistory[returnData.payloadId];
         uint256 txType;
@@ -327,6 +333,21 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
 
         if (transmuterPayload.messageType == DEPLOY_NEW_TRANSMUTER) {
             _deployTransmuter(transmuterPayload.message);
+        }
+    }
+
+    function validateSingleIdExists(uint256 superformId_) public view override(IStateSyncer, StateSyncer) {
+        if (synthethicTokenId[superformId_] == address(0)) revert Error.TRANSMUTER_NOT_REGISTERED();
+    }
+
+    function validateBatchIdsExist(uint256[] memory superformIds_) public view override(IStateSyncer, StateSyncer) {
+        uint256 len = superformIds_.length;
+        for (uint256 i; i < len;) {
+            if (synthethicTokenId[superformIds_[i]] == address(0)) revert Error.TRANSMUTER_NOT_REGISTERED();
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
