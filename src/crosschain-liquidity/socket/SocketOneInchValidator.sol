@@ -59,19 +59,6 @@ contract SocketOneInchValidator is BridgeValidator {
     }
 
     /// @inheritdoc BridgeValidator
-    function decodeMinAmountOut(
-        bytes calldata txData_,
-        bool genericSwapDisallowed_
-    )
-        external
-        view
-        override
-        returns (uint256 amount_)
-    {
-        revert();
-    }
-
-    /// @inheritdoc BridgeValidator
     function decodeAmountIn(
         bytes calldata txData_,
         bool genericSwapDisallowed_

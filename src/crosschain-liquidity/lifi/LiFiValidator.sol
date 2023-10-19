@@ -118,35 +118,6 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
     }
 
     /// @inheritdoc BridgeValidator
-    function decodeMinAmountOut(
-        bytes calldata txData_,
-        bool genericSwapDisallowed_
-    )
-        external
-        view
-        override
-        returns (uint256 amount_)
-    {
-        try this.extractMainParameters(txData_) returns (
-            string memory, /*bridge*/
-            address, /*sendingAssetId*/
-            address, /*receiver*/
-            uint256, /*amount*/
-            uint256 minAmount,
-            uint256, /*destinationChainId*/
-            bool, /*hasSourceSwaps*/
-            bool /*hasDestinationCall*/
-        ) {
-            /// @dev try is just used here to validate the txData. We need to always extract minAmount from bridge data
-            amount_ = minAmount;
-        } catch {
-            if (genericSwapDisallowed_) revert Error.INVALID_ACTION();
-            /// @dev in the case of a generic swap, minAmountOut is considered to be the receivedAmount
-            (,,,, amount_) = extractGenericSwapParameters(txData_);
-        }
-    }
-
-    /// @inheritdoc BridgeValidator
     function decodeAmountIn(
         bytes calldata txData_,
         bool genericSwapDisallowed_

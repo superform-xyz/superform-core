@@ -52,17 +52,6 @@ abstract contract BridgeValidator is IBridgeValidator {
     function validateTxData(ValidateTxDataArgs calldata args_) external view virtual override;
 
     /// @inheritdoc IBridgeValidator
-    function decodeMinAmountOut(
-        bytes calldata txData_,
-        bool genericSwapDisallowed_
-    )
-        external
-        view
-        virtual
-        override
-        returns (uint256 amount_);
-
-    /// @inheritdoc IBridgeValidator
     function decodeAmountIn(
         bytes calldata txData_,
         bool genericSwapDisallowed_

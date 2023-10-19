@@ -254,7 +254,6 @@ contract PayloadHelperMultiTest is ProtocolActions {
             v.tokens,
             v.liqDstChainIds,
             v.amounts,
-            ,
             v.nativeAmounts,
             v.hasDstSwaps,
             v.dstRefundAddress
