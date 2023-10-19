@@ -73,7 +73,9 @@ contract SocketOneInchValidator is BridgeValidator {
 
     /// @inheritdoc BridgeValidator
     function decodeDstSwap(bytes calldata txData_) external pure override returns (address token_, uint256 amount_) {
-        revert();
+        ISocketOneInchImpl.SwapInput memory swapInput = _decodeTxData(txData_);
+        token_ = swapInput.fromToken;
+        amount_ = swapInput.amount;
     }
 
     /*///////////////////////////////////////////////////////////////

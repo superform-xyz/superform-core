@@ -331,7 +331,7 @@ abstract contract CommonProtocolActions is BaseSetup {
                 SocketOneInchMock.performDirectAction.selector,
                 sendingTokenDst_,
                 receivingTokenDst_,
-                toChainId_,
+                getContract(toChainId_, "CoreStateRegistry"),
                 amount_,
                 abi.encode(from_, uint256(USDPerSendingTokenDst), uint256(USDPerReceivingTokenDst))
             );
