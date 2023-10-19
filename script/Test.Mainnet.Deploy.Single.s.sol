@@ -28,6 +28,8 @@ contract TestMainnetDeploySingle is AbstractDeploySingle {
 
     /// @dev stage 2 must be called only after stage 1 is complete for all chains!
     function deployStage2(uint256 selectedChainIndex) external {
+        _preDeploymentSetup();
+
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {
             if (SELECTED_CHAIN_IDS[selectedChainIndex] == chainIds[i]) {

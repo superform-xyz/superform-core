@@ -116,7 +116,7 @@ abstract contract AbstractDeploySingle is Script {
         "EmergencyQueue"
     ];
 
-    bytes32 constant salt = "SUPERFORM_2ND_AUDIT_FREEZE";
+    bytes32 constant salt = "SUPERFORM_TENTATIVE_DEPLOYMENT2";
 
     enum Chains {
         Ethereum,
@@ -330,7 +330,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRBAC = address(
             new SuperRBAC{salt: salt}(ISuperRBAC.InitialRoleSetup({
                         admin: ownerAddress,
-                        emergencyAdmin: ownerAddress,
+                        emergencyAdmin: ownerAddress, /// @dev NOTE this should be 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490, but must be ownerAddress on deployment
                         paymentAdmin: 0xD911673eAF0D3e15fe662D58De15511c5509bAbB,
                         csrProcessor: 0x23c658FE050B4eAeB9401768bF5911D11621629c,
                         tlProcessor: ownerAddress,
@@ -594,7 +594,6 @@ abstract contract AbstractDeploySingle is Script {
         vars.paymentHelper = _readContract(chainNames[trueIndex], vars.chainId, "PaymentHelper");
         vars.superRegistryC =
             SuperRegistry(payable(_readContract(chainNames[trueIndex], vars.chainId, "SuperRegistry")));
-
         /// @dev Set all trusted remotes for each chain & configure amb chains ids
         for (uint256 j = 0; j < s_superFormChainIds.length; j++) {
             if (j != i) {
@@ -619,7 +618,6 @@ abstract contract AbstractDeploySingle is Script {
                     _readContract(chainNames[dstTrueIndex], vars.dstChainId, "WormholeARImplementation");
                 vars.dstWormholeSRImplementation =
                     _readContract(chainNames[dstTrueIndex], vars.dstChainId, "WormholeSRImplementation");
-
                 LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
                     vars.dstLzChainId, abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
                 );
@@ -726,7 +724,7 @@ abstract contract AbstractDeploySingle is Script {
 
                 vars.superRegistryC.setAddress(
                     vars.superRegistryC.BROADCAST_REGISTRY(),
-                    getContract(vars.dstChainId, "BroadcastRegistry"),
+                    _readContract(chainNames[dstTrueIndex], vars.dstChainId, "BroadcastRegistry"),
                     vars.dstChainId
                 );
 
@@ -822,14 +820,41 @@ abstract contract AbstractDeploySingle is Script {
         lzEndpointsStorage[FTM] = FTM_lzEndpoint;
 
         mapping(uint64 chainId => address[] bridgeAddresses) storage bridgeAddresses = BRIDGE_ADDRESSES;
-        bridgeAddresses[ETH] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
-        bridgeAddresses[BSC] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
-        bridgeAddresses[AVAX] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
-        bridgeAddresses[POLY] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
-        bridgeAddresses[ARBI] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
-        bridgeAddresses[OP] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
-
-        bridgeAddresses[FTM] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
+        bridgeAddresses[ETH] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
+            0x2ddf16BA6d0180e5357d5e170eF1917a01b41fc0
+        ];
+        bridgeAddresses[BSC] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
+            0xd286595d2e3D879596FAB51f83A702D10a6db27b
+        ];
+        bridgeAddresses[AVAX] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            0x2b42AFFD4b7C14d9B7C2579229495c052672Ccd3,
+            0xbDf50eAe568ECef74796ed6022a0d453e8432410
+        ];
+        bridgeAddresses[POLY] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
+            0x2ddf16BA6d0180e5357d5e170eF1917a01b41fc0
+        ];
+        bridgeAddresses[ARBI] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
+            0xaa3d9fA3aB930aE635b001d00C612aa5b14d750e
+        ];
+        bridgeAddresses[OP] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
+            0xbDf50eAe568ECef74796ed6022a0d453e8432410
+        ];
+        bridgeAddresses[FTM] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
+            0x957301825Dc21d4A92919C9E72dC9E6C6a29e7f8
+        ];
 
         /// price feeds on all chains
         mapping(uint64 => mapping(uint64 => address)) storage priceFeeds = PRICE_FEEDS;

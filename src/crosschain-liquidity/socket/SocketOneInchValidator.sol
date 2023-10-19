@@ -20,8 +20,8 @@ contract SocketOneInchValidator is BridgeValidator {
     //////////////////////////////////////////////////////////////*/
     /// @inheritdoc BridgeValidator
     function validateLiqDstChainId(
-        bytes calldata txData_,
-        uint64 liqDstChainId_
+        bytes calldata, /*txData_*/
+        uint64 /*liqDstChainId_*/
     )
         external
         pure
@@ -37,7 +37,7 @@ contract SocketOneInchValidator is BridgeValidator {
     }
 
     /// @inheritdoc BridgeValidator
-    function validateTxData(ValidateTxDataArgs calldata args_) external view override {
+    function validateTxData(ValidateTxDataArgs calldata args_) external pure override {
         ISocketOneInchImpl.SwapInput memory decodedReq = _decodeTxData(args_.txData);
 
         /// @dev 1. chain id validation (only allow samechain with this)
@@ -61,10 +61,10 @@ contract SocketOneInchValidator is BridgeValidator {
     /// @inheritdoc BridgeValidator
     function decodeAmountIn(
         bytes calldata txData_,
-        bool genericSwapDisallowed_
+        bool /*genericSwapDisallowed_*/
     )
         external
-        view
+        pure
         override
         returns (uint256 amount_)
     {
