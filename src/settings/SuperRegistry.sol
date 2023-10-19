@@ -209,7 +209,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             bool broadcastAMB = isBroadcastAMB_[i];
 
             if (ambAddress == address(0)) revert Error.ZERO_ADDRESS();
-            if (ambAddresses[ambId] != address(0)) revert Error.DISABLED();
+            if (ambAddresses[ambId] != address(0) || ambIds[ambAddress] != 0) revert Error.DISABLED();
 
             ambAddresses[ambId] = ambAddress;
             ambIds[ambAddress] = ambId;
@@ -238,7 +238,9 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             address registryAddress = registryAddress_[i];
             uint8 registryId = registryId_[i];
             if (registryAddress == address(0)) revert Error.ZERO_ADDRESS();
-            if (registryAddresses[registryId] != address(0)) revert Error.DISABLED();
+            if (registryAddresses[registryId] != address(0) || stateRegistryIds[registryAddress] != 0) {
+                revert Error.DISABLED();
+            }
 
             registryAddresses[registryId] = registryAddress;
             stateRegistryIds[registryAddress] = registryId;
