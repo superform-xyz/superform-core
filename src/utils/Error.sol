@@ -111,6 +111,9 @@ library Error {
     /// @dev thrown if rescue is already proposed
     error RESCUE_ALREADY_PROPOSED();
 
+    /// @dev thrown if tx history is not found while state sync
+    error TX_HISTORY_NOT_FOUND();
+
     /*///////////////////////////////////////////////////////////////
                          LIQUIDITY BRIDGE ERRORS
     //////////////////////////////////////////////////////////////*/
