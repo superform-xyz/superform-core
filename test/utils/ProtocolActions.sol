@@ -2210,9 +2210,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[targetChainId_]);
 
-        /// FIXME: for now all dst swaps go through LIFI
-        if (liqBridgeKind_ != 1) {
-            liqBridgeKind_ = 1;
+        /// @dev replace socket bridge with socket one inch impl for dst swap
+        if (liqBridgeKind_ == 2) {
+            liqBridgeKind_ = 3;
         }
 
         /// @dev liqData is rebuilt here to perform to send the tokens from dstSwapProcessor to CoreStateRegistry
@@ -2246,8 +2246,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vm.selectFork(FORKS[targetChainId_]);
         bytes[] memory txDatas = new bytes[](underlyingTokensDst_.length);
 
+        /// @dev replace socket bridge with socket one inch impl for dst swap
         for (uint256 i; i < liqBridgeKinds_.length; i++) {
-            liqBridgeKinds_[i] = 1;
+            if (liqBridgeKinds_[i] == 2) liqBridgeKinds_[i] = 3;
         }
 
         /// @dev liqData is rebuilt here to perform to send the tokens from dstSwapProcessor to CoreStateRegistry

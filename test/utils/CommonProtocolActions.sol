@@ -326,6 +326,15 @@ abstract contract CommonProtocolActions is BaseSetup {
                 0,
                 swapData
             );
+        } else if (liqBridgeKind_ == 3) {
+            txData = abi.encodeWithSelector(
+                SocketOneInchMock.performDirectAction.selector,
+                sendingTokenDst_,
+                receivingTokenDst_,
+                toChainId_,
+                amount_,
+                abi.encode(from_, uint256(USDPerSendingTokenDst), uint256(USDPerReceivingTokenDst))
+            );
         }
     }
 
