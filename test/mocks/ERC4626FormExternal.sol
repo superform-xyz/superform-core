@@ -72,6 +72,11 @@ contract ERC4626FormExternal is ERC4626FormImplementation {
         _processEmergencyWithdraw(refundAddress_, amount_);
     }
 
+    /// @inheritdoc BaseForm
+    function _forwardDustToPaymaster() internal override {
+        _processForwardDustToPaymaster();
+    }
+
     /// @dev Wrapping Internal Functions
     function vaultSharesAmountToUnderlyingAmount(uint256 vaultSharesAmount_) public view returns (uint256) {
         return _vaultSharesAmountToUnderlyingAmount(vaultSharesAmount_, 0);
