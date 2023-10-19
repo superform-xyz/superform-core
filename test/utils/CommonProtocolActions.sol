@@ -471,6 +471,15 @@ abstract contract CommonProtocolActions is BaseSetup {
                 SocketMock.outboundTransferTo.selector,
                 ISocketRegistry.UserRequest(receiver_, toChainId_, amount_, middlewareRequest, bridgeRequest)
             );
+        } else if (liqBridgeKind_ == 3) {
+            txData = abi.encodeWithSelector(
+                SocketOneInchMock.performDirectAction.selector,
+                underlyingToken_,
+                underlyingToken_,
+                receiver_,
+                amount_,
+                abi.encode(from_, USDPerUnderlyingToken, USDPerUnderlyingTokenDst)
+            );
         }
     }
 }

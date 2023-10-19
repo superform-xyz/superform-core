@@ -28,7 +28,6 @@ contract SocketOneInchValidator is BridgeValidator {
         override
         returns (bool)
     {
-        /// FIXME: come to this later
         revert();
     }
 
@@ -68,7 +67,9 @@ contract SocketOneInchValidator is BridgeValidator {
         view
         override
         returns (uint256 amount_)
-    { }
+    {
+        revert();
+    }
 
     /// @inheritdoc BridgeValidator
     function decodeAmountIn(
@@ -84,7 +85,9 @@ contract SocketOneInchValidator is BridgeValidator {
     }
 
     /// @inheritdoc BridgeValidator
-    function decodeDstSwap(bytes calldata txData_) external pure override returns (address token_, uint256 amount_) { }
+    function decodeDstSwap(bytes calldata txData_) external pure override returns (address token_, uint256 amount_) {
+        revert();
+    }
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL HELPER FUNCTIONS
