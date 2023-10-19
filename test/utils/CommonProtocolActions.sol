@@ -188,7 +188,7 @@ abstract contract CommonProtocolActions is BaseSetup {
                     0,
                     /// @dev unused in tests
                     args.externalToken,
-                    abi.encode(args.from)
+                    abi.encode(args.from, args.USDPerExternalToken, args.USDPerUnderlyingToken)
                 );
                 /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
                 /// mainnet
@@ -198,7 +198,7 @@ abstract contract CommonProtocolActions is BaseSetup {
                     /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
                     0,
                     /// @dev unused in tests
-                    args.externalToken,
+                    args.withdraw ? args.externalToken : args.underlyingToken,
                     /// @dev initial token to extract will be externalToken in args, which is the actual
                     /// underlyingTokenDst for withdraws (check how the call is made in
                     /// _buildSingleVaultWithdrawCallData )
@@ -210,6 +210,7 @@ abstract contract CommonProtocolActions is BaseSetup {
                         args.dstSwap,
                         MULTI_TX_SLIPPAGE_SHARE,
                         args.USDPerExternalToken,
+                        args.USDPerUnderlyingToken,
                         args.USDPerUnderlyingTokenDst
                     )
                 );
@@ -232,6 +233,7 @@ abstract contract CommonProtocolActions is BaseSetup {
                         args.dstSwap,
                         MULTI_TX_SLIPPAGE_SHARE,
                         args.USDPerExternalToken,
+                        args.USDPerUnderlyingToken,
                         args.USDPerUnderlyingTokenDst
                     )
                 );
@@ -298,8 +300,8 @@ abstract contract CommonProtocolActions is BaseSetup {
                 receivingTokenDst_,
                 /// @dev in dst swap, assumes a swap between same token - FIXME
                 amount_,
-                /// @dev _buildLiqBridgeTxDataMultiTx() will only be called when multiTx is true
-                /// @dev and multiTx means cross-chain (last arg)
+                /// @dev _buildLiqBridgeTxDataDstSwap() will only be called when DstSwap is true
+                /// @dev and dstswap means cross-chain (last arg)
                 abi.encode(
                     from_,
                     FORKS[toChainId_],

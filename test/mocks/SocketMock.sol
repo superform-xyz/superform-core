@@ -30,7 +30,7 @@ contract SocketMock is ISocketRegistry, Test {
             );
         } else if (middlewareRequest.id != 0 && bridgeRequest.id != 0) {
             /// @dev else, assume according to socket a swap and bridge is involved
-            _swap(
+            uint256 amount = _swap(
                 userRequest_.amount,
                 userRequest_.middlewareRequest.inputToken,
                 userRequest_.bridgeRequest.inputToken,
@@ -38,7 +38,7 @@ contract SocketMock is ISocketRegistry, Test {
             );
 
             _bridge(
-                userRequest_.amount,
+                amount,
                 userRequest_.receiverAddress,
                 userRequest_.bridgeRequest.inputToken,
                 userRequest_.bridgeRequest.data,
@@ -60,8 +60,8 @@ contract SocketMock is ISocketRegistry, Test {
         uint256 USDPerUnderlyingTokenDst;
         uint256 toForkId;
         int256 slippage;
-        uint256 multiTxSlippageShare;
-        bool isMultiTx;
+        uint256 dstSwapSlippageShare;
+        bool isDstSwap;
     }
 
     function _bridge(
@@ -82,11 +82,12 @@ contract SocketMock is ISocketRegistry, Test {
             vars.toForkId,
             vars.outputToken,
             vars.slippage,
-            vars.isMultiTx,
-            vars.multiTxSlippageShare,
+            vars.isDstSwap,
+            vars.dstSwapSlippageShare,
+            ,
             vars.USDPerUnderlyingToken,
             vars.USDPerUnderlyingTokenDst
-        ) = abi.decode(data_, (address, uint256, address, int256, bool, uint256, uint256, uint256));
+        ) = abi.decode(data_, (address, uint256, address, int256, bool, uint256, uint256, uint256, uint256));
 
         if (!prevSwap) {
             if (inputToken_ != NATIVE) {
@@ -96,13 +97,15 @@ contract SocketMock is ISocketRegistry, Test {
             }
         }
 
+        amount_ = ((amount_ * uint256(10_000 - vars.slippage)) / 10_000);
+
         vm.selectFork(vars.prevForkId);
         vars.decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
         vm.selectFork(vars.toForkId);
         vars.decimal2 = vars.outputToken == NATIVE ? 18 : MockERC20(vars.outputToken).decimals();
 
-        if (vars.isMultiTx) vars.slippage = (vars.slippage * int256(vars.multiTxSlippageShare)) / 100;
-        else vars.slippage = (vars.slippage * int256(100 - vars.multiTxSlippageShare)) / 100;
+        if (vars.isDstSwap) vars.slippage = (vars.slippage * int256(vars.dstSwapSlippageShare)) / 100;
+        else vars.slippage = (vars.slippage * int256(100 - vars.dstSwapSlippageShare)) / 100;
 
         if (vars.decimal1 > vars.decimal2) {
             vars.finalAmount = (amount_ * vars.USDPerUnderlyingToken)
@@ -112,8 +115,6 @@ contract SocketMock is ISocketRegistry, Test {
                 / vars.USDPerUnderlyingTokenDst;
         }
 
-        /// @dev adding 1 for some rounding-off issues
-        vars.finalAmount = ((vars.finalAmount * uint256(10_000 - vars.slippage)) / 10_000 + 1);
         vm.selectFork(vars.toForkId);
 
         if (vars.outputToken != NATIVE) {
@@ -124,14 +125,39 @@ contract SocketMock is ISocketRegistry, Test {
         vm.selectFork(vars.prevForkId);
     }
 
-    function _swap(uint256 amount_, address inputToken_, address bridgeToken_, bytes memory data_) internal {
+    function _swap(
+        uint256 amount_,
+        address inputToken_,
+        address bridgeToken_,
+        bytes memory data_
+    )
+        internal
+        returns (uint256)
+    {
         /// @dev encapsulating from
-        address from = abi.decode(data_, (address));
+        (address from, uint256 USDPerExternalToken, uint256 USDPerUnderlyingToken) =
+            abi.decode(data_, (address, uint256, uint256));
 
         if (inputToken_ != NATIVE) {
-            MockERC20(inputToken_).transferFrom(from, address(this), amount_);
+            MockERC20(inputToken_).transferFrom(address(from), address(this), amount_);
         } else {
             require(msg.value == amount_);
         }
+
+        uint256 decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
+        uint256 decimal2 = bridgeToken_ == NATIVE ? 18 : MockERC20(bridgeToken_).decimals();
+
+        console.log("amount pre-swap", amount_);
+        /// @dev the results of this amount if there is a bridge are effectively ignored
+        if (decimal1 > decimal2) {
+            amount_ = (amount_ * USDPerExternalToken) / (USDPerUnderlyingToken * 10 ** (decimal1 - decimal2));
+        } else {
+            amount_ = (amount_ * USDPerExternalToken) * 10 ** (decimal2 - decimal1) / USDPerUnderlyingToken;
+        }
+        console.log("amount post-swap", amount_);
+        /// @dev swap slippage if any, is applied in ProtocolActions._stage1_buildReqData() for direct
+        /// actions and in ProtocolActions._buildLiqBridgeTxDataDstSwap() for dstSwaps.
+        /// @dev Could allocate swap slippage share separately like for ProtocolActions.MULTI_TX_SLIPPAGE_SHARE
+        return amount_;
     }
 }
