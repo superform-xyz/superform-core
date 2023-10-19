@@ -213,7 +213,7 @@ contract PaymentHelper is IPaymentHelper {
             uint256 totalDstGas;
 
             /// @dev step 1: estimate amb costs
-            (, uint256 ambFees) = _estimateAMBFees(
+            uint256 ambFees = _estimateAMBFees(
                 req_.ambIds[i], req_.dstChainIds[i], _generateMultiVaultMessage(req_.superformsData[i])
             );
 
@@ -266,7 +266,7 @@ contract PaymentHelper is IPaymentHelper {
             uint256 totalDstGas;
 
             /// @dev step 1: estimate amb costs
-            (, uint256 ambFees) = _estimateAMBFees(
+            uint256 ambFees = _estimateAMBFees(
                 req_.ambIds[i], req_.dstChainIds[i], _generateSingleVaultMessage(req_.superformsData[i])
             );
 
@@ -315,7 +315,7 @@ contract PaymentHelper is IPaymentHelper {
         uint256 superformIdsLen = req_.superformsData.superformIds.length;
 
         /// @dev step 1: estimate amb costs
-        (, uint256 ambFees) =
+        uint256 ambFees =
             _estimateAMBFees(req_.ambIds, req_.dstChainId, _generateMultiVaultMessage(req_.superformsData));
 
         srcAmount += ambFees;
@@ -354,7 +354,7 @@ contract PaymentHelper is IPaymentHelper {
     {
         uint256 totalDstGas;
         /// @dev step 1: estimate amb costs
-        (, uint256 ambFees) =
+        uint256 ambFees =
             _estimateAMBFees(req_.ambIds, req_.dstChainId, _generateSingleVaultMessage(req_.superformData));
 
         srcAmount += ambFees;
@@ -480,14 +480,13 @@ contract PaymentHelper is IPaymentHelper {
         view
         returns (bytes[] memory extraDataPerAMB)
     {
-        uint256 readGasPerKB = gasPerKB[dstChainId_];
         uint256 len = ambIds_.length;
-        uint256 totalDstGasReqInWei = message_.length * readGasPerKB;
+        uint256 totalDstGasReqInWei = message_.length * gasPerKB[dstChainId_];
 
         AMBMessage memory decodedMessage = abi.decode(message_, (AMBMessage));
         decodedMessage.params = message_.computeProofBytes();
 
-        uint256 totalDstGasReqInWeiForProof = abi.encode(decodedMessage).length * readGasPerKB;
+        uint256 totalDstGasReqInWeiForProof = abi.encode(decodedMessage).length * gasPerKB[dstChainId_];
 
         extraDataPerAMB = new bytes[](len);
 
@@ -573,14 +572,11 @@ contract PaymentHelper is IPaymentHelper {
     )
         public
         view
-        returns (uint256[] memory feeSplitUp, uint256 totalFees)
+        returns (uint256 totalFees)
     {
         uint256 len = ambIds_.length;
 
         bytes[] memory extraDataPerAMB = _generateExtraData(dstChainId_, ambIds_, message_);
-
-        feeSplitUp = new uint256[](len);
-
         bytes memory proof_ = abi.encode(AMBMessage(type(uint256).max, abi.encode(keccak256(message_))));
 
         /// @dev just checks the estimate for sending message from src -> dst
@@ -591,7 +587,6 @@ contract PaymentHelper is IPaymentHelper {
             );
 
             totalFees += tempFee;
-            feeSplitUp[i] = tempFee;
 
             unchecked {
                 ++i;
