@@ -197,13 +197,12 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         initialState = payloadTracking[payloadId_];
         /// @dev sets status as processed to prevent re-entrancy
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
-        uint256 payloadHeader__;
         bytes memory payloadBody__;
         bytes32 proof;
         CoreProcessPayloadLocalVars memory v;
         AMBMessage memory message;
-        (payloadHeader__, payloadBody__, message, proof, v.txType, v.callbackType, v.multi,, v.srcSender, v.srcChainId)
-        = _retrievePayloadHeaderAndBody(payloadId_);
+        (, payloadBody__, message, proof, v.txType, v.callbackType, v.multi,, v.srcSender, v.srcChainId) =
+            _retrievePayloadHeaderAndBody(payloadId_);
 
         /// @dev mint superPositions for successful deposits or remint for failed withdraws
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
@@ -329,6 +328,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             if (rescueInterim_) {
                 IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
                 (address interimToken,) = dstSwapper.getFailedSwap(payloadId_, superformIds[i]);
+
                 if (interimToken == NATIVE) {
                     (bool success,) = payable(refundAddress).call{ value: amounts[i] }("");
                     if (!success) revert Error.NATIVE_TOKEN_TRANSFER_FAILURE();
@@ -462,7 +462,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         }
 
         uint256 validLen;
-        bool failedSwapQueued;
         uint256 arrLen = finalAmounts_.length;
 
         for (uint256 i; i < arrLen;) {
@@ -470,34 +469,19 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 revert Error.ZERO_AMOUNT();
             }
 
-            failedSwapQueued = false;
-            if (multiVaultData.hasDstSwaps[i]) {
-                if (dstSwapper.swappedAmount(payloadId_, i) != finalAmounts_[i]) {
-                    (, uint256 amount) = dstSwapper.getFailedSwap(payloadId_, multiVaultData.superformIds[i]);
-                    if (amount != finalAmounts_[i]) {
-                        revert Error.INVALID_DST_SWAP_AMOUNT();
-                    } else {
-                        failedSwapQueued = true;
-                        multiVaultData.amounts[i] = 0;
-                        failedDeposits[payloadId_].superformIds.push(multiVaultData.superformIds[i]);
-                    }
-                }
-            }
-
-            if (!failedSwapQueued) {
-                /// @dev validate payload update
-                if (
-                    PayloadUpdaterLib.validateSlippage(
-                        finalAmounts_[i], multiVaultData.amounts[i], multiVaultData.maxSlippage[i]
-                    )
-                ) {
-                    multiVaultData.amounts[i] = finalAmounts_[i];
-                    validLen++;
-                } else {
-                    multiVaultData.amounts[i] = 0;
-                    failedDeposits[payloadId_].superformIds.push(multiVaultData.superformIds[i]);
-                }
-            }
+            /// @dev observe not consuming the second return value
+            (multiVaultData.amounts[i],, validLen) = _updateAmountOrQueueFailedDeposit(
+                dstSwapper,
+                multiVaultData.hasDstSwaps[i],
+                payloadId_,
+                i,
+                finalAmounts_[i],
+                multiVaultData.superformIds[i],
+                multiVaultData.amounts[i],
+                multiVaultData.maxSlippage[i],
+                finalState_,
+                validLen
+            );
 
             unchecked {
                 ++i;
@@ -552,18 +536,51 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             revert Error.ZERO_AMOUNT();
         }
 
+        /// @dev observe not consuming the third return value
+        (singleVaultData.amount, finalState_,) = _updateAmountOrQueueFailedDeposit(
+            dstSwapper,
+            singleVaultData.hasDstSwap,
+            payloadId_,
+            0,
+            finalAmount_,
+            singleVaultData.superformId,
+            singleVaultData.amount,
+            singleVaultData.maxSlippage,
+            finalState_,
+            0
+        );
+
+        newPayloadBody_ = abi.encode(singleVaultData);
+    }
+
+    function _updateAmountOrQueueFailedDeposit(
+        IDstSwapper dstSwapper,
+        bool hasDstSwap_,
+        uint256 payloadId_,
+        uint256 index_,
+        uint256 finalAmount_,
+        uint256 superformId_,
+        uint256 amount_,
+        uint256 maxSlippage_,
+        PayloadState finalState_,
+        uint256 validLen_
+    )
+        internal
+        returns (uint256, PayloadState, uint256)
+    {
         bool failedSwapQueued;
-        if (singleVaultData.hasDstSwap) {
-            if (dstSwapper.swappedAmount(payloadId_, 0) != finalAmount_) {
-                (, uint256 amount) = dstSwapper.getFailedSwap(payloadId_, singleVaultData.superformId);
+        if (hasDstSwap_) {
+            if (dstSwapper.swappedAmount(payloadId_, index_) != finalAmount_) {
+                (, uint256 amount) = dstSwapper.getFailedSwap(payloadId_, superformId_);
+
                 if (amount != finalAmount_) {
                     revert Error.INVALID_DST_SWAP_AMOUNT();
                 } else {
                     failedSwapQueued = true;
-                    failedDeposits[payloadId_].superformIds.push(singleVaultData.superformId);
+                    failedDeposits[payloadId_].superformIds.push(superformId_);
 
                     /// @dev sets amount to zero and will mark the payload as PROCESSED
-                    singleVaultData.amount = 0;
+                    amount_ = 0;
                     finalState_ = PayloadState.PROCESSED;
                 }
             }
@@ -571,20 +588,21 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         /// @dev validate payload update
         if (!failedSwapQueued) {
-            if (PayloadUpdaterLib.validateSlippage(finalAmount_, singleVaultData.amount, singleVaultData.maxSlippage)) {
+            if (PayloadUpdaterLib.validateSlippage(finalAmount_, amount_, maxSlippage_)) {
                 /// @dev sets amount to zero and will mark the payload as UPDATED
-                singleVaultData.amount = finalAmount_;
+                amount_ = finalAmount_;
                 finalState_ = PayloadState.UPDATED;
+                ++validLen_;
             } else {
-                failedDeposits[payloadId_].superformIds.push(singleVaultData.superformId);
+                failedDeposits[payloadId_].superformIds.push(superformId_);
 
                 /// @dev sets amount to zero and will mark the payload as PROCESSED
-                singleVaultData.amount = 0;
+                amount_ = 0;
                 finalState_ = PayloadState.PROCESSED;
             }
         }
 
-        newPayloadBody_ = abi.encode(singleVaultData);
+        return (amount_, finalState_, validLen_);
     }
 
     /// @dev helper function to update multi vault withdraw payload
