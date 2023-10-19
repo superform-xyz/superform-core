@@ -13,7 +13,7 @@ import { BroadcastMessage } from "../types/DataTypes.sol";
 /// @dev Contract to manage roles in the entire superform protocol
 contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     /*///////////////////////////////////////////////////////////////
-                            Constants
+                            CONSTANTS
     //////////////////////////////////////////////////////////////*/
 
     bytes32 public constant SYNC_REVOKE = keccak256("SYNC_REVOKE");
@@ -67,7 +67,7 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     bytes32 public constant override DST_SWAPPER_ROLE = keccak256("DST_SWAPPER_ROLE");
 
     /*///////////////////////////////////////////////////////////////
-                            State Variables
+                            STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
     uint256 public xChainPayloadCounter;
     ISuperRegistry public superRegistry;
@@ -102,7 +102,7 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     }
 
     /*///////////////////////////////////////////////////////////////
-                        External Write Functions
+                        EXTERNAL WRITE FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ISuperRBAC
@@ -184,7 +184,7 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     }
 
     /*///////////////////////////////////////////////////////////////
-                        Internal Functions
+                            INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /**
