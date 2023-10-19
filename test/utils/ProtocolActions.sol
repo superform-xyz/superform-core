@@ -3298,10 +3298,3 @@ abstract contract ProtocolActions is CommonProtocolActions {
         console.log("Asserted after failed timelock withdraw");
     }
 }
-
-// 16807397149968096809680
-// 11001100110011001100
-// 10647964796479647964
-
-/// 11000000000000000000
-/// 11208418375469740126
