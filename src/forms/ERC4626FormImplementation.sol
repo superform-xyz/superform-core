@@ -25,6 +25,10 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
     constructor(address superRegistry_, uint256 stateRegistryId_) BaseForm(superRegistry_) {
+        if (superRegistry.getStateRegistry(stateRegistryId_) == address(0)) {
+            Error.NOT_STATE_REGISTRY();
+        }
+
         STATE_REGISTRY_ID = stateRegistryId_;
     }
 
