@@ -81,6 +81,10 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     //////////////////////////////////////////////////////////////*/
 
     constructor(address superRegistry_) {
+        if (block.chainid > type(uint64).max) {
+            revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
+        }
+
         CHAIN_ID = uint64(block.chainid);
         superRegistry = ISuperRegistry(superRegistry_);
 

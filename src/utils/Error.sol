@@ -111,6 +111,9 @@ library Error {
     /// @dev thrown if rescue is already proposed
     error RESCUE_ALREADY_PROPOSED();
 
+    /// @dev thrown if chain id exceeds max(uint64)
+    error BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
+
     /*///////////////////////////////////////////////////////////////
                          LIQUIDITY BRIDGE ERRORS
     //////////////////////////////////////////////////////////////*/

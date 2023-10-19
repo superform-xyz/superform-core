@@ -5,10 +5,10 @@ import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { QuorumManager } from "../crosschain-data/utils/QuorumManager.sol";
 import { Error } from "../utils/Error.sol";
+
 /// @title SuperRegistry
 /// @author Zeropoint Labs.
 /// @dev Keeps information on all addresses used in the Superforms ecosystem.
-
 contract SuperRegistry is ISuperRegistry, QuorumManager {
     /*///////////////////////////////////////////////////////////////
                           Constants
@@ -108,6 +108,10 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     constructor(address superRBAC_) {
+        if (block.chainid > type(uint64).max) {
+            revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
+        }
+
         CHAIN_ID = uint64(block.chainid);
         registry[SUPER_RBAC][CHAIN_ID] = superRBAC_;
 
