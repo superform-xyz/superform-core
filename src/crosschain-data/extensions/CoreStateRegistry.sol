@@ -279,8 +279,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         /// @dev the msg sender should be the refund address (or) the disputer
         if (
-            msg.sender != failedDeposits_.refundAddress
-                || !_hasRole(keccak256("CORE_STATE_REGISTRY_DISPUTER_ROLE"), msg.sender)
+            !(
+                msg.sender == failedDeposits_.refundAddress
+                    || _hasRole(keccak256("CORE_STATE_REGISTRY_DISPUTER_ROLE"), msg.sender)
+            )
         ) {
             revert Error.INVALID_DISUPTER();
         }
