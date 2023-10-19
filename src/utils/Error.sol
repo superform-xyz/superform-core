@@ -111,6 +111,9 @@ library Error {
     /// @dev thrown if rescue is already proposed
     error RESCUE_ALREADY_PROPOSED();
 
+    /// @dev thrown if dst refund address is zero
+    error ZERO_DST_REFUND_ADDRESS();
+
     /*///////////////////////////////////////////////////////////////
                          LIQUIDITY BRIDGE ERRORS
     //////////////////////////////////////////////////////////////*/

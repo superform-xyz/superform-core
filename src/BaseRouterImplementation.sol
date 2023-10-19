@@ -58,6 +58,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
+        /// @dev validates the dst refund address
+        _validateDstRefundAddress(req_.superformsData.dstRefundAddress);
+
         IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).validateBatchIdsExist(req_.superformsData.superformIds);
 
         ActionLocalVars memory vars;
@@ -132,6 +135,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev disallow direct chain actions
         if (vars.srcChainId == req_.dstChainId) revert Error.INVALID_ACTION();
+
+        /// @dev validates the dst refund address
+        _validateDstRefundAddress(req_.superformData.dstRefundAddress);
 
         InitSingleVaultData memory ambData;
 
@@ -240,6 +246,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
+        /// @dev validates the dst refund address
+        _validateDstRefundAddress(req_.superformsData.dstRefundAddress);
+
         IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).burnBatch(
             msg.sender, req_.superformsData.superformIds, req_.superformsData.amounts
         );
@@ -288,6 +297,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         vars.srcChainId = CHAIN_ID;
         if (vars.srcChainId == req_.dstChainId) revert Error.INVALID_CHAIN_IDS();
 
+        /// @dev validates the dst refund address
+        _validateDstRefundAddress(req_.superformData.dstRefundAddress);
+
         InitSingleVaultData memory ambData;
 
         /// @dev this step validates and returns ambData from the state request
@@ -320,7 +332,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         vars.srcChainId = CHAIN_ID;
 
         InitSingleVaultData memory ambData;
-
         (ambData, vars.currentPayloadId) = _buildWithdrawAmbData(msg.sender, vars.srcChainId, req_.superformData);
 
         /// @dev same chain action
@@ -792,6 +803,17 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
             unchecked {
                 ++i;
+            }
+        }
+
+        return true;
+    }
+
+    function _validateDstRefundAddress(address dstRefundAddress_) internal view virtual returns (bool) {
+        /// @dev validates if EOA / SC Wallet & compares it against dst refund address
+        if (tx.origin != msg.sender) {
+            if (dstRefundAddress_ == address(0)) {
+                revert Error.ZERO_DST_REFUND_ADDRESS();
             }
         }
 
