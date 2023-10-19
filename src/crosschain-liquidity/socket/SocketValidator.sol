@@ -75,10 +75,10 @@ contract SocketValidator is BridgeValidator {
     /// @inheritdoc BridgeValidator
     function decodeAmountIn(
         bytes calldata txData_,
-        bool genericSwapDisallowed_
+        bool /*genericSwapDisallowed_*/
     )
         external
-        view
+        pure
         override
         returns (uint256 amount_)
     {
@@ -86,7 +86,12 @@ contract SocketValidator is BridgeValidator {
     }
 
     /// @inheritdoc BridgeValidator
-    function decodeDstSwap(bytes calldata txData_) external pure override returns (address token_, uint256 amount_) {
+    function decodeDstSwap(bytes calldata /*txData_*/ )
+        external
+        pure
+        override
+        returns (address, /*token_*/ uint256 /*amount_*/ )
+    {
         revert();
     }
 
