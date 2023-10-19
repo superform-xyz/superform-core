@@ -31,7 +31,7 @@ contract SXSVDNormal4626RevertRescueFailedDepositsNoTokenInputSlippageAMB1 is Pr
         MAX_SLIPPAGE = 1000;
 
         LIQ_BRIDGES[POLY][0] = [1];
-        LIQ_BRIDGES[OP][1] = [1];
+        LIQ_BRIDGES[OP][1] = [2];
 
         actions.push(
             TestAction({

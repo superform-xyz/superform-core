@@ -13,20 +13,8 @@ import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 /// @dev To assert input txData is valid
 contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
     /*///////////////////////////////////////////////////////////////
-                              Modifiers
+                                CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-
-    modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
-            revert Error.NOT_PROTOCOL_ADMIN();
-        }
-        _;
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                                Constructor
-    //////////////////////////////////////////////////////////////*/
-
     constructor(address superRegistry_) BridgeValidator(superRegistry_) { }
 
     /// @inheritdoc BridgeValidator
@@ -126,35 +114,6 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
             }
             /// @dev 3. token validations
             if (args_.liqDataToken != sendingAssetId) revert Error.INVALID_TXDATA_TOKEN();
-        }
-    }
-
-    /// @inheritdoc BridgeValidator
-    function decodeMinAmountOut(
-        bytes calldata txData_,
-        bool genericSwapDisallowed_
-    )
-        external
-        view
-        override
-        returns (uint256 amount_)
-    {
-        try this.extractMainParameters(txData_) returns (
-            string memory, /*bridge*/
-            address, /*sendingAssetId*/
-            address, /*receiver*/
-            uint256, /*amount*/
-            uint256 minAmount,
-            uint256, /*destinationChainId*/
-            bool, /*hasSourceSwaps*/
-            bool /*hasDestinationCall*/
-        ) {
-            /// @dev try is just used here to validate the txData. We need to always extract minAmount from bridge data
-            amount_ = minAmount;
-        } catch {
-            if (genericSwapDisallowed_) revert Error.INVALID_ACTION();
-            /// @dev in the case of a generic swap, minAmountOut is considered to be the receivedAmount
-            (,,,, amount_) = extractGenericSwapParameters(txData_);
         }
     }
 

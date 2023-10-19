@@ -17,6 +17,8 @@ import { ERC4626TimelockForm } from "src/forms/ERC4626TimelockForm.sol";
 import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
 import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
+import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator.sol";
+import { SocketOneInchValidator } from "src/crosschain-liquidity/socket/SocketOneInchValidator.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
 import { WormholeARImplementation } from
@@ -68,6 +70,8 @@ struct SetupVars {
     address superPositions;
     address superRBAC;
     address lifiValidator;
+    address socketValidator;
+    address socketOneInchValidator;
     address kycDao4626Form;
     address PayloadHelper;
     address paymentHelper;
@@ -85,7 +89,7 @@ abstract contract AbstractDeploySingle is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[22] public contractNames = [
+    string[24] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -94,6 +98,8 @@ abstract contract AbstractDeploySingle is Script {
         "WormholeARImplementation",
         "WormholeSRImplementation",
         "LiFiValidator",
+        "SocketValidator",
+        "SocketOneInchValidator",
         "DstSwapper",
         "SuperformFactory",
         "ERC4626Form",
@@ -148,8 +154,8 @@ abstract contract AbstractDeploySingle is Script {
     uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(2), uint32(3)];
     string[] public VAULT_KINDS = ["Vault", "TimelockedVault", "KYCDaoVault"];
 
-    /// @dev liquidity bridge ids 1 is lifi
-    uint8[] public bridgeIds = [1];
+    /// @dev liquidity bridge ids 1 is lifi, 2 is socket, 3 is socket one inch implementation
+    uint8[] public bridgeIds = [1, 2, 3];
 
     mapping(uint64 chainId => address[] bridgeAddresses) public BRIDGE_ADDRESSES;
 
@@ -423,11 +429,18 @@ abstract contract AbstractDeploySingle is Script {
         vars.ambAddresses[3] = vars.wormholeSRImplementation;
 
         /// @dev 6- deploy liquidity validators
-
         vars.lifiValidator = address(new LiFiValidator{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
 
+        vars.socketValidator = address(new SocketValidator{salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars.socketValidator;
+
+        vars.socketOneInchValidator = address(new SocketOneInchValidator{salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("SocketOneInchValidator"))] = vars.socketOneInchValidator;
+
         bridgeValidators[0] = vars.lifiValidator;
+        bridgeValidators[1] = vars.socketValidator;
+        bridgeValidators[2] = vars.socketOneInchValidator;
 
         /// @dev 7 - Deploy SuperformFactory
         vars.factory = address(new SuperformFactory{salt: salt}(vars.superRegistry));

@@ -26,7 +26,7 @@ contract SXSVDKYC4626TokenInputSlippageAMB13 is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[ETH][0] = [1];
+        LIQ_BRIDGES[ETH][0] = [2];
 
         actions.push(
             TestAction({

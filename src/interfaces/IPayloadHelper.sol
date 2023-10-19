@@ -39,7 +39,6 @@ interface IPayloadHelper {
     /// @return liqDstChainIds are the final destination chain id for the underlying token (can be arbitrary on
     /// withdraws)
     /// @return amountsIn are the from amounts to the liquidity bridge
-    /// @return amountsOut are the minimum amounts to be bridged through the liquidity bridge
     /// @return nativeAmounts is the native amounts to be used in the liqData
     /// @return hasDstSwaps is the array of flags indicating if the original liqData has a dstSwaps
     /// @return dstRefundAddress is the address to be used for refunds
@@ -52,7 +51,6 @@ interface IPayloadHelper {
             address[] memory tokens,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
-            uint256[] memory amountsOut,
             uint256[] memory nativeAmounts,
             bool[] memory hasDstSwaps,
             address dstRefundAddress

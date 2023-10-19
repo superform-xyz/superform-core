@@ -9,13 +9,13 @@ import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
 /// @dev To be inherited by specific bridge handlers to verify the calldata being sent
 abstract contract BridgeValidator is IBridgeValidator {
     /*///////////////////////////////////////////////////////////////
-                            State Variables
+                            STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
     ISuperRegistry public immutable superRegistry;
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     /*///////////////////////////////////////////////////////////////
-                                Constructor
+                              CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
     constructor(address superRegistry_) {
@@ -23,7 +23,7 @@ abstract contract BridgeValidator is IBridgeValidator {
     }
 
     /*///////////////////////////////////////////////////////////////
-                            External Functions
+                            EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IBridgeValidator
@@ -50,17 +50,6 @@ abstract contract BridgeValidator is IBridgeValidator {
 
     /// @inheritdoc IBridgeValidator
     function validateTxData(ValidateTxDataArgs calldata args_) external view virtual override;
-
-    /// @inheritdoc IBridgeValidator
-    function decodeMinAmountOut(
-        bytes calldata txData_,
-        bool genericSwapDisallowed_
-    )
-        external
-        view
-        virtual
-        override
-        returns (uint256 amount_);
 
     /// @inheritdoc IBridgeValidator
     function decodeAmountIn(
