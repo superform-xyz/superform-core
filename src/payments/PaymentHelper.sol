@@ -480,13 +480,14 @@ contract PaymentHelper is IPaymentHelper {
         view
         returns (bytes[] memory extraDataPerAMB)
     {
+        uint256 readGasPerKB = gasPerKB[dstChainId_];
         uint256 len = ambIds_.length;
-        uint256 totalDstGasReqInWei = message_.length * gasPerKB[dstChainId_];
+        uint256 totalDstGasReqInWei = message_.length * readGasPerKB;
 
         AMBMessage memory decodedMessage = abi.decode(message_, (AMBMessage));
         decodedMessage.params = message_.computeProofBytes();
 
-        uint256 totalDstGasReqInWeiForProof = abi.encode(decodedMessage).length * gasPerKB[dstChainId_];
+        uint256 totalDstGasReqInWeiForProof = abi.encode(decodedMessage).length * readGasPerKB;
 
         extraDataPerAMB = new bytes[](len);
 
