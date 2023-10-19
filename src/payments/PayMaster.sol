@@ -101,6 +101,10 @@ contract PayMaster is IPayMaster, LiquidityHandler {
 
     /// @dev helper to move native tokens same chain
     function _withdrawNative(address receiver_, uint256 amount_) internal {
+        if (receiver_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
+
         (bool success,) = payable(receiver_).call{ value: amount_ }("");
 
         if (!success) {
