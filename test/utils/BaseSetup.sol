@@ -724,7 +724,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.superRegistryC.setAddress(vars.superRegistryC.DST_SWAPPER_PROCESSOR(), deployer, vars.chainId);
 
             /// @dev 17 deploy emergency queue
-            vars.emergencyQueue = address(new EmergencyQueue(vars.superRegistry));
+            vars.emergencyQueue = address(new EmergencyQueue{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("EmergencyQueue"))] = vars.emergencyQueue;
             vars.superRegistryC.setAddress(vars.superRegistryC.EMERGENCY_QUEUE(), vars.emergencyQueue, vars.chainId);
 

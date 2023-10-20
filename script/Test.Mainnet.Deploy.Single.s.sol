@@ -8,8 +8,7 @@ contract TestMainnetDeploySingle is AbstractDeploySingle {
                         SELECT CHAIN IDS TO DEPLOY HERE
     //////////////////////////////////////////////////////////////*/
 
-    uint64[] SELECTED_CHAIN_IDS = [56, 137, 43_114];
-    /// @dev BSC, POLY & AVAX
+    uint64[] SELECTED_CHAIN_IDS = [POLY, AVAX, GNOSIS];
 
     /// @notice The main stage 1 script entrypoint
     function deployStage1(uint256 selectedChainIndex) external {
