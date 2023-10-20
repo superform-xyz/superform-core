@@ -152,7 +152,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                     singleVaultData_.liqData.txData,
                     vars.chainId,
                     vars.chainId,
-                    singleVaultData_.liqData.liqDstChainId,
+                    vars.chainId,
                     true,
                     address(this),
                     msg.sender,
