@@ -171,7 +171,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         vars.collateralDifference = IERC20(vars.collateral).balanceOf(address(this)) - vars.balanceBefore;
 
-        /// @dev the differennce in vault tokens, ready to be deposited, is compared with the amount inscribed in the
+        /// @dev the difference in vault tokens, ready to be deposited, is compared with the amount inscribed in the
         /// superform data
         if (vars.collateralDifference < singleVaultData_.amount) {
             revert Error.DIRECT_DEPOSIT_INVALID_DATA();
