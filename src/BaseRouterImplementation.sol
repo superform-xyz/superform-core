@@ -286,7 +286,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         ActionLocalVars memory vars;
 
         vars.srcChainId = CHAIN_ID;
-        if (vars.srcChainId == req_.dstChainId) revert Error.INVALID_CHAIN_IDS();
+
+        if (vars.srcChainId == req_.dstChainId || vars.srcChainId == 0 || req._dstChainId == 0) {
+            revert Error.INVALID_CHAIN_IDS();
+        }
 
         InitSingleVaultData memory ambData;
 
@@ -612,7 +615,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.ZERO_AMOUNT();
         }
 
-        if (chainId != CHAIN_ID) {
+        if (chainId != CHAIN_ID || chainId == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
 
@@ -706,7 +709,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         (,, uint64 chainId) =
             ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getSuperform(superformId_);
 
-        if (chainId != CHAIN_ID) {
+        if (chainId != CHAIN_ID || chainId == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
 
@@ -741,7 +744,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         returns (bool)
     {
         /// @dev the dstChainId_ (in the state request) must match the superforms' chainId (superform must exist on
-        /// destinatiom)
+        /// destination)
         if (dstChainId_ != DataLib.getDestinationChain(superformData_.superformId)) return false;
 
         /// @dev 10000 = 100% slippage
@@ -783,6 +786,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             if (superformsData_.maxSlippages[i] > 10_000) return false;
             (, uint32 formImplementationId_, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
             if (dstChainId_ != sfDstChainId) return false;
+
+            if (sfDstChainId == 0) {
+                revert Error.INVALID_CHAIN_ID();
+            }
 
             if (
                 ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
@@ -833,6 +840,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             if (superformsData_.maxSlippages[i] > 10_000) return false;
             (,, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
             if (dstChainId_ != sfDstChainId) return false;
+            if (sfDstChainId == 0) {
+                revert Error.INVALID_CHAIN_ID();
+            }
 
             unchecked {
                 ++i;
