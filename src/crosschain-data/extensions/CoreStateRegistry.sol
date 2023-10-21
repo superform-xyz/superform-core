@@ -243,6 +243,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         external
         override
         onlyCoreStateRegistryRescuer
+        isValidPayloadId(payloadId_)
     {
         FailedDeposit memory failedDeposits_ = failedDeposits[payloadId_];
 
@@ -274,7 +275,13 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     }
 
     /// @inheritdoc ICoreStateRegistry
-    function disputeRescueFailedDeposits(uint256 payloadId_) external override {
+    function disputeRescueFailedDeposits(
+        uint256 payloadId_
+        ) 
+        external 
+        override
+        isValidPayloadId(payloadId_) 
+    {
         FailedDeposit memory failedDeposits_ = failedDeposits[payloadId_];
 
         /// @dev the msg sender should be the refund address (or) the disputer
@@ -304,7 +311,13 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     /// @inheritdoc ICoreStateRegistry
     /// @notice is an open function & can be executed by anyone
-    function finalizeRescueFailedDeposits(uint256 payloadId_) external override {
+    function finalizeRescueFailedDeposits(
+        uint256 payloadId_
+        ) 
+        external
+        override
+        isValidPayloadId(payloadId_) 
+    {
         uint256 lastProposedTimestamp = failedDeposits[payloadId_].lastProposedTimestamp;
 
         /// @dev the timelock is elapsed
