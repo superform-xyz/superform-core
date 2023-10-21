@@ -129,7 +129,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     ) 
         internal
     {
-               if (swappedAmount[payloadId_][index_] != 0) {
+        if (swappedAmount[payloadId_][index_] != 0) {
             revert Error.DST_SWAP_ALREADY_PROCESSED();
         }
 
