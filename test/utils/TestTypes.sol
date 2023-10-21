@@ -138,6 +138,7 @@ struct SetupVars {
     address erc4626TimelockForm;
     address kycDao4626Form;
     address coreStateRegistry;
+    address rescueRegistry;
     address PayloadHelper;
     address paymentHelper;
     address twoStepsFormStateRegistry;
@@ -268,6 +269,14 @@ struct updateSingleVaultDepositPayloadArgs {
     bytes4 revertError;
     bytes32 revertRole;
     bool isdstSwap;
+}
+
+struct FailedDeposit {
+    uint256[] superformIds;
+    address[] rescueTokens;
+    uint256[] amounts;
+    address refundAddress;
+    uint256 lastProposedTimestamp;
 }
 
 /*//////////////////////////////////////////////////////////////

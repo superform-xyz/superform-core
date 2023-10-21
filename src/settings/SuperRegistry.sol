@@ -74,6 +74,9 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @dev used to sync messages for pausing superforms or deploying transmuters
     /// @dev probably should NOT be allowed to be changed
     bytes32 public constant override BROADCAST_REGISTRY = keccak256("BROADCAST_REGISTRY");
+    /// @dev accessed to propose and resuce failed deposits
+    /// @dev should NOT be allowed to be changed
+    bytes32 public constant override RESCUE_REGISTRY = keccak256("RESCUE_REGISTRY");
     /// @dev not accessed in protocol
     /// @dev could be allowed to be changed
     bytes32 public constant override SUPER_POSITIONS = keccak256("SUPER_POSITIONS");

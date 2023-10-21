@@ -35,7 +35,9 @@ import { KYCDaoNFTMock } from "../mocks/KYCDaoNFTMock.sol";
 /// @dev Protocol imports
 import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
 import { BroadcastRegistry } from "src/crosschain-data/BroadcastRegistry.sol";
+import { RescueRegistry } from "src/crosschain-data/extensions/RescueRegistry.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+import { ICoreStateRegistry } from "src/interfaces/ICoreStateRegistry.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
@@ -97,10 +99,11 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[29] public contractNames = [
+    string[30] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
+        "RescueRegistry",
         "LayerzeroImplementation",
         "HyperlaneImplementation",
         "WormholeARImplementation",
@@ -442,6 +445,15 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.superRegistryC.setAddress(
                 vars.superRegistryC.BROADCAST_REGISTRY(), vars.broadcastRegistry, vars.chainId
             );
+
+            /// @dev 4.4 - deploy Rescue Registry
+            vars.rescueRegistry = address(
+                new RescueRegistry{salt: salt}(
+                    SuperRegistry(vars.superRegistry)
+                )
+            );
+            contracts[vars.chainId][bytes32(bytes("RescueRegistry"))] = vars.rescueRegistry;
+            vars.superRegistryC.setAddress(vars.superRegistryC.RESCUE_REGISTRY(), vars.rescueRegistry, vars.chainId);
 
             address[] memory registryAddresses = new address[](3);
             registryAddresses[0] = vars.coreStateRegistry;

@@ -36,6 +36,9 @@ library Error {
     /// @dev thrown when msg.sender is not state registry
     error NOT_STATE_REGISTRY();
 
+    /// @dev thrown when msg.sender is not rescue registry
+    error NOT_RESCUE_REGISTRY();
+
     /// @dev thrown when msg.sender is not an allowed broadcaster
     error NOT_ALLOWED_BROADCASTER();
 

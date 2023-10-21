@@ -3,6 +3,7 @@ pragma solidity ^0.8.21;
 
 import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
 import "../types/DataTypes.sol";
+import "./IBaseStateRegistry.sol";
 
 /// @title ICoreStateRegistry
 /// @author ZeroPoint Labs
@@ -72,13 +73,28 @@ interface ICoreStateRegistry {
                           EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    function setFailedDeposits(
+        uint256 payloadId_,
+        uint256[] memory amounts_,
+        address refundAddress_,
+        uint256 lastProposedTimestamp_
+    )
+        external;
+
     /// @dev allows users to read the superformIds that failed in a specific payloadId_
     /// @param payloadId_ is the identifier of the cross-chain payload.
     /// @return superformIds_ is the identifiers of superforms in the payloadId that got failed.
     function getFailedDeposits(uint256 payloadId_)
         external
         view
-        returns (uint256[] memory superformIds_, uint256[] memory amounts);
+        returns (
+            // uint256[] memory superformIds,
+            // address[] memory rescueTokens,
+            // uint256[] memory amounts,
+            // address refundAddress,
+            // uint256 lastProposedTimestamp
+            FailedDeposit memory
+        );
 
     /// @dev allows accounts with {CORE_STATE_REGISTRY_UPDATER_ROLE} to modify a received cross-chain deposit payload.
     /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
@@ -90,16 +106,6 @@ interface ICoreStateRegistry {
     /// @param payloadId_  is the identifier of the cross-chain payload to be updated.
     /// @param txData_ is the transaction data to be updated.
     function updateWithdrawPayload(uint256 payloadId_, bytes[] calldata txData_) external;
-
-    /// @dev allows accounts with {CORE_STATE_REGISTRY_PROCESSOR_ROLE} to rescue tokens on failed deposits
-    /// @param payloadId_ is the identifier of the cross-chain payload.
-    /// @param proposedAmounts_ is the array of proposed rescue amounts.
-    function proposeRescueFailedDeposits(uint256 payloadId_, uint256[] memory proposedAmounts_) external;
-
-    /// @dev allows refund receivers to challenge their final receiving token amounts on failed deposits
-    /// @param payloadId_ is the identifier of the cross-chain payload
-    /// @notice should challenge within the delay window configured on SuperRegistry
-    function disputeRescueFailedDeposits(uint256 payloadId_) external;
 
     /// @dev allows anyone to settle refunds for unprocessed/failed deposits past the challenge period
     /// @param payloadId_ is the identifier of the cross-chain payload

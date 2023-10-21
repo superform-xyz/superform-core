@@ -66,6 +66,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         _;
     }
 
+    modifier onlyRescueRegistry() {
+        if (msg.sender != superRegistry.getAddress(keccak256("RESCUE_REGISTRY"))) revert Error.NOT_RESCUE_REGISTRY();
+        _;
+    }
+
     modifier isValidPayloadId(uint256 payloadId_) {
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();
@@ -240,72 +245,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     }
 
     /// @inheritdoc ICoreStateRegistry
-    function proposeRescueFailedDeposits(
-        uint256 payloadId_,
-        uint256[] memory proposedAmounts_
-    )
-        external
-        override
-        onlyCoreStateRegistryRescuer
-    {
-        FailedDeposit memory failedDeposits_ = failedDeposits[payloadId_];
-
-        if (
-            failedDeposits_.superformIds.length == 0 || proposedAmounts_.length == 0
-                || failedDeposits_.superformIds.length != proposedAmounts_.length
-        ) {
-            revert Error.INVALID_RESCUE_DATA();
-        }
-
-        if (failedDeposits_.lastProposedTimestamp != 0) {
-            revert Error.RESCUE_ALREADY_PROPOSED();
-        }
-
-        /// @dev note: should set this value to dstSwapper.failedSwap().amount for interim rescue
-        failedDeposits[payloadId_].amounts = proposedAmounts_;
-        failedDeposits[payloadId_].lastProposedTimestamp = block.timestamp;
-
-        (,, uint8 multi,,,) = DataLib.decodeTxInfo(payloadHeader[payloadId_]);
-
-        if (multi == 1) {
-            InitMultiVaultData memory data = abi.decode(payloadBody[payloadId_], (InitMultiVaultData));
-            failedDeposits[payloadId_].refundAddress = data.dstRefundAddress;
-        } else {
-            InitSingleVaultData memory data = abi.decode(payloadBody[payloadId_], (InitSingleVaultData));
-            failedDeposits[payloadId_].refundAddress = data.dstRefundAddress;
-        }
-
-        emit RescueProposed(payloadId_, failedDeposits_.superformIds, proposedAmounts_, block.timestamp);
-    }
-
-    /// @inheritdoc ICoreStateRegistry
-    function disputeRescueFailedDeposits(uint256 payloadId_) external override {
-        FailedDeposit memory failedDeposits_ = failedDeposits[payloadId_];
-
-        /// @dev the msg sender should be the refund address (or) the disputer
-        if (
-            msg.sender != failedDeposits_.refundAddress
-                || !_hasRole(keccak256("CORE_STATE_REGISTRY_DISPUTER_ROLE"), msg.sender)
-        ) {
-            revert Error.INVALID_DISUPTER();
-        }
-
-        /// @dev the timelock is already elapsed to dispute
-        if (
-            failedDeposits_.lastProposedTimestamp == 0
-                || block.timestamp > failedDeposits_.lastProposedTimestamp + _getDelay()
-        ) {
-            revert Error.DISPUTE_TIME_ELAPSED();
-        }
-
-        /// @dev just can reset last proposed time here, since amounts should be updated again to
-        /// pass the lastProposedTimestamp zero check in finalize
-        failedDeposits[payloadId_].lastProposedTimestamp = 0;
-
-        emit RescueDisputed(payloadId_);
-    }
-
-    /// @inheritdoc ICoreStateRegistry
     /// @notice is an open function & can be executed by anyone
     function finalizeRescueFailedDeposits(uint256 payloadId_, bool rescueInterim_) external override {
         uint256 lastProposedTimestamp = failedDeposits[payloadId_].lastProposedTimestamp;
@@ -346,15 +285,25 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         emit RescueFinalized(payloadId_);
     }
 
-    /// @inheritdoc ICoreStateRegistry
-    function getFailedDeposits(uint256 payloadId_)
+    function setFailedDeposits(
+        uint256 payloadId_,
+        uint256[] memory amounts_,
+        address refundAddress_,
+        uint256 lastProposedTimestamp_
+    )
         external
-        view
         override
-        returns (uint256[] memory superformIds, uint256[] memory amounts)
+        onlyRescueRegistry
     {
-        superformIds = failedDeposits[payloadId_].superformIds;
-        amounts = failedDeposits[payloadId_].amounts;
+        /// @dev TODO: add validations
+        failedDeposits[payloadId_].amounts = amounts_;
+        failedDeposits[payloadId_].refundAddress = refundAddress_;
+        failedDeposits[payloadId_].lastProposedTimestamp = lastProposedTimestamp_;
+    }
+
+    /// @inheritdoc ICoreStateRegistry
+    function getFailedDeposits(uint256 payloadId_) external view override returns (FailedDeposit memory) {
+        return failedDeposits[payloadId_];
     }
 
     /*///////////////////////////////////////////////////////////////
