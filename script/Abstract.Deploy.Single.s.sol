@@ -116,7 +116,8 @@ abstract contract AbstractDeploySingle is Script {
         "EmergencyQueue"
     ];
 
-    bytes32 constant salt = "THIRD_DEPLOYMENT_6";
+    // original salt bytes32 constant salt = "THIRD_DEPLOYMENT_6";
+    bytes32 constant salt = "THIRD_DEPLOYMENT_8";
 
     enum Chains {
         Ethereum,
@@ -323,7 +324,7 @@ abstract contract AbstractDeploySingle is Script {
         uint256 i,
         uint256 trueIndex,
         Cycle cycle,
-        uint64[] memory s_superFormChainIds
+        uint64[] memory targetDeploymentChains
     )
         internal
         setEnvDeploy(cycle)
@@ -332,7 +333,7 @@ abstract contract AbstractDeploySingle is Script {
         /// @dev liquidity validator addresses
         address[] memory bridgeValidators = new address[](bridgeIds.length);
 
-        vars.chainId = s_superFormChainIds[i];
+        vars.chainId = targetDeploymentChains[i];
 
         vars.ambAddresses = new address[](ambIds.length);
 
@@ -581,20 +582,23 @@ abstract contract AbstractDeploySingle is Script {
     }
 
     /// @dev stage 2 must be called only after stage 1 is complete for all chains!
+    /// @dev need another function to change the settings in the already deployed chains!
+    /// @dev perhaps separating the entry point files is adviseable
     function _deployStage2(
         uint256 i,
         /// 0, 1, 2
         uint256 trueIndex,
         /// 0, 1, 2, 3, 4, 5
         Cycle cycle,
-        uint64[] memory s_superFormChainIds
+        uint64[] memory targetDeploymentChains,
+        uint64[] memory finalDeployedChains
     )
         internal
         setEnvDeploy(cycle)
     {
         SetupVars memory vars;
 
-        vars.chainId = s_superFormChainIds[i];
+        vars.chainId = targetDeploymentChains[i];
         vm.startBroadcast(deployerPrivateKey);
 
         vars.lzImplementation = _readContract(chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
@@ -606,17 +610,17 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRegistryC =
             SuperRegistry(payable(_readContract(chainNames[trueIndex], vars.chainId, "SuperRegistry")));
         /// @dev Set all trusted remotes for each chain & configure amb chains ids
-        for (uint256 j = 0; j < s_superFormChainIds.length; j++) {
+        for (uint256 j = 0; j < finalDeployedChains.length; j++) {
             if (j != i) {
                 uint256 dstTrueIndex;
                 for (uint256 k = 0; i < chainIds.length; k++) {
-                    if (s_superFormChainIds[j] == chainIds[k]) {
+                    if (finalDeployedChains[j] == chainIds[k]) {
                         dstTrueIndex = k;
 
                         break;
                     }
                 }
-                vars.dstChainId = s_superFormChainIds[j];
+                vars.dstChainId = finalDeployedChains[j];
                 vars.dstLzChainId = lz_chainIds[dstTrueIndex];
                 vars.dstHypChainId = hyperlane_chainIds[dstTrueIndex];
                 vars.dstWormholeChainId = wormhole_chainIds[dstTrueIndex];
