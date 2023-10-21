@@ -383,7 +383,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     function _getDelay() internal view returns (uint256) {
         uint256 delay = superRegistry.delay();
         if (delay == 0){
-            revert(Error.DELAY_NOT_SET());
+            revert Error.DELAY_NOT_SET();
         }
         return delay;
     }
