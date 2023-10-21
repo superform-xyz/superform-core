@@ -747,6 +747,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev 10000 = 100% slippage
         if (superformData_.maxSlippage > 10_000) return false;
 
+        /// @dev amount can't be 0
+        if (superformData_.amount == 0) return false;
+
         /// if it reaches this point then is valid
         return true;
     }
@@ -777,10 +780,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             return false;
         }
 
-        /// @dev slippage and paused status validation
+        /// @dev slippage, amount, paused status validation
         for (uint256 i; i < len;) {
             /// @dev 10000 = 100% slippage
             if (superformsData_.maxSlippages[i] > 10_000) return false;
+            /// @dev amount can't be 0
+            if (superformsData_.amounts[i] == 0) return false;
             (, uint32 formImplementationId_, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
             if (dstChainId_ != sfDstChainId) return false;
 
@@ -831,6 +836,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         for (uint256 i; i < len;) {
             /// @dev 10000 = 100% slippage
             if (superformsData_.maxSlippages[i] > 10_000) return false;
+            /// @dev amount can't be 0
+            if (superformsData_.amounts[i] == 0) return false;
             (,, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
             if (dstChainId_ != sfDstChainId) return false;
 
@@ -973,37 +980,39 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 }
             }
 
-            if (v.totalAmount > 0) {
-                if (v.permit2dataLen > 0) {
-                    (uint256 nonce, uint256 deadline, bytes memory signature) =
-                        abi.decode(permit2data_, (uint256, uint256, bytes));
+            if (v.totalAmount == 0) {
+                revert Error.ZERO_AMOUNT();
+            }
 
-                    /// @dev moves the tokens from the user to the router
-                    IPermit2(v.permit2).permitTransferFrom(
-                        // The permit message.
-                        IPermit2.PermitTransferFrom({
-                            permitted: IPermit2.TokenPermissions({ token: v.token, amount: v.totalAmount }),
-                            nonce: nonce,
-                            deadline: deadline
-                        }),
-                        // The transfer recipient and amount.
-                        IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: v.totalAmount }),
-                        // The owner of the tokens, which must also be
-                        // the signer of the message, otherwise this call
-                        // will fail.
-                        srcSender_,
-                        // The packed signature that was the result of signing
-                        // the EIP712 hash of `permit`.
-                        signature
-                    );
-                } else {
-                    if (v.token.allowance(srcSender_, address(this)) < v.totalAmount) {
-                        revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
-                    }
+            if (v.permit2dataLen > 0) {
+                (uint256 nonce, uint256 deadline, bytes memory signature) =
+                    abi.decode(permit2data_, (uint256, uint256, bytes));
 
-                    /// @dev moves the tokens from the user to the router
-                    v.token.safeTransferFrom(srcSender_, address(this), v.totalAmount);
+                /// @dev moves the tokens from the user to the router
+                IPermit2(v.permit2).permitTransferFrom(
+                    // The permit message.
+                    IPermit2.PermitTransferFrom({
+                        permitted: IPermit2.TokenPermissions({ token: v.token, amount: v.totalAmount }),
+                        nonce: nonce,
+                        deadline: deadline
+                    }),
+                    // The transfer recipient and amount.
+                    IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: v.totalAmount }),
+                    // The owner of the tokens, which must also be
+                    // the signer of the message, otherwise this call
+                    // will fail.
+                    srcSender_,
+                    // The packed signature that was the result of signing
+                    // the EIP712 hash of `permit`.
+                    signature
+                );
+            } else {
+                if (v.token.allowance(srcSender_, address(this)) < v.totalAmount) {
+                    revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
                 }
+
+                /// @dev moves the tokens from the user to the router
+                v.token.safeTransferFrom(srcSender_, address(this), v.totalAmount);
             }
 
             /// @dev approves individual final targets if needed here
