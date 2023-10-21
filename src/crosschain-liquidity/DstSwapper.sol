@@ -96,6 +96,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         external
         override
         onlySwapper
+        nonReentrant
     {
         uint256 len = txData_.length;
         for (uint256 i; i < len;) {
