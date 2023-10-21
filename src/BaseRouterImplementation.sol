@@ -287,8 +287,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         vars.srcChainId = CHAIN_ID;
 
-        if (vars.srcChainId == req_.dstChainId || vars.srcChainId == 0 || req._dstChainId == 0) {
+        if (vars.srcChainId == req_.dstChainId) {
             revert Error.INVALID_CHAIN_IDS();
+        }
+
+        if (vars.srcChainId == 0 || req_.dstChainId == 0) {
+            revert Error.INVALID_CHAIN_ID();
         }
 
         InitSingleVaultData memory ambData;
