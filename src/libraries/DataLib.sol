@@ -105,7 +105,7 @@ library DataLib {
         /// @dev validates if superformId exists on factory
         uint64 chainId = getDestinationChain(superformId_);
 
-        if (chainId != chainId_) {
+        if (chainId != chainId_ || chainId == 0 ) {
             revert Error.INVALID_CHAIN_ID();
         }
     }
@@ -115,6 +115,10 @@ library DataLib {
     /// @return chainId_ is the chain id
     function getDestinationChain(uint256 superformId_) internal pure returns (uint64 chainId_) {
         chainId_ = uint64(superformId_ >> 192);
+
+        if (chainId_ == 0 ) {
+            revert Error.INVALID_CHAIN_ID();
+        }
     }
 
     /// @dev generates the superformId

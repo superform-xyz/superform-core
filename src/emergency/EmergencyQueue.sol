@@ -41,7 +41,7 @@ contract EmergencyQueue is IEmergencyQueue {
             revert Error.NOT_SUPERFORM();
         }
 
-        if (chainId != CHAIN_ID) {
+        if (chainId != CHAIN_ID || chainId == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
 
