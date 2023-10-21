@@ -96,7 +96,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             /// @dev dispatch liquidity data
             _validateAndDispatchTokens(
                 ValidateAndDispatchTokensArgs(
-                    vars.liqRequest, permit2, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
+                    vars.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
                 )
             );
             unchecked {
@@ -154,7 +154,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev dispatch liquidity data
         _validateAndDispatchTokens(
             ValidateAndDispatchTokensArgs(
-                vars.liqRequest, superRegistry.PERMIT2(), superform, vars.srcChainId, req_.dstChainId, msg.sender, true
+                vars.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
             )
         );
 
@@ -286,7 +286,14 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         ActionLocalVars memory vars;
 
         vars.srcChainId = CHAIN_ID;
-        if (vars.srcChainId == req_.dstChainId) revert Error.INVALID_CHAIN_IDS();
+
+        if (vars.srcChainId == req_.dstChainId) {
+            revert Error.INVALID_CHAIN_IDS();
+        }
+
+        if (vars.srcChainId == 0 || req_.dstChainId == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
 
         InitSingleVaultData memory ambData;
 
@@ -423,7 +430,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     struct ValidateAndDispatchTokensArgs {
         LiqRequest liqRequest;
-        address permit2;
         address superform;
         uint64 srcChainId;
         uint64 dstChainId;
@@ -612,7 +618,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.ZERO_AMOUNT();
         }
 
-        if (chainId != CHAIN_ID) {
+        if (chainId != CHAIN_ID || chainId == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
 
@@ -706,7 +712,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         (,, uint64 chainId) =
             ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getSuperform(superformId_);
 
-        if (chainId != CHAIN_ID) {
+        if (chainId != CHAIN_ID || chainId == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
 
@@ -741,7 +747,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         returns (bool)
     {
         /// @dev the dstChainId_ (in the state request) must match the superforms' chainId (superform must exist on
-        /// destinatiom)
+        /// destination)
         if (dstChainId_ != DataLib.getDestinationChain(superformData_.superformId)) return false;
 
         /// @dev 10000 = 100% slippage
@@ -788,6 +794,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             if (superformsData_.amounts[i] == 0) return false;
             (, uint32 formImplementationId_, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
             if (dstChainId_ != sfDstChainId) return false;
+
+            if (sfDstChainId == 0) {
+                revert Error.INVALID_CHAIN_ID();
+            }
 
             if (
                 ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
@@ -840,6 +850,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             if (superformsData_.amounts[i] == 0) return false;
             (,, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
             if (dstChainId_ != sfDstChainId) return false;
+            if (sfDstChainId == 0) {
+                revert Error.INVALID_CHAIN_ID();
+            }
 
             unchecked {
                 ++i;
@@ -954,7 +967,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             v.len = vaultData_.liqData.length;
 
             v.totalAmount;
-            v.permit2 = superRegistry.PERMIT2();
             v.permit2dataLen = permit2data_.length;
             v.approvalAmounts = new uint256[](v.len);
 
