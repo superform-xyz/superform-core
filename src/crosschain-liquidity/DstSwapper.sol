@@ -83,7 +83,41 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         onlySwapper
         nonReentrant
     {
-        if (swappedAmount[payloadId_][index_] != 0) {
+        _processTx(payloadId_, index_, bridgeId_, txData_);
+    }
+
+    /// @inheritdoc IDstSwapper
+    function batchProcessTx(
+        uint256 payloadId_,
+        uint256[] calldata indices,
+        uint8[] calldata bridgeIds_,
+        bytes[] calldata txData_
+    )
+        external
+        override
+        onlySwapper
+    {
+        uint256 len = txData_.length;
+        for (uint256 i; i < len;) {
+            _processTx(payloadId_, indices[i], bridgeIds_[i], txData_[i]);
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                        INTERNAL HELPER FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+    function _processTx(
+        uint256 payloadId_,
+        uint256 index_,
+        uint8 bridgeId_,
+        bytes calldata txData_
+    ) 
+        internal
+    {
+               if (swappedAmount[payloadId_][index_] != 0) {
             revert Error.DST_SWAP_ALREADY_PROCESSED();
         }
 
@@ -142,30 +176,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         emit SwapProcessed(payloadId_, index_, bridgeId_, balanceAfter - balanceBefore);
     }
 
-    /// @inheritdoc IDstSwapper
-    function batchProcessTx(
-        uint256 payloadId_,
-        uint256[] calldata indices,
-        uint8[] calldata bridgeIds_,
-        bytes[] calldata txData_
-    )
-        external
-        override
-        onlySwapper
-    {
-        uint256 len = txData_.length;
-        for (uint256 i; i < len;) {
-            processTx(payloadId_, indices[i], bridgeIds_[i], txData_[i]);
 
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                        INTERNAL HELPER FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
     function _getFormUnderlyingFrom(uint256 payloadId_, uint256 index_) internal view returns (address underlying_) {
         IBaseStateRegistry coreStateRegistry =
             IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
