@@ -103,7 +103,7 @@ library DataLib {
     /// @param chainId_ is the chainId to check if the superform id belongs to
     function validateSuperformChainId(uint256 superformId_, uint64 chainId_) internal pure {
         /// @dev validates if superformId exists on factory
-        (,, uint64 chainId) = getSuperform(superformId_);
+        uint64 chainId = getDestinationChain(superformId_);
 
         if (chainId != chainId_) {
             revert Error.INVALID_CHAIN_ID();
