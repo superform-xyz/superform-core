@@ -96,6 +96,9 @@ library Error {
     /// @dev thrown when trying to set again pseudo immutables in SuperRegistry
     error DISABLED();
 
+    /// @dev thrown if rescue delay not yet set for a chain
+    error DELAY_NOT_SET();
+
     /// @dev thrown when the native tokens transfer has failed
     error NATIVE_TOKEN_TRANSFER_FAILURE();
 
