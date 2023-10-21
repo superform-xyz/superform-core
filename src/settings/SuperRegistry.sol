@@ -137,7 +137,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
         PERMIT2 = permit2_;
 
-        emit SetPermit2(PERMIT2);
+        emit SetPermit2(permit2_);
     }
 
     /// @inheritdoc ISuperRegistry
