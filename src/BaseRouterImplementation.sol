@@ -96,7 +96,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             /// @dev dispatch liquidity data
             _validateAndDispatchTokens(
                 ValidateAndDispatchTokensArgs(
-                    vars.liqRequest, permit2, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
+                    vars.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
                 )
             );
             unchecked {
@@ -154,7 +154,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev dispatch liquidity data
         _validateAndDispatchTokens(
             ValidateAndDispatchTokensArgs(
-                vars.liqRequest, superRegistry.PERMIT2(), superform, vars.srcChainId, req_.dstChainId, msg.sender, true
+                vars.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
             )
         );
 
@@ -423,7 +423,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     struct ValidateAndDispatchTokensArgs {
         LiqRequest liqRequest;
-        address permit2;
         address superform;
         uint64 srcChainId;
         uint64 dstChainId;
