@@ -960,7 +960,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             v.len = vaultData_.liqData.length;
 
             v.totalAmount;
-            v.permit2 = superRegistry.PERMIT2();
             v.permit2dataLen = permit2data_.length;
             v.approvalAmounts = new uint256[](v.len);
 
@@ -992,6 +991,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                         abi.decode(permit2data_, (uint256, uint256, bytes));
 
                     /// @dev moves the tokens from the user to the router
+                    v.permit2 = superRegistry.PERMIT2();
                     IPermit2(v.permit2).permitTransferFrom(
                         // The permit message.
                         IPermit2.PermitTransferFrom({
