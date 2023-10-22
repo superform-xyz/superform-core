@@ -954,9 +954,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         internal
         virtual
     {
-        if (vaultData_.liqData[0].token != NATIVE) {
+        address token = vaultData_.liqData[0].token;
+        if (token != NATIVE) {
             MultiTokenForwardLocalVars memory v;
-            v.token = IERC20(vaultData_.liqData[0].token);
+            v.token = IERC20(token);
             v.len = vaultData_.liqData.length;
 
             v.totalAmount;
