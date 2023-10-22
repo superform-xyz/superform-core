@@ -504,7 +504,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     finalAmounts[currLen] = multiVaultData.amounts[i];
                     maxSlippage[currLen] = multiVaultData.maxSlippage[i];
                     hasDstSwaps[currLen] = multiVaultData.hasDstSwaps[i];
-                    ++currLen;
+                    unchecked {
+                        ++currLen;
+                    }
                 }
                 unchecked {
                     ++i;
