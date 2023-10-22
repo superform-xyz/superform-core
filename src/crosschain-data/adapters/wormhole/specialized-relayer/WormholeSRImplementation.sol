@@ -100,6 +100,10 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
             message_,
             broadcastFinality
         );
+
+        // Mark the message as processed on this chain immediately after publishing
+        bytes32 messageHash = keccak256(message_);
+        processedMessages[messageHash] = true;
     }
 
     function receiveMessage(bytes memory encodedMessage_) public {
