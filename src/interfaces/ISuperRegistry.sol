@@ -130,7 +130,7 @@ interface ISuperRegistry {
     function BROADCAST_REGISTRY() external view returns (bytes32);
 
     /// @dev returns the id of the rescue registry module
-    function RESCUE_REGISTRY() external view returns (bytes32);
+    function COLLATERAL_RESCUER() external view returns (bytes32);
 
     /// @dev returns the id of the super positions module
     function SUPER_POSITIONS() external view returns (bytes32);

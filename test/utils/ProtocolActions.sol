@@ -1403,15 +1403,15 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 v.userBalanceBefore = MockERC20(v.rescueToken).balanceOf(users[action.user]);
             }
             v.coreStateRegistryDst = payable(getContract(DST_CHAINS[0], "CoreStateRegistry"));
-            v.rescueRegistry = payable(getContract(DST_CHAINS[0], "RescueRegistry"));
+            v.rescueRegistry = payable(getContract(DST_CHAINS[0], "CollateralRescuer"));
 
             if (payloadId == 0) {
                 payloadId = PAYLOAD_ID[DST_CHAINS[0]];
             }
 
-            ICoreStateRegistry.FailedDeposit memory failedDeposits =
-                CoreStateRegistry(v.coreStateRegistryDst).getFailedDeposits(payloadId);
-            v.rescueSuperformIds = failedDeposits.superformIds;
+            // ICollateralRescuer.FailedDeposit memory failedDeposits =
+            //     CollateralRescuer(v.rescueRegistry).getFailedDeposits(payloadId);
+            v.rescueSuperformIds = (CollateralRescuer(v.rescueRegistry).getFailedDeposits(payloadId)).superformIds;
             v.amounts = new uint256[](v.rescueSuperformIds.length);
 
             for (uint256 i = 0; i < v.rescueSuperformIds.length; ++i) {
@@ -1434,10 +1434,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             vm.prank(deployer);
             vm.expectRevert(Error.INVALID_RESCUE_DATA.selector);
-            RescueRegistry(v.rescueRegistry).proposeRescueFailedDeposits(payloadId, new uint256[](0));
+            CollateralRescuer(v.rescueRegistry).proposeRescueFailedDeposits(payloadId, new uint256[](0));
 
             vm.prank(deployer);
-            RescueRegistry(v.rescueRegistry).proposeRescueFailedDeposits(payloadId, v.amounts);
+            CollateralRescuer(v.rescueRegistry).proposeRescueFailedDeposits(payloadId, v.amounts);
 
             vm.warp(block.timestamp + 12 hours);
             CoreStateRegistry(v.coreStateRegistryDst).finalizeRescueFailedDeposits(payloadId, rescueInterim);

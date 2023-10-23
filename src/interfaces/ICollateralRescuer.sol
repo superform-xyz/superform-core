@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.21;
 
-/// @title IRescueRegistry
+/// @title ICollateralRescuer
 /// @author ZeroPoint Labs
 /// @notice Interface for Core State Registry
-interface IRescueRegistry {
+interface ICollateralRescuer {
     /*///////////////////////////////////////////////////////////////
                                STRUCTS
     //////////////////////////////////////////////////////////////*/
-    // struct FailedDeposit {
-    //     uint256[] superformIds;
-    //     address[] rescueTokens;
-    //     uint256[] amounts;
-    //     address refundAddress;
-    //     uint256 lastProposedTimestamp;
-    // }
+    struct FailedDeposit {
+        uint256[] superformIds;
+        address[] rescueTokens;
+        uint256[] amounts;
+        address refundAddress;
+        uint256 lastProposedTimestamp;
+    }
     /*///////////////////////////////////////////////////////////////
                                EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -40,4 +40,18 @@ interface IRescueRegistry {
     /// @param payloadId_ is the identifier of the cross-chain payload
     /// @notice should challenge within the delay window configured on SuperRegistry
     function disputeRescueFailedDeposits(uint256 payloadId_) external;
+
+    /// @dev allows CoreStateRegistry to add failed deposits
+    /// @param payloadId_ is the identifier of the cross-chain payload
+    /// @param superformId_ is the identifier of the superform whose deposit failed
+    function addFailedDeposit(uint256 payloadId_, uint256 superformId_) external;
+
+    /// @dev allows CoreStateRegistry to delete failed deposits
+    /// @param payloadId_ is the identifier of the cross-chain payload to be deleted
+    function deleteFailedDeposits(uint256 payloadId_) external;
+
+    /// @dev allows users to read the superformIds that failed in a specific payloadId_
+    /// @param payloadId_ is the identifier of the cross-chain payload.
+    /// @return superformIds_ is the identifiers of superforms in the payloadId that got failed.
+    function getFailedDeposits(uint256 payloadId_) external view returns (FailedDeposit memory);
 }

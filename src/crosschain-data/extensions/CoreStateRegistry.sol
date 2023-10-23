@@ -17,6 +17,7 @@ import { IERC4626Form } from "../../forms/interfaces/IERC4626Form.sol";
 import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
 import { Error } from "../../utils/Error.sol";
 import "../../interfaces/ICoreStateRegistry.sol";
+import "../../interfaces/ICollateralRescuer.sol";
 
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
@@ -30,13 +31,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     Constants
     //////////////////////////////////////////////////////////////*/
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
-    /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev just stores the superformIds that failed in a specific payload id
-    mapping(uint256 payloadId => FailedDeposit) internal failedDeposits;
 
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
@@ -63,11 +57,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     modifier onlySender() override {
         if (superRegistry.getSuperformRouterId(msg.sender) == 0) revert Error.NOT_SUPER_ROUTER();
-        _;
-    }
-
-    modifier onlyRescueRegistry() {
-        if (msg.sender != superRegistry.getAddress(keccak256("RESCUE_REGISTRY"))) revert Error.NOT_RESCUE_REGISTRY();
         _;
     }
 
@@ -247,19 +236,22 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     /// @inheritdoc ICoreStateRegistry
     /// @notice is an open function & can be executed by anyone
     function finalizeRescueFailedDeposits(uint256 payloadId_, bool rescueInterim_) external override {
-        uint256 lastProposedTimestamp = failedDeposits[payloadId_].lastProposedTimestamp;
+        ICollateralRescuer collateralRescuer = ICollateralRescuer(_getAddress(keccak256("COLLATERAL_RESCUER")));
+        ICollateralRescuer.FailedDeposit memory failedDeposit = collateralRescuer.getFailedDeposits(payloadId_);
+
+        uint256 lastProposedTimestamp = failedDeposit.lastProposedTimestamp;
 
         /// @dev the timelock is elapsed
         if (lastProposedTimestamp == 0 || block.timestamp < lastProposedTimestamp + _getDelay()) {
             revert Error.RESCUE_LOCKED();
         }
 
-        uint256[] memory superformIds = failedDeposits[payloadId_].superformIds;
-        uint256[] memory amounts = failedDeposits[payloadId_].amounts;
-        address refundAddress = failedDeposits[payloadId_].refundAddress;
+        uint256[] memory superformIds = failedDeposit.superformIds;
+        uint256[] memory amounts = failedDeposit.amounts;
+        address refundAddress = failedDeposit.refundAddress;
 
         /// @dev deleted to prevent re-entrancy
-        delete failedDeposits[payloadId_];
+        collateralRescuer.deleteFailedDeposits(payloadId_);
 
         for (uint256 i; i < superformIds.length;) {
             (address form_,,) = DataLib.getSuperform(superformIds[i]);
@@ -283,27 +275,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         }
 
         emit RescueFinalized(payloadId_);
-    }
-
-    function setFailedDeposits(
-        uint256 payloadId_,
-        uint256[] memory amounts_,
-        address refundAddress_,
-        uint256 lastProposedTimestamp_
-    )
-        external
-        override
-        onlyRescueRegistry
-    {
-        /// @dev TODO: add validations
-        failedDeposits[payloadId_].amounts = amounts_;
-        failedDeposits[payloadId_].refundAddress = refundAddress_;
-        failedDeposits[payloadId_].lastProposedTimestamp = lastProposedTimestamp_;
-    }
-
-    /// @inheritdoc ICoreStateRegistry
-    function getFailedDeposits(uint256 payloadId_) external view override returns (FailedDeposit memory) {
-        return failedDeposits[payloadId_];
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -517,7 +488,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         internal
         returns (uint256, PayloadState, uint256)
     {
+        ICollateralRescuer collateralRescuer = ICollateralRescuer(_getAddress(keccak256("COLLATERAL_RESCUER")));
         bool failedSwapQueued;
+
         if (hasDstSwap_) {
             if (dstSwapper.swappedAmount(payloadId_, index_) != finalAmount_) {
                 (, uint256 amount) = dstSwapper.getFailedSwap(payloadId_, superformId_);
@@ -526,8 +499,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     revert Error.INVALID_DST_SWAP_AMOUNT();
                 } else {
                     failedSwapQueued = true;
-                    failedDeposits[payloadId_].superformIds.push(superformId_);
-
+                    collateralRescuer.addFailedDeposit(payloadId_, superformId_);
                     /// @dev sets amount to zero and will mark the payload as PROCESSED
                     amount_ = 0;
                     finalState_ = PayloadState.PROCESSED;
@@ -543,7 +515,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 finalState_ = PayloadState.UPDATED;
                 ++validLen_;
             } else {
-                failedDeposits[payloadId_].superformIds.push(superformId_);
+                collateralRescuer.addFailedDeposit(payloadId_, superformId_);
 
                 /// @dev sets amount to zero and will mark the payload as PROCESSED
                 amount_ = 0;
@@ -791,7 +763,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     /// mapping for future rescuing
                     if (!errors) errors = true;
 
-                    failedDeposits[payloadId_].superformIds.push(multiVaultData.superformIds[i]);
+                    ICollateralRescuer(_getAddress(keccak256("COLLATERAL_RESCUER"))).addFailedDeposit(
+                        payloadId_, multiVaultData.superformIds[i]
+                    );
                 }
             } else {
                 revert Error.BRIDGE_TOKENS_PENDING();
@@ -896,7 +870,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 underlying.safeDecreaseAllowance(superform_, singleVaultData.amount);
 
                 /// @dev if any deposit fails, add it to failedDepositSuperformIds mapping for future rescuing
-                failedDeposits[payloadId_].superformIds.push(singleVaultData.superformId);
+                ICollateralRescuer(_getAddress(keccak256("COLLATERAL_RESCUER"))).addFailedDeposit(
+                    payloadId_, singleVaultData.superformId
+                );
 
                 emit FailedXChainDeposits(payloadId_);
             }

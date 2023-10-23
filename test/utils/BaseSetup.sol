@@ -35,7 +35,7 @@ import { KYCDaoNFTMock } from "../mocks/KYCDaoNFTMock.sol";
 /// @dev Protocol imports
 import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
 import { BroadcastRegistry } from "src/crosschain-data/BroadcastRegistry.sol";
-import { RescueRegistry } from "src/crosschain-data/extensions/RescueRegistry.sol";
+import { CollateralRescuer } from "src/crosschain-data/CollateralRescuer.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { ICoreStateRegistry } from "src/interfaces/ICoreStateRegistry.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
@@ -103,7 +103,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
-        "RescueRegistry",
+        "CollateralRescuer",
         "LayerzeroImplementation",
         "HyperlaneImplementation",
         "WormholeARImplementation",
@@ -448,12 +448,12 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
             /// @dev 4.4 - deploy Rescue Registry
             vars.rescueRegistry = address(
-                new RescueRegistry{salt: salt}(
+                new CollateralRescuer{salt: salt}(
                     SuperRegistry(vars.superRegistry)
                 )
             );
-            contracts[vars.chainId][bytes32(bytes("RescueRegistry"))] = vars.rescueRegistry;
-            vars.superRegistryC.setAddress(vars.superRegistryC.RESCUE_REGISTRY(), vars.rescueRegistry, vars.chainId);
+            contracts[vars.chainId][bytes32(bytes("CollateralRescuer"))] = vars.rescueRegistry;
+            vars.superRegistryC.setAddress(vars.superRegistryC.COLLATERAL_RESCUER(), vars.rescueRegistry, vars.chainId);
 
             address[] memory registryAddresses = new address[](3);
             registryAddresses[0] = vars.coreStateRegistry;

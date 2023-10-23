@@ -43,14 +43,6 @@ interface ICoreStateRegistry {
         LiqRequest[] tLiqData;
     }
 
-    struct FailedDeposit {
-        uint256[] superformIds;
-        address[] rescueTokens;
-        uint256[] amounts;
-        address refundAddress;
-        uint256 lastProposedTimestamp;
-    }
-
     /*///////////////////////////////////////////////////////////////
                                EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -72,29 +64,6 @@ interface ICoreStateRegistry {
     /*///////////////////////////////////////////////////////////////
                           EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
-    function setFailedDeposits(
-        uint256 payloadId_,
-        uint256[] memory amounts_,
-        address refundAddress_,
-        uint256 lastProposedTimestamp_
-    )
-        external;
-
-    /// @dev allows users to read the superformIds that failed in a specific payloadId_
-    /// @param payloadId_ is the identifier of the cross-chain payload.
-    /// @return superformIds_ is the identifiers of superforms in the payloadId that got failed.
-    function getFailedDeposits(uint256 payloadId_)
-        external
-        view
-        returns (
-            // uint256[] memory superformIds,
-            // address[] memory rescueTokens,
-            // uint256[] memory amounts,
-            // address refundAddress,
-            // uint256 lastProposedTimestamp
-            FailedDeposit memory
-        );
 
     /// @dev allows accounts with {CORE_STATE_REGISTRY_UPDATER_ROLE} to modify a received cross-chain deposit payload.
     /// @param payloadId_ is the identifier of the cross-chain payload to be updated.

@@ -6,6 +6,7 @@ import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 
 /// @dev Protocol imports
 import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
+import { CollateralRescuer } from "src/crosschain-data/CollateralRescuer.sol";
 import { BroadcastRegistry } from "src/crosschain-data/BroadcastRegistry.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
@@ -55,6 +56,7 @@ struct SetupVars {
     address twoStepsFormStateRegistry;
     address broadcastRegistry;
     address coreStateRegistry;
+    address collateralRescuer;
     address UNDERLYING_TOKEN;
     address vault;
     address timelockVault;
@@ -86,7 +88,7 @@ abstract contract AbstractDeploy is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[22] public contractNames = [
+    string[23] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -108,7 +110,8 @@ abstract contract AbstractDeploy is Script {
         "PayloadHelper",
         "PaymentHelper",
         "PayMaster",
-        "EmergencyQueue"
+        "EmergencyQueue",
+        "CollateralRescuer"
     ];
 
     bytes32 constant salt = "SUPERFORM_4RD_TEST";
@@ -349,6 +352,12 @@ abstract contract AbstractDeploy is Script {
         contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars.coreStateRegistry;
 
         vars.superRegistryC.setAddress(vars.superRegistryC.CORE_STATE_REGISTRY(), vars.coreStateRegistry, vars.chainId);
+
+        /// @dev 3.15 - deploy Collateral Rescuer
+        vars.collateralRescuer = address(new CollateralRescuer{salt: salt}(vars.superRegistryC));
+        contracts[vars.chainId][bytes32(bytes("CollateralRescuer"))] = vars.collateralRescuer;
+
+        vars.superRegistryC.setAddress(vars.superRegistryC.COLLATERAL_RESCUER(), vars.collateralRescuer, vars.chainId);
 
         /// @dev 3.2 - deploy Form State Registry
         vars.twoStepsFormStateRegistry = address(new TimelockStateRegistry{salt: salt}(vars.superRegistryC));
@@ -671,6 +680,12 @@ abstract contract AbstractDeploy is Script {
                 vars.superRegistryC.setAddress(
                     vars.superRegistryC.CORE_STATE_REGISTRY(),
                     getContract(vars.dstChainId, "CoreStateRegistry"),
+                    vars.dstChainId
+                );
+
+                vars.superRegistryC.setAddress(
+                    vars.superRegistryC.COLLATERAL_RESCUER(),
+                    getContract(vars.dstChainId, "CollateralRescuer"),
                     vars.dstChainId
                 );
 
