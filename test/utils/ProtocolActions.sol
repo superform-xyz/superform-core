@@ -985,8 +985,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                                         aV[i].toChainId,
                                         vars.underlyingDstToken[0],
                                         vars.singleVaultsPayloadArg.amount,
-                                        action.slippage,
-                                        vars.underlyingWith0Slippage
+                                        action.slippage
                                     );
                                 }
                             }
@@ -2264,8 +2263,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint64 targetChainId_,
         address underlyingTokenDst_,
         uint256 amount_,
-        int256 slippage_,
-        uint256 underlyingWith0Slippage
+        int256 slippage_
     )
         internal
     {
@@ -2284,9 +2282,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         );
 
         vm.prank(deployer);
-        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).processTx(
-            1, 0, liqBridgeKind_, txData, underlyingWith0Slippage
-        );
+        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).processTx(1, 0, liqBridgeKind_, txData);
         vm.selectFork(initialFork);
     }
 
@@ -2327,7 +2323,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         }
 
         DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).batchProcessTx(
-            1, indices, liqBridgeKinds_, txDatas, underlyingWith0Slippages
+            1, indices, liqBridgeKinds_, txDatas
         );
         vm.selectFork(initialFork);
     }

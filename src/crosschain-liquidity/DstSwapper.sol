@@ -52,7 +52,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         _;
     }
 
-    /// @param superRegistry_        Superform registry contract
+    /// @param superRegistry_ superform registry contract
     constructor(address superRegistry_) {
         CHAIN_ID = uint64(block.chainid);
         superRegistry = ISuperRegistry(superRegistry_);
@@ -69,6 +69,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         address finalDst;
         address to;
         address underlying;
+        uint256 expAmount;
         uint256 maxSlippage;
     }
 
@@ -77,8 +78,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         uint256 payloadId_,
         uint256 index_,
         uint8 bridgeId_,
-        bytes calldata txData_,
-        uint256 underlyingWith0Slippage_
+        bytes calldata txData_
     )
         public
         override
@@ -112,7 +112,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
 
         /// @dev get the address of the bridge to send the txData to.
         v.to = superRegistry.getBridgeAddress(bridgeId_);
-        (v.underlying, v.maxSlippage) = _getFormUnderlyingFrom(payloadId_, index_);
+        (v.underlying, v.expAmount, v.maxSlippage) = _getFormUnderlyingFrom(payloadId_, index_);
 
         uint256 balanceBefore = IERC20(v.underlying).balanceOf(v.finalDst);
         if (approvalToken_ != NATIVE) {
@@ -133,9 +133,9 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
             revert Error.INVALID_SWAP_OUTPUT();
         }
 
-        /// @dev if actual underlying is less than underlyingWith0Slippage_ adjusted
+        /// @dev if actual underlying is less than expAmount adjusted
         /// with maxSlippage, invariant breaks
-        if (balanceAfter - balanceBefore < ((underlyingWith0Slippage_ * (10_000 - v.maxSlippage)) / 10_000)) {
+        if (balanceAfter - balanceBefore < ((v.expAmount * (10_000 - v.maxSlippage)) / 10_000)) {
             revert Error.MAX_SLIPPAGE_INVARIANT_BROKEN();
         }
 
@@ -151,8 +151,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         uint256 payloadId_,
         uint256[] calldata indices,
         uint8[] calldata bridgeIds_,
-        bytes[] calldata txData_,
-        uint256[] calldata underlyingsWith0Slippage_
+        bytes[] calldata txData_
     )
         external
         override
@@ -160,7 +159,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     {
         uint256 len = txData_.length;
         for (uint256 i; i < len;) {
-            processTx(payloadId_, indices[i], bridgeIds_[i], txData_[i], underlyingsWith0Slippage_[i]);
+            processTx(payloadId_, indices[i], bridgeIds_[i], txData_[i]);
 
             unchecked {
                 ++i;
@@ -244,7 +243,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     )
         internal
         view
-        returns (address underlying_, uint256 maxSlippage)
+        returns (address underlying_, uint256 amount_, uint256 maxSlippage_)
     {
         IBaseStateRegistry coreStateRegistry =
             IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
@@ -269,7 +268,8 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
 
             (address form_,,) = DataLib.getSuperform(data.superformIds[index_]);
             underlying_ = IERC4626Form(form_).getVaultAsset();
-            maxSlippage = data.maxSlippage[index_];
+            maxSlippage_ = data.maxSlippage[index_];
+            amount_ = data.amounts[index_];
         } else {
             if (index_ != 0) {
                 revert Error.INVALID_INDEX();
@@ -278,7 +278,8 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
             InitSingleVaultData memory data = abi.decode(payload, (InitSingleVaultData));
             (address form_,,) = DataLib.getSuperform(data.superformId);
             underlying_ = IERC4626Form(form_).getVaultAsset();
-            maxSlippage = data.maxSlippage;
+            maxSlippage_ = data.maxSlippage;
+            amount_ = data.amount;
         }
     }
 
