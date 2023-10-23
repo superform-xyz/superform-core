@@ -18,10 +18,10 @@ import {
     LiqRequest
 } from "../../types/DataTypes.sol";
 import { DataLib } from "../../libraries/DataLib.sol";
-
 /// @title PayloadHelper
 /// @author ZeroPoint Labs
 /// @dev helps decode payload data more easily. Used for off-chain purposes
+
 contract PayloadHelper is IPayloadHelper {
     using DataLib for uint256;
 
@@ -69,19 +69,6 @@ contract PayloadHelper is IPayloadHelper {
     ISuperRegistry public immutable superRegistry;
 
     /*///////////////////////////////////////////////////////////////
-                                MODIFIERS
-    //////////////////////////////////////////////////////////////*/
-
-    modifier isValidPayloadId(uint256 payloadId_) {
-        IBaseStateRegistry coreStateRegistry =
-            IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
-        if (payloadId_ > coreStateRegistry.payloadsCount()) {
-            revert Error.INVALID_PAYLOAD_ID();
-        }
-        _;
-    }
-
-    /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
@@ -98,7 +85,6 @@ contract PayloadHelper is IPayloadHelper {
         external
         view
         override
-        isValidPayloadId(dstPayloadId_)
         returns (
             uint8 txType,
             uint8 callbackType,
@@ -111,14 +97,20 @@ contract PayloadHelper is IPayloadHelper {
             uint8 superformRouterId
         )
     {
+        IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
+
+        _isValidPayloadId(dstPayloadId_, coreStateRegistry);
 
         DecodeDstPayloadInternalVars memory v;
-
+        (v.txType, v.callbackType, v.multi, v.srcSender, v.srcChainId) =
+            _decodePayloadHeader(dstPayloadId_, coreStateRegistry);
 
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
-            (v.amounts, v.srcPayloadId, v.superformRouterId) = _decodeReturnData(dstPayloadId_, v.multi);
+            (v.amounts, v.srcPayloadId, v.superformRouterId) =
+                _decodeReturnData(dstPayloadId_, v.multi, coreStateRegistry);
         } else if (v.callbackType == uint256(CallbackType.INIT)) {
-            (v.amounts, v.slippages, v.superformIds, v.srcPayloadId, v.superformRouterId) = _decodeInitData(dstPayloadId_, v.multi);
+            (v.amounts, v.slippages, v.superformIds, v.srcPayloadId, v.superformRouterId) =
+                _decodeInitData(dstPayloadId_, v.multi, coreStateRegistry);
         }
 
         return (
@@ -130,15 +122,15 @@ contract PayloadHelper is IPayloadHelper {
             v.slippages,
             v.superformIds,
             v.srcPayloadId,
-            v.superformRouterId);
-            }
+            v.superformRouterId
+        );
+    }
 
     /// @inheritdoc IPayloadHelper
     function decodeCoreStateRegistryPayloadLiqData(uint256 dstPayloadId_)
         external
         view
         override
-        isValidPayloadId(dstPayloadId_)
         returns (
             uint8[] memory bridgeIds,
             bytes[] memory txDatas,
@@ -150,14 +142,17 @@ contract PayloadHelper is IPayloadHelper {
             address dstRefundAddress
         )
     {
+        IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
+
+        _isValidPayloadId(dstPayloadId_, coreStateRegistry);
         DecodeDstPayloadLiqDataInternalVars memory v;
 
-        (, v.callbackType, v.multi,,) = _decodePayloadHeader(dstPayloadId_);
+        (, v.callbackType, v.multi,,) = _decodePayloadHeader(dstPayloadId_, coreStateRegistry);
 
         if (v.multi == 1) {
-            return _decodeMultiLiqData(dstPayloadId_);
+            return _decodeMultiLiqData(dstPayloadId_, coreStateRegistry);
         } else {
-            return _decodeSingleLiqData(dstPayloadId_);
+            return _decodeSingleLiqData(dstPayloadId_, coreStateRegistry);
         }
     }
 
@@ -223,73 +218,101 @@ contract PayloadHelper is IPayloadHelper {
                         INTERNAL HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function _getCoreStateRegistry() 
-        internal
-        view 
-        returns (IBaseStateRegistry) 
-    {
+    function _isValidPayloadId(uint256 payloadId_, IBaseStateRegistry coreStateRegistry) internal view {
+        if (payloadId_ > coreStateRegistry.payloadsCount()) {
+            revert Error.INVALID_PAYLOAD_ID();
+        }
+    }
+
+    function _getCoreStateRegistry() internal view returns (IBaseStateRegistry) {
         return IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
     }
 
-    function _decodePayloadHeader(uint256 dstPayloadId_) 
+    function _decodePayloadHeader(
+        uint256 dstPayloadId_,
+        IBaseStateRegistry coreStateRegistry_
+    )
         internal
         view
-        returns (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId) 
+        returns (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId)
     {
-        IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
-        (txType, callbackType, multi, , srcSender, srcChainId) = coreStateRegistry.payloadHeader(dstPayloadId_).decodeTxInfo();
+        (txType, callbackType, multi,, srcSender, srcChainId) =
+            coreStateRegistry_.payloadHeader(dstPayloadId_).decodeTxInfo();
         return (txType, callbackType, multi, srcSender, srcChainId);
     }
 
-    function _decodeReturnData(uint256 dstPayloadId_, uint8 multi)
+    function _decodeReturnData(
+        uint256 dstPayloadId_,
+        uint8 multi_,
+        IBaseStateRegistry coreStateRegistry_
+    )
         internal
-        view 
-        returns (uint256[] memory amounts, uint256 srcPayloadId, uint8 superformRouterId) 
+        view
+        returns (uint256[] memory amounts, uint256 srcPayloadId, uint8 superformRouterId)
     {
-        IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
-        if (multi == 1) {
-            ReturnMultiData memory rd = abi.decode(coreStateRegistry.payloadBody(dstPayloadId_), (ReturnMultiData));
+        if (multi_ == 1) {
+            ReturnMultiData memory rd = abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (ReturnMultiData));
             return (rd.amounts, rd.payloadId, rd.superformRouterId);
         } else {
-            ReturnSingleData memory rsd = abi.decode(coreStateRegistry.payloadBody(dstPayloadId_), (ReturnSingleData));
+            ReturnSingleData memory rsd = abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (ReturnSingleData));
             amounts = new uint256[](1);
             amounts[0] = rsd.amount;
             return (amounts, rsd.payloadId, rsd.superformRouterId);
         }
     }
 
-    function _decodeInitData(uint256 dstPayloadId_, uint8 multi)
+    function _decodeInitData(
+        uint256 dstPayloadId_,
+        uint8 multi_,
+        IBaseStateRegistry coreStateRegistry_
+    )
         internal
-        view 
-        returns (uint256[] memory amounts, uint256[] memory slippages, uint256[] memory superformIds,
-        uint256 srcPayloadId, uint8 superformRouterId) 
+        view
+        returns (
+            uint256[] memory amounts,
+            uint256[] memory slippages,
+            uint256[] memory superformIds,
+            uint256 srcPayloadId,
+            uint8 superformRouterId
+        )
     {
-        IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
-        if (multi == 1) {
-            InitMultiVaultData memory imvd = abi.decode(coreStateRegistry.payloadBody(dstPayloadId_), (InitMultiVaultData));
+        if (multi_ == 1) {
+            InitMultiVaultData memory imvd =
+                abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (InitMultiVaultData));
+
             return (imvd.amounts, imvd.maxSlippage, imvd.superformIds, imvd.payloadId, imvd.superformRouterId);
         } else {
-            InitSingleVaultData memory isvd = abi.decode(coreStateRegistry.payloadBody(dstPayloadId_), (InitSingleVaultData));
+            InitSingleVaultData memory isvd =
+                abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (InitSingleVaultData));
             amounts = new uint256[](1);
             amounts[0] = isvd.amount;
             slippages = new uint256[](1);
             slippages[0] = isvd.maxSlippage;
             superformIds = new uint256[](1);
             superformIds[0] = isvd.superformId;
-            
+
             return (amounts, slippages, superformIds, isvd.payloadId, isvd.superformRouterId);
         }
     }
 
-    function _decodeMultiLiqData(uint256 dstPayloadId_)
+    function _decodeMultiLiqData(
+        uint256 dstPayloadId_,
+        IBaseStateRegistry coreStateRegistry_
+    )
         internal
-        view 
-        returns (uint8[] memory bridgeIds, bytes[] memory txDatas, address[] memory tokens,
-        uint64[] memory liqDstChainIds, uint256[] memory amountsIn, uint256[] memory nativeAmounts,
-        bool[] memory hasDstSwaps, address dstRefundAddress) 
+        view
+        returns (
+            uint8[] memory bridgeIds,
+            bytes[] memory txDatas,
+            address[] memory tokens,
+            uint64[] memory liqDstChainIds,
+            uint256[] memory amountsIn,
+            uint256[] memory nativeAmounts,
+            bool[] memory hasDstSwaps,
+            address dstRefundAddress
+        )
     {
-        IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
-        InitMultiVaultData memory imvd = abi.decode(coreStateRegistry.payloadBody(dstPayloadId_), (InitMultiVaultData));
+        InitMultiVaultData memory imvd = abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (InitMultiVaultData));
 
         bridgeIds = new uint8[](imvd.liqData.length);
         txDatas = new bytes[](imvd.liqData.length);
@@ -305,22 +328,33 @@ contract PayloadHelper is IPayloadHelper {
             txDatas[i] = imvd.liqData[i].txData;
             tokens[i] = imvd.liqData[i].token;
             liqDstChainIds[i] = imvd.liqData[i].liqDstChainId;
-            amountsIn[i] = IBridgeValidator(superRegistry.getBridgeValidator(bridgeIds[i])).decodeAmountIn(txDatas[i], false);
+            amountsIn[i] =
+                IBridgeValidator(superRegistry.getBridgeValidator(bridgeIds[i])).decodeAmountIn(txDatas[i], false);
             nativeAmounts[i] = imvd.liqData[i].nativeAmount;
         }
 
         return (bridgeIds, txDatas, tokens, liqDstChainIds, amountsIn, nativeAmounts, hasDstSwaps, dstRefundAddress);
     }
 
-    function _decodeSingleLiqData(uint256 dstPayloadId_)
+    function _decodeSingleLiqData(
+        uint256 dstPayloadId_,
+        IBaseStateRegistry coreStateRegistry_
+    )
         internal
-        view 
-        returns (uint8[] memory bridgeIds, bytes[] memory txDatas, address[] memory tokens,
-        uint64[] memory liqDstChainIds, uint256[] memory amountsIn, uint256[] memory nativeAmounts,
-        bool[] memory hasDstSwaps, address dstRefundAddress) 
+        view
+        returns (
+            uint8[] memory bridgeIds,
+            bytes[] memory txDatas,
+            address[] memory tokens,
+            uint64[] memory liqDstChainIds,
+            uint256[] memory amountsIn,
+            uint256[] memory nativeAmounts,
+            bool[] memory hasDstSwaps,
+            address dstRefundAddress
+        )
     {
-        IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
-        InitSingleVaultData memory isvd = abi.decode(coreStateRegistry.payloadBody(dstPayloadId_), (InitSingleVaultData));
+        InitSingleVaultData memory isvd =
+            abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (InitSingleVaultData));
 
         bridgeIds = new uint8[](1);
         bridgeIds[0] = isvd.liqData.bridgeId;
@@ -335,7 +369,8 @@ contract PayloadHelper is IPayloadHelper {
         liqDstChainIds[0] = isvd.liqData.liqDstChainId;
 
         amountsIn = new uint256[](1);
-        amountsIn[0] = IBridgeValidator(superRegistry.getBridgeValidator(bridgeIds[0])).decodeAmountIn(txDatas[0], false);
+        amountsIn[0] =
+            IBridgeValidator(superRegistry.getBridgeValidator(bridgeIds[0])).decodeAmountIn(txDatas[0], false);
 
         nativeAmounts = new uint256[](1);
         nativeAmounts[0] = isvd.liqData.nativeAmount;
