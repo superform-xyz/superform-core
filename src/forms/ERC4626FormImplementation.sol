@@ -372,6 +372,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             if (dust > 0) {
                 token.safeTransferFrom(address(this), paymaster, dust);
             }
+        } else {
+            revert Error.ZERO_ADDRESS();
         }
     }
 

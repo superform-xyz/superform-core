@@ -356,6 +356,8 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
             if (dust > 0) {
                 token.safeTransferFrom(address(this), paymaster, dust);
             }
+        } else {
+            revert Error.ZERO_ADDRESS();
         }
     }
 
