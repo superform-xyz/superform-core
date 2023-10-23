@@ -70,6 +70,10 @@ contract SuperformFactory is ISuperformFactory {
 
     /// @param superRegistry_ the superform registry contract
     constructor(address superRegistry_) {
+        if (block.chainid > type(uint64).max) {
+            revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
+        }
+
         CHAIN_ID = uint64(block.chainid);
         superRegistry = ISuperRegistry(superRegistry_);
     }

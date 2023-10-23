@@ -36,7 +36,7 @@ contract SuperformRouter is BaseRouterImplementation {
         payable
         override(BaseRouter, IBaseRouter)
     {
-        uint256 chainId = CHAIN_ID;
+        uint64 chainId = CHAIN_ID;
         uint256 balanceBefore = address(this).balance - msg.value;
         uint256 len = req_.dstChainIds.length;
         for (uint256 i; i < len;) {
@@ -135,7 +135,7 @@ contract SuperformRouter is BaseRouterImplementation {
         payable
         override(BaseRouter, IBaseRouter)
     {
-        uint256 chainId = CHAIN_ID;
+        uint64 chainId = CHAIN_ID;
         uint256 balanceBefore = address(this).balance - msg.value;
         uint256 len = req_.dstChainIds.length;
 
