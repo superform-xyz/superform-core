@@ -1,5 +1,7 @@
 # Forms
 
+run fast
+
 This directory contains Superform's "Form" smart contracts. These form contracts serve as fundamental components of the Superform DeFi infrastructure, acting as intermediaries for deposit and withdrawal actions to and from the ERC4626 compliant vaults. Each Form is uniquely associated with a single underlying Vault.
 
 All form contracts adhere to the [IBaseForm](../interfaces/IBaseForm.sol) standard interface and implement abstract functions defined in [BaseForm](../BaseForm.sol) for both same-chain and cross-chain operations. Apart from the standard ERC4626 and time-locked forms, numerous other "custom" form types can be created. These are extended from BaseForm and used when Superform needs to handle specific scenarios not covered by an existing Form.
