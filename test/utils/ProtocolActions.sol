@@ -2270,6 +2270,11 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[targetChainId_]);
 
+        /// @dev replace socket bridge with socket one inch impl for dst swap
+        if (liqBridgeKind_ == 2) {
+            liqBridgeKind_ = 3;
+        }
+
         /// @dev liqData is rebuilt here to perform to send the tokens from dstSwapProcessor to CoreStateRegistry
         bytes memory txData = _buildLiqBridgeTxDataDstSwap(
             liqBridgeKind_,
@@ -2300,6 +2305,11 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[targetChainId_]);
         bytes[] memory txDatas = new bytes[](underlyingTokensDst_.length);
+
+        /// @dev replace socket bridge with socket one inch impl for dst swap
+        for (uint256 i; i < liqBridgeKinds_.length; i++) {
+            if (liqBridgeKinds_[i] == 2) liqBridgeKinds_[i] = 3;
+        }
 
         /// @dev liqData is rebuilt here to perform to send the tokens from dstSwapProcessor to CoreStateRegistry
         for (uint256 i = 0; i < underlyingTokensDst_.length; i++) {
@@ -3039,8 +3049,15 @@ abstract contract ProtocolActions is CommonProtocolActions {
         /// for xChain it should be less since some is used for xChain message
         assertLe(getContract(CHAIN_0, "PayMaster").balance, msgValue - liqValue);
 
-        /// asserting balance of lifi mock
-        assertEq(getContract(CHAIN_0, "LiFiMock").balance, liqValue);
+        uint256 bridgesNativeBal;
+        for (uint256 i; i < 3; i++) {
+            /// asserting balance of lifi mock || socket mock || socket oneinch mock
+            address addressToCheck = i == 1
+                ? getContract(CHAIN_0, "LiFiMock")
+                : i == 2 ? getContract(CHAIN_0, "SocketMock") : getContract(CHAIN_0, "SocketOneInchMock");
+            bridgesNativeBal += addressToCheck.balance;
+        }
+        assertEq(bridgesNativeBal, liqValue);
     }
 
     struct AssertAfterWithdrawVars {

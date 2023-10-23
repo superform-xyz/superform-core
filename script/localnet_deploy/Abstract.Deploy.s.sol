@@ -18,6 +18,8 @@ import { ERC4626TimelockForm } from "src/forms/ERC4626TimelockForm.sol";
 import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
 import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
+import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator.sol";
+import { SocketOneInchValidator } from "src/crosschain-liquidity/socket/SocketOneInchValidator.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
 import { WormholeARImplementation } from
@@ -69,6 +71,8 @@ struct SetupVars {
     address superPositions;
     address superRBAC;
     address lifiValidator;
+    address socketValidator;
+    address socketOneInchValidator;
     address kycDao4626Form;
     address PayloadHelper;
     address paymentHelper;
@@ -86,7 +90,7 @@ abstract contract AbstractDeploy is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[22] public contractNames = [
+    string[24] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -95,6 +99,8 @@ abstract contract AbstractDeploy is Script {
         "WormholeARImplementation",
         "WormholeSRImplementation",
         "LiFiValidator",
+        "SocketValidator",
+        "SocketOneInchValidator",
         "DstSwapper",
         "SuperformFactory",
         "ERC4626Form",
@@ -149,8 +155,8 @@ abstract contract AbstractDeploy is Script {
     uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(2), uint32(3)];
     string[] public VAULT_KINDS = ["Vault", "TimelockedVault", "KYCDaoVault"];
 
-    /// @dev liquidity bridge ids 1 is lifi
-    uint8[] public bridgeIds = [1];
+    /// @dev liquidity bridge ids 1 is lifi, 2 is socket, 3 is socket 1inch implementation
+    uint8[] public bridgeIds = [1, 2, 3];
 
     mapping(uint64 chainId => address[] bridgeAddresses) public BRIDGE_ADDRESSES;
 
@@ -425,7 +431,15 @@ abstract contract AbstractDeploy is Script {
         vars.lifiValidator = address(new LiFiValidator{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
 
+        vars.socketValidator = address(new SocketValidator{salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars.socketValidator;
+
+        vars.socketOneInchValidator = address(new SocketOneInchValidator{salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("SocketOneInchValidator"))] = vars.socketOneInchValidator;
+
         bridgeValidators[0] = vars.lifiValidator;
+        bridgeValidators[1] = vars.socketValidator;
+        bridgeValidators[2] = vars.socketOneInchValidator;
 
         /// @dev 7 - Deploy SuperformFactory
         vars.factory = address(new SuperformFactory{salt: salt}(vars.superRegistry));
@@ -541,7 +555,7 @@ abstract contract AbstractDeploy is Script {
         );
 
         /// @dev 17 deploy emergency queue
-        vars.emergencyQueue = address(new EmergencyQueue(vars.superRegistry));
+        vars.emergencyQueue = address(new EmergencyQueue{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("EmergencyQueue"))] = vars.emergencyQueue;
         vars.superRegistryC.setAddress(vars.superRegistryC.EMERGENCY_QUEUE(), vars.emergencyQueue, vars.chainId);
         vm.stopBroadcast();
@@ -790,14 +804,41 @@ abstract contract AbstractDeploy is Script {
         lzEndpointsStorage[FTM] = FTM_lzEndpoint;
 
         mapping(uint64 chainId => address[] bridgeAddresses) storage bridgeAddresses = BRIDGE_ADDRESSES;
-        bridgeAddresses[ETH] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
-        bridgeAddresses[BSC] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
-        bridgeAddresses[AVAX] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
-        bridgeAddresses[POLY] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
-        bridgeAddresses[ARBI] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
-        bridgeAddresses[OP] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
-
-        bridgeAddresses[FTM] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
+        bridgeAddresses[ETH] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
+            0x2ddf16BA6d0180e5357d5e170eF1917a01b41fc0
+        ];
+        bridgeAddresses[BSC] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
+            0xd286595d2e3D879596FAB51f83A702D10a6db27b
+        ];
+        bridgeAddresses[AVAX] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            0x2b42AFFD4b7C14d9B7C2579229495c052672Ccd3,
+            0xbDf50eAe568ECef74796ed6022a0d453e8432410
+        ];
+        bridgeAddresses[POLY] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
+            0x2ddf16BA6d0180e5357d5e170eF1917a01b41fc0
+        ];
+        bridgeAddresses[ARBI] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
+            0xaa3d9fA3aB930aE635b001d00C612aa5b14d750e
+        ];
+        bridgeAddresses[OP] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
+            0xbDf50eAe568ECef74796ed6022a0d453e8432410
+        ];
+        bridgeAddresses[FTM] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
+            0x957301825Dc21d4A92919C9E72dC9E6C6a29e7f8
+        ];
 
         /// price feeds on all chains
         mapping(uint64 => mapping(uint64 => address)) storage priceFeeds = PRICE_FEEDS;

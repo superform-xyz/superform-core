@@ -27,7 +27,7 @@ contract SDMVDMulti021NoNativeSlippageAMB23 is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[ETH][0] = [1, 1, 1];
+        LIQ_BRIDGES[ETH][0] = [2, 2, 1];
 
         actions.push(
             TestAction({

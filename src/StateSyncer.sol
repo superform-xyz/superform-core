@@ -52,6 +52,10 @@ abstract contract StateSyncer is IStateSyncer {
     /// @param superRegistry_ the superform registry contract
     /// @param routerType_ the router type
     constructor(address superRegistry_, uint8 routerType_) {
+        if (block.chainid > type(uint64).max) {
+            revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
+        }
+
         CHAIN_ID = uint64(block.chainid);
 
         superRegistry = ISuperRegistry(superRegistry_);
@@ -99,6 +103,9 @@ abstract contract StateSyncer is IStateSyncer {
     /// @inheritdoc IStateSyncer
     function stateSync(AMBMessage memory data_) external virtual override returns (uint64 srcChainId_);
 
+    function validateSingleIdExists(uint256 superformId_) public view virtual override;
+
+    function validateBatchIdsExist(uint256[] memory superformIds_) public view virtual override;
     /*///////////////////////////////////////////////////////////////
                         INTERNAL/HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/

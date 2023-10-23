@@ -62,8 +62,8 @@ contract LiFiMock is Test {
         address from;
         uint256 toForkId;
         int256 slippage;
-        bool isMultiTx;
-        uint256 multiTxSlippageShare;
+        bool isDstSwap;
+        uint256 dstSwapSlippageShare;
         bool isDirect;
         uint256 prevForkId;
         uint256 amountOut;
@@ -80,7 +80,7 @@ contract LiFiMock is Test {
         internal
     {
         BridgeLocalVars memory v;
-        (v.from, v.toForkId,, v.slippage, v.isMultiTx, v.multiTxSlippageShare, v.isDirect,,) =
+        (v.from, v.toForkId,, v.slippage, v.isDstSwap, v.dstSwapSlippageShare, v.isDirect,,) =
             abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool, uint256, uint256));
 
         if (inputToken_ != NATIVE) {
@@ -93,8 +93,8 @@ contract LiFiMock is Test {
         vm.selectFork(v.toForkId);
 
         if (v.isDirect) v.slippage = 0;
-        else if (v.isMultiTx) v.slippage = (v.slippage * int256(v.multiTxSlippageShare)) / 100;
-        else v.slippage = (v.slippage * int256(100 - v.multiTxSlippageShare)) / 100;
+        else if (v.isDstSwap) v.slippage = (v.slippage * int256(v.dstSwapSlippageShare)) / 100;
+        else v.slippage = (v.slippage * int256(100 - v.dstSwapSlippageShare)) / 100;
 
         v.amountOut = (amount_ * uint256(10_000 - v.slippage)) / 10_000;
 
@@ -172,7 +172,7 @@ contract LiFiMock is Test {
 
         /// @dev TODO: simulate dstSwap slippage here (currently in ProtocolActions._buildLiqBridgeTxDataDstSwap()), and
         /// remove from _bridge() above
-        // if (isDstSwap) slippage = (slippage * int256(multiTxSlippageShare)) / 100;
+        // if (isDstSwap) slippage = (slippage * int256(dstSwapSlippageShare)) / 100;
         // amount_ = (amount_ * uint256(10_000 - slippage)) / 10_000;
 
         uint256 decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();

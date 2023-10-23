@@ -167,6 +167,12 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
         _validateStateSyncer(returnData.superformIds);
 
         uint256 txInfo = txHistory[returnData.payloadId];
+
+        /// @dev if txInfo is zero then the payloadId is invalid for ack
+        if (txInfo == 0) {
+            revert Error.TX_HISTORY_NOT_FOUND();
+        }
+
         address srcSender;
         uint256 txType;
 
@@ -214,6 +220,12 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
         _validateStateSyncer(returnData.superformId);
 
         uint256 txInfo = txHistory[returnData.payloadId];
+
+        /// @dev if txInfo is zero then the payloadId is invalid for ack
+        if (txInfo == 0) {
+            revert Error.TX_HISTORY_NOT_FOUND();
+        }
+
         uint256 txType;
         address srcSender;
 
@@ -240,6 +252,10 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
 
         emit Completed(returnData.payloadId);
     }
+
+    function validateSingleIdExists(uint256 superformId_) public view override(IStateSyncer, StateSyncer) { }
+
+    function validateBatchIdsExist(uint256[] memory superformIds_) public view override(IStateSyncer, StateSyncer) { }
 
     /*///////////////////////////////////////////////////////////////
                         PRIVILEGED FUNCTIONS

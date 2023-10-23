@@ -26,7 +26,7 @@ contract SXSVDTimelocked4626NoTokenInputSlippageAMB13 is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[ARBI][0] = [1];
+        LIQ_BRIDGES[ARBI][0] = [2];
 
         actions.push(
             TestAction({
@@ -38,7 +38,7 @@ contract SXSVDTimelocked4626NoTokenInputSlippageAMB13 is ProtocolActions {
                 revertRole: "",
                 slippage: 321, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 1 // 0 = DAI, 1 = USDC, 2 = WETH
              })
         );
     }

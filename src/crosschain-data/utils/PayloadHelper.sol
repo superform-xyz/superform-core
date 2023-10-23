@@ -53,7 +53,6 @@ contract PayloadHelper is IPayloadHelper {
         address[] liqDataTokens;
         uint64[] liqDataChainIds;
         uint256[] liqDataAmountsIn;
-        uint256[] liqDataAmountsOut;
         uint256[] liqDataNativeAmounts;
         bool[] hasDstSwaps;
         address dstRefundAddress;
@@ -169,7 +168,6 @@ contract PayloadHelper is IPayloadHelper {
             address[] memory tokens,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
-            uint256[] memory amountsOut,
             uint256[] memory nativeAmounts,
             bool[] memory hasDstSwaps,
             address dstRefundAddress
@@ -188,7 +186,6 @@ contract PayloadHelper is IPayloadHelper {
             v.liqDataTokens = new address[](v.imvd.liqData.length);
             v.liqDataChainIds = new uint64[](v.imvd.liqData.length);
             v.liqDataAmountsIn = new uint256[](v.imvd.liqData.length);
-            v.liqDataAmountsOut = new uint256[](v.imvd.liqData.length);
             v.liqDataNativeAmounts = new uint256[](v.imvd.liqData.length);
             v.hasDstSwaps = v.imvd.hasDstSwaps;
             v.dstRefundAddress = v.imvd.dstRefundAddress;
@@ -204,8 +201,6 @@ contract PayloadHelper is IPayloadHelper {
                 v.liqDataAmountsIn[v.i] = IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[v.i]))
                     .decodeAmountIn(v.txDatas[v.i], false);
 
-                v.liqDataAmountsOut[v.i] = IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[v.i]))
-                    .decodeMinAmountOut(v.txDatas[v.i], false);
                 v.liqDataNativeAmounts[v.i] = v.imvd.liqData[v.i].nativeAmount;
 
                 unchecked {
@@ -231,10 +226,6 @@ contract PayloadHelper is IPayloadHelper {
             v.liqDataAmountsIn[0] =
                 IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[0])).decodeAmountIn(v.txDatas[0], false);
 
-            v.liqDataAmountsOut = new uint256[](1);
-            v.liqDataAmountsOut[0] = IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[0]))
-                .decodeMinAmountOut(v.txDatas[0], false);
-
             v.liqDataNativeAmounts = new uint256[](1);
             v.liqDataNativeAmounts[0] = v.isvd.liqData.nativeAmount;
 
@@ -250,7 +241,6 @@ contract PayloadHelper is IPayloadHelper {
             v.liqDataTokens,
             v.liqDataChainIds,
             v.liqDataAmountsIn,
-            v.liqDataAmountsOut,
             v.liqDataNativeAmounts,
             v.hasDstSwaps,
             v.dstRefundAddress

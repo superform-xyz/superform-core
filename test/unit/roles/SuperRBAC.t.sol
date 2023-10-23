@@ -222,7 +222,7 @@ contract SuperRBACTest is BaseSetup {
                 BroadcastMessage(
                     "SUPER_RBAC",
                     keccak256("SYNC_REVOKE"),
-                    abi.encode(keccak256("PAYMENT_ADMIN_ROLE"), keccak256("NON_EXISTENT_ID"))
+                    abi.encode(1, keccak256("PAYMENT_ADMIN_ROLE"), keccak256("NON_EXISTENT_ID"))
                 )
             )
         );
@@ -237,22 +237,22 @@ contract SuperRBACTest is BaseSetup {
         vm.deal(deployer, 1 ether);
         vm.startPrank(deployer);
         bytes32 id = keccak256("id");
-        vm.expectRevert(Error.CANNOT_REVOKE_BROADCAST.selector);
+        vm.expectRevert(Error.CANNOT_REVOKE_NON_BROADCASTABLE_ROLES.selector);
         /// @dev setting the status as false in chain id = ETH
         superRBAC.revokeRoleSuperBroadcast{ value: 1 ether }(
             keccak256("BROADCASTER_ROLE"), deployer, generateBroadcastParams(5, 1), id
         );
-        vm.expectRevert(Error.CANNOT_REVOKE_BROADCAST.selector);
+        vm.expectRevert(Error.CANNOT_REVOKE_NON_BROADCASTABLE_ROLES.selector);
         /// @dev setting the status as false in chain id = ETH
         superRBAC.revokeRoleSuperBroadcast{ value: 1 ether }(
             keccak256("PROTOCOL_ADMIN_ROLE"), deployer, generateBroadcastParams(5, 1), id
         );
-        vm.expectRevert(Error.CANNOT_REVOKE_BROADCAST.selector);
+        vm.expectRevert(Error.CANNOT_REVOKE_NON_BROADCASTABLE_ROLES.selector);
         /// @dev setting the status as false in chain id = ETH
         superRBAC.revokeRoleSuperBroadcast{ value: 1 ether }(
             keccak256("EMERGENCY_ADMIN_ROLE"), deployer, generateBroadcastParams(5, 1), id
         );
-        vm.expectRevert(Error.CANNOT_REVOKE_BROADCAST.selector);
+        vm.expectRevert(Error.CANNOT_REVOKE_NON_BROADCASTABLE_ROLES.selector);
         /// @dev setting the status as false in chain id = ETH
         superRBAC.revokeRoleSuperBroadcast{ value: 1 ether }(
             keccak256("WORMHOLE_VAA_RELAYER_ROLE"), deployer, generateBroadcastParams(5, 1), id

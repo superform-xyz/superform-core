@@ -4,7 +4,11 @@ pragma solidity ^0.8.21;
 import "./BaseSetup.sol";
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
+import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
+
 import { LiFiMock } from "../mocks/LiFiMock.sol";
+import { SocketMock } from "../mocks/SocketMock.sol";
+import { SocketOneInchMock } from "../mocks/SocketOneInchMock.sol";
 
 abstract contract CommonProtocolActions is BaseSetup {
     /// @dev percentage of total slippage that is used for dstSwap
@@ -163,6 +167,99 @@ abstract contract CommonProtocolActions is BaseSetup {
                     LiFiMock.swapTokensGeneric.selector, bytes32(0), "", "", args.toDst, 0, swapData
                 );
             }
+        } else if (args.liqBridgeKind == 2) {
+            /// @notice bridge id 2 doesn't support same chain swaps
+            if (args.toChainId == args.srcChainId) {
+                revert();
+            }
+
+            ISocketRegistry.BridgeRequest memory bridgeRequest;
+            ISocketRegistry.MiddlewareRequest memory middlewareRequest;
+            ISocketRegistry.UserRequest memory userRequest;
+
+            /// @dev middlware request is used if there is a swap involved before the bridging action (external !=
+            /// underlying)
+            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of
+            /// bridging request
+            if (args.externalToken != args.underlyingToken) {
+                middlewareRequest = ISocketRegistry.MiddlewareRequest(
+                    1,
+                    /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
+                    0,
+                    /// @dev unused in tests
+                    args.externalToken,
+                    abi.encode(args.from, args.USDPerExternalToken, args.USDPerUnderlyingToken)
+                );
+                /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
+                /// mainnet
+
+                bridgeRequest = ISocketRegistry.BridgeRequest(
+                    1,
+                    /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
+                    0,
+                    /// @dev unused in tests
+                    args.withdraw ? args.externalToken : args.underlyingToken,
+                    /// @dev initial token to extract will be externalToken in args, which is the actual
+                    /// underlyingTokenDst for withdraws (check how the call is made in
+                    /// _buildSingleVaultWithdrawCallData )
+                    abi.encode(
+                        args.from,
+                        FORKS[args.liqDstChainId],
+                        args.underlyingTokenDst,
+                        args.slippage,
+                        args.dstSwap,
+                        MULTI_TX_SLIPPAGE_SHARE,
+                        args.USDPerExternalToken,
+                        args.USDPerUnderlyingToken,
+                        args.USDPerUnderlyingTokenDst
+                    )
+                );
+                /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
+                /// mainnet
+            } else {
+                bridgeRequest = ISocketRegistry.BridgeRequest(
+                    1,
+                    /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
+                    0,
+                    args.externalToken,
+                    /// @dev initial token to extract will be externalToken in args, which is the actual
+                    /// underlyingTokenDst for withdraws (check how the call is made in
+                    /// _buildSingleVaultWithdrawCallData )
+                    abi.encode(
+                        args.from,
+                        FORKS[args.liqDstChainId],
+                        args.underlyingTokenDst,
+                        args.slippage,
+                        args.dstSwap,
+                        MULTI_TX_SLIPPAGE_SHARE,
+                        args.USDPerExternalToken,
+                        args.USDPerUnderlyingToken,
+                        args.USDPerUnderlyingTokenDst
+                    )
+                );
+                /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
+                /// mainnet
+            }
+
+            /// @dev for cross-chain dstSwap actions, 1st liquidity dst is DstSwapper
+            userRequest = ISocketRegistry.UserRequest(
+                args.dstSwap ? getContract(args.toChainId, "DstSwapper") : args.toDst,
+                args.toChainId,
+                args.amount,
+                middlewareRequest,
+                bridgeRequest
+            );
+
+            txData = abi.encodeWithSelector(SocketMock.outboundTransferTo.selector, userRequest);
+        } else if (args.liqBridgeKind == 3) {
+            txData = abi.encodeWithSelector(
+                SocketOneInchMock.performDirectAction.selector,
+                args.externalToken,
+                args.underlyingToken,
+                args.toDst,
+                args.amount,
+                abi.encode(args.from, args.USDPerExternalToken, args.USDPerUnderlyingToken)
+            );
         }
     }
 
@@ -203,8 +300,8 @@ abstract contract CommonProtocolActions is BaseSetup {
                 receivingTokenDst_,
                 /// @dev in dst swap, assumes a swap between same token - FIXME
                 amount_,
-                /// @dev _buildLiqBridgeTxDataMultiTx() will only be called when multiTx is true
-                /// @dev and multiTx means cross-chain (last arg)
+                /// @dev _buildLiqBridgeTxDataDstSwap() will only be called when DstSwap is true
+                /// @dev and dstswap means cross-chain (last arg)
                 abi.encode(
                     from_,
                     FORKS[toChainId_],
@@ -228,6 +325,15 @@ abstract contract CommonProtocolActions is BaseSetup {
                 getContract(toChainId_, "CoreStateRegistry"),
                 0,
                 swapData
+            );
+        } else if (liqBridgeKind_ == 3) {
+            txData = abi.encodeWithSelector(
+                SocketOneInchMock.performDirectAction.selector,
+                sendingTokenDst_,
+                receivingTokenDst_,
+                getContract(toChainId_, "CoreStateRegistry"),
+                amount_,
+                abi.encode(from_, uint256(USDPerSendingTokenDst), uint256(USDPerReceivingTokenDst))
             );
         }
     }
@@ -327,6 +433,64 @@ abstract contract CommonProtocolActions is BaseSetup {
                     LiFiMock.swapTokensGeneric.selector, bytes32(0), "", "", receiver_, 0, swapData
                 );
             }
+        } else if (liqBridgeKind_ == 2) {
+            /// @notice bridge id 2 doesn't support same chain swaps
+            if (sameChain_) {
+                revert();
+            }
+
+            ISocketRegistry.BridgeRequest memory bridgeRequest;
+            ISocketRegistry.MiddlewareRequest memory middlewareRequest;
+
+            /// @dev middlware request is used if there is a swap involved before the bridging action (external !=
+            /// underlying)
+            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of
+            /// bridging request
+            middlewareRequest = ISocketRegistry.MiddlewareRequest(
+                1,
+                /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
+                0,
+                /// @dev unused in tests
+                underlyingToken_,
+                abi.encode(from_)
+            );
+
+            /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
+            /// mainnet
+            bridgeRequest = ISocketRegistry.BridgeRequest(
+                1,
+                /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
+                0,
+                /// @dev unused in tests
+                underlyingToken_,
+                /// @dev initial token to extract will be externalToken in args, which is the actual
+                /// underlyingTokenDst for withdraws (check how the call is made in
+                /// _buildSingleVaultWithdrawCallData )
+                abi.encode(
+                    from_,
+                    FORKS[toChainId_],
+                    underlyingToken_,
+                    totalSlippage,
+                    false,
+                    0,
+                    uint256(USDPerUnderlyingToken),
+                    uint256(USDPerUnderlyingTokenDst)
+                )
+            );
+
+            txData = abi.encodeWithSelector(
+                SocketMock.outboundTransferTo.selector,
+                ISocketRegistry.UserRequest(receiver_, toChainId_, amount_, middlewareRequest, bridgeRequest)
+            );
+        } else if (liqBridgeKind_ == 3) {
+            txData = abi.encodeWithSelector(
+                SocketOneInchMock.performDirectAction.selector,
+                underlyingToken_,
+                underlyingToken_,
+                receiver_,
+                amount_,
+                abi.encode(from_, USDPerUnderlyingToken, USDPerUnderlyingTokenDst)
+            );
         }
     }
 }

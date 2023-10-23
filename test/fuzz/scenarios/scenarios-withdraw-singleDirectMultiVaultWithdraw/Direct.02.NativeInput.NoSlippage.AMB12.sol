@@ -31,8 +31,8 @@ contract SDiMVW02NativeInputNoSlippageAMB12 is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[OP][0] = [1, 1, 1];
-        LIQ_BRIDGES[OP][1] = [1, 1, 1];
+        LIQ_BRIDGES[OP][0] = [1, 1, 3];
+        LIQ_BRIDGES[OP][1] = [1, 3, 1];
 
         FINAL_LIQ_DST_WITHDRAW[OP] = [OP, OP, OP];
 

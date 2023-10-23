@@ -41,7 +41,7 @@ contract EmergencyQueue is IEmergencyQueue {
             revert Error.NOT_SUPERFORM();
         }
 
-        if (chainId != CHAIN_ID) {
+        if (chainId != CHAIN_ID || chainId == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
 
@@ -65,6 +65,10 @@ contract EmergencyQueue is IEmergencyQueue {
 
     /// @param superRegistry_ the superform registry contract
     constructor(address superRegistry_) {
+        if (block.chainid > type(uint64).max) {
+            revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
+        }
+
         superRegistry = ISuperRegistry(superRegistry_);
         CHAIN_ID = uint64(block.chainid);
     }

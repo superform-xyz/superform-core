@@ -102,8 +102,8 @@ library Error {
     /// @dev thrown when not possible to revoke last admin
     error CANNOT_REVOKE_LAST_ADMIN();
 
-    /// @dev thrown when not possible to revoke last admin
-    error CANNOT_REVOKE_BROADCAST();
+    /// @dev thrown when not possible to revoke a role in broadcast mode
+    error CANNOT_REVOKE_NON_BROADCASTABLE_ROLES();
 
     /// @dev thrown if the delay is invalid
     error INVALID_TIMELOCK_DELAY();
@@ -119,6 +119,14 @@ library Error {
 
     /// @dev thrown when the failed dstSwap is already enqueued
     error FAILED_DST_SWAP_ALREADY_PROCESSED();
+    /// @dev thrown if permit2 not supported on given chain
+    error PERMIT2_NOT_SUPPORTED();
+
+    /// @dev thrown if tx history is not found while state sync
+    error TX_HISTORY_NOT_FOUND();
+
+    /// @dev thrown if chain id exceeds max(uint64)
+    error BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
 
     /*///////////////////////////////////////////////////////////////
                          LIQUIDITY BRIDGE ERRORS
@@ -366,6 +374,13 @@ library Error {
 
     /// @dev thrown when the uri cannot be updated
     error DYNAMIC_URI_FROZEN();
+
+    /*///////////////////////////////////////////////////////////////
+                        SUPER TRANSMUTER ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev thrown when the transmuter is not yet registered
+    error TRANSMUTER_NOT_REGISTERED();
 
     /*///////////////////////////////////////////////////////////////
                         PAYMENT HELPER ERRORS

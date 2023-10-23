@@ -31,8 +31,8 @@ contract SDMVW142TokenInputSlippageAMB12 is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[AVAX][0] = [1, 1, 1];
-        LIQ_BRIDGES[AVAX][1] = [1, 1, 1];
+        LIQ_BRIDGES[AVAX][0] = [1, 1, 2];
+        LIQ_BRIDGES[AVAX][1] = [1, 2, 1];
 
         FINAL_LIQ_DST_WITHDRAW[AVAX] = [ETH, ETH, ETH];
 

@@ -64,4 +64,12 @@ interface IStateSyncer {
     /// @dev returns the payload header for a tx id on the source chain
     /// @param txId_ is the identifier of the transaction issued by super router
     function txHistory(uint256 txId_) external view returns (uint256);
+
+    /// @dev validates wether the superformId has a superShare representing it
+    /// @param superformId_ is the id of the superform
+    function validateSingleIdExists(uint256 superformId_) external view;
+
+    /// @dev validates wether the superformIds have superShares representing them
+    /// @param superformIds_ are the ids of the superforms
+    function validateBatchIdsExist(uint256[] memory superformIds_) external view;
 }

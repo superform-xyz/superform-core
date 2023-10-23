@@ -48,7 +48,7 @@ contract MDSVW10NativeSlippageAMB23 is ProtocolActions {
         LIQ_BRIDGES[OP][1] = [1];
 
         LIQ_BRIDGES[ARBI][0] = [1];
-        LIQ_BRIDGES[ARBI][1] = [1];
+        LIQ_BRIDGES[ARBI][1] = [2];
 
         FINAL_LIQ_DST_WITHDRAW[OP] = [AVAX];
         FINAL_LIQ_DST_WITHDRAW[ARBI] = [AVAX];

@@ -21,7 +21,7 @@ env:
 
 jobs:
   build:
-    runs-on: "SuperformCore2"
+    runs-on: self-hosted
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v3"
@@ -56,7 +56,7 @@ jobs:
 
   test-unit:
     needs: ["build"]
-    runs-on: "SuperformCore2"
+    runs-on: self-hosted
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v3"
@@ -90,7 +90,7 @@ jobs:
 
   test-fuzz:
     needs: ["build"]
-    runs-on: "SuperformCore2"
+    runs-on: self-hosted
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v3"
@@ -125,7 +125,7 @@ jobs:
                   
   test-invariant:
     needs: ["build"]
-    runs-on: "SuperformCore2"
+    runs-on: self-hosted
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v3"
@@ -159,7 +159,7 @@ jobs:
                 
   coverage:
     needs: ["build"]
-    runs-on: "SuperformCore2"
+    runs-on: self-hosted
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v3"
@@ -179,14 +179,6 @@ jobs:
         with:
           files: "./lcov.info"
 
-      - name: Coveralls
-        uses: coverallsapp/github-action@v2
-        env:
-          CODECOV_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        with:
-          files: "./lcov.info"
-          fail-on-error: false
-
       - name: "Add coverage summary"
         run: |
           echo "## Coverage result" >> $GITHUB_STEP_SUMMARY
@@ -195,7 +187,7 @@ jobs:
 
   slither:
    needs: ["build"]
-   runs-on: "SuperformCore2"
+   runs-on: self-hosted
    env:
     FOUNDRY_TEST: 'nonexisten'
    steps:
