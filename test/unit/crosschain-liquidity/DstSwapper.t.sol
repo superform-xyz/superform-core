@@ -152,7 +152,7 @@ contract DstSwapperTest is ProtocolActions {
         address weth = getContract(OP, "WETH");
         deal(weth, dstSwapper, 1e18);
 
-        DstSwapper(dstSwapper).processFailedTx(1, superformId, weth, 1e18);
+        DstSwapper(dstSwapper).processFailedTx(1, 0, weth, 1e18);
 
         /// @dev set quorum to 0 for simplicity in testing setup
         SuperRegistry(getContract(OP, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
@@ -207,7 +207,7 @@ contract DstSwapperTest is ProtocolActions {
         address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
         deal(dstSwapper, 1e18);
 
-        DstSwapper(dstSwapper).processFailedTx(1, superformId, native, 1e18);
+        DstSwapper(dstSwapper).processFailedTx(1, 0, native, 1e18);
 
         /// @dev set quorum to 0 for simplicity in testing setup
         SuperRegistry(getContract(OP, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
@@ -270,7 +270,11 @@ contract DstSwapperTest is ProtocolActions {
         amounts[0] = 1e18;
         amounts[1] = 1e18;
 
-        DstSwapper(dstSwapper).batchProcessFailedTx(1, superformIds, interimTokens, amounts);
+        uint256[] memory indices = new uint256[](2);
+        indices[0] = 0;
+        indices[1] = 1;
+
+        DstSwapper(dstSwapper).batchProcessFailedTx(1, indices, interimTokens, amounts);
 
         /// @dev set quorum to 0 for simplicity in testing setup
         SuperRegistry(getContract(OP, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
@@ -332,7 +336,11 @@ contract DstSwapperTest is ProtocolActions {
         amounts[0] = 1e18;
         amounts[1] = 1e18;
 
-        DstSwapper(dstSwapper).batchProcessFailedTx(1, superformIds, interimTokens, amounts);
+        uint256[] memory indices = new uint256[](2);
+        indices[0] = 0;
+        indices[1] = 1;
+
+        DstSwapper(dstSwapper).batchProcessFailedTx(1, indices, interimTokens, amounts);
 
         /// @dev set quorum to 0 for simplicity in testing setup
         SuperRegistry(getContract(OP, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);

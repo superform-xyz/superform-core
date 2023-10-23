@@ -31,7 +31,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
                     State Variables
     //////////////////////////////////////////////////////////////*/
 
-    mapping(uint256 payloadId => mapping(uint256 superformId => FailedSwap)) internal failedSwap;
+    mapping(uint256 payloadId => mapping(uint256 index => FailedSwap)) internal failedSwap;
     mapping(uint256 payloadId => mapping(uint256 index => uint256 amount)) public swappedAmount;
 
     modifier onlySwapper() {
@@ -174,7 +174,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     /// @inheritdoc IDstSwapper
     function processFailedTx(
         uint256 payloadId_,
-        uint256 superformId_,
+        uint256 index_,
         address interimToken_,
         uint256 amount_
     )
@@ -183,30 +183,32 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         onlySwapper
         nonReentrant
     {
-        if (failedSwap[payloadId_][superformId_].amount != 0) {
+        if (failedSwap[payloadId_][index_].amount != 0) {
             revert Error.FAILED_DST_SWAP_ALREADY_PROCESSED();
         }
 
         /// @dev updates swapped amount
-        failedSwap[payloadId_][superformId_].amount = amount_;
-        failedSwap[payloadId_][superformId_].interimToken = interimToken_;
+        failedSwap[payloadId_][index_].amount = amount_;
+        failedSwap[payloadId_][index_].interimToken = interimToken_;
 
         address finalDst = superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY"));
 
+        /// FIXME: should we transfer it here. since there is a chance that it can be invalidated during rescue
         if (interimToken_ != NATIVE) {
             IERC20(interimToken_).safeTransfer(finalDst, amount_);
         } else {
             (bool success,) = payable(finalDst).call{ value: amount_ }("");
             if (!success) revert Error.FAILED_TO_SEND_NATIVE();
         }
+
         /// @dev emits final event
-        emit SwapFailed(payloadId_, superformId_, interimToken_, amount_);
+        emit SwapFailed(payloadId_, index_, interimToken_, amount_);
     }
 
     /// @inheritdoc IDstSwapper
     function batchProcessFailedTx(
         uint256 payloadId_,
-        uint256[] calldata superformIds_,
+        uint256[] calldata indices_,
         address[] calldata interimTokens_,
         uint256[] calldata amounts_
     )
@@ -214,9 +216,9 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         override
         onlySwapper
     {
-        uint256 len = superformIds_.length;
+        uint256 len = indices_.length;
         for (uint256 i; i < len;) {
-            processFailedTx(payloadId_, superformIds_[i], interimTokens_[i], amounts_[i]);
+            processFailedTx(payloadId_, indices_[i], interimTokens_[i], amounts_[i]);
 
             unchecked {
                 ++i;
@@ -227,15 +229,15 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     /// @inheritdoc IDstSwapper
     function getFailedSwap(
         uint256 payloadId_,
-        uint256 superformId_
+        uint256 index_
     )
         external
         view
         override
         returns (address interimToken, uint256 amount)
     {
-        interimToken = failedSwap[payloadId_][superformId_].interimToken;
-        amount = failedSwap[payloadId_][superformId_].amount;
+        interimToken = failedSwap[payloadId_][index_].interimToken;
+        amount = failedSwap[payloadId_][index_].amount;
     }
 
     /*///////////////////////////////////////////////////////////////

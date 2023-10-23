@@ -47,7 +47,7 @@ interface IDstSwapper {
 
     function batchProcessFailedTx(
         uint256 payloadId_,
-        uint256[] calldata superformIds_,
+        uint256[] calldata indices_,
         address[] calldata interimTokens_,
         uint256[] calldata amounts_
     )
