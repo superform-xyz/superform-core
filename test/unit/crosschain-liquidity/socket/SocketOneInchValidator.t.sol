@@ -16,7 +16,11 @@ contract SocketOneInchValidatorTest is ProtocolActions {
     function test_socket_one_inch_validator() public {
         SocketOneInchValidator(getContract(BSC, "SocketOneInchValidator")).validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
-                _buildDummyTxDataUnitTests(3, address(0), address(0), deployer, BSC, uint256(100), deployer, false),
+                _buildDummyTxDataUnitTests(
+                    BuildDummyTxDataUnitTestsVars(
+                        3, address(0), address(0), deployer, ETH, BSC, uint256(100), deployer, false
+                    )
+                ),
                 BSC,
                 BSC,
                 BSC,
@@ -30,7 +34,17 @@ contract SocketOneInchValidatorTest is ProtocolActions {
 
     function test_socket_one_inch_invalid_receiver() public {
         bytes memory txData = _buildDummyTxDataUnitTests(
-            3, address(0), address(0), deployer, BSC, uint256(100), getContract(BSC, "CoreStateRegistry"), false
+            BuildDummyTxDataUnitTestsVars(
+                3,
+                address(0),
+                address(0),
+                deployer,
+                ETH,
+                BSC,
+                uint256(100),
+                getContract(BSC, "CoreStateRegistry"),
+                false
+            )
         );
 
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
@@ -40,8 +54,9 @@ contract SocketOneInchValidatorTest is ProtocolActions {
     }
 
     function test_socket_one_inch_invalid_liq_dst_chain() public {
-        bytes memory txData =
-            _buildDummyTxDataUnitTests(3, address(0), address(0), deployer, BSC, uint256(100), deployer, false);
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            BuildDummyTxDataUnitTestsVars(3, address(0), address(0), deployer, ETH, BSC, uint256(100), deployer, false)
+        );
 
         vm.expectRevert(Error.INVALID_DEPOSIT_LIQ_DST_CHAIN_ID.selector);
         SocketOneInchValidator(getContract(BSC, "SocketOneInchValidator")).validateTxData(
@@ -51,7 +66,17 @@ contract SocketOneInchValidatorTest is ProtocolActions {
 
     function test_socket_one_inch_invalid_receiver_xchain_withdraw() public {
         bytes memory txData = _buildDummyTxDataUnitTests(
-            3, address(0), address(0), deployer, BSC, uint256(100), getContract(BSC, "CoreStateRegistry"), false
+            BuildDummyTxDataUnitTestsVars(
+                3,
+                address(0),
+                address(0),
+                deployer,
+                ETH,
+                BSC,
+                uint256(100),
+                getContract(BSC, "CoreStateRegistry"),
+                false
+            )
         );
 
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
@@ -62,7 +87,17 @@ contract SocketOneInchValidatorTest is ProtocolActions {
 
     function test_validate_receiver() public {
         bytes memory txData = _buildDummyTxDataUnitTests(
-            3, address(0), address(0), deployer, BSC, uint256(100), getContract(BSC, "CoreStateRegistry"), false
+            BuildDummyTxDataUnitTestsVars(
+                3,
+                address(0),
+                address(0),
+                deployer,
+                ETH,
+                BSC,
+                uint256(100),
+                getContract(BSC, "CoreStateRegistry"),
+                false
+            )
         );
 
         assertTrue(
@@ -74,7 +109,17 @@ contract SocketOneInchValidatorTest is ProtocolActions {
 
     function test_validate_amountIn() public {
         bytes memory txData = _buildDummyTxDataUnitTests(
-            3, address(0), address(0), deployer, BSC, uint256(100), getContract(BSC, "CoreStateRegistry"), false
+            BuildDummyTxDataUnitTestsVars(
+                3,
+                address(0),
+                address(0),
+                deployer,
+                ETH,
+                BSC,
+                uint256(100),
+                getContract(BSC, "CoreStateRegistry"),
+                false
+            )
         );
 
         assertEq(

@@ -472,6 +472,82 @@ contract SuperformERC4626FormTest is ProtocolActions {
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultWithdraw(req);
     }
 
+    function test_forwardDustToPaymaster() public {
+        /// @dev prank deposits (just mint super-shares)
+        /// scenario: user deposits with his own collateral and has approved enough tokens
+        vm.selectFork(FORKS[ARBI]);
+        vm.startPrank(deployer);
+
+        address superform = getContract(
+            ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
+
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId, 1e18, 100, false, LiqRequest(1, "", getContract(ARBI, "WETH"), ARBI, 0), "", refundAddress, ""
+        );
+
+        SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
+
+        address router = getContract(ARBI, "SuperformRouter");
+
+        /// @dev approves before call
+        MockERC20(getContract(ARBI, "WETH")).approve(router, 1e18);
+        SuperformRouter(payable(router)).singleDirectSingleVaultDeposit(req);
+
+        IBaseForm(superform).getVaultAddress();
+
+        vm.stopPrank();
+
+        /// @dev simulating withdrawals with malicious tx data
+        vm.startPrank(getContract(ARBI, "CoreStateRegistry"));
+
+        uint256 superPositionBalance =
+            SuperPositions(getContract(ARBI, "SuperPositions")).balanceOf(deployer, superformId);
+
+        uint256 previewRedeemAmount = IBaseForm(superform).previewRedeemFrom(superPositionBalance);
+        InitSingleVaultData memory data2 = InitSingleVaultData(
+            1,
+            1,
+            superformId,
+            previewRedeemAmount - 0.5e18,
+            100,
+            false,
+            LiqRequest(
+                1,
+                _buildDummyTxDataUnitTests(
+                    BuildDummyTxDataUnitTestsVars(
+                        1,
+                        getContract(ARBI, "WETH"),
+                        getContract(ETH, "WETH"),
+                        superform,
+                        ARBI,
+                        ETH,
+                        0.2e18,
+                        deployer,
+                        false
+                    )
+                ),
+                getContract(ARBI, "WETH"),
+                ETH,
+                0
+            ),
+            refundAddress,
+            ""
+        );
+        vm.selectFork(FORKS[ARBI]);
+
+        IBaseForm(superform).xChainWithdrawFromVault(data2, deployer, ETH);
+        uint256 balanceBefore = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
+
+        assertGt(balanceBefore, 0);
+        IBaseForm(superform).forwardDustToPaymaster();
+        uint256 balanceAfter = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
+
+        assertEq(balanceAfter, 0);
+    }
+
     function test_superformXChainWithdrawalWithoutUpdatingTxData() public {
         /// @dev prank deposits (just mint super-shares)
         _successfulDeposit();
@@ -739,14 +815,17 @@ contract SuperformERC4626FormTest is ProtocolActions {
             LiqRequest(
                 1,
                 _buildDummyTxDataUnitTests(
-                    1,
-                    getContract(ETH, "DAI"),
-                    getContract(ETH, "DAI"),
-                    superform,
-                    ETH,
-                    1e18,
-                    getContract(ETH, "CoreStateRegistry"),
-                    false
+                    BuildDummyTxDataUnitTestsVars(
+                        1,
+                        getContract(ETH, "DAI"),
+                        getContract(ETH, "DAI"),
+                        superform,
+                        ETH,
+                        ETH,
+                        1e18,
+                        getContract(ETH, "CoreStateRegistry"),
+                        false
+                    )
                 ),
                 getContract(ETH, "DAI"),
                 ETH,

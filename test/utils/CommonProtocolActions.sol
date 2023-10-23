@@ -338,40 +338,43 @@ abstract contract CommonProtocolActions is BaseSetup {
         }
     }
 
-    function _buildDummyTxDataUnitTests(
-        uint8 liqBridgeKind_,
-        address underlyingToken_,
-        address underlyingTokenDst_,
-        address from_,
-        uint64 toChainId_,
-        uint256 amount_,
-        address receiver_,
-        bool sameChain_
-    )
+    struct BuildDummyTxDataUnitTestsVars {
+        uint8 liqBridgeKind_;
+        address underlyingToken_;
+        address underlyingTokenDst_;
+        address from_;
+        uint64 srcChainId_;
+        uint64 toChainId_;
+        uint256 amount_;
+        address receiver_;
+        bool sameChain_;
+    }
+
+    function _buildDummyTxDataUnitTests(BuildDummyTxDataUnitTestsVars memory v)
         internal
         returns (bytes memory txData)
     {
         int256 USDPerUnderlyingTokenDst;
         int256 USDPerUnderlyingToken;
 
-        if (underlyingTokenDst_ != address(0)) {
-            vm.selectFork(FORKS[toChainId_]);
+        if (v.underlyingTokenDst_ != address(0)) {
+            vm.selectFork(FORKS[v.toChainId_]);
             (, USDPerUnderlyingTokenDst,,,) =
-                AggregatorV3Interface(tokenPriceFeeds[toChainId_][underlyingTokenDst_]).latestRoundData();
+                AggregatorV3Interface(tokenPriceFeeds[v.toChainId_][v.underlyingTokenDst_]).latestRoundData();
         } else {
             USDPerUnderlyingTokenDst = 1;
         }
 
-        if (underlyingToken_ != address(0)) {
-            vm.selectFork(FORKS[ETH]);
+        if (v.underlyingToken_ != address(0)) {
+            vm.selectFork(FORKS[v.srcChainId_]);
             (, USDPerUnderlyingToken,,,) =
-                AggregatorV3Interface(tokenPriceFeeds[ETH][underlyingToken_]).latestRoundData();
+                AggregatorV3Interface(tokenPriceFeeds[v.srcChainId_][v.underlyingToken_]).latestRoundData();
         } else {
             USDPerUnderlyingToken = 1;
         }
 
-        if (liqBridgeKind_ == 1) {
-            if (!sameChain_) {
+        if (v.liqBridgeKind_ == 1) {
+            if (!v.sameChain_) {
                 ILiFi.BridgeData memory bridgeData;
                 LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
 
@@ -380,13 +383,13 @@ abstract contract CommonProtocolActions is BaseSetup {
                     /// callTo (arbitrary)
                     address(0),
                     /// callTo (approveTo)
-                    underlyingToken_,
-                    underlyingToken_,
-                    amount_,
+                    v.underlyingToken_,
+                    v.underlyingToken_,
+                    v.amount_,
                     abi.encode(
-                        from_,
-                        FORKS[toChainId_],
-                        underlyingTokenDst_,
+                        v.from_,
+                        FORKS[v.toChainId_],
+                        v.underlyingTokenDst_,
                         totalSlippage,
                         false,
                         0,
@@ -404,10 +407,10 @@ abstract contract CommonProtocolActions is BaseSetup {
                     "",
                     "",
                     address(0),
-                    underlyingToken_,
-                    receiver_,
-                    amount_,
-                    uint256(toChainId_),
+                    v.underlyingToken_,
+                    v.receiver_,
+                    v.amount_,
+                    uint256(v.toChainId_),
                     false,
                     false
                 );
@@ -422,20 +425,20 @@ abstract contract CommonProtocolActions is BaseSetup {
                     /// callTo (arbitrary)
                     address(0),
                     /// callTo (approveTo)
-                    underlyingToken_,
-                    underlyingToken_,
-                    amount_,
-                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, totalSlippage, false, 0, false),
+                    v.underlyingToken_,
+                    v.underlyingToken_,
+                    v.amount_,
+                    abi.encode(v.from_, FORKS[v.toChainId_], v.underlyingTokenDst_, totalSlippage, false, 0, false),
                     false // arbitrary
                 );
 
                 txData = abi.encodeWithSelector(
-                    LiFiMock.swapTokensGeneric.selector, bytes32(0), "", "", receiver_, 0, swapData
+                    LiFiMock.swapTokensGeneric.selector, bytes32(0), "", "", v.receiver_, 0, swapData
                 );
             }
-        } else if (liqBridgeKind_ == 2) {
+        } else if (v.liqBridgeKind_ == 2) {
             /// @notice bridge id 2 doesn't support same chain swaps
-            if (sameChain_) {
+            if (v.sameChain_) {
                 revert();
             }
 
@@ -451,8 +454,8 @@ abstract contract CommonProtocolActions is BaseSetup {
                 /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
                 0,
                 /// @dev unused in tests
-                underlyingToken_,
-                abi.encode(from_)
+                v.underlyingToken_,
+                abi.encode(v.from_)
             );
 
             /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
@@ -462,14 +465,14 @@ abstract contract CommonProtocolActions is BaseSetup {
                 /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
                 0,
                 /// @dev unused in tests
-                underlyingToken_,
+                v.underlyingToken_,
                 /// @dev initial token to extract will be externalToken in args, which is the actual
                 /// underlyingTokenDst for withdraws (check how the call is made in
                 /// _buildSingleVaultWithdrawCallData )
                 abi.encode(
-                    from_,
-                    FORKS[toChainId_],
-                    underlyingToken_,
+                    v.from_,
+                    FORKS[v.toChainId_],
+                    v.underlyingToken_,
                     totalSlippage,
                     false,
                     0,
@@ -480,16 +483,16 @@ abstract contract CommonProtocolActions is BaseSetup {
 
             txData = abi.encodeWithSelector(
                 SocketMock.outboundTransferTo.selector,
-                ISocketRegistry.UserRequest(receiver_, toChainId_, amount_, middlewareRequest, bridgeRequest)
+                ISocketRegistry.UserRequest(v.receiver_, v.toChainId_, v.amount_, middlewareRequest, bridgeRequest)
             );
-        } else if (liqBridgeKind_ == 3) {
+        } else if (v.liqBridgeKind_ == 3) {
             txData = abi.encodeWithSelector(
                 SocketOneInchMock.performDirectAction.selector,
-                underlyingToken_,
-                underlyingToken_,
-                receiver_,
-                amount_,
-                abi.encode(from_, USDPerUnderlyingToken, USDPerUnderlyingTokenDst)
+                v.underlyingToken_,
+                v.underlyingToken_,
+                v.receiver_,
+                v.amount_,
+                abi.encode(v.from_, USDPerUnderlyingToken, USDPerUnderlyingTokenDst)
             );
         }
     }
