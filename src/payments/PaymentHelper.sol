@@ -800,8 +800,9 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev helps return the current gas price of different networks
     /// @return native token price
     function _getGasPrice(uint64 chainId_) internal view returns (uint256) {
-        if (address(gasPriceOracle[chainId_]) != address(0)) {
-            (, int256 value,, uint256 updatedAt,) = gasPriceOracle[chainId_].latestRoundData();
+        address oracleAddr = address(gasPriceOracle[chainId_]);
+        if (oracleAddr!= address(0)) {
+            (, int256 value,, uint256 updatedAt,) = AggregatorV3Interface(oracleAddr).latestRoundData();
             if (value <= 0) revert Error.CHAINLINK_MALFUNCTION();
             if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
             return uint256(value);
@@ -813,8 +814,9 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev helps return the dst chain token price of different networks
     /// @return native token price
     function _getNativeTokenPrice(uint64 chainId_) internal view returns (uint256) {
-        if (address(nativeFeedOracle[chainId_]) != address(0)) {
-            (, int256 dstTokenPrice,, uint256 updatedAt,) = nativeFeedOracle[chainId_].latestRoundData();
+        address oracleAddr = address(nativeFeedOracle[chainId_]);
+        if (oracleAddr != address(0)) {
+            (, int256 dstTokenPrice,, uint256 updatedAt,) = AggregatorV3Interface(oracleAddr).latestRoundData();
             if (dstTokenPrice <= 0) revert Error.CHAINLINK_MALFUNCTION();
             if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
             return uint256(dstTokenPrice);
