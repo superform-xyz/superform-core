@@ -809,15 +809,13 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         return true;
     }
 
-    function _validateDstRefundAddress(address dstRefundAddress_) internal view virtual returns (bool) {
+    function _validateDstRefundAddress(address dstRefundAddress_) internal view virtual {
         /// @dev validates if EOA / SC Wallet & compares it against dst refund address
         if (tx.origin != msg.sender) {
             if (dstRefundAddress_ == address(0)) {
                 revert Error.ZERO_DST_REFUND_ADDRESS();
             }
         }
-
-        return true;
     }
 
     function _validateSuperformsWithdrawData(
