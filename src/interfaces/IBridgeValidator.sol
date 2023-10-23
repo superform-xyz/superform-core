@@ -37,18 +37,6 @@ interface IBridgeValidator {
     /// @param args_ the txData arguments to validate in txData
     function validateTxData(ValidateTxDataArgs calldata args_) external view;
 
-    /// @dev decodes the txData and returns the minimum amount expected to receive on the destination
-    /// @param txData_ is the txData of the cross chain deposit
-    /// @param genericSwapDisallowed_ true if generic swaps are disallowed
-    /// @return amount_ the amount expected
-    function decodeMinAmountOut(
-        bytes calldata txData_,
-        bool genericSwapDisallowed_
-    )
-        external
-        view
-        returns (uint256 amount_);
-
     /// @dev decodes the txData and returns the amount of external token on source
     /// @param txData_ is the txData of the cross chain deposit
     /// @param genericSwapDisallowed_ true if generic swaps are disallowed

@@ -17,7 +17,6 @@ enum CallbackType {
     RETURN,
     FAIL
 }
-/// @dev Used only in withdraw flow now
 
 /// @dev Payloads are stored, updated (deposits) or processed (finalized)
 enum PayloadState {

@@ -36,7 +36,7 @@ contract SXSVWRevertTimelockedNativeSlippageNewDst is ProtocolActions {
         MAX_SLIPPAGE = 1000;
 
         LIQ_BRIDGES[ARBI][0] = [1];
-        LIQ_BRIDGES[ARBI][1] = [1];
+        LIQ_BRIDGES[ARBI][1] = [3];
 
         FINAL_LIQ_DST_WITHDRAW[ARBI] = [ETH];
 

@@ -132,6 +132,8 @@ struct SetupVars {
     address wormholeSRImplementation;
     address dstSwapper;
     address lifiRouter;
+    address socketRouter;
+    address socketOneInch;
     address erc4626Form;
     address erc4626TimelockForm;
     address kycDao4626Form;
@@ -155,6 +157,8 @@ struct SetupVars {
     address superRBAC;
     address canonicalPermit2;
     address lifiValidator;
+    address socketValidator;
+    address socketOneInchValidator;
     Vm.Log[] logs;
     address superPositions;
     address kycDAOMock;

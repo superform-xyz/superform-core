@@ -110,6 +110,10 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
 
         /// @dev get the address of the bridge to send the txData to.
         v.to = superRegistry.getBridgeAddress(bridgeId_);
+        if (v.to == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
+
         v.underlying = _getFormUnderlyingFrom(payloadId_, index_);
 
         uint256 balanceBefore = IERC20(v.underlying).balanceOf(v.finalDst);

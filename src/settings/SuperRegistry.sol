@@ -137,7 +137,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
         PERMIT2 = permit2_;
 
-        emit SetPermit2(PERMIT2);
+        emit SetPermit2(permit2_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -145,20 +145,11 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         address oldAddress = registry[id_][chainId_];
         if (oldAddress != address(0)) {
             /// @notice SUPERFORM_FACTORY, CORE_STATE_REGISTRY, TIMELOCK_STATE_REGISTRY, BROADCAST_REGISTRY, SUPER_RBAC,
-            /// DST_SWAPPER cannot be changed once set
-            if (id_ == keccak256("SUPERFORM_FACTORY")) {
-                revert Error.DISABLED();
-            } else if (id_ == keccak256("CORE_STATE_REGISTRY")) {
-                revert Error.DISABLED();
-            } else if (id_ == keccak256("TIMELOCK_STATE_REGISTRY")) {
-                revert Error.DISABLED();
-            } else if (id_ == keccak256("BROADCAST_REGISTRY")) {
-                revert Error.DISABLED();
-            } else if (id_ == keccak256("SUPER_RBAC")) {
-                revert Error.DISABLED();
-            } else if (id_ == keccak256("DST_SWAPPER")) {
-                revert Error.DISABLED();
-            } else if (id_ == keccak256("EMERGENCY_QUEUE")) {
+            /// DST_SWAPPER and EMERGENCY_QUEUE cannot be changed once set
+            if (
+                id_ == SUPERFORM_FACTORY || id_ == CORE_STATE_REGISTRY || id_ == TIMELOCK_STATE_REGISTRY
+                    || id_ == BROADCAST_REGISTRY || id_ == SUPER_RBAC || id_ == DST_SWAPPER || id_ == EMERGENCY_QUEUE
+            ) {
                 revert Error.DISABLED();
             }
         }

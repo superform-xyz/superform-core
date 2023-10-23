@@ -21,13 +21,13 @@ contract SuperformFactory is ISuperformFactory {
     using Clones for address;
 
     /*///////////////////////////////////////////////////////////////
-                            Constants
+                            CONSTANTS
     //////////////////////////////////////////////////////////////*/
     bytes32 constant SYNC_IMPLEMENTATION_STATUS = keccak256("SYNC_IMPLEMENTATION_STATUS");
 
     uint64 public immutable CHAIN_ID;
     /*///////////////////////////////////////////////////////////////
-                            State Variables
+                            STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
     uint256 public xChainPayloadCounter;
     ISuperRegistry public immutable superRegistry;

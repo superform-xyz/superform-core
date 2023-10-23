@@ -26,7 +26,7 @@ contract SDSVD4626SwapTokenInputSlippage is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[OP][0] = [1];
+        LIQ_BRIDGES[OP][0] = [3];
 
         actions.push(
             TestAction({
