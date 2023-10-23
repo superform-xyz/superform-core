@@ -21,18 +21,22 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /*///////////////////////////////////////////////////////////////
-                    Constants
+                            CONSTANTS
     //////////////////////////////////////////////////////////////*/
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     /*///////////////////////////////////////////////////////////////
-                    State Variables
+                        STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
     mapping(uint256 payloadId => mapping(uint256 index => FailedSwap)) internal failedSwap;
     mapping(uint256 payloadId => mapping(uint256 index => uint256 amount)) public swappedAmount;
+
+    /*///////////////////////////////////////////////////////////////
+                            MODIFIERS
+    //////////////////////////////////////////////////////////////*/
 
     modifier onlySwapper() {
         if (
@@ -70,8 +74,9 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     }
 
     /*///////////////////////////////////////////////////////////////
-                            External Functions
+                        EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
     /// @notice receive enables processing native token transfers into the smart contract.
     /// @dev liquidity bridge fails without a native receive function.
     receive() external payable { }
@@ -251,6 +256,10 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         }
     }
 
+    /*///////////////////////////////////////////////////////////////
+                        VIEW-ONLY FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
     /// @inheritdoc IDstSwapper
     function getFailedSwap(
         uint256 payloadId_,
@@ -268,6 +277,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     /*///////////////////////////////////////////////////////////////
                         INTERNAL HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
     function _getFormUnderlyingFrom(
         uint256 payloadId_,
         uint256 index_
