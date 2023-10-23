@@ -791,7 +791,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                         srcChainId_
                     ) returns (uint256 dstAmount) {
                         if (dstAmount > 0) {
-                            if (!fulfilment) fulfilment = true;
+                            fulfilment = true;
                             /// @dev marks the indexes that require a callback mint of shares (successful)
                             dstAmounts[i] = dstAmount;
                         }
@@ -801,7 +801,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
                         /// @dev if any deposit fails, we mark errors as true and add it to failedDepositSuperformIds
                         /// mapping for future rescuing
-                        if (!errors) errors = true;
+                        errors = true;
 
                         failedDeposits[payloadId_].superformIds.push(multiVaultData.superformIds[i]);
                     }
