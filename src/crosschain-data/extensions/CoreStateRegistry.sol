@@ -331,8 +331,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             /// @dev refunds the amount to user specified refund address
             if (rescueInterim[i]) {
                 IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
-
-                /// FIXME: call dst swapper for refund
+                dstSwapper.processFailedTx(refundAddress, settlementToken[i], amounts[i]);
             } else {
                 IERC20(settlementToken[i]).safeTransfer(refundAddress, amounts[i]);
             }

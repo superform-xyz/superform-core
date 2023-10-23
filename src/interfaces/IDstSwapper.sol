@@ -13,7 +13,6 @@ interface IDstSwapper {
     struct FailedSwap {
         address interimToken;
         uint256 amount;
-        bool isProcessed;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -71,6 +70,8 @@ interface IDstSwapper {
         bytes[] calldata txData_
     )
         external;
+
+    function processFailedTx(address user_, address interimToken_, uint256 amount_) external;
 
     /// FIMXE: add natspec
     function swappedAmount(uint256 payloadId_, uint256 index_) external view returns (uint256 amount_);

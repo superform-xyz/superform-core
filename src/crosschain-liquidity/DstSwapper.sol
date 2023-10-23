@@ -52,6 +52,13 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         _;
     }
 
+    modifier onlyCoreStateRegistry() {
+        if (superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")) != msg.sender) {
+            revert Error.NOT_CORE_STATE_REGISTRY();
+        }
+        _;
+    }
+
     /// @param superRegistry_ superform registry contract
     constructor(address superRegistry_) {
         if (block.chainid > type(uint64).max) {
@@ -197,10 +204,6 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
             revert Error.FAILED_DST_SWAP_ALREADY_UPDATED();
         }
 
-        if (failedSwap[payloadId_][index_].isProcessed) {
-            revert Error.FAILED_DST_SWAP_ALREADY_PROCESSED();
-        }
-
         /// @dev updates swapped amount
         failedSwap[payloadId_][index_].amount = amount_;
         failedSwap[payloadId_][index_].interimToken = interimToken_;
@@ -227,6 +230,24 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
             unchecked {
                 ++i;
             }
+        }
+    }
+
+    /// @inheritdoc IDstSwapper
+    function processFailedTx(
+        address user_,
+        address interimToken_,
+        uint256 amount_
+    )
+        external
+        override
+        onlyCoreStateRegistry
+    {
+        if (interimToken_ != NATIVE) {
+            IERC20(interimToken_).safeTransfer(user_, amount_);
+        } else {
+            (bool success,) = payable(user_).call{ value: amount_ }("");
+            if (!success) revert Error.FAILED_TO_SEND_NATIVE();
         }
     }
 
