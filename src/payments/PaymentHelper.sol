@@ -422,9 +422,10 @@ contract PaymentHelper is IPaymentHelper {
         uint256 len = req_.superformData.superformIds.length;
         for (uint256 i; i < len;) {
             (, uint32 formId,) = req_.superformData.superformIds[i].getSuperform();
+            uint256 twoStepPrice = twoStepCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
             /// @dev only if timelock form withdrawal is involved
             if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
-                srcAmount += twoStepCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
+                srcAmount += twoStepPrice;
             }
 
             unchecked {
