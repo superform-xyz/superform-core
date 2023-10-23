@@ -406,7 +406,6 @@ contract PaymentHelper is IPaymentHelper {
         /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
 
-        dstAmount = 0;
     }
 
     /// @inheritdoc IPaymentHelper
@@ -437,7 +436,6 @@ contract PaymentHelper is IPaymentHelper {
         /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
 
-        dstAmount = 0;
     }
 
     /// @inheritdoc IPaymentHelper
