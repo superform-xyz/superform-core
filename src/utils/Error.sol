@@ -111,6 +111,15 @@ library Error {
     /// @dev thrown if rescue is already proposed
     error RESCUE_ALREADY_PROPOSED();
 
+    /// @dev thrown if permit2 not supported on given chain
+    error PERMIT2_NOT_SUPPORTED();
+
+    /// @dev thrown if tx history is not found while state sync
+    error TX_HISTORY_NOT_FOUND();
+
+    /// @dev thrown if chain id exceeds max(uint64)
+    error BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
+
     /*///////////////////////////////////////////////////////////////
                          LIQUIDITY BRIDGE ERRORS
     //////////////////////////////////////////////////////////////*/

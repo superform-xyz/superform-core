@@ -127,7 +127,7 @@ interface IBaseForm is IERC165 {
     function getPreviewPricePerVaultShare() external view returns (uint256);
 
     /// @notice get the state registry id
-    function getStateRegistryId() external view returns (uint256);
+    function getStateRegistryId() external view returns (uint8);
 
     /// @dev API may need to know state of funds deployed
     function previewDepositTo(uint256 assets_) external view returns (uint256);

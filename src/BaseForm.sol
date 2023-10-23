@@ -81,6 +81,10 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     //////////////////////////////////////////////////////////////*/
 
     constructor(address superRegistry_) {
+        if (block.chainid > type(uint64).max) {
+            revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
+        }
+
         CHAIN_ID = uint64(block.chainid);
         superRegistry = ISuperRegistry(superRegistry_);
 
@@ -221,7 +225,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     function getTotalAssets() public view virtual override returns (uint256);
 
     /// @inheritdoc IBaseForm
-    function getStateRegistryId() external view virtual override returns (uint256);
+    function getStateRegistryId() external view virtual override returns (uint8);
 
     // @inheritdoc IBaseForm
     function getPreviewPricePerVaultShare() public view virtual override returns (uint256);
