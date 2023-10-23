@@ -84,7 +84,7 @@ contract SDMVDMulti111RescueFailedDepositsNoTokenInputSlippageAMB12 is ProtocolA
             StagesLocalVars memory vars;
             bool success;
             if (action.action == Actions.RescueFailedDeposit) {
-                _rescueFailedDeposits(action, act, 0, false);
+                _rescueFailedDeposits(action, act, 0);
             } else {
                 _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
             }

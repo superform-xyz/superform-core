@@ -172,7 +172,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     }
 
     /// @inheritdoc IDstSwapper
-    function processFailedTx(
+    function updateFailedTx(
         uint256 payloadId_,
         uint256 index_,
         address interimToken_,
@@ -183,7 +183,21 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         onlySwapper
         nonReentrant
     {
+        /// @dev validate if payload state is STORED
+        IBaseStateRegistry coreStateRegistry =
+            IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
+
+        PayloadState currState = coreStateRegistry.payloadTracking(payloadId_);
+
+        if (currState != PayloadState.STORED) {
+            revert Error.INVALID_PAYLOAD_STATUS();
+        }
+
         if (failedSwap[payloadId_][index_].amount != 0) {
+            revert Error.FAILED_DST_SWAP_ALREADY_UPDATED();
+        }
+
+        if (failedSwap[payloadId_][index_].isProcessed) {
             revert Error.FAILED_DST_SWAP_ALREADY_PROCESSED();
         }
 
@@ -191,22 +205,12 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         failedSwap[payloadId_][index_].amount = amount_;
         failedSwap[payloadId_][index_].interimToken = interimToken_;
 
-        address finalDst = superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY"));
-
-        /// FIXME: should we transfer it here. since there is a chance that it can be invalidated during rescue
-        if (interimToken_ != NATIVE) {
-            IERC20(interimToken_).safeTransfer(finalDst, amount_);
-        } else {
-            (bool success,) = payable(finalDst).call{ value: amount_ }("");
-            if (!success) revert Error.FAILED_TO_SEND_NATIVE();
-        }
-
         /// @dev emits final event
         emit SwapFailed(payloadId_, index_, interimToken_, amount_);
     }
 
     /// @inheritdoc IDstSwapper
-    function batchProcessFailedTx(
+    function batchUpdateFailedTx(
         uint256 payloadId_,
         uint256[] calldata indices_,
         address[] calldata interimTokens_,
@@ -218,7 +222,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     {
         uint256 len = indices_.length;
         for (uint256 i; i < len;) {
-            processFailedTx(payloadId_, indices_[i], interimTokens_[i], amounts_[i]);
+            updateFailedTx(payloadId_, indices_[i], interimTokens_[i], amounts_[i]);
 
             unchecked {
                 ++i;

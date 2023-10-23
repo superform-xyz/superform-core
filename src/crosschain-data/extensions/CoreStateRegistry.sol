@@ -310,7 +310,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     /// @inheritdoc ICoreStateRegistry
     /// @notice is an open function & can be executed by anyone
-    function finalizeRescueFailedDeposits(uint256 payloadId_, bool rescueInterim_) external override {
+    function finalizeRescueFailedDeposits(uint256 payloadId_) external override {
         uint256 lastProposedTimestamp = failedDeposits[payloadId_].lastProposedTimestamp;
 
         /// @dev the timelock is elapsed
@@ -320,26 +320,21 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         uint256[] memory superformIds = failedDeposits[payloadId_].superformIds;
         uint256[] memory amounts = failedDeposits[payloadId_].amounts;
+        address[] memory settlementToken = failedDeposits[payloadId_].settlementToken;
+        bool[] memory rescueInterim = failedDeposits[payloadId_].settleFromDstSwapper;
         address refundAddress = failedDeposits[payloadId_].refundAddress;
 
         /// @dev deleted to prevent re-entrancy
         delete failedDeposits[payloadId_];
 
         for (uint256 i; i < superformIds.length;) {
-            (address form_,,) = DataLib.getSuperform(superformIds[i]);
             /// @dev refunds the amount to user specified refund address
-            if (rescueInterim_) {
+            if (rescueInterim[i]) {
                 IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
-                (address interimToken,) = dstSwapper.getFailedSwap(payloadId_, superformIds[i]);
 
-                if (interimToken == NATIVE) {
-                    (bool success,) = payable(refundAddress).call{ value: amounts[i] }("");
-                    if (!success) revert Error.NATIVE_TOKEN_TRANSFER_FAILURE();
-                } else {
-                    IERC20(interimToken).safeTransfer(refundAddress, amounts[i]);
-                }
+                /// FIXME: call dst swapper for refund
             } else {
-                IERC20(IERC4626Form(form_).getVaultAsset()).safeTransfer(refundAddress, amounts[i]);
+                IERC20(settlementToken[i]).safeTransfer(refundAddress, amounts[i]);
             }
             unchecked {
                 ++i;
@@ -574,13 +569,15 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         bool failedSwapQueued;
         if (hasDstSwap_) {
             if (dstSwapper.swappedAmount(payloadId_, index_) != finalAmount_) {
-                (, uint256 amount) = dstSwapper.getFailedSwap(payloadId_, superformId_);
+                (address interimToken, uint256 amount) = dstSwapper.getFailedSwap(payloadId_, index_);
 
                 if (amount != finalAmount_) {
                     revert Error.INVALID_DST_SWAP_AMOUNT();
                 } else {
                     failedSwapQueued = true;
                     failedDeposits[payloadId_].superformIds.push(superformId_);
+                    failedDeposits[payloadId_].settlementToken.push(interimToken);
+                    failedDeposits[payloadId_].settleFromDstSwapper.push(true);
 
                     /// @dev sets amount to zero and will mark the payload as PROCESSED
                     amount_ = 0;
@@ -597,7 +594,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 finalState_ = PayloadState.UPDATED;
                 ++validLen_;
             } else {
+                (address superform,,) = superformId_.getSuperform();
                 failedDeposits[payloadId_].superformIds.push(superformId_);
+                failedDeposits[payloadId_].settlementToken.push(IBaseForm(superform).getVaultAsset());
+                failedDeposits[payloadId_].settleFromDstSwapper.push(false);
 
                 /// @dev sets amount to zero and will mark the payload as PROCESSED
                 amount_ = 0;
@@ -851,6 +851,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                         if (!errors) errors = true;
 
                         failedDeposits[payloadId_].superformIds.push(multiVaultData.superformIds[i]);
+                        failedDeposits[payloadId_].settlementToken.push(IBaseForm(superforms[i]).getVaultAsset());
+                        failedDeposits[payloadId_].settleFromDstSwapper.push(false);
                     }
                 } else {
                     revert Error.BRIDGE_TOKENS_PENDING();
@@ -957,6 +959,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
                 /// @dev if any deposit fails, add it to failedDepositSuperformIds mapping for future rescuing
                 failedDeposits[payloadId_].superformIds.push(singleVaultData.superformId);
+                failedDeposits[payloadId_].settlementToken.push(IBaseForm(superform_).getVaultAsset());
+                failedDeposits[payloadId_].settleFromDstSwapper.push(false);
 
                 emit FailedXChainDeposits(payloadId_);
             }

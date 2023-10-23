@@ -44,8 +44,9 @@ interface ICoreStateRegistry {
 
     struct FailedDeposit {
         uint256[] superformIds;
-        address[] rescueTokens;
+        address[] settlementToken;
         uint256[] amounts;
+        bool[] settleFromDstSwapper;
         address refundAddress;
         uint256 lastProposedTimestamp;
     }
@@ -103,5 +104,5 @@ interface ICoreStateRegistry {
 
     /// @dev allows anyone to settle refunds for unprocessed/failed deposits past the challenge period
     /// @param payloadId_ is the identifier of the cross-chain payload
-    function finalizeRescueFailedDeposits(uint256 payloadId_, bool rescueInterim_) external;
+    function finalizeRescueFailedDeposits(uint256 payloadId_) external;
 }

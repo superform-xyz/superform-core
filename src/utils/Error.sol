@@ -117,8 +117,12 @@ library Error {
     /// @dev thrown when actual amount recieved is less than the ideal amount adjusted with max slippage
     error MAX_SLIPPAGE_INVARIANT_BROKEN();
 
-    /// @dev thrown when the failed dstSwap is already enqueued
+    /// @dev thrown when the failed dstSwap is already updated
+    error FAILED_DST_SWAP_ALREADY_UPDATED();
+
+    /// @dev thrown when the failed dstSwap is already processed
     error FAILED_DST_SWAP_ALREADY_PROCESSED();
+
     /// @dev thrown if permit2 not supported on given chain
     error PERMIT2_NOT_SUPPORTED();
 

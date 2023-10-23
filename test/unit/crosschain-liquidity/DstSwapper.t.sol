@@ -141,7 +141,7 @@ contract DstSwapperTest is ProtocolActions {
         DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
     }
 
-    function test_single_non_native_processFailedTx() public {
+    function test_single_non_native_updateFailedTx() public {
         address payable dstSwapper = payable(getContract(OP, "DstSwapper"));
         address payable coreStateRegistry = payable(getContract(OP, "CoreStateRegistry"));
 
@@ -152,7 +152,7 @@ contract DstSwapperTest is ProtocolActions {
         address weth = getContract(OP, "WETH");
         deal(weth, dstSwapper, 1e18);
 
-        DstSwapper(dstSwapper).processFailedTx(1, 0, weth, 1e18);
+        DstSwapper(dstSwapper).updateFailedTx(1, 0, weth, 1e18);
 
         /// @dev set quorum to 0 for simplicity in testing setup
         SuperRegistry(getContract(OP, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
@@ -192,11 +192,11 @@ contract DstSwapperTest is ProtocolActions {
              })
         );
 
-        _rescueFailedDeposits(actions[0], 0, 1, true);
+        _rescueFailedDeposits(actions[0], 0, 1);
         actions.pop();
     }
 
-    function test_single_native_processFailedTx() public {
+    function test_single_native_updateFailedTx() public {
         address payable dstSwapper = payable(getContract(OP, "DstSwapper"));
         address payable coreStateRegistry = payable(getContract(OP, "CoreStateRegistry"));
 
@@ -207,7 +207,7 @@ contract DstSwapperTest is ProtocolActions {
         address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
         deal(dstSwapper, 1e18);
 
-        DstSwapper(dstSwapper).processFailedTx(1, 0, native, 1e18);
+        DstSwapper(dstSwapper).updateFailedTx(1, 0, native, 1e18);
 
         /// @dev set quorum to 0 for simplicity in testing setup
         SuperRegistry(getContract(OP, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
@@ -247,11 +247,11 @@ contract DstSwapperTest is ProtocolActions {
              })
         );
 
-        _rescueFailedDeposits(actions[0], 0, 1, true);
+        _rescueFailedDeposits(actions[0], 0, 1);
         actions.pop();
     }
 
-    function test_multi_non_native_batchProcessFailedTx() public {
+    function test_multi_non_native_batchUpdateFailedTx() public {
         address payable dstSwapper = payable(getContract(OP, "DstSwapper"));
         address payable coreStateRegistry = payable(getContract(OP, "CoreStateRegistry"));
 
@@ -274,7 +274,7 @@ contract DstSwapperTest is ProtocolActions {
         indices[0] = 0;
         indices[1] = 1;
 
-        DstSwapper(dstSwapper).batchProcessFailedTx(1, indices, interimTokens, amounts);
+        DstSwapper(dstSwapper).batchUpdateFailedTx(1, indices, interimTokens, amounts);
 
         /// @dev set quorum to 0 for simplicity in testing setup
         SuperRegistry(getContract(OP, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
@@ -312,11 +312,11 @@ contract DstSwapperTest is ProtocolActions {
              })
         );
 
-        _rescueFailedDeposits(actions[0], 0, 1, true);
+        _rescueFailedDeposits(actions[0], 0, 1);
         actions.pop();
     }
 
-    function test_multi_native_batchProcessFailedTx() public {
+    function test_multi_native_batchUpdateFailedTx() public {
         address payable dstSwapper = payable(getContract(OP, "DstSwapper"));
         address payable coreStateRegistry = payable(getContract(OP, "CoreStateRegistry"));
 
@@ -340,7 +340,7 @@ contract DstSwapperTest is ProtocolActions {
         indices[0] = 0;
         indices[1] = 1;
 
-        DstSwapper(dstSwapper).batchProcessFailedTx(1, indices, interimTokens, amounts);
+        DstSwapper(dstSwapper).batchUpdateFailedTx(1, indices, interimTokens, amounts);
 
         /// @dev set quorum to 0 for simplicity in testing setup
         SuperRegistry(getContract(OP, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
@@ -378,7 +378,7 @@ contract DstSwapperTest is ProtocolActions {
              })
         );
 
-        _rescueFailedDeposits(actions[0], 0, 1, true);
+        _rescueFailedDeposits(actions[0], 0, 1);
         actions.pop();
     }
 

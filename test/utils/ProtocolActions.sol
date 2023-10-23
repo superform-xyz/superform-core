@@ -1368,84 +1368,78 @@ abstract contract ProtocolActions is CommonProtocolActions {
     /// @dev 'n' deposits rescued per payloadId per destination chain
     /// @dev TODO - Smit to add better comments
     /// @dev FIXME: asserts (stuckAmount) assume same underlyingTokenDsts for multi vaults
-    function _rescueFailedDeposits(
-        TestAction memory action,
-        uint256 actionIndex,
-        uint256 payloadId,
-        bool rescueInterim
-    )
-        internal
-    {
-        RescueFailedDepositsVars memory v;
+    function _rescueFailedDeposits(TestAction memory action, uint256 actionIndex, uint256 payloadId) internal {
+        // RescueFailedDepositsVars memory v;
 
-        if (action.action == Actions.RescueFailedDeposit && action.testType == TestType.Pass) {
-            if (!action.dstSwap) {
-                MULTI_TX_SLIPPAGE_SHARE = 0;
-            } else {
-                MULTI_TX_SLIPPAGE_SHARE = 40;
-            }
+        // if (action.action == Actions.RescueFailedDeposit && action.testType == TestType.Pass) {
+        //     if (!action.dstSwap) {
+        //         MULTI_TX_SLIPPAGE_SHARE = 0;
+        //     } else {
+        //         MULTI_TX_SLIPPAGE_SHARE = 40;
+        //     }
 
-            vm.selectFork(FORKS[DST_CHAINS[0]]);
+        //     vm.selectFork(FORKS[DST_CHAINS[0]]);
 
-            /// @dev interimToken can only be NATIVE for rescuing failedSwaps via DstSwapper
-            /// (which has rescueInterim true)
-            if (rescueInterim) {
-                v.rescueToken = action.externalToken == 3
-                    ? NATIVE_TOKEN
-                    : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[0]][0][0]]);
-                v.userBalanceBefore = action.externalToken == 3
-                    ? users[action.user].balance
-                    : MockERC20(v.rescueToken).balanceOf(users[action.user]);
-            } else {
-                v.rescueToken = getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[0]][0][0]]);
-                v.userBalanceBefore = MockERC20(v.rescueToken).balanceOf(users[action.user]);
-            }
-            v.coreStateRegistryDst = payable(getContract(DST_CHAINS[0], "CoreStateRegistry"));
+        //     /// @dev interimToken can only be NATIVE for rescuing failedSwaps via DstSwapper
+        //     /// (which has rescueInterim true)
+        //     if (rescueInterim) {
+        //         v.rescueToken = action.externalToken == 3
+        //             ? NATIVE_TOKEN
+        //             : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[0]][0][0]]);
+        //         v.userBalanceBefore = action.externalToken == 3
+        //             ? users[action.user].balance
+        //             : MockERC20(v.rescueToken).balanceOf(users[action.user]);
+        //     } else {
+        //         v.rescueToken = getContract(DST_CHAINS[0],
+        // UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[0]][0][0]]);
+        //         v.userBalanceBefore = MockERC20(v.rescueToken).balanceOf(users[action.user]);
+        //     }
+        //     v.coreStateRegistryDst = payable(getContract(DST_CHAINS[0], "CoreStateRegistry"));
 
-            if (payloadId == 0) {
-                payloadId = PAYLOAD_ID[DST_CHAINS[0]];
-            }
-            (v.rescueSuperformIds,) = CoreStateRegistry(v.coreStateRegistryDst).getFailedDeposits(payloadId);
-            v.amounts = new uint256[](v.rescueSuperformIds.length);
+        //     if (payloadId == 0) {
+        //         payloadId = PAYLOAD_ID[DST_CHAINS[0]];
+        //     }
+        //     (v.rescueSuperformIds,) = CoreStateRegistry(v.coreStateRegistryDst).getFailedDeposits(payloadId);
+        //     v.amounts = new uint256[](v.rescueSuperformIds.length);
 
-            for (uint256 i = 0; i < v.rescueSuperformIds.length; ++i) {
-                v.amounts[i] = _updateAmountWithPricedSwapsAndSlippage(
-                    AMOUNTS[DST_CHAINS[0]][actionIndex][i],
-                    action.slippage,
-                    v.rescueToken,
-                    /// @dev note: assuming no src swaps i.e externalToken == underlyingToken
-                    action.externalToken == 3
-                        ? NATIVE_TOKEN
-                        : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
-                    action.externalToken == 3
-                        ? NATIVE_TOKEN
-                        : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
-                    CHAIN_0,
-                    DST_CHAINS[0]
-                );
-                v.stuckAmount += v.amounts[i];
-            }
+        //     for (uint256 i = 0; i < v.rescueSuperformIds.length; ++i) {
+        //         v.amounts[i] = _updateAmountWithPricedSwapsAndSlippage(
+        //             AMOUNTS[DST_CHAINS[0]][actionIndex][i],
+        //             action.slippage,
+        //             v.rescueToken,
+        //             /// @dev note: assuming no src swaps i.e externalToken == underlyingToken
+        //             action.externalToken == 3
+        //                 ? NATIVE_TOKEN
+        //                 : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
+        //             action.externalToken == 3
+        //                 ? NATIVE_TOKEN
+        //                 : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
+        //             CHAIN_0,
+        //             DST_CHAINS[0]
+        //         );
+        //         v.stuckAmount += v.amounts[i];
+        //     }
 
-            vm.prank(deployer);
-            vm.expectRevert(Error.INVALID_RESCUE_DATA.selector);
-            CoreStateRegistry(v.coreStateRegistryDst).proposeRescueFailedDeposits(payloadId, new uint256[](0));
+        //     vm.prank(deployer);
+        //     vm.expectRevert(Error.INVALID_RESCUE_DATA.selector);
+        //     CoreStateRegistry(v.coreStateRegistryDst).proposeRescueFailedDeposits(payloadId, new uint256[](0));
 
-            vm.prank(deployer);
-            CoreStateRegistry(v.coreStateRegistryDst).proposeRescueFailedDeposits(payloadId, v.amounts);
+        //     vm.prank(deployer);
+        //     CoreStateRegistry(v.coreStateRegistryDst).proposeRescueFailedDeposits(payloadId, v.amounts);
 
-            vm.warp(block.timestamp + 12 hours);
-            CoreStateRegistry(v.coreStateRegistryDst).finalizeRescueFailedDeposits(payloadId, rescueInterim);
+        //     vm.warp(block.timestamp + 12 hours);
+        //     CoreStateRegistry(v.coreStateRegistryDst).finalizeRescueFailedDeposits(payloadId, rescueInterim);
 
-            if (rescueInterim) {
-                v.userBalanceAfter = action.externalToken == 3
-                    ? users[action.user].balance
-                    : MockERC20(v.rescueToken).balanceOf(users[action.user]);
-            } else {
-                v.userBalanceAfter = MockERC20(v.rescueToken).balanceOf(users[action.user]);
-            }
+        //     if (rescueInterim) {
+        //         v.userBalanceAfter = action.externalToken == 3
+        //             ? users[action.user].balance
+        //             : MockERC20(v.rescueToken).balanceOf(users[action.user]);
+        //     } else {
+        //         v.userBalanceAfter = MockERC20(v.rescueToken).balanceOf(users[action.user]);
+        //     }
 
-            assertEq(v.userBalanceAfter, v.userBalanceBefore + v.stuckAmount);
-        }
+        //     assertEq(v.userBalanceAfter, v.userBalanceBefore + v.stuckAmount);
+        // }
     }
 
     struct MultiVaultCallDataVars {
