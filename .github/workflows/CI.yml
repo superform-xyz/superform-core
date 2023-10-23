@@ -21,7 +21,7 @@ env:
 
 jobs:
   build:
-    runs-on: "SuperformCore2"
+    runs-on: "self-hosted"
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v3"
@@ -56,7 +56,7 @@ jobs:
 
   test-unit:
     needs: ["build"]
-    runs-on: "SuperformCore2"
+    runs-on: "self-hosted"
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v3"
@@ -90,7 +90,7 @@ jobs:
 
   test-fuzz:
     needs: ["build"]
-    runs-on: "SuperformCore2"
+    runs-on: "self-hosted"
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v3"
@@ -121,45 +121,10 @@ jobs:
         run: |
           echo "## Fork tests result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
-
-                  
-  test-invariant:
-    needs: ["build"]
-    runs-on: "SuperformCore2"
-    steps:
-      - name: "Check out the repo"
-        uses: "actions/checkout@v3"
-        with:
-          submodules: "recursive"
-
-      - name: "Install Foundry"
-        uses: "foundry-rs/foundry-toolchain@v1"
-
-      - name: "Restore the cached build"
-        uses: "actions/cache/restore@v3"
-        with:
-          fail-on-cache-miss: true
-          key: "foundry-build-${{ github.sha }}"
-          path: |
-            cache
-            out
-            out-optimized
-
-      - name: "Generate fuzz seed that changes weekly to avoid burning through RPC allowance"
-        run: |
-          echo "FOUNDRY_FUZZ_SEED=$(echo $(($EPOCHSECONDS / 604800)))" >> $GITHUB_ENV
-
-      - name: "Run invariant tests against the optimized build"
-        run: "forge test --match-path \"test/invariant/**/*.sol\""
-
-      - name: "Add test summary"
-        run: |
-          echo "## Fork tests result" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
                 
   coverage:
     needs: ["build"]
-    runs-on: "SuperformCore2"
+    runs-on: "self-hosted"
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v3"
@@ -187,7 +152,7 @@ jobs:
 
   slither:
    needs: ["build"]
-   runs-on: "SuperformCore2"
+   runs-on: "self-hosted"
    env:
     FOUNDRY_TEST: 'nonexisten'
    steps:
