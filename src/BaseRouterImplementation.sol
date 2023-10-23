@@ -89,7 +89,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformsData.extraFormData
         );
 
-        address permit2 = _getPermit2();
         address superform;
         uint256 len = req_.superformsData.superformIds.length;
 
@@ -163,7 +162,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev dispatch liquidity data
         _validateAndDispatchTokens(
             ValidateAndDispatchTokensArgs(
-                vars.liqRequest, _getPermit2(), superform, vars.srcChainId, req_.dstChainId, msg.sender, true
+                vars.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
             )
         );
 
@@ -864,7 +863,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         return true;
     }
 
-
     /*///////////////////////////////////////////////////////////////
                         FEE FORWARDING HELPERS
     //////////////////////////////////////////////////////////////*/
@@ -1002,7 +1000,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                         abi.decode(permit2data_, (uint256, uint256, bytes));
 
                     /// @dev moves the tokens from the user to the router
-                    v.permit2 = superRegistry.PERMIT2();
                     IPermit2(v.permit2).permitTransferFrom(
                         // The permit message.
                         IPermit2.PermitTransferFrom({

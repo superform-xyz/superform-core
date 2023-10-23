@@ -326,7 +326,7 @@ abstract contract AbstractDeploy is Script {
         vars.superRBAC = address(
             new SuperRBAC{salt: salt}(ISuperRBAC.InitialRoleSetup({
                         admin: ownerAddress,
-                        emergencyAdmin: 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490,
+                        emergencyAdmin: ownerAddress,
                         paymentAdmin: 0xD911673eAF0D3e15fe662D58De15511c5509bAbB,
                         csrProcessor: 0x23c658FE050B4eAeB9401768bF5911D11621629c,
                         tlProcessor: ownerAddress,
@@ -555,7 +555,7 @@ abstract contract AbstractDeploy is Script {
         );
 
         /// @dev 17 deploy emergency queue
-        vars.emergencyQueue = address(new EmergencyQueue(vars.superRegistry));
+        vars.emergencyQueue = address(new EmergencyQueue{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("EmergencyQueue"))] = vars.emergencyQueue;
         vars.superRegistryC.setAddress(vars.superRegistryC.EMERGENCY_QUEUE(), vars.emergencyQueue, vars.chainId);
         vm.stopBroadcast();

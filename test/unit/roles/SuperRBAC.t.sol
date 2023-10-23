@@ -222,7 +222,7 @@ contract SuperRBACTest is BaseSetup {
                 BroadcastMessage(
                     "SUPER_RBAC",
                     keccak256("SYNC_REVOKE"),
-                    abi.encode(keccak256("PAYMENT_ADMIN_ROLE"), keccak256("NON_EXISTENT_ID"))
+                    abi.encode(1, keccak256("PAYMENT_ADMIN_ROLE"), keccak256("NON_EXISTENT_ID"))
                 )
             )
         );

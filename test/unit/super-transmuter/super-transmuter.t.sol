@@ -10,6 +10,7 @@ import { Transmuter } from "ERC1155A/transmuter/Transmuter.sol";
 import { SuperTransmuter } from "src/SuperTransmuter.sol";
 import { Error } from "src/utils/Error.sol";
 import { VaultMock } from "test/mocks/VaultMock.sol";
+import { StateSyncer } from "src/StateSyncer.sol";
 
 contract SuperTransmuterTest is BaseSetup {
     SuperTransmuter public superTransmuter;
@@ -126,6 +127,8 @@ contract SuperTransmuterTest is BaseSetup {
 
     function test_revert_stateSync_InvalidPayloadStatus() public {
         uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
+        vm.prank(getContract(ETH, "SuperformRouter"));
+        StateSyncer(address(superTransmuter)).updateTxHistory(0, txInfo);
 
         uint256 superformId = DataLib.packSuperform(
             getContract(
@@ -169,6 +172,10 @@ contract SuperTransmuterTest is BaseSetup {
     function test_revert_stateSync_InvalidPayload_Multi() public {
         /// @dev multi = 1
         uint256 txInfo = DataLib.packTxInfo(0, 2, 1, 1, address(0), ETH);
+
+        vm.prank(getContract(ETH, "SuperformRouter"));
+        StateSyncer(address(superTransmuter)).updateTxHistory(0, 1);
+
         uint256 superformId = DataLib.packSuperform(
             getContract(
                 ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
@@ -190,6 +197,10 @@ contract SuperTransmuterTest is BaseSetup {
     function test_revert_stateSync_SrcSenderMismatch() public {
         /// @dev returnDataSrcSender = address(0x1)
         uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0x1), ETH);
+
+        vm.prank(getContract(ETH, "SuperformRouter"));
+        StateSyncer(address(superTransmuter)).updateTxHistory(0, 1);
+
         uint256 superformId = DataLib.packSuperform(
             getContract(
                 ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
@@ -211,6 +222,9 @@ contract SuperTransmuterTest is BaseSetup {
     function test_revert_stateSync_SrcTxTypeMismatch() public {
         /// @dev TxType = 1
         uint256 txInfo = DataLib.packTxInfo(1, 2, 0, 1, address(0), ETH);
+        vm.prank(getContract(ETH, "SuperformRouter"));
+        StateSyncer(address(superTransmuter)).updateTxHistory(0, 1);
+        txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
         uint256 superformId = DataLib.packSuperform(
             getContract(
                 ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
@@ -271,6 +285,8 @@ contract SuperTransmuterTest is BaseSetup {
     /// case: accidental messaging back for failed withdrawals with CallBackType FAIL
     function test_revert_stateMultiSync_InvalidPayloadStatus() public {
         uint256 txInfo = DataLib.packTxInfo(0, 2, 1, 1, address(0), ETH);
+        vm.prank(getContract(ETH, "SuperformRouter"));
+        StateSyncer(address(superTransmuter)).updateTxHistory(0, txInfo);
 
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 100;
@@ -321,6 +337,8 @@ contract SuperTransmuterTest is BaseSetup {
 
     function test_revert_stateMultiSync_InvalidPayload_Multi() public {
         uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
+        vm.prank(getContract(ETH, "SuperformRouter"));
+        StateSyncer(address(superTransmuter)).updateTxHistory(0, 1);
 
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 100;
@@ -346,6 +364,8 @@ contract SuperTransmuterTest is BaseSetup {
 
     function test_revert_stateMultiSync_SrcSenderMismatch() public {
         uint256 txInfo = DataLib.packTxInfo(0, 2, 1, 1, address(0x1), ETH);
+        vm.prank(getContract(ETH, "SuperformRouter"));
+        StateSyncer(address(superTransmuter)).updateTxHistory(0, 1);
 
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 100;
@@ -371,7 +391,9 @@ contract SuperTransmuterTest is BaseSetup {
 
     function test_revert_stateMultiSync_SrcTxTypeMismatch() public {
         uint256 txInfo = DataLib.packTxInfo(1, 2, 1, 1, address(0), ETH);
-
+        vm.prank(getContract(ETH, "SuperformRouter"));
+        StateSyncer(address(superTransmuter)).updateTxHistory(0, txInfo);
+        txInfo = DataLib.packTxInfo(0, 2, 1, 1, address(0), ETH);
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 100;
 
