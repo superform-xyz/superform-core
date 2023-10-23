@@ -108,6 +108,8 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
 
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
+
+        emit ChainAdded(superChainId_);
     }
 
     /*///////////////////////////////////////////////////////////////
