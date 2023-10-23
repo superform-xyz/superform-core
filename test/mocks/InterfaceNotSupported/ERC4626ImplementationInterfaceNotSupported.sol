@@ -18,12 +18,12 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
     using SafeERC20 for IERC20;
     using DataLib for uint256;
 
-    uint256 internal immutable STATE_REGISTRY_ID;
+    uint8 internal immutable STATE_REGISTRY_ID;
 
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
-    constructor(address superRegistry_, uint256 stateRegistryId_) BaseForm(superRegistry_) {
+    constructor(address superRegistry_, uint8 stateRegistryId_) BaseForm(superRegistry_) {
         STATE_REGISTRY_ID = stateRegistryId_;
     }
 
@@ -362,7 +362,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
     }
 
     /// @inheritdoc BaseForm
-    function getStateRegistryId() external view override returns (uint256) {
+    function getStateRegistryId() external view override returns (uint8) {
         return STATE_REGISTRY_ID;
     }
 
