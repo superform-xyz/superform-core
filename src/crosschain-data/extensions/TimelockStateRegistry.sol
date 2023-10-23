@@ -128,8 +128,6 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
             revert Error.LOCKED();
         }
 
-        /// @dev set status here to prevent re-entrancy
-        p.status = TwoStepsStatus.PROCESSED;
         (address superform,,) = p.data.superformId.getSuperform();
 
         IERC4626TimelockForm form = IERC4626TimelockForm(superform);
