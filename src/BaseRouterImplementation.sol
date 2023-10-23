@@ -51,6 +51,15 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                         INTERNAL/HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev getter for PERMIT2 in case it is not supported or set on a given chain
+    function _getPermit2() internal view returns (address) {
+        address permit2 = superRegistry.PERMIT2();
+        if (permit2 == address(0)) {
+            revert Error.PERMIT2_NOT_SUPPORTED();
+        }
+        return permit2;
+    }
+
     /// @dev handles cross-chain multi vault deposit
     function _singleXChainMultiVaultDeposit(SingleXChainMultiVaultStateReq memory req_) internal virtual {
         /// @dev validate superformsData
@@ -80,7 +89,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformsData.extraFormData
         );
 
-        address permit2 = superRegistry.PERMIT2();
         address superform;
         uint256 len = req_.superformsData.superformIds.length;
 
@@ -904,7 +912,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             }
 
             if (permit2data_.length != 0) {
-                address permit2 = superRegistry.PERMIT2();
+                address permit2 = _getPermit2();
 
                 (uint256 nonce, uint256 deadline, bytes memory signature) =
                     abi.decode(permit2data_, (uint256, uint256, bytes));
@@ -967,6 +975,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             v.len = vaultData_.liqData.length;
 
             v.totalAmount;
+
             v.permit2dataLen = permit2data_.length;
             v.approvalAmounts = new uint256[](v.len);
 
@@ -1000,6 +1009,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 (uint256 nonce, uint256 deadline, bytes memory signature) =
                     abi.decode(permit2data_, (uint256, uint256, bytes));
 
+                v.permit2 = _getPermit2();
                 /// @dev moves the tokens from the user to the router
                 IPermit2(v.permit2).permitTransferFrom(
                     // The permit message.
