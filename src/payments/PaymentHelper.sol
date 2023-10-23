@@ -231,7 +231,7 @@ contract PaymentHelper is IPaymentHelper {
 
                 /// @dev step 3: estimation processing cost of acknowledgement
                 /// @notice optimistically estimating. (Ideal case scenario: no failed deposits / withdrawals)
-                srcAmount += _estimateAckProcessingCost(req_.dstChainIds.length, superformIdsLen);
+                srcAmount += _estimateAckProcessingCost(len, superformIdsLen);
 
                 /// @dev step 4: estimate liq amount
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequests);
