@@ -148,35 +148,3 @@ jobs:
         run: |
           echo "## Coverage result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Uploaded to Codecov" >> $GITHUB_STEP_SUMMARY
-
-
-  slither:
-   needs: ["build"]
-   runs-on: "self-hosted"
-   env:
-    FOUNDRY_TEST: 'nonexisten'
-   steps:
-    - name: "Check out the repo"
-      uses: "actions/checkout@v3"
-      with:
-        submodules: "recursive"
-
-    - name: "Install Foundry"
-      uses: "foundry-rs/foundry-toolchain@v1"
-
-    - name: "Restore the cached build"
-      uses: "actions/cache/restore@v3"
-      with:
-        fail-on-cache-miss: true
-        key: "foundry-build-${{ github.sha }}"
-        path: |
-          cache
-          out
-          out-optimized
-
-    - name: "Run Slither"
-      uses: crytic/slither-action@v0.3.0
-      id: slither
-      with:
-        fail-on: none
-        slither-args: '--exclude-low --exclude-medium --exclude-optimization --exclude-informational --json-types console,detectors --filter-paths mock,test,script,lib'
