@@ -114,6 +114,9 @@ library Error {
     /// @dev thrown if tx history is not found while state sync
     error TX_HISTORY_NOT_FOUND();
 
+    /// @dev thrown if chain id exceeds max(uint64)
+    error BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
+
     /*///////////////////////////////////////////////////////////////
                          LIQUIDITY BRIDGE ERRORS
     //////////////////////////////////////////////////////////////*/
