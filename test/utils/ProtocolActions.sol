@@ -1420,7 +1420,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             CoreStateRegistry(v.coreStateRegistryDst).proposeRescueFailedDeposits(payloadId, v.amounts);
 
             vm.warp(block.timestamp + 25 hours);
-            CoreStateRegistry(v.coreStateRegistryDst).finalizeRescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]]);
+            CoreStateRegistry(v.coreStateRegistryDst).finalizeRescueFailedDeposits(payloadId);
 
             v.userBalanceAfter = action.externalToken == 3
                 ? users[action.user].balance
