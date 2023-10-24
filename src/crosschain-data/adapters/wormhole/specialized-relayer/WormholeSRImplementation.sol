@@ -120,6 +120,10 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
             revert Error.INVALID_BROADCAST_PAYLOAD();
         }
 
+        if (wormholeMessage.emitterChainId == wormhole.chainId()) {
+            revert Error.INVALID_SRC_CHAIN_ID();
+        }
+
         if (processedMessages[wormholeMessage.hash]) {
             revert Error.DUPLICATE_PAYLOAD();
         }
@@ -128,7 +132,6 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
 
         /// @dev decoding payload
         IBroadcastRegistry targetRegistry = IBroadcastRegistry(superRegistry.getStateRegistry(3));
-
         targetRegistry.receiveBroadcastPayload(superChainId[wormholeMessage.emitterChainId], wormholeMessage.payload);
     }
 
