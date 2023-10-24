@@ -619,15 +619,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         returns (uint256 dstAmount)
     {
         /// @dev validates if superformId exists on factory
-        (,, uint64 chainId) =
-            ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getSuperform(superformId_);
+        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId_)) {
+            revert Error.SUPERFORM_ID_NONEXISTANT();
+        }
 
         if (amount_ == 0) {
             revert Error.ZERO_AMOUNT();
-        }
-
-        if (chainId != CHAIN_ID || chainId == 0) {
-            revert Error.INVALID_CHAIN_ID();
         }
 
         /// @dev deposits collateral to a given vault and mint vault positions directly through the form
@@ -716,12 +713,14 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         internal
         virtual
     {
-        /// @dev validates if superformId exists on factory
-        (,, uint64 chainId) =
-            ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getSuperform(superformId_);
 
-        if (chainId != CHAIN_ID || chainId == 0) {
-            revert Error.INVALID_CHAIN_ID();
+        // @dev validates if superformId exists on factory
+        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId_)) {
+            revert Error.SUPERFORM_ID_NONEXISTANT();
+        }
+
+        if (amount_ == 0) {
+            revert Error.ZERO_AMOUNT();
         }
 
         /// @dev in direct withdraws, form is called directly
