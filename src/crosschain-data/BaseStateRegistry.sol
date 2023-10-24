@@ -68,7 +68,6 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    receive() external payable { }
 
     /// @inheritdoc IBaseStateRegistry
     function dispatchPayload(

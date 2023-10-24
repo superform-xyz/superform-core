@@ -49,13 +49,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         _;
     }
 
-    modifier isValidPayloadId(uint256 payloadId_) {
-        if (payloadId_ > payloadsCount) {
-            revert Error.INVALID_PAYLOAD_ID();
-        }
-        _;
-    }
-
     modifier onlySender() override {
         if (superRegistry.getSuperformRouterId(msg.sender) == 0) revert Error.NOT_SUPER_ROUTER();
         _;
@@ -79,8 +72,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         virtual
         override
         onlyAllowedCaller(keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE"))
-        isValidPayloadId(payloadId_)
     {
+        /// @dev validates the payload id
+        _validatePayloadId(payloadId_);
+
         (uint256 prevPayloadHeader, bytes memory prevPayloadBody,, bytes32 prevPayloadProof,,, uint8 isMulti,,,) =
             _retrievePayloadHeaderAndBody(payloadId_);
 
@@ -118,8 +113,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         virtual
         override
         onlyAllowedCaller(keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE"))
-        isValidPayloadId(payloadId_)
     {
+        /// @dev validates the payload id
+        _validatePayloadId(payloadId_);
+
         (
             uint256 prevPayloadHeader,
             bytes memory prevPayloadBody,
@@ -155,8 +152,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         virtual
         override
         onlyAllowedCaller(keccak256("CORE_STATE_REGISTRY_PROCESSOR_ROLE"))
-        isValidPayloadId(payloadId_)
     {
+        /// @dev validates the payload id
+        _validatePayloadId(payloadId_);
+
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
             revert Error.PAYLOAD_ALREADY_PROCESSED();
         }
@@ -220,8 +219,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         external
         override
         onlyAllowedCaller(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"))
-        isValidPayloadId(payloadId_)
     {
+        /// @dev validates the payload id
+        _validatePayloadId(payloadId_);
+
         FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
 
         if (
@@ -253,7 +254,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     }
 
     /// @inheritdoc ICoreStateRegistry
-    function disputeRescueFailedDeposits(uint256 payloadId_) external override isValidPayloadId(payloadId_) {
+    function disputeRescueFailedDeposits(uint256 payloadId_) external override {
+        /// @dev validates the payload id
+        _validatePayloadId(payloadId_);
+
         FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
 
         /// @dev the msg sender should be the refund address (or) the disputer
@@ -332,7 +336,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     /// @dev returns if an address has a specific role
     function _hasRole(bytes32 id_, address addressToCheck_) internal view returns (bool) {
-        return ISuperRBAC(_getSuperRBAC()).hasRole(id_, addressToCheck_);
+        return ISuperRBAC(_getAddress(keccak256("SUPER_RBAC"))).hasRole(id_, addressToCheck_);
     }
 
     /// @dev returns the state syncer address for id
@@ -355,11 +359,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         return superRegistry.delay();
     }
 
-    /// @dev returns the superRBAC address
-    function _getSuperRBAC() internal view returns (address) {
-        return _getAddress(SUPER_RBAC);
-    }
-
     /// @dev returns the required quorum for the src chain id from super registry
     /// @param chainId_ is the src chain id
     /// @return the quorum configured for the chain id
@@ -367,11 +366,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId_);
     }
 
-    /// @dev returns the required quorum for the src chain id from super registry
-    /// @param bridgeId_ is the bridge id
-    /// @return validator is the address of the validator contract
-    function _getBridgeValidator(uint8 bridgeId_) internal view returns (IBridgeValidator validator) {
-        return IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_));
+    function _validatePayloadId(uint256 payloadId_) internal view {
+        if (payloadId_ > payloadsCount) {
+            revert Error.INVALID_PAYLOAD_ID();
+        }
     }
 
     /// @dev retrieves information associated with the payload and validates quorum
@@ -633,7 +631,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 if (IBaseForm(superform).getStateRegistryId() == _getStateRegistryId(address(this))) {
                     PayloadUpdaterLib.validateLiqReq(multiVaultData_.liqData[i]);
 
-                    IBridgeValidator bridgeValidator = _getBridgeValidator(multiVaultData_.liqData[i].bridgeId);
+                    IBridgeValidator bridgeValidator =
+                        IBridgeValidator(superRegistry.getBridgeValidator(multiVaultData_.liqData[i].bridgeId));
 
                     bridgeValidator.validateTxData(
                         IBridgeValidator.ValidateTxDataArgs(
