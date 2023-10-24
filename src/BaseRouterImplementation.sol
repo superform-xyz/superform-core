@@ -195,6 +195,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         ActionLocalVars memory vars;
         vars.srcChainId = CHAIN_ID;
+        if (!_validateSuperformData(req_.superformData, vars.srcChainId)) {
+            revert Error.INVALID_SUPERFORMS_DATA();
+        }
         vars.currentPayloadId = ++payloadIds;
 
         InitSingleVaultData memory vaultData = InitSingleVaultData(
@@ -222,6 +225,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         ActionLocalVars memory vars;
         vars.srcChainId = CHAIN_ID;
+        if (!_validateSuperformsDepositData(req_.superformData, vars.srcChainId)) {
+            revert Error.INVALID_SUPERFORMS_DATA();
+        }
         vars.currentPayloadId = ++payloadIds;
 
         InitMultiVaultData memory vaultData = InitMultiVaultData(
@@ -334,12 +340,24 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         ActionLocalVars memory vars;
         vars.srcChainId = CHAIN_ID;
 
-        InitSingleVaultData memory ambData;
+        if (!_validateSuperformData(req_.superformData, vars.srcChainId)) {
+            revert Error.INVALID_SUPERFORMS_DATA();
+        }
 
-        (ambData, vars.currentPayloadId) = _buildWithdrawAmbData(msg.sender, vars.srcChainId, req_.superformData);
+        InitSingleVaultData memory vaultData = InitSingleVaultData(
+            ROUTER_TYPE,
+            vars.currentPayloadId,
+            req_.superformData.superformId,
+            req_.superformData.amount,
+            req_.superformData.maxSlippage,
+            false,
+            req_.superformData.liqRequest,
+            req_.superformData.dstRefundAddress,
+            req_.superformData.extraFormData
+        );
 
         /// @dev same chain action
-        _directSingleWithdraw(ambData, msg.sender);
+        _directSingleWithdraw(vaultData, msg.sender);
         emit Completed(vars.currentPayloadId);
     }
 
@@ -347,6 +365,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     function _singleDirectMultiVaultWithdraw(SingleDirectMultiVaultStateReq memory req_) internal virtual {
         ActionLocalVars memory vars;
         vars.srcChainId = CHAIN_ID;
+
+        if (!_validateSuperformsWithdrawData(req_.superformData, vars.srcChainId)) {
+            revert Error.INVALID_SUPERFORMS_DATA();
+        }
+
         vars.currentPayloadId = ++payloadIds;
 
         /// @dev SuperPositions are burnt optimistically here
@@ -385,9 +408,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         returns (InitSingleVaultData memory ambData, uint256 currentPayloadId)
     {
         /// @dev validate superformsData
-        if (!_validateSuperformData(dstChainId_, superformData_)) revert Error.INVALID_SUPERFORMS_DATA();
-        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).validateSingleIdExists(superformData_.superformId);
+        if (!_validateSuperformData(superformData_, dstChainId_)) {
+            revert Error.INVALID_SUPERFORMS_DATA();
+        }
 
+        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).validateSingleIdExists(superformData_.superformId);
+        
         currentPayloadId = ++payloadIds;
 
         ambData = InitSingleVaultData(
@@ -413,7 +439,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         returns (InitSingleVaultData memory ambData, uint256 currentPayloadId)
     {
         /// @dev validate superformsData
-        if (!_validateSuperformData(dstChainId_, superformData_)) {
+        if (!_validateSuperformData(superformData_, dstChainId_)) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
@@ -746,8 +772,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     //////////////////////////////////////////////////////////////*/
 
     function _validateSuperformData(
-        uint64 dstChainId_,
-        SingleVaultSFData memory superformData_
+        SingleVaultSFData memory superformData_,
+        uint64 dstChainId_
     )
         internal
         view
