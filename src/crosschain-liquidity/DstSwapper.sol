@@ -51,17 +51,12 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         _;
     }
 
-    modifier isValidPayloadId(uint256 payloadId_) {
-        IBaseStateRegistry coreStateRegistry =
-            IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
-        if (payloadId_ > coreStateRegistry.payloadsCount()) {
-            revert Error.INVALID_PAYLOAD_ID();
-        }
-        _;
-    }
-
-    /// @param superRegistry_        Superform registry contract
+    /// @param superRegistry_ Superform registry contract
     constructor(address superRegistry_) {
+        if (block.chainid > type(uint64).max) {
+            revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
+        }
+
         CHAIN_ID = uint64(block.chainid);
         superRegistry = ISuperRegistry(superRegistry_);
     }
@@ -91,9 +86,12 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         override
         onlySwapper
         nonReentrant
-        isValidPayloadId(payloadId_)
     {
-        _processTx(payloadId_, index_, bridgeId_, txData_);
+        IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
+
+        _isValidPayloadId(payloadId_, coreStateRegistry);
+
+        _processTx(payloadId_, index_, bridgeId_, txData_, coreStateRegistry);
     }
 
     /// @inheritdoc IDstSwapper
@@ -107,11 +105,14 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         override
         onlySwapper
         nonReentrant
-        isValidPayloadId(payloadId_)
     {
+        IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
+
+        _isValidPayloadId(payloadId_, coreStateRegistry);
+
         uint256 len = txData_.length;
         for (uint256 i; i < len;) {
-            _processTx(payloadId_, indices[i], bridgeIds_[i], txData_[i]);
+            _processTx(payloadId_, indices[i], bridgeIds_[i], txData_[i], coreStateRegistry);
             unchecked {
                 ++i;
             }
@@ -121,12 +122,24 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     /*///////////////////////////////////////////////////////////////
                         INTERNAL HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    function _getCoreStateRegistry() internal view returns (IBaseStateRegistry) {
+        return IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
+    }
+
+    function _isValidPayloadId(uint256 payloadId_, IBaseStateRegistry coreStateRegistry) internal view {
+        if (payloadId_ > coreStateRegistry.payloadsCount()) {
+            revert Error.INVALID_PAYLOAD_ID();
+        }
+    }
+
     function _processTx(
         uint256 payloadId_,
         uint256 index_,
         uint8 bridgeId_,
-        bytes calldata txData_
-    ) 
+        bytes calldata txData_,
+        IBaseStateRegistry coreStateRegistry_
+    )
         internal
     {
         if (swappedAmount[payloadId_][index_] != 0) {
@@ -138,7 +151,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
 
         IBridgeValidator validator = IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_));
         (address approvalToken_, uint256 amount_) = validator.decodeDstSwap(txData_);
-        v.finalDst = superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY"));
+        v.finalDst = address(coreStateRegistry_);
         /// @dev validates the bridge data
         validator.validateTxData(
             IBridgeValidator.ValidateTxDataArgs(

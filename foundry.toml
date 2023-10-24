@@ -50,6 +50,8 @@ avalanche = "${AVALANCHE_RPC_URL}"
 arbitrum = "${ARBITRUM_RPC_URL}"
 optimism = "${OPTIMISM_RPC_URL}"
 fantom = "${FANTOM_RPC_URL}"
+base = "${BASE_RPC_URL}"
+gnosis = "${GNOSIS_RPC_URL}"
 ethereum_fork = "${ETHEREUM_LOCAL_URL}"
 polygon_fork = "${POLYGON_LOCAL_URL}"
 bsc_fork = "${BSC_LOCAL_URL}"
@@ -57,6 +59,8 @@ avalanche_fork = "${AVALANCHE_LOCAL_URL}"
 arbitrum_fork = "${ARBITRUM_LOCAL_URL}"
 optimism_fork = "${OPTIMISM_LOCAL_URL}"
 fantom_fork = "${FANTOM_LOCAL_URL}"
+base_fork = "${BASE_LOCAL_URL}"
+gnosis_fork = "${GNOSIS_LOCAL_URL}"
 
 [fuzz]
 max_test_rejects = 1_000_000 # Number of times `vm.assume` can fail

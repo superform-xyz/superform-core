@@ -89,8 +89,8 @@ interface IBaseForm is IERC165 {
     /// @return The ERC20 symbol
     function superformYieldTokenSymbol() external view returns (string memory);
 
-    /// @notice Returns the underlying token of a vault.
-    /// @return The asset being deposited into the vault used for accounting, depositing, and withdrawing
+    /// @notice Returns the vault address
+    /// @return The address of the vault asset
     function getVaultAsset() external view returns (address);
 
     /// @notice Returns the name of the vault.
@@ -105,7 +105,8 @@ interface IBaseForm is IERC165 {
     /// @return The number of decimals in the vault balance
     function getVaultDecimals() external view returns (uint256);
 
-    /// @dev returns the vault address
+    /// @notice Returns the vault address
+    /// @return The address of the vault
     function getVaultAddress() external view returns (address);
 
     /// @notice Returns the amount of underlying tokens each share of a vault is worth.
@@ -124,7 +125,7 @@ interface IBaseForm is IERC165 {
     function getPreviewPricePerVaultShare() external view returns (uint256);
 
     /// @notice get the state registry id
-    function getStateRegistryId() external view returns (uint256);
+    function getStateRegistryId() external view returns (uint8);
 
     /// @dev API may need to know state of funds deployed
     function previewDepositTo(uint256 assets_) external view returns (uint256);

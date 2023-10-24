@@ -381,7 +381,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     /// @dev returns the current timelock delay
     function _getDelay() internal view returns (uint256) {
-        return superRegistry.delay();
+        uint256 delay = superRegistry.delay();
+        if (delay == 0){
+            revert Error.DELAY_NOT_SET();
+        }
+        return delay;
     }
 
     /// @dev returns the superRBAC address
@@ -504,7 +508,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     finalAmounts[currLen] = multiVaultData.amounts[i];
                     maxSlippage[currLen] = multiVaultData.maxSlippage[i];
                     hasDstSwaps[currLen] = multiVaultData.hasDstSwaps[i];
-                    ++currLen;
+                    unchecked {
+                        ++currLen;
+                    }
                 }
                 unchecked {
                     ++i;
@@ -758,53 +764,59 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         bool errors;
 
         for (uint256 i; i < numberOfVaults;) {
-            underlying = IERC20(IBaseForm(superforms[i]).getVaultAsset());
+            /// @dev if updating the deposit payload fails because of slippage, multiVaultData.amounts[i] is set to 0
+            /// @dev this means that this amount was already added to the failedDeposits state variable and should not
+            /// be re-added (or processed here)
+            if (multiVaultData.amounts[i] > 0) {
+                underlying = IERC20(IBaseForm(superforms[i]).getVaultAsset());
 
-            if (underlying.balanceOf(address(this)) >= multiVaultData.amounts[i]) {
-                underlying.safeIncreaseAllowance(superforms[i], multiVaultData.amounts[i]);
-                LiqRequest memory emptyRequest;
+                if (underlying.balanceOf(address(this)) >= multiVaultData.amounts[i]) {
+                    underlying.safeIncreaseAllowance(superforms[i], multiVaultData.amounts[i]);
+                    LiqRequest memory emptyRequest;
 
-                /// @dev it is critical to validate that the action is being performed to the correct chainId coming
-                /// from the superform
-                DataLib.validateSuperformChainId(multiVaultData.superformIds[i], CHAIN_ID);
+                    /// @dev it is critical to validate that the action is being performed to the correct chainId coming
+                    /// from the superform
+                    DataLib.validateSuperformChainId(multiVaultData.superformIds[i], CHAIN_ID);
 
-                /// @notice dstAmounts has same size of the number of vaults. If a given deposit fails, we are minting 0
-                /// SPs back on source (slight gas waste)
-                try IBaseForm(superforms[i]).xChainDepositIntoVault(
-                    InitSingleVaultData({
-                        superformRouterId: multiVaultData.superformRouterId,
-                        payloadId: multiVaultData.payloadId,
-                        superformId: multiVaultData.superformIds[i],
-                        amount: multiVaultData.amounts[i],
-                        maxSlippage: multiVaultData.maxSlippage[i],
-                        liqData: emptyRequest,
-                        hasDstSwap: false,
-                        dstRefundAddress: multiVaultData.dstRefundAddress,
-                        extraFormData: multiVaultData.extraFormData
-                    }),
-                    srcSender_,
-                    srcChainId_
-                ) returns (uint256 dstAmount) {
-                    if (dstAmount > 0) {
-                        if (!fulfilment) fulfilment = true;
-                        /// @dev marks the indexes that require a callback mint of shares (successful)
-                        dstAmounts[i] = dstAmount;
+                    /// @notice dstAmounts has same size of the number of vaults. If a given deposit fails, we are
+                    /// minting 0
+                    /// SPs back on source (slight gas waste)
+                    try IBaseForm(superforms[i]).xChainDepositIntoVault(
+                        InitSingleVaultData({
+                            superformRouterId: multiVaultData.superformRouterId,
+                            payloadId: multiVaultData.payloadId,
+                            superformId: multiVaultData.superformIds[i],
+                            amount: multiVaultData.amounts[i],
+                            maxSlippage: multiVaultData.maxSlippage[i],
+                            liqData: emptyRequest,
+                            hasDstSwap: false,
+                            dstRefundAddress: multiVaultData.dstRefundAddress,
+                            extraFormData: multiVaultData.extraFormData
+                        }),
+                        srcSender_,
+                        srcChainId_
+                    ) returns (uint256 dstAmount) {
+                        if (dstAmount > 0) {
+                            if (!fulfilment) fulfilment = true;
+                            /// @dev marks the indexes that require a callback mint of shares (successful)
+                            dstAmounts[i] = dstAmount;
+                        }
+                    } catch {
+                        /// @dev cleaning unused approval
+                        underlying.safeDecreaseAllowance(superforms[i], multiVaultData.amounts[i]);
+
+                        /// @dev if any deposit fails, we mark errors as true and add it to failedDepositSuperformIds
+                        /// mapping for future rescuing
+                        if (!errors) errors = true;
+
+                        failedDeposits[payloadId_].superformIds.push(multiVaultData.superformIds[i]);
                     }
-                } catch {
-                    /// @dev cleaning unused approval
-                    underlying.safeDecreaseAllowance(superforms[i], multiVaultData.amounts[i]);
-
-                    /// @dev if any deposit fails, we mark errors as true and add it to failedDepositSuperformIds
-                    /// mapping for future rescuing
-                    if (!errors) errors = true;
-
-                    failedDeposits[payloadId_].superformIds.push(multiVaultData.superformIds[i]);
+                } else {
+                    revert Error.BRIDGE_TOKENS_PENDING();
                 }
-            } else {
-                revert Error.BRIDGE_TOKENS_PENDING();
-            }
-            unchecked {
-                ++i;
+                unchecked {
+                    ++i;
+                }
             }
         }
 

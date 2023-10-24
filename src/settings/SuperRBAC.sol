@@ -12,6 +12,10 @@ import { BroadcastMessage } from "../types/DataTypes.sol";
 /// @author Zeropoint Labs.
 /// @dev Contract to manage roles in the entire superform protocol
 contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
+    /*///////////////////////////////////////////////////////////////
+                            CONSTANTS
+    //////////////////////////////////////////////////////////////*/
+
     bytes32 public constant SYNC_REVOKE = keccak256("SYNC_REVOKE");
 
     /// @dev used in many areas of the codebase to perform config operations
@@ -62,6 +66,10 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     /// @dev single address
     bytes32 public constant override DST_SWAPPER_ROLE = keccak256("DST_SWAPPER_ROLE");
 
+    /*///////////////////////////////////////////////////////////////
+                            STATE VARIABLES
+    //////////////////////////////////////////////////////////////*/
+    uint256 public xChainPayloadCounter;
     ISuperRegistry public superRegistry;
 
     constructor(InitialRoleSetup memory roles) {
@@ -94,7 +102,7 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     }
 
     /*///////////////////////////////////////////////////////////////
-                        External Write Functions
+                        EXTERNAL WRITE FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ISuperRBAC
@@ -129,8 +137,9 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         revokeRole(role_, addressToRevoke_);
 
         if (extraData_.length > 0) {
-            BroadcastMessage memory rolesPayload =
-                BroadcastMessage("SUPER_RBAC", SYNC_REVOKE, abi.encode(role_, superRegistryAddressId_));
+            BroadcastMessage memory rolesPayload = BroadcastMessage(
+                "SUPER_RBAC", SYNC_REVOKE, abi.encode(++xChainPayloadCounter, role_, superRegistryAddressId_)
+            );
 
             _broadcast(abi.encode(rolesPayload), extraData_);
         }
@@ -145,7 +154,8 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         BroadcastMessage memory rolesPayload = abi.decode(data_, (BroadcastMessage));
 
         if (rolesPayload.messageType == SYNC_REVOKE) {
-            (bytes32 role, bytes32 superRegistryAddressId) = abi.decode(rolesPayload.message, (bytes32, bytes32));
+            (, bytes32 role, bytes32 superRegistryAddressId) =
+                abi.decode(rolesPayload.message, (uint256, bytes32, bytes32));
             address addressToRevoke = superRegistry.getAddress(superRegistryAddressId);
 
             if (addressToRevoke == address(0)) revert Error.ZERO_ADDRESS();
@@ -171,7 +181,7 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     }
 
     /*///////////////////////////////////////////////////////////////
-                        Internal Functions
+                            INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /**

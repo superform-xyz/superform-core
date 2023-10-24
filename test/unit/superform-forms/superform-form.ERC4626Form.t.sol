@@ -633,8 +633,14 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         SuperformFactory superformFactory = SuperformFactory(getContract(chainId, "SuperformFactory"));
 
+        address newSr = address(new SuperRegistry(address(0x2222)));
+        vm.mockCall(
+            newSr, abi.encodeWithSelector(SuperRegistry(newSr).getStateRegistry.selector, 1), abi.encode(address(0x444))
+        );
         /// @dev Deploying Form with incorrect SuperRegistry
-        address formImplementation = address(new ERC4626Form(address(0x1)));
+        address formImplementation = address(new ERC4626Form(newSr));
+        vm.clearMockedCalls();
+
         uint32 formImplementationId = 0;
 
         /// @dev Vaults For The Superforms
