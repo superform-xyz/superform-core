@@ -3,6 +3,7 @@ pragma solidity ^0.8.21;
 
 import { ReentrancyGuard } from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 import { IBaseForm } from "../../interfaces/IBaseForm.sol";
+import { ISuperformFactory } from "../../interfaces/ISuperformFactory.sol";
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
 import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
 import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
@@ -99,8 +100,10 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         override
         onlyForm(data_.superformId)
     {
+        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(data_.superformId)) {
+            revert Error.SUPERFORM_ID_NONEXISTANT();
+        }
         ++timelockPayloadCounter;
-
         timelockPayload[timelockPayloadCounter] =
             TimelockPayload(type_, srcSender_, srcChainId_, lockedTill_, data_, TwoStepsStatus.PENDING);
     }
