@@ -297,11 +297,6 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         (, bytes memory extraData) = IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER")))
             .calculateAMBData(dstChainId_, ambIds_, message_);
 
-        AMBExtraData memory d = abi.decode(extraData, (AMBExtraData));
-        _dispatchPayload(msg.sender, ambIds_[0], dstChainId_, d.gasPerAMB[0], message_, d.extraDataPerAMB[0]);
-
-        if (ambIds_.length > 1) {
-            _dispatchProof(msg.sender, ambIds_, dstChainId_, d.gasPerAMB, message_, d.extraDataPerAMB);
-        }
+        _dispatchPayload(msg.sender, ambIds_, dstChainId_, message_, extraData);
     }
 }

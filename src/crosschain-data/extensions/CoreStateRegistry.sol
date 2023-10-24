@@ -28,12 +28,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     using ProofLib for AMBMessage;
 
     /*///////////////////////////////////////////////////////////////
-                    Constants
-    //////////////////////////////////////////////////////////////*/
-    bytes32 constant SUPER_RBAC = keccak256("SUPER_RBAC");
-    address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
-    /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
@@ -76,23 +70,22 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         /// @dev validates the payload id
         _validatePayloadId(payloadId_);
 
-        (uint256 prevPayloadHeader, bytes memory prevPayloadBody,, bytes32 prevPayloadProof,,, uint8 isMulti,,,) =
-            _retrievePayloadHeaderAndBody(payloadId_);
+        (uint256 prevPayloadHeader, bytes memory prevPayloadBody, bytes32 prevPayloadProof,,, uint8 isMulti,,,) =
+            _getPayload(payloadId_);
 
         PayloadUpdaterLib.validateDepositPayloadUpdate(prevPayloadHeader, payloadTracking[payloadId_], isMulti);
 
         PayloadState finalState;
         if (isMulti != 0) {
-            (prevPayloadBody, finalState) = _updateMultiVaultDepositPayload(payloadId_, prevPayloadBody, finalAmounts_);
+            (prevPayloadBody, finalState) = _updateMultiDeposit(payloadId_, prevPayloadBody, finalAmounts_);
         } else {
-            (prevPayloadBody, finalState) =
-                _updateSingleVaultDepositPayload(payloadId_, prevPayloadBody, finalAmounts_[0]);
+            (prevPayloadBody, finalState) = _updateSingleDeposit(payloadId_, prevPayloadBody, finalAmounts_[0]);
         }
 
         payloadBody[payloadId_] = prevPayloadBody;
 
         /// @dev updates the payload proof
-        _handlePayloadProofUpdate(prevPayloadProof, prevPayloadBody, prevPayloadHeader);
+        _updateProof(prevPayloadProof, prevPayloadBody, prevPayloadHeader);
 
         payloadTracking[payloadId_] = finalState;
         emit PayloadUpdated(payloadId_);
@@ -120,7 +113,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         (
             uint256 prevPayloadHeader,
             bytes memory prevPayloadBody,
-            ,
             bytes32 prevPayloadProof,
             ,
             ,
@@ -128,7 +120,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             ,
             address srcSender,
             uint64 srcChainId
-        ) = _retrievePayloadHeaderAndBody(payloadId_);
+        ) = _getPayload(payloadId_);
 
         /// @dev validate payload update
         PayloadUpdaterLib.validateWithdrawPayloadUpdate(prevPayloadHeader, payloadTracking[payloadId_], isMulti);
@@ -137,7 +129,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         payloadBody[payloadId_] = prevPayloadBody;
 
         /// @dev updates the payload proof
-        _handlePayloadProofUpdate(prevPayloadProof, prevPayloadBody, prevPayloadHeader);
+        _updateProof(prevPayloadProof, prevPayloadBody, prevPayloadHeader);
 
         /// @dev define the payload status as updated
         payloadTracking[payloadId_] = PayloadState.UPDATED;
@@ -167,7 +159,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         (
             uint256 payloadHeader_,
             bytes memory payloadBody_,
-            AMBMessage memory message_,
             ,
             uint8 txType,
             uint8 callbackType,
@@ -175,7 +166,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             ,
             address srcSender,
             uint64 srcChainId
-        ) = _retrievePayloadHeaderAndBody(payloadId_);
+        ) = _getPayload(payloadId_);
+
+        AMBMessage memory message_ = AMBMessage(payloadHeader_, payloadBody_);
 
         /// @dev mint superPositions for successful deposits or remint for failed withdraws
         if (callbackType == uint256(CallbackType.RETURN) || callbackType == uint256(CallbackType.FAIL)) {
@@ -191,21 +184,19 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
             if (txType == uint8(TransactionType.WITHDRAW)) {
                 returnMessage = isMulti == 1
-                    ? _processMultiWithdrawal(payloadId_, payloadBody_, srcSender, srcChainId)
-                    : _processSingleWithdrawal(payloadId_, payloadBody_, srcSender, srcChainId);
-            }
-
-            if (txType == uint8(TransactionType.DEPOSIT)) {
+                    ? _multiWithdrawal(payloadId_, payloadBody_, srcSender, srcChainId)
+                    : _singleWithdrawal(payloadId_, payloadBody_, srcSender, srcChainId);
+            } else if (txType == uint8(TransactionType.DEPOSIT)) {
                 if (initialState != PayloadState.UPDATED) {
                     revert Error.PAYLOAD_NOT_UPDATED();
                 }
 
                 returnMessage = isMulti == 1
-                    ? _processMultiDeposit(payloadId_, payloadBody_, srcSender, srcChainId)
-                    : _processSingleDeposit(payloadId_, payloadBody_, srcSender, srcChainId);
+                    ? _multiDeposit(payloadId_, payloadBody_, srcSender, srcChainId)
+                    : _singleDeposit(payloadId_, payloadBody_, srcSender, srcChainId);
             }
 
-            _processAcknowledgement(payloadId_, message_.computeProof(), srcChainId, returnMessage);
+            _processAck(payloadId_, message_.computeProof(), srcChainId, returnMessage);
         }
 
         emit PayloadProcessed(payloadId_);
@@ -255,9 +246,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     /// @inheritdoc ICoreStateRegistry
     function disputeRescueFailedDeposits(uint256 payloadId_) external override {
-        /// @dev validates the payload id
-        _validatePayloadId(payloadId_);
-
         FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
 
         /// @dev the msg sender should be the refund address (or) the disputer
@@ -288,34 +276,37 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     /// @inheritdoc ICoreStateRegistry
     /// @notice is an open function & can be executed by anyone
     function finalizeRescueFailedDeposits(uint256 payloadId_) external override {
-        uint256 lastProposedTimestamp = failedDeposits[payloadId_].lastProposedTimestamp;
+        FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
 
         /// @dev the timelock is elapsed
-        if (lastProposedTimestamp == 0 || block.timestamp < lastProposedTimestamp + _getDelay()) {
+        if (
+            failedDeposits_.lastProposedTimestamp == 0
+                || block.timestamp < failedDeposits_.lastProposedTimestamp + _getDelay()
+        ) {
             revert Error.RESCUE_LOCKED();
         }
 
-        uint256[] memory amounts = failedDeposits[payloadId_].amounts;
-        address[] memory settlementToken = failedDeposits[payloadId_].settlementToken;
-        bool[] memory rescueInterim = failedDeposits[payloadId_].settleFromDstSwapper;
-        address refundAddress = failedDeposits[payloadId_].refundAddress;
+        /// @dev set to zero to prevent re-entrancy
+        failedDeposits_.lastProposedTimestamp = 0;
 
-        /// @dev deleted to prevent re-entrancy
-        delete failedDeposits[payloadId_];
-
-        for (uint256 i; i < amounts.length;) {
+        for (uint256 i; i < failedDeposits_.amounts.length;) {
             /// @dev refunds the amount to user specified refund address
-            if (rescueInterim[i]) {
+            if (failedDeposits_.settleFromDstSwapper[i]) {
                 IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
-                dstSwapper.processFailedTx(refundAddress, settlementToken[i], amounts[i]);
+                dstSwapper.processFailedTx(
+                    failedDeposits_.refundAddress, failedDeposits_.settlementToken[i], failedDeposits_.amounts[i]
+                );
             } else {
-                IERC20(settlementToken[i]).safeTransfer(refundAddress, amounts[i]);
+                IERC20(failedDeposits_.settlementToken[i]).safeTransfer(
+                    failedDeposits_.refundAddress, failedDeposits_.amounts[i]
+                );
             }
             unchecked {
                 ++i;
             }
         }
 
+        delete failedDeposits[payloadId_];
         emit RescueFinalized(payloadId_);
     }
 
@@ -362,7 +353,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     /// @dev returns the required quorum for the src chain id from super registry
     /// @param chainId_ is the src chain id
     /// @return the quorum configured for the chain id
-    function _getRequiredMessagingQuorum(uint64 chainId_) internal view returns (uint256) {
+    function _getQuorum(uint64 chainId_) internal view returns (uint256) {
         return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId_);
     }
 
@@ -376,7 +367,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     /// @param payloadId_ is the payload id
     /// @return payloadHeader_ is the payload header
     /// @return payloadBody_ is the payload body
-    /// @return message is the AMBMessage struct
     /// @return payloadProof is the payload proof
     /// @return txType is the transaction type
     /// @return callbackType is the callback type
@@ -384,13 +374,12 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     /// @return registryId is the registry id
     /// @return srcSender is the source sender
     /// @return srcChainId is the source chain id
-    function _retrievePayloadHeaderAndBody(uint256 payloadId_)
+    function _getPayload(uint256 payloadId_)
         internal
         view
         returns (
             uint256 payloadHeader_,
             bytes memory payloadBody_,
-            AMBMessage memory message,
             bytes32 payloadProof,
             uint8 txType,
             uint8 callbackType,
@@ -402,17 +391,16 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     {
         payloadHeader_ = payloadHeader[payloadId_];
         payloadBody_ = payloadBody[payloadId_];
-        message = AMBMessage(payloadHeader_, payloadBody_);
-        payloadProof = message.computeProof();
+        payloadProof = AMBMessage(payloadHeader_, payloadBody_).computeProof();
         (txType, callbackType, isMulti, registryId, srcSender, srcChainId) = payloadHeader_.decodeTxInfo();
 
-        if (messageQuorum[payloadProof] < _getRequiredMessagingQuorum(srcChainId)) {
+        if (messageQuorum[payloadProof] < _getQuorum(srcChainId)) {
             revert Error.QUORUM_NOT_REACHED();
         }
     }
 
     /// @dev helper function to update multi vault deposit payload
-    function _updateMultiVaultDepositPayload(
+    function _updateMultiDeposit(
         uint256 payloadId_,
         bytes memory prevPayloadBody_,
         uint256[] calldata finalAmounts_
@@ -437,7 +425,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             }
 
             /// @dev observe not consuming the second return value
-            (multiVaultData.amounts[i],, validLen) = _updateAmountOrQueueFailedDeposit(
+            (multiVaultData.amounts[i],, validLen) = _updateAmount(
                 dstSwapper,
                 multiVaultData.hasDstSwaps[i],
                 payloadId_,
@@ -488,7 +476,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     }
 
     /// @dev helper function to update single vault deposit payload
-    function _updateSingleVaultDepositPayload(
+    function _updateSingleDeposit(
         uint256 payloadId_,
         bytes memory prevPayloadBody_,
         uint256 finalAmount_
@@ -504,7 +492,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         }
 
         /// @dev observe not consuming the third return value
-        (singleVaultData.amount, finalState_,) = _updateAmountOrQueueFailedDeposit(
+        (singleVaultData.amount, finalState_,) = _updateAmount(
             dstSwapper,
             singleVaultData.hasDstSwap,
             payloadId_,
@@ -520,7 +508,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         newPayloadBody_ = abi.encode(singleVaultData);
     }
 
-    function _updateAmountOrQueueFailedDeposit(
+    function _updateAmount(
         IDstSwapper dstSwapper,
         bool hasDstSwap_,
         uint256 payloadId_,
@@ -602,7 +590,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             revert Error.DIFFERENT_PAYLOAD_UPDATE_TX_DATA_LENGTH();
         }
 
-        multiVaultData = _validateAndUpdateTxData(txData_, multiVaultData, srcSender_, srcChainId_, CHAIN_ID);
+        multiVaultData = _updateTxData(txData_, multiVaultData, srcSender_, srcChainId_, CHAIN_ID);
 
         if (multi == 0) {
             singleVaultData.liqData.txData = txData_[0];
@@ -613,7 +601,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     }
 
     /// @dev validates the incoming update data
-    function _validateAndUpdateTxData(
+    function _updateTxData(
         bytes[] calldata txData_,
         InitMultiVaultData memory multiVaultData_,
         address srcSender_,
@@ -666,7 +654,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         return multiVaultData_;
     }
 
-    function _processMultiWithdrawal(
+    function _multiWithdrawal(
         uint256 payloadId_,
         bytes memory payload_,
         address srcSender_,
@@ -718,7 +706,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         /// @dev if at least one error happens, the shares will be re-minted for the affected superformIds
         if (errors) {
-            return _constructMultiReturnData(
+            return _multiReturnData(
                 srcSender_,
                 multiVaultData.payloadId,
                 multiVaultData.superformRouterId,
@@ -732,7 +720,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         return "";
     }
 
-    function _processMultiDeposit(
+    function _multiDeposit(
         uint256 payloadId_,
         bytes memory payload_,
         address srcSender_,
@@ -813,7 +801,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         /// @dev issue superPositions if at least one vault deposit passed
         if (fulfilment) {
-            return _constructMultiReturnData(
+            return _multiReturnData(
                 srcSender_,
                 multiVaultData.payloadId,
                 multiVaultData.superformRouterId,
@@ -831,7 +819,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         return "";
     }
 
-    function _processSingleWithdrawal(
+    function _singleWithdrawal(
         uint256 payloadId_,
         bytes memory payload_,
         address srcSender_,
@@ -852,7 +840,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         } catch {
             // Handle the case when the external call reverts for whatever reason
             /// https://solidity-by-example.org/try-catch/
-            return _constructSingleReturnData(
+            return _singleReturnData(
                 srcSender_,
                 singleVaultData.payloadId,
                 singleVaultData.superformRouterId,
@@ -866,7 +854,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         return "";
     }
 
-    function _processSingleDeposit(
+    function _singleDeposit(
         uint256 payloadId_,
         bytes memory payload_,
         address srcSender_,
@@ -891,7 +879,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 uint256 dstAmount
             ) {
                 if (dstAmount > 0) {
-                    return _constructSingleReturnData(
+                    return _singleReturnData(
                         srcSender_,
                         singleVaultData.payloadId,
                         singleVaultData.superformRouterId,
@@ -919,7 +907,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         return "";
     }
 
-    function _processAcknowledgement(
+    function _processAck(
         uint256 payloadId_,
         bytes32 proof_,
         uint64 srcChainId_,
@@ -931,11 +919,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         /// @dev if deposits succeeded or some withdrawal failed, dispatch a callback
         if (returnMessage_.length > 0) {
-            uint8[] memory ambIds = new uint8[](proofIds.length + 1);
-
+            uint256 len = proofIds.length;
+            uint8[] memory ambIds = new uint8[](len++);
             ambIds[0] = msgAMB[payloadId_];
 
-            uint256 len = proofIds.length;
             for (uint256 i; i < len;) {
                 ambIds[i + 1] = proofIds[i];
 
@@ -944,12 +931,16 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 }
             }
 
-            _dispatchAcknowledgement(srcChainId_, ambIds, returnMessage_);
+            (, bytes memory extraData) = IPaymentHelper(_getAddress(keccak256("PAYMENT_HELPER"))).calculateAMBData(
+                srcChainId_, ambIds, returnMessage_
+            );
+
+            _dispatchPayload(msg.sender, ambIds, srcChainId_, returnMessage_, extraData);
         }
     }
 
     /// @notice depositSync and withdrawSync internal method for sending message back to the source chain
-    function _constructMultiReturnData(
+    function _multiReturnData(
         address srcSender_,
         uint256 payloadId_,
         uint8 superformRouterId_,
@@ -974,7 +965,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     }
 
     /// @notice depositSync and withdrawSync internal method for sending message back to the source chain
-    function _constructSingleReturnData(
+    function _singleReturnData(
         address srcSender_,
         uint256 payloadId_,
         uint8 superformRouterId_,
@@ -998,28 +989,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         );
     }
 
-    /// @dev calls the appropriate dispatch function according to the ackExtraData the keeper fed initially
-    function _dispatchAcknowledgement(uint64 dstChainId_, uint8[] memory ambIds_, bytes memory message_) internal {
-        (, bytes memory extraData) =
-            IPaymentHelper(_getAddress(keccak256("PAYMENT_HELPER"))).calculateAMBData(dstChainId_, ambIds_, message_);
-
-        AMBExtraData memory d = abi.decode(extraData, (AMBExtraData));
-
-        _dispatchPayload(msg.sender, ambIds_[0], dstChainId_, d.gasPerAMB[0], message_, d.extraDataPerAMB[0]);
-
-        if (ambIds_.length > 1) {
-            _dispatchProof(msg.sender, ambIds_, dstChainId_, d.gasPerAMB, message_, d.extraDataPerAMB);
-        }
-    }
-
     /// @dev calls the function to update the proof during payload update
-    function _handlePayloadProofUpdate(
-        bytes32 prevPayloadProof,
-        bytes memory newPayloadBody,
-        uint256 prevPayloadHeader
-    )
-        internal
-    {
+    function _updateProof(bytes32 prevPayloadProof, bytes memory newPayloadBody, uint256 prevPayloadHeader) internal {
         bytes32 newPayloadProof = AMBMessage(prevPayloadHeader, newPayloadBody).computeProof();
         if (newPayloadProof != prevPayloadProof) {
             messageQuorum[newPayloadProof] = messageQuorum[prevPayloadProof];
