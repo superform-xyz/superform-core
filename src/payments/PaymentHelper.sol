@@ -37,7 +37,7 @@ contract PaymentHelper is IPaymentHelper {
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    uint32 public constant TIMELOCK_FORM_ID = 1;
+    uint32 public constant TIMELOCK_FORM_ID = 2;
 
     /*///////////////////////////////////////////////////////////////
                                 STATE VARIABLES
@@ -78,6 +78,10 @@ contract PaymentHelper is IPaymentHelper {
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
     constructor(address superRegistry_) {
+        if (block.chainid > type(uint64).max) {
+            revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
+        }
+
         CHAIN_ID = uint64(block.chainid);
         superRegistry = ISuperRegistry(superRegistry_);
     }

@@ -19,23 +19,21 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     using SafeERC20 for IERC4626;
     using DataLib for uint256;
 
-    uint256 internal immutable STATE_REGISTRY_ID;
+    uint8 internal immutable STATE_REGISTRY_ID;
 
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
-    constructor(address superRegistry_, uint256 stateRegistryId_) BaseForm(superRegistry_) {
+    constructor(address superRegistry_, uint8 stateRegistryId_) BaseForm(superRegistry_) {
+        if (superRegistry.getStateRegistry(stateRegistryId_) == address(0)) {
+            revert Error.NOT_STATE_REGISTRY();
+        }
         STATE_REGISTRY_ID = stateRegistryId_;
     }
 
     /*///////////////////////////////////////////////////////////////
                             VIEW/PURE OVERRIDES
     //////////////////////////////////////////////////////////////*/
-
-    /// @inheritdoc BaseForm
-    function getVaultAsset() public view virtual override returns (address) {
-        return address(IERC4626(vault).asset());
-    }
 
     /// @inheritdoc BaseForm
     function getVaultName() public view virtual override returns (string memory) {
@@ -111,7 +109,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         directDepositLocalVars memory vars;
 
         IERC4626 v = IERC4626(vault);
-        vars.collateral = address(v.asset());
+        vars.collateral = address(asset);
         vars.balanceBefore = IERC20(vars.collateral).balanceOf(address(this));
         IERC20 token = IERC20(singleVaultData_.liqData.token);
 
@@ -209,7 +207,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         v.receiver = v.len1 == 0 ? srcSender_ : address(this);
 
         v.v = IERC4626(vault);
-        v.collateral = address(v.v.asset());
+        v.collateral = address(asset);
 
         /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same as
         /// the vault asset
@@ -263,8 +261,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         IERC4626 v = IERC4626(vaultLoc);
 
-        address asset = v.asset();
-
         /// @dev pulling from sender, to auto-send tokens back in case of failed deposits / reverts
         IERC20(asset).safeTransferFrom(msg.sender, address(this), singleVaultData_.amount);
 
@@ -310,7 +306,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         vars.receiver = len == 0 ? srcSender_ : address(this);
 
         IERC4626 v = IERC4626(vault);
-        vars.collateral = v.asset();
+        vars.collateral = asset;
 
         /// @dev redeem vault positions (we operate only on positions, not assets)
         dstAmount = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
@@ -378,7 +374,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     }
 
     /// @inheritdoc BaseForm
-    function getStateRegistryId() external view override returns (uint256) {
+    function getStateRegistryId() external view override returns (uint8) {
         return STATE_REGISTRY_ID;
     }
 
