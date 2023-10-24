@@ -381,7 +381,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     /// @dev returns the current timelock delay
     function _getDelay() internal view returns (uint256) {
-        return superRegistry.delay();
+        uint256 delay = superRegistry.delay();
+        if (delay == 0){
+            revert Error.DELAY_NOT_SET();
+        }
+        return delay;
     }
 
     /// @dev returns the superRBAC address
