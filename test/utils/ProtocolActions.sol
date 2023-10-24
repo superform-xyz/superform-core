@@ -1378,7 +1378,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             CoreStateRegistry(coreStateRegistryDst).proposeRescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]], amounts);
 
-            vm.warp(block.timestamp + 12 hours);
+            vm.warp(block.timestamp + 25 hours);
             CoreStateRegistry(coreStateRegistryDst).finalizeRescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]]);
 
             uint256 userWethBalanceAfter =
