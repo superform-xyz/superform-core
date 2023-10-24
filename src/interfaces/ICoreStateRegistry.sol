@@ -11,36 +11,6 @@ interface ICoreStateRegistry {
     /*///////////////////////////////////////////////////////////////
                                STRUCTS
     //////////////////////////////////////////////////////////////*/
-    /// @dev local struct to avoid stack too deep errors in `processPayload`
-    struct CoreProcessPayloadLocalVars {
-        uint8 txType;
-        uint8 callbackType;
-        uint8 multi;
-        address srcSender;
-        uint64 srcChainId;
-    }
-
-    /// @dev local struct to avoid stack too deep errors in `updateWithdrawPayload`
-    struct UpdateWithdrawPayloadVars {
-        bytes32 prevPayloadProof;
-        bytes prevPayloadBody;
-        uint256 prevPayloadHeader;
-        uint8 isMulti;
-        uint64 srcChainId;
-        uint64 dstChainId;
-        address srcSender;
-    }
-
-    /// @dev local struct to avoid stack too deep errors in `updateWithdrawPayload`
-    struct UpdateMultiVaultWithdrawPayloadLocalVars {
-        InitMultiVaultData multiVaultData;
-        InitSingleVaultData singleVaultData;
-        address superform;
-        uint256[] tSuperFormIds;
-        uint256[] tAmounts;
-        uint256[] tMaxSlippage;
-        LiqRequest[] tLiqData;
-    }
 
     struct FailedDeposit {
         uint256[] superformIds;
