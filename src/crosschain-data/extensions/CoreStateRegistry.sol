@@ -42,27 +42,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
 
-    modifier onlyCoreStateRegistryProcessor() {
-        if (!_hasRole(keccak256("CORE_STATE_REGISTRY_PROCESSOR_ROLE"), msg.sender)) revert Error.NOT_PROCESSOR();
-        _;
-    }
-
-    modifier onlyCoreStateRegistryUpdater() {
-        if (!_hasRole(keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE"), msg.sender)) {
-            revert Error.NOT_UPDATER();
-        }
-        _;
-    }
-
-    modifier onlyCoreStateRegistryRescuer() {
-        if (!_hasRole(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), msg.sender)) {
-            revert Error.NOT_RESCUER();
-        }
-        _;
-    }
-
-    modifier onlySender() override {
-        if (superRegistry.getSuperformRouterId(msg.sender) == 0) revert Error.NOT_SUPER_ROUTER();
+    modifier onlyAllowedCaller(bytes32 role_) {
+        if (!_hasRole(role_, msg.sender)) revert Error.NOT_PREVILAGED_CALLER(role_);
         _;
     }
 
@@ -70,6 +51,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();
         }
+        _;
+    }
+
+    modifier onlySender() override {
+        if (superRegistry.getSuperformRouterId(msg.sender) == 0) revert Error.NOT_SUPER_ROUTER();
         _;
     }
 
@@ -90,7 +76,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         external
         virtual
         override
-        onlyCoreStateRegistryUpdater
+        onlyAllowedCaller(keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE"))
         isValidPayloadId(payloadId_)
     {
         (uint256 prevPayloadHeader, bytes memory prevPayloadBody,, bytes32 prevPayloadProof,,, uint8 isMulti,,,) =
@@ -98,28 +84,18 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         PayloadUpdaterLib.validateDepositPayloadUpdate(prevPayloadHeader, payloadTracking[payloadId_], isMulti);
 
-        bytes memory newPayloadBody;
         PayloadState finalState;
         if (isMulti != 0) {
-            (newPayloadBody, finalState) = _updateMultiVaultDepositPayload(payloadId_, prevPayloadBody, finalAmounts_);
+            (prevPayloadBody, finalState) = _updateMultiVaultDepositPayload(payloadId_, prevPayloadBody, finalAmounts_);
         } else {
-            (newPayloadBody, finalState) =
+            (prevPayloadBody, finalState) =
                 _updateSingleVaultDepositPayload(payloadId_, prevPayloadBody, finalAmounts_[0]);
         }
 
-        /// @dev set the new payload body
-        payloadBody[payloadId_] = newPayloadBody;
-        bytes32 newPayloadProof = AMBMessage(prevPayloadHeader, newPayloadBody).computeProof();
+        payloadBody[payloadId_] = prevPayloadBody;
 
-        if (newPayloadProof != prevPayloadProof) {
-            /// @dev set new message quorum
-            messageQuorum[newPayloadProof] = messageQuorum[prevPayloadProof];
-            proofAMB[newPayloadProof] = proofAMB[prevPayloadProof];
-
-            /// @dev re-set previous message quorum to 0
-            delete messageQuorum[prevPayloadProof];
-            delete proofAMB[prevPayloadProof];
-        }
+        /// @dev updates the payload proof
+        _handlePayloadProofUpdate(prevPayloadProof, prevPayloadBody, prevPayloadHeader);
 
         payloadTracking[payloadId_] = finalState;
         emit PayloadUpdated(payloadId_);
@@ -139,7 +115,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         external
         virtual
         override
-        onlyCoreStateRegistryUpdater
+        onlyAllowedCaller(keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE"))
         isValidPayloadId(payloadId_)
     {
         (
@@ -158,21 +134,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         /// @dev validate payload update
         PayloadUpdaterLib.validateWithdrawPayloadUpdate(prevPayloadHeader, payloadTracking[payloadId_], isMulti);
 
-        bytes memory newPayloadBody = _updateWithdrawPayload(prevPayloadBody, srcSender, srcChainId, txData_, isMulti);
+        prevPayloadBody = _updateWithdrawPayload(prevPayloadBody, srcSender, srcChainId, txData_, isMulti);
+        payloadBody[payloadId_] = prevPayloadBody;
 
-        /// @dev set the new payload body
-        payloadBody[payloadId_] = newPayloadBody;
-        bytes32 newPayloadProof = AMBMessage(prevPayloadHeader, newPayloadBody).computeProof();
-
-        if (newPayloadProof != prevPayloadProof) {
-            /// @dev set new message quorum
-            messageQuorum[newPayloadProof] = messageQuorum[prevPayloadProof];
-            proofAMB[newPayloadProof] = proofAMB[prevPayloadProof];
-
-            /// @dev re-set previous message quorum to 0
-            delete messageQuorum[prevPayloadProof];
-            delete proofAMB[prevPayloadProof];
-        }
+        /// @dev updates the payload proof
+        _handlePayloadProofUpdate(prevPayloadProof, prevPayloadBody, prevPayloadHeader);
 
         /// @dev define the payload status as updated
         payloadTracking[payloadId_] = PayloadState.UPDATED;
@@ -186,15 +152,15 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         payable
         virtual
         override
-        onlyCoreStateRegistryProcessor
+        onlyAllowedCaller(keccak256("CORE_STATE_REGISTRY_PROCESSOR_ROLE"))
         isValidPayloadId(payloadId_)
     {
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
             revert Error.PAYLOAD_ALREADY_PROCESSED();
         }
 
-        PayloadState initialState;
-        initialState = payloadTracking[payloadId_];
+        PayloadState initialState = payloadTracking[payloadId_];
+
         /// @dev sets status as processed to prevent re-entrancy
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
         bytes memory payloadBody__;
@@ -215,6 +181,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         }
 
         bytes memory returnMessage;
+
         /// @dev for initial payload processing
         if (v.callbackType == uint8(CallbackType.INIT)) {
             if (v.txType == uint8(TransactionType.WITHDRAW)) {
@@ -246,10 +213,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     )
         external
         override
-        onlyCoreStateRegistryRescuer
+        onlyAllowedCaller(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"))
         isValidPayloadId(payloadId_)
     {
-        FailedDeposit memory failedDeposits_ = failedDeposits[payloadId_];
+        FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
 
         if (
             failedDeposits_.superformIds.length == 0 || proposedAmounts_.length == 0
@@ -281,7 +248,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     /// @inheritdoc ICoreStateRegistry
     function disputeRescueFailedDeposits(uint256 payloadId_) external override isValidPayloadId(payloadId_) {
-        FailedDeposit memory failedDeposits_ = failedDeposits[payloadId_];
+        FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
 
         /// @dev the msg sender should be the refund address (or) the disputer
         if (
@@ -318,7 +285,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             revert Error.RESCUE_LOCKED();
         }
 
-        uint256[] memory superformIds = failedDeposits[payloadId_].superformIds;
         uint256[] memory amounts = failedDeposits[payloadId_].amounts;
         address[] memory settlementToken = failedDeposits[payloadId_].settlementToken;
         bool[] memory rescueInterim = failedDeposits[payloadId_].settleFromDstSwapper;
@@ -327,7 +293,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         /// @dev deleted to prevent re-entrancy
         delete failedDeposits[payloadId_];
 
-        for (uint256 i; i < superformIds.length;) {
+        for (uint256 i; i < amounts.length;) {
             /// @dev refunds the amount to user specified refund address
             if (rescueInterim[i]) {
                 IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
@@ -1060,6 +1026,24 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         if (ambIds_.length > 1) {
             _dispatchProof(msg.sender, ambIds_, dstChainId_, d.gasPerAMB, message_, d.extraDataPerAMB);
+        }
+    }
+
+    /// @dev calls the function to update the proof during payload update
+    function _handlePayloadProofUpdate(
+        bytes32 prevPayloadProof,
+        bytes memory newPayloadBody,
+        uint256 prevPayloadHeader
+    )
+        internal
+    {
+        bytes32 newPayloadProof = AMBMessage(prevPayloadHeader, newPayloadBody).computeProof();
+        if (newPayloadProof != prevPayloadProof) {
+            messageQuorum[newPayloadProof] = messageQuorum[prevPayloadProof];
+            proofAMB[newPayloadProof] = proofAMB[prevPayloadProof];
+
+            delete messageQuorum[prevPayloadProof];
+            delete proofAMB[prevPayloadProof];
         }
     }
 }
