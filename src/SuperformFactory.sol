@@ -2,6 +2,7 @@
 pragma solidity ^0.8.21;
 
 import { ERC165Checker } from "openzeppelin-contracts/contracts/utils/introspection/ERC165Checker.sol";
+import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import { BaseForm } from "./BaseForm.sol";
 import { BroadcastMessage } from "./types/DataTypes.sol";
 import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
@@ -127,9 +128,9 @@ contract SuperformFactory is ISuperformFactory {
             revert Error.VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS();
         }
 
-        /// @dev instantiate the superform.
+        /// @dev instantiate the superform
         superform_ = tFormImplementation.clone();
-        BaseForm(payable(superform_)).initialize(address(superRegistry), vault_, formImplementationId_);
+        BaseForm(payable(superform_)).initialize(address(superRegistry), vault_, formImplementationId_,address(IERC4626(vault_).asset()));
 
         /// @dev this will always be unique because all chainIds are unique
         superformId_ = DataLib.packSuperform(superform_, formImplementationId_, CHAIN_ID);

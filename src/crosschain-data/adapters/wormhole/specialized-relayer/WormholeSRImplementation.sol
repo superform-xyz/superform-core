@@ -120,6 +120,10 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
             revert Error.INVALID_BROADCAST_PAYLOAD();
         }
 
+        if (wormholeMessage.emitterChainId == wormhole.chainId()) {
+            revert Error.INVALID_SRC_CHAIN_ID();
+        }
+
         if (processedMessages[wormholeMessage.hash]) {
             revert Error.DUPLICATE_PAYLOAD();
         }
@@ -128,7 +132,6 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
 
         /// @dev decoding payload
         IBroadcastRegistry targetRegistry = IBroadcastRegistry(superRegistry.getStateRegistry(3));
-
         targetRegistry.receiveBroadcastPayload(superChainId[wormholeMessage.emitterChainId], wormholeMessage.payload);
     }
 
@@ -143,15 +146,14 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
 
         /// @dev  reset old mappings
         uint64 oldSuperChainId = superChainId[ambChainId_];
-
         uint16 oldAmbChainId = ambChainId[superChainId_];
 
-        if (oldSuperChainId > 0) {
-            ambChainId[oldSuperChainId] = 0;
+        if (oldSuperChainId != 0) {
+            delete ambChainId[oldSuperChainId];
         }
 
-        if (oldAmbChainId > 0) {
-            superChainId[oldAmbChainId] = 0;
+        if (oldAmbChainId != 0) {
+            delete superChainId[oldAmbChainId];
         }
 
         ambChainId[superChainId_] = ambChainId_;

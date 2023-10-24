@@ -272,7 +272,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
     uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111];
     uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10];
-    uint16[] public wormhole_chainIds = [2, 6, 23, 5, 4, 24];
+    uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24];
 
     /// @dev minting enough tokens to be able to fuzz with bigger amounts (DAI's 3.6B supply etc)
     uint256 public constant hundredBilly = 100 * 1e9 * 1e18;
@@ -722,7 +722,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_RESCUER(), deployer, vars.chainId);
             vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_DISPUTER(), deployer, vars.chainId);
             vars.superRegistryC.setAddress(vars.superRegistryC.DST_SWAPPER_PROCESSOR(), deployer, vars.chainId);
-
+            vars.superRegistryC.setDelay(86_400);
             /// @dev 17 deploy emergency queue
             vars.emergencyQueue = address(new EmergencyQueue{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("EmergencyQueue"))] = vars.emergencyQueue;
