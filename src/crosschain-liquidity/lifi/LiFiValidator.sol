@@ -153,6 +153,26 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         (token_, amount_,,,) = extractGenericSwapParameters(txData_);
     }
 
+    function decodeSwapOutputToken(bytes calldata txData_) external view override returns (address token_) {
+        try this.extractMainParameters(txData_) returns (
+            string memory, /*bridge*/
+            address, /*sendingAssetId*/
+            address, /*receiver*/
+            uint256, /*amount*/
+            uint256, /*minAmount*/
+            uint256, /*destinationChainId*/
+            bool, /*hasSourceSwaps*/
+            bool /*hasDestinationCall*/
+        ) {
+            /// @dev if there isn't a source swap, amountIn is minAmountOut from bridge data?
+
+            revert Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
+        } catch {
+            (,,, address receivingAssetId,) = extractGenericSwapParameters(txData_);
+            token_ = receivingAssetId;
+        }
+    }
+
     /// @notice Extracts the main parameters from the calldata
     /// @param data_ The calldata to extract the main parameters from
     /// @return bridge The bridge extracted from the calldata

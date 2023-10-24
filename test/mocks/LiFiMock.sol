@@ -162,7 +162,6 @@ contract LiFiMock is Test {
         address from;
         uint256 USDPerExternalToken;
         uint256 USDPerUnderlyingToken;
-
         (from,,,,,,, USDPerExternalToken, USDPerUnderlyingToken,) =
             abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool, uint256, uint256, uint256));
 
