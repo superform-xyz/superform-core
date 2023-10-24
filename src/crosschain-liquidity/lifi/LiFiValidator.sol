@@ -2,11 +2,11 @@
 pragma solidity ^0.8.21;
 
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
-import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { Error } from "src/utils/Error.sol";
 import { LiFiTxDataExtractor } from "src/vendor/lifi/LiFiTxDataExtractor.sol";
 import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
+import { StandardizedCallFacet } from "src/vendor/lifi/StandardizedCallFacet.sol";
 
 /// @title LiFiValidator
 /// @author Zeropoint Labs
@@ -241,7 +241,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         LibSwap.SwapData[] memory swapData;
         bytes memory callData = data_;
 
-        if (bytes4(data_[:4]) == 0xd6a4bc50) {
+        if (bytes4(data_[:4]) == StandardizedCallFacet.standardizedCall.selector) {
             // standardizedCall
             callData = abi.decode(data_[4:], (bytes));
         }
