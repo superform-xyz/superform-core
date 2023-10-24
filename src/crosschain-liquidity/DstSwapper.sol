@@ -149,17 +149,18 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
             revert Error.INVALID_SWAP_OUTPUT();
         }
 
+        uint256 balanceDiff = balanceAfter - balanceBefore;
         /// @dev if actual underlying is less than expAmount adjusted
         /// with maxSlippage, invariant breaks
-        if (balanceAfter - balanceBefore < ((v.expAmount * (10_000 - v.maxSlippage)) / 10_000)) {
+        if (balanceDiff < ((v.expAmount * (10_000 - v.maxSlippage)) / 10_000)) {
             revert Error.MAX_SLIPPAGE_INVARIANT_BROKEN();
         }
 
         /// @dev updates swapped amount
-        swappedAmount[payloadId_][index_] = balanceAfter - balanceBefore;
+        swappedAmount[payloadId_][index_] = balanceDiff;
 
         /// @dev emits final event
-        emit SwapProcessed(payloadId_, index_, bridgeId_, balanceAfter - balanceBefore);
+        emit SwapProcessed(payloadId_, index_, bridgeId_, balanceDiff);
     }
 
     /// @inheritdoc IDstSwapper

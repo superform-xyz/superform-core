@@ -19,6 +19,8 @@ import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
 import { Error } from "../../utils/Error.sol";
 import "../../interfaces/ICoreStateRegistry.sol";
 
+import "forge-std/console.sol";
+
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
 /// @dev enables communication between Superform Core Contracts deployed on all supported networks
@@ -546,7 +548,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         /// @dev validate payload update
         if (!failedSwapQueued) {
             if (PayloadUpdaterLib.validateSlippage(finalAmount_, amount_, maxSlippage_)) {
-                /// @dev sets amount to zero and will mark the payload as UPDATED
+                /// @dev sets amount to finalAmount_ and will mark the payload as UPDATED
                 amount_ = finalAmount_;
                 finalState_ = PayloadState.UPDATED;
                 ++validLen_;
@@ -920,7 +922,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         /// @dev if deposits succeeded or some withdrawal failed, dispatch a callback
         if (returnMessage_.length > 0) {
             uint256 len = proofIds.length;
-            uint8[] memory ambIds = new uint8[](len++);
+            uint8[] memory ambIds = new uint8[](len + 1);
             ambIds[0] = msgAMB[payloadId_];
 
             for (uint256 i; i < len;) {
@@ -953,6 +955,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         view
         returns (bytes memory)
     {
+        console.log("CHAIN_ID", CHAIN_ID);
         /// @dev Send Data to Source to issue superform positions (failed withdraws and successful deposits)
         return abi.encode(
             AMBMessage(
