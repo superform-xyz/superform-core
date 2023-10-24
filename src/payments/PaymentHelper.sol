@@ -37,7 +37,7 @@ contract PaymentHelper is IPaymentHelper {
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    uint32 public constant TIMELOCK_FORM_ID = 1;
+    uint32 public constant TIMELOCK_FORM_ID = 2;
 
     /*///////////////////////////////////////////////////////////////
                                 STATE VARIABLES
@@ -78,6 +78,10 @@ contract PaymentHelper is IPaymentHelper {
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
     constructor(address superRegistry_) {
+        if (block.chainid > type(uint64).max) {
+            revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
+        }
+
         CHAIN_ID = uint64(block.chainid);
         superRegistry = ISuperRegistry(superRegistry_);
     }
@@ -213,7 +217,7 @@ contract PaymentHelper is IPaymentHelper {
             uint256 totalDstGas;
 
             /// @dev step 1: estimate amb costs
-            (, uint256 ambFees) = _estimateAMBFees(
+            uint256 ambFees = _estimateAMBFees(
                 req_.ambIds[i], req_.dstChainIds[i], _generateMultiVaultMessage(req_.superformsData[i])
             );
 
@@ -266,7 +270,7 @@ contract PaymentHelper is IPaymentHelper {
             uint256 totalDstGas;
 
             /// @dev step 1: estimate amb costs
-            (, uint256 ambFees) = _estimateAMBFees(
+            uint256 ambFees = _estimateAMBFees(
                 req_.ambIds[i], req_.dstChainIds[i], _generateSingleVaultMessage(req_.superformsData[i])
             );
 
@@ -315,7 +319,7 @@ contract PaymentHelper is IPaymentHelper {
         uint256 superformIdsLen = req_.superformsData.superformIds.length;
 
         /// @dev step 1: estimate amb costs
-        (, uint256 ambFees) =
+        uint256 ambFees =
             _estimateAMBFees(req_.ambIds, req_.dstChainId, _generateMultiVaultMessage(req_.superformsData));
 
         srcAmount += ambFees;
@@ -354,7 +358,7 @@ contract PaymentHelper is IPaymentHelper {
     {
         uint256 totalDstGas;
         /// @dev step 1: estimate amb costs
-        (, uint256 ambFees) =
+        uint256 ambFees =
             _estimateAMBFees(req_.ambIds, req_.dstChainId, _generateSingleVaultMessage(req_.superformData));
 
         srcAmount += ambFees;
@@ -572,14 +576,11 @@ contract PaymentHelper is IPaymentHelper {
     )
         public
         view
-        returns (uint256[] memory feeSplitUp, uint256 totalFees)
+        returns (uint256 totalFees)
     {
         uint256 len = ambIds_.length;
 
         bytes[] memory extraDataPerAMB = _generateExtraData(dstChainId_, ambIds_, message_);
-
-        feeSplitUp = new uint256[](len);
-
         bytes memory proof_ = abi.encode(AMBMessage(type(uint256).max, abi.encode(keccak256(message_))));
 
         /// @dev just checks the estimate for sending message from src -> dst
@@ -590,7 +591,6 @@ contract PaymentHelper is IPaymentHelper {
             );
 
             totalFees += tempFee;
-            feeSplitUp[i] = tempFee;
 
             unchecked {
                 ++i;
