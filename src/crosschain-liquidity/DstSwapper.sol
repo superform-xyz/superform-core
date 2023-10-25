@@ -82,7 +82,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         uint8 bridgeId_,
         bytes calldata txData_
     )
-        public
+        external
         override
         onlySwapper
         nonReentrant
