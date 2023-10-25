@@ -135,7 +135,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     /// @dev handles cross-chain single vault deposit
     function _singleXChainSingleVaultDeposit(SingleXChainSingleVaultStateReq memory req_) internal virtual {
         /// @dev validate superformsData
-        if (!_validateSuperformData(req_.superformData, req_.dstChainId)) {
+        if (!_validateSuperformData(req_.superformData, req_.dstChainId, true)) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
@@ -212,7 +212,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         ActionLocalVars memory vars;
         vars.srcChainId = CHAIN_ID;
-        if (!_validateSuperformData(req_.superformData, vars.srcChainId)) {
+        if (!_validateSuperformData(req_.superformData, vars.srcChainId, true)) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
         vars.currentPayloadId = ++payloadIds;
@@ -318,7 +318,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     /// @dev handles cross-chain single vault withdraw
     function _singleXChainSingleVaultWithdraw(SingleXChainSingleVaultStateReq memory req_) internal virtual {
-        if (!_validateSuperformData(req_.superformData, req_.dstChainId)) {
+        if (!_validateSuperformData(req_.superformData, req_.dstChainId, false)) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
@@ -378,7 +378,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         ActionLocalVars memory vars;
         vars.srcChainId = CHAIN_ID;
 
-        if (!_validateSuperformData(req_.superformData, vars.srcChainId)) {
+        if (!_validateSuperformData(req_.superformData, vars.srcChainId, false)) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
@@ -733,7 +733,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     function _validateSuperformData(
         SingleVaultSFData memory superformData_,
-        uint64 dstChainId_
+        uint64 dstChainId_,
+        bool isDeposit_
     )
         internal
         view
@@ -742,17 +743,25 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     {
         /// @dev the dstChainId_ (in the state request) must match the superforms' chainId (superform must exist on
         /// destination)
-        uint64 sfChainid = DataLib.getDestinationChain(superformData_.superformId);
-        if (dstChainId_ != sfChainid) return false;
+        (, uint32 formImplementationId, uint64 sfDstChainId) = superformData_.superformId.getSuperform();
+
+        if (dstChainId_ != sfDstChainId) return false;
 
         /// @dev no chainId 0 allowed on superform
-        if (sfChainid == 0) return false;
+        if (sfDstChainId == 0) return false;
 
         /// @dev 10000 = 100% slippage
         if (superformData_.maxSlippage > 10_000) return false;
 
         /// @dev amount can't be 0
         if (superformData_.amount == 0) return false;
+
+        if (
+            isDeposit_
+                && ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
+                    formImplementationId
+                )
+        ) return false;
 
         /// if it reaches this point then is valid
         return true;
@@ -783,24 +792,20 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         ) {
             return false;
         }
-
+        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
         /// @dev slippage, amount, paused status validation
         for (uint256 i; i < len;) {
             /// @dev 10000 = 100% slippage
             if (superformsData_.maxSlippages[i] > 10_000) return false;
             /// @dev amount can't be 0
             if (superformsData_.amounts[i] == 0) return false;
-            (, uint32 formImplementationId_, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
+            (, uint32 formImplementationId, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
             if (dstChainId_ != sfDstChainId) return false;
 
             /// @dev no chainId 0 allowed on superform
             if (sfDstChainId == 0) return false;
 
-            if (
-                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
-                    formImplementationId_
-                )
-            ) return false;
+            if (factory.isFormImplementationPaused(formImplementationId)) return false;
 
             unchecked {
                 ++i;
