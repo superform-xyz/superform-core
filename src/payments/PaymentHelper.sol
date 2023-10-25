@@ -231,7 +231,7 @@ contract PaymentHelper is IPaymentHelper {
 
                 /// @dev step 3: estimation processing cost of acknowledgement
                 /// @notice optimistically estimating. (Ideal case scenario: no failed deposits / withdrawals)
-                srcAmount += _estimateAckProcessingCost(req_.dstChainIds.length, superformIdsLen);
+                srcAmount += _estimateAckProcessingCost(len, superformIdsLen);
 
                 /// @dev step 4: estimate liq amount
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequests);
@@ -405,8 +405,6 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
-
-        dstAmount = 0;
     }
 
     /// @inheritdoc IPaymentHelper
@@ -422,9 +420,10 @@ contract PaymentHelper is IPaymentHelper {
         uint256 len = req_.superformData.superformIds.length;
         for (uint256 i; i < len;) {
             (, uint32 formId,) = req_.superformData.superformIds[i].getSuperform();
+            uint256 twoStepPrice = twoStepCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
             /// @dev only if timelock form withdrawal is involved
             if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
-                srcAmount += timelockCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
+                srcAmount += twoStepPrice;
             }
 
             unchecked {
@@ -436,8 +435,6 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
-
-        dstAmount = 0;
     }
 
     /// @inheritdoc IPaymentHelper
@@ -800,8 +797,9 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev helps return the current gas price of different networks
     /// @return native token price
     function _getGasPrice(uint64 chainId_) internal view returns (uint256) {
-        if (address(gasPriceOracle[chainId_]) != address(0)) {
-            (, int256 value,, uint256 updatedAt,) = gasPriceOracle[chainId_].latestRoundData();
+        address oracleAddr = address(gasPriceOracle[chainId_]);
+        if (oracleAddr != address(0)) {
+            (, int256 value,, uint256 updatedAt,) = AggregatorV3Interface(oracleAddr).latestRoundData();
             if (value <= 0) revert Error.CHAINLINK_MALFUNCTION();
             if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
             return uint256(value);
@@ -813,8 +811,9 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev helps return the dst chain token price of different networks
     /// @return native token price
     function _getNativeTokenPrice(uint64 chainId_) internal view returns (uint256) {
-        if (address(nativeFeedOracle[chainId_]) != address(0)) {
-            (, int256 dstTokenPrice,, uint256 updatedAt,) = nativeFeedOracle[chainId_].latestRoundData();
+        address oracleAddr = address(nativeFeedOracle[chainId_]);
+        if (oracleAddr != address(0)) {
+            (, int256 dstTokenPrice,, uint256 updatedAt,) = AggregatorV3Interface(oracleAddr).latestRoundData();
             if (dstTokenPrice <= 0) revert Error.CHAINLINK_MALFUNCTION();
             if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
             return uint256(dstTokenPrice);

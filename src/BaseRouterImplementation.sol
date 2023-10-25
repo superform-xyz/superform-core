@@ -149,12 +149,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         vars.liqRequest = req_.superformData.liqRequest;
         (address superform,,) = req_.superformData.superformId.getSuperform();
 
-        _singleVaultTokenForward(
-            msg.sender,
-            superRegistry.getBridgeAddress(vars.liqRequest.bridgeId),
-            req_.superformData.permit2data,
-            ambData
-        );
+        _singleVaultTokenForward(msg.sender, address(0), req_.superformData.permit2data, ambData);
 
         LiqRequest memory emptyRequest;
         ambData.liqData = emptyRequest;
@@ -889,7 +884,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     //////////////////////////////////////////////////////////////*/
     function _singleVaultTokenForward(
         address srcSender_,
-        address superform_,
+        address target_,
         bytes memory permit2data_,
         InitSingleVaultData memory vaultData_
     )
@@ -943,8 +938,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 token.safeTransferFrom(srcSender_, address(this), amount);
             }
 
-            /// @dev approves the input amount to the superform
-            token.safeIncreaseAllowance(superform_, amount);
+            if (target_ != address(0)) {
+                /// @dev approves the input amount to the target
+                token.safeIncreaseAllowance(target_, amount);
+            }
         }
     }
 

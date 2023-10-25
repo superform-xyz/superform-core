@@ -22,10 +22,6 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
                             CONSTANTS
     //////////////////////////////////////////////////////////////*/
 
-    uint256 internal constant PRECISION_DECIMALS = 27;
-
-    uint256 internal constant PRECISION = 10 ** PRECISION_DECIMALS;
-
     uint64 public immutable CHAIN_ID;
 
     /*///////////////////////////////////////////////////////////////

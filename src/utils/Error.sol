@@ -166,6 +166,9 @@ library Error {
     /// @dev error thrown when txData must be present (in case of xChain acitons)
     error NO_TXDATA_PRESENT();
 
+    /// @dev error thrown if we try to decode the final swap output token in a xChain liquidity bridging action
+    error CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
+
     /*///////////////////////////////////////////////////////////////
                         STATE REGISTRY ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -350,6 +353,10 @@ library Error {
 
     /// @dev if implementation formBeacon is PAUSED then users cannot perform any action
     error PAUSED();
+
+    /// @dev in case of no txData, if liqData.token != collateral. In case of txData, if token output of swap ==
+    /// vault.asset()
+    error DIFFERENT_TOKENS();
 
     /*///////////////////////////////////////////////////////////////
                         PAYMASTER ERRORS
