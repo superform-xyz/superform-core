@@ -781,14 +781,17 @@ contract SuperformRouterTest is ProtocolActions {
             LiqRequest(
                 1,
                 _buildDummyTxDataUnitTests(
-                    1,
-                    getContract(ETH, "DAI"),
-                    getContract(ETH, "DAI"),
-                    superform,
-                    ETH,
-                    1e18,
-                    getContract(ETH, "CoreStateRegistry"),
-                    false
+                    BuildDummyTxDataUnitTestsVars(
+                        1,
+                        getContract(ETH, "DAI"),
+                        getContract(ETH, "DAI"),
+                        superform,
+                        ETH,
+                        ETH,
+                        1e18,
+                        getContract(ETH, "CoreStateRegistry"),
+                        false
+                    )
                 ),
                 getContract(ETH, "DAI"),
                 ETH,
@@ -925,14 +928,17 @@ contract SuperformRouterTest is ProtocolActions {
             LiqRequest(
                 1,
                 _buildDummyTxDataUnitTests(
-                    1,
-                    getContract(ETH, "DAI"),
-                    getContract(ARBI, "DAI"),
-                    superform,
-                    ARBI,
-                    1e18,
-                    getContract(ARBI, "CoreStateRegistry"),
-                    false
+                    BuildDummyTxDataUnitTestsVars(
+                        1,
+                        getContract(ETH, "DAI"),
+                        getContract(ARBI, "DAI"),
+                        superform,
+                        ETH,
+                        ARBI,
+                        1e18,
+                        getContract(ARBI, "CoreStateRegistry"),
+                        false
+                    )
                 ),
                 getContract(ARBI, "DAI"),
                 ETH,
@@ -976,14 +982,17 @@ contract SuperformRouterTest is ProtocolActions {
             LiqRequest(
                 1,
                 _buildDummyTxDataUnitTests(
-                    1,
-                    getContract(ETH, "DAI"),
-                    getContract(ARBI, "DAI"),
-                    superform,
-                    ARBI,
-                    1e18,
-                    getContract(ARBI, "CoreStateRegistry"),
-                    false
+                    BuildDummyTxDataUnitTestsVars(
+                        1,
+                        getContract(ETH, "DAI"),
+                        getContract(ARBI, "DAI"),
+                        superform,
+                        ETH,
+                        ARBI,
+                        1e18,
+                        getContract(ARBI, "CoreStateRegistry"),
+                        false
+                    )
                 ),
                 getContract(ARBI, "DAI"),
                 ETH,

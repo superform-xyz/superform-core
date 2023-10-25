@@ -130,7 +130,9 @@ contract SuperformFactory is ISuperformFactory {
 
         /// @dev instantiate the superform
         superform_ = tFormImplementation.clone();
-        BaseForm(payable(superform_)).initialize(address(superRegistry), vault_, formImplementationId_,address(IERC4626(vault_).asset()));
+        BaseForm(payable(superform_)).initialize(
+            address(superRegistry), vault_, formImplementationId_, address(IERC4626(vault_).asset())
+        );
 
         /// @dev this will always be unique because all chainIds are unique
         superformId_ = DataLib.packSuperform(superform_, formImplementationId_, CHAIN_ID);

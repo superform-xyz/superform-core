@@ -233,16 +233,16 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         failedDeposits[payloadId_].amounts = proposedAmounts_;
         failedDeposits[payloadId_].lastProposedTimestamp = block.timestamp;
 
-        (,, uint8 multi,,,) = DataLib.decodeTxInfo(payloadHeader[payloadId_]);
+        (,, uint8 multi,, address srcSender,) = DataLib.decodeTxInfo(payloadHeader[payloadId_]);
 
+        address refundAddress;
         if (multi == 1) {
-            failedDeposits[payloadId_].refundAddress =
-                abi.decode(payloadBody[payloadId_], (InitMultiVaultData)).dstRefundAddress;
+            refundAddress = abi.decode(payloadBody[payloadId_], (InitMultiVaultData)).dstRefundAddress;
         } else {
-            failedDeposits[payloadId_].refundAddress =
-                abi.decode(payloadBody[payloadId_], (InitSingleVaultData)).dstRefundAddress;
+            refundAddress = abi.decode(payloadBody[payloadId_], (InitSingleVaultData)).dstRefundAddress;
         }
 
+        failedDeposits[payloadId_].refundAddress = refundAddress == address(0) ? srcSender : refundAddress;
         emit RescueProposed(payloadId_, failedDeposits_.superformIds, proposedAmounts_, block.timestamp);
     }
 
@@ -350,7 +350,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     /// @dev returns the current timelock delay
     function _getDelay() internal view returns (uint256) {
         uint256 delay = superRegistry.delay();
-        if (delay == 0){
+        if (delay == 0) {
             revert Error.DELAY_NOT_SET();
         }
         return delay;
