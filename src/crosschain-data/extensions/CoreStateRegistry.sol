@@ -276,13 +276,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     }
 
     /// @inheritdoc ICoreStateRegistry
-    function disputeRescueFailedDeposits(
-        uint256 payloadId_
-        ) 
-        external 
-        override
-        isValidPayloadId(payloadId_) 
-    {
+    function disputeRescueFailedDeposits(uint256 payloadId_) external override isValidPayloadId(payloadId_) {
         FailedDeposit memory failedDeposits_ = failedDeposits[payloadId_];
 
         /// @dev the msg sender should be the refund address (or) the disputer
@@ -312,13 +306,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     /// @inheritdoc ICoreStateRegistry
     /// @notice is an open function & can be executed by anyone
-    function finalizeRescueFailedDeposits(
-        uint256 payloadId_
-        ) 
-        external
-        override
-        isValidPayloadId(payloadId_) 
-    {
+    function finalizeRescueFailedDeposits(uint256 payloadId_) external override isValidPayloadId(payloadId_) {
         uint256 lastProposedTimestamp = failedDeposits[payloadId_].lastProposedTimestamp;
 
         /// @dev the timelock is elapsed
@@ -383,7 +371,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     /// @dev returns the current timelock delay
     function _getDelay() internal view returns (uint256) {
         uint256 delay = superRegistry.delay();
-        if (delay == 0){
+        if (delay == 0) {
             revert Error.DELAY_NOT_SET();
         }
         return delay;
@@ -693,11 +681,12 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         bool errors;
 
         uint256 len = multiVaultData.superformIds.length;
+        address superformFactory = superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"));
 
         for (uint256 i; i < len;) {
             // @dev validates if superformId exists on factory
-            if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(multiVaultData.superformIds[i])) {
-                revert Error.SUPERFORM_ID_NONEXISTANT();
+            if (!ISuperformFactory(superformFactory).isSuperform(multiVaultData.superformIds[i])) {
+                revert Error.SUPERFORM_ID_NONEXISTENT();
             }
 
             singleVaultData = InitSingleVaultData({
@@ -764,11 +753,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         bool fulfilment;
         bool errors;
+        address superformFactory = superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"));
 
         for (uint256 i; i < numberOfVaults;) {
-
-            if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(multiVaultData.superformIds[i])) {
-                revert Error.SUPERFORM_ID_NONEXISTANT();
+            if (!ISuperformFactory(superformFactory).isSuperform(multiVaultData.superformIds[i])) {
+                revert Error.SUPERFORM_ID_NONEXISTENT();
             }
             /// @dev if updating the deposit payload fails because of slippage, multiVaultData.amounts[i] is set to 0
             /// @dev this means that this amount was already added to the failedDeposits state variable and should not
@@ -854,8 +843,12 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
         singleVaultData.extraFormData = abi.encode(payloadId_, 0);
 
-        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(singleVaultData.superformId)) {
-            revert Error.SUPERFORM_ID_NONEXISTANT();
+        if (
+            !ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(
+                singleVaultData.superformId
+            )
+        ) {
+            revert Error.SUPERFORM_ID_NONEXISTENT();
         }
 
         (address superform_,,) = singleVaultData.superformId.getSuperform();
@@ -890,8 +883,12 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
 
-        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(singleVaultData.superformId)) {
-            revert Error.SUPERFORM_ID_NONEXISTANT();
+        if (
+            !ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(
+                singleVaultData.superformId
+            )
+        ) {
+            revert Error.SUPERFORM_ID_NONEXISTENT();
         }
 
         (address superform_,,) = singleVaultData.superformId.getSuperform();

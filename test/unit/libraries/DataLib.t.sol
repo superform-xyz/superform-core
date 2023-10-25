@@ -7,7 +7,6 @@ import { Error } from "src/utils/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
 contract DataLibUser {
-
     function packSuperform(address a, uint32 b, uint64 c) external pure returns (uint256) {
         return DataLib.packSuperform(a, b, c);
     }
@@ -19,7 +18,6 @@ contract DataLibTest is Test {
     function setUp() external {
         dataLib = new DataLibUser();
     }
-
 
     function test_packSuperform() external {
         /// generates the exp superform id with shift

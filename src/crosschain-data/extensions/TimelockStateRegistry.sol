@@ -100,8 +100,9 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         override
         onlyForm(data_.superformId)
     {
-        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(data_.superformId)) {
-            revert Error.SUPERFORM_ID_NONEXISTANT();
+        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(data_.superformId))
+        {
+            revert Error.SUPERFORM_ID_NONEXISTENT();
         }
         ++timelockPayloadCounter;
         timelockPayload[timelockPayloadCounter] =

@@ -620,7 +620,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     {
         /// @dev validates if superformId exists on factory
         if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId_)) {
-            revert Error.SUPERFORM_ID_NONEXISTANT();
+            revert Error.SUPERFORM_ID_NONEXISTENT();
         }
 
         if (amount_ == 0) {
@@ -713,10 +713,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         internal
         virtual
     {
-
         // @dev validates if superformId exists on factory
         if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId_)) {
-            revert Error.SUPERFORM_ID_NONEXISTANT();
+            revert Error.SUPERFORM_ID_NONEXISTENT();
         }
 
         if (amount_ == 0) {
