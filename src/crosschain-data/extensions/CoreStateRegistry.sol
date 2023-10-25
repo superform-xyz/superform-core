@@ -19,8 +19,6 @@ import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
 import { Error } from "../../utils/Error.sol";
 import "../../interfaces/ICoreStateRegistry.sol";
 
-import "forge-std/console.sol";
-
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
 /// @dev enables communication between Superform Core Contracts deployed on all supported networks
@@ -961,7 +959,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         view
         returns (bytes memory)
     {
-        console.log("CHAIN_ID", CHAIN_ID);
         /// @dev Send Data to Source to issue superform positions (failed withdraws and successful deposits)
         return abi.encode(
             AMBMessage(
