@@ -112,8 +112,8 @@ contract PayloadHelperMultiTest is ProtocolActions {
         (, int256 USDPerETHonOP,,,) = AggregatorV3Interface(tokenPriceFeeds[OP][NATIVE_TOKEN]).latestRoundData();
         (, int256 USDPerDAIonOP,,,) =
             AggregatorV3Interface(tokenPriceFeeds[OP][getContract(OP, "DAI")]).latestRoundData();
-
         _checkDstPayloadInit(uint256(USDPerDAIonPOLY), uint256(USDPerETHonOP), uint256(USDPerDAIonOP));
+
         _checkDstPayloadReturn();
     }
 

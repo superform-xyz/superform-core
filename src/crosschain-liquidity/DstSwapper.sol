@@ -81,14 +81,6 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     /// @dev liquidity bridge fails without a native receive function.
     receive() external payable { }
 
-    struct ProcessTxVars {
-        address finalDst;
-        address to;
-        address underlying;
-        uint256 expAmount;
-        uint256 maxSlippage;
-    }
-
     /// @inheritdoc IDstSwapper
     function processTx(
         uint256 payloadId_,
@@ -96,71 +88,16 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         uint8 bridgeId_,
         bytes calldata txData_
     )
-        public
+        external
         override
         onlySwapper
         nonReentrant
     {
-        if (swappedAmount[payloadId_][index_] != 0) {
-            revert Error.DST_SWAP_ALREADY_PROCESSED();
-        }
+        IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
 
-        ProcessTxVars memory v;
-        uint64 chainId = CHAIN_ID;
+        _isValidPayloadId(payloadId_, coreStateRegistry);
 
-        IBridgeValidator validator = IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_));
-        (address approvalToken_, uint256 amount_) = validator.decodeDstSwap(txData_);
-        v.finalDst = superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY"));
-        /// @dev validates the bridge data
-        validator.validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(
-                txData_,
-                chainId,
-                chainId,
-                chainId,
-                false,
-                /// @dev to enter the if-else case of the bridge validator loop
-                address(0),
-                v.finalDst,
-                approvalToken_
-            )
-        );
-
-        /// @dev get the address of the bridge to send the txData to.
-        v.to = superRegistry.getBridgeAddress(bridgeId_);
-        (v.underlying, v.expAmount, v.maxSlippage) = _getFormUnderlyingFrom(payloadId_, index_);
-
-        uint256 balanceBefore = IERC20(v.underlying).balanceOf(v.finalDst);
-        if (approvalToken_ != NATIVE) {
-            /// @dev approve the bridge to spend the approvalToken_.
-            IERC20(approvalToken_).safeIncreaseAllowance(v.to, amount_);
-
-            /// @dev execute the txData_.
-            (bool success,) = payable(v.to).call(txData_);
-            if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA();
-        } else {
-            /// @dev execute the txData_.
-            (bool success,) = payable(v.to).call{ value: amount_ }(txData_);
-            if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA_NATIVE();
-        }
-        uint256 balanceAfter = IERC20(v.underlying).balanceOf(v.finalDst);
-
-        if (balanceAfter <= balanceBefore) {
-            revert Error.INVALID_SWAP_OUTPUT();
-        }
-
-        uint256 balanceDiff = balanceAfter - balanceBefore;
-        /// @dev if actual underlying is less than expAmount adjusted
-        /// with maxSlippage, invariant breaks
-        if (balanceDiff < ((v.expAmount * (10_000 - v.maxSlippage)) / 10_000)) {
-            revert Error.MAX_SLIPPAGE_INVARIANT_BROKEN();
-        }
-
-        /// @dev updates swapped amount
-        swappedAmount[payloadId_][index_] = balanceDiff;
-
-        /// @dev emits final event
-        emit SwapProcessed(payloadId_, index_, bridgeId_, balanceDiff);
+        _processTx(payloadId_, index_, bridgeId_, txData_, coreStateRegistry);
     }
 
     /// @inheritdoc IDstSwapper
@@ -173,11 +110,15 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         external
         override
         onlySwapper
+        nonReentrant
     {
+        IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
+
+        _isValidPayloadId(payloadId_, coreStateRegistry);
+
         uint256 len = txData_.length;
         for (uint256 i; i < len;) {
-            processTx(payloadId_, indices[i], bridgeIds_[i], txData_[i]);
-
+            _processTx(payloadId_, indices[i], bridgeIds_[i], txData_[i], coreStateRegistry);
             unchecked {
                 ++i;
             }
@@ -191,31 +132,16 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         address interimToken_,
         uint256 amount_
     )
-        public
+        external
         override
         onlySwapper
         nonReentrant
     {
-        /// @dev validate if payload state is STORED
-        IBaseStateRegistry coreStateRegistry =
-            IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
+        IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
 
-        PayloadState currState = coreStateRegistry.payloadTracking(payloadId_);
+        _isValidPayloadId(payloadId_, coreStateRegistry);
 
-        if (currState != PayloadState.STORED) {
-            revert Error.INVALID_PAYLOAD_STATUS();
-        }
-
-        if (failedSwap[payloadId_][index_].amount != 0) {
-            revert Error.FAILED_DST_SWAP_ALREADY_UPDATED();
-        }
-
-        /// @dev updates swapped amount
-        failedSwap[payloadId_][index_].amount = amount_;
-        failedSwap[payloadId_][index_].interimToken = interimToken_;
-
-        /// @dev emits final event
-        emit SwapFailed(payloadId_, index_, interimToken_, amount_);
+        _updateFailedTx(payloadId_, index_, interimToken_, amount_, coreStateRegistry);
     }
 
     /// @inheritdoc IDstSwapper
@@ -230,8 +156,12 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         onlySwapper
     {
         uint256 len = indices_.length;
+
+        IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
+
+        _isValidPayloadId(payloadId_, coreStateRegistry);
         for (uint256 i; i < len;) {
-            updateFailedTx(payloadId_, indices_[i], interimTokens_[i], amounts_[i]);
+            _updateFailedTx(payloadId_, indices_[i], interimTokens_[i], amounts_[i], coreStateRegistry);
 
             unchecked {
                 ++i;
@@ -278,6 +208,128 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     /*///////////////////////////////////////////////////////////////
                         INTERNAL HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    function _getCoreStateRegistry() internal view returns (IBaseStateRegistry) {
+        return IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
+    }
+
+    function _isValidPayloadId(uint256 payloadId_, IBaseStateRegistry coreStateRegistry) internal view {
+        if (payloadId_ > coreStateRegistry.payloadsCount()) {
+            revert Error.INVALID_PAYLOAD_ID();
+        }
+    }
+
+    struct ProcessTxVars {
+        address finalDst;
+        address to;
+        address underlying;
+        address approvalToken;
+        uint256 amount;
+        uint256 expAmount;
+        uint256 maxSlippage;
+        uint256 balanceBefore;
+        uint256 balanceAfter;
+        uint256 balanceDiff;
+        uint64 chainId;
+    }
+
+    function _processTx(
+        uint256 payloadId_,
+        uint256 index_,
+        uint8 bridgeId_,
+        bytes calldata txData_,
+        IBaseStateRegistry coreStateRegistry_
+    )
+        internal
+    {
+        if (swappedAmount[payloadId_][index_] != 0) {
+            revert Error.DST_SWAP_ALREADY_PROCESSED();
+        }
+
+        ProcessTxVars memory v;
+        v.chainId = CHAIN_ID;
+
+        IBridgeValidator validator = IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_));
+        (v.approvalToken, v.amount) = validator.decodeDstSwap(txData_);
+        v.finalDst = address(coreStateRegistry_);
+        /// @dev validates the bridge data
+        validator.validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                txData_,
+                v.chainId,
+                v.chainId,
+                v.chainId,
+                false,
+                /// @dev to enter the if-else case of the bridge validator loop
+                address(0),
+                v.finalDst,
+                v.approvalToken
+            )
+        );
+
+        /// @dev get the address of the bridge to send the txData to.
+        v.to = superRegistry.getBridgeAddress(bridgeId_);
+        (v.underlying, v.expAmount, v.maxSlippage) = _getFormUnderlyingFrom(payloadId_, index_);
+
+        v.balanceBefore = IERC20(v.underlying).balanceOf(v.finalDst);
+        if (v.approvalToken != NATIVE) {
+            /// @dev approve the bridge to spend the approvalToken_.
+            IERC20(v.approvalToken).safeIncreaseAllowance(v.to, v.amount);
+
+            /// @dev execute the txData_.
+            (bool success,) = payable(v.to).call(txData_);
+            if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA();
+        } else {
+            /// @dev execute the txData_.
+            (bool success,) = payable(v.to).call{ value: v.amount }(txData_);
+            if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA_NATIVE();
+        }
+        v.balanceAfter = IERC20(v.underlying).balanceOf(v.finalDst);
+
+        if (v.balanceAfter <= v.balanceBefore) {
+            revert Error.INVALID_SWAP_OUTPUT();
+        }
+
+        v.balanceDiff = v.balanceAfter - v.balanceBefore;
+        /// @dev if actual underlying is less than expAmount adjusted
+        /// with maxSlippage, invariant breaks
+        if (v.balanceDiff < ((v.expAmount * (10_000 - v.maxSlippage)) / 10_000)) {
+            revert Error.MAX_SLIPPAGE_INVARIANT_BROKEN();
+        }
+
+        /// @dev updates swapped amount
+        swappedAmount[payloadId_][index_] = v.balanceDiff;
+
+        /// @dev emits final event
+        emit SwapProcessed(payloadId_, index_, bridgeId_, v.balanceDiff);
+    }
+
+    function _updateFailedTx(
+        uint256 payloadId_,
+        uint256 index_,
+        address interimToken_,
+        uint256 amount_,
+        IBaseStateRegistry coreStateRegistry
+    )
+        internal
+    {
+        PayloadState currState = coreStateRegistry.payloadTracking(payloadId_);
+
+        if (currState != PayloadState.STORED) {
+            revert Error.INVALID_PAYLOAD_STATUS();
+        }
+
+        if (failedSwap[payloadId_][index_].amount != 0) {
+            revert Error.FAILED_DST_SWAP_ALREADY_UPDATED();
+        }
+
+        /// @dev updates swapped amount
+        failedSwap[payloadId_][index_].amount = amount_;
+        failedSwap[payloadId_][index_].interimToken = interimToken_;
+
+        /// @dev emits final event
+        emit SwapFailed(payloadId_, index_, interimToken_, amount_);
+    }
 
     function _getFormUnderlyingFrom(
         uint256 payloadId_,

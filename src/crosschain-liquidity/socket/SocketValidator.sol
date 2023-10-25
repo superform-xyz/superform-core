@@ -95,6 +95,10 @@ contract SocketValidator is BridgeValidator {
         revert();
     }
 
+    function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
+        revert Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
+    }
+
     /*///////////////////////////////////////////////////////////////
                             INTERNAL HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/

@@ -51,5 +51,12 @@ interface IBridgeValidator {
 
     /// @dev decodes the amount in from the txData that just involves a swap
     /// @param txData_ is the txData to be decoded
+    /// @return token_ is the address of the token
+    /// @return amount_ the amount expected
     function decodeDstSwap(bytes calldata txData_) external pure returns (address token_, uint256 amount_);
+
+    /// @dev decodes the final output token address (for only direct chain actions!)
+    /// @param txData_ is the txData to be decoded
+    /// @return token_ the address of the token
+    function decodeSwapOutputToken(bytes calldata txData_) external view returns (address token_);
 }
