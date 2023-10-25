@@ -34,7 +34,7 @@ contract SuperformRouterTest is ProtocolActions {
         /// @dev approves before call
         MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
 
-        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 
@@ -79,7 +79,7 @@ contract SuperformRouterTest is ProtocolActions {
         SuperPositions(getContract(ETH, "SuperPositions")).increaseAllowance(
             getContract(ETH, "SuperformRouter"), superformId, 1e18
         );
-        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectMultiVaultWithdraw(req);
     }
 
@@ -608,7 +608,7 @@ contract SuperformRouterTest is ProtocolActions {
         /// @dev approves before call
         MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
 
-        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 

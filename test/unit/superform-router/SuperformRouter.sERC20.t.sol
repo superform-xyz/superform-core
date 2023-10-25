@@ -91,7 +91,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         /// @dev approves before call
         MockERC20(getContract(ETH, "DAI")).approve(address(superformRouterSERC20), 1e18);
 
-        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
         superformRouterSERC20.singleDirectSingleVaultDeposit(req);
     }
 
@@ -735,7 +735,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         /// @dev approves before call
         MockERC20(getContract(ETH, "DAI")).approve(address(superformRouterSERC20), 1e18);
 
-        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
         superformRouterSERC20.singleDirectSingleVaultDeposit(req);
     }
 

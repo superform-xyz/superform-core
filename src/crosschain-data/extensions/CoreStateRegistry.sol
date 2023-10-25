@@ -749,8 +749,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         IERC20 underlying;
         uint256 numberOfVaults = multiVaultData.superformIds.length;
-        uint256[] memory dstAmounts = new uint256[](numberOfVaults);
-
         bool fulfilment;
         bool errors;
         address superformFactory = superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"));
@@ -769,9 +767,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     underlying.safeIncreaseAllowance(superforms[i], multiVaultData.amounts[i]);
                     LiqRequest memory emptyRequest;
 
-                    /// @notice dstAmounts has same size of the number of vaults. If a given deposit fails, we are
-                    /// minting 0
-                    /// SPs back on source (slight gas waste)
+                    /// @notice  If a given deposit fails, we are minting 0 SPs back on source (slight gas waste)
                     try IBaseForm(superforms[i]).xChainDepositIntoVault(
                         InitSingleVaultData({
                             superformRouterId: multiVaultData.superformRouterId,
@@ -790,7 +786,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                         if (dstAmount > 0) {
                             fulfilment = true;
                             /// @dev marks the indexes that require a callback mint of shares (successful)
-                            dstAmounts[i] = dstAmount;
+                            multiVaultData.amounts[i] = dstAmount;
+                        } else {
+                            multiVaultData.amounts[i] = 0;
                         }
                     } catch {
                         /// @dev cleaning unused approval
@@ -801,6 +799,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                         errors = true;
 
                         failedDeposits[payloadId_].superformIds.push(multiVaultData.superformIds[i]);
+
+                        /// @dev clearing multiVaultData.amounts so that in case that fullfilment is true these amounts
+                        /// are not minted
+                        multiVaultData.amounts[i] = 0;
                     }
                 } else {
                     revert Error.BRIDGE_TOKENS_PENDING();
@@ -820,7 +822,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 TransactionType.DEPOSIT,
                 CallbackType.RETURN,
                 multiVaultData.superformIds,
-                dstAmounts
+                multiVaultData.amounts
             );
         }
 
