@@ -78,7 +78,7 @@ library Error {
     /// @dev thrown if the msg-sender is not super registry
     error NOT_SUPER_REGISTRY();
 
-    /// @dev thrown if the msg-sender is not previlaged caller
+    /// @dev thrown if the msg-sender is not privileged caller
     error NOT_PREVILAGED_CALLER(bytes32 role);
 
     /// @dev thrown if the msg-sender does not have SWAPPER role
