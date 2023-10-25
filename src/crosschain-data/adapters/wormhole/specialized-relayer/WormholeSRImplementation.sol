@@ -26,6 +26,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
 
     mapping(uint64 => uint16) public ambChainId;
     mapping(uint16 => uint64) public superChainId;
+    mapping(uint16 => address) public authorizedImpl;
     mapping(bytes32 => bool) public processedMessages;
 
     /*///////////////////////////////////////////////////////////////
@@ -104,8 +105,9 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
 
     function receiveMessage(bytes memory encodedMessage_) public {
         /// @dev 1. validate caller
-        /// @dev 2. validate src chain sender
-        /// @dev 3. validate message uniqueness
+        /// @dev 2. validate not broadcasted to emitter chain
+        /// @dev 3. validate src chain sender
+        /// @dev 4. validate message uniqueness
         if (
             !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
                 keccak256("WORMHOLE_VAA_RELAYER_ROLE"), msg.sender
@@ -122,6 +124,10 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
 
         if (wormholeMessage.emitterChainId == wormhole.chainId()) {
             revert Error.INVALID_SRC_CHAIN_ID();
+        }
+
+        if (_bytes32ToAddress(wormholeMessage.emitterAddress) != authorizedImpl[wormholeMessage.emitterChainId]) {
+            revert Error.INVALID_SRC_SENDER();
         }
 
         if (processedMessages[wormholeMessage.hash]) {
@@ -160,6 +166,23 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         superChainId[ambChainId_] = superChainId_;
 
         emit ChainAdded(superChainId_);
+    }
+
+    /// @dev allows protocol admin to set receiver implmentation on a new chain id
+    /// @param chainId_ is the identifier of the destination chain within wormhole
+    /// @param authorizedImpl_ is the implementation of the wormhole message bridge on the specified destination
+    /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
+    function setReceiver(uint16 chainId_, address authorizedImpl_) external onlyProtocolAdmin {
+        if (chainId_ == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
+        if (authorizedImpl_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
+
+        authorizedImpl[chainId_] = authorizedImpl_;
+        emit AuthorizedImplAdded(chainId_, authorizedImpl_);
     }
 
     /*///////////////////////////////////////////////////////////////
