@@ -77,6 +77,12 @@ contract SocketOneInchValidator is BridgeValidator {
         amount_ = swapInput.amount;
     }
 
+    /// @inheritdoc BridgeValidator
+    function decodeSwapOutputToken(bytes calldata txData_) external pure override returns (address token_) {
+        ISocketOneInchImpl.SwapInput memory swapInput = _decodeTxData(txData_);
+        token_ = swapInput.toToken;
+    }
+
     /*///////////////////////////////////////////////////////////////
                             INTERNAL HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/

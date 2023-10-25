@@ -116,7 +116,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         onlyTimelockStateRegistryProcessor
         nonReentrant
     {
-        TimelockPayload memory p = timelockPayload[timeLockPayloadId_];
+        TimelockPayload storage p = timelockPayload[timeLockPayloadId_];
         IBridgeValidator bridgeValidator = IBridgeValidator(superRegistry.getBridgeValidator(p.data.liqData.bridgeId));
         uint256 finalAmount;
 
@@ -127,9 +127,9 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         if (p.lockedTill > block.timestamp) {
             revert Error.LOCKED();
         }
-
         /// @dev set status here to prevent re-entrancy
         p.status = TwoStepsStatus.PROCESSED;
+
         (address superform,,) = p.data.superformId.getSuperform();
 
         IERC4626TimelockForm form = IERC4626TimelockForm(superform);
