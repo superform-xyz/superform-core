@@ -68,7 +68,6 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    receive() external payable { }
 
     /// @inheritdoc IBaseStateRegistry
     function dispatchPayload(
@@ -83,12 +82,49 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         override
         onlySender
     {
+        _dispatchPayload(srcSender_, ambIds_, dstChainId_, message_, extraData_);
+    }
+
+    function _dispatchPayload(
+        address srcSender_,
+        uint8[] memory ambIds_,
+        uint64 dstChainId_,
+        bytes memory message_,
+        bytes memory extraData_
+    )
+        internal
+    {
         AMBExtraData memory d = abi.decode(extraData_, (AMBExtraData));
 
-        _dispatchPayload(srcSender_, ambIds_[0], dstChainId_, d.gasPerAMB[0], message_, d.extraDataPerAMB[0]);
+        _getAMBImpl(ambIds_[0]).dispatchPayload{ value: d.gasPerAMB[0] }(
+            srcSender_, dstChainId_, message_, d.extraDataPerAMB[0]
+        );
 
-        if (ambIds_.length > 1) {
-            _dispatchProof(srcSender_, ambIds_, dstChainId_, d.gasPerAMB, message_, d.extraDataPerAMB);
+        uint256 len = ambIds_.length;
+
+        if (len > 1) {
+            AMBMessage memory data = abi.decode(message_, (AMBMessage));
+            data.params = message_.computeProofBytes();
+
+            /// @dev i starts from 1 since 0 is primary amb id which dispatches the message itself
+            for (uint8 i = 1; i < len;) {
+                if (ambIds_[i] == ambIds_[0]) {
+                    revert Error.INVALID_PROOF_BRIDGE_ID();
+                }
+
+                if (i - 1 > 0 && ambIds_[i] <= ambIds_[i - 1]) {
+                    revert Error.DUPLICATE_PROOF_BRIDGE_ID();
+                }
+
+                /// @dev proof is dispatched in the form of a payload
+                _getAMBImpl(ambIds_[i]).dispatchPayload{ value: d.gasPerAMB[i] }(
+                    srcSender_, dstChainId_, abi.encode(data), d.extraDataPerAMB[i]
+                );
+
+                unchecked {
+                    ++i;
+                }
+            }
         }
     }
 
@@ -143,66 +179,12 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         return superRegistry.getAmbAddress(id_);
     }
 
-    /// @dev dispatches the payload(message_) through individual message bridge implementations
-    function _dispatchPayload(
-        address srcSender_,
-        uint8 ambId_,
-        uint64 dstChainId_,
-        uint256 gasToPay_,
-        bytes memory message_,
-        bytes memory overrideData_
-    )
-        internal
-    {
-        IAmbImplementation ambImplementation = IAmbImplementation(_getAmbAddress(ambId_));
+    function _getAMBImpl(uint8 id_) internal view returns (IAmbImplementation ambImplementation) {
+        ambImplementation = IAmbImplementation(_getAmbAddress(id_));
 
         /// @dev revert if an unknown amb id is used
         if (address(ambImplementation) == address(0)) {
             revert Error.INVALID_BRIDGE_ID();
-        }
-
-        ambImplementation.dispatchPayload{ value: gasToPay_ }(srcSender_, dstChainId_, message_, overrideData_);
-    }
-
-    /// @dev dispatches the proof(hash of the message_) through individual message bridge implementations
-    function _dispatchProof(
-        address srcSender_,
-        uint8[] memory ambIds_,
-        uint64 dstChainId_,
-        uint256[] memory gasToPay_,
-        bytes memory message_,
-        bytes[] memory overrideData_
-    )
-        internal
-    {
-        AMBMessage memory data = abi.decode(message_, (AMBMessage));
-        data.params = message_.computeProofBytes();
-
-        uint256 len = ambIds_.length;
-        /// @dev i starts from 1 since 0 is primary amb id which dispatches the message itself
-        for (uint8 i = 1; i < len;) {
-            uint8 tempAmbId = ambIds_[i];
-
-            if (tempAmbId == ambIds_[0]) {
-                revert Error.INVALID_PROOF_BRIDGE_ID();
-            }
-
-            if (i - 1 > 0 && tempAmbId <= ambIds_[i - 1]) {
-                revert Error.DUPLICATE_PROOF_BRIDGE_ID();
-            }
-
-            IAmbImplementation tempImpl = IAmbImplementation(_getAmbAddress(tempAmbId));
-
-            if (address(tempImpl) == address(0)) {
-                revert Error.INVALID_BRIDGE_ID();
-            }
-
-            /// @dev proof is dispatched in the form of a payload
-            tempImpl.dispatchPayload{ value: gasToPay_[i] }(srcSender_, dstChainId_, abi.encode(data), overrideData_[i]);
-
-            unchecked {
-                ++i;
-            }
         }
     }
 }

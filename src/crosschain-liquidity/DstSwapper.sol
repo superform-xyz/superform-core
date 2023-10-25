@@ -21,17 +21,22 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /*///////////////////////////////////////////////////////////////
-                    Constants
+                            CONSTANTS
     //////////////////////////////////////////////////////////////*/
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     /*///////////////////////////////////////////////////////////////
-                    State Variables
+                        STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
+    mapping(uint256 payloadId => mapping(uint256 index => FailedSwap)) internal failedSwap;
     mapping(uint256 payloadId => mapping(uint256 index => uint256 amount)) public swappedAmount;
+
+    /*///////////////////////////////////////////////////////////////
+                            MODIFIERS
+    //////////////////////////////////////////////////////////////*/
 
     modifier onlySwapper() {
         if (
@@ -51,7 +56,14 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         _;
     }
 
-    /// @param superRegistry_ Superform registry contract
+    modifier onlyCoreStateRegistry() {
+        if (superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")) != msg.sender) {
+            revert Error.NOT_CORE_STATE_REGISTRY();
+        }
+        _;
+    }
+
+    /// @param superRegistry_ superform registry contract
     constructor(address superRegistry_) {
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
@@ -62,18 +74,12 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     }
 
     /*///////////////////////////////////////////////////////////////
-                            External Functions
+                        EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
     /// @notice receive enables processing native token transfers into the smart contract.
     /// @dev liquidity bridge fails without a native receive function.
     receive() external payable { }
-
-    struct ProcessTxVars {
-        address finalDst;
-        address to;
-        address underlying;
-        uint256 expAmount;
-    }
 
     /// @inheritdoc IDstSwapper
     function processTx(
@@ -119,6 +125,86 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         }
     }
 
+    /// @inheritdoc IDstSwapper
+    function updateFailedTx(
+        uint256 payloadId_,
+        uint256 index_,
+        address interimToken_,
+        uint256 amount_
+    )
+        external
+        override
+        onlySwapper
+        nonReentrant
+    {
+        IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
+
+        _isValidPayloadId(payloadId_, coreStateRegistry);
+
+        _updateFailedTx(payloadId_, index_, interimToken_, amount_, coreStateRegistry);
+    }
+
+    /// @inheritdoc IDstSwapper
+    function batchUpdateFailedTx(
+        uint256 payloadId_,
+        uint256[] calldata indices_,
+        address[] calldata interimTokens_,
+        uint256[] calldata amounts_
+    )
+        external
+        override
+        onlySwapper
+    {
+        uint256 len = indices_.length;
+
+        IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
+
+        _isValidPayloadId(payloadId_, coreStateRegistry);
+        for (uint256 i; i < len;) {
+            _updateFailedTx(payloadId_, indices_[i], interimTokens_[i], amounts_[i], coreStateRegistry);
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /// @inheritdoc IDstSwapper
+    function processFailedTx(
+        address user_,
+        address interimToken_,
+        uint256 amount_
+    )
+        external
+        override
+        onlyCoreStateRegistry
+    {
+        if (interimToken_ != NATIVE) {
+            IERC20(interimToken_).safeTransfer(user_, amount_);
+        } else {
+            (bool success,) = payable(user_).call{ value: amount_ }("");
+            if (!success) revert Error.FAILED_TO_SEND_NATIVE();
+        }
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                        VIEW-ONLY FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @inheritdoc IDstSwapper
+    function getFailedSwap(
+        uint256 payloadId_,
+        uint256 index_
+    )
+        external
+        view
+        override
+        returns (address interimToken, uint256 amount)
+    {
+        interimToken = failedSwap[payloadId_][index_].interimToken;
+        amount = failedSwap[payloadId_][index_].amount;
+    }
+
     /*///////////////////////////////////////////////////////////////
                         INTERNAL HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -131,6 +217,20 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         if (payloadId_ > coreStateRegistry.payloadsCount()) {
             revert Error.INVALID_PAYLOAD_ID();
         }
+    }
+
+    struct ProcessTxVars {
+        address finalDst;
+        address to;
+        address underlying;
+        address approvalToken;
+        uint256 amount;
+        uint256 expAmount;
+        uint256 maxSlippage;
+        uint256 balanceBefore;
+        uint256 balanceAfter;
+        uint256 balanceDiff;
+        uint64 chainId;
     }
 
     function _processTx(
@@ -147,61 +247,98 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         }
 
         ProcessTxVars memory v;
-        uint64 chainId = CHAIN_ID;
+        v.chainId = CHAIN_ID;
 
         IBridgeValidator validator = IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_));
-        (address approvalToken_, uint256 amount_) = validator.decodeDstSwap(txData_);
+        (v.approvalToken, v.amount) = validator.decodeDstSwap(txData_);
         v.finalDst = address(coreStateRegistry_);
         /// @dev validates the bridge data
         validator.validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
                 txData_,
-                chainId,
-                chainId,
-                chainId,
+                v.chainId,
+                v.chainId,
+                v.chainId,
                 false,
                 /// @dev to enter the if-else case of the bridge validator loop
                 address(0),
                 v.finalDst,
-                approvalToken_
+                v.approvalToken
             )
         );
 
         /// @dev get the address of the bridge to send the txData to.
         v.to = superRegistry.getBridgeAddress(bridgeId_);
-        if (v.to == address(0)) {
-            revert Error.ZERO_ADDRESS();
-        }
+        (v.underlying, v.expAmount, v.maxSlippage) = _getFormUnderlyingFrom(payloadId_, index_);
 
-        v.underlying = _getFormUnderlyingFrom(payloadId_, index_);
-
-        uint256 balanceBefore = IERC20(v.underlying).balanceOf(v.finalDst);
-        if (approvalToken_ != NATIVE) {
+        v.balanceBefore = IERC20(v.underlying).balanceOf(v.finalDst);
+        if (v.approvalToken != NATIVE) {
             /// @dev approve the bridge to spend the approvalToken_.
-            IERC20(approvalToken_).safeIncreaseAllowance(v.to, amount_);
+            IERC20(v.approvalToken).safeIncreaseAllowance(v.to, v.amount);
 
             /// @dev execute the txData_.
             (bool success,) = payable(v.to).call(txData_);
             if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA();
         } else {
             /// @dev execute the txData_.
-            (bool success,) = payable(v.to).call{ value: amount_ }(txData_);
+            (bool success,) = payable(v.to).call{ value: v.amount }(txData_);
             if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA_NATIVE();
         }
-        uint256 balanceAfter = IERC20(v.underlying).balanceOf(v.finalDst);
+        v.balanceAfter = IERC20(v.underlying).balanceOf(v.finalDst);
 
-        if (balanceAfter <= balanceBefore) {
+        if (v.balanceAfter <= v.balanceBefore) {
             revert Error.INVALID_SWAP_OUTPUT();
         }
 
+        v.balanceDiff = v.balanceAfter - v.balanceBefore;
+        /// @dev if actual underlying is less than expAmount adjusted
+        /// with maxSlippage, invariant breaks
+        if (v.balanceDiff < ((v.expAmount * (10_000 - v.maxSlippage)) / 10_000)) {
+            revert Error.MAX_SLIPPAGE_INVARIANT_BROKEN();
+        }
+
         /// @dev updates swapped amount
-        swappedAmount[payloadId_][index_] = balanceAfter - balanceBefore;
+        swappedAmount[payloadId_][index_] = v.balanceDiff;
 
         /// @dev emits final event
-        emit SwapProcessed(payloadId_, index_, bridgeId_, balanceAfter - balanceBefore);
+        emit SwapProcessed(payloadId_, index_, bridgeId_, v.balanceDiff);
     }
 
-    function _getFormUnderlyingFrom(uint256 payloadId_, uint256 index_) internal view returns (address underlying_) {
+    function _updateFailedTx(
+        uint256 payloadId_,
+        uint256 index_,
+        address interimToken_,
+        uint256 amount_,
+        IBaseStateRegistry coreStateRegistry
+    )
+        internal
+    {
+        PayloadState currState = coreStateRegistry.payloadTracking(payloadId_);
+
+        if (currState != PayloadState.STORED) {
+            revert Error.INVALID_PAYLOAD_STATUS();
+        }
+
+        if (failedSwap[payloadId_][index_].amount != 0) {
+            revert Error.FAILED_DST_SWAP_ALREADY_UPDATED();
+        }
+
+        /// @dev updates swapped amount
+        failedSwap[payloadId_][index_].amount = amount_;
+        failedSwap[payloadId_][index_].interimToken = interimToken_;
+
+        /// @dev emits final event
+        emit SwapFailed(payloadId_, index_, interimToken_, amount_);
+    }
+
+    function _getFormUnderlyingFrom(
+        uint256 payloadId_,
+        uint256 index_
+    )
+        internal
+        view
+        returns (address underlying_, uint256 amount_, uint256 maxSlippage_)
+    {
         IBaseStateRegistry coreStateRegistry =
             IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
 
@@ -225,6 +362,8 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
 
             (address form_,,) = DataLib.getSuperform(data.superformIds[index_]);
             underlying_ = IERC4626Form(form_).getVaultAsset();
+            maxSlippage_ = data.maxSlippage[index_];
+            amount_ = data.amounts[index_];
         } else {
             if (index_ != 0) {
                 revert Error.INVALID_INDEX();
@@ -233,30 +372,8 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
             InitSingleVaultData memory data = abi.decode(payload, (InitSingleVaultData));
             (address form_,,) = DataLib.getSuperform(data.superformId);
             underlying_ = IERC4626Form(form_).getVaultAsset();
+            maxSlippage_ = data.maxSlippage;
+            amount_ = data.amount;
         }
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                            EMERGENCY FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev EMERGENCY_ADMIN ONLY FUNCTION.
-    /// @dev allows admin to withdraw lost tokens in the smart contract.
-    /// @param tokenContract_        address of the token contract
-    /// @param amount_               amount of tokens to withdraw
-    function emergencyWithdrawToken(address tokenContract_, uint256 amount_) external onlyEmergencyAdmin {
-        IERC20 tokenContract = IERC20(tokenContract_);
-
-        /// note: transfer the token from address of this contract
-        /// note: to address of the user (executing the withdrawToken() function)
-        tokenContract.safeTransfer(msg.sender, amount_);
-    }
-
-    /// @dev EMERGENCY_ADMIN ONLY FUNCTION.
-    /// @dev allows admin to withdraw lost native tokens in the smart contract.
-    /// @param amount_               amount of tokens to withdraw
-    function emergencyWithdrawNativeToken(uint256 amount_) external onlyEmergencyAdmin {
-        (bool success,) = payable(msg.sender).call{ value: amount_ }("");
-        if (!success) revert Error.NATIVE_TOKEN_TRANSFER_FAILURE();
     }
 }
