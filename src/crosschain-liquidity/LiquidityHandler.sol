@@ -8,14 +8,15 @@ import { Error } from "../utils/Error.sol";
 /**
  * @title LiquidityHandler
  * @author Zeropoint Labs.
- * @dev bridges tokens from Chain A -> Chain B. To be inherited by contracts that move liquidity
+ * @dev Executes an action with tokens to either bridge from Chain A -> Chain B or swap on same chain. 
+ * @dev To be inherited by contracts that move liquidity
  */
 abstract contract LiquidityHandler {
     using SafeERC20 for IERC20;
 
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    /// @dev dispatches tokens via a liquidity bridge
+    /// @dev dispatches tokens via a liquidity bridge or exchange
     /// @param bridge_ Bridge address to pass tokens to
     /// @param txData_ liquidity bridge data
     /// @param token_ Token caller deposits into superform
