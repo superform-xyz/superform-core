@@ -114,6 +114,8 @@ library Error {
     /// @dev thrown if rescue is already proposed
     error RESCUE_ALREADY_PROPOSED();
 
+    /// @dev thrown if dst refund address is zero
+    error ZERO_DST_REFUND_ADDRESS();
     /// @dev thrown if permit2 not supported on given chain
     error PERMIT2_NOT_SUPPORTED();
 
