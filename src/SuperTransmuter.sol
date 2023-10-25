@@ -123,14 +123,14 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
             string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
         string memory symbol = string(abi.encodePacked("sERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
         uint8 decimal = uint8(IBaseForm(superform).getVaultDecimals());
-
-        synthethicTokenId[superformId_] = address(
+        address syntheticToken = address(
             new sERC20(
                 name,
                 symbol,
                 decimal
             )
         );
+        synthethicTokenId[superformId_] = syntheticToken;
 
         /// @dev broadcast and deploy to the other destination chains
         if (extraData_.length > 0) {
@@ -143,7 +143,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
             _broadcast(abi.encode(transmuterPayload), extraData_);
         }
 
-        return synthethicTokenId[superformId_];
+        return syntheticToken;
     }
 
     /// @inheritdoc IStateSyncer
