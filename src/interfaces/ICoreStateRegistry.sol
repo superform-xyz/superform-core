@@ -11,40 +11,18 @@ interface ICoreStateRegistry {
     /*///////////////////////////////////////////////////////////////
                                STRUCTS
     //////////////////////////////////////////////////////////////*/
-    /// @dev local struct to avoid stack too deep errors in `processPayload`
-    struct CoreProcessPayloadLocalVars {
-        uint8 txType;
-        uint8 callbackType;
-        uint8 multi;
-        address srcSender;
-        uint64 srcChainId;
-    }
 
-    /// @dev local struct to avoid stack too deep errors in `updateWithdrawPayload`
-    struct UpdateWithdrawPayloadVars {
-        bytes32 prevPayloadProof;
-        bytes prevPayloadBody;
-        uint256 prevPayloadHeader;
-        uint8 isMulti;
-        uint64 srcChainId;
-        uint64 dstChainId;
-        address srcSender;
-    }
-
-    /// @dev local struct to avoid stack too deep errors in `updateWithdrawPayload`
-    struct UpdateMultiVaultWithdrawPayloadLocalVars {
-        InitMultiVaultData multiVaultData;
-        InitSingleVaultData singleVaultData;
-        address superform;
-        uint256[] tSuperFormIds;
-        uint256[] tAmounts;
-        uint256[] tMaxSlippage;
-        LiqRequest[] tLiqData;
-    }
-
+    /// @dev holds all information about a failed deposit mapped to a payload id
+    /// @param superformIds is an array of failing superform ids
+    /// @param settlementToken is an array of tokens to be refunded for the failing superform
+    /// @param amounts is an array of amounts of settlementToken to be refunded
+    /// @param refundAddress is the users dst refund address
+    /// @param lastProposedTime indicates the rescue proposal timestamp
     struct FailedDeposit {
         uint256[] superformIds;
+        address[] settlementToken;
         uint256[] amounts;
+        bool[] settleFromDstSwapper;
         address refundAddress;
         uint256 lastProposedTimestamp;
     }

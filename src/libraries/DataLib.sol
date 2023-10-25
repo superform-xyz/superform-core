@@ -17,14 +17,12 @@ library DataLib {
         pure
         returns (uint256 txInfo)
     {
-        assembly ("memory-safe") {
-            txInfo := txType_
-            txInfo := or(txInfo, shl(8, callbackType_))
-            txInfo := or(txInfo, shl(16, multi_))
-            txInfo := or(txInfo, shl(24, registryId_))
-            txInfo := or(txInfo, shl(32, srcSender_))
-            txInfo := or(txInfo, shl(192, srcChainId_))
-        }
+        txInfo = uint256(txType_);
+        txInfo |= uint256(callbackType_) << 8;
+        txInfo |= uint256(multi_) << 16;
+        txInfo |= uint256(registryId_) << 24;
+        txInfo |= uint256(uint160(srcSender_)) << 32;
+        txInfo |= uint256(srcChainId_) << 192;
     }
 
     function decodeTxInfo(uint256 txInfo_)

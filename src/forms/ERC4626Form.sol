@@ -71,4 +71,9 @@ contract ERC4626Form is ERC4626FormImplementation {
     function _emergencyWithdraw(address refundAddress_, uint256 amount_) internal override {
         _processEmergencyWithdraw(refundAddress_, amount_);
     }
+
+    /// @inheritdoc BaseForm
+    function _forwardDustToPaymaster() internal override {
+        _processForwardDustToPaymaster();
+    }
 }

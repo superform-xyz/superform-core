@@ -54,7 +54,7 @@ interface IBaseStateRegistry {
     /// NOTE: Only {IMPLEMENTATION_CONTRACT} role can call this function.
     function receivePayload(uint64 srcChainId_, bytes memory message_) external;
 
-    /// @dev allows previlaged actors to process cross-chain payloads
+    /// @dev allows privileged actors to process cross-chain payloads
     /// @param payloadId_ is the identifier of the cross-chain payload
     /// NOTE: Only {CORE_STATE_REGISTRY_PROCESSOR_ROLE} role can call this function
     /// NOTE: this should handle reverting the state on source chain in-case of failure

@@ -22,7 +22,7 @@ interface IBroadcastRegistry {
     /// @dev allows ambs to write broadcasted payloads
     function receiveBroadcastPayload(uint64 srcChainId_, bytes memory message_) external;
 
-    /// @dev allows previlaged actors to process broadcasted payloads
+    /// @dev allows privileged actors to process broadcasted payloads
     /// @param payloadId_ is the identifier of the cross-chain payload
     function processPayload(uint256 payloadId_) external;
 }
