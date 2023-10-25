@@ -17,7 +17,17 @@ contract SocketValidatorTest is ProtocolActions {
         SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
                 _buildDummyTxDataUnitTests(
-                    2, address(0), address(0), deployer, BSC, uint256(100), getContract(BSC, "CoreStateRegistry"), false
+                    BuildDummyTxDataUnitTestsVars(
+                        2,
+                        address(0),
+                        address(0),
+                        deployer,
+                        ETH,
+                        BSC,
+                        uint256(100),
+                        getContract(BSC, "CoreStateRegistry"),
+                        false
+                    )
                 ),
                 ETH,
                 BSC,
@@ -32,7 +42,9 @@ contract SocketValidatorTest is ProtocolActions {
 
     function test_socket_invalid_receiver() public {
         bytes memory txData = _buildDummyTxDataUnitTests(
-            2, address(0), address(0), deployer, BSC, uint256(100), getContract(BSC, "PayMaster"), false
+            BuildDummyTxDataUnitTestsVars(
+                2, address(0), address(0), deployer, ETH, BSC, uint256(100), getContract(BSC, "PayMaster"), false
+            )
         );
 
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
@@ -43,7 +55,17 @@ contract SocketValidatorTest is ProtocolActions {
 
     function test_socket_invalid_dstchain() public {
         bytes memory txData = _buildDummyTxDataUnitTests(
-            2, address(0), address(0), deployer, BSC, uint256(100), getContract(BSC, "CoreStateRegistry"), false
+            BuildDummyTxDataUnitTestsVars(
+                2,
+                address(0),
+                address(0),
+                deployer,
+                ETH,
+                BSC,
+                uint256(100),
+                getContract(BSC, "CoreStateRegistry"),
+                false
+            )
         );
 
         vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
@@ -54,7 +76,9 @@ contract SocketValidatorTest is ProtocolActions {
 
     function test_socket_invalid_receiver_xchain_withdraw() public {
         bytes memory txData = _buildDummyTxDataUnitTests(
-            2, address(0), address(0), deployer, BSC, uint256(100), getContract(BSC, "PayMaster"), false
+            BuildDummyTxDataUnitTestsVars(
+                2, address(0), address(0), deployer, ETH, BSC, uint256(100), getContract(BSC, "PayMaster"), false
+            )
         );
 
         vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
@@ -65,7 +89,9 @@ contract SocketValidatorTest is ProtocolActions {
 
     function test_validate_receiver() public {
         bytes memory txData = _buildDummyTxDataUnitTests(
-            2, address(0), address(0), deployer, BSC, uint256(100), getContract(BSC, "PayMaster"), false
+            BuildDummyTxDataUnitTestsVars(
+                2, address(0), address(0), deployer, ETH, BSC, uint256(100), getContract(BSC, "PayMaster"), false
+            )
         );
 
         assertTrue(
@@ -75,7 +101,9 @@ contract SocketValidatorTest is ProtocolActions {
 
     function test_validate_amountIn() public {
         bytes memory txData = _buildDummyTxDataUnitTests(
-            2, address(0), address(0), deployer, BSC, uint256(100), getContract(BSC, "PayMaster"), false
+            BuildDummyTxDataUnitTestsVars(
+                2, address(0), address(0), deployer, ETH, BSC, uint256(100), getContract(BSC, "PayMaster"), false
+            )
         );
 
         assertEq(SocketValidator(getContract(ETH, "SocketValidator")).decodeAmountIn(txData, true), uint256(100));
@@ -83,7 +111,9 @@ contract SocketValidatorTest is ProtocolActions {
 
     function test_validate_liq_dst_chain_id() public {
         bytes memory txData = _buildDummyTxDataUnitTests(
-            2, address(0), address(0), deployer, BSC, uint256(100), getContract(BSC, "PayMaster"), false
+            BuildDummyTxDataUnitTestsVars(
+                2, address(0), address(0), deployer, ETH, BSC, uint256(100), getContract(BSC, "PayMaster"), false
+            )
         );
 
         assertTrue(SocketValidator(getContract(ETH, "SocketValidator")).validateLiqDstChainId(txData, BSC));

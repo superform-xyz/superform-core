@@ -93,7 +93,15 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     /// @param superRegistry_        ISuperRegistry address deployed
     /// @param vault_         The vault address this form pertains to
     /// @dev sets caller as the admin of the contract.
-    function initialize(address superRegistry_, address vault_, uint32 formImplementationId_, address asset_) external initializer {
+    function initialize(
+        address superRegistry_,
+        address vault_,
+        uint32 formImplementationId_,
+        address asset_
+    )
+        external
+        initializer
+    {
         if (ISuperRegistry(superRegistry_) != superRegistry) revert Error.NOT_SUPER_REGISTRY();
 
         formImplementationId = formImplementationId_;
@@ -184,6 +192,10 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         _emergencyWithdraw(refundAddress_, amount_);
     }
 
+    /// @inheritdoc IBaseForm
+    function forwardDustToPaymaster() external override {
+        _forwardDustToPaymaster();
+    }
     /*///////////////////////////////////////////////////////////////
                     PURE/VIEW VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -194,8 +206,8 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     /// @inheritdoc IBaseForm
     function superformYieldTokenSymbol() external view virtual override returns (string memory);
 
-   // @inheritdoc IBaseForm
-    function getVaultAsset() external view override returns (address) {
+    // @inheritdoc IBaseForm
+    function getVaultAsset() public view override returns (address) {
         return asset;
     }
 
@@ -282,10 +294,13 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     /// @dev withdraws vault shares from form during emergency
     function _emergencyWithdraw(address refundAddress_, uint256 amount_) internal virtual;
 
+    /// @dev forwards dust to paymaster
+    function _forwardDustToPaymaster() internal virtual;
     /*///////////////////////////////////////////////////////////////
                     INTERNAL VIEW VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
     /// @dev returns if a form id is paused
+
     function _isPaused(uint256 superformId) internal view returns (bool) {
         (, uint32 formImplementationId_,) = superformId.getSuperform();
 

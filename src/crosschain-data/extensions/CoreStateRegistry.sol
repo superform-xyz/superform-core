@@ -277,13 +277,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     }
 
     /// @inheritdoc ICoreStateRegistry
-    function disputeRescueFailedDeposits(
-        uint256 payloadId_
-        ) 
-        external 
-        override
-        isValidPayloadId(payloadId_) 
-    {
+    function disputeRescueFailedDeposits(uint256 payloadId_) external override isValidPayloadId(payloadId_) {
         FailedDeposit memory failedDeposits_ = failedDeposits[payloadId_];
 
         /// @dev the msg sender should be the refund address (or) the disputer
@@ -313,13 +307,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     /// @inheritdoc ICoreStateRegistry
     /// @notice is an open function & can be executed by anyone
-    function finalizeRescueFailedDeposits(
-        uint256 payloadId_
-        ) 
-        external
-        override
-        isValidPayloadId(payloadId_) 
-    {
+    function finalizeRescueFailedDeposits(uint256 payloadId_) external override isValidPayloadId(payloadId_) {
         uint256 lastProposedTimestamp = failedDeposits[payloadId_].lastProposedTimestamp;
 
         /// @dev the timelock is elapsed
@@ -384,7 +372,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     /// @dev returns the current timelock delay
     function _getDelay() internal view returns (uint256) {
         uint256 delay = superRegistry.delay();
-        if (delay == 0){
+        if (delay == 0) {
             revert Error.DELAY_NOT_SET();
         }
         return delay;

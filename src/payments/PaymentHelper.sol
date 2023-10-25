@@ -393,7 +393,7 @@ contract PaymentHelper is IPaymentHelper {
         external
         view
         override
-        returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
+        returns (uint256 liqAmount, uint256 srcAmount, uint256, /*dstAmount*/ uint256 totalAmount)
     {
         (, uint32 formId,) = req_.superformData.superformId.getSuperform();
         /// @dev only if timelock form withdrawal is involved
@@ -405,7 +405,6 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
-
     }
 
     /// @inheritdoc IPaymentHelper
@@ -416,7 +415,7 @@ contract PaymentHelper is IPaymentHelper {
         external
         view
         override
-        returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
+        returns (uint256 liqAmount, uint256 srcAmount, uint256, /*dstAmount*/ uint256 totalAmount)
     {
         uint256 len = req_.superformData.superformIds.length;
         for (uint256 i; i < len;) {
@@ -436,7 +435,6 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
-
     }
 
     /// @inheritdoc IPaymentHelper
@@ -800,7 +798,7 @@ contract PaymentHelper is IPaymentHelper {
     /// @return native token price
     function _getGasPrice(uint64 chainId_) internal view returns (uint256) {
         address oracleAddr = address(gasPriceOracle[chainId_]);
-        if (oracleAddr!= address(0)) {
+        if (oracleAddr != address(0)) {
             (, int256 value,, uint256 updatedAt,) = AggregatorV3Interface(oracleAddr).latestRoundData();
             if (value <= 0) revert Error.CHAINLINK_MALFUNCTION();
             if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();

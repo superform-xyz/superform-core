@@ -162,8 +162,9 @@ contract PayMasterTest is ProtocolActions {
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
         superRegistry.setAddress(keccak256("CORE_REGISTRY_PROCESSOR"), address(0), ETH);
 
-        bytes memory txData =
-            _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst, false);
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            BuildDummyTxDataUnitTestsVars(1, NATIVE, NATIVE, feeCollector, ETH, ARBI, 1 ether, feeCollectorDst, false)
+        );
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         PayMaster(feeCollector).rebalanceTo(
@@ -171,13 +172,17 @@ contract PayMasterTest is ProtocolActions {
         );
 
         superRegistry.setAddress(keccak256("CORE_REGISTRY_PROCESSOR"), txProcessorETH, ETH);
-        txData = _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst, false);
+        txData = _buildDummyTxDataUnitTests(
+            BuildDummyTxDataUnitTestsVars(1, NATIVE, NATIVE, feeCollector, ETH, ARBI, 1 ether, feeCollectorDst, false)
+        );
         /// @dev admin moves the payment from fee collector to different address on another chain
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
         PayMaster(feeCollector).rebalanceTo(
             keccak256("CORE_REGISTRY_PROCESSOR"), LiqRequest(1, txData, NATIVE, ARBI, 1 ether), ARBI
         );
-        txData = _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, txProcessorARBI, false);
+        txData = _buildDummyTxDataUnitTests(
+            BuildDummyTxDataUnitTestsVars(1, NATIVE, NATIVE, feeCollector, ETH, ARBI, 1 ether, txProcessorARBI, false)
+        );
         /// @dev admin moves the payment from fee collector to different address on another chain
         vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
         PayMaster(feeCollector).rebalanceTo(
@@ -189,7 +194,11 @@ contract PayMasterTest is ProtocolActions {
             keccak256("CORE_REGISTRY_PROCESSOR"),
             LiqRequest(
                 1,
-                _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, txProcessorARBI, false),
+                _buildDummyTxDataUnitTests(
+                    BuildDummyTxDataUnitTestsVars(
+                        1, NATIVE, NATIVE, feeCollector, ETH, ARBI, 1 ether, txProcessorARBI, false
+                    )
+                ),
                 NATIVE,
                 ARBI,
                 1 ether
@@ -220,8 +229,9 @@ contract PayMasterTest is ProtocolActions {
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
         superRegistry.setAddress(keccak256("CORE_REGISTRY_UPDATER"), address(0), ETH);
-        bytes memory txData =
-            _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst, false);
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            BuildDummyTxDataUnitTestsVars(1, NATIVE, NATIVE, feeCollector, ETH, ARBI, 1 ether, feeCollectorDst, false)
+        );
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         PayMaster(feeCollector).rebalanceTo(
@@ -230,7 +240,9 @@ contract PayMasterTest is ProtocolActions {
 
         superRegistry.setAddress(keccak256("CORE_REGISTRY_UPDATER"), txUpdaterARBI, ETH);
 
-        txData = _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst, false);
+        txData = _buildDummyTxDataUnitTests(
+            BuildDummyTxDataUnitTestsVars(1, NATIVE, NATIVE, feeCollector, ETH, ARBI, 1 ether, feeCollectorDst, false)
+        );
 
         /// @dev admin moves the payment from fee collector to different address on another chain
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
@@ -243,7 +255,11 @@ contract PayMasterTest is ProtocolActions {
             keccak256("CORE_REGISTRY_UPDATER"),
             LiqRequest(
                 1,
-                _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, txUpdaterARBI, false),
+                _buildDummyTxDataUnitTests(
+                    BuildDummyTxDataUnitTestsVars(
+                        1, NATIVE, NATIVE, feeCollector, ETH, ARBI, 1 ether, txUpdaterARBI, false
+                    )
+                ),
                 NATIVE,
                 ARBI,
                 1 ether

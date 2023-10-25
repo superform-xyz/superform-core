@@ -159,6 +159,11 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         _emergencyWithdraw(refundAddress_, amount_);
     }
 
+    /// @inheritdoc IBaseForm
+    function forwardDustToPaymaster() external override {
+        _forwardDustToPaymaster();
+    }
+
     /*///////////////////////////////////////////////////////////////
                     PURE/VIEW VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -253,6 +258,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
 
     /// @dev withdraws vault shares from form during emergency
     function _emergencyWithdraw(address refundAddress_, uint256 amount_) internal virtual;
+
+    /// @dev forwards dust to paymaster
+    function _forwardDustToPaymaster() internal virtual;
 
     /*///////////////////////////////////////////////////////////////
                     INTERNAL VIEW VIRTUAL FUNCTIONS
