@@ -2,7 +2,6 @@
 pragma solidity ^0.8.21;
 
 import { Error } from "src/utils/Error.sol";
-
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
 import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
 
@@ -93,6 +92,10 @@ contract SocketValidator is BridgeValidator {
         returns (address, /*token_*/ uint256 /*amount_*/ )
     {
         revert();
+    }
+
+    function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
+        revert Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
     }
 
     /*///////////////////////////////////////////////////////////////

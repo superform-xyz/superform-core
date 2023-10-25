@@ -2,7 +2,6 @@
 pragma solidity ^0.8.21;
 
 import { Error } from "src/utils/Error.sol";
-
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
 import { ISocketOneInchImpl } from "src/vendor/socket/ISocketOneInchImpl.sol";
 
@@ -76,6 +75,12 @@ contract SocketOneInchValidator is BridgeValidator {
         ISocketOneInchImpl.SwapInput memory swapInput = _decodeTxData(txData_);
         token_ = swapInput.fromToken;
         amount_ = swapInput.amount;
+    }
+
+    /// @inheritdoc BridgeValidator
+    function decodeSwapOutputToken(bytes calldata txData_) external pure override returns (address token_) {
+        ISocketOneInchImpl.SwapInput memory swapInput = _decodeTxData(txData_);
+        token_ = swapInput.toToken;
     }
 
     /*///////////////////////////////////////////////////////////////

@@ -115,6 +115,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         if (address(token) != NATIVE && singleVaultData_.liqData.txData.length == 0) {
             /// @dev this is only valid if token == collateral (no txData)
+            if (singleVaultData_.liqData.token != vars.collateral) revert Error.DIFFERENT_TOKENS();
 
             /// @dev handles the collateral token transfers.
             if (token.allowance(msg.sender, address(this)) < singleVaultData_.amount) {
@@ -165,6 +166,13 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 vars.inputAmount,
                 singleVaultData_.liqData.nativeAmount
             );
+
+            if (
+                IBridgeValidator(vars.bridgeValidator).decodeSwapOutputToken(singleVaultData_.liqData.txData)
+                    != vars.collateral
+            ) {
+                revert Error.DIFFERENT_TOKENS();
+            }
         }
 
         vars.collateralDifference = IERC20(vars.collateral).balanceOf(address(this)) - vars.balanceBefore;
@@ -357,6 +365,20 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         vaultContract.safeTransfer(refundAddress_, amount_);
         emit EmergencyWithdrawalProcessed(refundAddress_, amount_);
+    }
+
+    function _processForwardDustToPaymaster() internal {
+        address paymaster = superRegistry.getAddress(keccak256("PAYMASTER"));
+        if (paymaster != address(0)) {
+            IERC20 token = IERC20(getVaultAsset());
+
+            uint256 dust = token.balanceOf(address(this));
+            if (dust > 0) {
+                token.safeTransfer(paymaster, dust);
+            }
+        } else {
+            revert Error.ZERO_ADDRESS();
+        }
     }
 
     /*///////////////////////////////////////////////////////////////

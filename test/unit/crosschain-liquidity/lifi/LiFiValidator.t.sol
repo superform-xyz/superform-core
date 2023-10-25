@@ -17,7 +17,17 @@ contract LiFiValidatorTest is ProtocolActions {
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
                 _buildDummyTxDataUnitTests(
-                    1, address(0), address(0), deployer, BSC, uint256(100), getContract(BSC, "CoreStateRegistry"), false
+                    BuildDummyTxDataUnitTestsVars(
+                        1,
+                        address(0),
+                        address(0),
+                        deployer,
+                        ETH,
+                        BSC,
+                        uint256(100),
+                        getContract(BSC, "CoreStateRegistry"),
+                        false
+                    )
                 ),
                 ETH,
                 BSC,
@@ -32,7 +42,9 @@ contract LiFiValidatorTest is ProtocolActions {
 
     function test_lifi_invalid_receiver() public {
         bytes memory txData = _buildDummyTxDataUnitTests(
-            1, address(0), address(0), deployer, BSC, uint256(100), getContract(BSC, "PayMaster"), false
+            BuildDummyTxDataUnitTestsVars(
+                1, address(0), address(0), deployer, ETH, BSC, uint256(100), getContract(BSC, "PayMaster"), false
+            )
         );
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
 
@@ -43,7 +55,17 @@ contract LiFiValidatorTest is ProtocolActions {
 
     function test_lifi_invalid_dstchain() public {
         bytes memory txData = _buildDummyTxDataUnitTests(
-            1, address(0), address(0), deployer, BSC, uint256(100), getContract(BSC, "CoreStateRegistry"), false
+            BuildDummyTxDataUnitTestsVars(
+                1,
+                address(0),
+                address(0),
+                deployer,
+                ETH,
+                BSC,
+                uint256(100),
+                getContract(BSC, "CoreStateRegistry"),
+                false
+            )
         );
         vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
 
@@ -54,7 +76,9 @@ contract LiFiValidatorTest is ProtocolActions {
 
     function test_lifi_invalid_receiver_samechain() public {
         bytes memory txData = _buildDummyTxDataUnitTests(
-            1, address(0), address(0), deployer, ETH, uint256(100), getContract(ETH, "PayMaster"), true
+            BuildDummyTxDataUnitTestsVars(
+                1, address(0), address(0), deployer, ETH, ETH, uint256(100), getContract(ETH, "PayMaster"), true
+            )
         );
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
 
@@ -65,7 +89,9 @@ contract LiFiValidatorTest is ProtocolActions {
 
     function test_lifi_invalid_receiver_xchain_withdraw() public {
         bytes memory txData = _buildDummyTxDataUnitTests(
-            1, address(0), address(0), deployer, OP, uint256(100), getContract(OP, "PayMaster"), false
+            BuildDummyTxDataUnitTestsVars(
+                1, address(0), address(0), deployer, ETH, OP, uint256(100), getContract(OP, "PayMaster"), false
+            )
         );
 
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
@@ -77,7 +103,9 @@ contract LiFiValidatorTest is ProtocolActions {
 
     function test_lifi_invalid_txdata_chainid_withdraw() public {
         bytes memory txData = _buildDummyTxDataUnitTests(
-            1, address(0), address(0), deployer, OP, uint256(100), getContract(OP, "PayMaster"), false
+            BuildDummyTxDataUnitTestsVars(
+                1, address(0), address(0), deployer, ETH, OP, uint256(100), getContract(OP, "PayMaster"), false
+            )
         );
 
         vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
@@ -89,7 +117,17 @@ contract LiFiValidatorTest is ProtocolActions {
 
     function test_lifi_invalid_token() public {
         bytes memory txData = _buildDummyTxDataUnitTests(
-            1, address(0), address(0), deployer, ARBI, uint256(100), getContract(ARBI, "CoreStateRegistry"), false
+            BuildDummyTxDataUnitTestsVars(
+                1,
+                address(0),
+                address(0),
+                deployer,
+                ETH,
+                ARBI,
+                uint256(100),
+                getContract(ARBI, "CoreStateRegistry"),
+                false
+            )
         );
 
         vm.expectRevert(Error.INVALID_TXDATA_TOKEN.selector);
@@ -103,7 +141,17 @@ contract LiFiValidatorTest is ProtocolActions {
         bytes memory data = abi.encodeWithSelector(
             0xd6a4bc50,
             _buildDummyTxDataUnitTests(
-                1, address(0), address(0), deployer, ETH, uint256(100), getContract(ETH, "CoreStateRegistry"), true
+                BuildDummyTxDataUnitTestsVars(
+                    1,
+                    address(0),
+                    address(0),
+                    deployer,
+                    ETH,
+                    ETH,
+                    uint256(100),
+                    getContract(ETH, "CoreStateRegistry"),
+                    true
+                )
             )
         );
 

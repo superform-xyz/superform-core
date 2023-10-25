@@ -67,6 +67,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
+        /// @dev validates the dst refund address
+        _validateDstRefundAddress(req_.superformsData.dstRefundAddress);
+
         IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).validateBatchIdsExist(req_.superformsData.superformIds);
 
         ActionLocalVars memory vars;
@@ -150,6 +153,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (vars.srcChainId == req_.dstChainId) revert Error.INVALID_ACTION();
 
         vars.currentPayloadId = ++payloadIds;
+        /// @dev validates the dst refund address
+        _validateDstRefundAddress(req_.superformData.dstRefundAddress);
 
         ambData = InitSingleVaultData(
             ROUTER_TYPE,
@@ -166,12 +171,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         vars.liqRequest = req_.superformData.liqRequest;
         (address superform,,) = req_.superformData.superformId.getSuperform();
 
-        _singleVaultTokenForward(
-            msg.sender,
-            superRegistry.getBridgeAddress(vars.liqRequest.bridgeId),
-            req_.superformData.permit2data,
-            ambData
-        );
+        _singleVaultTokenForward(msg.sender, address(0), req_.superformData.permit2data, ambData);
 
         LiqRequest memory emptyRequest;
         ambData.liqData = emptyRequest;
@@ -815,6 +815,15 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         return true;
     }
 
+    function _validateDstRefundAddress(address dstRefundAddress_) internal view virtual {
+        /// @dev validates if EOA / SC Wallet & compares it against dst refund address
+        if (tx.origin != msg.sender) {
+            if (dstRefundAddress_ == address(0)) {
+                revert Error.ZERO_DST_REFUND_ADDRESS();
+            }
+        }
+    }
+
     function _validateSuperformsWithdrawData(
         MultiVaultSFData memory superformsData_,
         uint64 dstChainId_
@@ -882,7 +891,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     //////////////////////////////////////////////////////////////*/
     function _singleVaultTokenForward(
         address srcSender_,
-        address superform_,
+        address target_,
         bytes memory permit2data_,
         InitSingleVaultData memory vaultData_
     )
@@ -936,8 +945,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 token.safeTransferFrom(srcSender_, address(this), amount);
             }
 
-            /// @dev approves the input amount to the superform
-            token.safeIncreaseAllowance(superform_, amount);
+            if (target_ != address(0)) {
+                /// @dev approves the input amount to the target
+                token.safeIncreaseAllowance(target_, amount);
+            }
         }
     }
 

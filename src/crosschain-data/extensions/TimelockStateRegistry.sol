@@ -32,11 +32,10 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     //////////////////////////////////////////////////////////////*/
 
     modifier onlyTimelockStateRegistryProcessor() {
-        if (
-            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
-                keccak256("TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE"), msg.sender
-            )
-        ) revert Error.NOT_PROCESSOR();
+        bytes32 role = keccak256("TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE");
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(role, msg.sender)) {
+            revert Error.NOT_PREVILAGED_CALLER(role);
+        }
         _;
     }
 
@@ -116,7 +115,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         onlyTimelockStateRegistryProcessor
         nonReentrant
     {
-        TimelockPayload memory p = timelockPayload[timeLockPayloadId_];
+        TimelockPayload storage p = timelockPayload[timeLockPayloadId_];
         IBridgeValidator bridgeValidator = IBridgeValidator(superRegistry.getBridgeValidator(p.data.liqData.bridgeId));
         uint256 finalAmount;
 
@@ -127,9 +126,9 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         if (p.lockedTill > block.timestamp) {
             revert Error.LOCKED();
         }
-
         /// @dev set status here to prevent re-entrancy
         p.status = TwoStepsStatus.PROCESSED;
+
         (address superform,,) = p.data.superformId.getSuperform();
 
         IERC4626TimelockForm form = IERC4626TimelockForm(superform);
@@ -298,11 +297,6 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         (, bytes memory extraData) = IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER")))
             .calculateAMBData(dstChainId_, ambIds_, message_);
 
-        AMBExtraData memory d = abi.decode(extraData, (AMBExtraData));
-        _dispatchPayload(msg.sender, ambIds_[0], dstChainId_, d.gasPerAMB[0], message_, d.extraDataPerAMB[0]);
-
-        if (ambIds_.length > 1) {
-            _dispatchProof(msg.sender, ambIds_, dstChainId_, d.gasPerAMB, message_, d.extraDataPerAMB);
-        }
+        _dispatchPayload(msg.sender, ambIds_, dstChainId_, message_, extraData);
     }
 }
