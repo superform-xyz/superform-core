@@ -115,6 +115,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         if (address(token) != NATIVE && singleVaultData_.liqData.txData.length == 0) {
             /// @dev this is only valid if token == collateral (no txData)
+            if (singleVaultData_.liqData.token != vars.collateral) revert Error.DIFFERENT_TOKENS();
 
             /// @dev handles the collateral token transfers.
             if (token.allowance(msg.sender, address(this)) < singleVaultData_.amount) {
@@ -165,6 +166,13 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 vars.inputAmount,
                 singleVaultData_.liqData.nativeAmount
             );
+
+            if (
+                IBridgeValidator(vars.bridgeValidator).decodeSwapOutputToken(singleVaultData_.liqData.txData)
+                    != vars.collateral
+            ) {
+                revert Error.DIFFERENT_TOKENS();
+            }
         }
 
         vars.collateralDifference = IERC20(vars.collateral).balanceOf(address(this)) - vars.balanceBefore;

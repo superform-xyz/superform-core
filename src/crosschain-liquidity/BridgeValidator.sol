@@ -69,4 +69,12 @@ abstract contract BridgeValidator is IBridgeValidator {
         virtual
         override
         returns (address token_, uint256 amount_);
+
+    /// @inheritdoc IBridgeValidator
+    function decodeSwapOutputToken(bytes calldata txData_)
+        external
+        view
+        virtual
+        override
+        returns (address outputToken_);
 }
