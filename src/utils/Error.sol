@@ -78,17 +78,11 @@ library Error {
     /// @dev thrown if the msg-sender is not super registry
     error NOT_SUPER_REGISTRY();
 
+    /// @dev thrown if the msg-sender is not privileged caller
+    error NOT_PREVILAGED_CALLER(bytes32 role);
+
     /// @dev thrown if the msg-sender does not have SWAPPER role
     error NOT_SWAPPER();
-
-    /// @dev thrown if the msg-sender does not have PROCESSOR role
-    error NOT_PROCESSOR();
-
-    /// @dev thrown if the msg-sender does not have UPDATER role
-    error NOT_UPDATER();
-
-    /// @dev thrown if the msg-sender does not have RESCUER role
-    error NOT_RESCUER();
 
     /// @dev thrown when the bridge tokens haven't arrived to destination
     error BRIDGE_TOKENS_PENDING();
@@ -113,6 +107,18 @@ library Error {
 
     /// @dev thrown if rescue is already proposed
     error RESCUE_ALREADY_PROPOSED();
+
+    /// @dev thrown if DstSwapper fails to send native tokens to CoreStateRegistry
+    error FAILED_TO_SEND_NATIVE();
+
+    /// @dev thrown when actual amount recieved is less than the ideal amount adjusted with max slippage
+    error MAX_SLIPPAGE_INVARIANT_BROKEN();
+
+    /// @dev thrown when the failed dstSwap is already updated
+    error FAILED_DST_SWAP_ALREADY_UPDATED();
+
+    /// @dev thrown when the failed dstSwap is already processed
+    error FAILED_DST_SWAP_ALREADY_PROCESSED();
 
     /// @dev thrown if dst refund address is zero
     error ZERO_DST_REFUND_ADDRESS();
@@ -222,6 +228,9 @@ library Error {
 
     /// @dev thrown if payload update amount mismatch with dst swapper amount
     error INVALID_DST_SWAP_AMOUNT();
+
+    /// @dev thrown if payload update amount mismatch with failed dst swap amount
+    error INVALID_FAILED_DST_SWAP_AMOUNT();
 
     /// @dev thrown if payload is being updated with final amounts length different than amounts length
     error DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH();

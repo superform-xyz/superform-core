@@ -2,7 +2,6 @@
 pragma solidity ^0.8.21;
 
 import { Error } from "src/utils/Error.sol";
-
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
 import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
 
