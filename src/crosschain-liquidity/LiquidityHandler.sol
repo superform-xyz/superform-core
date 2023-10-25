@@ -21,7 +21,7 @@ abstract contract LiquidityHandler {
     /// @param token_ Token caller deposits into superform
     /// @param amount_ Amount of tokens to deposit
     /// @param nativeAmount_ msg.value or msg.value + native tokens
-    function dispatchTokens(
+    function _dispatchTokens(
         address bridge_,
         bytes memory txData_,
         address token_,
@@ -37,22 +37,12 @@ abstract contract LiquidityHandler {
 
         if (token_ != NATIVE) {
             IERC20 token = IERC20(token_);
-
-            /// @dev call bridge with txData. Native amount here just contains liquidity bridge fees (if needed)
             token.safeIncreaseAllowance(bridge_, amount_);
-            unchecked {
-                (bool success,) = payable(bridge_).call{ value: nativeAmount_ }(txData_);
-                if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA();
-            }
         } else {
             if (nativeAmount_ < amount_) revert Error.INSUFFICIENT_NATIVE_AMOUNT();
-
-            /// @dev call bridge with txData. Native amount here contains liquidity bridge fees (if needed) + native
-            /// tokens to swap
-            unchecked {
-                (bool success,) = payable(bridge_).call{ value: nativeAmount_ }(txData_);
-                if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA_NATIVE();
-            }
         }
+        
+        (bool success,) = payable(bridge_).call{ value: nativeAmount_ }(txData_);
+        if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA();
     }
 }

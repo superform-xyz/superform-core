@@ -47,7 +47,7 @@ contract DstSwapperTest is ProtocolActions {
             txData = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
 
             /// @dev no funds in multi-tx processor at this point; should revert
-            vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA_NATIVE.selector);
+            vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA.selector);
             DstSwapper(dstSwapper).processTx(2, 0, 1, txData);
         } else {
             revert();
@@ -362,7 +362,7 @@ contract DstSwapperTest is ProtocolActions {
         DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData);
 
         /// @dev no funds in multi-tx processor at this point; should revert
-        vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA_NATIVE.selector);
+        vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA.selector);
         DstSwapper(dstSwapper).batchProcessTx(2, indices, bridgeId, txData);
     }
 
