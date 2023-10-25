@@ -21,7 +21,7 @@ env:
 
 jobs:
   build:
-    runs-on: "SuperformCore2"
+    runs-on: self-hosted
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v3"
@@ -56,7 +56,7 @@ jobs:
 
   test-unit:
     needs: ["build"]
-    runs-on: "SuperformCore2"
+    runs-on: self-hosted
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v3"
@@ -90,7 +90,7 @@ jobs:
 
   test-fuzz:
     needs: ["build"]
-    runs-on: "SuperformCore2"
+    runs-on: self-hosted
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v3"
@@ -125,7 +125,7 @@ jobs:
                   
   coverage:
     needs: ["build"]
-    runs-on: "SuperformCore2"
+    runs-on: self-hosted
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v3"
