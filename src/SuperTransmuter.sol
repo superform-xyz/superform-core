@@ -114,7 +114,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
     function registerTransmuter(uint256 superformId_, bytes memory extraData_) external override returns (address) {
         (address superform, uint32 formImplementationId, uint64 chainId) = DataLib.getSuperform(superformId_);
 
-        if (CHAIN_ID != chainId) revert Error.INVALID_CHAIN_ID();
+        if (CHAIN_ID != chainId || chainId == 0) revert Error.INVALID_CHAIN_ID();
         if (superform == address(0)) revert Error.NOT_SUPERFORM();
         if (formImplementationId == 0) revert Error.FORM_DOES_NOT_EXIST();
         if (synthethicTokenId[superformId_] != address(0)) revert TRANSMUTER_ALREADY_REGISTERED();
@@ -241,6 +241,12 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         validateBatchIdsExist(returnData.superformIds);
 
         uint256 txInfo = txHistory[returnData.payloadId];
+
+        /// @dev if txInfo is zero then the payloadId is invalid for ack
+        if (txInfo == 0) {
+            revert Error.TX_HISTORY_NOT_FOUND();
+        }
+
         address srcSender;
         uint256 txType;
 
@@ -296,6 +302,12 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         validateSingleIdExists(returnData.superformId);
 
         uint256 txInfo = txHistory[returnData.payloadId];
+
+        /// @dev if txInfo is zero then the payloadId is invalid for ack
+        if (txInfo == 0) {
+            revert Error.TX_HISTORY_NOT_FOUND();
+        }
+
         uint256 txType;
         address srcSender;
 

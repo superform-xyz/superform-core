@@ -96,19 +96,20 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
 
         /// @dev  reset old mappings
         uint64 oldSuperChainId = superChainId[ambChainId_];
-
         uint16 oldAmbChainId = ambChainId[superChainId_];
 
-        if (oldSuperChainId > 0) {
-            ambChainId[oldSuperChainId] = 0;
+        if (oldSuperChainId != 0) {
+            delete ambChainId[oldSuperChainId];
         }
 
-        if (oldAmbChainId > 0) {
-            superChainId[oldAmbChainId] = 0;
+        if (oldAmbChainId != 0) {
+            delete superChainId[oldAmbChainId];
         }
 
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
+
+        emit ChainAdded(superChainId_);
     }
 
     /*///////////////////////////////////////////////////////////////

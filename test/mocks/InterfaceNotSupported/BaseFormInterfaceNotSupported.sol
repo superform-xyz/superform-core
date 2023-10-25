@@ -18,14 +18,6 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     using DataLib for uint256;
 
     /*///////////////////////////////////////////////////////////////
-                            CONSTANTS
-    //////////////////////////////////////////////////////////////*/
-
-    uint256 internal constant PRECISION_DECIMALS = 27;
-
-    uint256 internal constant PRECISION = 10 ** PRECISION_DECIMALS;
-
-    /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
@@ -204,7 +196,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     function getTotalAssets() public view virtual override returns (uint256);
 
     /// @inheritdoc IBaseForm
-    function getStateRegistryId() external view virtual override returns (uint256);
+    function getStateRegistryId() external view virtual override returns (uint8);
 
     // @inheritdoc IBaseForm
     function getPreviewPricePerVaultShare() public view virtual override returns (uint256);

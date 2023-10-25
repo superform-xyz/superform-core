@@ -51,6 +51,15 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                         INTERNAL/HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev getter for PERMIT2 in case it is not supported or set on a given chain
+    function _getPermit2() internal view returns (address) {
+        address permit2 = superRegistry.PERMIT2();
+        if (permit2 == address(0)) {
+            revert Error.PERMIT2_NOT_SUPPORTED();
+        }
+        return permit2;
+    }
+
     /// @dev handles cross-chain multi vault deposit
     function _singleXChainMultiVaultDeposit(SingleXChainMultiVaultStateReq memory req_) internal virtual {
         /// @dev validate superformsData
@@ -83,7 +92,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformsData.extraFormData
         );
 
-        address permit2 = superRegistry.PERMIT2();
         address superform;
         uint256 len = req_.superformsData.superformIds.length;
 
@@ -99,7 +107,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             /// @dev dispatch liquidity data
             _validateAndDispatchTokens(
                 ValidateAndDispatchTokensArgs(
-                    vars.liqRequest, permit2, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
+                    vars.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
                 )
             );
             unchecked {
@@ -147,12 +155,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         vars.liqRequest = req_.superformData.liqRequest;
         (address superform,,) = req_.superformData.superformId.getSuperform();
 
-        _singleVaultTokenForward(
-            msg.sender,
-            superRegistry.getBridgeAddress(vars.liqRequest.bridgeId),
-            req_.superformData.permit2data,
-            ambData
-        );
+        _singleVaultTokenForward(msg.sender, address(0), req_.superformData.permit2data, ambData);
 
         LiqRequest memory emptyRequest;
         ambData.liqData = emptyRequest;
@@ -160,7 +163,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev dispatch liquidity data
         _validateAndDispatchTokens(
             ValidateAndDispatchTokensArgs(
-                vars.liqRequest, superRegistry.PERMIT2(), superform, vars.srcChainId, req_.dstChainId, msg.sender, true
+                vars.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
             )
         );
 
@@ -292,7 +295,14 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         ActionLocalVars memory vars;
 
         vars.srcChainId = CHAIN_ID;
-        if (vars.srcChainId == req_.dstChainId) revert Error.INVALID_CHAIN_IDS();
+
+        if (vars.srcChainId == req_.dstChainId) {
+            revert Error.INVALID_CHAIN_IDS();
+        }
+
+        if (vars.srcChainId == 0 || req_.dstChainId == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
 
         InitSingleVaultData memory ambData;
 
@@ -428,7 +438,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     struct ValidateAndDispatchTokensArgs {
         LiqRequest liqRequest;
-        address permit2;
         address superform;
         uint64 srcChainId;
         uint64 dstChainId;
@@ -617,7 +626,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.ZERO_AMOUNT();
         }
 
-        if (chainId != CHAIN_ID) {
+        if (chainId != CHAIN_ID || chainId == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
 
@@ -711,7 +720,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         (,, uint64 chainId) =
             ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getSuperform(superformId_);
 
-        if (chainId != CHAIN_ID) {
+        if (chainId != CHAIN_ID || chainId == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
 
@@ -746,11 +755,14 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         returns (bool)
     {
         /// @dev the dstChainId_ (in the state request) must match the superforms' chainId (superform must exist on
-        /// destinatiom)
+        /// destination)
         if (dstChainId_ != DataLib.getDestinationChain(superformData_.superformId)) return false;
 
         /// @dev 10000 = 100% slippage
         if (superformData_.maxSlippage > 10_000) return false;
+
+        /// @dev amount can't be 0
+        if (superformData_.amount == 0) return false;
 
         /// if it reaches this point then is valid
         return true;
@@ -782,12 +794,18 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             return false;
         }
 
-        /// @dev slippage and paused status validation
+        /// @dev slippage, amount, paused status validation
         for (uint256 i; i < len;) {
             /// @dev 10000 = 100% slippage
             if (superformsData_.maxSlippages[i] > 10_000) return false;
+            /// @dev amount can't be 0
+            if (superformsData_.amounts[i] == 0) return false;
             (, uint32 formImplementationId_, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
             if (dstChainId_ != sfDstChainId) return false;
+
+            if (sfDstChainId == 0) {
+                revert Error.INVALID_CHAIN_ID();
+            }
 
             if (
                 ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
@@ -845,8 +863,13 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         for (uint256 i; i < len;) {
             /// @dev 10000 = 100% slippage
             if (superformsData_.maxSlippages[i] > 10_000) return false;
+            /// @dev amount can't be 0
+            if (superformsData_.amounts[i] == 0) return false;
             (,, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
             if (dstChainId_ != sfDstChainId) return false;
+            if (sfDstChainId == 0) {
+                revert Error.INVALID_CHAIN_ID();
+            }
 
             unchecked {
                 ++i;
@@ -877,7 +900,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     //////////////////////////////////////////////////////////////*/
     function _singleVaultTokenForward(
         address srcSender_,
-        address superform_,
+        address target_,
         bytes memory permit2data_,
         InitSingleVaultData memory vaultData_
     )
@@ -898,7 +921,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             }
 
             if (permit2data_.length != 0) {
-                address permit2 = superRegistry.PERMIT2();
+                address permit2 = _getPermit2();
 
                 (uint256 nonce, uint256 deadline, bytes memory signature) =
                     abi.decode(permit2data_, (uint256, uint256, bytes));
@@ -931,8 +954,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 token.safeTransferFrom(srcSender_, address(this), amount);
             }
 
-            /// @dev approves the input amount to the superform
-            token.safeIncreaseAllowance(superform_, amount);
+            if (target_ != address(0)) {
+                /// @dev approves the input amount to the target
+                token.safeIncreaseAllowance(target_, amount);
+            }
         }
     }
 
@@ -955,13 +980,14 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         internal
         virtual
     {
-        if (vaultData_.liqData[0].token != NATIVE) {
+        address token = vaultData_.liqData[0].token;
+        if (token != NATIVE) {
             MultiTokenForwardLocalVars memory v;
-            v.token = IERC20(vaultData_.liqData[0].token);
+            v.token = IERC20(token);
             v.len = vaultData_.liqData.length;
 
             v.totalAmount;
-            v.permit2 = superRegistry.PERMIT2();
+
             v.permit2dataLen = permit2data_.length;
             v.approvalAmounts = new uint256[](v.len);
 
@@ -987,37 +1013,40 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 }
             }
 
-            if (v.totalAmount > 0) {
-                if (v.permit2dataLen > 0) {
-                    (uint256 nonce, uint256 deadline, bytes memory signature) =
-                        abi.decode(permit2data_, (uint256, uint256, bytes));
+            if (v.totalAmount == 0) {
+                revert Error.ZERO_AMOUNT();
+            }
 
-                    /// @dev moves the tokens from the user to the router
-                    IPermit2(v.permit2).permitTransferFrom(
-                        // The permit message.
-                        IPermit2.PermitTransferFrom({
-                            permitted: IPermit2.TokenPermissions({ token: v.token, amount: v.totalAmount }),
-                            nonce: nonce,
-                            deadline: deadline
-                        }),
-                        // The transfer recipient and amount.
-                        IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: v.totalAmount }),
-                        // The owner of the tokens, which must also be
-                        // the signer of the message, otherwise this call
-                        // will fail.
-                        srcSender_,
-                        // The packed signature that was the result of signing
-                        // the EIP712 hash of `permit`.
-                        signature
-                    );
-                } else {
-                    if (v.token.allowance(srcSender_, address(this)) < v.totalAmount) {
-                        revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
-                    }
+            if (v.permit2dataLen > 0) {
+                (uint256 nonce, uint256 deadline, bytes memory signature) =
+                    abi.decode(permit2data_, (uint256, uint256, bytes));
 
-                    /// @dev moves the tokens from the user to the router
-                    v.token.safeTransferFrom(srcSender_, address(this), v.totalAmount);
+                v.permit2 = _getPermit2();
+                /// @dev moves the tokens from the user to the router
+                IPermit2(v.permit2).permitTransferFrom(
+                    // The permit message.
+                    IPermit2.PermitTransferFrom({
+                        permitted: IPermit2.TokenPermissions({ token: v.token, amount: v.totalAmount }),
+                        nonce: nonce,
+                        deadline: deadline
+                    }),
+                    // The transfer recipient and amount.
+                    IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: v.totalAmount }),
+                    // The owner of the tokens, which must also be
+                    // the signer of the message, otherwise this call
+                    // will fail.
+                    srcSender_,
+                    // The packed signature that was the result of signing
+                    // the EIP712 hash of `permit`.
+                    signature
+                );
+            } else {
+                if (v.token.allowance(srcSender_, address(this)) < v.totalAmount) {
+                    revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
                 }
+
+                /// @dev moves the tokens from the user to the router
+                v.token.safeTransferFrom(srcSender_, address(this), v.totalAmount);
             }
 
             /// @dev approves individual final targets if needed here

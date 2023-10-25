@@ -96,6 +96,9 @@ library Error {
     /// @dev thrown when trying to set again pseudo immutables in SuperRegistry
     error DISABLED();
 
+    /// @dev thrown if rescue delay not yet set for a chain
+    error DELAY_NOT_SET();
+
     /// @dev thrown when the native tokens transfer has failed
     error NATIVE_TOKEN_TRANSFER_FAILURE();
 
@@ -113,6 +116,14 @@ library Error {
 
     /// @dev thrown if dst refund address is zero
     error ZERO_DST_REFUND_ADDRESS();
+    /// @dev thrown if permit2 not supported on given chain
+    error PERMIT2_NOT_SUPPORTED();
+
+    /// @dev thrown if tx history is not found while state sync
+    error TX_HISTORY_NOT_FOUND();
+
+    /// @dev thrown if chain id exceeds max(uint64)
+    error BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
 
     /*///////////////////////////////////////////////////////////////
                          LIQUIDITY BRIDGE ERRORS
@@ -156,6 +167,9 @@ library Error {
 
     /// @dev error thrown when txData must be present (in case of xChain acitons)
     error NO_TXDATA_PRESENT();
+
+    /// @dev error thrown if we try to decode the final swap output token in a xChain liquidity bridging action
+    error CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
 
     /*///////////////////////////////////////////////////////////////
                         STATE REGISTRY ERRORS
@@ -338,6 +352,10 @@ library Error {
 
     /// @dev if implementation formBeacon is PAUSED then users cannot perform any action
     error PAUSED();
+
+    /// @dev in case of no txData, if liqData.token != collateral. In case of txData, if token output of swap ==
+    /// vault.asset()
+    error DIFFERENT_TOKENS();
 
     /*///////////////////////////////////////////////////////////////
                         PAYMASTER ERRORS

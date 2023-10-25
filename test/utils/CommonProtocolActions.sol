@@ -425,7 +425,18 @@ abstract contract CommonProtocolActions is BaseSetup {
                     underlyingToken_,
                     underlyingToken_,
                     amount_,
-                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, totalSlippage, false, 0, false),
+                    abi.encode(
+                        from_,
+                        FORKS[toChainId_],
+                        underlyingTokenDst_,
+                        totalSlippage,
+                        false,
+                        0,
+                        false,
+                        uint256(USDPerUnderlyingToken),
+                        uint256(USDPerUnderlyingToken),
+                        uint256(USDPerUnderlyingTokenDst)
+                    ),
                     false // arbitrary
                 );
 
@@ -473,6 +484,8 @@ abstract contract CommonProtocolActions is BaseSetup {
                     totalSlippage,
                     false,
                     0,
+                    false,
+                    uint256(USDPerUnderlyingToken),
                     uint256(USDPerUnderlyingToken),
                     uint256(USDPerUnderlyingTokenDst)
                 )

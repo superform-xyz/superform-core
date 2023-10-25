@@ -37,7 +37,7 @@ contract PaymentHelper is IPaymentHelper {
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    uint32 public constant TIMELOCK_FORM_ID = 1;
+    uint32 public constant TIMELOCK_FORM_ID = 2;
 
     /*///////////////////////////////////////////////////////////////
                                 STATE VARIABLES
@@ -78,6 +78,10 @@ contract PaymentHelper is IPaymentHelper {
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
     constructor(address superRegistry_) {
+        if (block.chainid > type(uint64).max) {
+            revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
+        }
+
         CHAIN_ID = uint64(block.chainid);
         superRegistry = ISuperRegistry(superRegistry_);
     }
@@ -213,7 +217,7 @@ contract PaymentHelper is IPaymentHelper {
             uint256 totalDstGas;
 
             /// @dev step 1: estimate amb costs
-            (, uint256 ambFees) = _estimateAMBFees(
+            uint256 ambFees = _estimateAMBFees(
                 req_.ambIds[i], req_.dstChainIds[i], _generateMultiVaultMessage(req_.superformsData[i])
             );
 
@@ -227,7 +231,7 @@ contract PaymentHelper is IPaymentHelper {
 
                 /// @dev step 3: estimation processing cost of acknowledgement
                 /// @notice optimistically estimating. (Ideal case scenario: no failed deposits / withdrawals)
-                srcAmount += _estimateAckProcessingCost(req_.dstChainIds.length, superformIdsLen);
+                srcAmount += _estimateAckProcessingCost(len, superformIdsLen);
 
                 /// @dev step 4: estimate liq amount
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequests);
@@ -266,7 +270,7 @@ contract PaymentHelper is IPaymentHelper {
             uint256 totalDstGas;
 
             /// @dev step 1: estimate amb costs
-            (, uint256 ambFees) = _estimateAMBFees(
+            uint256 ambFees = _estimateAMBFees(
                 req_.ambIds[i], req_.dstChainIds[i], _generateSingleVaultMessage(req_.superformsData[i])
             );
 
@@ -315,7 +319,7 @@ contract PaymentHelper is IPaymentHelper {
         uint256 superformIdsLen = req_.superformsData.superformIds.length;
 
         /// @dev step 1: estimate amb costs
-        (, uint256 ambFees) =
+        uint256 ambFees =
             _estimateAMBFees(req_.ambIds, req_.dstChainId, _generateMultiVaultMessage(req_.superformsData));
 
         srcAmount += ambFees;
@@ -354,7 +358,7 @@ contract PaymentHelper is IPaymentHelper {
     {
         uint256 totalDstGas;
         /// @dev step 1: estimate amb costs
-        (, uint256 ambFees) =
+        uint256 ambFees =
             _estimateAMBFees(req_.ambIds, req_.dstChainId, _generateSingleVaultMessage(req_.superformData));
 
         srcAmount += ambFees;
@@ -402,7 +406,6 @@ contract PaymentHelper is IPaymentHelper {
         /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
 
-        dstAmount = 0;
     }
 
     /// @inheritdoc IPaymentHelper
@@ -418,9 +421,10 @@ contract PaymentHelper is IPaymentHelper {
         uint256 len = req_.superformData.superformIds.length;
         for (uint256 i; i < len;) {
             (, uint32 formId,) = req_.superformData.superformIds[i].getSuperform();
+            uint256 twoStepPrice = twoStepCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
             /// @dev only if timelock form withdrawal is involved
             if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
-                srcAmount += twoStepCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
+                srcAmount += twoStepPrice;
             }
 
             unchecked {
@@ -433,7 +437,6 @@ contract PaymentHelper is IPaymentHelper {
         /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
 
-        dstAmount = 0;
     }
 
     /// @inheritdoc IPaymentHelper
@@ -572,14 +575,11 @@ contract PaymentHelper is IPaymentHelper {
     )
         public
         view
-        returns (uint256[] memory feeSplitUp, uint256 totalFees)
+        returns (uint256 totalFees)
     {
         uint256 len = ambIds_.length;
 
         bytes[] memory extraDataPerAMB = _generateExtraData(dstChainId_, ambIds_, message_);
-
-        feeSplitUp = new uint256[](len);
-
         bytes memory proof_ = abi.encode(AMBMessage(type(uint256).max, abi.encode(keccak256(message_))));
 
         /// @dev just checks the estimate for sending message from src -> dst
@@ -590,7 +590,6 @@ contract PaymentHelper is IPaymentHelper {
             );
 
             totalFees += tempFee;
-            feeSplitUp[i] = tempFee;
 
             unchecked {
                 ++i;
@@ -800,8 +799,9 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev helps return the current gas price of different networks
     /// @return native token price
     function _getGasPrice(uint64 chainId_) internal view returns (uint256) {
-        if (address(gasPriceOracle[chainId_]) != address(0)) {
-            (, int256 value,, uint256 updatedAt,) = gasPriceOracle[chainId_].latestRoundData();
+        address oracleAddr = address(gasPriceOracle[chainId_]);
+        if (oracleAddr!= address(0)) {
+            (, int256 value,, uint256 updatedAt,) = AggregatorV3Interface(oracleAddr).latestRoundData();
             if (value <= 0) revert Error.CHAINLINK_MALFUNCTION();
             if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
             return uint256(value);
@@ -813,8 +813,9 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev helps return the dst chain token price of different networks
     /// @return native token price
     function _getNativeTokenPrice(uint64 chainId_) internal view returns (uint256) {
-        if (address(nativeFeedOracle[chainId_]) != address(0)) {
-            (, int256 dstTokenPrice,, uint256 updatedAt,) = nativeFeedOracle[chainId_].latestRoundData();
+        address oracleAddr = address(nativeFeedOracle[chainId_]);
+        if (oracleAddr != address(0)) {
+            (, int256 dstTokenPrice,, uint256 updatedAt,) = AggregatorV3Interface(oracleAddr).latestRoundData();
             if (dstTokenPrice <= 0) revert Error.CHAINLINK_MALFUNCTION();
             if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
             return uint256(dstTokenPrice);

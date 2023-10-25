@@ -19,23 +19,21 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     using SafeERC20 for IERC4626;
     using DataLib for uint256;
 
-    uint256 internal immutable STATE_REGISTRY_ID;
+    uint8 internal immutable STATE_REGISTRY_ID;
 
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
-    constructor(address superRegistry_, uint256 stateRegistryId_) BaseForm(superRegistry_) {
+    constructor(address superRegistry_, uint8 stateRegistryId_) BaseForm(superRegistry_) {
+        if (superRegistry.getStateRegistry(stateRegistryId_) == address(0)) {
+            revert Error.NOT_STATE_REGISTRY();
+        }
         STATE_REGISTRY_ID = stateRegistryId_;
     }
 
     /*///////////////////////////////////////////////////////////////
                             VIEW/PURE OVERRIDES
     //////////////////////////////////////////////////////////////*/
-
-    /// @inheritdoc BaseForm
-    function getVaultAsset() public view virtual override returns (address) {
-        return address(IERC4626(vault).asset());
-    }
 
     /// @inheritdoc BaseForm
     function getVaultName() public view virtual override returns (string memory) {
@@ -100,7 +98,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         address bridgeValidator;
         uint256 dstAmount;
         uint256 balanceBefore;
-        uint256 balanceAfter;
+        uint256 collateralDifference;
         uint256 nonce;
         uint256 deadline;
         uint256 inputAmount;
@@ -111,12 +109,13 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         directDepositLocalVars memory vars;
 
         IERC4626 v = IERC4626(vault);
-        vars.collateral = address(v.asset());
+        vars.collateral = address(asset);
         vars.balanceBefore = IERC20(vars.collateral).balanceOf(address(this));
         IERC20 token = IERC20(singleVaultData_.liqData.token);
 
         if (address(token) != NATIVE && singleVaultData_.liqData.txData.length == 0) {
             /// @dev this is only valid if token == collateral (no txData)
+            if (singleVaultData_.liqData.token != vars.collateral) revert Error.DIFFERENT_TOKENS();
 
             /// @dev handles the collateral token transfers.
             if (token.allowance(msg.sender, address(this)) < singleVaultData_.amount) {
@@ -152,7 +151,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                     singleVaultData_.liqData.txData,
                     vars.chainId,
                     vars.chainId,
-                    singleVaultData_.liqData.liqDstChainId,
+                    vars.chainId,
                     true,
                     address(this),
                     msg.sender,
@@ -167,22 +166,28 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 vars.inputAmount,
                 singleVaultData_.liqData.nativeAmount
             );
+
+            if (
+                IBridgeValidator(vars.bridgeValidator).decodeSwapOutputToken(singleVaultData_.liqData.txData)
+                    != vars.collateral
+            ) {
+                revert Error.DIFFERENT_TOKENS();
+            }
         }
 
-        vars.balanceAfter = IERC20(vars.collateral).balanceOf(address(this));
+        vars.collateralDifference = IERC20(vars.collateral).balanceOf(address(this)) - vars.balanceBefore;
 
-        /// @dev the balance of vault tokens, ready to be deposited is compared with the previous balance
-        if (vars.balanceAfter - vars.balanceBefore < singleVaultData_.amount) {
+        /// @dev the difference in vault tokens, ready to be deposited, is compared with the amount inscribed in the
+        /// superform data
+        if (vars.collateralDifference < singleVaultData_.amount) {
             revert Error.DIRECT_DEPOSIT_INVALID_DATA();
         }
 
-        /// @dev notice the inscribed singleVaultData_.amount is deposited regardless if txData exists or not
-        /// @dev this is always the estimated value post any swaps (if they exist)
-        /// @dev the balance check above implies that a certain dust may be left in the superform after depositing
-        /// @dev the vault asset (collateral) is approved and deposited to the vault
-        IERC20(vars.collateral).safeIncreaseAllowance(vault, singleVaultData_.amount);
+        /// @dev notice that vars.collateralDifference is deposited regardless if txData exists or not
+        /// @dev this presumes no dust is left in the superform
+        IERC20(vars.collateral).safeIncreaseAllowance(vault, vars.collateralDifference);
 
-        dstAmount = v.deposit(singleVaultData_.amount, address(this));
+        dstAmount = v.deposit(vars.collateralDifference, address(this));
     }
 
     struct ProcessDirectWithdawLocalVars {
@@ -210,7 +215,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         v.receiver = v.len1 == 0 ? srcSender_ : address(this);
 
         v.v = IERC4626(vault);
-        v.collateral = address(v.v.asset());
+        v.collateral = address(asset);
 
         /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same as
         /// the vault asset
@@ -265,10 +270,10 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         IERC4626 v = IERC4626(vaultLoc);
 
         /// @dev pulling from sender, to auto-send tokens back in case of failed deposits / reverts
-        IERC20(v.asset()).safeTransferFrom(msg.sender, address(this), singleVaultData_.amount);
+        IERC20(asset).safeTransferFrom(msg.sender, address(this), singleVaultData_.amount);
 
         /// @dev allowance is modified inside of the IERC20.transferFrom() call
-        IERC20(v.asset()).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
+        IERC20(asset).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
 
         /// @dev This makes ERC4626Form (address(this)) owner of v.shares
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
@@ -309,7 +314,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         vars.receiver = len == 0 ? srcSender_ : address(this);
 
         IERC4626 v = IERC4626(vault);
-        vars.collateral = v.asset();
+        vars.collateral = asset;
 
         /// @dev redeem vault positions (we operate only on positions, not assets)
         dstAmount = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
@@ -377,7 +382,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     }
 
     /// @inheritdoc BaseForm
-    function getStateRegistryId() external view override returns (uint256) {
+    function getStateRegistryId() external view override returns (uint8) {
         return STATE_REGISTRY_ID;
     }
 

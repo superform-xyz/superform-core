@@ -633,8 +633,14 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         SuperformFactory superformFactory = SuperformFactory(getContract(chainId, "SuperformFactory"));
 
+        address newSr = address(new SuperRegistry(address(0x2222)));
+        vm.mockCall(
+            newSr, abi.encodeWithSelector(SuperRegistry(newSr).getStateRegistry.selector, 1), abi.encode(address(0x444))
+        );
         /// @dev Deploying Form with incorrect SuperRegistry
-        address formImplementation = address(new ERC4626Form(address(0x1)));
+        address formImplementation = address(new ERC4626Form(newSr));
+        vm.clearMockedCalls();
+
         uint32 formImplementationId = 0;
 
         /// @dev Vaults For The Superforms
@@ -650,48 +656,86 @@ contract SuperformERC4626FormTest is ProtocolActions {
         superformFactory.createSuperform(formImplementationId, address(vault));
     }
 
-    function test_directDepositInvalidData() public {
+    function test_directDeposit_DIFFERENT_TOKENS() public {
         /// @dev no txData is sent for a vault that requires it
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
         address superformRouter = getContract(ETH, "SuperformRouter");
-        address superform1 = getContract(
-            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
-        );
 
         address superform2 = getContract(
             ETH, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
         );
 
-        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_IMPLEMENTATION_IDS[0], ETH);
         uint256 superformId2 = DataLib.packSuperform(superform2, FORM_IMPLEMENTATION_IDS[0], ETH);
 
-        uint256[] memory superformIds = new uint256[](2);
-        superformIds[0] = superformId1;
-        superformIds[1] = superformId2;
+        uint256[] memory superformIds = new uint256[](1);
+        superformIds[0] = superformId2;
 
-        uint256[] memory amounts = new uint256[](2);
+        uint256[] memory amounts = new uint256[](1);
         amounts[0] = 1e18;
-        amounts[1] = 1e18;
 
-        uint256[] memory maxSlippages = new uint256[](2);
+        uint256[] memory maxSlippages = new uint256[](1);
         maxSlippages[0] = 1000;
-        maxSlippages[1] = 1000;
 
-        LiqRequest[] memory liqReqs = new LiqRequest[](2);
+        LiqRequest[] memory liqReqs = new LiqRequest[](1);
 
         liqReqs[0] = LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0);
-        liqReqs[1] = LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0);
 
         MultiVaultSFData memory data =
-            MultiVaultSFData(superformIds, amounts, maxSlippages, new bool[](2), liqReqs, "", refundAddress, "");
+            MultiVaultSFData(superformIds, amounts, maxSlippages, new bool[](1), liqReqs, "", refundAddress, "");
 
         SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
 
         /// @dev approves before call
-        MockERC20(getContract(ETH, "DAI")).approve(address(superformRouter), 2e18);
+        MockERC20(getContract(ETH, "DAI")).approve(address(superformRouter), 1e18);
 
-        vm.expectRevert(Error.DIRECT_DEPOSIT_INVALID_DATA.selector);
+        vm.expectRevert(Error.DIFFERENT_TOKENS.selector);
+        SuperformRouter(payable(superformRouter)).singleDirectMultiVaultDeposit{ value: 10 ether }(req);
+        vm.stopPrank();
+    }
+
+    function test_directDeposit_DIFFERENT_TOKENS_OUTPUT_TOKEN() public {
+        /// @dev no txData is sent for a vault that requires it
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+        address superformRouter = getContract(ETH, "SuperformRouter");
+
+        address superform2 = getContract(
+            ETH, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_IMPLEMENTATION_IDS[0], ETH);
+
+        uint256[] memory superformIds = new uint256[](1);
+        superformIds[0] = superformId2;
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 1e18;
+
+        uint256[] memory maxSlippages = new uint256[](1);
+        maxSlippages[0] = 1000;
+
+        LiqRequest[] memory liqReqs = new LiqRequest[](1);
+
+        liqReqs[0] = LiqRequest(
+            1,
+            _buildDummyTxDataUnitTests(
+                1, getContract(ETH, "DAI"), getContract(ETH, "USDC"), superform2, ETH, 1e18, superform2, true
+            ),
+            getContract(ETH, "DAI"),
+            ETH,
+            0
+        );
+
+        MultiVaultSFData memory data =
+            MultiVaultSFData(superformIds, amounts, maxSlippages, new bool[](1), liqReqs, "", refundAddress, "");
+
+        SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
+
+        /// @dev approves before call
+        MockERC20(getContract(ETH, "DAI")).approve(address(superformRouter), 1e18);
+
+        vm.expectRevert(Error.DIFFERENT_TOKENS.selector);
         SuperformRouter(payable(superformRouter)).singleDirectMultiVaultDeposit{ value: 10 ether }(req);
         vm.stopPrank();
     }

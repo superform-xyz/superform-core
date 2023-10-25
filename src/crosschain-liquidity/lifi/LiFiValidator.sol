@@ -2,11 +2,11 @@
 pragma solidity ^0.8.21;
 
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
-import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { Error } from "src/utils/Error.sol";
 import { LiFiTxDataExtractor } from "src/vendor/lifi/LiFiTxDataExtractor.sol";
 import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
+import { StandardizedCallFacet } from "src/vendor/lifi/StandardizedCallFacet.sol";
 
 /// @title LiFiValidator
 /// @author Zeropoint Labs
@@ -153,6 +153,26 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         (token_, amount_,,,) = extractGenericSwapParameters(txData_);
     }
 
+    function decodeSwapOutputToken(bytes calldata txData_) external view override returns (address token_) {
+        try this.extractMainParameters(txData_) returns (
+            string memory, /*bridge*/
+            address, /*sendingAssetId*/
+            address, /*receiver*/
+            uint256, /*amount*/
+            uint256, /*minAmount*/
+            uint256, /*destinationChainId*/
+            bool, /*hasSourceSwaps*/
+            bool /*hasDestinationCall*/
+        ) {
+            /// @dev if there isn't a source swap, amountIn is minAmountOut from bridge data?
+
+            revert Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
+        } catch {
+            (,,, address receivingAssetId,) = extractGenericSwapParameters(txData_);
+            token_ = receivingAssetId;
+        }
+    }
+
     /// @notice Extracts the main parameters from the calldata
     /// @param data_ The calldata to extract the main parameters from
     /// @return bridge The bridge extracted from the calldata
@@ -221,7 +241,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         LibSwap.SwapData[] memory swapData;
         bytes memory callData = data_;
 
-        if (bytes4(data_[:4]) == 0xd6a4bc50) {
+        if (bytes4(data_[:4]) == StandardizedCallFacet.standardizedCall.selector) {
             // standardizedCall
             callData = abi.decode(data_[4:], (bytes));
         }

@@ -22,10 +22,6 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
                             CONSTANTS
     //////////////////////////////////////////////////////////////*/
 
-    uint256 internal constant PRECISION_DECIMALS = 27;
-
-    uint256 internal constant PRECISION = 10 ** PRECISION_DECIMALS;
-
     uint64 public immutable CHAIN_ID;
 
     /*///////////////////////////////////////////////////////////////
@@ -37,6 +33,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
 
     /// @dev the vault this form pertains to
     address public vault;
+
+    /// @dev underlying asset of vault this form pertains to
+    address public asset;
 
     uint32 public formImplementationId;
 
@@ -81,6 +80,10 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     //////////////////////////////////////////////////////////////*/
 
     constructor(address superRegistry_) {
+        if (block.chainid > type(uint64).max) {
+            revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
+        }
+
         CHAIN_ID = uint64(block.chainid);
         superRegistry = ISuperRegistry(superRegistry_);
 
@@ -90,11 +93,12 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     /// @param superRegistry_        ISuperRegistry address deployed
     /// @param vault_         The vault address this form pertains to
     /// @dev sets caller as the admin of the contract.
-    function initialize(address superRegistry_, address vault_, uint32 formImplementationId_) external initializer {
+    function initialize(address superRegistry_, address vault_, uint32 formImplementationId_, address asset_) external initializer {
         if (ISuperRegistry(superRegistry_) != superRegistry) revert Error.NOT_SUPER_REGISTRY();
 
         formImplementationId = formImplementationId_;
         vault = vault_;
+        asset = asset_;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -190,8 +194,10 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     /// @inheritdoc IBaseForm
     function superformYieldTokenSymbol() external view virtual override returns (string memory);
 
-    /// @inheritdoc IBaseForm
-    function getVaultAsset() public view virtual override returns (address);
+   // @inheritdoc IBaseForm
+    function getVaultAsset() external view override returns (address) {
+        return asset;
+    }
 
     /// @inheritdoc IBaseForm
     function getVaultName() public view virtual override returns (string memory);
@@ -217,7 +223,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     function getTotalAssets() public view virtual override returns (uint256);
 
     /// @inheritdoc IBaseForm
-    function getStateRegistryId() external view virtual override returns (uint256);
+    function getStateRegistryId() external view virtual override returns (uint8);
 
     // @inheritdoc IBaseForm
     function getPreviewPricePerVaultShare() public view virtual override returns (uint256);
