@@ -246,9 +246,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
-        /// @dev validates the dst refund address
-        _validateDstRefundAddress(req_.superformsData.dstRefundAddress);
-
         IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).burnBatch(
             msg.sender, req_.superformsData.superformIds, req_.superformsData.amounts
         );
@@ -296,9 +293,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         vars.srcChainId = CHAIN_ID;
         if (vars.srcChainId == req_.dstChainId) revert Error.INVALID_CHAIN_IDS();
-
-        /// @dev validates the dst refund address
-        _validateDstRefundAddress(req_.superformData.dstRefundAddress);
 
         InitSingleVaultData memory ambData;
 
