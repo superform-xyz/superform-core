@@ -134,17 +134,34 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     /// @dev handles cross-chain single vault deposit
     function _singleXChainSingleVaultDeposit(SingleXChainSingleVaultStateReq memory req_) internal virtual {
+        /// @dev validate superformsData
+        if (!_validateSuperformData(req_.superformData, req_.dstChainId)) {
+            revert Error.INVALID_SUPERFORMS_DATA();
+        }
+
+        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).validateSingleIdExists(req_.superformData.superformId);
+
         ActionLocalVars memory vars;
+        InitSingleVaultData memory ambData;
 
         vars.srcChainId = CHAIN_ID;
 
         /// @dev disallow direct chain actions
         if (vars.srcChainId == req_.dstChainId) revert Error.INVALID_ACTION();
 
-        InitSingleVaultData memory ambData;
+        vars.currentPayloadId = ++payloadIds;
 
-        /// @dev this step validates and returns ambData from the state request
-        (ambData, vars.currentPayloadId) = _buildDepositAmbData(req_.dstChainId, req_.superformData);
+        ambData = InitSingleVaultData(
+            ROUTER_TYPE,
+            vars.currentPayloadId,
+            req_.superformData.superformId,
+            req_.superformData.amount,
+            req_.superformData.maxSlippage,
+            req_.superformData.hasDstSwap,
+            req_.superformData.liqRequest,
+            req_.superformData.dstRefundAddress,
+            req_.superformData.extraFormData
+        );
 
         vars.liqRequest = req_.superformData.liqRequest;
         (address superform,,) = req_.superformData.superformId.getSuperform();
@@ -264,6 +281,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         vars.srcChainId = CHAIN_ID;
         vars.currentPayloadId = ++payloadIds;
 
+        if (vars.srcChainId == req_.dstChainId) {
+            revert Error.INVALID_CHAIN_IDS();
+        }
+
         /// @dev write packed txData
         ambData = InitMultiVaultData(
             ROUTER_TYPE,
@@ -297,9 +318,19 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     /// @dev handles cross-chain single vault withdraw
     function _singleXChainSingleVaultWithdraw(SingleXChainSingleVaultStateReq memory req_) internal virtual {
+        if (!_validateSuperformData(req_.superformData, req_.dstChainId)) {
+            revert Error.INVALID_SUPERFORMS_DATA();
+        }
+
+        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).burnSingle(
+            msg.sender, req_.superformData.superformId, req_.superformData.amount
+        );
+
         ActionLocalVars memory vars;
+        InitSingleVaultData memory ambData;
 
         vars.srcChainId = CHAIN_ID;
+        vars.currentPayloadId = ++payloadIds;
 
         if (vars.srcChainId == req_.dstChainId) {
             revert Error.INVALID_CHAIN_IDS();
@@ -309,10 +340,17 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_CHAIN_ID();
         }
 
-        InitSingleVaultData memory ambData;
-
-        /// @dev this step validates and returns ambData from the state request
-        (ambData, vars.currentPayloadId) = _buildWithdrawAmbData(msg.sender, req_.dstChainId, req_.superformData);
+        ambData = InitSingleVaultData(
+            ROUTER_TYPE,
+            vars.currentPayloadId,
+            req_.superformData.superformId,
+            req_.superformData.amount,
+            req_.superformData.maxSlippage,
+            false,
+            req_.superformData.liqRequest,
+            req_.superformData.dstRefundAddress,
+            req_.superformData.extraFormData
+        );
 
         uint256[] memory superformIds = new uint256[](1);
         superformIds[0] = req_.superformData.superformId;
@@ -344,6 +382,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
+        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).burnSingle(
+            msg.sender, req_.superformData.superformId, req_.superformData.amount
+        );
+
+        vars.currentPayloadId = ++payloadIds;
+
         InitSingleVaultData memory vaultData = InitSingleVaultData(
             ROUTER_TYPE,
             vars.currentPayloadId,
@@ -370,12 +414,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
-        vars.currentPayloadId = ++payloadIds;
-
         /// @dev SuperPositions are burnt optimistically here
         IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).burnBatch(
             msg.sender, req_.superformData.superformIds, req_.superformData.amounts
         );
+
+        vars.currentPayloadId = ++payloadIds;
 
         InitMultiVaultData memory vaultData = InitMultiVaultData(
             ROUTER_TYPE,
@@ -397,70 +441,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     /*///////////////////////////////////////////////////////////////
                          HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
-    /// @dev internal function used for validation and ambData building across different entry points
-    function _buildDepositAmbData(
-        uint64 dstChainId_,
-        SingleVaultSFData memory superformData_
-    )
-        internal
-        virtual
-        returns (InitSingleVaultData memory ambData, uint256 currentPayloadId)
-    {
-        /// @dev validate superformsData
-        if (!_validateSuperformData(superformData_, dstChainId_)) {
-            revert Error.INVALID_SUPERFORMS_DATA();
-        }
-
-        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).validateSingleIdExists(superformData_.superformId);
-        
-        currentPayloadId = ++payloadIds;
-
-        ambData = InitSingleVaultData(
-            ROUTER_TYPE,
-            currentPayloadId,
-            superformData_.superformId,
-            superformData_.amount,
-            superformData_.maxSlippage,
-            superformData_.hasDstSwap,
-            superformData_.liqRequest,
-            superformData_.dstRefundAddress,
-            superformData_.extraFormData
-        );
-    }
-
-    function _buildWithdrawAmbData(
-        address srcSender_,
-        uint64 dstChainId_,
-        SingleVaultSFData memory superformData_
-    )
-        internal
-        virtual
-        returns (InitSingleVaultData memory ambData, uint256 currentPayloadId)
-    {
-        /// @dev validate superformsData
-        if (!_validateSuperformData(superformData_, dstChainId_)) {
-            revert Error.INVALID_SUPERFORMS_DATA();
-        }
-
-        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).burnSingle(
-            srcSender_, superformData_.superformId, superformData_.amount
-        );
-
-        currentPayloadId = ++payloadIds;
-
-        ambData = InitSingleVaultData(
-            ROUTER_TYPE,
-            currentPayloadId,
-            superformData_.superformId,
-            superformData_.amount,
-            superformData_.maxSlippage,
-            false,
-            superformData_.liqRequest,
-            superformData_.dstRefundAddress,
-            superformData_.extraFormData
-        );
-    }
 
     struct ValidateAndDispatchTokensArgs {
         LiqRequest liqRequest;
@@ -644,18 +624,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         virtual
         returns (uint256 dstAmount)
     {
-        /// @dev validates if superformId exists on factory
-        (,, uint64 chainId) =
-            ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getSuperform(superformId_);
-
-        if (amount_ == 0) {
-            revert Error.ZERO_AMOUNT();
-        }
-
-        if (chainId != CHAIN_ID || chainId == 0) {
-            revert Error.INVALID_CHAIN_ID();
-        }
-
         /// @dev deposits collateral to a given vault and mint vault positions directly through the form
         dstAmount = IBaseForm(superform_).directDepositIntoVault{ value: msgValue_ }(
             InitSingleVaultData(
@@ -742,14 +710,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         internal
         virtual
     {
-        /// @dev validates if superformId exists on factory
-        (,, uint64 chainId) =
-            ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getSuperform(superformId_);
-
-        if (chainId != CHAIN_ID || chainId == 0) {
-            revert Error.INVALID_CHAIN_ID();
-        }
-
         /// @dev in direct withdraws, form is called directly
         IBaseForm(superform_).directWithdrawFromVault(
             InitSingleVaultData(
@@ -782,7 +742,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     {
         /// @dev the dstChainId_ (in the state request) must match the superforms' chainId (superform must exist on
         /// destination)
-        if (dstChainId_ != DataLib.getDestinationChain(superformData_.superformId)) return false;
+        uint64 sfChainid = DataLib.getDestinationChain(superformData_.superformId);
+        if (dstChainId_ != sfChainid) return false;
+
+        /// @dev no chainId 0 allowed on superform
+        if (sfChainid == 0) return false;
 
         /// @dev 10000 = 100% slippage
         if (superformData_.maxSlippage > 10_000) return false;
@@ -829,9 +793,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             (, uint32 formImplementationId_, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
             if (dstChainId_ != sfDstChainId) return false;
 
-            if (sfDstChainId == 0) {
-                revert Error.INVALID_CHAIN_ID();
-            }
+            /// @dev no chainId 0 allowed on superform
+            if (sfDstChainId == 0) return false;
 
             if (
                 ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
@@ -884,10 +847,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             if (superformsData_.amounts[i] == 0) return false;
             (,, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
             if (dstChainId_ != sfDstChainId) return false;
-            if (sfDstChainId == 0) {
-                revert Error.INVALID_CHAIN_ID();
-            }
-
+            if (sfDstChainId == 0) return false;
             unchecked {
                 ++i;
             }
