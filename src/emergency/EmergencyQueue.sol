@@ -131,6 +131,7 @@ contract EmergencyQueue is IEmergencyQueue {
 
     function _executeQueuedWithdrawal(uint256 id_) internal {
         QueuedWithdrawal storage data = queuedWithdrawal[id_];
+        if (data.superformId == 0) revert Error.EMERGENCY_WITHDRAW_NOT_QUEUED();
 
         if (data.isProcessed) {
             revert Error.EMERGENCY_WITHDRAW_PROCESSED_ALREADY();

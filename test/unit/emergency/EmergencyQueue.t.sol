@@ -175,6 +175,16 @@ contract EmergencyQueueTest is ProtocolActions {
         assertEq(balanceBefore + 1e18, balanceAfter);
     }
 
+    function test_emergencyQueueProcessingNonExistentId() public {
+        vm.selectFork(FORKS[ETH]);
+
+        /// @dev deployer has emergency admin role
+        address emergencyQueue = getContract(ETH, "EmergencyQueue");
+        vm.prank(deployer);
+        vm.expectRevert(Error.EMERGENCY_WITHDRAW_NOT_QUEUED.selector);
+        EmergencyQueue(emergencyQueue).executeQueuedWithdrawal(1);
+    }
+
     function test_emergencyQueueProcessingMultiVault() public {
         /// user deposits successfully to a form
         _successfulDeposit();
