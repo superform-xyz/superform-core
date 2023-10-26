@@ -143,7 +143,7 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
 
         /// @dev The number of valid proofs (quorum) must be equal to the required messaging quorum
         if (messageQuorum[payload_.computeProof()] < getRequiredMessagingQuorum(srcChainId[payloadId])) {
-            revert Error.QUORUM_NOT_REACHED();
+            revert Error.INSUFFICIENT_QUORUM();
         }
 
         BroadcastMessage memory data = abi.decode(payload_, (BroadcastMessage));

@@ -2213,7 +2213,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         );
 
         vm.prank(deployer);
-        vm.expectRevert(Error.QUORUM_NOT_REACHED.selector);
+        vm.expectRevert(Error.INSUFFICIENT_QUORUM.selector);
         TimelockStateRegistry(payable(getContract(targetChainId_, "TimelockStateRegistry"))).processPayload{
             value: msgValue
         }(payloadId_);

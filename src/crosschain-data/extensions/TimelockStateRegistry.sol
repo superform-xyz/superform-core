@@ -208,7 +208,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         bytes32 _proof = _message.computeProof();
 
         if (messageQuorum[_proof] < _getRequiredMessagingQuorum(srcChainId)) {
-            revert Error.QUORUM_NOT_REACHED();
+            revert Error.INSUFFICIENT_QUORUM();
         }
 
         ReturnSingleData memory singleVaultData = abi.decode(_payloadBody, (ReturnSingleData));

@@ -7,7 +7,6 @@ import { BaseStateRegistry } from "../BaseStateRegistry.sol";
 import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
 import { IStateSyncer } from "../../interfaces/IStateSyncer.sol";
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
-import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
 import { IPaymentHelper } from "../../interfaces/IPaymentHelper.sol";
 import { IBaseForm } from "../../interfaces/IBaseForm.sol";
 import { IDstSwapper } from "../../interfaces/IDstSwapper.sol";
@@ -354,13 +353,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         return delay;
     }
 
-    /// @dev returns the required quorum for the src chain id from super registry
-    /// @param chainId_ is the src chain id
-    /// @return the quorum configured for the chain id
-    function _getQuorum(uint64 chainId_) internal view returns (uint256) {
-        return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId_);
-    }
-
     function _validatePayloadId(uint256 payloadId_) internal view {
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();
@@ -399,7 +391,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         (txType, callbackType, isMulti, registryId, srcSender, srcChainId) = payloadHeader_.decodeTxInfo();
 
         if (messageQuorum[payloadProof] < _getQuorum(srcChainId)) {
-            revert Error.QUORUM_NOT_REACHED();
+            revert Error.INSUFFICIENT_QUORUM();
         }
     }
 

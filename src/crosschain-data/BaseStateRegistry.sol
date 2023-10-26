@@ -2,6 +2,7 @@
 pragma solidity ^0.8.21;
 
 import { Error } from "../utils/Error.sol";
+import { IQuorumManager } from "../interfaces/IQuorumManager.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
 import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
@@ -94,6 +95,11 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     )
         internal
     {
+        /// @dev revert here if quorum requirements might fail on the remote chain
+        if (ambIds_.length < _getQuorum(dstChainId_)) {
+            revert Error.INSUFFICIENT_QUORUM();
+        }
+
         AMBExtraData memory d = abi.decode(extraData_, (AMBExtraData));
 
         _getAMBImpl(ambIds_[0]).dispatchPayload{ value: d.gasPerAMB[0] }(
@@ -168,6 +174,13 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev returns the required quorum for the src chain id from super registry
+    /// @param chainId_ is the src chain id
+    /// @return the quorum configured for the chain id
+    function _getQuorum(uint64 chainId_) internal view returns (uint256) {
+        return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId_);
+    }
 
     /// @dev returns the amb id for address
     function _getAmbId(address amb_) internal view returns (uint8 ambId) {

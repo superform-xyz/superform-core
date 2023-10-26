@@ -76,7 +76,7 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         vm.selectFork(FORKS[AVAX]);
         vm.prank(deployer);
-        vm.expectRevert(Error.QUORUM_NOT_REACHED.selector);
+        vm.expectRevert(Error.INSUFFICIENT_QUORUM.selector);
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload(1);
     }
 
@@ -151,7 +151,7 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         vm.selectFork(FORKS[AVAX]);
         vm.prank(deployer);
-        vm.expectRevert(Error.QUORUM_NOT_REACHED.selector);
+        vm.expectRevert(Error.INSUFFICIENT_QUORUM.selector);
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, amounts);
     }
 
@@ -167,7 +167,7 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         bytes[] memory txData = new bytes[](1);
         txData[0] = bytes("");
-        vm.expectRevert(Error.QUORUM_NOT_REACHED.selector);
+        vm.expectRevert(Error.INSUFFICIENT_QUORUM.selector);
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateWithdrawPayload(1, txData);
     }
 
@@ -182,7 +182,7 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         vm.selectFork(FORKS[AVAX]);
         vm.prank(deployer);
-        vm.expectRevert(Error.QUORUM_NOT_REACHED.selector);
+        vm.expectRevert(Error.INSUFFICIENT_QUORUM.selector);
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateWithdrawPayload(1, txData);
 
         vm.prank(deployer);
@@ -244,7 +244,7 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         vm.selectFork(FORKS[AVAX]);
         vm.prank(deployer);
-        vm.expectRevert(Error.QUORUM_NOT_REACHED.selector);
+        vm.expectRevert(Error.INSUFFICIENT_QUORUM.selector);
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
 
         vm.prank(deployer);

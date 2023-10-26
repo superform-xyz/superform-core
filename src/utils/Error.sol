@@ -250,8 +250,8 @@ library Error {
     /// @dev thrown if withdrawal TX_DATA is not updated
     error WITHDRAW_TX_DATA_NOT_UPDATED();
 
-    /// @dev thrown if message hasn't reached the specified level of quorum needed
-    error QUORUM_NOT_REACHED();
+    /// @dev thrown if message failed to reach the specified level of quorum needed
+    error INSUFFICIENT_QUORUM();
 
     /// @dev thrown if message amb and proof amb are the same
     error INVALID_PROOF_BRIDGE_ID();
