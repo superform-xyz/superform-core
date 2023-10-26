@@ -89,6 +89,7 @@ contract EmergencyQueue is IEmergencyQueue {
         ++queueCounter;
 
         queuedWithdrawal[queueCounter] = QueuedWithdrawal(
+            srcSender_,
             data_.dstRefundAddress == address(0) ? srcSender_ : data_.dstRefundAddress,
             data_.superformId,
             data_.amount,
@@ -102,25 +103,13 @@ contract EmergencyQueue is IEmergencyQueue {
     }
 
     /// @inheritdoc IEmergencyQueue
-    function executeQueuedWithdrawal(uint256 id_) public override onlyEmergencyAdmin {
-        QueuedWithdrawal storage data = queuedWithdrawal[id_];
-
-        if (data.isProcessed) {
-            revert Error.EMERGENCY_WITHDRAW_PROCESSED_ALREADY();
-        }
-
-        data.isProcessed = true;
-
-        (address superform,,) = data.superformId.getSuperform();
-        IBaseForm(superform).emergencyWithdraw(data.refundAddress, data.amount);
-
-        emit WithdrawalProcessed(data.refundAddress, id_, data.superformId, data.amount);
+    function executeQueuedWithdrawal(uint256 id_) external override onlyEmergencyAdmin {
+        _executeQueuedWithdrawal(id_);
     }
 
     function batchExecuteQueuedWithdrawal(uint256[] memory ids_) external override onlyEmergencyAdmin {
         for (uint256 i; i < ids_.length;) {
-            executeQueuedWithdrawal(ids_[i]);
-
+            _executeQueuedWithdrawal(ids_[i]);
             unchecked {
                 ++i;
             }
@@ -134,5 +123,24 @@ contract EmergencyQueue is IEmergencyQueue {
     /// @inheritdoc IEmergencyQueue
     function queuedWithdrawalStatus(uint256 id) external view override returns (bool) {
         return queuedWithdrawal[id].isProcessed;
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                        INTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    function _executeQueuedWithdrawal(uint256 id_) internal {
+        QueuedWithdrawal storage data = queuedWithdrawal[id_];
+
+        if (data.isProcessed) {
+            revert Error.EMERGENCY_WITHDRAW_PROCESSED_ALREADY();
+        }
+
+        data.isProcessed = true;
+
+        (address superform,,) = data.superformId.getSuperform();
+        IBaseForm(superform).emergencyWithdraw(data.srcSender, data.refundAddress, data.amount);
+
+        emit WithdrawalProcessed(data.refundAddress, id_, data.superformId, data.amount);
     }
 }
