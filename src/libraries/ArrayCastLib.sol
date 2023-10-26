@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.21;
 
-import "../types/DataTypes.sol";
-import "../types/LiquidityTypes.sol";
+import { InitSingleVaultData, InitMultiVaultData } from "../types/DataTypes.sol";
+import { LiqRequest } from "../types/LiquidityTypes.sol";
 
 /// @dev library to cast single values into array for streamlining helper functions
 /// @notice not gas optimized, suggested for usage only in view/pure functions

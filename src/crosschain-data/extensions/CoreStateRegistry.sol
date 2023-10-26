@@ -12,13 +12,24 @@ import { IPaymentHelper } from "../../interfaces/IPaymentHelper.sol";
 import { IBaseForm } from "../../interfaces/IBaseForm.sol";
 import { IDstSwapper } from "../../interfaces/IDstSwapper.sol";
 import { ISuperformFactory } from "../../interfaces/ISuperformFactory.sol";
+import { ICoreStateRegistry } from "../../interfaces/ICoreStateRegistry.sol";
+import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
 import { DataLib } from "../../libraries/DataLib.sol";
 import { ProofLib } from "../../libraries/ProofLib.sol";
 import { ArrayCastLib } from "../../libraries/ArrayCastLib.sol";
-import { IERC4626Form } from "../../forms/interfaces/IERC4626Form.sol";
 import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
 import { Error } from "../../utils/Error.sol";
-import "../../interfaces/ICoreStateRegistry.sol";
+import {
+    PayloadState,
+    AMBMessage,
+    InitMultiVaultData,
+    TransactionType,
+    CallbackType,
+    ReturnMultiData,
+    ReturnSingleData,
+    InitSingleVaultData
+} from "../../types/DataTypes.sol";
+import { LiqRequest } from "../../types/LiquidityTypes.sol";
 
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
@@ -40,7 +51,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     //////////////////////////////////////////////////////////////*/
 
     modifier onlyAllowedCaller(bytes32 role_) {
-        if (!_hasRole(role_, msg.sender)) revert Error.NOT_PREVILAGED_CALLER(role_);
+        if (!_hasRole(role_, msg.sender)) revert Error.NOT_PRIVILEGED_CALLER(role_);
         _;
     }
 
@@ -752,7 +763,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         uint256 numberOfVaults = multiVaultData.superformIds.length;
         bool fulfilment;
         bool errors;
-        address superformFactory = superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"));
+        address superformFactory = _getAddress(keccak256("SUPERFORM_FACTORY"));
 
         for (uint256 i; i < numberOfVaults;) {
             if (!ISuperformFactory(superformFactory).isSuperform(multiVaultData.superformIds[i])) {
@@ -848,11 +859,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
         singleVaultData.extraFormData = abi.encode(payloadId_, 0);
 
-        if (
-            !ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(
-                singleVaultData.superformId
-            )
-        ) {
+        if (!ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(singleVaultData.superformId)) {
             revert Error.SUPERFORM_ID_NONEXISTENT();
         }
 
@@ -888,11 +895,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
 
-        if (
-            !ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(
-                singleVaultData.superformId
-            )
-        ) {
+        if (!ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(singleVaultData.superformId)) {
             revert Error.SUPERFORM_ID_NONEXISTENT();
         }
 

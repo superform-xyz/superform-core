@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.21;
 
-import "../types/DataTypes.sol";
+import {
+    MultiDstMultiVaultStateReq,
+    MultiDstSingleVaultStateReq,
+    SingleXChainMultiVaultStateReq,
+    SingleXChainSingleVaultStateReq,
+    SingleDirectSingleVaultStateReq,
+    SingleDirectMultiVaultStateReq
+} from "../types/DataTypes.sol";
 
 /// @title IPaymentHelper
 /// @author ZeroPoint Labs
