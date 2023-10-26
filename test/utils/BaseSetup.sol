@@ -802,6 +802,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                     );
 
                     vars.superRegistryC.setRequiredMessagingQuorum(vars.dstChainId, 1);
+                    vars.superRegistryC.setVaultLimitPerTx(vars.dstChainId, 30);
 
                     /// swap gas cost: 50000
                     /// update gas cost: 40000
