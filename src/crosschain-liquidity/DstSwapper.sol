@@ -8,6 +8,7 @@ import { IDstSwapper } from "../interfaces/IDstSwapper.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
 import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
+import { LiquidityHandler } from "../crosschain-liquidity/LiquidityHandler.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { IERC4626Form } from "../forms/interfaces/IERC4626Form.sol";
 import { Error } from "../utils/Error.sol";
@@ -17,7 +18,7 @@ import "../types/DataTypes.sol";
 /// @title DstSwapper
 /// @author Zeropoint Labs.
 /// @dev handles all destination chain swaps.
-contract DstSwapper is IDstSwapper, ReentrancyGuard {
+contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
     using SafeERC20 for IERC20;
 
     /*///////////////////////////////////////////////////////////////
@@ -25,7 +26,6 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     //////////////////////////////////////////////////////////////*/
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
-    address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     /*///////////////////////////////////////////////////////////////
                         STATE VARIABLES
@@ -272,18 +272,16 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         (v.underlying, v.expAmount, v.maxSlippage) = _getFormUnderlyingFrom(payloadId_, index_);
 
         v.balanceBefore = IERC20(v.underlying).balanceOf(v.finalDst);
-        if (v.approvalToken != NATIVE) {
-            /// @dev approve the bridge to spend the approvalToken_.
-            IERC20(v.approvalToken).safeIncreaseAllowance(v.to, v.amount);
+        uint256 nativeAmount = (v.approvalToken == NATIVE) ? v.amount : 0;
 
-            /// @dev execute the txData_.
-            (bool success,) = payable(v.to).call(txData_);
-            if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA();
-        } else {
-            /// @dev execute the txData_.
-            (bool success,) = payable(v.to).call{ value: v.amount }(txData_);
-            if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA_NATIVE();
-        }
+        _dispatchTokens(
+                v.to,
+                txData_,
+                v.approvalToken,
+                v.amount,
+                nativeAmount
+        );
+
         v.balanceAfter = IERC20(v.underlying).balanceOf(v.finalDst);
 
         if (v.balanceAfter <= v.balanceBefore) {

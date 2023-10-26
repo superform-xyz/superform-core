@@ -316,11 +316,8 @@ library Error {
                         LIQUIDITY HANDLER ERRORS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev thrown if liquidity bridge fails for erc20 tokens
-    error FAILED_TO_EXECUTE_TXDATA();
-
-    /// @dev thrown if liquidity bridge fails for native tokens
-    error FAILED_TO_EXECUTE_TXDATA_NATIVE();
+    /// @dev thrown if liquidity bridge fails for erc20 or native tokens
+    error FAILED_TO_EXECUTE_TXDATA(address token);
 
     /// @dev thrown if native amount is not at least equal to the amount in the request
     error INSUFFICIENT_NATIVE_AMOUNT();

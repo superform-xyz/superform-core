@@ -159,7 +159,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 )
             );
 
-            dispatchTokens(
+            _dispatchTokens(
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 address(token),
@@ -247,7 +247,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 )
             );
 
-            dispatchTokens(
+            _dispatchTokens(
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
@@ -344,7 +344,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 )
             );
 
-            dispatchTokens(
+            _dispatchTokens(
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,

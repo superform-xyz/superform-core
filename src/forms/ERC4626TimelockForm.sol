@@ -99,7 +99,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
                 )
             );
 
-            dispatchTokens(
+            _dispatchTokens(
                 superRegistry.getBridgeAddress(vars.liqData.bridgeId),
                 vars.liqData.txData,
                 vars.liqData.token,

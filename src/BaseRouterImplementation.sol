@@ -462,7 +462,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
 
         /// @dev dispatches tokens through the selected liquidity bridge to the destination contract
-        dispatchTokens(
+        _dispatchTokens(
             superRegistry.getBridgeAddress(args_.liqRequest.bridgeId),
             args_.liqRequest.txData,
             args_.liqRequest.token,
