@@ -275,7 +275,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         uint256 nativeAmount = (v.approvalToken == NATIVE) ? v.amount : 0;
 
         _dispatchTokens(
-                superRegistry.getBridgeAddress(bridgeId_),
+                v.to,
                 txData_,
                 v.approvalToken,
                 v.amount,
