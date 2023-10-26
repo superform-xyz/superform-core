@@ -8,7 +8,7 @@ import { Error } from "../utils/Error.sol";
 /**
  * @title LiquidityHandler
  * @author Zeropoint Labs.
- * @dev Executes an action with tokens to either bridge from Chain A -> Chain B or swap on same chain. 
+ * @dev Executes an action with tokens to either bridge from Chain A -> Chain B or swap on same chain.
  * @dev To be inherited by contracts that move liquidity
  */
 abstract contract LiquidityHandler {
@@ -42,8 +42,8 @@ abstract contract LiquidityHandler {
         } else {
             if (nativeAmount_ < amount_) revert Error.INSUFFICIENT_NATIVE_AMOUNT();
         }
-        
+
         (bool success,) = payable(bridge_).call{ value: nativeAmount_ }(txData_);
-        if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA();
+        if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA(token_);
     }
 }

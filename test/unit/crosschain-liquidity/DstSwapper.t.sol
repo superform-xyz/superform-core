@@ -47,7 +47,7 @@ contract DstSwapperTest is ProtocolActions {
             txData = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
 
             /// @dev no funds in multi-tx processor at this point; should revert
-            vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA.selector);
+            vm.expectRevert(abi.encodeWithSelector(Error.FAILED_TO_EXECUTE_TXDATA.selector, native));
             DstSwapper(dstSwapper).processTx(2, 0, 1, txData);
         } else {
             revert();
@@ -65,7 +65,7 @@ contract DstSwapperTest is ProtocolActions {
         bytes memory txData =
             _buildLiqBridgeTxDataDstSwap(1, getContract(ETH, "WETH"), getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
         /// @dev no funds in multi-tx processor at this point; should revert
-        vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA.selector);
+        vm.expectRevert(abi.encodeWithSelector(Error.FAILED_TO_EXECUTE_TXDATA.selector, getContract(ETH, "WETH")));
         DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
     }
 
@@ -74,7 +74,7 @@ contract DstSwapperTest is ProtocolActions {
         address payable coreStateRegistry = payable(getContract(OP, "CoreStateRegistry"));
 
         vm.selectFork(FORKS[OP]);
-        uint256 superformId = _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry);
+        _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry);
 
         vm.startPrank(deployer);
         address weth = getContract(OP, "WETH");
@@ -129,7 +129,7 @@ contract DstSwapperTest is ProtocolActions {
         address payable coreStateRegistry = payable(getContract(OP, "CoreStateRegistry"));
 
         vm.selectFork(FORKS[OP]);
-        uint256 superformId = _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry);
+        _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry);
 
         vm.startPrank(deployer);
         address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -184,7 +184,7 @@ contract DstSwapperTest is ProtocolActions {
         address payable coreStateRegistry = payable(getContract(OP, "CoreStateRegistry"));
 
         vm.selectFork(FORKS[OP]);
-        uint256[] memory superformIds = _simulateMultiVaultExistingPayloadOnOP(coreStateRegistry);
+        _simulateMultiVaultExistingPayloadOnOP(coreStateRegistry);
 
         vm.startPrank(deployer);
         address weth = getContract(OP, "WETH");
@@ -250,7 +250,7 @@ contract DstSwapperTest is ProtocolActions {
 
         vm.selectFork(FORKS[OP]);
 
-        uint256[] memory superformIds = _simulateMultiVaultExistingPayloadOnOP(coreStateRegistry);
+        _simulateMultiVaultExistingPayloadOnOP(coreStateRegistry);
         vm.startPrank(deployer);
         address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
         /// @dev simulating a failed swap in DstSwapper that leaves these tokens there
@@ -362,7 +362,7 @@ contract DstSwapperTest is ProtocolActions {
         DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData);
 
         /// @dev no funds in multi-tx processor at this point; should revert
-        vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA.selector);
+        vm.expectRevert(abi.encodeWithSelector(Error.FAILED_TO_EXECUTE_TXDATA.selector, native));
         DstSwapper(dstSwapper).batchProcessTx(2, indices, bridgeId, txData);
     }
 

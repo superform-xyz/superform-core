@@ -317,7 +317,7 @@ library Error {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev thrown if liquidity bridge fails for erc20 tokens
-    error FAILED_TO_EXECUTE_TXDATA();
+    error FAILED_TO_EXECUTE_TXDATA(address token);
 
     /// @dev thrown if liquidity bridge fails for native tokens
     error FAILED_TO_EXECUTE_TXDATA_NATIVE();
