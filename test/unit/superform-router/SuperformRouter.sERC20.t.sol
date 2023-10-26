@@ -1431,9 +1431,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         vm.selectFork(FORKS[srcChainId]);
         vm.recordLogs();
-        SuperTransmuter(getContract(srcChainId, "SuperTransmuter")).registerTransmuter(
-            superformId, generateBroadcastParams(5, 1)
-        );
+        SuperTransmuter(getContract(srcChainId, "SuperTransmuter")).registerTransmuter(superformId);
 
         vm.startPrank(deployer);
         _broadcastPayloadHelper(srcChainId, vm.getRecordedLogs());

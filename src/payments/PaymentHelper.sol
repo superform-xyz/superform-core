@@ -56,6 +56,10 @@ contract PaymentHelper is IPaymentHelper {
     mapping(uint64 chainId => uint256 gasForOps) public ackGasCost;
     mapping(uint64 chainId => uint256 gasForOps) public twoStepCost;
 
+    /// @dev register transmuter params
+    uint256 public totalTransmuterFees;
+    bytes public extraDataForTransmuter;
+
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
@@ -179,6 +183,18 @@ contract PaymentHelper is IPaymentHelper {
         emit ChainConfigUpdated(chainId_, configType_, config_);
     }
 
+    /// @inheritdoc IPaymentHelper
+    function updateRegisterTransmuterParams(
+        uint256 totalTransmuterFees_,
+        bytes memory extraDataForTransmuter_
+    )
+        external
+        onlyEmergencyAdmin
+    {
+        totalTransmuterFees = totalTransmuterFees_;
+        extraDataForTransmuter = extraDataForTransmuter_;
+    }
+
     /*///////////////////////////////////////////////////////////////
                                 VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -199,6 +215,16 @@ contract PaymentHelper is IPaymentHelper {
 
         extraData = abi.encode(AMBExtraData(gasPerAMB, extraDataPerAMB));
         totalFees = fees;
+    }
+
+    /// @inheritdoc IPaymentHelper
+    function calculateRegisterTransmuterAMBData()
+        external
+        view
+        override
+        returns (uint256 totalFees, bytes memory extraData)
+    {
+        return (totalTransmuterFees, extraDataForTransmuter);
     }
 
     /// @inheritdoc IPaymentHelper
@@ -482,12 +508,13 @@ contract PaymentHelper is IPaymentHelper {
         returns (bytes[] memory extraDataPerAMB)
     {
         uint256 len = ambIds_.length;
-        uint256 totalDstGasReqInWei = message_.length * gasPerKB[dstChainId_];
+        uint256 gasFee = gasPerKB[dstChainId_];
+        uint256 totalDstGasReqInWei = message_.length * gasFee;
 
         AMBMessage memory decodedMessage = abi.decode(message_, (AMBMessage));
         decodedMessage.params = message_.computeProofBytes();
 
-        uint256 totalDstGasReqInWeiForProof = abi.encode(decodedMessage).length * gasPerKB[dstChainId_];
+        uint256 totalDstGasReqInWeiForProof = abi.encode(decodedMessage).length * gasFee;
 
         extraDataPerAMB = new bytes[](len);
 

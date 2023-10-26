@@ -821,6 +821,9 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                             50_000
                         )
                     );
+                    PaymentHelper(payable(vars.paymentHelper)).updateRegisterTransmuterParams(
+                        0, generateBroadcastParams(5, 1)
+                    );
 
                     vars.superRegistryC.setAddress(
                         vars.superRegistryC.SUPERFORM_ROUTER(),
