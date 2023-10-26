@@ -26,6 +26,7 @@ interface ReadOnlyBaseRegistry is IBaseStateRegistry {
 contract PaymentHelper is IPaymentHelper {
     using DataLib for uint256;
     using ArrayCastLib for LiqRequest;
+    using ArrayCastLib for bool;
     using ProofLib for bytes;
     using ProofLib for AMBMessage;
 
@@ -284,10 +285,10 @@ contract PaymentHelper is IPaymentHelper {
                 srcAmount += _estimateAckProcessingCost(len, 1);
 
                 /// @dev step 4: estimate the liqAmount
-                liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequest.castToArray());
+                liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequest.castLiqRequestToArray());
 
                 /// @dev step 5: estimate if swap costs are involved
-                totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwaps.castToArray());
+                totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwap.castBoolToArray());
             }
 
             /// @dev step 5: estimate execution costs in dst
@@ -338,7 +339,7 @@ contract PaymentHelper is IPaymentHelper {
         if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformsData.liqRequests);
 
         /// @dev step 6: estimate if swap costs are involved
-        if (isDeposit_) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformsData.hasDstSwap);
+        if (isDeposit_) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformsData.hasDstSwaps);
 
         /// @dev step 7: convert all dst gas estimates to src chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
@@ -374,10 +375,10 @@ contract PaymentHelper is IPaymentHelper {
         if (isDeposit_) srcAmount += _estimateAckProcessingCost(1, 1);
 
         /// @dev step 5: estimate the liq amount
-        if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castToArray());
+        if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
 
         /// @dev step 6: estimate if swap costs are involved
-        if (isDeposit_) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformData.hasDstSwap.castToArray());
+        if (isDeposit_) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformData.hasDstSwap.castBoolToArray());
 
         /// @dev step 7: convert all dst gas estimates to src chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
@@ -401,7 +402,7 @@ contract PaymentHelper is IPaymentHelper {
             srcAmount += twoStepCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
         }
 
-        if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castToArray());
+        if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
 
         /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
@@ -646,7 +647,7 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev helps estimate the dst chain swap gas limit (if multi-tx is involved)
     function _estimateSwapFees(
         uint64 dstChainId_,
-        bool[] hasDstSwaps_
+        bool[] memory hasDstSwaps_
     )
         internal
         view

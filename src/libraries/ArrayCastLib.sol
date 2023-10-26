@@ -7,8 +7,14 @@ import "../types/LiquidityTypes.sol";
 /// @dev library to cast single values into array for streamlining helper functions
 /// @notice not gas optimized, suggested for usage only in view/pure functions
 library ArrayCastLib {
-    function castToArray(LiqRequest memory value_) internal pure returns (LiqRequest[] memory values) {
+    function castLiqRequestToArray(LiqRequest memory value_) internal pure returns (LiqRequest[] memory values) {
         values = new LiqRequest[](1);
+
+        values[0] = value_;
+    }
+
+    function castBoolToArray(bool value_) internal pure returns (bool[] memory values) {
+        values = new bool[](1);
 
         values[0] = value_;
     }
