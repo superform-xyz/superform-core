@@ -12,8 +12,11 @@ library Error {
     /// @dev error thrown when address input is address 0
     error ZERO_ADDRESS();
 
-    /// @dev error thrown when address input is address 0
+    /// @dev error thrown when amount input is 0
     error ZERO_AMOUNT();
+
+    /// @dev error thrown when value input is 0
+    error ZERO_INPUT_VALUE();
 
     /// @dev error thrown when beacon id already exists
     error FORM_IMPLEMENTATION_ID_ALREADY_EXISTS();
