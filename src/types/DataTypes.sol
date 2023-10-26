@@ -124,21 +124,21 @@ struct QueuedWithdrawal {
     bool isProcessed;
 }
 
-/// @dev all statuses of the two steps payload
-enum TwoStepsStatus {
+/// @dev all statuses of the timelock payload
+enum TimelockStatus {
     UNAVAILABLE,
     PENDING,
     PROCESSED
 }
 
-/// @dev holds information about the two-steps payload
+/// @dev holds information about the timlock payload
 struct TimelockPayload {
     uint8 isXChain;
     address srcSender;
     uint64 srcChainId;
     uint256 lockedTill;
     InitSingleVaultData data;
-    TwoStepsStatus status;
+    TimelockStatus status;
 }
 
 /// @dev struct that contains the type of transaction, callback flags and other identification, as well as the vaults

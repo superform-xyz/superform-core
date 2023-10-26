@@ -123,7 +123,7 @@ interface ISuperRegistry {
     /// @dev returns the id of the core state registry module
     function CORE_STATE_REGISTRY() external view returns (bytes32);
 
-    /// @dev returns the id of the two steps form state registry module
+    /// @dev returns the id of the timelock form state registry module
     function TIMELOCK_STATE_REGISTRY() external view returns (bytes32);
 
     /// @dev returns the id of the broadcast state registry module
@@ -153,7 +153,7 @@ interface ISuperRegistry {
     /// @dev returns the id of the broadcast registry processor keeper
     function BROADCAST_REGISTRY_PROCESSOR() external view returns (bytes32);
 
-    /// @dev returns the id of the two steps form state registry processor keeper
+    /// @dev returns the id of the timelock form state registry processor keeper
     function TIMELOCK_REGISTRY_PROCESSOR() external view returns (bytes32);
 
     /// @dev returns the id of the core state registry updater keeper

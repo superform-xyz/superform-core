@@ -170,7 +170,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
     mapping(uint64 chainId => mapping(uint32 formImplementationId => IERC4626[][] vaults)) public vaults;
     mapping(uint64 chainId => uint256 payloadId) PAYLOAD_ID;
-    mapping(uint64 chainId => uint256 payloadId) TWO_STEP_PAYLOAD_ID;
+    mapping(uint64 chainId => uint256 payloadId) TIMELOCK_PAYLOAD_ID;
 
     /// @dev liquidity bridge ids
     uint8[] bridgeIds;
@@ -435,11 +435,11 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             );
 
             /// @dev 4.2 - deploy Form State Registry
-            vars.twoStepsFormStateRegistry = address(new TimelockStateRegistry{salt: salt}(vars.superRegistryC));
-            contracts[vars.chainId][bytes32(bytes("TimelockStateRegistry"))] = vars.twoStepsFormStateRegistry;
+            vars.timelockStateRegistry = address(new TimelockStateRegistry{salt: salt}(vars.superRegistryC));
+            contracts[vars.chainId][bytes32(bytes("TimelockStateRegistry"))] = vars.timelockStateRegistry;
 
             vars.superRegistryC.setAddress(
-                vars.superRegistryC.TIMELOCK_STATE_REGISTRY(), vars.twoStepsFormStateRegistry, vars.chainId
+                vars.superRegistryC.TIMELOCK_STATE_REGISTRY(), vars.timelockStateRegistry, vars.chainId
             );
 
             /// @dev 4.3 - deploy Broadcast State Registry
@@ -452,7 +452,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
             address[] memory registryAddresses = new address[](3);
             registryAddresses[0] = vars.coreStateRegistry;
-            registryAddresses[1] = vars.twoStepsFormStateRegistry;
+            registryAddresses[1] = vars.timelockStateRegistry;
             registryAddresses[2] = vars.broadcastRegistry;
 
             uint8[] memory registryIds = new uint8[](3);
@@ -924,7 +924,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                     );
                 } else {
                     /// ack gas cost: 40000
-                    /// two step form cost: 50000
+                    /// timelock step form cost: 50000
                     /// default gas price: 50 Gwei
                     PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(
                         vars.chainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])

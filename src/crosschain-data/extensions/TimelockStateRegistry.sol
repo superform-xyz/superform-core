@@ -21,7 +21,7 @@ import "../../types/DataTypes.sol";
 
 /// @title TimelockStateRegistry
 /// @author Zeropoint Labs
-/// @notice handles communication in two stepped forms
+/// @notice handles communication in timelocked forms
 
 contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, ReentrancyGuard {
     using DataLib for uint256;
@@ -65,7 +65,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         (address superform,,) = superformId.getSuperform();
         if (msg.sender != superform) revert Error.NOT_SUPERFORM();
         if (IBaseForm(superform).getStateRegistryId() != superRegistry.getStateRegistryId(address(this))) {
-            revert Error.NOT_TWO_STEP_SUPERFORM();
+            revert Error.NOT_TIMELOCK_SUPERFORM();
         }
         _;
     }
@@ -101,7 +101,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         ++timelockPayloadCounter;
 
         timelockPayload[timelockPayloadCounter] =
-            TimelockPayload(type_, srcSender_, srcChainId_, lockedTill_, data_, TwoStepsStatus.PENDING);
+            TimelockPayload(type_, srcSender_, srcChainId_, lockedTill_, data_, TimelockStatus.PENDING);
     }
 
     /// @inheritdoc ITimelockStateRegistry
@@ -119,7 +119,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         IBridgeValidator bridgeValidator = IBridgeValidator(superRegistry.getBridgeValidator(p.data.liqData.bridgeId));
         uint256 finalAmount;
 
-        if (p.status != TwoStepsStatus.PENDING) {
+        if (p.status != TimelockStatus.PENDING) {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
 
@@ -127,7 +127,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
             revert Error.LOCKED();
         }
         /// @dev set status here to prevent re-entrancy
-        p.status = TwoStepsStatus.PROCESSED;
+        p.status = TimelockStatus.PROCESSED;
 
         (address superform,,) = p.data.superformId.getSuperform();
 

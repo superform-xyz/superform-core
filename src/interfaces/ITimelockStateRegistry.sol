@@ -7,7 +7,7 @@ import { InitSingleVaultData, TimelockPayload } from "../types/DataTypes.sol";
 /// @author ZeroPoint Labs
 /// @notice Interface for Two Steps Form State Registry
 interface ITimelockStateRegistry {
-    /// @notice Receives request (payload) from two steps form to process later
+    /// @notice Receives request (payload) from timelock form to process later
     /// @param type_ is the nature of transaction (xChain: 1 or same chain: 0)
     /// @param srcSender_ is the address of the source chain caller
     /// @param srcChainId_ is the chainId of the source chain
@@ -22,7 +22,7 @@ interface ITimelockStateRegistry {
     )
         external;
 
-    /// @notice Form Keeper finalizes payload to process two steps withdraw fully
+    /// @notice Form Keeper finalizes payload to process timelock withdraw fully
     /// @param payloadId_ is the id of the payload to finalize
     /// @param txData_ is the off-chain generated transaction data
     function finalizePayload(uint256 payloadId_, bytes memory txData_) external payable;
