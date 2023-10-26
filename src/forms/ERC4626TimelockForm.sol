@@ -10,6 +10,7 @@ import { ERC4626FormImplementation } from "./ERC4626FormImplementation.sol";
 import { BaseForm } from "../BaseForm.sol";
 import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
 import { ITimelockStateRegistry } from "../interfaces/ITimelockStateRegistry.sol";
+import { IEmergencyQueue } from "../interfaces/IEmergencyQueue.sol";
 import { DataLib } from "../libraries/DataLib.sol";
 import { Error } from "../utils/Error.sol";
 
@@ -58,7 +59,14 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         onlyTwoStepStateRegistry
         returns (uint256 dstAmount)
     {
+        if (_isPaused(p_.data.superformId)) {
+            IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
+                p_.data, p_.srcSender
+            );
+            return 0;
+        }
         withdrawAfterCoolDownLocalVars memory vars;
+
         IERC4626TimelockVault v = IERC4626TimelockVault(vault);
 
         vars.liqData = p_.data.liqData;

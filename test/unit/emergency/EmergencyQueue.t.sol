@@ -222,8 +222,77 @@ contract EmergencyQueueTest is ProtocolActions {
         _pauseFormXChain(0);
 
         /// try to withdraw after pause (mrperfect panicks)
-        _withdrawAfterPauseXChain();
+        _withdrawXchain("VaultMock", 0, true);
 
+        /// processing the queued withdrawal and assert
+        vm.selectFork(FORKS[ARBI]);
+
+        /// @dev deployer has emergency admin role
+        address emergencyQueue = getContract(ARBI, "EmergencyQueue");
+
+        address superform = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 balanceBefore = MockERC20(IBaseForm(superform).getVaultAddress()).balanceOf(mrimperfect);
+
+        assertFalse(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(1));
+        vm.prank(deployer);
+        EmergencyQueue(emergencyQueue).executeQueuedWithdrawal(1);
+        assertTrue(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(1));
+
+        uint256 balanceAfter = MockERC20(IBaseForm(superform).getVaultAddress()).balanceOf(mrimperfect);
+        assertEq(balanceBefore + 1e18, balanceAfter);
+    }
+
+    function test_emergencyQueueProcessingXChainTimelockSpecialCase() public {
+        /// user deposits successfully to a form
+        _successfulDepositXChain(1, "ERC4626TimelockMock", 1);
+
+        /// send to timelock unlock queue
+        _withdrawXchain("ERC4626TimelockMock", 1, false);
+
+        /// now pause the form
+        _pauseFormXChain(1);
+
+        /// processing the queued withdrawal and assert
+        vm.selectFork(FORKS[ARBI]);
+        vm.warp(block.timestamp + (86_400 * 5));
+
+        vm.prank(deployer);
+        TimelockStateRegistry(payable(getContract(ARBI, "TimelockStateRegistry"))).finalizePayload(1, bytes(""));
+
+        assertEq(EmergencyQueue(getContract(ARBI, "EmergencyQueue")).queueCounter(), 1);
+
+        /// @dev deployer has emergency admin role
+        address emergencyQueue = getContract(ARBI, "EmergencyQueue");
+
+        address superform = getContract(
+            ARBI, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
+        );
+
+        uint256 balanceBefore = MockERC20(IBaseForm(superform).getVaultAddress()).balanceOf(mrimperfect);
+
+        assertFalse(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(1));
+        vm.prank(deployer);
+        EmergencyQueue(emergencyQueue).executeQueuedWithdrawal(1);
+        assertTrue(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(1));
+
+        uint256 balanceAfter = MockERC20(IBaseForm(superform).getVaultAddress()).balanceOf(mrimperfect);
+        assertEq(balanceBefore + 1e18, balanceAfter);
+    }
+
+    function test_emergencyQueueProcessingXChainUnpause() public {
+        /// user deposits successfully to a form
+        _successfulDepositXChain(1, "VaultMock", 0);
+
+        /// now pause the form and try to withdraw
+        _pauseFormXChain(0);
+
+        /// try to withdraw after pause (mrperfect panicks)
+        _withdrawXchain("VaultMock", 0, true);
+
+        _unpauseFormXChain(0);
         /// processing the queued withdrawal and assert
         vm.selectFork(FORKS[ARBI]);
 
@@ -282,6 +351,64 @@ contract EmergencyQueueTest is ProtocolActions {
 
         /// try to withdraw after pause (mrperfect panicks)
         _withdrawAfterPauseXChainMulti(vaultKinds, formImplIds);
+
+        /// processing the queued withdrawal and assert
+        vm.selectFork(FORKS[ARBI]);
+
+        /// @dev deployer has emergency admin role
+        address emergencyQueue = getContract(ARBI, "EmergencyQueue");
+
+        address superform1 = getContract(
+            ARBI,
+            string.concat("DAI", vaultKinds[0], "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[formImplIds[0]]))
+        );
+
+        uint256 balanceBefore = MockERC20(IBaseForm(superform1).getVaultAddress()).balanceOf(mrimperfect);
+
+        assertFalse(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(1));
+        assertFalse(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(2));
+
+        uint256[] memory emergencyWithdrawIds = new uint256[](2);
+
+        emergencyWithdrawIds[0] = 1;
+        emergencyWithdrawIds[1] = 2;
+
+        vm.prank(deployer);
+        EmergencyQueue(emergencyQueue).batchExecuteQueuedWithdrawal(emergencyWithdrawIds);
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.EMERGENCY_WITHDRAW_PROCESSED_ALREADY.selector);
+        EmergencyQueue(emergencyQueue).executeQueuedWithdrawal(2);
+
+        assertTrue(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(1));
+        assertTrue(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(2));
+
+        uint256 balanceAfter = MockERC20(IBaseForm(superform1).getVaultAddress()).balanceOf(mrimperfect);
+        assertEq(balanceBefore + 0.9e18, balanceAfter);
+    }
+
+    function test_emergencyQueueProcessingXChainMultiVaultUnpause() public {
+        string[] memory vaultKinds = new string[](2);
+        vaultKinds[0] = "ERC4626TimelockMock";
+        vaultKinds[1] = "kycDAO4626";
+
+        uint256[] memory formImplIds = new uint256[](2);
+        formImplIds[0] = 1;
+        formImplIds[1] = 2;
+        /// user deposits successfully to a form
+        _successfulDepositXChain(1, vaultKinds[0], formImplIds[0]);
+        _successfulDepositXChain(2, vaultKinds[1], formImplIds[1]);
+
+        /// now pause the form and try to withdraw
+        _pauseFormXChain(formImplIds[0]);
+        _pauseFormXChain(formImplIds[1]);
+
+        /// try to withdraw after pause (mrperfect panicks)
+        _withdrawAfterPauseXChainMulti(vaultKinds, formImplIds);
+
+        /// now pause the form and try to withdraw
+        _unpauseFormXChain(formImplIds[0]);
+        _unpauseFormXChain(formImplIds[1]);
 
         /// processing the queued withdrawal and assert
         vm.selectFork(FORKS[ARBI]);
@@ -384,17 +511,17 @@ contract EmergencyQueueTest is ProtocolActions {
         assertEq(EmergencyQueue(getContract(ETH, "EmergencyQueue")).queueCounter(), 2);
     }
 
-    function _withdrawAfterPauseXChain() internal {
+    function _withdrawXchain(string memory vaultKind, uint256 formImplId, bool checkForEmergency) internal {
         /// scenario: user deposits with his own collateral and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
 
         address superformRouter = getContract(ETH, "SuperformRouter");
 
         address superform = getContract(
-            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+            ARBI, string.concat("DAI", vaultKind, "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[formImplId]))
         );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[formImplId], ARBI);
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId, 1e18, 1000, false, LiqRequest(1, "", address(0), ETH, 0), "", mrimperfect, ""
@@ -437,7 +564,7 @@ contract EmergencyQueueTest is ProtocolActions {
         CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload(2);
 
         /// @dev assert emergency withdrawal added to queue on ARBI
-        assertEq(EmergencyQueue(getContract(ARBI, "EmergencyQueue")).queueCounter(), 1);
+        if (checkForEmergency) assertEq(EmergencyQueue(getContract(ARBI, "EmergencyQueue")).queueCounter(), 1);
     }
 
     function _withdrawAfterPauseXChainMulti(string[] memory vaultKinds, uint256[] memory formImplIds) internal {
@@ -532,6 +659,14 @@ contract EmergencyQueueTest is ProtocolActions {
         vm.prank(deployer);
         SuperformFactory(getContract(ARBI, "SuperformFactory")).changeFormImplementationPauseStatus(
             FORM_IMPLEMENTATION_IDS[formImplId], true, bytes("")
+        );
+    }
+
+    function _unpauseFormXChain(uint256 formImplId) internal {
+        vm.selectFork(FORKS[ARBI]);
+        vm.prank(deployer);
+        SuperformFactory(getContract(ARBI, "SuperformFactory")).changeFormImplementationPauseStatus(
+            FORM_IMPLEMENTATION_IDS[formImplId], false, bytes("")
         );
     }
 
