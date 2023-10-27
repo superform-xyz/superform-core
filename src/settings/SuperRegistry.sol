@@ -37,15 +37,11 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     mapping(uint64 chainId => uint256 vaultLimitPerTx) public vaultLimitPerTx;
 
-    mapping(uint8 superformRouterId => address stateSyncer) public stateSyncers;
-    mapping(uint8 superformRouterId => address router) public routers;
     mapping(uint8 registryId => address registryAddress) public registryAddresses;
     /// @dev is the reverse mapping of registryAddresses
     mapping(address registryAddress => uint8 registryId) public stateRegistryIds;
     /// @dev is the reverse mapping of ambAddresses
     mapping(address ambAddress => uint8 bridgeId) public ambIds;
-    /// @dev is the reverse mapping of routers
-    mapping(address router => uint8 superformRouterId) public superformRouterIds;
 
     /// @dev core protocol - identifiers
     /// @notice SUPERFORM_FACTORY, CORE_STATE_REGISTRY, TIMELOCK_STATE_REGISTRY, BROADCAST_REGISTRY, SUPER_RBAC,

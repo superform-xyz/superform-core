@@ -38,7 +38,6 @@ contract PayloadHelper is IPayloadHelper {
         uint256[] slippages;
         uint256[] superformIds;
         uint256 srcPayloadId;
-        uint8 superformRouterId;
         uint8 multi;
         ReturnMultiData rd;
         ReturnSingleData rsd;
