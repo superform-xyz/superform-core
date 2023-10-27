@@ -7,6 +7,7 @@ import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { IEmergencyQueue } from "../interfaces/IEmergencyQueue.sol";
 import { Error } from "../utils/Error.sol";
+import { ISuperformFactory } from "../interfaces/ISuperformFactory.sol";
 import "../types/DataTypes.sol";
 
 /// @title EmergencyQueue
@@ -34,20 +35,12 @@ contract EmergencyQueue is IEmergencyQueue {
     /*///////////////////////////////////////////////////////////////
                             MODIFIER
     //////////////////////////////////////////////////////////////*/
-    modifier onlySuperform(uint256 superformId_) {
-        (address superform, uint32 formId, uint64 chainId) = superformId_.getSuperform();
-
-        if (msg.sender != superform) {
-            revert Error.NOT_SUPERFORM();
+    modifier onlySuperform(uint256 superformId) {
+        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId)) {
+            revert Error.SUPERFORM_ID_NONEXISTENT();
         }
-
-        if (chainId != CHAIN_ID || chainId == 0) {
-            revert Error.INVALID_CHAIN_ID();
-        }
-
-        if (IBaseForm(superform).formImplementationId() != formId) {
-            revert Error.INVALID_SUPERFORMS_DATA();
-        }
+        (address superform,,) = superformId.getSuperform();
+        if (msg.sender != superform) revert Error.NOT_SUPERFORM();
 
         _;
     }
@@ -89,6 +82,7 @@ contract EmergencyQueue is IEmergencyQueue {
         ++queueCounter;
 
         queuedWithdrawal[queueCounter] = QueuedWithdrawal(
+            srcSender_,
             data_.dstRefundAddress == address(0) ? srcSender_ : data_.dstRefundAddress,
             data_.superformId,
             data_.amount,
@@ -102,25 +96,13 @@ contract EmergencyQueue is IEmergencyQueue {
     }
 
     /// @inheritdoc IEmergencyQueue
-    function executeQueuedWithdrawal(uint256 id_) public override onlyEmergencyAdmin {
-        QueuedWithdrawal storage data = queuedWithdrawal[id_];
-
-        if (data.isProcessed) {
-            revert Error.EMERGENCY_WITHDRAW_PROCESSED_ALREADY();
-        }
-
-        data.isProcessed = true;
-
-        (address superform,,) = data.superformId.getSuperform();
-        IBaseForm(superform).emergencyWithdraw(data.refundAddress, data.amount);
-
-        emit WithdrawalProcessed(data.refundAddress, id_, data.superformId, data.amount);
+    function executeQueuedWithdrawal(uint256 id_) external override onlyEmergencyAdmin {
+        _executeQueuedWithdrawal(id_);
     }
 
     function batchExecuteQueuedWithdrawal(uint256[] memory ids_) external override onlyEmergencyAdmin {
         for (uint256 i; i < ids_.length;) {
-            executeQueuedWithdrawal(ids_[i]);
-
+            _executeQueuedWithdrawal(ids_[i]);
             unchecked {
                 ++i;
             }
@@ -134,5 +116,25 @@ contract EmergencyQueue is IEmergencyQueue {
     /// @inheritdoc IEmergencyQueue
     function queuedWithdrawalStatus(uint256 id) external view override returns (bool) {
         return queuedWithdrawal[id].isProcessed;
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                        INTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    function _executeQueuedWithdrawal(uint256 id_) internal {
+        QueuedWithdrawal storage data = queuedWithdrawal[id_];
+        if (data.superformId == 0) revert Error.EMERGENCY_WITHDRAW_NOT_QUEUED();
+
+        if (data.isProcessed) {
+            revert Error.EMERGENCY_WITHDRAW_PROCESSED_ALREADY();
+        }
+
+        data.isProcessed = true;
+
+        (address superform,,) = data.superformId.getSuperform();
+        IBaseForm(superform).emergencyWithdraw(data.srcSender, data.refundAddress, data.amount);
+
+        emit WithdrawalProcessed(data.refundAddress, id_, data.superformId, data.amount);
     }
 }

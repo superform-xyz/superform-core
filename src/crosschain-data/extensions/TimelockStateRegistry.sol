@@ -3,6 +3,7 @@ pragma solidity ^0.8.21;
 
 import { ReentrancyGuard } from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 import { IBaseForm } from "../../interfaces/IBaseForm.sol";
+import { ISuperformFactory } from "../../interfaces/ISuperformFactory.sol";
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
 import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
 import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
@@ -34,7 +35,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     modifier onlyTimelockStateRegistryProcessor() {
         bytes32 role = keccak256("TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE");
         if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(role, msg.sender)) {
-            revert Error.NOT_PREVILAGED_CALLER(role);
+            revert Error.NOT_PRIVILEGED_CALLER(role);
         }
         _;
     }
@@ -61,7 +62,10 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     mapping(uint256 timelockPayloadId => TimelockPayload) public timelockPayload;
 
     /// @dev allows only form to write to the receive paylod
-    modifier onlyForm(uint256 superformId) {
+    modifier onlyTimelockSuperform(uint256 superformId) {
+        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId)) {
+            revert Error.SUPERFORM_ID_NONEXISTENT();
+        }
         (address superform,,) = superformId.getSuperform();
         if (msg.sender != superform) revert Error.NOT_SUPERFORM();
         if (IBaseForm(superform).getStateRegistryId() != superRegistry.getStateRegistryId(address(this))) {
@@ -96,10 +100,9 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     )
         external
         override
-        onlyForm(data_.superformId)
+        onlyTimelockSuperform(data_.superformId)
     {
         ++timelockPayloadCounter;
-
         timelockPayload[timelockPayloadCounter] =
             TimelockPayload(type_, srcSender_, srcChainId_, lockedTill_, data_, TimelockStatus.PENDING);
     }

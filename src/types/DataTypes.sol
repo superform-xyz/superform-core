@@ -117,6 +117,7 @@ struct InitSingleVaultData {
 
 /// @dev struct for Emergency Queue
 struct QueuedWithdrawal {
+    address srcSender;
     address refundAddress;
     uint256 superformId;
     uint256 amount;

@@ -42,16 +42,7 @@ contract SuperTransmuterTest is BaseSetup {
     function test_registerTransmuter() public {
         (uint256 superformId,) =
             SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
-        superTransmuter.registerTransmuter(superformId, "");
-    }
-
-    function test_registerTransmuter_invalidExtraData() public {
-        uint8[] memory ambId = new uint8[](1);
-        ambId[0] = 4;
-        (uint256 superformId,) =
-            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
-        vm.expectRevert();
-        superTransmuter.registerTransmuter(superformId, abi.encode(ambId, 1));
+        superTransmuter.registerTransmuter(superformId);
     }
 
     function test_withdrawFromInvalidChainId() public {
@@ -63,28 +54,28 @@ contract SuperTransmuterTest is BaseSetup {
 
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
 
-        superTransmuter.registerTransmuter(superformId, "");
+        superTransmuter.registerTransmuter(superformId);
     }
 
     function test_InvalidSuperFormAddress() public {
         uint256 invalidSuperFormId = DataLib.packSuperform(address(0), 4, ETH);
         vm.expectRevert(Error.NOT_SUPERFORM.selector);
-        superTransmuter.registerTransmuter(invalidSuperFormId, "");
+        superTransmuter.registerTransmuter(invalidSuperFormId);
     }
 
     function test_InvalidFormImplementation() public {
         uint256 invalidSuperFormId = DataLib.packSuperform(address(0x777), 0, ETH);
         vm.expectRevert(Error.FORM_DOES_NOT_EXIST.selector);
-        superTransmuter.registerTransmuter(invalidSuperFormId, "");
+        superTransmuter.registerTransmuter(invalidSuperFormId);
     }
 
     function test_alreadyRegistered() public {
         (uint256 superformId,) =
             SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
-        superTransmuter.registerTransmuter(superformId, "");
+        superTransmuter.registerTransmuter(superformId);
         vm.expectRevert(Transmuter.TRANSMUTER_ALREADY_REGISTERED.selector);
 
-        superTransmuter.registerTransmuter(superformId, "");
+        superTransmuter.registerTransmuter(superformId);
     }
 
     function test_broadcastAndDeploy() public {
@@ -92,7 +83,7 @@ contract SuperTransmuterTest is BaseSetup {
             SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
 
         vm.recordLogs();
-        superTransmuter.registerTransmuter(superformId, generateBroadcastParams(5, 1));
+        superTransmuter.registerTransmuter(superformId);
 
         vm.startPrank(deployer);
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
@@ -138,7 +129,7 @@ contract SuperTransmuterTest is BaseSetup {
             ETH
         );
 
-        superTransmuter.registerTransmuter(superformId, "");
+        superTransmuter.registerTransmuter(superformId);
 
         ReturnSingleData memory maliciousReturnData = ReturnSingleData(2, 0, superformId, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
@@ -159,7 +150,7 @@ contract SuperTransmuterTest is BaseSetup {
             ETH
         );
 
-        superTransmuter.registerTransmuter(superformId, "");
+        superTransmuter.registerTransmuter(superformId);
 
         ReturnSingleData memory maliciousReturnData = ReturnSingleData(2, 0, superformId, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
@@ -184,7 +175,7 @@ contract SuperTransmuterTest is BaseSetup {
             ETH
         );
 
-        superTransmuter.registerTransmuter(superformId, "");
+        superTransmuter.registerTransmuter(superformId);
 
         ReturnSingleData memory maliciousReturnData = ReturnSingleData(2, 0, superformId, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
@@ -209,7 +200,7 @@ contract SuperTransmuterTest is BaseSetup {
             ETH
         );
 
-        superTransmuter.registerTransmuter(superformId, "");
+        superTransmuter.registerTransmuter(superformId);
 
         ReturnSingleData memory maliciousReturnData = ReturnSingleData(2, 0, superformId, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
@@ -233,7 +224,7 @@ contract SuperTransmuterTest is BaseSetup {
             ETH
         );
 
-        superTransmuter.registerTransmuter(superformId, "");
+        superTransmuter.registerTransmuter(superformId);
 
         ReturnSingleData memory maliciousReturnData = ReturnSingleData(2, 0, superformId, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
@@ -254,7 +245,7 @@ contract SuperTransmuterTest is BaseSetup {
             ETH
         );
 
-        superTransmuter.registerTransmuter(superformId, "");
+        superTransmuter.registerTransmuter(superformId);
 
         ReturnSingleData memory maliciousReturnData = ReturnSingleData(1, 0, superformId, 100);
 
@@ -300,7 +291,7 @@ contract SuperTransmuterTest is BaseSetup {
             ETH
         );
 
-        superTransmuter.registerTransmuter(superformIds[0], "");
+        superTransmuter.registerTransmuter(superformIds[0]);
 
         ReturnMultiData memory maliciousReturnData = ReturnMultiData(2, 0, superformIds, amounts);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
@@ -325,7 +316,7 @@ contract SuperTransmuterTest is BaseSetup {
             ETH
         );
 
-        superTransmuter.registerTransmuter(superformIds[0], "");
+        superTransmuter.registerTransmuter(superformIds[0]);
 
         ReturnMultiData memory maliciousReturnData = ReturnMultiData(2, 0, superformIds, amounts);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
@@ -352,7 +343,7 @@ contract SuperTransmuterTest is BaseSetup {
             ETH
         );
 
-        superTransmuter.registerTransmuter(superformIds[0], "");
+        superTransmuter.registerTransmuter(superformIds[0]);
 
         ReturnMultiData memory maliciousReturnData = ReturnMultiData(2, 0, superformIds, amounts);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
@@ -379,7 +370,7 @@ contract SuperTransmuterTest is BaseSetup {
             ETH
         );
 
-        superTransmuter.registerTransmuter(superformIds[0], "");
+        superTransmuter.registerTransmuter(superformIds[0]);
 
         ReturnMultiData memory maliciousReturnData = ReturnMultiData(2, 0, superformIds, amounts);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
@@ -406,7 +397,7 @@ contract SuperTransmuterTest is BaseSetup {
             ETH
         );
 
-        superTransmuter.registerTransmuter(superformIds[0], "");
+        superTransmuter.registerTransmuter(superformIds[0]);
 
         ReturnMultiData memory maliciousReturnData = ReturnMultiData(2, 0, superformIds, amounts);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
@@ -431,7 +422,7 @@ contract SuperTransmuterTest is BaseSetup {
             ETH
         );
 
-        superTransmuter.registerTransmuter(superformIds[0], "");
+        superTransmuter.registerTransmuter(superformIds[0]);
 
         ReturnMultiData memory maliciousReturnData = ReturnMultiData(1, 0, superformIds, amounts);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));

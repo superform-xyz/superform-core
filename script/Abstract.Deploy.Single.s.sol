@@ -812,6 +812,8 @@ abstract contract AbstractDeploySingle is Script {
 
         SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
 
+        vars.superRegistryC.setVaultLimitPerTx(vars.dstChainId, 30);
+
         /// @dev these values are mocks and has to be replaced
         /// swap gas cost: 50000
         /// update gas cost: 40000

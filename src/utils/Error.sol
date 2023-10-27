@@ -12,8 +12,11 @@ library Error {
     /// @dev error thrown when address input is address 0
     error ZERO_ADDRESS();
 
-    /// @dev error thrown when address input is address 0
+    /// @dev error thrown when amount input is 0
     error ZERO_AMOUNT();
+
+    /// @dev error thrown when value input is 0
+    error ZERO_INPUT_VALUE();
 
     /// @dev error thrown when beacon id already exists
     error FORM_IMPLEMENTATION_ID_ALREADY_EXISTS();
@@ -48,6 +51,9 @@ library Error {
     /// @dev thrown if the broadcast payload is invalid
     error INVALID_BROADCAST_PAYLOAD();
 
+    /// @dev thrown if the broadcast fee is invalid
+    error INVALID_BROADCAST_FEE();
+
     /// @dev thrown if the underlying collateral mismatches
     error INVALID_DEPOSIT_TOKEN();
 
@@ -79,7 +85,7 @@ library Error {
     error NOT_SUPER_REGISTRY();
 
     /// @dev thrown if the msg-sender is not privileged caller
-    error NOT_PREVILAGED_CALLER(bytes32 role);
+    error NOT_PRIVILEGED_CALLER(bytes32 role);
 
     /// @dev thrown if the msg-sender does not have SWAPPER role
     error NOT_SWAPPER();
@@ -265,6 +271,9 @@ library Error {
     /// @dev thrown if not enough native fees is paid for amb to send the message
     error CROSS_CHAIN_TX_UNDERPAID();
 
+    /// @dev thrown if wormhole relayer is not set
+    error RELAYER_NOT_SET();
+
     /*///////////////////////////////////////////////////////////////
                         SUPERFORM FACTORY ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -277,6 +286,9 @@ library Error {
 
     /// @dev thrown when a form does not exist
     error FORM_DOES_NOT_EXIST();
+
+    /// @dev thrown when superform not on factory
+    error SUPERFORM_ID_NONEXISTENT();
 
     /// @dev thrown when same vault and beacon is used to create new superform
     error VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS();
@@ -325,12 +337,6 @@ library Error {
     /*///////////////////////////////////////////////////////////////
                             FORM ERRORS
     //////////////////////////////////////////////////////////////*/
-
-    /// @dev thrown when the form has insufficient balance for emergency withdraw
-    error EMERGENCY_WITHDRAW_INSUFFICIENT_BALANCE();
-
-    /// @dev thrown when emergency withdraw is already processed
-    error EMERGENCY_WITHDRAW_PROCESSED_ALREADY();
 
     /// @dev thrown when the allowance in direct deposit is not correct
     error DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
@@ -401,4 +407,17 @@ library Error {
 
     /// @dev thrown when chainlink is reporting an incomplete round
     error CHAINLINK_INCOMPLETE_ROUND();
+
+    /*///////////////////////////////////////////////////////////////
+                        EMERGENCY QUEUE ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev thrown when the form has insufficient balance for emergency withdraw
+    error EMERGENCY_WITHDRAW_INSUFFICIENT_BALANCE();
+
+    /// @dev thrown when emergency withdraw is already processed
+    error EMERGENCY_WITHDRAW_PROCESSED_ALREADY();
+
+    /// @dev thrown when emergency withdraw is not queued
+    error EMERGENCY_WITHDRAW_NOT_QUEUED();
 }

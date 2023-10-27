@@ -88,6 +88,11 @@ interface ISuperformFactory {
         pure
         returns (address superform_, uint32 formImplementationId_, uint64 chainId_);
 
+    /// @dev returns if an address has been added to a Form
+    /// @param superformId_ is the id of the superform
+    /// @return isSuperform_ bool if it exists
+    function isSuperform(uint256 superformId_) external view returns (bool isSuperform_);
+
     /// @dev Reverse query of getSuperform, returns all superforms for a given vault
     /// @param vault_ is the address of a vault
     /// @return superformIds_ is the id of the superform
