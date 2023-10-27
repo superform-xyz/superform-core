@@ -2,21 +2,40 @@
 pragma solidity ^0.8.21;
 
 import { ERC1155A } from "ERC1155A/ERC1155A.sol";
-import { StateSyncer } from "./StateSyncer.sol";
-import { TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, AMBMessage } from "./types/DataTypes.sol";
-import { ISuperPositions } from "./interfaces/ISuperPositions.sol";
-import { IStateSyncer } from "./interfaces/IStateSyncer.sol";
-import { Error } from "./utils/Error.sol";
-import { DataLib } from "./libraries/DataLib.sol";
+import { sERC20 } from "ERC1155A/sERC20.sol";
+import {
+    TransactionType,
+    ReturnMultiData,
+    ReturnSingleData,
+    CallbackType,
+    AMBMessage,
+    BroadcastMessage
+} from "src/types/DataTypes.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+
+import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
+import { IBaseForm } from "src/interfaces/IBaseForm.sol";
+import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
+import { Error } from "src/utils/Error.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
 
 /// @title SuperPositions
 /// @author Zeropoint Labs.
-contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
+contract SuperPositions is ISuperPositions, ERC1155A {
     using DataLib for uint256;
 
     /*///////////////////////////////////////////////////////////////
                         STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
+    bytes32 constant DEPLOY_NEW_TRANSMUTER = keccak256("DEPLOY_NEW_TRANSMUTER");
+
+    /// @dev is the super registry address
+    ISuperRegistry public immutable superRegistry;
+    uint64 public immutable CHAIN_ID;
+
+    /// @dev maps all transaction data routed through the smart contract.
+    mapping(uint256 transactionId => uint256 txInfo) public override txHistory;
 
     /// @dev is the base uri set by admin
     string public dynamicURI;
@@ -24,17 +43,31 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
     /// @dev is the base uri frozen status
     bool public dynamicURIFrozen;
 
+    /// @dev nonce for sERC20 broadcast
+    uint256 public xChainPayloadCounter;
+
     /*///////////////////////////////////////////////////////////////
                             MODIFIER
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev minters can be router with id 1 (or) state registry for that beacon
-    modifier onlyMinter(uint256 superformId) override {
-        uint8 routerId = superRegistry.getSuperformRouterId(msg.sender);
+    modifier onlyRouter() {
+        if (msg.sender != superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"))) revert Error.NOT_SUPER_ROUTER();
+        _;
+    }
+
+    modifier onlyProtocolAdmin() {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
+            revert Error.NOT_PROTOCOL_ADMIN();
+        }
+        _;
+    }
+
+    modifier onlyMinter(uint256 superformId) {
+        address router = superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"));
         uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
-        /// if registry id is 1 (or) corresponding state registry can mint
-        if (routerId != 1) {
+        /// if msg.sender isn't superformRouter then it must be state registry for that superform
+        if (msg.sender != router) {
             (, uint32 formBeaconId,) = DataLib.getSuperform(superformId);
 
             if (uint32(registryId) != formBeaconId) {
@@ -45,13 +78,12 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
         _;
     }
 
-    /// @dev minters can be router with id 1 (or) state registry for that beacon
-    modifier onlyBatchMinter(uint256[] memory superformIds) override {
-        uint8 routerId = superRegistry.getSuperformRouterId(msg.sender);
+    modifier onlyBatchMinter(uint256[] memory superformIds) {
+        address router = superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"));
         uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
-        /// if registry id is 1 (or) corresponding state registry can mint
-        if (routerId != ROUTER_TYPE) {
+        /// if msg.sender isn't superformRouter then it must be state registry for that superform
+        if (msg.sender != router) {
             for (uint256 i; i < superformIds.length; ++i) {
                 (, uint32 formBeaconId,) = DataLib.getSuperform(superformIds[i]);
 
@@ -63,30 +95,20 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
         _;
     }
 
-    /// @dev only routers with id 1 can burn super positions
-    modifier onlyBurner() override {
-        uint8 id = superRegistry.getSuperformRouterId(msg.sender);
-
-        if (id != ROUTER_TYPE) {
-            revert Error.NOT_BURNER();
-        }
-        _;
-    }
-
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
     /// @param dynamicURI_  URL for external metadata of ERC1155 SuperPositions
     /// @param superRegistry_ the superform registry contract
-    /// @param routerType_ the router type
-    constructor(
-        string memory dynamicURI_,
-        address superRegistry_,
-        uint8 routerType_
-    )
-        StateSyncer(superRegistry_, routerType_)
-    {
+    constructor(string memory dynamicURI_, address superRegistry_) {
+        if (block.chainid > type(uint64).max) {
+            revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
+        }
+
+        CHAIN_ID = uint64(block.chainid);
+
+        superRegistry = ISuperRegistry(superRegistry_);
         dynamicURI = dynamicURI_;
     }
 
@@ -94,64 +116,49 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
                         EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @inheritdoc IStateSyncer
-    function mintSingle(
-        address srcSender_,
-        uint256 id_,
-        uint256 amount_
-    )
-        external
-        override(IStateSyncer, StateSyncer)
-        onlyMinter(id_)
-    {
-        _mint(srcSender_, id_, amount_, "");
+    /// @inheritdoc ISuperPositions
+    function updateTxHistory(uint256 payloadId_, uint256 txInfo_) external override onlyRouter {
+        txHistory[payloadId_] = txInfo_;
     }
 
-    /// @inheritdoc IStateSyncer
+    /// @inheritdoc ISuperPositions
+    function mintSingle(address srcSender_, uint256 id_, uint256 amount_) external override onlyMinter(id_) {
+        _mint(srcSender_, msg.sender, id_, amount_, "");
+    }
+
+    /// @inheritdoc ISuperPositions
     function mintBatch(
         address srcSender_,
         uint256[] memory ids_,
         uint256[] memory amounts_
     )
         external
-        override(IStateSyncer, StateSyncer)
+        override
         onlyBatchMinter(ids_)
     {
-        _batchMint(srcSender_, ids_, amounts_, "");
+        _batchMint(srcSender_, msg.sender, ids_, amounts_, "");
     }
 
-    /// @inheritdoc IStateSyncer
-    function burnSingle(
-        address srcSender_,
-        uint256 id_,
-        uint256 amount_
-    )
-        external
-        override(IStateSyncer, StateSyncer)
-        onlyBurner
-    {
-        _burn(srcSender_, id_, amount_);
+    /// @inheritdoc ISuperPositions
+    function burnSingle(address srcSender_, uint256 id_, uint256 amount_) external override onlyRouter {
+        _burn(srcSender_, msg.sender, id_, amount_);
     }
 
-    /// @inheritdoc IStateSyncer
+    /// @inheritdoc ISuperPositions
     function burnBatch(
         address srcSender_,
         uint256[] memory ids_,
         uint256[] memory amounts_
     )
         external
-        override(IStateSyncer, StateSyncer)
-        onlyBurner
+        override
+        onlyRouter
     {
-        _batchBurn(srcSender_, ids_, amounts_);
+        _batchBurn(srcSender_, msg.sender, ids_, amounts_);
     }
 
-    /// @inheritdoc IStateSyncer
-    function stateMultiSync(AMBMessage memory data_)
-        external
-        override(IStateSyncer, StateSyncer)
-        returns (uint64 srcChainId_)
-    {
+    /// @inheritdoc ISuperPositions
+    function stateMultiSync(AMBMessage memory data_) external override returns (uint64 srcChainId_) {
         /// @dev here we decode the txInfo and params from the data brought back from destination
 
         (uint256 returnTxType, uint256 callbackType, uint8 multi,, address returnDataSrcSender,) =
@@ -163,7 +170,7 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
 
         /// @dev decode remaining info on superPositions to mint from destination
         ReturnMultiData memory returnData = abi.decode(data_.params, (ReturnMultiData));
-        if (returnData.superformRouterId != ROUTER_TYPE) revert Error.INVALID_PAYLOAD();
+
         _validateStateSyncer(returnData.superformIds);
 
         uint256 txInfo = txHistory[returnData.payloadId];
@@ -199,12 +206,8 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
         emit Completed(returnData.payloadId);
     }
 
-    /// @inheritdoc IStateSyncer
-    function stateSync(AMBMessage memory data_)
-        external
-        override(IStateSyncer, StateSyncer)
-        returns (uint64 srcChainId_)
-    {
+    /// @inheritdoc ISuperPositions
+    function stateSync(AMBMessage memory data_) external override returns (uint64 srcChainId_) {
         /// @dev here we decode the txInfo and params from the data brought back from destination
 
         (uint256 returnTxType, uint256 callbackType, uint8 multi,, address returnDataSrcSender,) =
@@ -216,7 +219,6 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
 
         /// @dev decode remaining info on superPositions to mint from destination
         ReturnSingleData memory returnData = abi.decode(data_.params, (ReturnSingleData));
-        if (returnData.superformRouterId != ROUTER_TYPE) revert Error.INVALID_PAYLOAD();
         _validateStateSyncer(returnData.superformId);
 
         uint256 txInfo = txHistory[returnData.payloadId];
@@ -253,10 +255,55 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
         emit Completed(returnData.payloadId);
     }
 
-    function validateSingleIdExists(uint256 superformId_) public view override(IStateSyncer, StateSyncer) { }
+    /// @inheritdoc ISuperPositions
+    function registerSERC20(uint256 superformId_, bytes memory extraData_) external override returns (address) {
+        (address superform, uint32 formImplementationId, uint64 chainId) = DataLib.getSuperform(superformId_);
 
-    function validateBatchIdsExist(uint256[] memory superformIds_) public view override(IStateSyncer, StateSyncer) { }
+        if (CHAIN_ID != chainId || chainId == 0) revert Error.INVALID_CHAIN_ID();
+        if (superform == address(0)) revert Error.NOT_SUPERFORM();
+        if (formImplementationId == 0) revert Error.FORM_DOES_NOT_EXIST();
+        if (synthethicTokenId[superformId_] != address(0)) revert SYNTHETIC_ERC20_ALREADY_REGISTERED();
 
+        string memory name =
+            string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
+        string memory symbol = string(abi.encodePacked("sERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
+        uint8 decimal = uint8(IBaseForm(superform).getVaultDecimals());
+        address syntheticToken = address(
+            new sERC20(
+                name,
+                symbol,
+                decimal
+            )
+        );
+        synthethicTokenId[superformId_] = syntheticToken;
+
+        /// @dev broadcast and deploy to the other destination chains
+        if (extraData_.length > 0) {
+            BroadcastMessage memory transmuterPayload = BroadcastMessage(
+                "SUPER_TRANSMUTER",
+                DEPLOY_NEW_TRANSMUTER,
+                abi.encode(CHAIN_ID, ++xChainPayloadCounter, superformId_, name, symbol, decimal)
+            );
+
+            _broadcast(abi.encode(transmuterPayload), extraData_);
+        }
+
+        return syntheticToken;
+    }
+
+    /// @inheritdoc ISuperPositions
+    function stateSyncBroadcast(bytes memory data_) external payable override {
+        /// @dev this function is only accessible through broadcast registry
+        if (msg.sender != superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))) {
+            revert Error.NOT_BROADCAST_REGISTRY();
+        }
+
+        BroadcastMessage memory transmuterPayload = abi.decode(data_, (BroadcastMessage));
+
+        if (transmuterPayload.messageType == DEPLOY_NEW_TRANSMUTER) {
+            _deployTransmuter(transmuterPayload.message);
+        }
+    }
     /*///////////////////////////////////////////////////////////////
                         PRIVILEGED FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -286,5 +333,73 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
     /// @notice Used to construct return url
     function _baseURI() internal view override returns (string memory) {
         return dynamicURI;
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                        INTERNAL/HELPER FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev helps validate the state registry id for minting superform id
+    function _validateStateSyncer(uint256 superformId_) internal view {
+        uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
+        _isValidStateSyncer(registryId, superformId_);
+    }
+
+    /// @dev helps validate the state registry id for minting superform id
+    function _validateStateSyncer(uint256[] memory superformIds_) internal view {
+        uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
+        for (uint256 i; i < superformIds_.length;) {
+            _isValidStateSyncer(registryId, superformIds_[i]);
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    function _isValidStateSyncer(uint8 registryId_, uint256 superformId_) internal pure {
+        // Directly check if the registryId is 0 or doesn't match the allowed cases.
+        if (registryId_ == 0) {
+            revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
+        }
+        // If registryId is 1, no further checks are necessary.
+        if (registryId_ == 1) {
+            return;
+        }
+
+        (, uint32 formImplementationId,) = DataLib.getSuperform(superformId_);
+
+        if (uint32(registryId_) != formImplementationId) {
+            revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
+        }
+    }
+
+    /// @dev interacts with broadcast state registry to broadcasting state changes to all connected remote chains
+    /// @param message_ is the crosschain message to be sent.
+    /// @param extraData_ is the amb override information.
+    function _broadcast(bytes memory message_, bytes memory extraData_) internal {
+        (uint8[] memory ambIds, bytes memory broadcastParams) = abi.decode(extraData_, (uint8[], bytes));
+
+        /// @dev ambIds are validated inside the broadcast state registry
+        /// @dev broadcastParams if wrong will revert in the amb implementation
+        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{
+            value: msg.value
+        }(msg.sender, ambIds, message_, broadcastParams);
+    }
+
+    /// @dev deploys new transmuter on broadcasting
+    function _deployTransmuter(bytes memory message_) internal {
+        (,, uint256 superformId, string memory name, string memory symbol, uint8 decimal) =
+            abi.decode(message_, (uint64, uint256, uint256, string, string, uint8));
+        if (synthethicTokenId[superformId] != address(0)) revert SYNTHETIC_ERC20_ALREADY_REGISTERED();
+
+        address syntheticToken = address(
+            new sERC20(
+                name,
+                symbol,
+                decimal
+            )
+        );
+
+        synthethicTokenId[superformId] = syntheticToken;
     }
 }

@@ -59,7 +59,6 @@ contract TimelockStateRegistryTest is ProtocolActions {
             block.timestamp - 5 seconds,
             InitSingleVaultData(
                 1,
-                1,
                 superformId,
                 420,
                 0,
@@ -90,7 +89,6 @@ contract TimelockStateRegistryTest is ProtocolActions {
             ETH,
             block.timestamp - 5 seconds,
             InitSingleVaultData(
-                1,
                 1,
                 superformId,
                 420,
@@ -140,9 +138,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
         uint256 superformId = _legacySuperformPackWithShift();
 
         bytes memory _message = abi.encode(
-            AMBMessage(
-                DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH), abi.encode(ReturnSingleData(1, 1, superformId, 420))
-            )
+            AMBMessage(DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH), abi.encode(ReturnSingleData(1, superformId, 420)))
         );
 
         vm.prank(getContract(AVAX, "SuperformRouter"));

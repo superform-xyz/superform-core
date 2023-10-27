@@ -69,7 +69,6 @@ import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
 import { PaymentHelper } from "src/payments/PaymentHelper.sol";
 import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
-import { SuperTransmuter } from "src/SuperTransmuter.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import "src/types/DataTypes.sol";
 import "./TestTypes.sol";
@@ -102,7 +101,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[31] public contractNames = [
+    string[30] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -121,7 +120,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         "SuperPositions",
         "SuperRegistry",
         "SuperRBAC",
-        "SuperTransmuter",
         "PayloadHelper",
         "PaymentHelper",
         "PayMaster",
@@ -644,47 +642,21 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             ISuperformFactory(vars.factory).addFormImplementation(vars.kycDao4626Form, FORM_IMPLEMENTATION_IDS[2]);
 
             /// @dev 11 - Deploy SuperformRouter
-            vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry, 1, 1));
+            vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
 
-            /// @dev 12 - Deploy SuperPositions and SuperTransmuter
+            /// @dev 12 - Deploy SuperPositions
             vars.superPositions =
-                address(new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry, 1));
+                address(new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry));
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);
 
-            contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))] = address(
-                new SuperTransmuter{salt: salt}(
-                    IERC1155A(vars.superPositions),
-                    vars.superRegistry,
-                    2
-                )
-            );
-
-            vars.superRegistryC.setAddress(
-                vars.superRegistryC.SUPER_TRANSMUTER(),
-                contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))],
-                vars.chainId
-            );
-
             vars.superRBACC.grantRole(
-                vars.superRBACC.BROADCASTER_ROLE(), contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))]
+                vars.superRBACC.BROADCASTER_ROLE(), contracts[vars.chainId][bytes32(bytes("SuperPositions"))]
             );
-
-            /// @dev 12.1 Set Router Info
-            uint8[] memory superformRouterIds = new uint8[](1);
-            superformRouterIds[0] = 1;
-
-            address[] memory stateSyncers = new address[](1);
-            stateSyncers[0] = vars.superPositions;
-
-            address[] memory routers = new address[](1);
-            routers[0] = vars.superformRouter;
-
-            vars.superRegistryC.setRouterInfo(superformRouterIds, stateSyncers, routers);
 
             /// @dev 13- deploy Payload Helper
             vars.PayloadHelper = address(
@@ -874,12 +846,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                     vars.superRegistryC.setAddress(
                         vars.superRegistryC.SUPER_POSITIONS(),
                         getContract(vars.dstChainId, "SuperPositions"),
-                        vars.dstChainId
-                    );
-
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.SUPER_TRANSMUTER(),
-                        getContract(vars.dstChainId, "SuperTransmuter"),
                         vars.dstChainId
                     );
 
@@ -1437,9 +1403,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         (,, uint256 payloadId, uint256 superformId, uint256 amount) =
             vars.payloadHelper.decodeTimeLockPayload(timelockPayloadId);
 
-        vars.message = abi.encode(
-            AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(2 ** 8 - 1, payloadId, superformId, amount)))
-        );
+        vars.message =
+            abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superformId, amount))));
 
         (vars.totalFees, gasPerAMB) =
             vars.paymentHelper.estimateAMBFees(selectedAmbIds, vars.srcChainId, abi.encode(vars.message), paramsPerAMB);

@@ -161,10 +161,11 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         address oldAddress = registry[id_][chainId_];
         if (oldAddress != address(0)) {
             /// @notice SUPERFORM_FACTORY, CORE_STATE_REGISTRY, TIMELOCK_STATE_REGISTRY, BROADCAST_REGISTRY, SUPER_RBAC,
-            /// DST_SWAPPER and EMERGENCY_QUEUE cannot be changed once set
+            /// DST_SWAPPER, EMERGENCY_QUEUE, SUPER_POSITIONS and SUPERFORM_ROUTER  cannot be changed once set
             if (
                 id_ == SUPERFORM_FACTORY || id_ == CORE_STATE_REGISTRY || id_ == TIMELOCK_STATE_REGISTRY
                     || id_ == BROADCAST_REGISTRY || id_ == SUPER_RBAC || id_ == DST_SWAPPER || id_ == EMERGENCY_QUEUE
+                    || id_ == SUPER_POSITIONS || id_ == SUPERFORM_ROUTER
             ) {
                 revert Error.DISABLED();
             }
@@ -268,39 +269,6 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         }
     }
 
-    /// @inheritdoc ISuperRegistry
-    function setRouterInfo(
-        uint8[] memory superformRouterIds_,
-        address[] memory stateSyncers_,
-        address[] memory routers_
-    )
-        external
-        override
-        onlyProtocolAdmin
-    {
-        uint256 len = superformRouterIds_.length;
-        if (len != stateSyncers_.length || len != routers_.length) revert Error.ARRAY_LENGTH_MISMATCH();
-
-        for (uint256 i; i < len;) {
-            address stateSyncer = stateSyncers_[i];
-            address router = routers_[i];
-            uint8 superFormRouterId = superformRouterIds_[i];
-            if (stateSyncer == address(0)) revert Error.ZERO_ADDRESS();
-            if (router == address(0)) revert Error.ZERO_ADDRESS();
-            if (stateSyncers[superFormRouterId] != address(0)) revert Error.DISABLED();
-            if (superformRouterIds[router] != 0) revert Error.DISABLED();
-
-            stateSyncers[superFormRouterId] = stateSyncer;
-            routers[superFormRouterId] = router;
-            superformRouterIds[router] = superFormRouterId;
-            emit SetRouterInfo(superFormRouterId, stateSyncer, router);
-
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
     /// @inheritdoc QuorumManager
     function setRequiredMessagingQuorum(uint64 srcChainId_, uint256 quorum_) external override onlyProtocolAdmin {
         requiredQuorum[srcChainId_] = quorum_;
@@ -348,21 +316,6 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @inheritdoc ISuperRegistry
     function getStateRegistryId(address registryAddress_) external view override returns (uint8 registryId_) {
         registryId_ = stateRegistryIds[registryAddress_];
-    }
-
-    /// @inheritdoc ISuperRegistry
-    function getStateSyncer(uint8 superformRouterId_) external view override returns (address stateSyncer_) {
-        stateSyncer_ = stateSyncers[superformRouterId_];
-    }
-
-    /// @inheritdoc ISuperRegistry
-    function getRouter(uint8 superformRouterId_) external view override returns (address router_) {
-        router_ = routers[superformRouterId_];
-    }
-
-    /// @inheritdoc ISuperRegistry
-    function getSuperformRouterId(address router_) external view override returns (uint8 superformRouterId_) {
-        superformRouterId_ = superformRouterIds[router_];
     }
 
     /// @inheritdoc ISuperRegistry

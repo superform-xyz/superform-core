@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
-import { IStateSyncer } from "../../interfaces/IStateSyncer.sol";
+import { ISuperPositions } from "../../interfaces/ISuperPositions.sol";
 import { IBaseStateRegistry } from "../../interfaces/IBaseStateRegistry.sol";
 import { ITimelockStateRegistry } from "../../interfaces/ITimelockStateRegistry.sol";
 import { IPayloadHelper } from "../../interfaces/IPayloadHelper.sol";
@@ -93,8 +93,7 @@ contract PayloadHelper is IPayloadHelper {
             uint256[] memory amounts,
             uint256[] memory slippages,
             uint256[] memory superformIds,
-            uint256 srcPayloadId,
-            uint8 superformRouterId
+            uint256 srcPayloadId
         )
     {
         IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
@@ -106,23 +105,14 @@ contract PayloadHelper is IPayloadHelper {
             _decodePayloadHeader(dstPayloadId_, coreStateRegistry);
 
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
-            (v.amounts, v.srcPayloadId, v.superformRouterId) =
-                _decodeReturnData(dstPayloadId_, v.multi, coreStateRegistry);
+            (v.amounts, v.srcPayloadId) = _decodeReturnData(dstPayloadId_, v.multi, coreStateRegistry);
         } else if (v.callbackType == uint256(CallbackType.INIT)) {
-            (v.amounts, v.slippages, v.superformIds, v.srcPayloadId, v.superformRouterId) =
+            (v.amounts, v.slippages, v.superformIds, v.srcPayloadId) =
                 _decodeInitData(dstPayloadId_, v.multi, coreStateRegistry);
         }
 
         return (
-            v.txType,
-            v.callbackType,
-            v.srcSender,
-            v.srcChainId,
-            v.amounts,
-            v.slippages,
-            v.superformIds,
-            v.srcPayloadId,
-            v.superformRouterId
+            v.txType, v.callbackType, v.srcSender, v.srcChainId, v.amounts, v.slippages, v.superformIds, v.srcPayloadId
         );
     }
 
@@ -157,16 +147,14 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     /// @inheritdoc IPayloadHelper
-    function decodeStateSyncerPayloadHistory(
-        uint256 srcPayloadId_,
-        uint8 superformRouterId_
-    )
+    function decodePayloadHistory(uint256 srcPayloadId_)
         external
         view
         override
         returns (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId)
     {
-        uint256 txInfo = IStateSyncer(superRegistry.getStateSyncer(superformRouterId_)).txHistory(srcPayloadId_);
+        uint256 txInfo =
+            ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).txHistory(srcPayloadId_);
 
         if (txInfo != 0) {
             (txType, callbackType, multi,, srcSender, srcChainId) = txInfo.decodeTxInfo();
@@ -248,16 +236,16 @@ contract PayloadHelper is IPayloadHelper {
     )
         internal
         view
-        returns (uint256[] memory amounts, uint256 srcPayloadId, uint8 superformRouterId)
+        returns (uint256[] memory amounts, uint256 srcPayloadId)
     {
         if (multi_ == 1) {
             ReturnMultiData memory rd = abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (ReturnMultiData));
-            return (rd.amounts, rd.payloadId, rd.superformRouterId);
+            return (rd.amounts, rd.payloadId);
         } else {
             ReturnSingleData memory rsd = abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (ReturnSingleData));
             amounts = new uint256[](1);
             amounts[0] = rsd.amount;
-            return (amounts, rsd.payloadId, rsd.superformRouterId);
+            return (amounts, rsd.payloadId);
         }
     }
 
@@ -272,15 +260,14 @@ contract PayloadHelper is IPayloadHelper {
             uint256[] memory amounts,
             uint256[] memory slippages,
             uint256[] memory superformIds,
-            uint256 srcPayloadId,
-            uint8 superformRouterId
+            uint256 srcPayloadId
         )
     {
         if (multi_ == 1) {
             InitMultiVaultData memory imvd =
                 abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (InitMultiVaultData));
 
-            return (imvd.amounts, imvd.maxSlippage, imvd.superformIds, imvd.payloadId, imvd.superformRouterId);
+            return (imvd.amounts, imvd.maxSlippage, imvd.superformIds, imvd.payloadId);
         } else {
             InitSingleVaultData memory isvd =
                 abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (InitSingleVaultData));
@@ -291,7 +278,7 @@ contract PayloadHelper is IPayloadHelper {
             superformIds = new uint256[](1);
             superformIds[0] = isvd.superformId;
 
-            return (amounts, slippages, superformIds, isvd.payloadId, isvd.superformRouterId);
+            return (amounts, slippages, superformIds, isvd.payloadId);
         }
     }
 

@@ -153,7 +153,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
         IPayloadHelper helper = IPayloadHelper(_PayloadHelper);
 
         (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId) =
-            helper.decodeStateSyncerPayloadHistory(1, 1);
+            helper.decodePayloadHistory(1);
 
         assertEq(txType, 0);
 
@@ -178,24 +178,14 @@ contract PayloadHelperMultiTest is ProtocolActions {
         uint256[] slippage;
         uint256[] superformIds;
         uint256 srcPayloadId;
-        uint8 superformRouterId;
     }
 
     function _checkDstPayloadInit(uint256 USDPerDAIonPOLY_, uint256 USDPerETHonOP_, uint256 USDPerDAIonOP_) internal {
         vm.selectFork(FORKS[DST_CHAINS[0]]);
         CheckDstPayloadInternalVars memory v;
 
-        (
-            v.txType,
-            v.callbackType,
-            v.srcSender,
-            v.srcChainId,
-            v.amounts,
-            v.slippage,
-            ,
-            v.srcPayloadId,
-            v.superformRouterId
-        ) = IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
+        (v.txType, v.callbackType, v.srcSender, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId) =
+            IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
 
         v.extraDataGenerated = new bytes[](2);
         v.extraDataGenerated[0] = abi.encode("500000");
@@ -209,8 +199,6 @@ contract PayloadHelperMultiTest is ProtocolActions {
         assertEq(v.srcChainId, 10);
         /// chain id of optimism is 10
         assertEq(v.srcPayloadId, 1);
-
-        assertEq(v.superformRouterId, 1);
 
         for (uint256 i; i < v.amounts.length; i++) {
             /// @dev ETH<>DAI swap on OP
@@ -282,7 +270,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
         CheckDstPayloadInternalVars memory v;
 
-        (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId, v.superformRouterId) =
+        (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId) =
             IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
 
         assertEq(v.txType, 0);
@@ -293,7 +281,6 @@ contract PayloadHelperMultiTest is ProtocolActions {
         assertEq(v.srcChainId, 137);
         /// chain id of polygon is 137
         assertEq(v.srcPayloadId, 1);
-        assertEq(v.superformRouterId, 1);
 
         for (uint256 i = 0; i < v.slippage.length; ++i) {
             assertLe(v.amounts[i], AMOUNTS[POLY][0][i]);

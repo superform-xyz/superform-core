@@ -54,7 +54,6 @@ contract EmergencyQueueTest is ProtocolActions {
         EmergencyQueue(emergencyQueue).queueWithdrawal(
             InitSingleVaultData(
                 1,
-                1,
                 _getTestSuperformId(),
                 1e18, // good hacker tries to take only 1e18
                 1000,
@@ -85,7 +84,6 @@ contract EmergencyQueueTest is ProtocolActions {
         EmergencyQueue(emergencyQueue).queueWithdrawal(
             InitSingleVaultData(
                 1,
-                1,
                 superformId,
                 1e18, // good hacker tries to take only 1e18
                 1000,
@@ -115,7 +113,6 @@ contract EmergencyQueueTest is ProtocolActions {
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         EmergencyQueue(emergencyQueue).queueWithdrawal(
             InitSingleVaultData(
-                1,
                 1,
                 superformId,
                 1e18, // good hacker tries to take only 1e18

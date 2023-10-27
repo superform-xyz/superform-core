@@ -68,10 +68,6 @@ contract SuperRegistryTest is BaseSetup {
         _setAndAssert(superRegistry.SUPERFORM_FACTORY(), address(0x1));
     }
 
-    function test_setSuperTransmuter_and_revert_invalidCaller() public {
-        _setAndAssert(superRegistry.SUPER_TRANSMUTER(), address(0x1));
-    }
-
     function test_setPayMaster_and_revert_invalidCaller() public {
         _setAndAssert(superRegistry.PAYMASTER(), address(0x1));
     }
@@ -331,66 +327,6 @@ contract SuperRegistryTest is BaseSetup {
         vm.prank(address(420));
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         superRegistry.setVaultLimitPerTx(1, 100);
-    }
-
-    function test_setRouterInfo() public {
-        uint8[] memory superformRouterIds = new uint8[](2);
-        address[] memory stateSyncers = new address[](1);
-        address[] memory routers = new address[](2);
-
-        superformRouterIds[0] = 3;
-        stateSyncers[0] = address(0x1);
-        routers[0] = address(0x2);
-        superformRouterIds[1] = 4;
-        routers[1] = address(0x4);
-
-        vm.prank(deployer);
-        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
-
-        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
-        stateSyncers = new address[](2);
-        stateSyncers[0] = address(0x1);
-        stateSyncers[1] = address(0x3);
-
-        routers = new address[](1);
-        routers[0] = address(0x2);
-
-        vm.prank(deployer);
-        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
-
-        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
-        routers = new address[](2);
-        routers[0] = address(0x2);
-        routers[1] = address(0x4);
-
-        vm.prank(deployer);
-        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
-
-        routers[0] = address(0);
-
-        vm.prank(deployer);
-        vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
-        routers[0] = address(0x2);
-        stateSyncers[0] = address(0);
-
-        vm.prank(deployer);
-        vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
-        stateSyncers[0] = address(0x1);
-
-        vm.prank(deployer);
-        vm.expectRevert(Error.DISABLED.selector);
-        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
-
-        superformRouterIds[0] = 5;
-        vm.prank(deployer);
-        vm.expectRevert(Error.DISABLED.selector);
-        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
-
-        address router1 = superRegistry.getRouter(4);
-
-        assertEq(router1, address(0x4));
     }
 
     function test_setRequiredMessagingQuorum_and_revert_invalidCaller() public {

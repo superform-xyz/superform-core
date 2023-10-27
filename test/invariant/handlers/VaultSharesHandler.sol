@@ -27,7 +27,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
 
     constructor(
         uint64[] memory chainIds,
-        string[31] memory contractNames,
+        string[30] memory contractNames,
         address[][] memory coreContracts,
         address[][] memory underlyingAddresses,
         address[][][] memory vaultAddresses,

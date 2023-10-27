@@ -6,7 +6,7 @@ import { IBaseForm } from "../../interfaces/IBaseForm.sol";
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
 import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
 import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
-import { IStateSyncer } from "../../interfaces/IStateSyncer.sol";
+import { ISuperPositions } from "../../interfaces/ISuperPositions.sol";
 import { IERC4626TimelockForm } from "../../forms/interfaces/IERC4626TimelockForm.sol";
 import { ITimelockStateRegistry } from "../../interfaces/ITimelockStateRegistry.sol";
 import { IBaseStateRegistry } from "../../interfaces/IBaseStateRegistry.sol";
@@ -172,7 +172,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
 
             /// @dev for direct chain, superPositions are minted directly
             if (p.isXChain == 0) {
-                IStateSyncer(superRegistry.getStateSyncer(p.data.superformRouterId)).mintSingle(
+                ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintSingle(
                     p.srcSender, p.data.superformId, p.data.amount
                 );
             }
@@ -213,7 +213,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
 
         ReturnSingleData memory singleVaultData = abi.decode(_payloadBody, (ReturnSingleData));
         if (callbackType == uint256(CallbackType.FAIL)) {
-            IStateSyncer(superRegistry.getStateSyncer(singleVaultData.superformRouterId)).stateSync(_message);
+            ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).stateSync(_message);
         }
     }
 
@@ -280,12 +280,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
                     CHAIN_ID
                 ),
                 abi.encode(
-                    ReturnSingleData(
-                        singleVaultData_.superformRouterId,
-                        singleVaultData_.payloadId,
-                        singleVaultData_.superformId,
-                        singleVaultData_.amount
-                    )
+                    ReturnSingleData(singleVaultData_.payloadId, singleVaultData_.superformId, singleVaultData_.amount)
                 )
             )
         );

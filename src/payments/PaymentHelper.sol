@@ -543,12 +543,10 @@ contract PaymentHelper is IPaymentHelper {
 
         if (v.isMulti == 1) {
             InitMultiVaultData memory data = abi.decode(v.payloadBody, (InitMultiVaultData));
-            v.payloadBody =
-                abi.encode(ReturnMultiData(data.superformRouterId, v.currPayloadId, data.superformIds, data.amounts));
+            v.payloadBody = abi.encode(ReturnMultiData(v.currPayloadId, data.superformIds, data.amounts));
         } else {
             InitSingleVaultData memory data = abi.decode(v.payloadBody, (InitSingleVaultData));
-            v.payloadBody =
-                abi.encode(ReturnSingleData(data.superformRouterId, v.currPayloadId, data.superformId, data.amount));
+            v.payloadBody = abi.encode(ReturnSingleData(v.currPayloadId, data.superformId, data.amount));
         }
 
         v.proofIds = coreStateRegistry.getProofAMB(v.proof);
@@ -724,8 +722,6 @@ contract PaymentHelper is IPaymentHelper {
     {
         bytes memory ambData = abi.encode(
             InitSingleVaultData(
-                1,
-                /// @dev sample router id for estimation
                 _getNextPayloadId(),
                 sfData_.superformId,
                 sfData_.amount,
@@ -747,8 +743,6 @@ contract PaymentHelper is IPaymentHelper {
     {
         bytes memory ambData = abi.encode(
             InitMultiVaultData(
-                1,
-                /// @dev sample router id for estimation
                 _getNextPayloadId(),
                 sfData_.superformIds,
                 sfData_.amounts,

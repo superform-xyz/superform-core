@@ -31,7 +31,6 @@ library ArrayCastLib {
         liqData[0] = data_.liqData;
 
         castedData_ = InitMultiVaultData(
-            data_.superformRouterId,
             data_.payloadId,
             superformIds,
             amounts,

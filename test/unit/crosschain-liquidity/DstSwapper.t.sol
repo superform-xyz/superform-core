@@ -3,7 +3,6 @@ pragma solidity ^0.8.21;
 
 import { Error } from "src/utils/Error.sol";
 
-import { IStateSyncer } from "src/interfaces/IStateSyncer.sol";
 import "test/utils/ProtocolActions.sol";
 
 contract DstSwapperTest is ProtocolActions {
@@ -438,8 +437,7 @@ contract DstSwapperTest is ProtocolActions {
             137,
             abi.encode(
                 AMBMessage(
-                    0,
-                    abi.encode(InitSingleVaultData(1, 1, superformId, 1e18, 0, true, liq, dstRefundAddress, bytes("")))
+                    0, abi.encode(InitSingleVaultData(1, superformId, 1e18, 0, true, liq, dstRefundAddress, bytes("")))
                 )
             )
         );
@@ -468,7 +466,7 @@ contract DstSwapperTest is ProtocolActions {
                     /// @dev srcSender,
                     ETH
                 ),
-                abi.encode(InitSingleVaultData(1, 1, superformId, 1e18, 1000, true, liq, users[0], bytes("")))
+                abi.encode(InitSingleVaultData(1, superformId, 1e18, 1000, true, liq, users[0], bytes("")))
             )
         );
 
@@ -513,7 +511,7 @@ contract DstSwapperTest is ProtocolActions {
                     DataLib.packTxInfo(uint8(TransactionType.DEPOSIT), uint8(CallbackType.INIT), 1, 1, users[0], ETH),
                     abi.encode(
                         InitMultiVaultData(
-                            1, 1, superformIds, amounts, maxSlippages, hasDstSwaps, liq, users[0], bytes("")
+                            1, superformIds, amounts, maxSlippages, hasDstSwaps, liq, users[0], bytes("")
                         )
                     )
                 )
@@ -548,7 +546,7 @@ contract DstSwapperTest is ProtocolActions {
                     DataLib.packTxInfo(1, 0, 1, 1, address(420), uint64(137)),
                     abi.encode(
                         InitMultiVaultData(
-                            1, 1, superformIds, amounts, new uint256[](2), hasDstSwaps, liq, dstRefundAddress, bytes("")
+                            1, superformIds, amounts, new uint256[](2), hasDstSwaps, liq, dstRefundAddress, bytes("")
                         )
                     )
                 )

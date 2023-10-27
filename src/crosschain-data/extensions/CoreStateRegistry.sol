@@ -5,7 +5,7 @@ import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol"
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { BaseStateRegistry } from "../BaseStateRegistry.sol";
 import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
-import { IStateSyncer } from "../../interfaces/IStateSyncer.sol";
+import { ISuperPositions } from "../../interfaces/ISuperPositions.sol";
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
 import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
 import { IPaymentHelper } from "../../interfaces/IPaymentHelper.sol";
@@ -14,7 +14,6 @@ import { IDstSwapper } from "../../interfaces/IDstSwapper.sol";
 import { DataLib } from "../../libraries/DataLib.sol";
 import { ProofLib } from "../../libraries/ProofLib.sol";
 import { ArrayCastLib } from "../../libraries/ArrayCastLib.sol";
-import { IERC4626Form } from "../../forms/interfaces/IERC4626Form.sol";
 import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
 import { Error } from "../../utils/Error.sol";
 import "../../interfaces/ICoreStateRegistry.sol";
@@ -44,7 +43,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     }
 
     modifier onlySender() override {
-        if (superRegistry.getSuperformRouterId(msg.sender) == 0) revert Error.NOT_SUPER_ROUTER();
+        if (msg.sender != superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"))) revert Error.NOT_SUPER_ROUTER();
         _;
     }
 
@@ -173,11 +172,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         /// @dev mint superPositions for successful deposits or remint for failed withdraws
         if (callbackType == uint256(CallbackType.RETURN) || callbackType == uint256(CallbackType.FAIL)) {
             isMulti == 1
-                ? IStateSyncer(_getStateSyncer(abi.decode(payloadBody_, (ReturnMultiData)).superformRouterId))
-                    .stateMultiSync(message_)
-                : IStateSyncer(_getStateSyncer(abi.decode(payloadBody_, (ReturnSingleData)).superformRouterId)).stateSync(
-                    message_
-                );
+                ? ISuperPositions(_getAddress(keccak256("SUPER_POSITIONS"))).stateMultiSync(message_)
+                : ISuperPositions(_getAddress(keccak256("SUPER_POSITIONS"))).stateSync(message_);
         } else if (callbackType == uint8(CallbackType.INIT)) {
             /// @dev for initial payload processing
             bytes memory returnMessage;
@@ -328,11 +324,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     /// @dev returns if an address has a specific role
     function _hasRole(bytes32 id_, address addressToCheck_) internal view returns (bool) {
         return ISuperRBAC(_getAddress(keccak256("SUPER_RBAC"))).hasRole(id_, addressToCheck_);
-    }
-
-    /// @dev returns the state syncer address for id
-    function _getStateSyncer(uint8 id_) internal view returns (address stateSyncer) {
-        return superRegistry.getStateSyncer(id_);
     }
 
     /// @dev returns the registry address for id
@@ -684,7 +675,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
             try IBaseForm(superform_).xChainWithdrawFromVault(
                 InitSingleVaultData({
-                    superformRouterId: multiVaultData.superformRouterId,
                     payloadId: multiVaultData.payloadId,
                     superformId: multiVaultData.superformIds[i],
                     amount: multiVaultData.amounts[i],
@@ -715,7 +705,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             return _multiReturnData(
                 srcSender_,
                 multiVaultData.payloadId,
-                multiVaultData.superformRouterId,
                 TransactionType.WITHDRAW,
                 CallbackType.FAIL,
                 multiVaultData.superformIds,
@@ -766,7 +755,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     /// SPs back on source (slight gas waste)
                     try IBaseForm(superforms[i]).xChainDepositIntoVault(
                         InitSingleVaultData({
-                            superformRouterId: multiVaultData.superformRouterId,
                             payloadId: multiVaultData.payloadId,
                             superformId: multiVaultData.superformIds[i],
                             amount: multiVaultData.amounts[i],
@@ -810,7 +798,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             return _multiReturnData(
                 srcSender_,
                 multiVaultData.payloadId,
-                multiVaultData.superformRouterId,
                 TransactionType.DEPOSIT,
                 CallbackType.RETURN,
                 multiVaultData.superformIds,
@@ -849,7 +836,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             return _singleReturnData(
                 srcSender_,
                 singleVaultData.payloadId,
-                singleVaultData.superformRouterId,
                 TransactionType.WITHDRAW,
                 CallbackType.FAIL,
                 singleVaultData.superformId,
@@ -888,7 +874,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     return _singleReturnData(
                         srcSender_,
                         singleVaultData.payloadId,
-                        singleVaultData.superformRouterId,
                         TransactionType.DEPOSIT,
                         CallbackType.RETURN,
                         singleVaultData.superformId,
@@ -949,7 +934,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     function _multiReturnData(
         address srcSender_,
         uint256 payloadId_,
-        uint8 superformRouterId_,
         TransactionType txType,
         CallbackType returnType_,
         uint256[] memory superformIds_,
@@ -965,7 +949,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 DataLib.packTxInfo(
                     uint8(txType), uint8(returnType_), 1, _getStateRegistryId(address(this)), srcSender_, CHAIN_ID
                 ),
-                abi.encode(ReturnMultiData(superformRouterId_, payloadId_, superformIds_, amounts_))
+                abi.encode(ReturnMultiData(payloadId_, superformIds_, amounts_))
             )
         );
     }
@@ -974,7 +958,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     function _singleReturnData(
         address srcSender_,
         uint256 payloadId_,
-        uint8 superformRouterId_,
         TransactionType txType,
         CallbackType returnType_,
         uint256 superformId_,
@@ -990,7 +973,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 DataLib.packTxInfo(
                     uint8(txType), uint8(returnType_), 0, _getStateRegistryId(address(this)), srcSender_, CHAIN_ID
                 ),
-                abi.encode(ReturnSingleData(superformRouterId_, payloadId_, superformId_, amount_))
+                abi.encode(ReturnSingleData(payloadId_, superformId_, amount_))
             )
         );
     }
