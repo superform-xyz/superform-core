@@ -554,7 +554,7 @@ contract PaymentHelper is IPaymentHelper {
         v.ackAmbIds = new uint8[](v.proofIds.length + 1);
         v.ackAmbIds[0] = coreStateRegistry.msgAMB(payloadId_);
 
-        uint256 len = v.proofIds.length
+        uint256 len = v.proofIds.length;
 
         for (uint256 i; i < len; i++) {
             v.ackAmbIds[i + 1] = v.proofIds[i];
