@@ -21,6 +21,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
     //////////////////////////////////////////////////////////////*/
     ISuperRegistry public immutable superRegistry;
     IWormhole public wormhole;
+    address public relayer;
 
     uint8 public broadcastFinality;
 
@@ -51,6 +52,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
     /*///////////////////////////////////////////////////////////////
                             WORMHOLE APPLICATION CONFIG
     //////////////////////////////////////////////////////////////*/
+
     /// @dev allows protocol admin to configure wormhole core contract
     /// @param wormhole_ is wormhole address for respective chain
     function setWormholeCore(address wormhole_) external onlyProtocolAdmin {
@@ -58,6 +60,13 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         if (address(wormhole) == address(0)) {
             wormhole = IWormhole(wormhole_);
         }
+    }
+
+    /// @dev allows protocol admin to configure relayer (superform owned)
+    /// @param relayer_ is superform deployed relayer address
+    function setRelayer(address relayer_) external onlyProtocolAdmin {
+        if (relayer_ == address(0)) revert Error.ZERO_ADDRESS();
+        relayer = relayer_;
     }
 
     /// @dev allows protocol admin to set broadcast finality
@@ -91,16 +100,27 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         /// @dev is wormhole's inherent fee for sending a message
         uint256 msgFee = wormhole.messageFee();
 
-        if (msg.value != msgFee) {
+        if (msg.value < msgFee) {
             revert Error.CROSS_CHAIN_TX_UNDERPAID();
         }
 
-        wormhole.publishMessage{ value: msg.value }(
+        wormhole.publishMessage{ value: msgFee }(
             0,
             /// batch id
             message_,
             broadcastFinality
         );
+
+        if (relayer == address(0)) {
+            revert Error.RELAYER_NOT_SET();
+        }
+
+        /// @dev forwards the rest to superform relayer
+        (bool success,) = payable(relayer).call{ value: msg.value - msgFee }("");
+
+        if (!success) {
+            revert Error.NATIVE_TOKEN_TRANSFER_FAILURE();
+        }
     }
 
     function receiveMessage(bytes memory encodedMessage_) public {

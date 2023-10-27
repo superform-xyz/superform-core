@@ -26,6 +26,7 @@ interface ReadOnlyBaseRegistry is IBaseStateRegistry {
 contract PaymentHelper is IPaymentHelper {
     using DataLib for uint256;
     using ArrayCastLib for LiqRequest;
+    using ArrayCastLib for bool;
     using ProofLib for bytes;
     using ProofLib for AMBMessage;
 
@@ -54,7 +55,11 @@ contract PaymentHelper is IPaymentHelper {
     mapping(uint64 chainId => uint256 defaultGasPrice) public gasPrice;
     mapping(uint64 chainId => uint256 gasPerKB) public gasPerKB;
     mapping(uint64 chainId => uint256 gasForOps) public ackGasCost;
-    mapping(uint64 chainId => uint256 gasForOps) public twoStepCost;
+    mapping(uint64 chainId => uint256 gasForOps) public timelockCost;
+
+    /// @dev register transmuter params
+    uint256 public totalTransmuterFees;
+    bytes public extraDataForTransmuter;
 
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
@@ -107,7 +112,7 @@ contract PaymentHelper is IPaymentHelper {
         gasPrice[chainId_] = config_.defaultGasPrice;
         gasPerKB[chainId_] = config_.dstGasPerKB;
         ackGasCost[chainId_] = config_.ackGasCost;
-        twoStepCost[chainId_] = config_.twoStepCost;
+        timelockCost[chainId_] = config_.timelockCost;
         swapGasUsed[chainId_] = config_.swapGasUsed;
     }
 
@@ -168,7 +173,7 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev Type 10: TWO STEP PROCESSING COST
         if (configType_ == 10) {
-            twoStepCost[chainId_] = abi.decode(config_, (uint256));
+            timelockCost[chainId_] = abi.decode(config_, (uint256));
         }
 
         /// @dev Type 11: SWAP GAS USED
@@ -177,6 +182,18 @@ contract PaymentHelper is IPaymentHelper {
         }
 
         emit ChainConfigUpdated(chainId_, configType_, config_);
+    }
+
+    /// @inheritdoc IPaymentHelper
+    function updateRegisterTransmuterParams(
+        uint256 totalTransmuterFees_,
+        bytes memory extraDataForTransmuter_
+    )
+        external
+        onlyEmergencyAdmin
+    {
+        totalTransmuterFees = totalTransmuterFees_;
+        extraDataForTransmuter = extraDataForTransmuter_;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -199,6 +216,16 @@ contract PaymentHelper is IPaymentHelper {
 
         extraData = abi.encode(AMBExtraData(gasPerAMB, extraDataPerAMB));
         totalFees = fees;
+    }
+
+    /// @inheritdoc IPaymentHelper
+    function calculateRegisterTransmuterAMBData()
+        external
+        view
+        override
+        returns (uint256 totalFees, bytes memory extraData)
+    {
+        return (totalTransmuterFees, extraDataForTransmuter);
     }
 
     /// @inheritdoc IPaymentHelper
@@ -237,7 +264,7 @@ contract PaymentHelper is IPaymentHelper {
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequests);
 
                 /// @dev step 5: estimate dst swap cost if it exists
-                totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].liqRequests);
+                totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwaps);
             }
 
             /// @dev step 6: estimate execution costs in dst (withdraw / deposit)
@@ -284,10 +311,11 @@ contract PaymentHelper is IPaymentHelper {
                 srcAmount += _estimateAckProcessingCost(len, 1);
 
                 /// @dev step 4: estimate the liqAmount
-                liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequest.castToArray());
+                liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequest.castLiqRequestToArray());
 
                 /// @dev step 5: estimate if swap costs are involved
-                totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].liqRequest.castToArray());
+                totalDstGas +=
+                    _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwap.castBoolToArray());
             }
 
             /// @dev step 5: estimate execution costs in dst
@@ -338,7 +366,7 @@ contract PaymentHelper is IPaymentHelper {
         if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformsData.liqRequests);
 
         /// @dev step 6: estimate if swap costs are involved
-        if (isDeposit_) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformsData.liqRequests);
+        if (isDeposit_) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformsData.hasDstSwaps);
 
         /// @dev step 7: convert all dst gas estimates to src chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
@@ -374,10 +402,12 @@ contract PaymentHelper is IPaymentHelper {
         if (isDeposit_) srcAmount += _estimateAckProcessingCost(1, 1);
 
         /// @dev step 5: estimate the liq amount
-        if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castToArray());
+        if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
 
         /// @dev step 6: estimate if swap costs are involved
-        if (isDeposit_) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformData.liqRequest.castToArray());
+        if (isDeposit_) {
+            totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformData.hasDstSwap.castBoolToArray());
+        }
 
         /// @dev step 7: convert all dst gas estimates to src chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
@@ -398,10 +428,10 @@ contract PaymentHelper is IPaymentHelper {
         (, uint32 formId,) = req_.superformData.superformId.getSuperform();
         /// @dev only if timelock form withdrawal is involved
         if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
-            srcAmount += twoStepCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
+            srcAmount += timelockCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
         }
 
-        if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castToArray());
+        if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
 
         /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
@@ -420,7 +450,7 @@ contract PaymentHelper is IPaymentHelper {
         uint256 len = req_.superformData.superformIds.length;
         for (uint256 i; i < len;) {
             (, uint32 formId,) = req_.superformData.superformIds[i].getSuperform();
-            uint256 twoStepPrice = twoStepCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
+            uint256 twoStepPrice = timelockCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
             /// @dev only if timelock form withdrawal is involved
             if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
                 srcAmount += twoStepPrice;
@@ -482,12 +512,13 @@ contract PaymentHelper is IPaymentHelper {
         returns (bytes[] memory extraDataPerAMB)
     {
         uint256 len = ambIds_.length;
-        uint256 totalDstGasReqInWei = message_.length * gasPerKB[dstChainId_];
+        uint256 gasReqPerKB = gasPerKB[dstChainId_];
+        uint256 totalDstGasReqInWei = message_.length * gasReqPerKB;
 
         AMBMessage memory decodedMessage = abi.decode(message_, (AMBMessage));
         decodedMessage.params = message_.computeProofBytes();
 
-        uint256 totalDstGasReqInWeiForProof = abi.encode(decodedMessage).length * gasPerKB[dstChainId_];
+        uint256 totalDstGasReqInWeiForProof = abi.encode(decodedMessage).length * gasReqPerKB;
 
         extraDataPerAMB = new bytes[](len);
 
@@ -646,7 +677,7 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev helps estimate the dst chain swap gas limit (if multi-tx is involved)
     function _estimateSwapFees(
         uint64 dstChainId_,
-        LiqRequest[] memory liqReq_
+        bool[] memory hasDstSwaps_
     )
         internal
         view
@@ -658,14 +689,9 @@ contract PaymentHelper is IPaymentHelper {
             return 0;
         }
 
-        for (uint256 i; i < liqReq_.length;) {
-            /// @dev checks if tx_data receiver is dstSwapProcessor
-            if (
-                liqReq_[i].bridgeId != 0
-                    && IBridgeValidator(superRegistry.getBridgeValidator(liqReq_[i].bridgeId)).validateReceiver(
-                        liqReq_[i].txData, superRegistry.getAddress(keccak256("DST_SWAPPER"))
-                    )
-            ) {
+        for (uint256 i; i < hasDstSwaps_.length;) {
+            /// @dev checks if hasDstSwap is true
+            if (hasDstSwaps_[i]) {
                 ++totalSwaps;
             }
 

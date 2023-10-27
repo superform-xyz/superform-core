@@ -435,11 +435,11 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             );
 
             /// @dev 4.2 - deploy Form State Registry
-            vars.twoStepsFormStateRegistry = address(new TimelockStateRegistry{salt: salt}(vars.superRegistryC));
-            contracts[vars.chainId][bytes32(bytes("TimelockStateRegistry"))] = vars.twoStepsFormStateRegistry;
+            vars.timelockFormStateRegistry = address(new TimelockStateRegistry{salt: salt}(vars.superRegistryC));
+            contracts[vars.chainId][bytes32(bytes("TimelockStateRegistry"))] = vars.timelockFormStateRegistry;
 
             vars.superRegistryC.setAddress(
-                vars.superRegistryC.TIMELOCK_STATE_REGISTRY(), vars.twoStepsFormStateRegistry, vars.chainId
+                vars.superRegistryC.TIMELOCK_STATE_REGISTRY(), vars.timelockFormStateRegistry, vars.chainId
             );
 
             /// @dev 4.3 - deploy Broadcast State Registry
@@ -452,7 +452,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
             address[] memory registryAddresses = new address[](3);
             registryAddresses[0] = vars.coreStateRegistry;
-            registryAddresses[1] = vars.twoStepsFormStateRegistry;
+            registryAddresses[1] = vars.timelockFormStateRegistry;
             registryAddresses[2] = vars.broadcastRegistry;
 
             uint8[] memory registryIds = new uint8[](3);
@@ -504,6 +504,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
 
             WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[i]);
+            WormholeSRImplementation(vars.wormholeSRImplementation).setRelayer(deployer);
 
             vars.ambAddresses[0] = vars.lzImplementation;
             vars.ambAddresses[1] = vars.hyperlaneImplementation;
@@ -802,6 +803,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                     );
 
                     vars.superRegistryC.setRequiredMessagingQuorum(vars.dstChainId, 1);
+                    vars.superRegistryC.setVaultLimitPerTx(vars.dstChainId, 30);
 
                     /// swap gas cost: 50000
                     /// update gas cost: 40000
@@ -824,6 +826,9 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                             10_000,
                             50_000
                         )
+                    );
+                    PaymentHelper(payable(vars.paymentHelper)).updateRegisterTransmuterParams(
+                        0, generateBroadcastParams(5, 1)
                     );
 
                     vars.superRegistryC.setAddress(

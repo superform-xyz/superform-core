@@ -10,13 +10,25 @@ import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
 import { IPaymentHelper } from "../../interfaces/IPaymentHelper.sol";
 import { IBaseForm } from "../../interfaces/IBaseForm.sol";
 import { IDstSwapper } from "../../interfaces/IDstSwapper.sol";
+import { ISuperformFactory } from "../../interfaces/ISuperformFactory.sol";
+import { ICoreStateRegistry } from "../../interfaces/ICoreStateRegistry.sol";
+import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
 import { DataLib } from "../../libraries/DataLib.sol";
 import { ProofLib } from "../../libraries/ProofLib.sol";
 import { ArrayCastLib } from "../../libraries/ArrayCastLib.sol";
-import { IERC4626Form } from "../../forms/interfaces/IERC4626Form.sol";
 import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
 import { Error } from "../../utils/Error.sol";
-import "../../interfaces/ICoreStateRegistry.sol";
+import {
+    PayloadState,
+    AMBMessage,
+    InitMultiVaultData,
+    TransactionType,
+    CallbackType,
+    ReturnMultiData,
+    ReturnSingleData,
+    InitSingleVaultData
+} from "../../types/DataTypes.sol";
+import { LiqRequest } from "../../types/LiquidityTypes.sol";
 
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
@@ -38,7 +50,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     //////////////////////////////////////////////////////////////*/
 
     modifier onlyAllowedCaller(bytes32 role_) {
-        if (!_hasRole(role_, msg.sender)) revert Error.NOT_PREVILAGED_CALLER(role_);
+        if (!_hasRole(role_, msg.sender)) revert Error.NOT_PRIVILEGED_CALLER(role_);
         _;
     }
 
@@ -245,6 +257,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     /// @inheritdoc ICoreStateRegistry
     function disputeRescueFailedDeposits(uint256 payloadId_) external override {
+        /// @dev validates the payload id
+        _validatePayloadId(payloadId_);
+
         FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
 
         /// @dev the msg sender should be the refund address (or) the disputer
@@ -275,6 +290,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     /// @inheritdoc ICoreStateRegistry
     /// @notice is an open function & can be executed by anyone
     function finalizeRescueFailedDeposits(uint256 payloadId_) external override {
+        /// @dev validates the payload id
+        _validatePayloadId(payloadId_);
+
         FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
 
         /// @dev the timelock is elapsed
@@ -665,11 +683,13 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         bool errors;
         uint256 len = multiVaultData.superformIds.length;
+        address superformFactory = superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"));
 
         for (uint256 i; i < len;) {
-            /// @dev it is critical to validate that the action is being performed to the correct chainId coming from
-            /// the superform
-            DataLib.validateSuperformChainId(multiVaultData.superformIds[i], CHAIN_ID);
+            // @dev validates if superformId exists on factory
+            if (!ISuperformFactory(superformFactory).isSuperform(multiVaultData.superformIds[i])) {
+                revert Error.SUPERFORM_ID_NONEXISTENT();
+            }
 
             /// @dev Store destination payloadId_ & index in extraFormData (tbd: 1-step flow doesnt need this)
             (address superform_,,) = multiVaultData.superformIds[i].getSuperform();
@@ -733,12 +753,14 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         IERC20 underlying;
         uint256 numberOfVaults = multiVaultData.superformIds.length;
-        uint256[] memory dstAmounts = new uint256[](numberOfVaults);
-
         bool fulfilment;
         bool errors;
+        address superformFactory = _getAddress(keccak256("SUPERFORM_FACTORY"));
 
         for (uint256 i; i < numberOfVaults;) {
+            if (!ISuperformFactory(superformFactory).isSuperform(multiVaultData.superformIds[i])) {
+                revert Error.SUPERFORM_ID_NONEXISTENT();
+            }
             /// @dev if updating the deposit payload fails because of slippage, multiVaultData.amounts[i] is set to 0
             /// @dev this means that this amount was already added to the failedDeposits state variable and should not
             /// be re-added (or processed here)
@@ -749,13 +771,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     underlying.safeIncreaseAllowance(superforms[i], multiVaultData.amounts[i]);
                     LiqRequest memory emptyRequest;
 
-                    /// @dev it is critical to validate that the action is being performed to the correct chainId coming
-                    /// from the superform
-                    DataLib.validateSuperformChainId(multiVaultData.superformIds[i], CHAIN_ID);
-
-                    /// @notice dstAmounts has same size of the number of vaults. If a given deposit fails, we are
-                    /// minting 0
-                    /// SPs back on source (slight gas waste)
+                    /// @notice  If a given deposit fails, we are minting 0 SPs back on source (slight gas waste)
                     try IBaseForm(superforms[i]).xChainDepositIntoVault(
                         InitSingleVaultData({
                             superformRouterId: multiVaultData.superformRouterId,
@@ -774,7 +790,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                         if (dstAmount > 0) {
                             fulfilment = true;
                             /// @dev marks the indexes that require a callback mint of shares (successful)
-                            dstAmounts[i] = dstAmount;
+                            multiVaultData.amounts[i] = dstAmount;
+                        } else {
+                            multiVaultData.amounts[i] = 0;
                         }
                     } catch {
                         /// @dev cleaning unused approval
@@ -785,6 +803,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                         errors = true;
 
                         failedDeposits[payloadId_].superformIds.push(multiVaultData.superformIds[i]);
+
+                        /// @dev clearing multiVaultData.amounts so that in case that fullfilment is true these amounts
+                        /// are not minted
+                        multiVaultData.amounts[i] = 0;
                         failedDeposits[payloadId_].settlementToken.push(IBaseForm(superforms[i]).getVaultAsset());
                         failedDeposits[payloadId_].settleFromDstSwapper.push(false);
                     }
@@ -806,7 +828,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 TransactionType.DEPOSIT,
                 CallbackType.RETURN,
                 multiVaultData.superformIds,
-                dstAmounts
+                multiVaultData.amounts
             );
         }
 
@@ -829,7 +851,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
         singleVaultData.extraFormData = abi.encode(payloadId_, 0);
 
-        DataLib.validateSuperformChainId(singleVaultData.superformId, CHAIN_ID);
+        if (!ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(singleVaultData.superformId)) {
+            revert Error.SUPERFORM_ID_NONEXISTENT();
+        }
 
         (address superform_,,) = singleVaultData.superformId.getSuperform();
         /// @dev Withdraw from superform
@@ -863,7 +887,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
 
-        DataLib.validateSuperformChainId(singleVaultData.superformId, CHAIN_ID);
+        if (!ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(singleVaultData.superformId)) {
+            revert Error.SUPERFORM_ID_NONEXISTENT();
+        }
 
         (address superform_,,) = singleVaultData.superformId.getSuperform();
 

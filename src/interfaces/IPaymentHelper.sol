@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.21;
 
-import "../types/DataTypes.sol";
+import {
+    MultiDstMultiVaultStateReq,
+    MultiDstSingleVaultStateReq,
+    SingleXChainMultiVaultStateReq,
+    SingleXChainSingleVaultStateReq,
+    SingleDirectSingleVaultStateReq,
+    SingleDirectMultiVaultStateReq
+} from "../types/DataTypes.sol";
 
 /// @title IPaymentHelper
 /// @author ZeroPoint Labs
@@ -21,7 +28,7 @@ interface IPaymentHelper {
     /// @param defaultGasPrice_ is the gas price on the specified chain
     /// @param dstGasPerKB_ is the gas per size of data on the specified chain
     /// @param ackGasCost_ is the gas cost for processing acknowledgements on src chain
-    /// @param twoStepCost_ is the extra cost for processing two-step/timelocked payloads
+    /// @param timelockCost_ is the extra cost for processing two-step/timelocked payloads
     /// @param swapGasUsed_ is the cost for dst swap
     struct PaymentHelperConfig {
         address nativeFeedOracle;
@@ -33,7 +40,7 @@ interface IPaymentHelper {
         uint256 defaultGasPrice;
         uint256 dstGasPerKB;
         uint256 ackGasCost;
-        uint256 twoStepCost;
+        uint256 timelockCost;
         uint256 swapGasUsed;
     }
 
@@ -57,6 +64,14 @@ interface IPaymentHelper {
     /// @param config_ is the encoded new configuration
     function updateChainConfig(uint64 chainId_, uint256 configType_, bytes memory config_) external;
 
+    /// @dev admin updates config for register transmuter amb params
+    /// @param totalTransmuterFees_ is the native value fees for registering transmuter on all supported chains
+    /// @param extraDataForTransmuter_ is the broadcast extra data
+    function updateRegisterTransmuterParams(
+        uint256 totalTransmuterFees_,
+        bytes memory extraDataForTransmuter_
+    )
+        external;
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -73,6 +88,11 @@ interface IPaymentHelper {
         external
         view
         returns (uint256 totalFees, bytes memory extraData);
+
+    /// @dev returns the amb overrides & gas to be used
+    /// @return totalFees the msg.value to be sent along the transaction
+    /// @return extraData the amb specific override information
+    function calculateRegisterTransmuterAMBData() external view returns (uint256 totalFees, bytes memory extraData);
 
     /// @dev returns the gas fees estimation in native tokens if we send message through a combination of AMBs
     /// @param ambIds_ is the identifier of different AMBs

@@ -38,6 +38,7 @@ contract SuperformFactory is ISuperformFactory {
 
     /// @dev all superform ids
     uint256[] public superforms;
+    mapping(uint256 superformId => bool superformIdExists) public isSuperform;
 
     /// @notice If formImplementationId is 0, formImplementation is not part of the protocol
     mapping(uint32 formImplementationId => address formBeaconAddress) public formImplementation;
@@ -145,6 +146,7 @@ contract SuperformFactory is ISuperformFactory {
         vaultFormImplCombinationToSuperforms[vaultFormImplementationCombination] = superformId_;
 
         superforms.push(superformId_);
+        isSuperform[superformId_] = true;
 
         emit SuperformCreated(formImplementationId_, vault_, superformId_, superform_);
     }

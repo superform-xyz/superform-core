@@ -96,18 +96,6 @@ library DataLib {
         }
     }
 
-    /// @dev validates if the superformId_ belongs to the chainId_
-    /// @param superformId_ to validate
-    /// @param chainId_ is the chainId to check if the superform id belongs to
-    function validateSuperformChainId(uint256 superformId_, uint64 chainId_) internal pure {
-        /// @dev validates if superformId exists on factory
-        uint64 chainId = getDestinationChain(superformId_);
-
-        if (chainId != chainId_ || chainId == 0) {
-            revert Error.INVALID_CHAIN_ID();
-        }
-    }
-
     /// @dev returns the destination chain of a given superform
     /// @param superformId_ is the id of the superform
     /// @return chainId_ is the chain id
