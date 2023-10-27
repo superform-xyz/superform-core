@@ -921,10 +921,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     )
         internal
     {
-        uint8[] memory proofIds = proofAMB[proof_];
 
         /// @dev if deposits succeeded or some withdrawal failed, dispatch a callback
         if (returnMessage_.length > 0) {
+            uint8[] memory proofIds = proofAMB[proof_];
             uint256 len = proofIds.length;
             uint8[] memory ambIds = new uint8[](len + 1);
             ambIds[0] = msgAMB[payloadId_];

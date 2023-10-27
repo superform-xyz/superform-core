@@ -554,7 +554,9 @@ contract PaymentHelper is IPaymentHelper {
         v.ackAmbIds = new uint8[](v.proofIds.length + 1);
         v.ackAmbIds[0] = coreStateRegistry.msgAMB(payloadId_);
 
-        for (uint256 i; i < v.proofIds.length; i++) {
+        uint256 len = v.proofIds.length
+
+        for (uint256 i; i < len; i++) {
             v.ackAmbIds[i + 1] = v.proofIds[i];
         }
 
@@ -630,7 +632,8 @@ contract PaymentHelper is IPaymentHelper {
 
     /// @dev helps estimate the liq amount involved in the tx
     function _estimateLiqAmount(LiqRequest[] memory req_) internal view returns (uint256 liqAmount) {
-        for (uint256 i; i < req_.length;) {
+        uint256 len = req_.length;
+        for (uint256 i; i < len;) {
             if (req_[i].token == NATIVE) {
                 liqAmount += IBridgeValidator(superRegistry.getBridgeValidator(req_[i].bridgeId)).decodeAmountIn(
                     req_[i].txData, false
@@ -658,7 +661,8 @@ contract PaymentHelper is IPaymentHelper {
             return 0;
         }
 
-        for (uint256 i; i < liqReq_.length;) {
+        uint256 len = liqReq_.length;
+        for (uint256 i; i < len;) {
             /// @dev checks if tx_data receiver is dstSwapProcessor
             if (
                 liqReq_[i].bridgeId != 0

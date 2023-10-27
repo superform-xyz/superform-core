@@ -176,7 +176,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         uint256 len = bridgeId_.length;
         if (len != bridgeAddress_.length || len != bridgeValidator_.length) revert Error.ARRAY_LENGTH_MISMATCH();
 
-        for (uint256 i; i < bridgeId_.length;) {
+        for (uint256 i; i < len;) {
             uint8 bridgeId = bridgeId_[i];
             address bridgeAddress = bridgeAddress_[i];
             address bridgeValidatorT = bridgeValidator_[i];
@@ -207,7 +207,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         uint256 len = ambId_.length;
         if (len != ambAddress_.length || len != isBroadcastAMB_.length) revert Error.ARRAY_LENGTH_MISMATCH();
 
-        for (uint256 i; i < ambId_.length;) {
+        for (uint256 i; i < len;) {
             address ambAddress = ambAddress_[i];
             uint8 ambId = ambId_[i];
             bool broadcastAMB = isBroadcastAMB_[i];
