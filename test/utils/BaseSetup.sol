@@ -13,9 +13,6 @@ import { WormholeHelper } from "pigeon/wormhole/automatic-relayer/WormholeHelper
 import "pigeon/wormhole/specialized-relayer/WormholeHelper.sol" as WormholeBroadcastHelper;
 
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
-import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
-
-import { AggregatorV3Interface } from "../../src/vendor/chainlink/AggregatorV3Interface.sol";
 
 /// @dev test utils & mocks
 import { LiFiMock } from "../mocks/LiFiMock.sol";
@@ -502,6 +499,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
 
             WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[i]);
+            WormholeSRImplementation(vars.wormholeSRImplementation).setRelayer(deployer);
 
             vars.ambAddresses[0] = vars.lzImplementation;
             vars.ambAddresses[1] = vars.hyperlaneImplementation;
@@ -798,6 +796,9 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                             10_000,
                             50_000
                         )
+                    );
+                    PaymentHelper(payable(vars.paymentHelper)).updateRegisterSERC20Params(
+                        0, generateBroadcastParams(5, 1)
                     );
 
                     vars.superRegistryC.setAddress(

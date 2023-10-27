@@ -17,6 +17,7 @@ import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
+import { IPaymentHelper } from "./interfaces/IPaymentHelper.sol";
 import { Error } from "src/utils/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
@@ -255,55 +256,20 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         emit Completed(returnData.payloadId);
     }
 
-    /// @dev FIXME workaround till Sujith's pr is merged
-    function registerSERC20(uint256 superformId_) external override returns (address) {
-        revert();
-    }
-
-    /// @dev FIXME workaround till Sujith's pr is merged (this should not be here)
     /// @inheritdoc ISuperPositions
-    function registerSERC20(uint256 superformId_, bytes memory extraData_) external override returns (address) {
+    function registerSERC20(uint256 superformId_)
+        external
+        payable
+        override(ERC1155A, ISuperPositions)
+        returns (address)
+    {
         if (synthethicTokenId[superformId_] != address(0)) revert SYNTHETIC_ERC20_ALREADY_REGISTERED();
 
-        address syntheticToken = _createToken(superformId_, extraData_);
+        address syntheticToken = _registerSERC20(superformId_);
 
         synthethicTokenId[superformId_] = syntheticToken;
 
         return synthethicTokenId[superformId_];
-    }
-
-    function _createToken(uint256 id) internal virtual override returns (address syntheticToken) { }
-
-    function _createToken(uint256 id, bytes memory extraData_) internal virtual returns (address syntheticToken) {
-        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(id)) {
-            revert Error.SUPERFORM_ID_NONEXISTENT();
-        }
-        (address superform,,) = id.getSuperform();
-
-        string memory name =
-            string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
-        string memory symbol = string(abi.encodePacked("sERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
-        uint8 decimal = uint8(IBaseForm(superform).getVaultDecimals());
-        syntheticToken = address(
-            new sERC20(
-                name,
-                symbol,
-                decimal
-            )
-        );
-
-        /// @dev broadcast and deploy to the other destination chains
-        if (extraData_.length > 0) {
-            BroadcastMessage memory transmuterPayload = BroadcastMessage(
-                "SUPER_POSITIONS",
-                DEPLOY_NEW_SERC20,
-                abi.encode(CHAIN_ID, ++xChainPayloadCounter, id, name, symbol, decimal)
-            );
-
-            _broadcast(abi.encode(transmuterPayload), extraData_);
-        }
-
-        return syntheticToken;
     }
 
     /// @inheritdoc ISuperPositions
@@ -388,11 +354,46 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         }
     }
 
+    function _registerSERC20(uint256 id) internal override returns (address syntheticToken) {
+        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(id)) {
+            revert Error.SUPERFORM_ID_NONEXISTENT();
+        }
+        (address superform,,) = id.getSuperform();
+
+        string memory name =
+            string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
+        string memory symbol = string(abi.encodePacked("sERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
+        uint8 decimal = uint8(IBaseForm(superform).getVaultDecimals());
+        syntheticToken = address(
+            new sERC20(
+                name,
+                symbol,
+                decimal
+            )
+        );
+        /// @dev broadcast and deploy to the other destination chains
+        BroadcastMessage memory transmuterPayload = BroadcastMessage(
+            "SUPER_POSITIONS",
+            DEPLOY_NEW_SERC20,
+            abi.encode(CHAIN_ID, ++xChainPayloadCounter, id, name, symbol, decimal)
+        );
+
+        _broadcast(abi.encode(transmuterPayload));
+
+        return syntheticToken;
+    }
+
     /// @dev interacts with broadcast state registry to broadcasting state changes to all connected remote chains
     /// @param message_ is the crosschain message to be sent.
-    /// @param extraData_ is the amb override information.
-    function _broadcast(bytes memory message_, bytes memory extraData_) internal {
-        (uint8[] memory ambIds, bytes memory broadcastParams) = abi.decode(extraData_, (uint8[], bytes));
+    function _broadcast(bytes memory message_) internal {
+        (uint256 totalFees, bytes memory extraData) =
+            IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER"))).calculateRegisterTransmuterAMBData();
+
+        (uint8[] memory ambIds, bytes memory broadcastParams) = abi.decode(extraData, (uint8[], bytes));
+
+        if (msg.value < totalFees) {
+            revert Error.INVALID_BROADCAST_FEE();
+        }
 
         /// @dev ambIds are validated inside the broadcast state registry
         /// @dev broadcastParams if wrong will revert in the amb implementation

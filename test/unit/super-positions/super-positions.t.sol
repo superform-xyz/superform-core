@@ -267,7 +267,7 @@ contract SuperPositionsTest is BaseSetup {
     function test_registerSERC20() public {
         (uint256 superformId,) =
             SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
-        superPositions.registerSERC20(superformId, "");
+        superPositions.registerSERC20(superformId);
     }
 
     function test_registerSERC20_invalidExtraData() public {
@@ -276,7 +276,7 @@ contract SuperPositionsTest is BaseSetup {
         (uint256 superformId,) =
             SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
         vm.expectRevert();
-        superPositions.registerSERC20(superformId, abi.encode(ambId, 1));
+        superPositions.registerSERC20(superformId);
     }
 
     function test_withdrawFromInvalidChainId() public {
@@ -288,28 +288,28 @@ contract SuperPositionsTest is BaseSetup {
 
         vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
 
-        superPositions.registerSERC20(superformId, "");
+        superPositions.registerSERC20(superformId);
     }
 
     function test_InvalidSuperFormAddress() public {
         uint256 invalidSuperFormId = DataLib.packSuperform(address(0), 4, ETH);
         vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
-        superPositions.registerSERC20(invalidSuperFormId, "");
+        superPositions.registerSERC20(invalidSuperFormId);
     }
 
     function test_InvalidFormImplementation() public {
         uint256 invalidSuperFormId = DataLib.packSuperform(address(0x777), 0, ETH);
         vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
-        superPositions.registerSERC20(invalidSuperFormId, "");
+        superPositions.registerSERC20(invalidSuperFormId);
     }
 
     function test_alreadyRegistered() public {
         (uint256 superformId,) =
             SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
-        superPositions.registerSERC20(superformId, "");
+        superPositions.registerSERC20(superformId);
         vm.expectRevert(IERC1155A.SYNTHETIC_ERC20_ALREADY_REGISTERED.selector);
 
-        superPositions.registerSERC20(superformId, "");
+        superPositions.registerSERC20(superformId);
     }
 
     function test_broadcastAndDeploy() public {
@@ -317,7 +317,7 @@ contract SuperPositionsTest is BaseSetup {
             SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
 
         vm.recordLogs();
-        superPositions.registerSERC20(superformId, generateBroadcastParams(5, 1));
+        superPositions.registerSERC20(superformId);
 
         vm.startPrank(deployer);
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());

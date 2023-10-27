@@ -69,8 +69,7 @@ interface ISuperPositions {
     /// @notice this overrides registerTransmuter from original transmuter implementation so that users cannot insert
     /// name, symbol, and decimals
     /// @param superformId the superform to register a transmuter for
-    /// @param extraData_ is an optional param to broadcast changes to all chains
-    function registerSERC20(uint256 superformId, bytes memory extraData_) external returns (address);
+    function registerSERC20(uint256 superformId) external payable returns (address);
 
     /// @dev allows to create sERC0 using broadcast state registry
     /// @param data_ is the crosschain payload

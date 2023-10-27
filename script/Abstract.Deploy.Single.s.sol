@@ -34,6 +34,8 @@ import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
 import { EmergencyQueue } from "src/emergency/EmergencyQueue.sol";
 
+import { generateBroadcastParams } from "test/utils/AmbParams.sol";
+
 struct SetupVars {
     uint64 chainId;
     uint64 dstChainId;
@@ -815,6 +817,8 @@ abstract contract AbstractDeploySingle is Script {
                 50_000
             )
         );
+
+        PaymentHelper(payable(vars.paymentHelper)).updateRegisterSERC20Params(0, generateBroadcastParams(5, 1));
 
         vars.superRegistryC.setAddress(
             vars.superRegistryC.SUPERFORM_ROUTER(),
