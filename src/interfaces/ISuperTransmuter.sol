@@ -12,11 +12,11 @@ interface ISuperTransmuter is IStateSyncer {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev anyone can register a transmuter for an existent superform
+    /// @notice it uses WormholeSR implementation by default and broadcast to all chains
     /// @notice this overrides registerTransmuter from original transmuter implementation so that users cannot insert
     /// name, symbol, and decimals
     /// @param superformId the superform to register a transmuter for
-    /// @param extraData_ is an optional param to broadcast changes to all chains
-    function registerTransmuter(uint256 superformId, bytes memory extraData_) external returns (address);
+    function registerTransmuter(uint256 superformId) external payable returns (address);
 
     /// @dev allows sync register new superform ids using broadcast state registry
     /// @param data_ is the crosschain payload

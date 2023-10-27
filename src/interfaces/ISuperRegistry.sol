@@ -35,6 +35,9 @@ interface ISuperRegistry {
     /// @dev is emitted when a new delay is configured.
     event SetDelay(uint256 oldDelay_, uint256 newDelay_);
 
+    /// @dev is emitted when a new vault limit is configured
+    event SetVaultLimitPerTx(uint64 chainId_, uint256 vaultLimit_);
+
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
@@ -46,6 +49,11 @@ interface ISuperRegistry {
     /// @dev sets the permit2 address
     /// @param permit2_ the address of the permit2 contract
     function setPermit2(address permit2_) external;
+
+    /// @dev sets the safe vault limit
+    /// @param chainId_ is the remote chain identifier
+    /// @param vaultLimit_ is the max limit of vaults per transaction
+    function setVaultLimitPerTx(uint64 chainId_, uint256 vaultLimit_) external;
 
     /// @dev sets a new address on a specific chain.
     /// @param id_ the identifier of the address on that chain
@@ -237,4 +245,10 @@ interface ISuperRegistry {
     /// @param ambId_ is the id of a bridge
     /// @return ambAddress_ is the address of the form
     function getAmbAddress(uint8 ambId_) external view returns (address ambAddress_);
+
+    /// @dev gets the safe vault limit
+    /// @param chainId_ is the id of the remote chain
+    /// @return vaultLimitPerTx_ is the safe number of vaults to deposit
+    /// without hitting out of gas error
+    function getVaultLimitPerTx(uint64 chainId_) external view returns (uint256 vaultLimitPerTx_);
 }

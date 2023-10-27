@@ -192,7 +192,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IDstSwapper
-    function getFailedSwap(
+    function getPostDstSwapFailureUpdatedTokenAmount(
         uint256 payloadId_,
         uint256 index_
     )
@@ -274,13 +274,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         v.balanceBefore = IERC20(v.underlying).balanceOf(v.finalDst);
         uint256 nativeAmount = (v.approvalToken == NATIVE) ? v.amount : 0;
 
-        _dispatchTokens(
-                v.to,
-                txData_,
-                v.approvalToken,
-                v.amount,
-                nativeAmount
-        );
+        _dispatchTokens(v.to, txData_, v.approvalToken, v.amount, nativeAmount);
 
         v.balanceAfter = IERC20(v.underlying).balanceOf(v.finalDst);
 

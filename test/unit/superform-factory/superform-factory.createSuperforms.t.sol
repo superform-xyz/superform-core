@@ -110,6 +110,10 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
 
         uint256 totalFormImplementations = SuperformFactory(getContract(chainId, "SuperformFactory")).getFormCount();
         assertEq(totalFormImplementations, 4);
+
+        bool superformExists =
+            SuperformFactory(getContract(chainId, "SuperformFactory")).isSuperform(superformIdCreated);
+        assertEq(superformExists, true);
     }
 
     function test_revert_createSuperform_addressZero() public {

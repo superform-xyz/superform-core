@@ -8,8 +8,12 @@ import { ArrayCastLib } from "src/libraries/ArrayCastLib.sol";
 import { LiqRequest } from "src/types/LiquidityTypes.sol";
 
 contract ArrayCastLibUser {
-    function castToArray(LiqRequest memory a) external pure returns (LiqRequest[] memory) {
-        return ArrayCastLib.castToArray(a);
+    function castLiqRequestToArray(LiqRequest memory a) external pure returns (LiqRequest[] memory) {
+        return ArrayCastLib.castLiqRequestToArray(a);
+    }
+
+    function castBoolToArray(bool a) external pure returns (bool[] memory) {
+        return ArrayCastLib.castBoolToArray(a);
     }
 }
 
@@ -23,7 +27,13 @@ contract ArrayCastLibTest is Test {
     function test_castLiqRequestToArray() external {
         LiqRequest memory req = LiqRequest(1, "", address(0), 1, 1 wei);
 
-        LiqRequest[] memory castedReq = arrayCastLib.castToArray(req);
+        LiqRequest[] memory castedReq = arrayCastLib.castLiqRequestToArray(req);
         assertEq(castedReq.length, 1);
+    }
+
+    function test_castBoolToArray() external {
+        bool value = true; 
+        bool[] memory castedValue = arrayCastLib.castBoolToArray(value);
+        assertEq(castedValue.length, 1);
     }
 }

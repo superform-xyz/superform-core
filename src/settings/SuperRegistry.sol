@@ -35,6 +35,8 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     mapping(uint8 bridgeId => address ambAddresses) public ambAddresses;
     mapping(uint8 bridgeId => bool isBroadcastAMB) public isBroadcastAMB;
 
+    mapping(uint64 chainId => uint256 vaultLimitPerTx) public vaultLimitPerTx;
+
     mapping(uint8 superformRouterId => address stateSyncer) public stateSyncers;
     mapping(uint8 superformRouterId => address router) public routers;
     mapping(uint8 registryId => address registryAddress) public registryAddresses;
@@ -142,6 +144,16 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         PERMIT2 = permit2_;
 
         emit SetPermit2(permit2_);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function setVaultLimitPerTx(uint64 chainId_, uint256 vaultLimit_) external override onlyProtocolAdmin {
+        if (vaultLimit_ == 0) {
+            revert Error.ZERO_INPUT_VALUE();
+        }
+
+        vaultLimitPerTx[chainId_] = vaultLimit_;
+        emit SetVaultLimitPerTx(chainId_, vaultLimit_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -351,6 +363,11 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @inheritdoc ISuperRegistry
     function getSuperformRouterId(address router_) external view override returns (uint8 superformRouterId_) {
         superformRouterId_ = superformRouterIds[router_];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getVaultLimitPerTx(uint64 chainId_) external view override returns (uint256 vaultLimitPerTx_) {
+        vaultLimitPerTx_ = vaultLimitPerTx[chainId_];
     }
 
     /// @inheritdoc ISuperRegistry
