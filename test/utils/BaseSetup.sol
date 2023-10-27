@@ -792,6 +792,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                         vars.dstChainId, vars.dstWormholeChainId
                     );
 
+                    WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setReceiver(
+                        vars.dstWormholeChainId, vars.dstWormholeSRImplementation
+                    );
+
                     /// sets the relayer address on all subsequent chains
                     SuperRBAC(vars.superRBAC).grantRole(
                         SuperRBAC(vars.superRBAC).WORMHOLE_VAA_RELAYER_ROLE(), vars.dstwormholeBroadcastHelper

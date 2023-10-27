@@ -91,7 +91,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         /// @dev approves before call
         MockERC20(getContract(ETH, "DAI")).approve(address(superformRouterSERC20), 1e18);
 
-        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         superformRouterSERC20.singleDirectSingleVaultDeposit(req);
     }
 
@@ -203,7 +203,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds, ETH, data);
 
-        vm.expectRevert(Error.INVALID_CHAIN_IDS.selector);
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         superformRouterSERC20.singleXChainSingleVaultWithdraw(req);
     }
 
@@ -735,7 +735,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         /// @dev approves before call
         MockERC20(getContract(ETH, "DAI")).approve(address(superformRouterSERC20), 1e18);
 
-        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
+
         superformRouterSERC20.singleDirectSingleVaultDeposit(req);
     }
 
@@ -765,7 +766,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
-        vm.expectRevert(Error.ZERO_AMOUNT.selector);
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         superformRouterSERC20.singleDirectSingleVaultDeposit(req);
     }
 

@@ -16,7 +16,7 @@ contract LiquidityHandlerUser is LiquidityHandler {
         external
         payable
     {
-        dispatchTokens(bridge_, txData_, token_, amount_, nativeAmount_);
+        _dispatchTokens(bridge_, txData_, token_, amount_, nativeAmount_);
     }
 }
 
@@ -86,7 +86,7 @@ contract LiquidityHandlerTest is ProtocolActions {
         );
         vm.prank(deployer);
 
-        vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA.selector);
+        vm.expectRevert(abi.encodeWithSelector(Error.FAILED_TO_EXECUTE_TXDATA.selector, token));
         liquidityHandler.dispatchTokensTest(bridgeAddress, txData, token, transferAmount, 0);
     }
 
@@ -116,7 +116,7 @@ contract LiquidityHandlerTest is ProtocolActions {
             )
         );
         vm.prank(deployer);
-        vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA_NATIVE.selector);
+        vm.expectRevert(abi.encodeWithSelector(Error.FAILED_TO_EXECUTE_TXDATA.selector, token));
         liquidityHandler.dispatchTokensTest{ value: 1e18 }(bridgeAddress, txData, token, transferAmount, transferAmount);
     }
 }

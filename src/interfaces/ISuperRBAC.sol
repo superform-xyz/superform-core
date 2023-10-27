@@ -35,12 +35,10 @@ interface ISuperRBAC is IAccessControl {
 
     /// @dev revokes the role_ from superRegistryAddressId_ on all chains
     /// @param role_ the role to revoke
-    /// @param addressToRevoke_ the address to revoke the role from
     /// @param extraData_ amb config if broadcasting is required
     /// @param superRegistryAddressId_ the super registry address id
     function revokeRoleSuperBroadcast(
         bytes32 role_,
-        address addressToRevoke_,
         bytes memory extraData_,
         bytes32 superRegistryAddressId_
     )

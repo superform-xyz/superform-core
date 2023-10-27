@@ -319,11 +319,8 @@ library Error {
                         LIQUIDITY HANDLER ERRORS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev thrown if liquidity bridge fails for erc20 tokens
-    error FAILED_TO_EXECUTE_TXDATA();
-
-    /// @dev thrown if liquidity bridge fails for native tokens
-    error FAILED_TO_EXECUTE_TXDATA_NATIVE();
+    /// @dev thrown if liquidity bridge fails for erc20 or native tokens
+    error FAILED_TO_EXECUTE_TXDATA(address token);
 
     /// @dev thrown if native amount is not at least equal to the amount in the request
     error INSUFFICIENT_NATIVE_AMOUNT();
@@ -331,12 +328,6 @@ library Error {
     /*///////////////////////////////////////////////////////////////
                             FORM ERRORS
     //////////////////////////////////////////////////////////////*/
-
-    /// @dev thrown when the form has insufficient balance for emergency withdraw
-    error EMERGENCY_WITHDRAW_INSUFFICIENT_BALANCE();
-
-    /// @dev thrown when emergency withdraw is already processed
-    error EMERGENCY_WITHDRAW_PROCESSED_ALREADY();
 
     /// @dev thrown when the allowance in direct deposit is not correct
     error DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
@@ -404,4 +395,17 @@ library Error {
 
     /// @dev thrown when chainlink is reporting an incomplete round
     error CHAINLINK_INCOMPLETE_ROUND();
+
+    /*///////////////////////////////////////////////////////////////
+                        EMERGENCY QUEUE ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev thrown when the form has insufficient balance for emergency withdraw
+    error EMERGENCY_WITHDRAW_INSUFFICIENT_BALANCE();
+
+    /// @dev thrown when emergency withdraw is already processed
+    error EMERGENCY_WITHDRAW_PROCESSED_ALREADY();
+
+    /// @dev thrown when emergency withdraw is not queued
+    error EMERGENCY_WITHDRAW_NOT_QUEUED();
 }

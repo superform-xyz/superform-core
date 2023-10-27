@@ -636,7 +636,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         view
         returns (InitMultiVaultData memory)
     {
-        for (uint256 i; i < multiVaultData_.liqData.length;) {
+        for (uint256 i = 0; i < multiVaultData_.liqData.length;) {
             if (txData_[i].length != 0 && multiVaultData_.liqData[i].txData.length == 0) {
                 (address superform,,) = multiVaultData_.superformIds[i].getSuperform();
 

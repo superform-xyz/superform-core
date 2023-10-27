@@ -323,7 +323,7 @@ contract PayloadHelper is IPayloadHelper {
         hasDstSwaps = imvd.hasDstSwaps;
         dstRefundAddress = imvd.dstRefundAddress;
 
-        for (uint256 i = 0; i < imvd.liqData.length; i++) {
+        for (uint256 i = 0; i < imvd.liqData.length;) {
             bridgeIds[i] = imvd.liqData[i].bridgeId;
             txDatas[i] = imvd.liqData[i].txData;
             tokens[i] = imvd.liqData[i].token;
@@ -331,6 +331,9 @@ contract PayloadHelper is IPayloadHelper {
             amountsIn[i] =
                 IBridgeValidator(superRegistry.getBridgeValidator(bridgeIds[i])).decodeAmountIn(txDatas[i], false);
             nativeAmounts[i] = imvd.liqData[i].nativeAmount;
+            unchecked {
+                ++i;
+            }
         }
 
         return (bridgeIds, txDatas, tokens, liqDstChainIds, amountsIn, nativeAmounts, hasDstSwaps, dstRefundAddress);
