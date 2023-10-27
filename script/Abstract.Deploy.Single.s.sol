@@ -146,8 +146,6 @@ abstract contract AbstractDeploySingle is Script {
 
     uint256 public deployerPrivateKey;
     address public ownerAddress;
-    uint256 public emergencyAdminPrivateKey;
-    address public emergencyAdmin;
 
     /// @dev Mapping of chain enum to rpc url
     mapping(Chains chains => string rpcUrls) public forks;
@@ -285,13 +283,9 @@ abstract contract AbstractDeploySingle is Script {
         if (cycle == Cycle.Dev) {
             deployerPrivateKey = vm.envUint("LOCAL_PRIVATE_KEY");
             ownerAddress = vm.envAddress("LOCAL_OWNER_ADDRESS");
-            emergencyAdminPrivateKey = vm.envUint("EMERGENCY_ADMIN_KEY");
-            emergencyAdmin = vm.envAddress("EMERGENCY_ADMIN");
         } else {
             deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
             ownerAddress = vm.envAddress("OWNER_ADDRESS");
-            emergencyAdminPrivateKey = vm.envUint("EMERGENCY_ADMIN_KEY");
-            emergencyAdmin = vm.envAddress("EMERGENCY_ADMIN");
         }
 
         _;
@@ -348,7 +342,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRBAC = address(
             new SuperRBAC{salt: salt}(ISuperRBAC.InitialRoleSetup({
                         admin: ownerAddress,
-                        emergencyAdmin: emergencyAdmin, /// @dev FIXME currently this is an arbitrary address from metamask
+                        emergencyAdmin: ownerAddress,
                         paymentAdmin: 0xD911673eAF0D3e15fe662D58De15511c5509bAbB,
                         csrProcessor: 0x23c658FE050B4eAeB9401768bF5911D11621629c,
                         tlProcessor: ownerAddress,
@@ -577,6 +571,15 @@ abstract contract AbstractDeploySingle is Script {
         vars.emergencyQueue = address(new EmergencyQueue{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("EmergencyQueue"))] = vars.emergencyQueue;
         vars.superRegistryC.setAddress(vars.superRegistryC.EMERGENCY_QUEUE(), vars.emergencyQueue, vars.chainId);
+
+        /// @dev 18 configure payment helper
+        PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(
+            vars.chainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
+        );
+        PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 9, abi.encode(40_000));
+        PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 10, abi.encode(50_000));
+        PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 7, abi.encode(50 * 10 ** 9 wei));
+
         vm.stopBroadcast();
 
         /// @dev Exports
@@ -590,9 +593,7 @@ abstract contract AbstractDeploySingle is Script {
     /// @dev stage 2 must be called only after stage 1 is complete for all chains!
     function _deployStage2(
         uint256 i,
-        /// 0, 1, 2
         uint256 trueIndex,
-        /// 0, 1, 2, 3, 4, 5
         Cycle cycle,
         uint64[] memory targetDeploymentChains,
         uint64[] memory finalDeployedChains
@@ -643,12 +644,10 @@ abstract contract AbstractDeploySingle is Script {
         vm.stopBroadcast();
     }
 
-    /// @dev stage 3 is to be done by emergency admin
+    /// @dev pass roles from burner wallets to multi sigs
     function _deployStage3(
         uint256 i,
-        /// 0, 1, 2
         uint256 trueIndex,
-        /// 0, 1, 2, 3, 4, 5
         Cycle cycle,
         uint64[] memory s_superFormChainIds
     )
@@ -659,15 +658,18 @@ abstract contract AbstractDeploySingle is Script {
 
         vars.chainId = s_superFormChainIds[i];
 
-        vm.startBroadcast(emergencyAdminPrivateKey);
+        /// @dev override these pre-launch
+        address protocolAdminMultiSig = ownerAddress;
+        address emergencyAdminMultiSig = ownerAddress;
 
-        vars.paymentHelper = _readContract(chainNames[trueIndex], vars.chainId, "PaymentHelper");
-        PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(
-            vars.chainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
-        );
-        PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 9, abi.encode(40_000));
-        PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 10, abi.encode(50_000));
-        PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 7, abi.encode(50 * 10 ** 9 wei));
+        vm.startBroadcast(deployerPrivateKey);
+        SuperRegistry sr = SuperRegistry(payable(_readContract(chainNames[trueIndex], vars.chainId, "SuperRegistry")));
+
+        sr.grantRole(sr.PROTOCOL_ADMIN_ROLE(), protocolAdminMultiSig);
+        sr.grantRole(sr.EMERGENCY_ADMIN_ROLE(), emergencyAdminMultiSig);
+        sr.revokeRole(sr.EMERGENCY_ADMIN_ROLE(), ownerAddress);
+        sr.revokeRole(sr.PROTOCOL_ADMIN_ROLE(), ownerAddress);
+
         vm.stopBroadcast();
     }
 
