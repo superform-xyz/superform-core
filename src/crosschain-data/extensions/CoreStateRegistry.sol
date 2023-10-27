@@ -306,11 +306,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         /// @dev set to zero to prevent re-entrancy
         failedDeposits_.lastProposedTimestamp = 0;
+        IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
 
         for (uint256 i; i < failedDeposits_.amounts.length;) {
             /// @dev refunds the amount to user specified refund address
             if (failedDeposits_.settleFromDstSwapper[i]) {
-                IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
                 dstSwapper.processFailedTx(
                     failedDeposits_.refundAddress, failedDeposits_.settlementToken[i], failedDeposits_.amounts[i]
                 );
