@@ -130,7 +130,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
             revert Error.INVALID_TXDATA_CHAIN_ID();
         }
 
-        dispatchTokens(
+        _dispatchTokens(
             superRegistry.getBridgeAddress(liqRequest_.bridgeId),
             liqRequest_.txData,
             liqRequest_.token,

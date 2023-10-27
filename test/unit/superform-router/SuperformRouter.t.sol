@@ -34,7 +34,7 @@ contract SuperformRouterTest is ProtocolActions {
         /// @dev approves before call
         MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
 
-        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 
@@ -79,7 +79,8 @@ contract SuperformRouterTest is ProtocolActions {
         SuperPositions(getContract(ETH, "SuperPositions")).increaseAllowance(
             getContract(ETH, "SuperformRouter"), superformId, 1e18
         );
-        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectMultiVaultWithdraw(req);
     }
 
@@ -187,7 +188,7 @@ contract SuperformRouterTest is ProtocolActions {
 
         address superformRouter = getContract(ETH, "SuperformRouter");
 
-        vm.expectRevert(Error.INVALID_CHAIN_IDS.selector);
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         SuperformRouter(payable(superformRouter)).singleXChainSingleVaultWithdraw(req);
     }
 
@@ -608,7 +609,7 @@ contract SuperformRouterTest is ProtocolActions {
         /// @dev approves before call
         MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
 
-        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 
@@ -641,7 +642,7 @@ contract SuperformRouterTest is ProtocolActions {
         /// @dev no point approving 0 tokens
         // MockERC20(getContract(ETH, "DAI")).approve(formImplementation, 0);
 
-        vm.expectRevert(Error.ZERO_AMOUNT.selector);
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 
@@ -781,14 +782,17 @@ contract SuperformRouterTest is ProtocolActions {
             LiqRequest(
                 1,
                 _buildDummyTxDataUnitTests(
-                    1,
-                    getContract(ETH, "DAI"),
-                    getContract(ETH, "DAI"),
-                    superform,
-                    ETH,
-                    1e18,
-                    getContract(ETH, "CoreStateRegistry"),
-                    false
+                    BuildDummyTxDataUnitTestsVars(
+                        1,
+                        getContract(ETH, "DAI"),
+                        getContract(ETH, "DAI"),
+                        superform,
+                        ETH,
+                        ETH,
+                        1e18,
+                        getContract(ETH, "CoreStateRegistry"),
+                        false
+                    )
                 ),
                 getContract(ETH, "DAI"),
                 ETH,
@@ -925,14 +929,17 @@ contract SuperformRouterTest is ProtocolActions {
             LiqRequest(
                 1,
                 _buildDummyTxDataUnitTests(
-                    1,
-                    getContract(ETH, "DAI"),
-                    getContract(ARBI, "DAI"),
-                    superform,
-                    ARBI,
-                    1e18,
-                    getContract(ARBI, "CoreStateRegistry"),
-                    false
+                    BuildDummyTxDataUnitTestsVars(
+                        1,
+                        getContract(ETH, "DAI"),
+                        getContract(ARBI, "DAI"),
+                        superform,
+                        ETH,
+                        ARBI,
+                        1e18,
+                        getContract(ARBI, "CoreStateRegistry"),
+                        false
+                    )
                 ),
                 getContract(ARBI, "DAI"),
                 ETH,
@@ -976,14 +983,17 @@ contract SuperformRouterTest is ProtocolActions {
             LiqRequest(
                 1,
                 _buildDummyTxDataUnitTests(
-                    1,
-                    getContract(ETH, "DAI"),
-                    getContract(ARBI, "DAI"),
-                    superform,
-                    ARBI,
-                    1e18,
-                    getContract(ARBI, "CoreStateRegistry"),
-                    false
+                    BuildDummyTxDataUnitTestsVars(
+                        1,
+                        getContract(ETH, "DAI"),
+                        getContract(ARBI, "DAI"),
+                        superform,
+                        ETH,
+                        ARBI,
+                        1e18,
+                        getContract(ARBI, "CoreStateRegistry"),
+                        false
+                    )
                 ),
                 getContract(ARBI, "DAI"),
                 ETH,

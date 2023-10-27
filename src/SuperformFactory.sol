@@ -38,6 +38,7 @@ contract SuperformFactory is ISuperformFactory {
 
     /// @dev all superform ids
     uint256[] public superforms;
+    mapping(uint256 superformId => bool superformIdExists) public isSuperform;
 
     /// @notice If formImplementationId is 0, formImplementation is not part of the protocol
     mapping(uint32 formImplementationId => address formBeaconAddress) public formImplementation;
@@ -130,7 +131,9 @@ contract SuperformFactory is ISuperformFactory {
 
         /// @dev instantiate the superform
         superform_ = tFormImplementation.clone();
-        BaseForm(payable(superform_)).initialize(address(superRegistry), vault_, formImplementationId_,address(IERC4626(vault_).asset()));
+        BaseForm(payable(superform_)).initialize(
+            address(superRegistry), vault_, formImplementationId_, address(IERC4626(vault_).asset())
+        );
 
         /// @dev this will always be unique because all chainIds are unique
         superformId_ = DataLib.packSuperform(superform_, formImplementationId_, CHAIN_ID);
@@ -143,6 +146,7 @@ contract SuperformFactory is ISuperformFactory {
         vaultFormImplCombinationToSuperforms[vaultFormImplementationCombination] = superformId_;
 
         superforms.push(superformId_);
+        isSuperform[superformId_] = true;
 
         emit SuperformCreated(formImplementationId_, vault_, superformId_, superform_);
     }

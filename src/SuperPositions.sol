@@ -157,8 +157,8 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
         (uint256 returnTxType, uint256 callbackType, uint8 multi,, address returnDataSrcSender,) =
             data_.txInfo.decodeTxInfo();
 
-        if (callbackType != uint256(CallbackType.RETURN)) {
-            if (callbackType != uint256(CallbackType.FAIL)) revert Error.INVALID_PAYLOAD();
+        if (callbackType == uint256(CallbackType.INIT)) {
+            revert Error.INVALID_PAYLOAD();
         }
 
         /// @dev decode remaining info on superPositions to mint from destination
@@ -210,8 +210,8 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
         (uint256 returnTxType, uint256 callbackType, uint8 multi,, address returnDataSrcSender,) =
             data_.txInfo.decodeTxInfo();
 
-        if (callbackType != uint256(CallbackType.RETURN)) {
-            if (callbackType != uint256(CallbackType.FAIL)) revert Error.INVALID_PAYLOAD();
+        if (callbackType == uint256(CallbackType.INIT)) {
+            revert Error.INVALID_PAYLOAD();
         }
 
         /// @dev decode remaining info on superPositions to mint from destination

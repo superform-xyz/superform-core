@@ -220,14 +220,17 @@ contract PaymentHelperTest is ProtocolActions {
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
-            1,
-            native,
-            address(0),
-            getContract(ETH, "CoreStateRegistry"),
-            ETH,
-            1e18,
-            getContract(ETH, "CoreStateRegistry"),
-            false
+            BuildDummyTxDataUnitTestsVars(
+                1,
+                native,
+                address(0),
+                getContract(ETH, "CoreStateRegistry"),
+                ETH,
+                ETH,
+                1e18,
+                getContract(ETH, "CoreStateRegistry"),
+                false
+            )
         );
 
         uint8[] memory ambIds = new uint8[](1);
@@ -265,14 +268,17 @@ contract PaymentHelperTest is ProtocolActions {
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
-            1,
-            native,
-            address(0),
-            getContract(ETH, "CoreStateRegistry"),
-            ETH,
-            1e18,
-            getContract(ETH, "CoreStateRegistry"),
-            false
+            BuildDummyTxDataUnitTestsVars(
+                1,
+                native,
+                address(0),
+                getContract(ETH, "CoreStateRegistry"),
+                ETH,
+                ETH,
+                1e18,
+                getContract(ETH, "CoreStateRegistry"),
+                false
+            )
         );
 
         uint8[] memory ambIds = new uint8[](1);
@@ -308,7 +314,9 @@ contract PaymentHelperTest is ProtocolActions {
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
-            1, native, address(0), address(0), ETH, 1e18, getContract(ETH, "DstSwapper"), false
+            BuildDummyTxDataUnitTestsVars(
+                1, native, address(0), address(0), ETH, ETH, 1e18, getContract(ETH, "DstSwapper"), false
+            )
         );
 
         uint8[] memory ambIds = new uint8[](1);
@@ -360,14 +368,17 @@ contract PaymentHelperTest is ProtocolActions {
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
-            1,
-            native,
-            address(0),
-            getContract(ETH, "CoreStateRegistry"),
-            ETH,
-            1e18,
-            getContract(ETH, "CoreStateRegistry"),
-            false
+            BuildDummyTxDataUnitTestsVars(
+                1,
+                native,
+                address(0),
+                getContract(ETH, "CoreStateRegistry"),
+                ETH,
+                ETH,
+                1e18,
+                getContract(ETH, "CoreStateRegistry"),
+                false
+            )
         );
 
         uint8[] memory ambIds = new uint8[](1);
@@ -414,14 +425,17 @@ contract PaymentHelperTest is ProtocolActions {
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
-            1,
-            native,
-            address(0),
-            getContract(ETH, "CoreStateRegistry"),
-            ETH,
-            1e18,
-            getContract(ETH, "CoreStateRegistry"),
-            false
+            BuildDummyTxDataUnitTestsVars(
+                1,
+                native,
+                address(0),
+                getContract(ETH, "CoreStateRegistry"),
+                ETH,
+                ETH,
+                1e18,
+                getContract(ETH, "CoreStateRegistry"),
+                false
+            )
         );
 
         uint8[] memory ambIds = new uint8[](1);
@@ -468,14 +482,17 @@ contract PaymentHelperTest is ProtocolActions {
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
-            1,
-            native,
-            address(0),
-            getContract(ETH, "CoreStateRegistry"),
-            ETH,
-            1e18,
-            getContract(ETH, "CoreStateRegistry"),
-            false
+            BuildDummyTxDataUnitTestsVars(
+                1,
+                native,
+                address(0),
+                getContract(ETH, "CoreStateRegistry"),
+                ETH,
+                ETH,
+                1e18,
+                getContract(ETH, "CoreStateRegistry"),
+                false
+            )
         );
 
         uint8[] memory ambIds = new uint8[](1);
@@ -531,7 +548,7 @@ contract PaymentHelperTest is ProtocolActions {
         vm.prank(deployer);
         paymentHelper.updateChainConfig(1, 10, abi.encode(423));
 
-        uint256 result4 = paymentHelper.twoStepCost(1);
+        uint256 result4 = paymentHelper.timelockCost(1);
         assertEq(result4, 423);
 
         /// set config type: 6

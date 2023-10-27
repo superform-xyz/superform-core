@@ -69,6 +69,8 @@ struct StagesLocalVars {
     uint8[] AMBs;
     uint64 CHAIN_0;
     uint64[] DST_CHAINS;
+    uint256 underlyingWith0Slippage;
+    uint256[] underlyingWith0Slippages;
 }
 
 struct MessagingAssertVars {
@@ -140,7 +142,7 @@ struct SetupVars {
     address coreStateRegistry;
     address PayloadHelper;
     address paymentHelper;
-    address twoStepsFormStateRegistry;
+    address timelockFormStateRegistry;
     address broadcastRegistry;
     address UNDERLYING_TOKEN;
     address vault;

@@ -145,7 +145,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
                 )
             );
 
-            dispatchTokens(
+            _dispatchTokens(
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 address(token),
@@ -226,7 +226,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
             /// @dev FIXME: notice that in direct withdraws we withdraw v.amount (coming from txData), but not what was
             /// actually redeemed? Why? xChainWithdraw operates differently here
 
-            dispatchTokens(
+            _dispatchTokens(
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
@@ -323,7 +323,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
                 )
             );
 
-            dispatchTokens(
+            _dispatchTokens(
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
@@ -345,6 +345,20 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         vaultContract.transfer(refundAddress_, amount_);
 
         emit EmergencyWithdrawalProcessed(refundAddress_, amount_);
+    }
+
+    function _processForwardDustToPaymaster() internal {
+        address paymaster = superRegistry.getAddress(keccak256("PAYMASTER"));
+        if (paymaster != address(0)) {
+            IERC20 token = IERC20(getVaultAsset());
+
+            uint256 dust = token.balanceOf(address(this));
+            if (dust > 0) {
+                token.safeTransferFrom(address(this), paymaster, dust);
+            }
+        } else {
+            revert Error.ZERO_ADDRESS();
+        }
     }
 
     /*///////////////////////////////////////////////////////////////

@@ -159,7 +159,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 )
             );
 
-            dispatchTokens(
+            _dispatchTokens(
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 address(token),
@@ -247,7 +247,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 )
             );
 
-            dispatchTokens(
+            _dispatchTokens(
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
@@ -344,7 +344,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 )
             );
 
-            dispatchTokens(
+            _dispatchTokens(
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
@@ -365,6 +365,20 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         vaultContract.safeTransfer(refundAddress_, amount_);
         emit EmergencyWithdrawalProcessed(refundAddress_, amount_);
+    }
+
+    function _processForwardDustToPaymaster() internal {
+        address paymaster = superRegistry.getAddress(keccak256("PAYMASTER"));
+        if (paymaster != address(0)) {
+            IERC20 token = IERC20(getVaultAsset());
+
+            uint256 dust = token.balanceOf(address(this));
+            if (dust > 0) {
+                token.safeTransfer(paymaster, dust);
+            }
+        } else {
+            revert Error.ZERO_ADDRESS();
+        }
     }
 
     /*///////////////////////////////////////////////////////////////

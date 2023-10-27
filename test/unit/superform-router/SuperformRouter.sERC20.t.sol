@@ -91,7 +91,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         /// @dev approves before call
         MockERC20(getContract(ETH, "DAI")).approve(address(superformRouterSERC20), 1e18);
 
-        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         superformRouterSERC20.singleDirectSingleVaultDeposit(req);
     }
 
@@ -203,7 +203,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds, ETH, data);
 
-        vm.expectRevert(Error.INVALID_CHAIN_IDS.selector);
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         superformRouterSERC20.singleXChainSingleVaultWithdraw(req);
     }
 
@@ -735,7 +735,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         /// @dev approves before call
         MockERC20(getContract(ETH, "DAI")).approve(address(superformRouterSERC20), 1e18);
 
-        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
+
         superformRouterSERC20.singleDirectSingleVaultDeposit(req);
     }
 
@@ -765,7 +766,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
-        vm.expectRevert(Error.ZERO_AMOUNT.selector);
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         superformRouterSERC20.singleDirectSingleVaultDeposit(req);
     }
 
@@ -904,14 +905,17 @@ contract SuperformRouterSERC20Test is ProtocolActions {
             LiqRequest(
                 1,
                 _buildDummyTxDataUnitTests(
-                    1,
-                    getContract(ETH, "DAI"),
-                    getContract(ETH, "DAI"),
-                    superform,
-                    ETH,
-                    1e18,
-                    getContract(ETH, "CoreStateRegistry"),
-                    false
+                    BuildDummyTxDataUnitTestsVars(
+                        1,
+                        getContract(ETH, "DAI"),
+                        getContract(ETH, "DAI"),
+                        superform,
+                        ETH,
+                        ETH,
+                        1e18,
+                        getContract(ETH, "CoreStateRegistry"),
+                        false
+                    )
                 ),
                 getContract(ETH, "DAI"),
                 ETH,
@@ -953,14 +957,17 @@ contract SuperformRouterSERC20Test is ProtocolActions {
             LiqRequest(
                 1,
                 _buildDummyTxDataUnitTests(
-                    1,
-                    getContract(ETH, "DAI"),
-                    getContract(ARBI, "DAI"),
-                    superform,
-                    ARBI,
-                    1e18,
-                    getContract(ARBI, "CoreStateRegistry"),
-                    false
+                    BuildDummyTxDataUnitTestsVars(
+                        1,
+                        getContract(ETH, "DAI"),
+                        getContract(ARBI, "DAI"),
+                        superform,
+                        ETH,
+                        ARBI,
+                        1e18,
+                        getContract(ARBI, "CoreStateRegistry"),
+                        false
+                    )
                 ),
                 getContract(ARBI, "DAI"),
                 ETH,
@@ -1003,14 +1010,17 @@ contract SuperformRouterSERC20Test is ProtocolActions {
             LiqRequest(
                 1,
                 _buildDummyTxDataUnitTests(
-                    1,
-                    getContract(ETH, "DAI"),
-                    getContract(ARBI, "DAI"),
-                    superform,
-                    ARBI,
-                    1e18,
-                    getContract(ARBI, "CoreStateRegistry"),
-                    false
+                    BuildDummyTxDataUnitTestsVars(
+                        1,
+                        getContract(ETH, "DAI"),
+                        getContract(ARBI, "DAI"),
+                        superform,
+                        ETH,
+                        ARBI,
+                        1e18,
+                        getContract(ARBI, "CoreStateRegistry"),
+                        false
+                    )
                 ),
                 getContract(ARBI, "DAI"),
                 ETH,
@@ -1422,9 +1432,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         vm.selectFork(FORKS[srcChainId]);
         vm.recordLogs();
-        SuperTransmuter(getContract(srcChainId, "SuperTransmuter")).registerTransmuter(
-            superformId, generateBroadcastParams(5, 1)
-        );
+        SuperTransmuter(getContract(srcChainId, "SuperTransmuter")).registerTransmuter(superformId);
 
         vm.startPrank(deployer);
         _broadcastPayloadHelper(srcChainId, vm.getRecordedLogs());

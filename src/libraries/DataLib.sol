@@ -17,14 +17,12 @@ library DataLib {
         pure
         returns (uint256 txInfo)
     {
-        assembly ("memory-safe") {
-            txInfo := txType_
-            txInfo := or(txInfo, shl(8, callbackType_))
-            txInfo := or(txInfo, shl(16, multi_))
-            txInfo := or(txInfo, shl(24, registryId_))
-            txInfo := or(txInfo, shl(32, srcSender_))
-            txInfo := or(txInfo, shl(192, srcChainId_))
-        }
+        txInfo = uint256(txType_);
+        txInfo |= uint256(callbackType_) << 8;
+        txInfo |= uint256(multi_) << 16;
+        txInfo |= uint256(registryId_) << 24;
+        txInfo |= uint256(uint160(srcSender_)) << 32;
+        txInfo |= uint256(srcChainId_) << 192;
     }
 
     function decodeTxInfo(uint256 txInfo_)
@@ -98,25 +96,13 @@ library DataLib {
         }
     }
 
-    /// @dev validates if the superformId_ belongs to the chainId_
-    /// @param superformId_ to validate
-    /// @param chainId_ is the chainId to check if the superform id belongs to
-    function validateSuperformChainId(uint256 superformId_, uint64 chainId_) internal pure {
-        /// @dev validates if superformId exists on factory
-        uint64 chainId = getDestinationChain(superformId_);
-
-        if (chainId != chainId_ || chainId == 0 ) {
-            revert Error.INVALID_CHAIN_ID();
-        }
-    }
-
     /// @dev returns the destination chain of a given superform
     /// @param superformId_ is the id of the superform
     /// @return chainId_ is the chain id
     function getDestinationChain(uint256 superformId_) internal pure returns (uint64 chainId_) {
         chainId_ = uint64(superformId_ >> 192);
 
-        if (chainId_ == 0 ) {
+        if (chainId_ == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
     }

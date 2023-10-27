@@ -16,7 +16,7 @@ contract LiquidityHandlerUser is LiquidityHandler {
         external
         payable
     {
-        dispatchTokens(bridge_, txData_, token_, amount_, nativeAmount_);
+        _dispatchTokens(bridge_, txData_, token_, amount_, nativeAmount_);
     }
 }
 
@@ -42,14 +42,17 @@ contract LiquidityHandlerTest is ProtocolActions {
         liquidityHandler.dispatchTokensTest(
             SuperRegistry(getContract(ETH, "SuperRegistry")).getBridgeAddress(1),
             _buildDummyTxDataUnitTests(
-                1,
-                address(token),
-                tokenDst,
-                address(liquidityHandler),
-                ARBI,
-                transferAmount,
-                address(liquidityHandler),
-                false
+                BuildDummyTxDataUnitTestsVars(
+                    1,
+                    address(token),
+                    tokenDst,
+                    address(liquidityHandler),
+                    ETH,
+                    ARBI,
+                    transferAmount,
+                    address(liquidityHandler),
+                    false
+                )
             ),
             token,
             transferAmount,
@@ -69,18 +72,21 @@ contract LiquidityHandlerTest is ProtocolActions {
         MockERC20(token).approve(address(liquidityHandler), transferAmount);
 
         bytes memory txData = _buildDummyTxDataUnitTests(
-            1,
-            address(token),
-            tokenDst,
-            address(liquidityHandler),
-            ARBI,
-            transferAmount,
-            address(liquidityHandler),
-            false
+            BuildDummyTxDataUnitTestsVars(
+                1,
+                address(token),
+                tokenDst,
+                address(liquidityHandler),
+                ETH,
+                ARBI,
+                transferAmount,
+                address(liquidityHandler),
+                false
+            )
         );
         vm.prank(deployer);
 
-        vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA.selector);
+        vm.expectRevert(abi.encodeWithSelector(Error.FAILED_TO_EXECUTE_TXDATA.selector, token));
         liquidityHandler.dispatchTokensTest(bridgeAddress, txData, token, transferAmount, 0);
     }
 
@@ -90,7 +96,9 @@ contract LiquidityHandlerTest is ProtocolActions {
         address bridgeAddress = SuperRegistry(getContract(ETH, "SuperRegistry")).getBridgeAddress(1);
 
         bytes memory txData = _buildDummyTxDataUnitTests(
-            1, token, token, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler), false
+            BuildDummyTxDataUnitTestsVars(
+                1, token, token, address(liquidityHandler), ETH, ARBI, transferAmount, address(liquidityHandler), false
+            )
         );
         vm.prank(deployer);
 
@@ -103,10 +111,12 @@ contract LiquidityHandlerTest is ProtocolActions {
         address token = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
         address bridgeAddress = address(new LiquidityHandlerUser());
         bytes memory txData = _buildDummyTxDataUnitTests(
-            1, token, token, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler), false
+            BuildDummyTxDataUnitTestsVars(
+                1, token, token, address(liquidityHandler), ETH, ARBI, transferAmount, address(liquidityHandler), false
+            )
         );
         vm.prank(deployer);
-        vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA_NATIVE.selector);
+        vm.expectRevert(abi.encodeWithSelector(Error.FAILED_TO_EXECUTE_TXDATA.selector, token));
         liquidityHandler.dispatchTokensTest{ value: 1e18 }(bridgeAddress, txData, token, transferAmount, transferAmount);
     }
 }

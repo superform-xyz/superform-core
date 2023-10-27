@@ -720,7 +720,9 @@ contract SuperformERC4626FormTest is ProtocolActions {
         liqReqs[0] = LiqRequest(
             1,
             _buildDummyTxDataUnitTests(
-                1, getContract(ETH, "DAI"), getContract(ETH, "USDC"), superform2, ETH, 1e18, superform2, true
+                BuildDummyTxDataUnitTestsVars(
+                    1, getContract(ETH, "DAI"), getContract(ETH, "USDC"), superform2, ETH, ETH, 1e18, superform2, true
+                )
             ),
             getContract(ETH, "DAI"),
             ETH,
@@ -777,14 +779,17 @@ contract SuperformERC4626FormTest is ProtocolActions {
             LiqRequest(
                 1,
                 _buildDummyTxDataUnitTests(
-                    1,
-                    getContract(ETH, "DAI"),
-                    getContract(ETH, "DAI"),
-                    superform,
-                    ETH,
-                    1e18,
-                    getContract(ETH, "CoreStateRegistry"),
-                    false
+                    BuildDummyTxDataUnitTestsVars(
+                        1,
+                        getContract(ETH, "DAI"),
+                        getContract(ETH, "DAI"),
+                        superform,
+                        ETH,
+                        ETH,
+                        1e18,
+                        getContract(ETH, "CoreStateRegistry"),
+                        false
+                    )
                 ),
                 getContract(ETH, "DAI"),
                 ETH,

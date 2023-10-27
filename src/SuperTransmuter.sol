@@ -12,6 +12,7 @@ import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { Error } from "src/utils/Error.sol";
 import { IStateSyncer } from "src/interfaces/IStateSyncer.sol";
 import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
+import { IPaymentHelper } from "./interfaces/IPaymentHelper.sol";
 import { BroadcastMessage } from "./types/DataTypes.sol";
 
 /// @title SuperTransmuter
@@ -111,7 +112,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
     }
 
     /// @inheritdoc ISuperTransmuter
-    function registerTransmuter(uint256 superformId_, bytes memory extraData_) external override returns (address) {
+    function registerTransmuter(uint256 superformId_) external payable override returns (address) {
         (address superform, uint32 formImplementationId, uint64 chainId) = DataLib.getSuperform(superformId_);
 
         if (CHAIN_ID != chainId || chainId == 0) revert Error.INVALID_CHAIN_ID();
@@ -123,27 +124,25 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
             string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
         string memory symbol = string(abi.encodePacked("sERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
         uint8 decimal = uint8(IBaseForm(superform).getVaultDecimals());
-
-        synthethicTokenId[superformId_] = address(
+        address syntheticToken = address(
             new sERC20(
                 name,
                 symbol,
                 decimal
             )
         );
+        synthethicTokenId[superformId_] = syntheticToken;
 
         /// @dev broadcast and deploy to the other destination chains
-        if (extraData_.length > 0) {
-            BroadcastMessage memory transmuterPayload = BroadcastMessage(
-                "SUPER_TRANSMUTER",
-                DEPLOY_NEW_TRANSMUTER,
-                abi.encode(CHAIN_ID, ++xChainPayloadCounter, superformId_, name, symbol, decimal)
-            );
+        BroadcastMessage memory transmuterPayload = BroadcastMessage(
+            "SUPER_TRANSMUTER",
+            DEPLOY_NEW_TRANSMUTER,
+            abi.encode(CHAIN_ID, ++xChainPayloadCounter, superformId_, name, symbol, decimal)
+        );
 
-            _broadcast(abi.encode(transmuterPayload), extraData_);
-        }
+        _broadcast(abi.encode(transmuterPayload));
 
-        return synthethicTokenId[superformId_];
+        return syntheticToken;
     }
 
     /// @inheritdoc IStateSyncer
@@ -230,8 +229,8 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         (uint256 returnTxType, uint256 callbackType, uint8 multi,, address returnDataSrcSender,) =
             data_.txInfo.decodeTxInfo();
 
-        if (callbackType != uint256(CallbackType.RETURN)) {
-            if (callbackType != uint256(CallbackType.FAIL)) revert Error.INVALID_PAYLOAD();
+        if (callbackType == uint256(CallbackType.INIT)) {
+            revert Error.INVALID_PAYLOAD();
         }
 
         /// @dev decode remaining info on superPositions to mint from destination
@@ -291,8 +290,8 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         (uint256 returnTxType, uint256 callbackType, uint8 multi,, address returnDataSrcSender,) =
             data_.txInfo.decodeTxInfo();
 
-        if (callbackType != uint256(CallbackType.RETURN)) {
-            if (callbackType != uint256(CallbackType.FAIL)) revert Error.INVALID_PAYLOAD();
+        if (callbackType == uint256(CallbackType.INIT)) {
+            revert Error.INVALID_PAYLOAD();
         }
 
         /// @dev decode remaining info on superPositions to mint from destination
@@ -369,9 +368,15 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
 
     /// @dev interacts with broadcast state registry to broadcasting state changes to all connected remote chains
     /// @param message_ is the crosschain message to be sent.
-    /// @param extraData_ is the amb override information.
-    function _broadcast(bytes memory message_, bytes memory extraData_) internal {
-        (uint8[] memory ambIds, bytes memory broadcastParams) = abi.decode(extraData_, (uint8[], bytes));
+    function _broadcast(bytes memory message_) internal {
+        (uint256 totalFees, bytes memory extraData) =
+            IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER"))).calculateRegisterTransmuterAMBData();
+
+        (uint8[] memory ambIds, bytes memory broadcastParams) = abi.decode(extraData, (uint8[], bytes));
+
+        if (msg.value < totalFees) {
+            revert Error.INVALID_BROADCAST_FEE();
+        }
 
         /// @dev ambIds are validated inside the broadcast state registry
         /// @dev broadcastParams if wrong will revert in the amb implementation

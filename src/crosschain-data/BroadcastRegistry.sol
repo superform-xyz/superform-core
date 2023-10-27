@@ -73,12 +73,9 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
     }
 
     modifier onlyProcessor() {
-        if (
-            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
-                keccak256("BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE"), msg.sender
-            )
-        ) {
-            revert Error.NOT_PROCESSOR();
+        bytes32 role = keccak256("BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE");
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(role, msg.sender)) {
+            revert Error.NOT_PRIVILEGED_CALLER(role);
         }
         _;
     }

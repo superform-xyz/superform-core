@@ -77,9 +77,13 @@ interface IBaseForm is IERC165 {
         returns (uint256 dstAmount);
 
     /// @dev process withdrawal of shares if form is paused
+    /// @param srcSender_ The address of the sender of the transaction
     /// @param refundAddress_ The address to refund the shares to
     /// @param amount_ The amount of vault shares to refund
-    function emergencyWithdraw(address refundAddress_, uint256 amount_) external;
+    function emergencyWithdraw(address srcSender_, address refundAddress_, uint256 amount_) external;
+
+    /// @dev moves all dust in the contract to Paymaster contract
+    function forwardDustToPaymaster() external;
 
     /// @notice get Superform name of the ERC20 vault representation
     /// @return The ERC20 name
