@@ -12,8 +12,11 @@ library Error {
     /// @dev error thrown when address input is address 0
     error ZERO_ADDRESS();
 
-    /// @dev error thrown when address input is address 0
+    /// @dev error thrown when amount input is 0
     error ZERO_AMOUNT();
+
+    /// @dev error thrown when value input is 0
+    error ZERO_INPUT_VALUE();
 
     /// @dev error thrown when beacon id already exists
     error FORM_IMPLEMENTATION_ID_ALREADY_EXISTS();
@@ -82,7 +85,7 @@ library Error {
     error NOT_SUPER_REGISTRY();
 
     /// @dev thrown if the msg-sender is not privileged caller
-    error NOT_PREVILAGED_CALLER(bytes32 role);
+    error NOT_PRIVILEGED_CALLER(bytes32 role);
 
     /// @dev thrown if the msg-sender does not have SWAPPER role
     error NOT_SWAPPER();
@@ -284,6 +287,9 @@ library Error {
     /// @dev thrown when a form does not exist
     error FORM_DOES_NOT_EXIST();
 
+    /// @dev thrown when superform not on factory
+    error SUPERFORM_ID_NONEXISTENT();
+
     /// @dev thrown when same vault and beacon is used to create new superform
     error VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS();
 
@@ -322,11 +328,8 @@ library Error {
                         LIQUIDITY HANDLER ERRORS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev thrown if liquidity bridge fails for erc20 tokens
-    error FAILED_TO_EXECUTE_TXDATA();
-
-    /// @dev thrown if liquidity bridge fails for native tokens
-    error FAILED_TO_EXECUTE_TXDATA_NATIVE();
+    /// @dev thrown if liquidity bridge fails for erc20 or native tokens
+    error FAILED_TO_EXECUTE_TXDATA(address token);
 
     /// @dev thrown if native amount is not at least equal to the amount in the request
     error INSUFFICIENT_NATIVE_AMOUNT();
@@ -334,12 +337,6 @@ library Error {
     /*///////////////////////////////////////////////////////////////
                             FORM ERRORS
     //////////////////////////////////////////////////////////////*/
-
-    /// @dev thrown when the form has insufficient balance for emergency withdraw
-    error EMERGENCY_WITHDRAW_INSUFFICIENT_BALANCE();
-
-    /// @dev thrown when emergency withdraw is already processed
-    error EMERGENCY_WITHDRAW_PROCESSED_ALREADY();
 
     /// @dev thrown when the allowance in direct deposit is not correct
     error DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
@@ -407,4 +404,17 @@ library Error {
 
     /// @dev thrown when chainlink is reporting an incomplete round
     error CHAINLINK_INCOMPLETE_ROUND();
+
+    /*///////////////////////////////////////////////////////////////
+                        EMERGENCY QUEUE ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev thrown when the form has insufficient balance for emergency withdraw
+    error EMERGENCY_WITHDRAW_INSUFFICIENT_BALANCE();
+
+    /// @dev thrown when emergency withdraw is already processed
+    error EMERGENCY_WITHDRAW_PROCESSED_ALREADY();
+
+    /// @dev thrown when emergency withdraw is not queued
+    error EMERGENCY_WITHDRAW_NOT_QUEUED();
 }

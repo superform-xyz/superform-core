@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.21;
 
-import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
-import "../types/DataTypes.sol";
-
 /// @title ICoreStateRegistry
 /// @author ZeroPoint Labs
 /// @notice Interface for Core State Registry

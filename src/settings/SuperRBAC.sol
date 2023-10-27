@@ -118,7 +118,6 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     /// @inheritdoc ISuperRBAC
     function revokeRoleSuperBroadcast(
         bytes32 role_,
-        address addressToRevoke_,
         bytes memory extraData_,
         bytes32 superRegistryAddressId_
     )
@@ -134,7 +133,7 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
                 || role_ == WORMHOLE_VAA_RELAYER_ROLE
         ) revert Error.CANNOT_REVOKE_NON_BROADCASTABLE_ROLES();
 
-        revokeRole(role_, addressToRevoke_);
+        _revokeRole(role_, superRegistry.getAddress(superRegistryAddressId_));
 
         if (extraData_.length > 0) {
             BroadcastMessage memory rolesPayload = BroadcastMessage(
@@ -160,8 +159,14 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
 
             if (addressToRevoke == address(0)) revert Error.ZERO_ADDRESS();
 
-            /// @dev broadcasting cannot update the PROTOCOL_ADMIN_ROLE and EMERGENCY_ADMIN_ROLE
-            if (role != PROTOCOL_ADMIN_ROLE || role != EMERGENCY_ADMIN_ROLE) _revokeRole(role, addressToRevoke);
+            /// @dev broadcasting cannot update the PROTOCOL_ADMIN_ROLE, EMERGENCY_ADMIN_ROLE, BROADCASTER_ROLE
+            /// and WORMHOLE_VAA_RELAYER_ROLE
+            if (
+                !(
+                    role == PROTOCOL_ADMIN_ROLE || role == EMERGENCY_ADMIN_ROLE || role == BROADCASTER_ROLE
+                        || role == WORMHOLE_VAA_RELAYER_ROLE
+                )
+            ) _revokeRole(role, addressToRevoke);
         }
     }
 
