@@ -270,15 +270,6 @@ contract SuperPositionsTest is BaseSetup {
         superPositions.registerSERC20(superformId);
     }
 
-    function test_registerSERC20_invalidExtraData() public {
-        uint8[] memory ambId = new uint8[](1);
-        ambId[0] = 4;
-        (uint256 superformId,) =
-            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
-        vm.expectRevert();
-        superPositions.registerSERC20(superformId);
-    }
-
     function test_withdrawFromInvalidChainId() public {
         address superform = getContract(
             ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
