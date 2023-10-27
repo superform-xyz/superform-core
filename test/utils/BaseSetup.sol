@@ -504,6 +504,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
 
             WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[i]);
+            WormholeSRImplementation(vars.wormholeSRImplementation).setRelayer(deployer);
 
             vars.ambAddresses[0] = vars.lzImplementation;
             vars.ambAddresses[1] = vars.hyperlaneImplementation;
@@ -825,6 +826,9 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                             10_000,
                             50_000
                         )
+                    );
+                    PaymentHelper(payable(vars.paymentHelper)).updateRegisterTransmuterParams(
+                        0, generateBroadcastParams(5, 1)
                     );
 
                     vars.superRegistryC.setAddress(

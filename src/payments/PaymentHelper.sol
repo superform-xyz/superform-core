@@ -57,6 +57,10 @@ contract PaymentHelper is IPaymentHelper {
     mapping(uint64 chainId => uint256 gasForOps) public ackGasCost;
     mapping(uint64 chainId => uint256 gasForOps) public timelockCost;
 
+    /// @dev register transmuter params
+    uint256 public totalTransmuterFees;
+    bytes public extraDataForTransmuter;
+
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
@@ -180,6 +184,18 @@ contract PaymentHelper is IPaymentHelper {
         emit ChainConfigUpdated(chainId_, configType_, config_);
     }
 
+    /// @inheritdoc IPaymentHelper
+    function updateRegisterTransmuterParams(
+        uint256 totalTransmuterFees_,
+        bytes memory extraDataForTransmuter_
+    )
+        external
+        onlyEmergencyAdmin
+    {
+        totalTransmuterFees = totalTransmuterFees_;
+        extraDataForTransmuter = extraDataForTransmuter_;
+    }
+
     /*///////////////////////////////////////////////////////////////
                                 VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -200,6 +216,16 @@ contract PaymentHelper is IPaymentHelper {
 
         extraData = abi.encode(AMBExtraData(gasPerAMB, extraDataPerAMB));
         totalFees = fees;
+    }
+
+    /// @inheritdoc IPaymentHelper
+    function calculateRegisterTransmuterAMBData()
+        external
+        view
+        override
+        returns (uint256 totalFees, bytes memory extraData)
+    {
+        return (totalTransmuterFees, extraDataForTransmuter);
     }
 
     /// @inheritdoc IPaymentHelper
@@ -288,7 +314,8 @@ contract PaymentHelper is IPaymentHelper {
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequest.castLiqRequestToArray());
 
                 /// @dev step 5: estimate if swap costs are involved
-                totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwap.castBoolToArray());
+                totalDstGas +=
+                    _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwap.castBoolToArray());
             }
 
             /// @dev step 5: estimate execution costs in dst
@@ -378,7 +405,9 @@ contract PaymentHelper is IPaymentHelper {
         if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
 
         /// @dev step 6: estimate if swap costs are involved
-        if (isDeposit_) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformData.hasDstSwap.castBoolToArray());
+        if (isDeposit_) {
+            totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformData.hasDstSwap.castBoolToArray());
+        }
 
         /// @dev step 7: convert all dst gas estimates to src chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
