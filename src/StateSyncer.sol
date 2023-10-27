@@ -119,7 +119,8 @@ abstract contract StateSyncer is IStateSyncer {
     /// @dev helps validate the state registry id for minting superform id
     function _validateStateSyncer(uint256[] memory superformIds_) internal view {
         uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
-        for (uint256 i; i < superformIds_.length;) {
+        uint256 len = superformIds_.length;
+        for (uint256 i; i < len;) {
             _isValidStateSyncer(registryId, superformIds_[i]);
             unchecked {
                 ++i;

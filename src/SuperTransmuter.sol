@@ -51,7 +51,8 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
 
         /// if registry id is 1 (or) corresponding state registry can mint
         if (routerId != ROUTER_TYPE) {
-            for (uint256 i; i < superformIds.length; ++i) {
+            uint256 len = superformIds.length;
+            for (uint256 i; i < len; ++i) {
                 (, uint32 formBeaconId,) = DataLib.getSuperform(superformIds[i]);
 
                 if (uint32(registryId) != formBeaconId) {
