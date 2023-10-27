@@ -33,7 +33,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
 
-    uint8 stateRegistryId = 2; // TimelockStateRegistry
+    uint8 constant stateRegistryId = 2; // TimelockStateRegistry
 
     constructor(address superRegistry_) 
         ERC4626FormImplementation(superRegistry_, stateRegistryId) {}

@@ -11,7 +11,7 @@ contract ERC4626Form is ERC4626FormImplementation {
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
-    uint8 stateRegistryId = 1; // CoreStateRegistry
+    uint8 constant stateRegistryId = 1; // CoreStateRegistry
 
     constructor(address superRegistry_) 
         ERC4626FormImplementation(superRegistry_, stateRegistryId) {}

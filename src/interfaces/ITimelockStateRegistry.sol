@@ -5,7 +5,7 @@ import { InitSingleVaultData, TimelockPayload } from "../types/DataTypes.sol";
 
 /// @title ITimelockStateRegistry
 /// @author ZeroPoint Labs
-/// @notice Interface for Two Steps Form State Registry
+/// @notice Interface for Timelock Form State Registry
 interface ITimelockStateRegistry {
     /// @notice Receives request (payload) from timelock form to process later
     /// @param type_ is the nature of transaction (xChain: 1 or same chain: 0)
