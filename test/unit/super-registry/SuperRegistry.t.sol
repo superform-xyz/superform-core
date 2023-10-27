@@ -319,6 +319,20 @@ contract SuperRegistryTest is BaseSetup {
         superRegistry.setStateRegistryAddress(registryId, registryAddress);
     }
 
+    function test_setVaultLimitPerTx() public {
+        vm.prank(deployer);
+        superRegistry.setVaultLimitPerTx(1, 100);
+        assertEq(superRegistry.getVaultLimitPerTx(1), 100);
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.ZERO_INPUT_VALUE.selector);
+        superRegistry.setVaultLimitPerTx(1, 0);
+
+        vm.prank(address(420));
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        superRegistry.setVaultLimitPerTx(1, 100);
+    }
+
     function test_setRouterInfo() public {
         uint8[] memory superformRouterIds = new uint8[](2);
         address[] memory stateSyncers = new address[](1);

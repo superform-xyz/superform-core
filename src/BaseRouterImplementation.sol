@@ -62,6 +62,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     /// @dev handles cross-chain multi vault deposit
     function _singleXChainMultiVaultDeposit(SingleXChainMultiVaultStateReq memory req_) internal virtual {
+        ActionLocalVars memory vars;
+
+        vars.srcChainId = CHAIN_ID;
+        if (vars.srcChainId == req_.dstChainId) revert Error.INVALID_ACTION();
+
         /// @dev validate superformsData
         if (!_validateSuperformsDepositData(req_.superformsData, req_.dstChainId)) {
             revert Error.INVALID_SUPERFORMS_DATA();
@@ -72,15 +77,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).validateBatchIdsExist(req_.superformsData.superformIds);
 
-        ActionLocalVars memory vars;
-        InitMultiVaultData memory ambData;
-
-        vars.srcChainId = CHAIN_ID;
-        if (vars.srcChainId == req_.dstChainId) revert Error.INVALID_ACTION();
-
         vars.currentPayloadId = ++payloadIds;
 
-        ambData = InitMultiVaultData(
+        InitMultiVaultData memory ambData = InitMultiVaultData(
             ROUTER_TYPE,
             vars.currentPayloadId,
             req_.superformsData.superformIds,
@@ -783,6 +782,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (len == 0 || liqRequestsLen == 0) return false;
         if (len != liqRequestsLen) return false;
 
+        /// @dev deposits beyond max vaults per tx is blocked
+        if (superformsData_.superformIds.length > superRegistry.getVaultLimitPerTx(dstChainId_)) return false;
+
         /// @dev superformIds/amounts/slippages array sizes validation
         if (
             !(
@@ -842,6 +844,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (liqRequestsLen != len) {
             return false;
         }
+
+        /// @dev deposits beyond max vaults per tx is blocked
+        if (superformsData_.superformIds.length > superRegistry.getVaultLimitPerTx(dstChainId_)) return false;
 
         /// @dev superformIds/amounts/slippages array sizes validation
         if (
