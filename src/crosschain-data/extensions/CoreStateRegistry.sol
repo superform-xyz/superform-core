@@ -38,7 +38,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     //////////////////////////////////////////////////////////////*/
 
     modifier onlyAllowedCaller(bytes32 role_) {
-        if (!_hasRole(role_, msg.sender)) revert Error.NOT_PREVILAGED_CALLER(role_);
+        if (!_hasRole(role_, msg.sender)) revert Error.NOT_PRIVILEGED_CALLER(role_);
         _;
     }
 

@@ -60,7 +60,7 @@ contract SuperRegistryTest is BaseSetup {
         superRegistry.setPermit2(getContract(ETH, "CanonicalPermit2"));
     }
 
-    function test_setSuperRouter_and_revert_invalidCaller() public {
+    function test_setSuperRouter_and_revert_disabled() public {
         _setAndAssert(superRegistry.SUPERFORM_ROUTER(), address(0x1));
     }
 
@@ -88,7 +88,7 @@ contract SuperRegistryTest is BaseSetup {
         _setAndAssert(superRegistry.BROADCAST_REGISTRY(), address(0x1));
     }
 
-    function test_setSuperPositions_and_revert_invalidCaller() public {
+    function test_setSuperPositions_and_revert_disabled() public {
         _setAndAssert(superRegistry.SUPER_POSITIONS(), address(0x1));
     }
 
@@ -374,6 +374,12 @@ contract SuperRegistryTest is BaseSetup {
             vm.expectRevert(Error.DISABLED.selector);
             isLocked = true;
         } else if (id_ == keccak256("EMERGENCY_QUEUE")) {
+            vm.expectRevert(Error.DISABLED.selector);
+            isLocked = true;
+        } else if (id_ == keccak256("SUPER_POSITIONS")) {
+            vm.expectRevert(Error.DISABLED.selector);
+            isLocked = true;
+        } else if (id_ == keccak256("SUPERFORM_ROUTER")) {
             vm.expectRevert(Error.DISABLED.selector);
             isLocked = true;
         }

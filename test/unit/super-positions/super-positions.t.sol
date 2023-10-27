@@ -264,12 +264,6 @@ contract SuperPositionsTest is BaseSetup {
         superPositions.stateMultiSync(maliciousMessage);
     }
 
-    function test_registerSERC20_invalid_interface() public {
-        SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
-        vm.expectRevert(Error.DISABLED.selector);
-        superPositions.registerSERC20(1, "");
-    }
-
     function test_registerSERC20() public {
         (uint256 superformId,) =
             SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);

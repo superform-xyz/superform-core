@@ -583,6 +583,9 @@ abstract contract AbstractDeploySingle is Script {
         vars.paymentHelper = _readContract(chainNames[trueIndex], vars.chainId, "PaymentHelper");
         vars.superRegistryC =
             SuperRegistry(payable(_readContract(chainNames[trueIndex], vars.chainId, "SuperRegistry")));
+
+        vars.superRegistryC.setVaultLimitPerTx(vars.chainId, 30);
+
         /// @dev Set all trusted remotes for each chain & configure amb chains ids
         for (uint256 j = 0; j < finalDeployedChains.length; j++) {
             if (j != i) {

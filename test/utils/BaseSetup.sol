@@ -719,6 +719,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.superRegistry = getContract(vars.chainId, "SuperRegistry");
             vars.paymentHelper = getContract(vars.chainId, "PaymentHelper");
             vars.superRegistryC = SuperRegistry(payable(vars.superRegistry));
+            vars.superRegistryC.setVaultLimitPerTx(vars.chainId, 30);
 
             /// @dev Set all trusted remotes for each chain, configure amb chains ids, setupQuorum for all chains as 1
             /// and setup PaymentHelper

@@ -34,7 +34,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     modifier onlyTimelockStateRegistryProcessor() {
         bytes32 role = keccak256("TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE");
         if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(role, msg.sender)) {
-            revert Error.NOT_PREVILAGED_CALLER(role);
+            revert Error.NOT_PRIVILEGED_CALLER(role);
         }
         _;
     }
@@ -44,21 +44,6 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
             _;
         }
     }
-
-    /*///////////////////////////////////////////////////////////////
-                            CONSTANTS
-    //////////////////////////////////////////////////////////////*/
-    bytes32 immutable WITHDRAW_COOLDOWN_PERIOD = keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));
-
-    /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev tracks the total time lock payloads
-    uint256 public timelockPayloadCounter;
-
-    /// @dev stores the timelock payloads
-    mapping(uint256 timelockPayloadId => TimelockPayload) public timelockPayload;
 
     /// @dev allows only form to write to the receive paylod
     modifier onlyForm(uint256 superformId) {
@@ -76,6 +61,21 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         }
         _;
     }
+
+    /*///////////////////////////////////////////////////////////////
+                            CONSTANTS
+    //////////////////////////////////////////////////////////////*/
+    bytes32 immutable WITHDRAW_COOLDOWN_PERIOD = keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));
+
+    /*///////////////////////////////////////////////////////////////
+                            STATE VARIABLES
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev tracks the total time lock payloads
+    uint256 public timelockPayloadCounter;
+
+    /// @dev stores the timelock payloads
+    mapping(uint256 timelockPayloadId => TimelockPayload) public timelockPayload;
 
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
@@ -211,7 +211,6 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
             revert Error.QUORUM_NOT_REACHED();
         }
 
-        ReturnSingleData memory singleVaultData = abi.decode(_payloadBody, (ReturnSingleData));
         if (callbackType == uint256(CallbackType.FAIL)) {
             ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).stateSync(_message);
         }

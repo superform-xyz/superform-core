@@ -27,7 +27,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     /*///////////////////////////////////////////////////////////////
                         STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
-    bytes32 constant DEPLOY_NEW_TRANSMUTER = keccak256("DEPLOY_NEW_TRANSMUTER");
+    bytes32 constant DEPLOY_NEW_SERC20 = keccak256("DEPLOY_NEW_SERC20");
 
     /// @dev is the super registry address
     ISuperRegistry public immutable superRegistry;
@@ -296,8 +296,8 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         /// @dev broadcast and deploy to the other destination chains
         if (extraData_.length > 0) {
             BroadcastMessage memory transmuterPayload = BroadcastMessage(
-                "SUPER_TRANSMUTER",
-                DEPLOY_NEW_TRANSMUTER,
+                "SUPER_POSITIONS",
+                DEPLOY_NEW_SERC20,
                 abi.encode(CHAIN_ID, ++xChainPayloadCounter, id, name, symbol, decimal)
             );
 
@@ -316,7 +316,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
 
         BroadcastMessage memory transmuterPayload = abi.decode(data_, (BroadcastMessage));
 
-        if (transmuterPayload.messageType == DEPLOY_NEW_TRANSMUTER) {
+        if (transmuterPayload.messageType == DEPLOY_NEW_SERC20) {
             _deployTransmuter(transmuterPayload.message);
         }
     }
