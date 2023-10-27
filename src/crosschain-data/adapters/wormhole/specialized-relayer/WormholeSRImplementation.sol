@@ -110,6 +110,10 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
             broadcastFinality
         );
 
+        if (relayer == address(0)) {
+            revert Error.RELAYER_NOT_SET();
+        }
+
         /// @dev forwards the rest to superform relayer
         (bool success,) = payable(relayer).call{ value: msg.value - msgFee }("");
 

@@ -268,6 +268,9 @@ library Error {
     /// @dev thrown if not enough native fees is paid for amb to send the message
     error CROSS_CHAIN_TX_UNDERPAID();
 
+    /// @dev thrown if wormhole relayer is not set
+    error RELAYER_NOT_SET();
+
     /*///////////////////////////////////////////////////////////////
                         SUPERFORM FACTORY ERRORS
     //////////////////////////////////////////////////////////////*/
