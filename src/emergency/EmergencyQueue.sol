@@ -7,6 +7,7 @@ import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { IEmergencyQueue } from "../interfaces/IEmergencyQueue.sol";
 import { Error } from "../utils/Error.sol";
+import { ISuperformFactory } from "../interfaces/ISuperformFactory.sol";
 import "../types/DataTypes.sol";
 
 /// @title EmergencyQueue
@@ -34,20 +35,12 @@ contract EmergencyQueue is IEmergencyQueue {
     /*///////////////////////////////////////////////////////////////
                             MODIFIER
     //////////////////////////////////////////////////////////////*/
-    modifier onlySuperform(uint256 superformId_) {
-        (address superform, uint32 formId, uint64 chainId) = superformId_.getSuperform();
-
-        if (msg.sender != superform) {
-            revert Error.NOT_SUPERFORM();
+    modifier onlySuperform(uint256 superformId) {
+        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId)) {
+            revert Error.SUPERFORM_ID_NONEXISTENT();
         }
-
-        if (chainId != CHAIN_ID || chainId == 0) {
-            revert Error.INVALID_CHAIN_ID();
-        }
-
-        if (IBaseForm(superform).formImplementationId() != formId) {
-            revert Error.INVALID_SUPERFORMS_DATA();
-        }
+        (address superform,,) = superformId.getSuperform();
+        if (msg.sender != superform) revert Error.NOT_SUPERFORM();
 
         _;
     }

@@ -54,7 +54,7 @@ contract PaymentHelper is IPaymentHelper {
     mapping(uint64 chainId => uint256 defaultGasPrice) public gasPrice;
     mapping(uint64 chainId => uint256 gasPerKB) public gasPerKB;
     mapping(uint64 chainId => uint256 gasForOps) public ackGasCost;
-    mapping(uint64 chainId => uint256 gasForOps) public twoStepCost;
+    mapping(uint64 chainId => uint256 gasForOps) public timelockCost;
 
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
@@ -107,7 +107,7 @@ contract PaymentHelper is IPaymentHelper {
         gasPrice[chainId_] = config_.defaultGasPrice;
         gasPerKB[chainId_] = config_.dstGasPerKB;
         ackGasCost[chainId_] = config_.ackGasCost;
-        twoStepCost[chainId_] = config_.twoStepCost;
+        timelockCost[chainId_] = config_.timelockCost;
         swapGasUsed[chainId_] = config_.swapGasUsed;
     }
 
@@ -168,7 +168,7 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev Type 10: TWO STEP PROCESSING COST
         if (configType_ == 10) {
-            twoStepCost[chainId_] = abi.decode(config_, (uint256));
+            timelockCost[chainId_] = abi.decode(config_, (uint256));
         }
 
         /// @dev Type 11: SWAP GAS USED
@@ -398,7 +398,7 @@ contract PaymentHelper is IPaymentHelper {
         (, uint32 formId,) = req_.superformData.superformId.getSuperform();
         /// @dev only if timelock form withdrawal is involved
         if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
-            srcAmount += twoStepCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
+            srcAmount += timelockCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
         }
 
         if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castToArray());
@@ -420,7 +420,7 @@ contract PaymentHelper is IPaymentHelper {
         uint256 len = req_.superformData.superformIds.length;
         for (uint256 i; i < len;) {
             (, uint32 formId,) = req_.superformData.superformIds[i].getSuperform();
-            uint256 twoStepPrice = twoStepCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
+            uint256 twoStepPrice = timelockCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
             /// @dev only if timelock form withdrawal is involved
             if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
                 srcAmount += twoStepPrice;

@@ -736,6 +736,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         MockERC20(getContract(ETH, "DAI")).approve(address(superformRouterSERC20), 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
+
         superformRouterSERC20.singleDirectSingleVaultDeposit(req);
     }
 

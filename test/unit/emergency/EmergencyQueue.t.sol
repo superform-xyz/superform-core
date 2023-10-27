@@ -81,7 +81,7 @@ contract EmergencyQueueTest is ProtocolActions {
 
         vm.prank(superform);
 
-        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
+        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
         EmergencyQueue(emergencyQueue).queueWithdrawal(
             InitSingleVaultData(
                 1,
@@ -112,7 +112,7 @@ contract EmergencyQueueTest is ProtocolActions {
 
         vm.prank(superform);
 
-        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
         EmergencyQueue(emergencyQueue).queueWithdrawal(
             InitSingleVaultData(
                 1,

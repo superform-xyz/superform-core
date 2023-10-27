@@ -79,6 +79,7 @@ contract SuperformRouterTest is ProtocolActions {
         SuperPositions(getContract(ETH, "SuperPositions")).increaseAllowance(
             getContract(ETH, "SuperformRouter"), superformId, 1e18
         );
+
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectMultiVaultWithdraw(req);
     }
