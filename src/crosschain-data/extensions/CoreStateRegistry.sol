@@ -550,7 +550,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         bool failedSwapQueued;
         if (hasDstSwap_) {
             if (dstSwapper.swappedAmount(payloadId_, index_) != finalAmount_) {
-                (address interimToken, uint256 amount) = dstSwapper.getFailedSwap(payloadId_, index_);
+                (address interimToken, uint256 amount) =
+                    dstSwapper.getPostDstSwapFailureUpdatedTokenAmount(payloadId_, index_);
 
                 if (amount != finalAmount_) {
                     revert Error.INVALID_DST_SWAP_AMOUNT();
