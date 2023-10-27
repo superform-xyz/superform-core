@@ -44,6 +44,13 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     //////////////////////////////////////////////////////////////*/
 
     modifier notPaused(InitSingleVaultData memory singleVaultData_) {
+        if (
+            !ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(
+                singleVaultData_.superformId
+            )
+        ) {
+            revert Error.SUPERFORM_ID_NONEXISTENT();
+        }
         (, uint32 formImplementationId_,) = singleVaultData_.superformId.getSuperform();
 
         if (formImplementationId != formImplementationId_) revert Error.INVALID_SUPERFORMS_DATA();
@@ -310,6 +317,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     /// @dev returns if a form id is paused
 
     function _isPaused(uint256 superformId) internal view returns (bool) {
+        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId)) {
+            revert Error.SUPERFORM_ID_NONEXISTENT();
+        }
         (, uint32 formImplementationId_,) = superformId.getSuperform();
 
         if (formImplementationId != formImplementationId_) revert Error.INVALID_SUPERFORMS_DATA();

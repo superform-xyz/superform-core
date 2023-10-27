@@ -161,7 +161,6 @@ contract TimelockStateRegistryTest is ProtocolActions {
     }
 
     function _legacySuperformPackWithShift() internal view returns (address superform, uint256 superformId_) {
-        uint32 formImplementationId_ = 1;
         uint64 chainId_ = ETH;
 
         superform = getContract(

@@ -62,7 +62,10 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     mapping(uint256 timelockPayloadId => TimelockPayload) public timelockPayload;
 
     /// @dev allows only form to write to the receive paylod
-    modifier onlyForm(uint256 superformId) {
+    modifier onlyTimelockSuperform(uint256 superformId) {
+        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId)) {
+            revert Error.SUPERFORM_ID_NONEXISTENT();
+        }
         (address superform,,) = superformId.getSuperform();
         if (msg.sender != superform) revert Error.NOT_SUPERFORM();
         if (IBaseForm(superform).getStateRegistryId() != superRegistry.getStateRegistryId(address(this))) {
@@ -97,12 +100,8 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     )
         external
         override
-        onlyForm(data_.superformId)
+        onlyTimelockSuperform(data_.superformId)
     {
-        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(data_.superformId))
-        {
-            revert Error.SUPERFORM_ID_NONEXISTENT();
-        }
         ++timelockPayloadCounter;
         timelockPayload[timelockPayloadCounter] =
             TimelockPayload(type_, srcSender_, srcChainId_, lockedTill_, data_, TwoStepsStatus.PENDING);
