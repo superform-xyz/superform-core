@@ -13,7 +13,6 @@ import {
 } from "src/types/DataTypes.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
-
 import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
@@ -198,7 +197,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
             (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN))
                 || (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL))
         ) {
-            _batchMint(srcSender, returnData.superformIds, returnData.amounts, "");
+            _batchMint(srcSender, msg.sender, returnData.superformIds, returnData.amounts, "");
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
@@ -247,7 +246,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
             (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN))
                 || (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL))
         ) {
-            _mint(srcSender, returnData.superformId, returnData.amount, "");
+            _mint(srcSender, msg.sender, returnData.superformId, returnData.amount, "");
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
@@ -255,34 +254,51 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         emit Completed(returnData.payloadId);
     }
 
+    /// @dev FIXME workaround till Sujith's pr is merged
+    function registerSERC20(uint256 superformId_) external override returns (address) {
+        revert();
+    }
+
+    /// @dev FIXME workaround till Sujith's pr is merged (this should not be here)
     /// @inheritdoc ISuperPositions
     function registerSERC20(uint256 superformId_, bytes memory extraData_) external override returns (address) {
-        (address superform, uint32 formImplementationId, uint64 chainId) = DataLib.getSuperform(superformId_);
+        if (synthethicTokenId[superformId_] != address(0)) revert SYNTHETIC_ERC20_ALREADY_REGISTERED();
+
+        address syntheticToken = _createToken(superformId_, extraData_);
+
+        synthethicTokenId[superformId_] = syntheticToken;
+
+        return synthethicTokenId[superformId_];
+    }
+
+    function _createToken(uint256 id) internal virtual override returns (address syntheticToken) { }
+
+    function _createToken(uint256 id, bytes memory extraData_) internal virtual returns (address syntheticToken) {
+        /// @dev FIXME add isSuperform check here
+        (address superform, uint32 formImplementationId, uint64 chainId) = DataLib.getSuperform(id);
 
         if (CHAIN_ID != chainId || chainId == 0) revert Error.INVALID_CHAIN_ID();
         if (superform == address(0)) revert Error.NOT_SUPERFORM();
         if (formImplementationId == 0) revert Error.FORM_DOES_NOT_EXIST();
-        if (synthethicTokenId[superformId_] != address(0)) revert SYNTHETIC_ERC20_ALREADY_REGISTERED();
 
         string memory name =
             string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
         string memory symbol = string(abi.encodePacked("sERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
         uint8 decimal = uint8(IBaseForm(superform).getVaultDecimals());
-        address syntheticToken = address(
+        syntheticToken = address(
             new sERC20(
                 name,
                 symbol,
                 decimal
             )
         );
-        synthethicTokenId[superformId_] = syntheticToken;
 
         /// @dev broadcast and deploy to the other destination chains
         if (extraData_.length > 0) {
             BroadcastMessage memory transmuterPayload = BroadcastMessage(
                 "SUPER_TRANSMUTER",
                 DEPLOY_NEW_TRANSMUTER,
-                abi.encode(CHAIN_ID, ++xChainPayloadCounter, superformId_, name, symbol, decimal)
+                abi.encode(CHAIN_ID, ++xChainPayloadCounter, id, name, symbol, decimal)
             );
 
             _broadcast(abi.encode(transmuterPayload), extraData_);

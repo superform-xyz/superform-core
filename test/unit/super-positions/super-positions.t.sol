@@ -8,7 +8,7 @@ import { DataLib } from "src/libraries/DataLib.sol";
 import { SuperPositions } from "src/SuperPositions.sol";
 import { Error } from "src/utils/Error.sol";
 
-import { ERC1155A } from "ERC1155A/ERC1155A.sol";
+import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 
 contract SuperPositionsTest is BaseSetup {
     bytes4 INTERFACE_ID_ERC165 = 0x01ffc9a7;
@@ -264,19 +264,19 @@ contract SuperPositionsTest is BaseSetup {
         superPositions.stateMultiSync(maliciousMessage);
     }
 
-    function test_registerTransmuter_invalid_interface() public {
+    function test_registerSERC20_invalid_interface() public {
         SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
         vm.expectRevert(Error.DISABLED.selector);
-        superPositions.registerSERC20(1, "", "", 1);
+        superPositions.registerSERC20(1, "");
     }
 
-    function test_registerTransmuter() public {
+    function test_registerSERC20() public {
         (uint256 superformId,) =
             SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
         superPositions.registerSERC20(superformId, "");
     }
 
-    function test_registerTransmuter_invalidExtraData() public {
+    function test_registerSERC20_invalidExtraData() public {
         uint8[] memory ambId = new uint8[](1);
         ambId[0] = 4;
         (uint256 superformId,) =
@@ -313,7 +313,7 @@ contract SuperPositionsTest is BaseSetup {
         (uint256 superformId,) =
             SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
         superPositions.registerSERC20(superformId, "");
-        vm.expectRevert(ERC1155A.SYNTHETIC_ERC20_ALREADY_REGISTERED.selector);
+        vm.expectRevert(IERC1155A.SYNTHETIC_ERC20_ALREADY_REGISTERED.selector);
 
         superPositions.registerSERC20(superformId, "");
     }
