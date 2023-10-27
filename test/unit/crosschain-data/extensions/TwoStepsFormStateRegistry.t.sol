@@ -17,7 +17,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
     function test_updateTxDataBranch() external {
         /// @dev mocks receive payload as a form
         vm.selectFork(FORKS[ETH]);
-        uint256 superformId = _legacySuperformPackWithShift();
+        (address superform, uint256 superformId) = _legacySuperformPackWithShift();
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             1,
@@ -51,7 +51,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
             1, DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH)
         );
 
-        vm.prank(getContract(ETH, "ERC4626TimelockForm"));
+        vm.prank(superform);
         timelockStateRegistry.receivePayload(
             0,
             deployer,
@@ -135,7 +135,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
     function test_processPayloadMintPositionBranch() external {
         /// @dev mocks receive payload as a form
         vm.selectFork(FORKS[AVAX]);
-        uint256 superformId = _legacySuperformPackWithShift();
+        (, uint256 superformId) = _legacySuperformPackWithShift();
 
         bytes memory _message = abi.encode(
             AMBMessage(DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH), abi.encode(ReturnSingleData(1, superformId, 420)))
@@ -156,13 +156,16 @@ contract TimelockStateRegistryTest is ProtocolActions {
         timelockStateRegistry.processPayload(1);
     }
 
-    function _legacySuperformPackWithShift() internal view returns (uint256 superformId_) {
-        address superform_ = getContract(ETH, "ERC4626TimelockForm");
-        uint32 formImplementationId_ = 2;
+    function _legacySuperformPackWithShift() internal view returns (address superform, uint256 superformId_) {
         uint64 chainId_ = ETH;
 
-        superformId_ = uint256(uint160(superform_));
-        superformId_ |= uint256(formImplementationId_) << 160;
+        superform = getContract(
+            chainId_,
+            string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
+        );
+
+        superformId_ = uint256(uint160(superform));
+        superformId_ |= uint256(FORM_IMPLEMENTATION_IDS[1]) << 160;
         superformId_ |= uint256(chainId_) << 192;
     }
 }

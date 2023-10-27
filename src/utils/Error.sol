@@ -281,6 +281,9 @@ library Error {
     /// @dev thrown when a form does not exist
     error FORM_DOES_NOT_EXIST();
 
+    /// @dev thrown when superform not on factory
+    error SUPERFORM_ID_NONEXISTENT();
+
     /// @dev thrown when same vault and beacon is used to create new superform
     error VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS();
 

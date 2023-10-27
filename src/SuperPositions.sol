@@ -14,6 +14,7 @@ import {
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
 import { Error } from "src/utils/Error.sol";
@@ -274,12 +275,10 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     function _createToken(uint256 id) internal virtual override returns (address syntheticToken) { }
 
     function _createToken(uint256 id, bytes memory extraData_) internal virtual returns (address syntheticToken) {
-        /// @dev FIXME add isSuperform check here
-        (address superform, uint32 formImplementationId, uint64 chainId) = DataLib.getSuperform(id);
-
-        if (CHAIN_ID != chainId || chainId == 0) revert Error.INVALID_CHAIN_ID();
-        if (superform == address(0)) revert Error.NOT_SUPERFORM();
-        if (formImplementationId == 0) revert Error.FORM_DOES_NOT_EXIST();
+        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(id)) {
+            revert Error.SUPERFORM_ID_NONEXISTENT();
+        }
+        (address superform,,) = id.getSuperform();
 
         string memory name =
             string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));

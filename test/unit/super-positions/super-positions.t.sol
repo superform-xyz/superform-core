@@ -286,20 +286,20 @@ contract SuperPositionsTest is BaseSetup {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
-        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
 
         superPositions.registerSERC20(superformId, "");
     }
 
     function test_InvalidSuperFormAddress() public {
         uint256 invalidSuperFormId = DataLib.packSuperform(address(0), 4, ETH);
-        vm.expectRevert(Error.NOT_SUPERFORM.selector);
+        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
         superPositions.registerSERC20(invalidSuperFormId, "");
     }
 
     function test_InvalidFormImplementation() public {
         uint256 invalidSuperFormId = DataLib.packSuperform(address(0x777), 0, ETH);
-        vm.expectRevert(Error.FORM_DOES_NOT_EXIST.selector);
+        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
         superPositions.registerSERC20(invalidSuperFormId, "");
     }
 

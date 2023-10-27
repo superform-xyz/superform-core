@@ -433,11 +433,11 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             );
 
             /// @dev 4.2 - deploy Form State Registry
-            vars.twoStepsFormStateRegistry = address(new TimelockStateRegistry{salt: salt}(vars.superRegistryC));
-            contracts[vars.chainId][bytes32(bytes("TimelockStateRegistry"))] = vars.twoStepsFormStateRegistry;
+            vars.timelockFormStateRegistry = address(new TimelockStateRegistry{salt: salt}(vars.superRegistryC));
+            contracts[vars.chainId][bytes32(bytes("TimelockStateRegistry"))] = vars.timelockFormStateRegistry;
 
             vars.superRegistryC.setAddress(
-                vars.superRegistryC.TIMELOCK_STATE_REGISTRY(), vars.twoStepsFormStateRegistry, vars.chainId
+                vars.superRegistryC.TIMELOCK_STATE_REGISTRY(), vars.timelockFormStateRegistry, vars.chainId
             );
 
             /// @dev 4.3 - deploy Broadcast State Registry
@@ -450,7 +450,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
             address[] memory registryAddresses = new address[](3);
             registryAddresses[0] = vars.coreStateRegistry;
-            registryAddresses[1] = vars.twoStepsFormStateRegistry;
+            registryAddresses[1] = vars.timelockFormStateRegistry;
             registryAddresses[2] = vars.broadcastRegistry;
 
             uint8[] memory registryIds = new uint8[](3);
