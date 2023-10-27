@@ -570,7 +570,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         v.dstAmounts = new uint256[](v.len);
 
         /// @dev decode superforms
-        (v.superforms,,) = DataLib.getSuperforms(vaultData_.superformIds);
+        v.superforms = DataLib.getSuperforms(vaultData_.superformIds);
 
         _multiVaultTokenForward(srcSender_, v.superforms, permit2data_, vaultData_, false);
 
@@ -669,7 +669,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     /// @dev loops and call `_directWithdraw`
     function _directMultiWithdraw(InitMultiVaultData memory vaultData_, address srcSender_) internal virtual {
         /// @dev decode superforms
-        (address[] memory superforms,,) = DataLib.getSuperforms(vaultData_.superformIds);
+        address[] memory superforms = DataLib.getSuperforms(vaultData_.superformIds);
         uint256 len = superforms.length;
 
         for (uint256 i; i < len;) {

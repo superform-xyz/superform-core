@@ -56,20 +56,12 @@ library DataLib {
     /// @dev returns the vault-form-chain pair of an array of superforms
     /// @param superformIds_  array of superforms
     /// @return superforms_ are the address of the vaults
-    /// @return formIds_ are the form ids
-    /// @return chainIds_ are the chain ids
-    function getSuperforms(uint256[] memory superformIds_)
-        internal
-        pure
-        returns (address[] memory superforms_, uint32[] memory formIds_, uint64[] memory chainIds_)
-    {
+    function getSuperforms(uint256[] memory superformIds_) internal pure returns (address[] memory superforms_) {
         uint256 len = superformIds_.length;
         superforms_ = new address[](len);
-        formIds_ = new uint32[](len);
-        chainIds_ = new uint64[](len);
 
         for (uint256 i = 0; i < len;) {
-            (superforms_[i], formIds_[i], chainIds_[i]) = getSuperform(superformIds_[i]);
+            (superforms_[i],,) = getSuperform(superformIds_[i]);
             unchecked {
                 ++i;
             }
