@@ -1464,7 +1464,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         /// @dev only generate if acknowledgement is needed
         if (targetChainId_ != srcChainId_) {
-            (nativeFee,) = PaymentHelper(getContract(targetChainId_, "PaymentHelper")).estimateAckCost(payloadId_);
+            nativeFee = PaymentHelper(getContract(targetChainId_, "PaymentHelper")).estimateAckCost(payloadId_);
         }
 
         vm.prank(deployer);

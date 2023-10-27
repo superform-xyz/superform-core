@@ -14,8 +14,9 @@ contract CoreStateRegistryTest is ProtocolActions {
 
     /// @dev test processPayload reverts with insufficient collateral
     function test_processPayloadRevertingWithoutCollateral() public {
-        uint8[] memory ambIds = new uint8[](1);
+        uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
+        ambIds[1] = 2;
 
         _successfulSingleDeposit(ambIds);
 
@@ -32,7 +33,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.prank(getContract(AVAX, "CoreStateRegistry"));
         MockERC20(getContract(AVAX, "DAI")).transfer(deployer, 999_900_000_000_000_000);
 
-        (uint256 nativeAmount,) = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
+        uint256 nativeAmount = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
 
         vm.prank(deployer);
         vm.expectRevert(Error.BRIDGE_TOKENS_PENDING.selector);
@@ -41,8 +42,9 @@ contract CoreStateRegistryTest is ProtocolActions {
 
     /// @dev test processPayload reverts with insufficient collateral for multi vault case
     function test_processPayloadRevertingWithoutCollateralMultiVault() public {
-        uint8[] memory ambIds = new uint8[](1);
+        uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
+        ambIds[1] = 2;
 
         _successfulMultiDeposit(ambIds);
 
@@ -60,7 +62,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.prank(getContract(AVAX, "CoreStateRegistry"));
         MockERC20(getContract(AVAX, "DAI")).transfer(deployer, 840);
 
-        (uint256 nativeValue,) = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
+        uint256 nativeValue = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
 
         vm.prank(deployer);
         vm.expectRevert(Error.BRIDGE_TOKENS_PENDING.selector);
@@ -69,8 +71,9 @@ contract CoreStateRegistryTest is ProtocolActions {
 
     /// @dev test processPayload with just 1 AMB
     function test_processPayloadWithoutReachingQuorum() public {
-        uint8[] memory ambIds = new uint8[](1);
+        uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
+        ambIds[1] = 2;
 
         _successfulSingleDeposit(ambIds);
 
@@ -82,8 +85,9 @@ contract CoreStateRegistryTest is ProtocolActions {
 
     /// @dev test processPayload without updating deposit payload
     function test_processPayloadWithoutUpdating() public {
-        uint8[] memory ambIds = new uint8[](1);
+        uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
+        ambIds[1] = 2;
 
         _successfulSingleDeposit(ambIds);
 
@@ -98,8 +102,9 @@ contract CoreStateRegistryTest is ProtocolActions {
 
     /// @dev test processPayload without updating deposit payload
     function test_processPayloadForAlreadyProcessedPayload() public {
-        uint8[] memory ambIds = new uint8[](1);
+        uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
+        ambIds[1] = 2;
 
         _successfulSingleDeposit(ambIds);
 
@@ -112,7 +117,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         amounts[0] = 999_900_000_000_000_000;
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, amounts);
 
-        (uint256 nativeValue,) = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
+        uint256 nativeValue = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
 
         vm.prank(deployer);
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: nativeValue }(1);
@@ -124,8 +129,9 @@ contract CoreStateRegistryTest is ProtocolActions {
 
     /// @dev test processPayload without updating multi vault deposit payload
     function test_processPayloadWithoutUpdatingMultiVaultDeposit() public {
-        uint8[] memory ambIds = new uint8[](1);
+        uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
+        ambIds[1] = 2;
 
         _successfulMultiDeposit(ambIds);
 
@@ -140,8 +146,9 @@ contract CoreStateRegistryTest is ProtocolActions {
 
     /// @dev test all revert cases with single vault deposit payload update
     function test_updatePayloadSingleVaultDepositRevertCases() public {
-        uint8[] memory ambIds = new uint8[](1);
+        uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
+        ambIds[1] = 2;
 
         _successfulSingleDeposit(ambIds);
 
@@ -157,8 +164,9 @@ contract CoreStateRegistryTest is ProtocolActions {
 
     /// @dev test all revert cases with single vault withdraw payload update
     function test_updatePayloadSingleVaultWithdrawQuorumCheck() public {
-        uint8[] memory ambIds = new uint8[](1);
+        uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
+        ambIds[1] = 2;
 
         _successfulSingleWithdrawal(ambIds, 0);
 
@@ -173,8 +181,9 @@ contract CoreStateRegistryTest is ProtocolActions {
 
     /// @dev test all revert cases with multi vault withdraw payload update
     function test_updatePayloadMultiVaultWithdrawRevertCases() public {
-        uint8[] memory ambIds = new uint8[](1);
+        uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
+        ambIds[1] = 2;
 
         _successfulMultiWithdrawal(ambIds);
 
@@ -235,8 +244,9 @@ contract CoreStateRegistryTest is ProtocolActions {
 
     /// @dev test all revert cases with multi vault deposit payload update
     function test_updatePayloadMultiVaultDepositRevertCases() public {
-        uint8[] memory ambIds = new uint8[](1);
+        uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
+        ambIds[1] = 2;
 
         _successfulMultiDeposit(ambIds);
 

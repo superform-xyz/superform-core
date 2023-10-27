@@ -31,16 +31,21 @@ contract BaseStateRegistryTest is BaseSetup {
     function test_callDispatchUsingInvalidAmbId() public {
         vm.selectFork(FORKS[ETH]);
 
-        uint8[] memory ambIds = new uint8[](1);
+        uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 9;
+        ambIds[1] = 10;
 
-        uint256[] memory gasPerAMB = new uint256[](1);
-        bytes[] memory extraDataPerAMB = new bytes[](1);
+        uint256[] memory gasPerAMB = new uint256[](2);
+        bytes[] memory extraDataPerAMB = new bytes[](2);
 
         vm.expectRevert(Error.INVALID_BRIDGE_ID.selector);
         vm.prank(getContract(ETH, "SuperformRouter"));
         coreStateRegistry.dispatchPayload(
-            bond, ambIds, ARBI, abi.encode(420), abi.encode(AMBExtraData(gasPerAMB, extraDataPerAMB))
+            bond,
+            ambIds,
+            ARBI,
+            abi.encode(AMBMessage(type(uint256).max, abi.encode(420))),
+            abi.encode(AMBExtraData(gasPerAMB, extraDataPerAMB))
         );
     }
 

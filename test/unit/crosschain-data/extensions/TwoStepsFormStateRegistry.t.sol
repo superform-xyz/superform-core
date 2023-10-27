@@ -141,7 +141,8 @@ contract TimelockStateRegistryTest is ProtocolActions {
 
         bytes memory _message = abi.encode(
             AMBMessage(
-                DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH), abi.encode(ReturnSingleData(1, 1, superformId, 420))
+                DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH),
+                abi.encode(new uint8[](0), abi.encode(ReturnSingleData(1, 1, superformId, 420)))
             )
         );
 

@@ -43,10 +43,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     mapping(uint256 => PayloadState) public payloadTracking;
 
     /// @dev maps payloads to the amb ids that delivered them
-    mapping(uint256 => uint8) public msgAMB;
-
-    /// @dev maps payloads to the amb ids that delivered them
-    mapping(bytes32 => uint8[]) internal proofAMB;
+    mapping(uint256 => uint8[]) internal msgAMBs;
 
     /// @dev sender varies based on functionality
     /// @notice inheriting contracts should override this function (else not safe)
@@ -96,14 +93,17 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         internal
     {
         /// @dev revert here if quorum requirements might fail on the remote chain
-        if (ambIds_.length < _getQuorum(dstChainId_)) {
+        if (ambIds_.length - 1 < _getQuorum(dstChainId_)) {
             revert Error.INSUFFICIENT_QUORUM();
         }
 
         AMBExtraData memory d = abi.decode(extraData_, (AMBExtraData));
 
+        AMBMessage memory ambEncodedMessage = abi.decode(message_, (AMBMessage));
+        ambEncodedMessage.params = abi.encode(ambIds_, ambEncodedMessage.params);
+
         _getAMBImpl(ambIds_[0]).dispatchPayload{ value: d.gasPerAMB[0] }(
-            srcSender_, dstChainId_, message_, d.extraDataPerAMB[0]
+            srcSender_, dstChainId_, abi.encode(ambEncodedMessage), d.extraDataPerAMB[0]
         );
 
         uint256 len = ambIds_.length;
@@ -147,17 +147,13 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             bytes32 proofHash = abi.decode(data.params, (bytes32));
             ++messageQuorum[proofHash];
 
-            proofAMB[proofHash].push(_getAmbId(msg.sender));
-
             emit ProofReceived(data.params);
         } else {
             /// @dev if message, store header and body of it
             ++payloadsCount;
 
-            payloadBody[payloadsCount] = data.params;
             payloadHeader[payloadsCount] = data.txInfo;
-
-            msgAMB[payloadsCount] = _getAmbId(msg.sender);
+            (msgAMBs[payloadsCount], payloadBody[payloadsCount]) = abi.decode(data.params, (uint8[], bytes));
 
             emit PayloadReceived(srcChainId_, CHAIN_ID, payloadsCount);
         }
@@ -167,8 +163,8 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     function processPayload(uint256 payloadId_) external payable virtual override;
 
     /// @inheritdoc IBaseStateRegistry
-    function getProofAMB(bytes32 proof_) external view override returns (uint8[] memory) {
-        return proofAMB[proof_];
+    function getMessageAMB(uint256 payloadId_) external view override returns (uint8[] memory) {
+        return msgAMBs[payloadId_];
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -180,11 +176,6 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     /// @return the quorum configured for the chain id
     function _getQuorum(uint64 chainId_) internal view returns (uint256) {
         return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId_);
-    }
-
-    /// @dev returns the amb id for address
-    function _getAmbId(address amb_) internal view returns (uint8 ambId) {
-        return superRegistry.getAmbId(amb_);
     }
 
     /// @dev returns the amb id for address

@@ -207,7 +207,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     : _singleDeposit(payloadId_, payloadBody_, srcSender, srcChainId);
             }
 
-            _processAck(payloadId_, message_.computeProof(), srcChainId, returnMessage);
+            _processAck(payloadId_, srcChainId, returnMessage);
         }
 
         emit PayloadProcessed(payloadId_);
@@ -931,29 +931,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         return "";
     }
 
-    function _processAck(
-        uint256 payloadId_,
-        bytes32 proof_,
-        uint64 srcChainId_,
-        bytes memory returnMessage_
-    )
-        internal
-    {
-        uint8[] memory proofIds = proofAMB[proof_];
-
+    function _processAck(uint256 payloadId_, uint64 srcChainId_, bytes memory returnMessage_) internal {
         /// @dev if deposits succeeded or some withdrawal failed, dispatch a callback
         if (returnMessage_.length > 0) {
-            uint256 len = proofIds.length;
-            uint8[] memory ambIds = new uint8[](len + 1);
-            ambIds[0] = msgAMB[payloadId_];
-
-            for (uint256 i; i < len;) {
-                ambIds[i + 1] = proofIds[i];
-
-                unchecked {
-                    ++i;
-                }
-            }
+            uint8[] memory ambIds = msgAMBs[payloadId_];
 
             (, bytes memory extraData) = IPaymentHelper(_getAddress(keccak256("PAYMENT_HELPER"))).calculateAMBData(
                 srcChainId_, ambIds, returnMessage_
@@ -1018,10 +999,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         bytes32 newPayloadProof = AMBMessage(prevPayloadHeader, newPayloadBody).computeProof();
         if (newPayloadProof != prevPayloadProof) {
             messageQuorum[newPayloadProof] = messageQuorum[prevPayloadProof];
-            proofAMB[newPayloadProof] = proofAMB[prevPayloadProof];
 
             delete messageQuorum[prevPayloadProof];
-            delete proofAMB[prevPayloadProof];
         }
     }
 }

@@ -604,7 +604,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         );
         vm.selectFork(FORKS[ARBI]);
 
-        (uint256 nativeAmount,) = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(2);
+        uint256 nativeAmount = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(2);
 
         vm.startPrank(deployer);
         vm.recordLogs();
@@ -709,7 +709,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         vm.selectFork(FORKS[ARBI]);
         vm.startPrank(deployer);
         vm.recordLogs();
-        (uint256 nativeAmount,) = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(2);
+
+        uint256 nativeAmount = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(2);
         CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(2);
         vm.stopPrank();
     }
@@ -1137,8 +1138,10 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         MultiVaultSFData memory data =
             MultiVaultSFData(superformIds, amounts, maxSlippages, new bool[](2), liqReqs, "", refundAddress, "");
-        uint8[] memory ambIds = new uint8[](1);
+        uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
+        ambIds[1] = 2;
+
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
 
         /// @dev approves before call
@@ -1164,7 +1167,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(1, amounts);
 
         vm.recordLogs();
-        (uint256 nativeAmount,) = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(1);
+
+        uint256 nativeAmount = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(1);
         CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(1);
         vm.stopPrank();
 
@@ -1181,7 +1185,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         vm.startPrank(deployer);
         SuperRegistry(getContract(ETH, "SuperRegistry")).setRequiredMessagingQuorum(ARBI, 0);
 
-        (nativeAmount,) = PaymentHelper(getContract(ETH, "PaymentHelper")).estimateAckCost(1);
+        nativeAmount = PaymentHelper(getContract(ETH, "PaymentHelper")).estimateAckCost(1);
         CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(1);
         vm.stopPrank();
     }
@@ -1343,8 +1347,10 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         SingleVaultSFData memory data =
             SingleVaultSFData(superformId, amount, maxSlippage, false, liqReq, "", refundAddress, "");
-        uint8[] memory ambIds = new uint8[](1);
+        uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
+        ambIds[1] = 2;
+
         SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds, ARBI, data);
 
         /// @dev approves before call
@@ -1375,7 +1381,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         vm.recordLogs();
 
-        (uint256 nativeAmount,) = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(1);
+        uint256 nativeAmount = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(1);
         CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(1);
         vm.stopPrank();
         LayerZeroHelper(getContract(ARBI, "LayerZeroHelper")).helpWithEstimates(
@@ -1391,7 +1397,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         vm.startPrank(deployer);
         SuperRegistry(getContract(ETH, "SuperRegistry")).setRequiredMessagingQuorum(ARBI, 0);
 
-        (nativeAmount,) = PaymentHelper(getContract(ETH, "PaymentHelper")).estimateAckCost(1);
+        nativeAmount = PaymentHelper(getContract(ETH, "PaymentHelper")).estimateAckCost(1);
         CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(1);
         vm.stopPrank();
     }
