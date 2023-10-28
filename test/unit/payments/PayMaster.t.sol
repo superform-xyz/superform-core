@@ -293,6 +293,7 @@ contract PayMasterTest is ProtocolActions {
             1e18,
             100,
             false,
+            false,
             LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ETH, 0),
             bytes(""),
             receiverAddress,
