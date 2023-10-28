@@ -11,7 +11,7 @@ import "./types/DataTypes.sol";
 /// @title BaseRouter
 /// @author Zeropoint Labs.
 /// @dev Routes users funds and action information to a remote execution chain.
-/// @dev abstract implementation that allows inheriting routers to implement their own logic
+/// @dev abstract implementation that allows inheriting contract to implement the logic
 abstract contract BaseRouter is IBaseRouter {
     using SafeERC20 for IERC20;
 
@@ -19,8 +19,7 @@ abstract contract BaseRouter is IBaseRouter {
                         CONSTANT/IMMUTABLE
     //////////////////////////////////////////////////////////////*/
 
-    uint8 public immutable STATE_REGISTRY_TYPE;
-    uint8 public immutable ROUTER_TYPE;
+    uint8 public constant STATE_REGISTRY_TYPE = 1;
     uint64 public immutable CHAIN_ID;
 
     ISuperRegistry public immutable superRegistry;
@@ -30,17 +29,13 @@ abstract contract BaseRouter is IBaseRouter {
     //////////////////////////////////////////////////////////////*/
 
     /// @param superRegistry_ the superform registry contract
-    /// @param stateRegistryType_ the state registry type
-    /// @param routerType_ the router type
-    constructor(address superRegistry_, uint8 stateRegistryType_, uint8 routerType_) {
+    constructor(address superRegistry_) {
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }
 
         CHAIN_ID = uint64(block.chainid);
         superRegistry = ISuperRegistry(superRegistry_);
-        STATE_REGISTRY_TYPE = stateRegistryType_;
-        ROUTER_TYPE = routerType_;
     }
 
     /*///////////////////////////////////////////////////////////////

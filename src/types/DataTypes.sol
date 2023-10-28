@@ -91,7 +91,6 @@ struct SingleDirectMultiVaultStateReq {
 
 /// @dev struct for SuperRouter with re-arranged data for the message (contains the payloadId)
 struct InitMultiVaultData {
-    uint8 superformRouterId;
     uint256 payloadId;
     uint256[] superformIds;
     uint256[] amounts;
@@ -104,7 +103,6 @@ struct InitMultiVaultData {
 
 /// @dev struct for SuperRouter with re-arranged data for the message (contains the payloadId)
 struct InitSingleVaultData {
-    uint8 superformRouterId;
     uint256 payloadId;
     uint256 superformId;
     uint256 amount;
@@ -159,7 +157,6 @@ struct BroadcastMessage {
 
 /// @dev struct that contains info on returned data from destination
 struct ReturnMultiData {
-    uint8 superformRouterId;
     uint256 payloadId;
     uint256[] superformIds;
     uint256[] amounts;
@@ -167,7 +164,6 @@ struct ReturnMultiData {
 
 /// @dev struct that contains info on returned data from destination
 struct ReturnSingleData {
-    uint8 superformRouterId;
     uint256 payloadId;
     uint256 superformId;
     uint256 amount;

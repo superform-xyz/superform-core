@@ -91,14 +91,13 @@ contract PayloadHelperSingleTest is ProtocolActions {
         uint256[] slippage;
         uint256[] superformIds;
         uint256 srcPayloadId;
-        uint8 superformRouterId;
     }
 
     function _checkSrcPayload() internal {
         vm.selectFork(FORKS[CHAIN_0]);
 
         (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId) =
-            IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeStateSyncerPayloadHistory(1, 1);
+            IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodePayloadHistory(1);
 
         /// @dev 0 for deposit
         assertEq(txType, 0);
@@ -119,7 +118,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
 
         CheckDstPayloadInternalVars memory v;
 
-        (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId, v.superformRouterId) =
+        (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId) =
             IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
 
         v.extraDataGenerated = new bytes[](2);
@@ -136,8 +135,6 @@ contract PayloadHelperSingleTest is ProtocolActions {
         assertEq(v.srcChainId, 10);
 
         assertEq(v.srcPayloadId, 1);
-
-        assertEq(v.superformRouterId, 1);
 
         for (uint256 i = 0; i < v.slippage.length; ++i) {
             console.log("v.amounts[i]: %s", v.amounts[i]);
@@ -160,7 +157,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
 
         CheckDstPayloadInternalVars memory v;
 
-        (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId, v.superformRouterId) =
+        (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId) =
             IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
 
         /// @dev 0 for deposit
@@ -172,8 +169,6 @@ contract PayloadHelperSingleTest is ProtocolActions {
         /// @dev chain id of polygon is 137
         assertEq(v.srcChainId, 137);
         assertEq(v.srcPayloadId, 1);
-
-        assertEq(v.superformRouterId, 1);
 
         for (uint256 i = 0; i < v.slippage.length; ++i) {
             assertLe(v.amounts[i], AMOUNTS[POLY][0][i]);

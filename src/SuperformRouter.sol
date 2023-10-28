@@ -9,22 +9,13 @@ import "./types/DataTypes.sol";
 /// @title SuperformRouter
 /// @author Zeropoint Labs.
 /// @dev SuperformRouter users funds and action information to a remote execution chain.
-/// @dev Uses standard BaseRouterImplementation without any overrides to internal execution functions
 contract SuperformRouter is BaseRouterImplementation {
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
     /// @param superRegistry_ the superform registry contract
-    /// @param stateRegistryType_ the state registry type
-    /// @param routerType_ the router type
-    constructor(
-        address superRegistry_,
-        uint8 stateRegistryType_,
-        uint8 routerType_
-    )
-        BaseRouterImplementation(superRegistry_, stateRegistryType_, routerType_)
-    { }
+    constructor(address superRegistry_) BaseRouterImplementation(superRegistry_) { }
 
     /*///////////////////////////////////////////////////////////////
                           EXTERNAL FUNCTIONS
