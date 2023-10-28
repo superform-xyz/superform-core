@@ -758,7 +758,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     {
         InitMultiVaultData memory multiVaultData = abi.decode(payload_, (InitMultiVaultData));
 
-        (address[] memory superforms,,) = DataLib.getSuperforms(multiVaultData.superformIds);
+        address[] memory superforms = DataLib.getSuperforms(multiVaultData.superformIds);
 
         IERC20 underlying;
         uint256 numberOfVaults = multiVaultData.superformIds.length;
