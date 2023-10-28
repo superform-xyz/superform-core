@@ -93,9 +93,11 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
     }
 
     /// @inheritdoc BaseForm
-    function _emergencyWithdraw(address srcSender_, address refundAddress_, uint256 amount_) internal override {
-        _kycCheck(srcSender_);
-
+    function _emergencyWithdraw(address srcSender_, address refundAddress_, uint256 amount_)
+        internal
+        override
+        onlyKYC(srcSender_) 
+    {
         _processEmergencyWithdraw(refundAddress_, amount_);
     }
 
