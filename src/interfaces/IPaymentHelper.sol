@@ -167,7 +167,6 @@ interface IPaymentHelper {
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
     /// @return liqAmount is the amount of liquidity to be provided in native tokens
     /// @return srcAmount is the gas expense on source chain in native tokens
-    /// @return dstAmount is the gas expense on dst chain in terms of src chain's native tokens
     /// @return totalAmount is the native_tokens to be sent along the transaction
     function estimateSingleDirectSingleVault(
         SingleDirectSingleVaultStateReq calldata req_,
@@ -175,13 +174,12 @@ interface IPaymentHelper {
     )
         external
         view
-        returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount);
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 totalAmount);
 
     /// @dev estimates the gas fees for multiple same chain operation
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
     /// @return liqAmount is the amount of liquidity to be provided in native tokens
     /// @return srcAmount is the gas expense on source chain in native tokens
-    /// @return dstAmount is the gas expense on dst chain in terms of src chain's native tokens
     /// @return totalAmount is the native_tokens to be sent along the transaction
     function estimateSingleDirectMultiVault(
         SingleDirectMultiVaultStateReq calldata req_,
@@ -189,5 +187,5 @@ interface IPaymentHelper {
     )
         external
         view
-        returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount);
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 totalAmount);
 }

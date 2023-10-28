@@ -423,7 +423,7 @@ contract PaymentHelper is IPaymentHelper {
         external
         view
         override
-        returns (uint256 liqAmount, uint256 srcAmount, uint256, /*dstAmount*/ uint256 totalAmount)
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 totalAmount)
     {
         (, uint32 formId,) = req_.superformData.superformId.getSuperform();
         /// @dev only if timelock form withdrawal is involved
@@ -445,7 +445,7 @@ contract PaymentHelper is IPaymentHelper {
         external
         view
         override
-        returns (uint256 liqAmount, uint256 srcAmount, uint256, /*dstAmount*/ uint256 totalAmount)
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 totalAmount)
     {
         uint256 len = req_.superformData.superformIds.length;
         for (uint256 i; i < len;) {

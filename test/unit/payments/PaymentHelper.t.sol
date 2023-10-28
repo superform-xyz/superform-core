@@ -99,7 +99,7 @@ contract PaymentHelperTest is ProtocolActions {
         /// @dev scenario: single vault withdrawal involving timelock
         /// expected fees to be greater than zero
         bytes memory emptyBytes;
-        (,,, uint256 fees) = paymentHelper.estimateSingleDirectSingleVault(
+        (,, uint256 fees) = paymentHelper.estimateSingleDirectSingleVault(
             SingleDirectSingleVaultStateReq(
                 SingleVaultSFData(
                     _generateTimelockSuperformPackWithShift(),
@@ -118,7 +118,7 @@ contract PaymentHelperTest is ProtocolActions {
 
         assertGt(fees, 0);
 
-        (,,, uint256 fees2) = paymentHelper.estimateSingleDirectSingleVault(
+        (,, uint256 fees2) = paymentHelper.estimateSingleDirectSingleVault(
             SingleDirectSingleVaultStateReq(
                 SingleVaultSFData(
                     _generateTimelockSuperformPackWithShift(),
@@ -137,7 +137,7 @@ contract PaymentHelperTest is ProtocolActions {
 
         assertEq(fees2, 0);
 
-        (,,, uint256 fees3) = paymentHelper.estimateSingleDirectSingleVault(
+        (,, uint256 fees3) = paymentHelper.estimateSingleDirectSingleVault(
             SingleDirectSingleVaultStateReq(
                 SingleVaultSFData(
                     _generateSuperformPackWithShift(),
@@ -170,7 +170,7 @@ contract PaymentHelperTest is ProtocolActions {
         LiqRequest[] memory liqRequestMemoryArray = new LiqRequest[](1);
         liqRequestMemoryArray[0] = LiqRequest(1, emptyBytes, address(0), ETH, 420);
 
-        (,,, uint256 fees) = paymentHelper.estimateSingleDirectMultiVault(
+        (,, uint256 fees) = paymentHelper.estimateSingleDirectMultiVault(
             SingleDirectMultiVaultStateReq(
                 MultiVaultSFData(
                     superFormIds,
@@ -189,7 +189,7 @@ contract PaymentHelperTest is ProtocolActions {
 
         assertGt(fees, 0);
 
-        (,,, uint256 fees2) = paymentHelper.estimateSingleDirectMultiVault(
+        (,, uint256 fees2) = paymentHelper.estimateSingleDirectMultiVault(
             SingleDirectMultiVaultStateReq(
                 MultiVaultSFData(
                     superFormIds,

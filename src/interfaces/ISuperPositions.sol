@@ -2,11 +2,12 @@
 pragma solidity ^0.8.21;
 
 import { AMBMessage } from "../types/DataTypes.sol";
+import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 
 /// @title ISuperPositions
 /// @author Zeropoint Labs.
 /// @dev interface for Super Positions
-interface ISuperPositions {
+interface ISuperPositions is IERC1155A {
     /*///////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -38,7 +39,9 @@ interface ISuperPositions {
     /// @param amounts_ are the amounts of shares to mint
     function mintBatch(address srcSender_, uint256[] memory ids_, uint256[] memory amounts_) external;
 
-    /// @dev allows burner to burn shares on source
+    /// @dev allows superformRouter to burn shares on source
+    /// @notice burn is done optimistically by the router in the beginning of the withdraw transactions
+    /// @notice in case the withdraw tx fails on the destination, shares are reminted through stateSync
     /// @param srcSender_ is the address of the sender
     /// @param id_ is the id of the shares
     /// @param amount_ is the amount of shares to burn
@@ -64,12 +67,6 @@ interface ISuperPositions {
     /// @param dynamicURI_ is the dynamic uri of the NFT
     /// @param freeze_ is to prevent updating the metadata once migrated to IPFS
     function setDynamicURI(string memory dynamicURI_, bool freeze_) external;
-
-    /// @dev anyone can register a transmuter for an existent superform
-    /// @notice this overrides registerTransmuter from original transmuter implementation so that users cannot insert
-    /// name, symbol, and decimals
-    /// @param superformId the superform to register a transmuter for
-    function registerSERC20(uint256 superformId) external payable returns (address);
 
     /// @dev allows to create sERC0 using broadcast state registry
     /// @param data_ is the crosschain payload

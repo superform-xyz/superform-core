@@ -11,6 +11,7 @@ import {
     AMBMessage,
     BroadcastMessage
 } from "src/types/DataTypes.sol";
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
@@ -65,11 +66,11 @@ contract SuperPositions is ISuperPositions, ERC1155A {
 
     modifier onlyMinter(uint256 superformId) {
         address router = superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"));
-        uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
         /// if msg.sender isn't superformRouter then it must be state registry for that superform
         if (msg.sender != router) {
             (, uint32 formBeaconId,) = DataLib.getSuperform(superformId);
+            uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
             if (uint32(registryId) != formBeaconId) {
                 revert Error.NOT_MINTER();
@@ -81,12 +82,12 @@ contract SuperPositions is ISuperPositions, ERC1155A {
 
     modifier onlyBatchMinter(uint256[] memory superformIds) {
         address router = superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"));
-        uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
         /// if msg.sender isn't superformRouter then it must be state registry for that superform
         if (msg.sender != router) {
             for (uint256 i; i < superformIds.length; ++i) {
                 (, uint32 formBeaconId,) = DataLib.getSuperform(superformIds[i]);
+                uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
                 if (uint32(registryId) != formBeaconId) {
                     revert Error.NOT_MINTER();
@@ -257,22 +258,6 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     }
 
     /// @inheritdoc ISuperPositions
-    function registerSERC20(uint256 superformId_)
-        external
-        payable
-        override(ERC1155A, ISuperPositions)
-        returns (address)
-    {
-        if (synthethicTokenId[superformId_] != address(0)) revert SYNTHETIC_ERC20_ALREADY_REGISTERED();
-
-        address syntheticToken = _registerSERC20(superformId_);
-
-        synthethicTokenId[superformId_] = syntheticToken;
-
-        return synthethicTokenId[superformId_];
-    }
-
-    /// @inheritdoc ISuperPositions
     function stateSyncBroadcast(bytes memory data_) external payable override {
         /// @dev this function is only accessible through broadcast registry
         if (msg.sender != superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))) {
@@ -307,7 +292,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ERC1155A
-    function supportsInterface(bytes4 interfaceId_) public view virtual override(ERC1155A) returns (bool) {
+    function supportsInterface(bytes4 interfaceId_) public view virtual override(ERC1155A, IERC165) returns (bool) {
         return super.supportsInterface(interfaceId_);
     }
 
@@ -338,11 +323,13 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     }
 
     function _isValidStateSyncer(uint8 registryId_, uint256 superformId_) internal pure {
-        // Directly check if the registryId is 0 or doesn't match the allowed cases.
+        /// @dev Directly check if the registryId is 0 or doesn't match the allowed cases.
         if (registryId_ == 0) {
             revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
         }
-        // If registryId is 1, no further checks are necessary.
+        /// @dev If registryId is 1, meaning CoreStateRegistry, no further checks are necessary.
+        /// @dev This is because CoreStateRegistry is the default minter for all kinds of forms
+        /// @dev In case registryId is > 1, we need to check if the registryId matches the formImplementationId
         if (registryId_ == 1) {
             return;
         }
