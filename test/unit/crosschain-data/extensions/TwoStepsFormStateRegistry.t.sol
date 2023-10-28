@@ -6,7 +6,7 @@ import "test/utils/ProtocolActions.sol";
 
 contract TimelockStateRegistryTest is ProtocolActions {
     TimelockStateRegistry public timelockStateRegistry;
-    address dstRefundAddress = address(444);
+    address receiverAddress = address(444);
 
     function setUp() public override {
         super.setUp();
@@ -64,7 +64,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
                 0,
                 false,
                 LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "DAI"), ETH, 0),
-                dstRefundAddress,
+                receiverAddress,
                 bytes("")
             )
         );
@@ -97,7 +97,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
                 /// @dev note txData (2nd arg) is empty and token (3rd arg) is not address(0) to
                 /// indicate keeper to create and update txData using finalizePayload()
                 LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ETH, 0),
-                dstRefundAddress,
+                receiverAddress,
                 bytes("")
             )
         );

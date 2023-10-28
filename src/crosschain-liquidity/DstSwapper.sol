@@ -354,7 +354,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
 
             (address form_,,) = DataLib.getSuperform(data.superformIds[index_]);
             underlying_ = IERC4626Form(form_).getVaultAsset();
-            maxSlippage_ = data.maxSlippage[index_];
+            maxSlippage_ = data.maxSlippages[index_];
             amount_ = data.amounts[index_];
         } else {
             if (index_ != 0) {

@@ -244,9 +244,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         address refundAddress;
         if (multi == 1) {
-            refundAddress = abi.decode(payloadBody[payloadId_], (InitMultiVaultData)).dstRefundAddress;
+            refundAddress = abi.decode(payloadBody[payloadId_], (InitMultiVaultData)).receiverAddress;
         } else {
-            refundAddress = abi.decode(payloadBody[payloadId_], (InitSingleVaultData)).dstRefundAddress;
+            refundAddress = abi.decode(payloadBody[payloadId_], (InitSingleVaultData)).receiverAddress;
         }
 
         failedDeposits[payloadId_].refundAddress = refundAddress == address(0) ? srcSender : refundAddress;
@@ -447,7 +447,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 finalAmounts_[i],
                 multiVaultData.superformIds[i],
                 multiVaultData.amounts[i],
-                multiVaultData.maxSlippage[i],
+                multiVaultData.maxSlippages[i],
                 finalState_,
                 validLen
             );
@@ -460,7 +460,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         if (validLen > 0) {
             uint256[] memory finalSuperformIds = new uint256[](validLen);
             uint256[] memory finalAmounts = new uint256[](validLen);
-            uint256[] memory maxSlippage = new uint256[](validLen);
+            uint256[] memory maxSlippages = new uint256[](validLen);
             bool[] memory hasDstSwaps = new bool[](validLen);
 
             uint256 currLen;
@@ -468,7 +468,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 if (multiVaultData.amounts[i] != 0) {
                     finalSuperformIds[currLen] = multiVaultData.superformIds[i];
                     finalAmounts[currLen] = multiVaultData.amounts[i];
-                    maxSlippage[currLen] = multiVaultData.maxSlippage[i];
+                    maxSlippages[currLen] = multiVaultData.maxSlippages[i];
                     hasDstSwaps[currLen] = multiVaultData.hasDstSwaps[i];
                     unchecked {
                         ++currLen;
@@ -481,7 +481,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
             multiVaultData.amounts = finalAmounts;
             multiVaultData.superformIds = finalSuperformIds;
-            multiVaultData.maxSlippage = maxSlippage;
+            multiVaultData.maxSlippages = maxSlippages;
             multiVaultData.hasDstSwaps = hasDstSwaps;
             finalState_ = PayloadState.UPDATED;
         } else {
@@ -656,7 +656,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     PayloadUpdaterLib.strictValidateSlippage(
                         finalAmount,
                         IBaseForm(superform).previewRedeemFrom(multiVaultData_.amounts[i]),
-                        multiVaultData_.maxSlippage[i]
+                        multiVaultData_.maxSlippages[i]
                     );
 
                     multiVaultData_.liqData[i].txData = txData_[i];
@@ -700,10 +700,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     payloadId: multiVaultData.payloadId,
                     superformId: multiVaultData.superformIds[i],
                     amount: multiVaultData.amounts[i],
-                    maxSlippage: multiVaultData.maxSlippage[i],
+                    maxSlippage: multiVaultData.maxSlippages[i],
                     hasDstSwap: false,
+                    retain4626: false,
                     liqData: multiVaultData.liqData[i],
-                    dstRefundAddress: multiVaultData.dstRefundAddress,
+                    receiverAddress: multiVaultData.receiverAddress,
                     extraFormData: abi.encode(payloadId_, i)
                 }),
                 srcSender_,
@@ -776,10 +777,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                             payloadId: multiVaultData.payloadId,
                             superformId: multiVaultData.superformIds[i],
                             amount: multiVaultData.amounts[i],
-                            maxSlippage: multiVaultData.maxSlippage[i],
-                            liqData: emptyRequest,
+                            maxSlippage: multiVaultData.maxSlippages[i],
                             hasDstSwap: false,
-                            dstRefundAddress: multiVaultData.dstRefundAddress,
+                            retain4626: false,
+                            liqData: emptyRequest,
+                            receiverAddress: multiVaultData.receiverAddress,
                             extraFormData: multiVaultData.extraFormData
                         }),
                         srcSender_,

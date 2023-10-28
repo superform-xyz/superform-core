@@ -39,7 +39,7 @@ interface IPayloadHelper {
     /// @return amountsIn are the from amounts to the liquidity bridge
     /// @return nativeAmounts is the native amounts to be used in the liqData
     /// @return hasDstSwaps is the array of flags indicating if the original liqData has a dstSwaps
-    /// @return dstRefundAddress is the address to be used for refunds
+    /// @return receiverAddress is the address to be used for refunds
     function decodeCoreStateRegistryPayloadLiqData(uint256 dstPayloadId_)
         external
         view
@@ -51,7 +51,7 @@ interface IPayloadHelper {
             uint256[] memory amountsIn,
             uint256[] memory nativeAmounts,
             bool[] memory hasDstSwaps,
-            address dstRefundAddress
+            address receiverAddress
         );
 
     /// @dev reads the payload header from superPositions and decodes it.

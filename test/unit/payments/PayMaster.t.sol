@@ -21,7 +21,7 @@ contract PayMasterTest is ProtocolActions {
     address txProcessorARBI;
     address txUpdaterARBI;
 
-    address dstRefundAddress = address(444);
+    address receiverAddress = address(444);
 
     SuperRegistry superRegistry;
     SuperRegistry superRegistryARBI;
@@ -295,7 +295,7 @@ contract PayMasterTest is ProtocolActions {
             false,
             LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ETH, 0),
             bytes(""),
-            dstRefundAddress,
+            receiverAddress,
             bytes("")
         );
 
