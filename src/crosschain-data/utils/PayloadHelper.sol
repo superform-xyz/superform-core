@@ -309,7 +309,9 @@ contract PayloadHelper is IPayloadHelper {
         hasDstSwaps = imvd.hasDstSwaps;
         dstRefundAddress = imvd.dstRefundAddress;
 
-        for (uint256 i = 0; i < imvd.liqData.length;) {
+        uint256 len = imvd.liqData.length;
+
+        for (uint256 i = 0; i < len;) {
             bridgeIds[i] = imvd.liqData[i].bridgeId;
             txDatas[i] = imvd.liqData[i].txData;
             tokens[i] = imvd.liqData[i].token;

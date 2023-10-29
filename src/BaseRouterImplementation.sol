@@ -1003,7 +1003,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             }
 
             /// @dev approves individual final targets if needed here
-            for (uint256 j; j < targets_.length;) {
+            uint256 targetLen = targets_.length;
+            for (uint256 j; j < targetLen;) {
                 /// @dev approves the superform
                 v.token.safeIncreaseAllowance(targets_[j], v.approvalAmounts[j]);
 
