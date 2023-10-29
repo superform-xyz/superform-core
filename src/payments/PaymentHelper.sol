@@ -185,7 +185,7 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @inheritdoc IPaymentHelper
-    function updateRegisterTransmuterParams(
+    function updateRegisterSERC20Params(
         uint256 totalTransmuterFees_,
         bytes memory extraDataForTransmuter_
     )
@@ -423,7 +423,7 @@ contract PaymentHelper is IPaymentHelper {
         external
         view
         override
-        returns (uint256 liqAmount, uint256 srcAmount, uint256, /*dstAmount*/ uint256 totalAmount)
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 totalAmount)
     {
         (, uint32 formId,) = req_.superformData.superformId.getSuperform();
         /// @dev only if timelock form withdrawal is involved
@@ -445,7 +445,7 @@ contract PaymentHelper is IPaymentHelper {
         external
         view
         override
-        returns (uint256 liqAmount, uint256 srcAmount, uint256, /*dstAmount*/ uint256 totalAmount)
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 totalAmount)
     {
         uint256 len = req_.superformData.superformIds.length;
         for (uint256 i; i < len;) {
@@ -572,12 +572,10 @@ contract PaymentHelper is IPaymentHelper {
 
         if (v.isMulti == 1) {
             InitMultiVaultData memory data = abi.decode(v.payloadBody, (InitMultiVaultData));
-            v.payloadBody =
-                abi.encode(ReturnMultiData(data.superformRouterId, v.currPayloadId, data.superformIds, data.amounts));
+            v.payloadBody = abi.encode(ReturnMultiData(v.currPayloadId, data.superformIds, data.amounts));
         } else {
             InitSingleVaultData memory data = abi.decode(v.payloadBody, (InitSingleVaultData));
-            v.payloadBody =
-                abi.encode(ReturnSingleData(data.superformRouterId, v.currPayloadId, data.superformId, data.amount));
+            v.payloadBody = abi.encode(ReturnSingleData(v.currPayloadId, data.superformId, data.amount));
         }
 
         v.ackAmbIds = coreStateRegistry.getMessageAMB(payloadId_);
@@ -747,8 +745,6 @@ contract PaymentHelper is IPaymentHelper {
     {
         bytes memory ambData = abi.encode(
             InitSingleVaultData(
-                1,
-                /// @dev sample router id for estimation
                 _getNextPayloadId(),
                 sfData_.superformId,
                 sfData_.amount,
@@ -770,8 +766,6 @@ contract PaymentHelper is IPaymentHelper {
     {
         bytes memory ambData = abi.encode(
             InitMultiVaultData(
-                1,
-                /// @dev sample router id for estimation
                 _getNextPayloadId(),
                 sfData_.superformIds,
                 sfData_.amounts,

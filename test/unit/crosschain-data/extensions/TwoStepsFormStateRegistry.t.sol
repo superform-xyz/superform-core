@@ -59,7 +59,6 @@ contract TimelockStateRegistryTest is ProtocolActions {
             block.timestamp - 5 seconds,
             InitSingleVaultData(
                 1,
-                1,
                 superformId,
                 420,
                 0,
@@ -90,7 +89,6 @@ contract TimelockStateRegistryTest is ProtocolActions {
             ETH,
             block.timestamp - 5 seconds,
             InitSingleVaultData(
-                1,
                 1,
                 superformId,
                 420,
@@ -142,7 +140,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
         bytes memory _message = abi.encode(
             AMBMessage(
                 DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH),
-                abi.encode(new uint8[](0), abi.encode(ReturnSingleData(1, 1, superformId, 420)))
+                abi.encode(new uint8[](0), abi.encode(ReturnSingleData(1, superformId, 420)))
             )
         );
 

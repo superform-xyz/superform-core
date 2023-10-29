@@ -494,7 +494,6 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         InitSingleVaultData memory data = InitSingleVaultData(
             1,
-            1,
             superformId,
             1e18,
             100,
@@ -530,7 +529,6 @@ contract SuperformERC4626FormTest is ProtocolActions {
         vm.startPrank(getContract(ETH, "CoreStateRegistry"));
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1,
             1,
             superformId,
             amount,
@@ -607,7 +605,6 @@ contract SuperformERC4626FormTest is ProtocolActions {
         bytes memory invalidTxData = abi.encode(1);
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1,
             1,
             superformId,
             0.9e18,

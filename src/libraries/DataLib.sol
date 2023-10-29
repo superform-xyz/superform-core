@@ -56,42 +56,14 @@ library DataLib {
     /// @dev returns the vault-form-chain pair of an array of superforms
     /// @param superformIds_  array of superforms
     /// @return superforms_ are the address of the vaults
-    /// @return formIds_ are the form ids
-    /// @return chainIds_ are the chain ids
-    function getSuperforms(uint256[] memory superformIds_)
-        internal
-        pure
-        returns (address[] memory superforms_, uint32[] memory formIds_, uint64[] memory chainIds_)
-    {
-        superforms_ = new address[](superformIds_.length);
-        formIds_ = new uint32[](superformIds_.length);
-        chainIds_ = new uint64[](superformIds_.length);
+    function getSuperforms(uint256[] memory superformIds_) internal pure returns (address[] memory superforms_) {
+        uint256 len = superformIds_.length;
+        superforms_ = new address[](len);
 
-        assembly ("memory-safe") {
-            /// @dev pointer to the end of the superformIds_ array (shl(5, mload(superformIds_)) == mul(32,
-            /// mload(superformIds_))
-            let end := add(add(superformIds_, 0x20), shl(5, mload(superformIds_)))
-            /// @dev initialize pointers for all the 4 arrays
-            let i := add(superformIds_, 0x20)
-            let j := add(superforms_, 0x20)
-            let k := add(formIds_, 0x20)
-            let l := add(chainIds_, 0x20)
-
-            let superformId := 0
-            for { } 1 { } {
-                superformId := mload(i)
-                /// @dev execute what getSuperform() does on a single superformId and store the results in the
-                /// respective arrays
-                mstore(j, superformId)
-                mstore(k, shr(160, superformId))
-                mstore(l, shr(192, superformId))
-                /// @dev increment pointers
-                i := add(i, 0x20)
-                j := add(j, 0x20)
-                k := add(k, 0x20)
-                l := add(l, 0x20)
-                /// @dev check if we've reached the end of the array
-                if iszero(lt(i, end)) { break }
+        for (uint256 i = 0; i < len;) {
+            (superforms_[i],,) = getSuperform(superformIds_[i]);
+            unchecked {
+                ++i;
             }
         }
     }
