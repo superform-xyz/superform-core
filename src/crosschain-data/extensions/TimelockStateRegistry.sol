@@ -7,7 +7,7 @@ import { ISuperformFactory } from "../../interfaces/ISuperformFactory.sol";
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
 import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
 import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
-import { IStateSyncer } from "../../interfaces/IStateSyncer.sol";
+import { ISuperPositions } from "../../interfaces/ISuperPositions.sol";
 import { IERC4626TimelockForm } from "../../forms/interfaces/IERC4626TimelockForm.sol";
 import { ITimelockStateRegistry } from "../../interfaces/ITimelockStateRegistry.sol";
 import { IBaseStateRegistry } from "../../interfaces/IBaseStateRegistry.sol";
@@ -46,21 +46,6 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         }
     }
 
-    /*///////////////////////////////////////////////////////////////
-                            CONSTANTS
-    //////////////////////////////////////////////////////////////*/
-    bytes32 immutable WITHDRAW_COOLDOWN_PERIOD = keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));
-
-    /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev tracks the total time lock payloads
-    uint256 public timelockPayloadCounter;
-
-    /// @dev stores the timelock payloads
-    mapping(uint256 timelockPayloadId => TimelockPayload) public timelockPayload;
-
     /// @dev allows only form to write to the receive paylod
     modifier onlyTimelockSuperform(uint256 superformId) {
         if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId)) {
@@ -80,6 +65,21 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         }
         _;
     }
+
+    /*///////////////////////////////////////////////////////////////
+                            CONSTANTS
+    //////////////////////////////////////////////////////////////*/
+    bytes32 immutable WITHDRAW_COOLDOWN_PERIOD = keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));
+
+    /*///////////////////////////////////////////////////////////////
+                            STATE VARIABLES
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev tracks the total time lock payloads
+    uint256 public timelockPayloadCounter;
+
+    /// @dev stores the timelock payloads
+    mapping(uint256 timelockPayloadId => TimelockPayload) public timelockPayload;
 
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
@@ -175,7 +175,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
 
             /// @dev for direct chain, superPositions are minted directly
             if (p.isXChain == 0) {
-                IStateSyncer(superRegistry.getStateSyncer(p.data.superformRouterId)).mintSingle(
+                ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintSingle(
                     p.srcSender, p.data.superformId, p.data.amount
                 );
             }
@@ -214,9 +214,8 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
             revert Error.QUORUM_NOT_REACHED();
         }
 
-        ReturnSingleData memory singleVaultData = abi.decode(_payloadBody, (ReturnSingleData));
         if (callbackType == uint256(CallbackType.FAIL)) {
-            IStateSyncer(superRegistry.getStateSyncer(singleVaultData.superformRouterId)).stateSync(_message);
+            ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).stateSync(_message);
         }
     }
 
@@ -283,12 +282,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
                     CHAIN_ID
                 ),
                 abi.encode(
-                    ReturnSingleData(
-                        singleVaultData_.superformRouterId,
-                        singleVaultData_.payloadId,
-                        singleVaultData_.superformId,
-                        singleVaultData_.amount
-                    )
+                    ReturnSingleData(singleVaultData_.payloadId, singleVaultData_.superformId, singleVaultData_.amount)
                 )
             )
         );

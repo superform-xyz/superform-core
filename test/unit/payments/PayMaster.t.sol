@@ -305,7 +305,7 @@ contract PayMasterTest is ProtocolActions {
 
         /// @dev approves before call
         MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
-        (,,, uint256 msgFees) =
+        (,, uint256 msgFees) =
             PaymentHelper(getContract(ETH, "PaymentHelper")).estimateSingleDirectSingleVault(req, true);
         msgFees = msgFees + 2 ether;
 

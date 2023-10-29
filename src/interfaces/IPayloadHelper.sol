@@ -15,7 +15,6 @@ interface IPayloadHelper {
     /// @return slippage is the max slippage configured by the user (only for deposits)
     /// @return superformIds is the unique identifiers of the superforms
     /// @return srcPayloadId is the identifier of the corresponding payload on srcChain
-    /// @return superformRouterId is the identifier of the superform router
     function decodeCoreStateRegistryPayload(uint256 dstPayloadId_)
         external
         view
@@ -27,8 +26,7 @@ interface IPayloadHelper {
             uint256[] memory amounts,
             uint256[] memory slippage,
             uint256[] memory superformIds,
-            uint256 srcPayloadId,
-            uint8 superformRouterId
+            uint256 srcPayloadId
         );
 
     /// @dev reads the payload from the core state registry and decodes liqData for it (to be used in withdraw cases)
@@ -56,18 +54,14 @@ interface IPayloadHelper {
             address dstRefundAddress
         );
 
-    /// @dev reads the payload header from a state syncer and decodes it.
+    /// @dev reads the payload header from superPositions and decodes it.
     /// @param srcPayloadId_ is the unique identifier of the payload allocated by super router
-    /// @param superformRouterId_ is the unique identifier of the superform router
     /// @return txType is the type of transaction. check {TransactionType} enum in DataTypes.sol
     /// @return callbackType is the type of payload. check {CallbackType} enum in DataTypes.sol
     /// @return isMulti indicates if the transaction involves operations to multiple vaults
     /// @return srcSender is the user who initiated the transaction on the srcChain
     /// @return srcChainId is the unique identifier of the srcChain
-    function decodeStateSyncerPayloadHistory(
-        uint256 srcPayloadId_,
-        uint8 superformRouterId_
-    )
+    function decodePayloadHistory(uint256 srcPayloadId_)
         external
         view
         returns (uint8 txType, uint8 callbackType, uint8 isMulti, address srcSender, uint64 srcChainId);

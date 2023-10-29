@@ -60,16 +60,12 @@ contract SuperRegistryTest is BaseSetup {
         superRegistry.setPermit2(getContract(ETH, "CanonicalPermit2"));
     }
 
-    function test_setSuperRouter_and_revert_invalidCaller() public {
+    function test_setSuperRouter_and_revert_disabled() public {
         _setAndAssert(superRegistry.SUPERFORM_ROUTER(), address(0x1));
     }
 
     function test_setSuperformFactory_and_revert_disabled() public {
         _setAndAssert(superRegistry.SUPERFORM_FACTORY(), address(0x1));
-    }
-
-    function test_setSuperTransmuter_and_revert_invalidCaller() public {
-        _setAndAssert(superRegistry.SUPER_TRANSMUTER(), address(0x1));
     }
 
     function test_setPayMaster_and_revert_invalidCaller() public {
@@ -92,7 +88,7 @@ contract SuperRegistryTest is BaseSetup {
         _setAndAssert(superRegistry.BROADCAST_REGISTRY(), address(0x1));
     }
 
-    function test_setSuperPositions_and_revert_invalidCaller() public {
+    function test_setSuperPositions_and_revert_disabled() public {
         _setAndAssert(superRegistry.SUPER_POSITIONS(), address(0x1));
     }
 
@@ -333,66 +329,6 @@ contract SuperRegistryTest is BaseSetup {
         superRegistry.setVaultLimitPerTx(1, 100);
     }
 
-    function test_setRouterInfo() public {
-        uint8[] memory superformRouterIds = new uint8[](2);
-        address[] memory stateSyncers = new address[](1);
-        address[] memory routers = new address[](2);
-
-        superformRouterIds[0] = 3;
-        stateSyncers[0] = address(0x1);
-        routers[0] = address(0x2);
-        superformRouterIds[1] = 4;
-        routers[1] = address(0x4);
-
-        vm.prank(deployer);
-        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
-
-        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
-        stateSyncers = new address[](2);
-        stateSyncers[0] = address(0x1);
-        stateSyncers[1] = address(0x3);
-
-        routers = new address[](1);
-        routers[0] = address(0x2);
-
-        vm.prank(deployer);
-        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
-
-        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
-        routers = new address[](2);
-        routers[0] = address(0x2);
-        routers[1] = address(0x4);
-
-        vm.prank(deployer);
-        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
-
-        routers[0] = address(0);
-
-        vm.prank(deployer);
-        vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
-        routers[0] = address(0x2);
-        stateSyncers[0] = address(0);
-
-        vm.prank(deployer);
-        vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
-        stateSyncers[0] = address(0x1);
-
-        vm.prank(deployer);
-        vm.expectRevert(Error.DISABLED.selector);
-        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
-
-        superformRouterIds[0] = 5;
-        vm.prank(deployer);
-        vm.expectRevert(Error.DISABLED.selector);
-        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
-
-        address router1 = superRegistry.getRouter(4);
-
-        assertEq(router1, address(0x4));
-    }
-
     function test_setRequiredMessagingQuorum_and_revert_invalidCaller() public {
         vm.prank(deployer);
         superRegistry.setRequiredMessagingQuorum(OP, 2);
@@ -438,6 +374,12 @@ contract SuperRegistryTest is BaseSetup {
             vm.expectRevert(Error.DISABLED.selector);
             isLocked = true;
         } else if (id_ == keccak256("EMERGENCY_QUEUE")) {
+            vm.expectRevert(Error.DISABLED.selector);
+            isLocked = true;
+        } else if (id_ == keccak256("SUPER_POSITIONS")) {
+            vm.expectRevert(Error.DISABLED.selector);
+            isLocked = true;
+        } else if (id_ == keccak256("SUPERFORM_ROUTER")) {
             vm.expectRevert(Error.DISABLED.selector);
             isLocked = true;
         }

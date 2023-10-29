@@ -93,7 +93,7 @@ interface IDstSwapper {
     /// @param index_ represents the index in the payload (0 for single vault payload)
     /// @return interimToken is the token that is to be refunded
     /// @return amount is the amount of interim token to be refunded
-    function getFailedSwap(
+    function getPostDstSwapFailureUpdatedTokenAmount(
         uint256 payloadId_,
         uint256 index_
     )
