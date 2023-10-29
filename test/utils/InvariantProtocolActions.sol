@@ -330,11 +330,15 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
                     /// @dev payment estimation, differs according to the type of entry point used
-                    (,,, msgValue) = vars.CHAIN_0 != vars.DST_CHAINS[0]
-                        ? paymentHelper.estimateSingleXChainMultiVault(vars.singleDstMultiVaultStateReq, true)
-                        : paymentHelper.estimateSingleDirectMultiVault(
+
+                    if (vars.CHAIN_0 != vars.DST_CHAINS[0]) {
+                        (,,, msgValue) =
+                            paymentHelper.estimateSingleXChainMultiVault(vars.singleDstMultiVaultStateReq, true);
+                    } else {
+                        (,, msgValue) = paymentHelper.estimateSingleDirectMultiVault(
                             SingleDirectMultiVaultStateReq(multiSuperformsData[0]), true
                         );
+                    }
 
                     vm.prank(users[action.user]);
 
@@ -350,11 +354,14 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                         );
                 } else if (action.action == Actions.Withdraw) {
                     /// @dev payment estimation, differs according to the type of entry point used
-                    (,,, msgValue) = vars.CHAIN_0 != vars.DST_CHAINS[0]
-                        ? paymentHelper.estimateSingleXChainMultiVault(vars.singleDstMultiVaultStateReq, false)
-                        : paymentHelper.estimateSingleDirectMultiVault(
+                    if (vars.CHAIN_0 != vars.DST_CHAINS[0]) {
+                        (,,, msgValue) =
+                            paymentHelper.estimateSingleXChainMultiVault(vars.singleDstMultiVaultStateReq, false);
+                    } else {
+                        (,, msgValue) = paymentHelper.estimateSingleDirectMultiVault(
                             SingleDirectMultiVaultStateReq(multiSuperformsData[0]), false
                         );
+                    }
 
                     vm.prank(users[action.user]);
 
@@ -446,7 +453,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
                         /// @dev payment estimation, differs according to the type of entry point used
 
-                        (,,, msgValue) =
+                        (,, msgValue) =
                             paymentHelper.estimateSingleDirectSingleVault(vars.singleDirectSingleVaultStateReq, true);
                         vm.prank(users[action.user]);
 
@@ -461,7 +468,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     } else if (action.action == Actions.Withdraw) {
                         /// @dev payment estimation, differs according to the type of entry point used
 
-                        (,,, msgValue) =
+                        (,, msgValue) =
                             paymentHelper.estimateSingleDirectSingleVault(vars.singleDirectSingleVaultStateReq, false);
                         vm.prank(users[action.user]);
 

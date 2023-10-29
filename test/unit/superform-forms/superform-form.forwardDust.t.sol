@@ -133,7 +133,6 @@ contract ForwardDustFormTest is ProtocolActions {
 
         InitSingleVaultData memory data2 = InitSingleVaultData(
             1,
-            1,
             superformId,
             spAmountToRedeem_ == 0 ? superPositionBalance : spAmountToRedeem_,
             100,
