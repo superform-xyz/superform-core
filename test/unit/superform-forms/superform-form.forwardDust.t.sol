@@ -169,7 +169,7 @@ contract ForwardDustFormTest is ProtocolActions {
             vm.prank(getContract(ARBI, "TimelockStateRegistry"));
             IERC4626TimelockForm(superform).withdrawAfterCoolDown(
                 spAmountToRedeem_ == 0 ? superPositionBalance : spAmountToRedeem_,
-                TimelockPayload(1, user, ETH, block.timestamp, data2, TwoStepsStatus.PENDING)
+                TimelockPayload(1, user, ETH, block.timestamp, data2, TimelockStatus.PENDING)
             );
         }
     }

@@ -171,7 +171,7 @@ contract PaymentHelper is IPaymentHelper {
             ackGasCost[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 10: TWO STEP PROCESSING COST
+        /// @dev Type 10: TIMELOCK PROCESSING COST
         if (configType_ == 10) {
             timelockCost[chainId_] = abi.decode(config_, (uint256));
         }
@@ -450,10 +450,10 @@ contract PaymentHelper is IPaymentHelper {
         uint256 len = req_.superformData.superformIds.length;
         for (uint256 i; i < len;) {
             (, uint32 formId,) = req_.superformData.superformIds[i].getSuperform();
-            uint256 twoStepPrice = timelockCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
+            uint256 timelockPrice = timelockCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
             /// @dev only if timelock form withdrawal is involved
             if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
-                srcAmount += twoStepPrice;
+                srcAmount += timelockPrice;
             }
 
             unchecked {
