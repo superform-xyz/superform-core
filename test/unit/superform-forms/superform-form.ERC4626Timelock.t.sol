@@ -38,7 +38,6 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
 
         InitSingleVaultData memory data = InitSingleVaultData(
             1,
-            1,
             superformId,
             1e18,
             100,
@@ -79,7 +78,6 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
 
         InitSingleVaultData memory data = InitSingleVaultData(
             1,
-            1,
             superformId,
             1e18,
             100,
@@ -117,7 +115,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.stopPrank();
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1, 1, superformId, 1e18, 100, false, LiqRequest(1, "", address(0), ETH, 0), refundAddress, ""
+            1, superformId, 1e18, 100, false, LiqRequest(1, "", address(0), ETH, 0), refundAddress, ""
         );
 
         vm.prank(getContract(ETH, "CoreStateRegistry"));
@@ -167,7 +165,6 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         );
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1,
             1,
             superformId,
             1e18,

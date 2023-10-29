@@ -2,7 +2,6 @@
 pragma solidity ^0.8.21;
 
 import { Script } from "forge-std/Script.sol";
-import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 /// @dev Protocol imports
 import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
 import { BroadcastRegistry } from "src/crosschain-data/BroadcastRegistry.sol";
@@ -33,8 +32,9 @@ import { PaymentHelper } from "src/payments/PaymentHelper.sol";
 import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
-import { SuperTransmuter } from "src/SuperTransmuter.sol";
 import { EmergencyQueue } from "src/emergency/EmergencyQueue.sol";
+
+import { generateBroadcastParams } from "test/utils/AmbParams.sol";
 
 struct SetupVars {
     uint64 chainId;
@@ -89,7 +89,7 @@ abstract contract AbstractDeploySingle is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[24] public contractNames = [
+    string[23] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -109,7 +109,6 @@ abstract contract AbstractDeploySingle is Script {
         "SuperPositions",
         "SuperRegistry",
         "SuperRBAC",
-        "SuperTransmuter",
         "PayloadHelper",
         "PaymentHelper",
         "PayMaster",
@@ -483,43 +482,21 @@ abstract contract AbstractDeploySingle is Script {
         ISuperformFactory(vars.factory).addFormImplementation(vars.kycDao4626Form, FORM_IMPLEMENTATION_IDS[2]);
 
         /// @dev 10 - Deploy SuperformRouter
-        vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry, 1, 1));
+        vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
 
         /// @dev 11 - Deploy SuperPositions
         vars.superPositions =
-            address(new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry, 1));
+            address(new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry));
 
         contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);
 
-        contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))] =
-            address(new SuperTransmuter{salt: salt}(IERC1155A(vars.superPositions), vars.superRegistry, 2));
-
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.SUPER_TRANSMUTER(),
-            contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))],
-            vars.chainId
-        );
-
         vars.superRBACC.grantRole(
-            vars.superRBACC.BROADCASTER_ROLE(), contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))]
+            vars.superRBACC.BROADCASTER_ROLE(), contracts[vars.chainId][bytes32(bytes("SuperPositions"))]
         );
-
-        /// @dev 11.1 Set Router Info
-
-        uint8[] memory superformRouterIds = new uint8[](1);
-        superformRouterIds[0] = 1;
-
-        address[] memory stateSyncers = new address[](1);
-        stateSyncers[0] = vars.superPositions;
-
-        address[] memory routers = new address[](1);
-        routers[0] = vars.superformRouter;
-
-        vars.superRegistryC.setRouterInfo(superformRouterIds, stateSyncers, routers);
 
         /// @dev 12 - Deploy Payload Helper
         vars.PayloadHelper = address(new PayloadHelper{salt: salt}( vars.superRegistry));
@@ -608,6 +585,9 @@ abstract contract AbstractDeploySingle is Script {
         vars.paymentHelper = _readContract(chainNames[trueIndex], vars.chainId, "PaymentHelper");
         vars.superRegistryC =
             SuperRegistry(payable(_readContract(chainNames[trueIndex], vars.chainId, "SuperRegistry")));
+
+        vars.superRegistryC.setVaultLimitPerTx(vars.chainId, 30);
+
         /// @dev Set all trusted remotes for each chain & configure amb chains ids
         for (uint256 j = 0; j < finalDeployedChains.length; j++) {
             if (j != i) {
@@ -838,6 +818,8 @@ abstract contract AbstractDeploySingle is Script {
             )
         );
 
+        PaymentHelper(payable(vars.paymentHelper)).updateRegisterSERC20Params(0, generateBroadcastParams(5, 1));
+
         vars.superRegistryC.setAddress(
             vars.superRegistryC.SUPERFORM_ROUTER(),
             _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperformRouter"),
@@ -889,12 +871,6 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRegistryC.setAddress(
             vars.superRegistryC.SUPER_POSITIONS(),
             _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperPositions"),
-            vars.dstChainId
-        );
-
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.SUPER_TRANSMUTER(),
-            _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperTransmuter"),
             vars.dstChainId
         );
 

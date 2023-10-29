@@ -5,7 +5,7 @@ import "./BaseSetup.sol";
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
-
+import { AggregatorV3Interface } from "../../src/vendor/chainlink/AggregatorV3Interface.sol";
 import { LiFiMock } from "../mocks/LiFiMock.sol";
 import { SocketMock } from "../mocks/SocketMock.sol";
 import { SocketOneInchMock } from "../mocks/SocketOneInchMock.sol";
