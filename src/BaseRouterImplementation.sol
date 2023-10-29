@@ -591,7 +591,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         v.superforms = new address[](v.len);
         v.dstAmounts = new uint256[](v.len);
-        v.mints = new bool[](v.len);
 
         /// @dev decode superforms
         v.superforms = DataLib.getSuperforms(vaultData_.superformIds);
@@ -616,9 +615,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 srcSender_
             );
 
-            if (v.dstAmounts[i] > 0 && !vaultData_.retain4626s[i]) {
-                v.mints[i] = true;
-                mintLen++;
+            /// @dev if retain4626 is set to True, set the amount of SuperPositions to mint to 0
+            if (v.dstAmounts[i] > 0 && vaultData_.retain4626s[i]) {
+                v.dstAmounts[i] = 0;
             }
 
             unchecked {
@@ -626,21 +625,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             }
         }
 
-        if (mintLen > 0) {
-            uint256[] memory mintableSuperPositions = new uint256[](mintLen);
-            uint256[] memory mintableAmounts = new uint256[](mintLen);
-            uint256 j = 0;
-            for (uint256 i = 0; i < v.len; i++) {
-                if (v.mints[i]) {
-                    mintableSuperPositions[j] = vaultData_.superformIds[i];
-                    mintableAmounts[j] = v.dstAmounts[i];
-                    j++;
-                }
-            }
-            /// @dev in direct deposits, SuperPositions are minted right after depositing to vaults
-            ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintBatch(
-                srcSender_, mintableSuperPositions, mintableAmounts);
-        }
+        /// @dev in direct deposits, SuperPositions are minted right after depositing to vaults
+        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintBatch(
+            srcSender_, vaultData_.superformIds, v.dstAmounts);
     }
 
     /*///////////////////////////////////////////////////////////////
