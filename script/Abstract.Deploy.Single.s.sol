@@ -33,7 +33,6 @@ import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
 import { EmergencyQueue } from "src/emergency/EmergencyQueue.sol";
-
 import { generateBroadcastParams } from "test/utils/AmbParams.sol";
 
 struct SetupVars {
@@ -115,7 +114,7 @@ abstract contract AbstractDeploySingle is Script {
         "EmergencyQueue"
     ];
 
-    bytes32 constant salt = "THIRD_DEPLOYMENT_6";
+    bytes32 constant salt = "THIRD_DEPLOYMENT_6_(3)";
 
     enum Chains {
         Ethereum,
@@ -145,6 +144,7 @@ abstract contract AbstractDeploySingle is Script {
 
     uint256 public deployerPrivateKey;
     address public ownerAddress;
+    address public multiSigAddress;
 
     /// @dev Mapping of chain enum to rpc url
     mapping(Chains chains => string rpcUrls) public forks;
@@ -282,9 +282,11 @@ abstract contract AbstractDeploySingle is Script {
         if (cycle == Cycle.Dev) {
             deployerPrivateKey = vm.envUint("LOCAL_PRIVATE_KEY");
             ownerAddress = vm.envAddress("LOCAL_OWNER_ADDRESS");
+            multiSigAddress = vm.envAddress("MULTI_SIG_ADDRESS");
         } else {
             deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
             ownerAddress = vm.envAddress("OWNER_ADDRESS");
+            multiSigAddress = vm.envAddress("MULTI_SIG_ADDRESS");
         }
 
         _;
@@ -638,17 +640,15 @@ abstract contract AbstractDeploySingle is Script {
 
         vars.chainId = s_superFormChainIds[i];
 
-        /// @dev override these pre-launch
-        address protocolAdminMultiSig = ownerAddress;
-        address emergencyAdminMultiSig = ownerAddress;
-
         vm.startBroadcast(deployerPrivateKey);
-        SuperRegistry sr = SuperRegistry(payable(_readContract(chainNames[trueIndex], vars.chainId, "SuperRegistry")));
+        SuperRBAC srbac = SuperRBAC(payable(_readContract(chainNames[trueIndex], vars.chainId, "SuperRBAC")));
+        bytes32 protocolAdminRole = srbac.PROTOCOL_ADMIN_ROLE();
+        bytes32 emergencyAdminRole = srbac.EMERGENCY_ADMIN_ROLE();
+        srbac.grantRole(protocolAdminRole, multiSigAddress);
+        srbac.grantRole(emergencyAdminRole, multiSigAddress);
 
-        sr.grantRole(sr.PROTOCOL_ADMIN_ROLE(), protocolAdminMultiSig);
-        sr.grantRole(sr.EMERGENCY_ADMIN_ROLE(), emergencyAdminMultiSig);
-        sr.revokeRole(sr.EMERGENCY_ADMIN_ROLE(), ownerAddress);
-        sr.revokeRole(sr.PROTOCOL_ADMIN_ROLE(), ownerAddress);
+        srbac.revokeRole(emergencyAdminRole, ownerAddress);
+        srbac.revokeRole(protocolAdminRole, ownerAddress);
 
         vm.stopBroadcast();
     }
