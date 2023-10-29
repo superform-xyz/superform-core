@@ -330,7 +330,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformData.amount,
             req_.superformData.maxSlippage,
             false,
-            req_.superformData.retain4626,
+            false,
             req_.superformData.liqRequest,
             req_.superformData.receiverAddress,
             req_.superformData.extraFormData
@@ -379,7 +379,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformData.amount,
             req_.superformData.maxSlippage,
             false,
-            req_.superformData.retain4626,
+            false,
             req_.superformData.liqRequest,
             req_.superformData.receiverAddress,
             req_.superformData.extraFormData
@@ -413,7 +413,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformData.amounts,
             req_.superformData.maxSlippages,
             new bool[](req_.superformData.superformIds.length),
-            req_.superformData.retain4626s,
+            new bool[](req_.superformData.superformIds.length),
             req_.superformData.liqRequests,
             req_.superformData.receiverAddress,
             req_.superformData.extraFormData
@@ -598,6 +598,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         _multiVaultTokenForward(srcSender_, v.superforms, permit2data_, vaultData_, false);
 
+        uint256 mintLen = 0;
+
         for (uint256 i; i < v.len;) {
             /// @dev deposits collateral to a given vault and mint vault positions.
             v.dstAmounts[i] = _directDeposit(
@@ -616,6 +618,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
             if (v.dstAmounts[i] > 0 && !vaultData_.retain4626s[i]) {
                 v.mints[i] = true;
+                mintLen++;
             }
 
             unchecked {
@@ -623,31 +626,20 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             }
         }
 
-        uint256 mintLen = 0;
-        uint256 len = v.mints.length;
-        for (uint256 i = 0; i < len; i++) {
-            if (v.mints[i]) {
-                mintLen++;
+        if (mintLen > 0) {
+            uint256[] memory mintableSuperPositions = new uint256[](mintLen);
+            uint256[] memory mintableAmounts = new uint256[](mintLen);
+            uint256 j = 0;
+            for (uint256 i = 0; i < len; i++) {
+                if (v.mints[i]) {
+                    mintableSuperPositions[j] = vaultData_.superformIds[i];
+                    mintableAmounts[j] = v.dstAmounts[i];
+                    j++;
+                }
             }
-        }
-
-        uint256[] memory mintableSuperPositions = new uint256[](mintLen);
-        uint256[] memory mintableAmounts = new uint256[](mintLen);
-
-        uint256 j = 0;
-        for (uint256 i = 0; i < len; i++) {
-            if (v.mints[i]) {
-                mintableSuperPositions[j] = vaultData_.superformIds[i];
-                mintableAmounts[j] = v.dstAmounts[i];
-                j++;
-            }
-        }
-
-        if (mintableSuperPositions.length > 0) {
             /// @dev in direct deposits, SuperPositions are minted right after depositing to vaults
             ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintBatch(
-                srcSender_, mintableSuperPositions, mintableAmounts
-            );
+                srcSender_, mintableSuperPositions, mintableAmounts);
         }
     }
 

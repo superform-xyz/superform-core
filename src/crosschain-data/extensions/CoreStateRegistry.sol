@@ -779,7 +779,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                             amount: multiVaultData.amounts[i],
                             maxSlippage: multiVaultData.maxSlippages[i],
                             hasDstSwap: false,
-                            retain4626: false,
+                            retain4626: multiVaultData.retain4626s[i],
                             liqData: emptyRequest,
                             receiverAddress: multiVaultData.receiverAddress,
                             extraFormData: multiVaultData.extraFormData
@@ -787,7 +787,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                         srcSender_,
                         srcChainId_
                     ) returns (uint256 dstAmount) {
-                        if (dstAmount > 0) {
+                        if (dstAmount > 0 && !retain4626) {
                             fulfilment = true;
                             /// @dev marks the indexes that require a callback mint of shares (successful)
                             multiVaultData.amounts[i] = dstAmount;
@@ -900,7 +900,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             try IBaseForm(superform_).xChainDepositIntoVault(singleVaultData, srcSender_, srcChainId_) returns (
                 uint256 dstAmount
             ) {
-                if (dstAmount > 0) {
+                if (dstAmount > 0 !singleVaultData.retain4626) {
                     return _singleReturnData(
                         srcSender_,
                         singleVaultData.payloadId,
