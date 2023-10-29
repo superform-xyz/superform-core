@@ -30,8 +30,8 @@ library Error {
     /// @dev thrown when msg.sender is not form
     error NOT_SUPERFORM();
 
-    /// @dev thrown when msg.sender is not two step form
-    error NOT_TWO_STEP_SUPERFORM();
+    /// @dev thrown when msg.sender is not timelock form
+    error NOT_TIMELOCK_SUPERFORM();
 
     /// @dev thrown when msg.sender is not a valid amb implementation
     error NOT_AMB_IMPLEMENTATION();
@@ -57,8 +57,8 @@ library Error {
     /// @dev thrown if the underlying collateral mismatches
     error INVALID_DEPOSIT_TOKEN();
 
-    /// @dev thrown when msg.sender is not two step state registry
-    error NOT_TWO_STEP_STATE_REGISTRY();
+    /// @dev thrown when msg.sender is not timelock state registry
+    error NOT_TIMELOCK_STATE_REGISTRY();
 
     /// @dev thrown when msg.sender is not protocol admin
     error NOT_PROTOCOL_ADMIN();
@@ -368,6 +368,9 @@ library Error {
     /// @dev in case of no txData, if liqData.token != collateral. In case of txData, if token output of swap ==
     /// vault.asset()
     error DIFFERENT_TOKENS();
+
+    /// @dev thrown in KYCDAO form if no KYC token is present 
+    error NO_VALID_KYC_TOKEN();
 
     /*///////////////////////////////////////////////////////////////
                         PAYMASTER ERRORS

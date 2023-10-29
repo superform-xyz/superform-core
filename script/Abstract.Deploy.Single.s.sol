@@ -52,7 +52,7 @@ struct SetupVars {
     address wormholeSRImplementation;
     address erc4626Form;
     address erc4626TimelockForm;
-    address twoStepsFormStateRegistry;
+    address timelockStateRegistry;
     address broadcastRegistry;
     address coreStateRegistry;
     address UNDERLYING_TOKEN;
@@ -373,11 +373,11 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRegistryC.setAddress(vars.superRegistryC.CORE_STATE_REGISTRY(), vars.coreStateRegistry, vars.chainId);
 
         /// @dev 3.2 - deploy Form State Registry
-        vars.twoStepsFormStateRegistry = address(new TimelockStateRegistry{salt: salt}(vars.superRegistryC));
-        contracts[vars.chainId][bytes32(bytes("TimelockStateRegistry"))] = vars.twoStepsFormStateRegistry;
+        vars.timelockStateRegistry = address(new TimelockStateRegistry{salt: salt}(vars.superRegistryC));
+        contracts[vars.chainId][bytes32(bytes("TimelockStateRegistry"))] = vars.timelockStateRegistry;
 
         vars.superRegistryC.setAddress(
-            vars.superRegistryC.TIMELOCK_STATE_REGISTRY(), vars.twoStepsFormStateRegistry, vars.chainId
+            vars.superRegistryC.TIMELOCK_STATE_REGISTRY(), vars.timelockStateRegistry, vars.chainId
         );
 
         /// @dev 3.3 - deploy Broadcast State Registry
@@ -388,7 +388,7 @@ abstract contract AbstractDeploySingle is Script {
 
         address[] memory registryAddresses = new address[](3);
         registryAddresses[0] = vars.coreStateRegistry;
-        registryAddresses[1] = vars.twoStepsFormStateRegistry;
+        registryAddresses[1] = vars.timelockStateRegistry;
         registryAddresses[2] = vars.broadcastRegistry;
 
         uint8[] memory registryIds = new uint8[](3);

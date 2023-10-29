@@ -171,7 +171,7 @@ contract PaymentHelper is IPaymentHelper {
             ackGasCost[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 10: TWO STEP PROCESSING COST
+        /// @dev Type 10: TIMELOCK PROCESSING COST
         if (configType_ == 10) {
             timelockCost[chainId_] = abi.decode(config_, (uint256));
         }
@@ -450,10 +450,10 @@ contract PaymentHelper is IPaymentHelper {
         uint256 len = req_.superformData.superformIds.length;
         for (uint256 i; i < len;) {
             (, uint32 formId,) = req_.superformData.superformIds[i].getSuperform();
-            uint256 twoStepPrice = timelockCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
+            uint256 timelockPrice = timelockCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
             /// @dev only if timelock form withdrawal is involved
             if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
-                srcAmount += twoStepPrice;
+                srcAmount += timelockPrice;
             }
 
             unchecked {
@@ -583,7 +583,9 @@ contract PaymentHelper is IPaymentHelper {
         v.ackAmbIds = new uint8[](v.proofIds.length + 1);
         v.ackAmbIds[0] = coreStateRegistry.msgAMB(payloadId_);
 
-        for (uint256 i; i < v.proofIds.length; i++) {
+        uint256 len = v.proofIds.length;
+
+        for (uint256 i; i < len; i++) {
             v.ackAmbIds[i + 1] = v.proofIds[i];
         }
 
@@ -659,7 +661,8 @@ contract PaymentHelper is IPaymentHelper {
 
     /// @dev helps estimate the liq amount involved in the tx
     function _estimateLiqAmount(LiqRequest[] memory req_) internal view returns (uint256 liqAmount) {
-        for (uint256 i; i < req_.length;) {
+        uint256 len = req_.length;
+        for (uint256 i; i < len;) {
             if (req_[i].token == NATIVE) {
                 liqAmount += IBridgeValidator(superRegistry.getBridgeValidator(req_[i].bridgeId)).decodeAmountIn(
                     req_[i].txData, false
@@ -687,12 +690,12 @@ contract PaymentHelper is IPaymentHelper {
             return 0;
         }
 
-        for (uint256 i; i < hasDstSwaps_.length;) {
+        uint256 len = hasDstSwaps_.length;
+        for (uint256 i; i < len;) {
             /// @dev checks if hasDstSwap is true
             if (hasDstSwaps_[i]) {
                 ++totalSwaps;
             }
-
             unchecked {
                 ++i;
             }
