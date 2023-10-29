@@ -630,7 +630,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             uint256[] memory mintableSuperPositions = new uint256[](mintLen);
             uint256[] memory mintableAmounts = new uint256[](mintLen);
             uint256 j = 0;
-            for (uint256 i = 0; i < len; i++) {
+            for (uint256 i = 0; i < v.len; i++) {
                 if (v.mints[i]) {
                     mintableSuperPositions[j] = vaultData_.superformIds[i];
                     mintableAmounts[j] = v.dstAmounts[i];
