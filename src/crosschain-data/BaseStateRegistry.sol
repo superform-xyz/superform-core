@@ -92,24 +92,28 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     )
         internal
     {
+        AMBMessage memory data = abi.decode(message_, (AMBMessage));
+        uint256 len = ambIds_.length;
+
+        if (len == 0) {
+            revert Error.ZERO_AMB_ID_LENGTH();
+        }
+
         /// @dev revert here if quorum requirements might fail on the remote chain
-        if (ambIds_.length - 1 < _getQuorum(dstChainId_)) {
+        if (len - 1 < _getQuorum(dstChainId_)) {
             revert Error.INSUFFICIENT_QUORUM();
         }
 
         AMBExtraData memory d = abi.decode(extraData_, (AMBExtraData));
 
-        AMBMessage memory ambEncodedMessage = abi.decode(message_, (AMBMessage));
-        ambEncodedMessage.params = abi.encode(ambIds_, ambEncodedMessage.params);
-
         _getAMBImpl(ambIds_[0]).dispatchPayload{ value: d.gasPerAMB[0] }(
-            srcSender_, dstChainId_, abi.encode(ambEncodedMessage), d.extraDataPerAMB[0]
+            srcSender_,
+            dstChainId_,
+            abi.encode(AMBMessage(data.txInfo, abi.encode(ambIds_, data.params))),
+            d.extraDataPerAMB[0]
         );
 
-        uint256 len = ambIds_.length;
-
         if (len > 1) {
-            AMBMessage memory data = abi.decode(message_, (AMBMessage));
             data.params = message_.computeProofBytes();
 
             /// @dev i starts from 1 since 0 is primary amb id which dispatches the message itself

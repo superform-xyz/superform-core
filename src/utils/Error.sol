@@ -18,6 +18,9 @@ library Error {
     /// @dev error thrown when value input is 0
     error ZERO_INPUT_VALUE();
 
+    /// @dev error thrown when amb ids length is 0
+    error ZERO_AMB_ID_LENGTH();
+
     /// @dev error thrown when beacon id already exists
     error FORM_IMPLEMENTATION_ID_ALREADY_EXISTS();
 
