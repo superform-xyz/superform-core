@@ -28,6 +28,8 @@ contract SDSVD4626KycSwapNativeSlippage is ProtocolActions {
 
         LIQ_BRIDGES[ETH][0] = [3];
 
+        RECEIVE_4626[ETH][0] = [false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

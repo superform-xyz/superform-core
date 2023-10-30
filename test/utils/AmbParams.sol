@@ -3,7 +3,7 @@ import { AMBExtraData, BroadCastAMBExtraData } from "src/types/DataTypes.sol";
 
 pragma solidity ^0.8.21;
 
-function generateBroadcastParams(uint256 dstCount, uint256 ambCount) pure returns (bytes memory) {
+function generateBroadcastParams(uint256, uint256) pure returns (bytes memory) {
     uint8 ambId = 4;
 
     uint256 gasFee = 0;

@@ -69,6 +69,15 @@ contract MDMVW0102408NativeInputSlippageAMB12 is ProtocolActions {
         LIQ_BRIDGES[AVAX][0] = [1, 1, 1, 1];
         LIQ_BRIDGES[AVAX][1] = [1, 1, 1, 1];
 
+        RECEIVE_4626[ETH][0] = [false, false, false, false];
+        RECEIVE_4626[ETH][1] = [false, false, false, false];
+
+        RECEIVE_4626[POLY][0] = [false, false, false, false];
+        RECEIVE_4626[POLY][1] = [false, false, false, false];
+
+        RECEIVE_4626[AVAX][0] = [false, false, false, false];
+        RECEIVE_4626[AVAX][1] = [false, false, false, false];
+
         FINAL_LIQ_DST_WITHDRAW[ETH] = [ETH, ETH, ETH, ETH];
         FINAL_LIQ_DST_WITHDRAW[POLY] = [ETH, ETH, ETH, ETH];
         FINAL_LIQ_DST_WITHDRAW[AVAX] = [ETH, ETH, ETH, ETH];

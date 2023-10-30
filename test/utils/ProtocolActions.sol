@@ -3,8 +3,6 @@ pragma solidity ^0.8.21;
 
 import "./CommonProtocolActions.sol";
 import { IPermit2 } from "src/vendor/dragonfly-xyz/IPermit2.sol";
-import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
-import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { LiFiMock } from "../mocks/LiFiMock.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
@@ -90,6 +88,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
     /// @dev all amounts for the action
     mapping(uint64 chainId => mapping(uint256 index => uint256[] amounts)) public AMOUNTS;
+
+    /// @dev if the user wants to receive 4626 directly
+    mapping(uint64 chainId => mapping(uint256 index => bool[] receive4626)) public RECEIVE_4626;
 
     /// @dev if the action is a partial withdraw (has no effect for deposits) - important for assertions
     mapping(uint64 chainId => mapping(uint256 index => bool[] partials)) public PARTIAL;
@@ -401,6 +402,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             vars.liqBridges = LIQ_BRIDGES[DST_CHAINS[i]][actionIndex];
 
+            vars.receive4626 = RECEIVE_4626[DST_CHAINS[i]][actionIndex];
+
             if (action.multiVaults) {
                 multiSuperformsData[i] = _buildMultiVaultCallData(
                     MultiVaultCallDataArgs(
@@ -415,6 +418,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         vars.targetSuperformIds,
                         vars.amounts,
                         vars.liqBridges,
+                        vars.receive4626,
                         MAX_SLIPPAGE,
                         vars.vaultMock,
                         CHAIN_0,
@@ -460,6 +464,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     vars.targetSuperformIds[0],
                     finalAmount,
                     vars.liqBridges[0],
+                    vars.receive4626[0],
                     MAX_SLIPPAGE,
                     vars.vaultMock[0],
                     CHAIN_0,
@@ -1192,7 +1197,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         /// @dev tries to process the payload during lock-in period
                         vm.expectRevert(Error.LOCKED.selector);
                         timelockStateRegistry.finalizePayload{ value: nativeFee }(
-                        
                             currentUnlockId - j + 1,
                             GENERATE_WITHDRAW_TX_DATA_ON_DST
                                 ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][timeLockedIndexes[DST_CHAINS[i]][j]]
@@ -1213,7 +1217,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         /// @dev if needed in certain test scenarios, re-feed txData for timelocked here
 
                         timelockStateRegistry.finalizePayload{ value: nativeFee }(
-
                             currentUnlockId - j + 1,
                             GENERATE_WITHDRAW_TX_DATA_ON_DST
                                 ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][timeLockedIndexes[DST_CHAINS[i]][j]]
@@ -1224,7 +1227,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         vm.prank(deployer);
                         vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
                         timelockStateRegistry.finalizePayload{ value: nativeFee }(
-
                             currentUnlockId - j + 1,
                             GENERATE_WITHDRAW_TX_DATA_ON_DST
                                 ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][timeLockedIndexes[DST_CHAINS[i]][j]]
@@ -1258,8 +1260,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     IBaseStateRegistry(contracts[CHAIN_0][bytes32(bytes("TimelockStateRegistry"))]);
 
                 /// @dev if a payload exists to be processed, process it
-                if (_payload(address(timelockStateRegistry), CHAIN_0, TIMELOCK_PAYLOAD_ID[CHAIN_0] + 1).length > 0)
-                {
+                if (_payload(address(timelockStateRegistry), CHAIN_0, TIMELOCK_PAYLOAD_ID[CHAIN_0] + 1).length > 0) {
                     unchecked {
                         TIMELOCK_PAYLOAD_ID[CHAIN_0]++;
                     }
@@ -1498,6 +1499,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 args.superformIds[i],
                 finalAmounts[i],
                 args.liqBridges[i],
+                args.receive4626[i],
                 args.maxSlippage,
                 args.vaultMock[i],
                 args.srcChainId,
@@ -1547,6 +1549,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             finalAmounts,
             maxSlippageTemp,
             hasDstSwap,
+            args.receive4626,
             liqRequests,
             v.permit2data,
             users[args.user],
@@ -1720,6 +1723,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             v.amount,
             args.maxSlippage,
             args.dstSwap,
+            args.receive4626,
             v.liqReq,
             v.permit2Calldata,
             users[args.user],
@@ -1828,6 +1832,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             args.amount,
             args.maxSlippage,
             args.dstSwap,
+            args.receive4626,
             vars.liqReq,
             "",
             users[args.user],
@@ -3348,5 +3353,147 @@ abstract contract ProtocolActions is CommonProtocolActions {
             }
         }
         console.log("Asserted after failed timelock withdraw");
+    }
+
+    function _successfulDepositXChain(
+        uint256 payloadId,
+        string memory vaultKind,
+        uint256 formImplId,
+        address mrperfect,
+        bool retain4626
+    )
+        internal
+        returns (uint256 superformId)
+    {
+        /// scenario: user deposits with his own collateral and has approved enough tokens
+        vm.selectFork(FORKS[ETH]);
+
+        vm.prank(deployer);
+        MockERC20(getContract(ETH, "DAI")).transfer(mrperfect, 2e18);
+
+        address superformRouter = getContract(ETH, "SuperformRouter");
+
+        superformId = DataLib.packSuperform(
+            getContract(
+                ARBI,
+                string.concat("DAI", vaultKind, "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[formImplId]))
+            ),
+            FORM_IMPLEMENTATION_IDS[formImplId],
+            ARBI
+        );
+
+        vm.selectFork(FORKS[ARBI]);
+
+        KYCDaoNFTMock(getContract(ARBI, "KYCDAOMock")).mint(mrperfect);
+        vm.selectFork(FORKS[ETH]);
+
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            2e18,
+            1000,
+            false,
+            retain4626,
+            LiqRequest(
+                1,
+                _buildLiqBridgeTxData(
+                    LiqBridgeTxDataArgs(
+                        1,
+                        getContract(ETH, "DAI"),
+                        getContract(ETH, "DAI"),
+                        getContract(ARBI, "DAI"),
+                        superformRouter,
+                        ETH,
+                        ARBI,
+                        ARBI,
+                        false,
+                        getContract(ARBI, "CoreStateRegistry"),
+                        uint256(ARBI),
+                        2e18,
+                        false,
+                        /// @dev placeholder value, not used
+                        0,
+                        1,
+                        1,
+                        1
+                    ),
+                    false
+                ),
+                getContract(ETH, "DAI"),
+                ARBI,
+                0
+            ),
+            "",
+            mrperfect,
+            ""
+        );
+
+        uint8[] memory ambIds = new uint8[](2);
+        ambIds[0] = 1;
+        ambIds[1] = 2;
+
+        SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds, ARBI, data);
+
+        /// @dev approves before call
+        vm.prank(mrperfect);
+        MockERC20(getContract(ETH, "DAI")).approve(superformRouter, 2e18);
+        vm.recordLogs();
+
+        vm.prank(mrperfect);
+        vm.deal(mrperfect, 2 ether);
+        SuperformRouter(payable(superformRouter)).singleXChainSingleVaultDeposit{ value: 2 ether }(req);
+
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        /// @dev simulate cross-chain payload delivery
+        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).helpWithEstimates(
+            LZ_ENDPOINTS[ARBI],
+            500_000,
+            /// note: using some max limit
+            FORKS[ARBI],
+            logs
+        );
+
+        HyperlaneHelper(getContract(ETH, "HyperlaneHelper")).help(
+            address(HyperlaneMailbox), address(HyperlaneMailbox), FORKS[ARBI], logs
+        );
+
+        /// @dev update and process the payload on ARBI
+        vm.selectFork(FORKS[ARBI]);
+        vm.prank(deployer);
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 2e18;
+
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(payloadId, amounts);
+
+        uint256 nativeAmount = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(1);
+
+        vm.recordLogs();
+        vm.prank(deployer);
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(
+            payloadId
+        );
+
+        if (!retain4626) {
+            logs = vm.getRecordedLogs();
+
+            /// @dev simulate cross-chain payload delivery
+            LayerZeroHelper(getContract(ARBI, "LayerZeroHelper")).helpWithEstimates(
+                LZ_ENDPOINTS[ETH],
+                500_000,
+                /// note: using some max limit
+                FORKS[ETH],
+                logs
+            );
+
+            HyperlaneHelper(getContract(ARBI, "HyperlaneHelper")).help(
+                address(HyperlaneMailbox), address(HyperlaneMailbox), FORKS[ETH], logs
+            );
+
+            /// @dev mint super positions on source chain
+            vm.selectFork(FORKS[ETH]);
+            vm.prank(deployer);
+            CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload(payloadId);
+        }
     }
 }

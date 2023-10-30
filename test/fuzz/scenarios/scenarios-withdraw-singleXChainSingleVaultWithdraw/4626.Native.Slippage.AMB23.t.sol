@@ -38,6 +38,9 @@ contract SXSVWNormal4626NativeSlippageAMB23 is ProtocolActions {
         LIQ_BRIDGES[OP][0] = [1];
         LIQ_BRIDGES[OP][1] = [1];
 
+        RECEIVE_4626[OP][0] = [false];
+        RECEIVE_4626[OP][1] = [false];
+
         GENERATE_WITHDRAW_TX_DATA_ON_DST = true;
 
         FINAL_LIQ_DST_WITHDRAW[OP] = [POLY];

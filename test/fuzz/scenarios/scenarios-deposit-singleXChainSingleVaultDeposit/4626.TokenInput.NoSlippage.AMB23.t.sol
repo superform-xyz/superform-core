@@ -30,6 +30,8 @@ contract SXSVDNormal4626MultiTokenInputNoSlippageAMB23 is ProtocolActions {
 
         LIQ_BRIDGES[OP][0] = [2];
 
+        RECEIVE_4626[OP][0] = [false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

@@ -13,7 +13,7 @@ interface ICoreStateRegistry {
     /// @param superformIds is an array of failing superform ids
     /// @param settlementToken is an array of tokens to be refunded for the failing superform
     /// @param amounts is an array of amounts of settlementToken to be refunded
-    /// @param refundAddress is the users dst refund address
+    /// @param refundAddress is the users refund address
     /// @param lastProposedTime indicates the rescue proposal timestamp
     struct FailedDeposit {
         uint256[] superformIds;

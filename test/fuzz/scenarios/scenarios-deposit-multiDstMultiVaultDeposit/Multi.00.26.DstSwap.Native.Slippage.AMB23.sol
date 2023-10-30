@@ -35,6 +35,9 @@ contract MDMVDMulti0026NativeSlippageAMB23 is ProtocolActions {
         LIQ_BRIDGES[POLY][0] = [1, 1];
         LIQ_BRIDGES[ETH][0] = [1, 1];
 
+        RECEIVE_4626[POLY][0] = [false, false];
+        RECEIVE_4626[ETH][0] = [false, false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

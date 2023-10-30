@@ -11,7 +11,7 @@ contract SDMVDMulti021NoNativeSlippageAMB23 is ProtocolActions {
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
         //////////////////////////////////////////////////////////////*/
 
-        AMBs = [2, 3];
+        AMBs = [3, 2];
 
         CHAIN_0 = ARBI;
         DST_CHAINS = [ETH];
@@ -28,6 +28,8 @@ contract SDMVDMulti021NoNativeSlippageAMB23 is ProtocolActions {
         MAX_SLIPPAGE = 1000;
 
         LIQ_BRIDGES[ETH][0] = [2, 2, 1];
+
+        RECEIVE_4626[ETH][0] = [false, false, false];
 
         actions.push(
             TestAction({

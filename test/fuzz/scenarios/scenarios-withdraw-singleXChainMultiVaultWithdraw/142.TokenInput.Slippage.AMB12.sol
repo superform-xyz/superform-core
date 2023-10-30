@@ -34,6 +34,9 @@ contract SDMVW142TokenInputSlippageAMB12 is ProtocolActions {
         LIQ_BRIDGES[AVAX][0] = [1, 1, 2];
         LIQ_BRIDGES[AVAX][1] = [1, 2, 1];
 
+        RECEIVE_4626[AVAX][0] = [false, false, false];
+        RECEIVE_4626[AVAX][1] = [false, false, false];
+
         FINAL_LIQ_DST_WITHDRAW[AVAX] = [ETH, ETH, ETH];
 
         /// @dev push in order the actions should be executed

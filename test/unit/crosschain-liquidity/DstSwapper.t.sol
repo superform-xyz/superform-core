@@ -6,7 +6,7 @@ import { Error } from "src/utils/Error.sol";
 import "test/utils/ProtocolActions.sol";
 
 contract DstSwapperTest is ProtocolActions {
-    address dstRefundAddress = address(444);
+    address receiverAddress = address(444);
 
     function setUp() public override {
         super.setUp();
@@ -440,7 +440,9 @@ contract DstSwapperTest is ProtocolActions {
                     0,
                     abi.encode(
                         new uint8[](0),
-                        abi.encode(InitSingleVaultData(1, superformId, 1e18, 0, true, liq, dstRefundAddress, bytes("")))
+                        abi.encode(
+                            InitSingleVaultData(1, superformId, 1e18, 0, true, false, liq, receiverAddress, bytes(""))
+                        )
                     )
                 )
             )
@@ -472,7 +474,7 @@ contract DstSwapperTest is ProtocolActions {
                 ),
                 abi.encode(
                     new uint8[](0),
-                    abi.encode(InitSingleVaultData(1, superformId, 1e18, 1000, true, liq, users[0], bytes("")))
+                    abi.encode(InitSingleVaultData(1, superformId, 1e18, 1000, true, false, liq, users[0], bytes("")))
                 )
             )
         );
@@ -520,7 +522,15 @@ contract DstSwapperTest is ProtocolActions {
                         new uint8[](1),
                         abi.encode(
                             InitMultiVaultData(
-                                1, superformIds, amounts, maxSlippages, hasDstSwaps, liq, users[0], bytes("")
+                                1,
+                                superformIds,
+                                amounts,
+                                maxSlippages,
+                                hasDstSwaps,
+                                new bool[](2),
+                                liq,
+                                users[0],
+                                bytes("")
                             )
                         )
                     )
@@ -567,8 +577,9 @@ contract DstSwapperTest is ProtocolActions {
                                 amounts,
                                 new uint256[](2),
                                 hasDstSwaps,
+                                new bool[](2),
                                 liq,
-                                dstRefundAddress,
+                                receiverAddress,
                                 bytes("")
                             )
                         )

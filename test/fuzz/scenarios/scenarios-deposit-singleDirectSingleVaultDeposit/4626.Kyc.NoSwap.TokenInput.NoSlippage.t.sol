@@ -28,6 +28,8 @@ contract SDSVD4626KycNoSwapTokenInputNoSlippage is ProtocolActions {
 
         LIQ_BRIDGES[POLY][0] = [0];
 
+        RECEIVE_4626[POLY][0] = [false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

@@ -39,6 +39,10 @@ contract MDSVDNormal4626MultiTokenInputNoSlippageAMB23 is ProtocolActions {
         LIQ_BRIDGES[OP][0] = [1];
         LIQ_BRIDGES[POLY][0] = [1];
 
+        RECEIVE_4626[ETH][0] = [false];
+        RECEIVE_4626[OP][0] = [false];
+        RECEIVE_4626[POLY][0] = [false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

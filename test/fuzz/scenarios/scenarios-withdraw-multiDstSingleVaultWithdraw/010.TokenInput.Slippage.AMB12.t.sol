@@ -60,6 +60,14 @@ contract MDSVW010NativeSlippage2AMB12 is ProtocolActions {
         LIQ_BRIDGES[OP][1] = [1];
         LIQ_BRIDGES[AVAX][1] = [1];
 
+        RECEIVE_4626[ARBI][0] = [false];
+        RECEIVE_4626[OP][0] = [false];
+        RECEIVE_4626[AVAX][0] = [false];
+
+        RECEIVE_4626[ARBI][1] = [false];
+        RECEIVE_4626[OP][1] = [false];
+        RECEIVE_4626[AVAX][1] = [false];
+
         FINAL_LIQ_DST_WITHDRAW[ARBI] = [ARBI];
         FINAL_LIQ_DST_WITHDRAW[OP] = [ARBI];
         FINAL_LIQ_DST_WITHDRAW[AVAX] = [ARBI];

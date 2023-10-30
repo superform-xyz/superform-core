@@ -33,6 +33,9 @@ contract SDMVDMulti111RescueFailedDepositsNoTokenInputSlippageAMB12 is ProtocolA
         LIQ_BRIDGES[AVAX][0] = [1, 1, 1];
         LIQ_BRIDGES[ETH][1] = [1, 1, 1];
 
+        RECEIVE_4626[AVAX][0] = [false, false, false];
+        RECEIVE_4626[ETH][1] = [false, false, false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

@@ -129,8 +129,9 @@ library Error {
     /// @dev thrown when the failed dstSwap is already processed
     error FAILED_DST_SWAP_ALREADY_PROCESSED();
 
-    /// @dev thrown if dst refund address is zero
-    error ZERO_DST_REFUND_ADDRESS();
+    /// @dev thrown if receiver address is not set when the contract is a smart contract wallet
+    error RECEIVER_ADDRESS_NOT_SET();
+
     /// @dev thrown if permit2 not supported on given chain
     error PERMIT2_NOT_SUPPORTED();
 

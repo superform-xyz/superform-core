@@ -27,6 +27,8 @@ contract SXSVDNormal4626RevertTokenInputSlippageAMB1 is ProtocolActions {
 
         LIQ_BRIDGES[AVAX][0] = [1];
 
+        RECEIVE_4626[AVAX][0] = [false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

@@ -35,6 +35,10 @@ contract MDSVDNormal4626RevertTokenInputSlippageAMB1 is ProtocolActions {
         LIQ_BRIDGES[AVAX][0] = [1];
         LIQ_BRIDGES[OP][0] = [1];
 
+        RECEIVE_4626[POLY][0] = [false];
+        RECEIVE_4626[AVAX][0] = [false];
+        RECEIVE_4626[OP][0] = [false];
+
         /// @dev define the test type for every destination chain and for every action
         /// should allow us to revert on specific destination calls, such as specific updatePayloads, specific
         /// processPayloads, etc.

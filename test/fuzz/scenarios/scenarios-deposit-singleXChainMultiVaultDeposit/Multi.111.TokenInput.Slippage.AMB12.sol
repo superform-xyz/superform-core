@@ -29,6 +29,8 @@ contract SDMVDMulti111NoTokenInputSlippageAMB12 is ProtocolActions {
 
         LIQ_BRIDGES[AVAX][0] = [1, 1, 1];
 
+        RECEIVE_4626[AVAX][0] = [false, false, false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

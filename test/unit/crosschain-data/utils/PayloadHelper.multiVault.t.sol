@@ -40,6 +40,8 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
         LIQ_BRIDGES[POLY][0] = [1, 1];
         LIQ_BRIDGES[POLY][1] = [1, 1];
+        RECEIVE_4626[POLY][0] = [false, false];
+        RECEIVE_4626[POLY][1] = [false, false];
 
         FINAL_LIQ_DST_WITHDRAW[POLY] = [OP, OP];
 
@@ -229,7 +231,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
         uint256[] amounts;
         uint256[] nativeAmounts;
         bool[] hasDstSwaps;
-        address dstRefundAddress;
+        address receiverAddress;
     }
 
     function _checkDstPayloadLiqData() internal {
@@ -244,7 +246,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
             v.amounts,
             v.nativeAmounts,
             v.hasDstSwaps,
-            v.dstRefundAddress
+            v.receiverAddress
         ) = IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))])
             .decodeCoreStateRegistryPayloadLiqData(2);
 
@@ -260,7 +262,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
         assertEq(v.amounts, actualAmountWithdrawnPerDst[0]);
 
-        assertEq(v.dstRefundAddress, users[0]);
+        assertEq(v.receiverAddress, users[0]);
 
         assertEq(v.hasDstSwaps[0], false);
     }

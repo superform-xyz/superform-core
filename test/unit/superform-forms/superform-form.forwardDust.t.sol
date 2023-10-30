@@ -111,6 +111,7 @@ contract ForwardDustFormTest is ProtocolActions {
             amountToDeposit_,
             100,
             false,
+            false,
             LiqRequest(1, "", getContract(ARBI, "WETH"), ARBI, 0),
             "",
             refundAddress,
@@ -136,6 +137,7 @@ contract ForwardDustFormTest is ProtocolActions {
             superformId,
             spAmountToRedeem_ == 0 ? superPositionBalance : spAmountToRedeem_,
             100,
+            false,
             false,
             LiqRequest(
                 1,

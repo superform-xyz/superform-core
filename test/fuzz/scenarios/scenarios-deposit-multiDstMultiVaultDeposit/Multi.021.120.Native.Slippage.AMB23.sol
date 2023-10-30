@@ -11,7 +11,7 @@ contract MDMVDMulti021120NoNativeSlippageAMB23 is ProtocolActions {
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
         //////////////////////////////////////////////////////////////*/
 
-        AMBs = [2, 3];
+        AMBs = [3, 2];
         MultiDstAMBs = [AMBs, AMBs];
 
         CHAIN_0 = ARBI;
@@ -34,6 +34,9 @@ contract MDMVDMulti021120NoNativeSlippageAMB23 is ProtocolActions {
 
         LIQ_BRIDGES[ETH][0] = [1, 1, 1];
         LIQ_BRIDGES[OP][0] = [1, 1, 1];
+
+        RECEIVE_4626[ETH][0] = [false, false, false];
+        RECEIVE_4626[OP][0] = [false, false, false];
 
         actions.push(
             TestAction({

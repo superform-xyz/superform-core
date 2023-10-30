@@ -28,6 +28,8 @@ contract SDSVD4626SwapTokenInputSlippage is ProtocolActions {
 
         LIQ_BRIDGES[OP][0] = [3];
 
+        RECEIVE_4626[OP][0] = [false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

@@ -213,6 +213,8 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
             vars.liqBridges = vars.targetLiqBridges[i];
 
+            vars.receive4626 = vars.targetReceive4626[i];
+
             if (action.multiVaults) {
                 multiSuperformsData[i] = _buildMultiVaultCallData(
                     MultiVaultCallDataArgs(
@@ -227,6 +229,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                         vars.targetSuperformIds,
                         vars.amounts,
                         vars.liqBridges,
+                        vars.receive4626,
                         1000,
                         vars.vaultMock,
                         vars.CHAIN_0,
@@ -272,6 +275,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     vars.targetSuperformIds[0],
                     finalAmount,
                     vars.liqBridges[0],
+                    vars.receive4626[0],
                     1000,
                     vars.vaultMock[0],
                     vars.CHAIN_0,
@@ -902,6 +906,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                 args.superformIds[i],
                 finalAmounts[i],
                 args.liqBridges[i],
+                args.receive4626[i],
                 args.maxSlippage,
                 args.vaultMock[i],
                 args.srcChainId,
@@ -951,6 +956,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             finalAmounts,
             maxSlippageTemp,
             hasDstSwap,
+            args.receive4626,
             liqRequests,
             v.permit2data,
             users[args.user],
@@ -1125,6 +1131,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             v.amount,
             args.maxSlippage,
             args.dstSwap,
+            args.receive4626,
             v.liqReq,
             v.permit2Calldata,
             users[args.user],
@@ -1230,6 +1237,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             args.amount,
             args.maxSlippage,
             args.dstSwap,
+            args.receive4626,
             vars.liqReq,
             "",
             users[args.user],

@@ -187,10 +187,14 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// @dev this presumes no dust is left in the superform
         IERC20(vars.collateral).safeIncreaseAllowance(vault, vars.collateralDifference);
 
-        dstAmount = v.deposit(vars.collateralDifference, address(this));
+        if (singleVaultData_.retain4626) {
+            dstAmount = v.deposit(vars.collateralDifference, singleVaultData_.receiverAddress);
+        } else {
+            dstAmount = v.deposit(vars.collateralDifference, address(this));
+        }
     }
 
-    struct ProcessDirectWithdawLocalVars {
+    struct ProcessDirectWithdrawLocalVars {
         uint64 chainId;
         address collateral;
         address receiver;
@@ -207,7 +211,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         internal
         returns (uint256 dstAmount)
     {
-        ProcessDirectWithdawLocalVars memory v;
+        ProcessDirectWithdrawLocalVars memory v;
         v.len1 = singleVaultData_.liqData.txData.length;
 
         /// @dev if there is no txData, on withdraws the receiver is the original beneficiary (srcSender_), otherwise it
@@ -276,8 +280,13 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// @dev allowance is modified inside of the IERC20.transferFrom() call
         IERC20(asset).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
 
-        /// @dev This makes ERC4626Form (address(this)) owner of v.shares
-        dstAmount = v.deposit(singleVaultData_.amount, address(this));
+        /// @dev Deposit into vault 
+        if (singleVaultData_.retain4626) {
+            dstAmount = v.deposit(singleVaultData_.amount, singleVaultData_.receiverAddress);
+        } else {
+            /// This makes ERC4626Form (address(this)) owner of v.shares
+            dstAmount = v.deposit(singleVaultData_.amount, address(this));
+        }
 
         emit Processed(srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
     }

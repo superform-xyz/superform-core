@@ -29,6 +29,8 @@ contract SDMVDMulti26NativeNoSlippageAMB13 is ProtocolActions {
 
         LIQ_BRIDGES[POLY][0] = [1, 1];
 
+        RECEIVE_4626[POLY][0] = [false, false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

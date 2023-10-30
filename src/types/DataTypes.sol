@@ -27,27 +27,29 @@ enum PayloadState {
 
 /// @dev main struct that holds required multi vault data for an action
 struct MultiVaultSFData {
-    // superformids must have same destination. Can have different different underlyings
+    // superformids must have same destination. Can have different underlyings
     uint256[] superformIds;
     uint256[] amounts;
     uint256[] maxSlippages;
     bool[] hasDstSwaps;
+    bool[] retain4626s; // if true, we don't mint SuperPositions, and send the 4626 back to the user instead
     LiqRequest[] liqRequests; // if length = 1; amount = sum(amounts) | else  amounts must match the amounts being sent
     bytes permit2data;
-    address dstRefundAddress;
+    address receiverAddress;
     bytes extraFormData; // extraFormData
 }
 
 /// @dev main struct that holds required single vault data for an action
 struct SingleVaultSFData {
-    // superformids must have same destination. Can have different different underlyings
+    // superformids must have same destination. Can have different underlyings
     uint256 superformId;
     uint256 amount;
     uint256 maxSlippage;
     bool hasDstSwap;
+    bool retain4626; // if true, we don't mint SuperPositions, and send the 4626 back to the user instead
     LiqRequest liqRequest; // if length = 1; amount = sum(amounts)| else  amounts must match the amounts being sent
     bytes permit2data;
-    address dstRefundAddress;
+    address receiverAddress;
     bytes extraFormData; // extraFormData
 }
 
@@ -94,10 +96,11 @@ struct InitMultiVaultData {
     uint256 payloadId;
     uint256[] superformIds;
     uint256[] amounts;
-    uint256[] maxSlippage;
+    uint256[] maxSlippages;
     bool[] hasDstSwaps;
+    bool[] retain4626s;
     LiqRequest[] liqData;
-    address dstRefundAddress;
+    address receiverAddress;
     bytes extraFormData;
 }
 
@@ -108,8 +111,9 @@ struct InitSingleVaultData {
     uint256 amount;
     uint256 maxSlippage;
     bool hasDstSwap;
+    bool retain4626;
     LiqRequest liqData;
-    address dstRefundAddress;
+    address receiverAddress;
     bytes extraFormData;
 }
 

@@ -32,6 +32,9 @@ contract MDSVDNormal4626RevertNoTokenInputSlippageAMB1RepeatingDstMultiAmb is Pr
         LIQ_BRIDGES[ARBI][0] = [1];
         LIQ_BRIDGES[ETH][0] = [1];
 
+        RECEIVE_4626[ARBI][0] = [false];
+        RECEIVE_4626[ETH][0] = [false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,
