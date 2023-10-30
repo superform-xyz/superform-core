@@ -590,6 +590,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             if (txData_[i].length != 0 && multiVaultData_.liqData[i].txData.length == 0) {
                 (address superform,,) = multiVaultData_.superformIds[i].getSuperform();
 
+                /// @dev for withdrawals the payload update can happen on core state registry (for normal forms)
+                /// and also can happen in timelock state registry (for timelock form)
+
+                /// @notice this check validates if the state registry is elligible to update tx data for the
+                /// corresponding superform
                 if (IBaseForm(superform).getStateRegistryId() == _getStateRegistryId(address(this))) {
                     PayloadUpdaterLib.validateLiqReq(multiVaultData_.liqData[i]);
 
