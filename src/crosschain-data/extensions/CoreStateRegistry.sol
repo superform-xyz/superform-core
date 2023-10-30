@@ -93,13 +93,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             (prevPayloadBody, finalState) = _updateSingleDeposit(payloadId_, prevPayloadBody, finalAmounts_[0]);
         }
 
-        payloadBody[payloadId_] = prevPayloadBody;
-
         /// @dev updates the payload proof
-        _updateProof(prevPayloadProof, prevPayloadBody, prevPayloadHeader);
-
-        payloadTracking[payloadId_] = finalState;
-        emit PayloadUpdated(payloadId_);
+        _updatePayload(payloadId_, prevPayloadProof, prevPayloadBody, prevPayloadHeader, finalState);
 
         /// @dev if payload is processed at this stage then it is failing
         if (finalState == PayloadState.PROCESSED) {
@@ -135,15 +130,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         /// @dev validate payload update
         PayloadUpdaterLib.validateWithdrawPayloadUpdate(prevPayloadHeader, payloadTracking[payloadId_], isMulti);
-
         prevPayloadBody = _updateWithdrawPayload(prevPayloadBody, srcSender, srcChainId, txData_, isMulti);
-        payloadBody[payloadId_] = prevPayloadBody;
 
         /// @dev updates the payload proof
-        _updateProof(prevPayloadProof, prevPayloadBody, prevPayloadHeader);
-
-        /// @dev define the payload status as updated
-        payloadTracking[payloadId_] = PayloadState.UPDATED;
+        _updatePayload(payloadId_, prevPayloadProof, prevPayloadBody, prevPayloadHeader, PayloadState.UPDATED);
 
         emit PayloadUpdated(payloadId_);
     }
@@ -304,9 +294,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         failedDeposits_.lastProposedTimestamp = 0;
         IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
 
-        uint256 len = failedDeposits_.amounts.length;
-
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < failedDeposits_.amounts.length;) {
             /// @dev refunds the amount to user specified refund address
             if (failedDeposits_.settleFromDstSwapper[i]) {
                 dstSwapper.processFailedTx(
@@ -419,14 +407,14 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         InitMultiVaultData memory multiVaultData = abi.decode(prevPayloadBody_, (InitMultiVaultData));
         IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
 
+        uint256 arrLen = finalAmounts_.length;
+
         /// @dev compare number of vaults to update with provided finalAmounts length
-        if (multiVaultData.amounts.length != finalAmounts_.length) {
+        if (multiVaultData.amounts.length != arrLen) {
             revert Error.DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH();
         }
 
         uint256 validLen;
-        uint256 arrLen = finalAmounts_.length;
-
         for (uint256 i; i < arrLen;) {
             if (finalAmounts_[i] == 0) {
                 revert Error.ZERO_AMOUNT();
@@ -452,18 +440,18 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         }
 
         if (validLen > 0) {
-            uint256[] memory finalSuperformIds = new uint256[](validLen);
-            uint256[] memory finalAmounts = new uint256[](validLen);
-            uint256[] memory maxSlippages = new uint256[](validLen);
-            bool[] memory hasDstSwaps = new bool[](validLen);
+            multiVaultData.superformIds = new uint256[](validLen);
+            multiVaultData.amounts = new uint256[](validLen);
+            multiVaultData.maxSlippages = new uint256[](validLen);
+            multiVaultData.hasDstSwaps = new bool[](validLen);
 
             uint256 currLen;
             for (uint256 i; i < arrLen;) {
                 if (multiVaultData.amounts[i] != 0) {
-                    finalSuperformIds[currLen] = multiVaultData.superformIds[i];
-                    finalAmounts[currLen] = multiVaultData.amounts[i];
-                    maxSlippages[currLen] = multiVaultData.maxSlippages[i];
-                    hasDstSwaps[currLen] = multiVaultData.hasDstSwaps[i];
+                    multiVaultData.superformIds[currLen] = multiVaultData.superformIds[i];
+                    multiVaultData.amounts[currLen] = multiVaultData.amounts[i];
+                    multiVaultData.maxSlippages[currLen] = multiVaultData.maxSlippages[i];
+                    multiVaultData.hasDstSwaps[currLen] = multiVaultData.hasDstSwaps[i];
                     unchecked {
                         ++currLen;
                     }
@@ -473,10 +461,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 }
             }
 
-            multiVaultData.amounts = finalAmounts;
-            multiVaultData.superformIds = finalSuperformIds;
-            multiVaultData.maxSlippages = maxSlippages;
-            multiVaultData.hasDstSwaps = hasDstSwaps;
             finalState_ = PayloadState.UPDATED;
         } else {
             finalState_ = PayloadState.PROCESSED;
@@ -986,12 +970,25 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     }
 
     /// @dev calls the function to update the proof during payload update
-    function _updateProof(bytes32 prevPayloadProof, bytes memory newPayloadBody, uint256 prevPayloadHeader) internal {
+    function _updatePayload(
+        uint256 payloadId_,
+        bytes32 prevPayloadProof,
+        bytes memory newPayloadBody,
+        uint256 prevPayloadHeader,
+        PayloadState finalState
+    )
+        internal
+    {
         bytes32 newPayloadProof = AMBMessage(prevPayloadHeader, newPayloadBody).computeProof();
         if (newPayloadProof != prevPayloadProof) {
             messageQuorum[newPayloadProof] = messageQuorum[prevPayloadProof];
 
             delete messageQuorum[prevPayloadProof];
         }
+
+        payloadBody[payloadId_] = newPayloadBody;
+        payloadTracking[payloadId_] = finalState;
+
+        emit PayloadUpdated(payloadId_);
     }
 }
