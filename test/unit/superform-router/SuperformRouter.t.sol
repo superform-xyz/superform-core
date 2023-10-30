@@ -1673,6 +1673,22 @@ contract SuperformRouterTest is ProtocolActions {
         vm.stopPrank();
     }
 
+    function test_multiVault_retain4626() public {
+        address mrperfect = vm.addr(421);
+
+        uint256 superformId = _successfulDepositXChain(1, "VaultMock", 0, mrperfect, true);
+        vm.selectFork(FORKS[ETH]);
+
+        assertEq(SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(mrperfect, superformId), 0);
+
+        (address superform,,) = DataLib.getSuperform(superformId);
+        vm.selectFork(FORKS[ARBI]);
+
+        address vault = IBaseForm(superform).getVaultAddress();
+
+        assertGt(IERC4626(vault).balanceOf(mrperfect), 0);
+    }
+
     function _successfulMultiVaultDeposit() internal {
         /// scenario: user deposits with his own collateral and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
