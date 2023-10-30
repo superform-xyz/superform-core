@@ -569,7 +569,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(deployer, superformId),
             100,
             false,
-            LiqRequest(1, "", getContract(ETH, "WETH"), ETH, 0),
+            LiqRequest(1, "0x2222", getContract(ETH, "WETH"), ETH, 0),
             "",
             refundAddress,
             ""
