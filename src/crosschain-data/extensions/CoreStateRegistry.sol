@@ -342,16 +342,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     }
 
     /// @dev retrieves information associated with the payload and validates quorum
-    /// @param payloadId_ is the payload id
-    /// @return payloadHeader_ is the payload header
-    /// @return payloadBody_ is the payload body
-    /// @return payloadProof is the payload proof
-    /// @return txType is the transaction type
-    /// @return callbackType is the callback type
-    /// @return isMulti is the multi flag
-    /// @return registryId is the registry id
-    /// @return srcSender is the source sender
-    /// @return srcChainId is the source chain id
     function _getPayload(uint256 payloadId_)
         internal
         view
@@ -372,6 +362,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         payloadProof = AMBMessage(payloadHeader_, payloadBody_).computeProof();
         (txType, callbackType, isMulti, registryId, srcSender, srcChainId) = payloadHeader_.decodeTxInfo();
 
+        /// @dev the number of valid proofs (quorum) must be equal or larger to the required messaging quorum
         if (messageQuorum[payloadProof] < _getQuorum(srcChainId)) {
             revert Error.INSUFFICIENT_QUORUM();
         }
