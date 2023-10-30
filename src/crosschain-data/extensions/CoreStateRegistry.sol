@@ -631,7 +631,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         view
         returns (InitMultiVaultData memory)
     {
-
         uint256 len = multiVaultData_.liqData.length;
 
         for (uint256 i = 0; i < len;) {
@@ -719,7 +718,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 multiVaultData.amounts[i] = 0;
             } catch {
                 /// @dev detect if there is at least one failed withdraw
-                if (!errors) errors = true;
+                errors = true;
             }
 
             unchecked {
@@ -939,7 +938,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     )
         internal
     {
-
         /// @dev if deposits succeeded or some withdrawal failed, dispatch a callback
         if (returnMessage_.length > 0) {
             uint8[] memory proofIds = proofAMB[proof_];
