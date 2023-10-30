@@ -38,6 +38,9 @@ contract SXSVWTimelockedNativeSlippageAMB12 is ProtocolActions {
         LIQ_BRIDGES[ARBI][0] = [1];
         LIQ_BRIDGES[ARBI][1] = [2];
 
+        RECEIVE_4626[ARBI][0] = [false];
+        RECEIVE_4626[ARBI][1] = [false];
+
         GENERATE_WITHDRAW_TX_DATA_ON_DST = true;
 
         FINAL_LIQ_DST_WITHDRAW[ARBI] = [ETH];

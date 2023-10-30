@@ -33,6 +33,9 @@ contract SXSVDNormal4626RevertRescueFailedDepositsNoTokenInputSlippageAMB1 is Pr
         LIQ_BRIDGES[POLY][0] = [1];
         LIQ_BRIDGES[OP][1] = [2];
 
+        RECEIVE_4626[POLY][0] = [false];
+        RECEIVE_4626[OP][1] = [false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

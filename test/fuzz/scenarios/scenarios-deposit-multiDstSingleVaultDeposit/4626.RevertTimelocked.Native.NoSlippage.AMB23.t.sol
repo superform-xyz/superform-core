@@ -31,6 +31,9 @@ contract MDSVD4626RevertTimelockedNativeNoSlippageAMB23 is ProtocolActions {
         LIQ_BRIDGES[ETH][0] = [1];
         LIQ_BRIDGES[ARBI][0] = [1];
 
+        RECEIVE_4626[ETH][0] = [false];
+        RECEIVE_4626[ARBI][0] = [false];
+
         /// if testing a revert, do we test the revert on the whole destination?
         /// to assert values, it is best to find the indexes that didn't revert
 

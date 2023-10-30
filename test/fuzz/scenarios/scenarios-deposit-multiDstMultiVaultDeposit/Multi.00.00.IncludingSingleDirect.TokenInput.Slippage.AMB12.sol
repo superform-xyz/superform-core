@@ -35,6 +35,9 @@ contract MDMVDMulti0000NoIncludingSingleDirectTokenInputSlippageAMB12 is Protoco
         LIQ_BRIDGES[ARBI][0] = [1, 1];
         LIQ_BRIDGES[ETH][0] = [1, 1];
 
+        RECEIVE_4626[ARBI][0] = [false, false];
+        RECEIVE_4626[ETH][0] = [false, false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

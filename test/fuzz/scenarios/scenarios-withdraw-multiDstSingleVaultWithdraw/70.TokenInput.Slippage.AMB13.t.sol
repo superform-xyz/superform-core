@@ -49,6 +49,12 @@ contract MDSVW70TokenInputSlippageAMB13 is ProtocolActions {
         LIQ_BRIDGES[ETH][0] = [1];
         LIQ_BRIDGES[ETH][1] = [1];
 
+        RECEIVE_4626[OP][0] = [false];
+        RECEIVE_4626[OP][1] = [false];
+
+        RECEIVE_4626[ETH][0] = [false];
+        RECEIVE_4626[ETH][1] = [false];
+
         FINAL_LIQ_DST_WITHDRAW[OP] = [POLY];
         FINAL_LIQ_DST_WITHDRAW[ETH] = [POLY];
 

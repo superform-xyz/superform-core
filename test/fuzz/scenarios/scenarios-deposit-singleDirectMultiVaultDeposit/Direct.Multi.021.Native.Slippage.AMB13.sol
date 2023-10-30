@@ -29,6 +29,8 @@ contract SDiMVDMulti021NoNativeSlippageAMB24 is ProtocolActions {
 
         LIQ_BRIDGES[ETH][0] = [1, 1, 1];
 
+        RECEIVE_4626[ETH][0] = [false, false, false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

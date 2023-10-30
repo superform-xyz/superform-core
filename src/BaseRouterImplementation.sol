@@ -521,7 +521,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 false,
                 retain4626_,
                 liqData_,
-                receiverAddress_, /// needed if user if keeping 4626
+                receiverAddress_,
+                /// needed if user if keeping 4626
                 extraFormData_
             ),
             srcSender_
@@ -597,8 +598,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         _multiVaultTokenForward(srcSender_, v.superforms, permit2data_, vaultData_, false);
 
-        uint256 mintLen = 0;
-
         for (uint256 i; i < v.len;) {
             /// @dev deposits collateral to a given vault and mint vault positions.
             v.dstAmounts[i] = _directDeposit(
@@ -627,7 +626,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev in direct deposits, SuperPositions are minted right after depositing to vaults
         ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintBatch(
-            srcSender_, vaultData_.superformIds, v.dstAmounts);
+            srcSender_, vaultData_.superformIds, v.dstAmounts
+        );
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -653,7 +653,15 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev in direct withdraws, form is called directly
         IBaseForm(superform_).directWithdrawFromVault(
             InitSingleVaultData(
-                payloadId_, superformId_, amount_, maxSlippage_, false, retain4626_,liqData_, receiverAddress_, extraFormData_
+                payloadId_,
+                superformId_,
+                amount_,
+                maxSlippage_,
+                false,
+                retain4626_,
+                liqData_,
+                receiverAddress_,
+                extraFormData_
             ),
             srcSender_
         );

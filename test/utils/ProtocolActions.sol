@@ -91,6 +91,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
     /// @dev all amounts for the action
     mapping(uint64 chainId => mapping(uint256 index => uint256[] amounts)) public AMOUNTS;
 
+    /// @dev if the user wants to receive 4626 directly
+    mapping(uint64 chainId => mapping(uint256 index => bool[] receive4626)) public RECEIVE_4626;
+
     /// @dev if the action is a partial withdraw (has no effect for deposits) - important for assertions
     mapping(uint64 chainId => mapping(uint256 index => bool[] partials)) public PARTIAL;
 
@@ -401,6 +404,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             vars.liqBridges = LIQ_BRIDGES[DST_CHAINS[i]][actionIndex];
 
+            vars.receive4626 = RECEIVE_4626[DST_CHAINS[i]][actionIndex];
+
             if (action.multiVaults) {
                 multiSuperformsData[i] = _buildMultiVaultCallData(
                     MultiVaultCallDataArgs(
@@ -415,6 +420,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         vars.targetSuperformIds,
                         vars.amounts,
                         vars.liqBridges,
+                        vars.receive4626,
                         MAX_SLIPPAGE,
                         vars.vaultMock,
                         CHAIN_0,
@@ -460,6 +466,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     vars.targetSuperformIds[0],
                     finalAmount,
                     vars.liqBridges[0],
+                    vars.receive4626[0],
                     MAX_SLIPPAGE,
                     vars.vaultMock[0],
                     CHAIN_0,
@@ -1494,6 +1501,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 args.superformIds[i],
                 finalAmounts[i],
                 args.liqBridges[i],
+                args.receive4626[i],
                 args.maxSlippage,
                 args.vaultMock[i],
                 args.srcChainId,
@@ -1543,6 +1551,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             finalAmounts,
             maxSlippageTemp,
             hasDstSwap,
+            args.receive4626,
             liqRequests,
             v.permit2data,
             users[args.user],
@@ -1716,6 +1725,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             v.amount,
             args.maxSlippage,
             args.dstSwap,
+            args.receive4626,
             v.liqReq,
             v.permit2Calldata,
             users[args.user],
@@ -1824,6 +1834,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             args.amount,
             args.maxSlippage,
             args.dstSwap,
+            args.receive4626,
             vars.liqReq,
             "",
             users[args.user],

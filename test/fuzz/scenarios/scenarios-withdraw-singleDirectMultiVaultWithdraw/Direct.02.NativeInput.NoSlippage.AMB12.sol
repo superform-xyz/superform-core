@@ -34,6 +34,9 @@ contract SDiMVW02NativeInputNoSlippageAMB12 is ProtocolActions {
         LIQ_BRIDGES[OP][0] = [1, 1, 3];
         LIQ_BRIDGES[OP][1] = [1, 3, 1];
 
+        RECEIVE_4626[OP][0] = [false, false, false];
+        RECEIVE_4626[OP][1] = [false, false, false];
+
         FINAL_LIQ_DST_WITHDRAW[OP] = [OP, OP, OP];
 
         /// @dev push in order the actions should be executed

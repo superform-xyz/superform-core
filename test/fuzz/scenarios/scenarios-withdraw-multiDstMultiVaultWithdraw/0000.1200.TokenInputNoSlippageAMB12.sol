@@ -54,6 +54,12 @@ contract MDMVW00001200TokenInputSlippageAMB12 is ProtocolActions {
         LIQ_BRIDGES[POLY][0] = [1, 1, 1, 1];
         LIQ_BRIDGES[POLY][1] = [1, 1, 1, 1];
 
+        RECEIVE_4626[ARBI][0] = [false, false, false, false];
+        RECEIVE_4626[ARBI][1] = [false, false, false, false];
+
+        RECEIVE_4626[POLY][0] = [false, false, false, false];
+        RECEIVE_4626[POLY][1] = [false, false, false, false];
+
         FINAL_LIQ_DST_WITHDRAW[ARBI] = [ETH, ETH, ETH, ETH];
         FINAL_LIQ_DST_WITHDRAW[POLY] = [ETH, ETH, ETH, ETH];
 

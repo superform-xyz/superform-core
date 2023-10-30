@@ -39,6 +39,10 @@ contract MDSVDKYC4626TokenInputSlippageAMB13 is ProtocolActions {
         LIQ_BRIDGES[BSC][0] = [1];
         LIQ_BRIDGES[ETH][0] = [1];
 
+        RECEIVE_4626[AVAX][0] = [false];
+        RECEIVE_4626[BSC][0] = [false];
+        RECEIVE_4626[ETH][0] = [false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

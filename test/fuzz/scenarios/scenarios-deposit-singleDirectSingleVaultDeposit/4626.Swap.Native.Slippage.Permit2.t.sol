@@ -28,6 +28,8 @@ contract SDSVD4626SwapNativeSlippagePermit2 is ProtocolActions {
 
         LIQ_BRIDGES[ARBI][0] = [3];
 
+        RECEIVE_4626[ARBI][0] = [false];
+
         actions.push(
             TestAction({
                 action: Actions.DepositPermit2,

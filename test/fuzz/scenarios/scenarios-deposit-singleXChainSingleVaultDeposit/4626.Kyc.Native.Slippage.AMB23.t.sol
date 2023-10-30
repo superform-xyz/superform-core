@@ -28,6 +28,8 @@ contract SXSVDKyc4626NoNativeSlippageAMB23 is ProtocolActions {
 
         LIQ_BRIDGES[ARBI][0] = [1];
 
+        RECEIVE_4626[ARBI][0] = [false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

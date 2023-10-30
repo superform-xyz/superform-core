@@ -30,6 +30,8 @@ contract SDSVD4626NoSwapNativeSlippage14 is ProtocolActions {
 
         LIQ_BRIDGES[AVAX][0] = [0];
 
+        RECEIVE_4626[AVAX][0] = [false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

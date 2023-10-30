@@ -900,7 +900,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             try IBaseForm(superform_).xChainDepositIntoVault(singleVaultData, srcSender_, srcChainId_) returns (
                 uint256 dstAmount
             ) {
-                if ((dstAmount > 0) && (!singleVaultData.retain4626)) {
+                if (dstAmount > 0 && !singleVaultData.retain4626) {
                     return _singleReturnData(
                         srcSender_,
                         singleVaultData.payloadId,

@@ -40,6 +40,8 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
         LIQ_BRIDGES[POLY][0] = [1, 1];
         LIQ_BRIDGES[POLY][1] = [1, 1];
+        RECEIVE_4626[POLY][0] = [false, false];
+        RECEIVE_4626[POLY][1] = [false, false];
 
         FINAL_LIQ_DST_WITHDRAW[POLY] = [OP, OP];
 

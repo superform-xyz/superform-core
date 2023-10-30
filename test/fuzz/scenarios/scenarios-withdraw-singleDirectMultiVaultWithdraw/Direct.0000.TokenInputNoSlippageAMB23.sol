@@ -31,6 +31,9 @@ contract SDiMVW0000TokenInputNoSlippage2AMB23 is ProtocolActions {
         LIQ_BRIDGES[ARBI][0] = [1, 1, 1, 1];
         LIQ_BRIDGES[ARBI][1] = [1, 1, 1, 1];
 
+        RECEIVE_4626[ARBI][0] = [false, false, false, false];
+        RECEIVE_4626[ARBI][1] = [false, false, false, false];
+
         FINAL_LIQ_DST_WITHDRAW[ARBI] = [ARBI, ARBI, ARBI, ARBI];
 
         /// @dev push in order the actions should be executed

@@ -66,6 +66,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
         uint256[] targetUnderlyingsPerDst;
         uint256[] amountsPerDst;
         uint8[] liqBridgesPerDst;
+        bool[] receive4626PerDst;
         uint256 superPositionsSum;
         uint256 vaultShares;
         TestAction[] actionsMem;
@@ -110,6 +111,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
         v.targetUnderlyingsPerDst = new uint256[](1);
         v.amountsPerDst = new uint256[](1);
         v.liqBridgesPerDst = new uint8[](1);
+        v.receive4626PerDst = new bool[](1);
 
         v.targetVaultsPerDst[0] = 0;
         v.targetFormKindsPerDst[0] = 0;
@@ -139,6 +141,8 @@ contract VaultSharesHandler is InvariantProtocolActions {
 
         v.liqBridgesPerDst[0] = 1;
 
+        v.receive4626PerDst[0] = false;
+
         v.actionsMem = new TestAction[](1);
 
         v.actionsMem[0] = TestAction({
@@ -167,6 +171,8 @@ contract VaultSharesHandler is InvariantProtocolActions {
             v.vars.targetAmounts[0] = v.amountsPerDst;
             v.vars.targetLiqBridges = new uint8[][](1);
             v.vars.targetLiqBridges[0] = v.liqBridgesPerDst;
+            v.vars.targetReceive4626 = new bool[][](1);
+            v.vars.targetReceive4626[0] = v.receive4626PerDst;
             v.vars.AMBs = v.AMBs;
             v.vars.CHAIN_0 = v.CHAIN_0;
             v.vars.DST_CHAINS = v.DST_CHAINS;
@@ -221,6 +227,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
         v.targetUnderlyingsPerDst = new uint256[](1);
         v.amountsPerDst = new uint256[](1);
         v.liqBridgesPerDst = new uint8[](1);
+        v.receive4626PerDst = new bool[](1);
 
         v.targetVaultsPerDst[0] = 0;
         v.targetFormKindsPerDst[0] = 0;
@@ -246,6 +253,8 @@ contract VaultSharesHandler is InvariantProtocolActions {
         v.amountsPerDst[0] = amount1;
 
         v.liqBridgesPerDst[0] = 1;
+
+        v.receive4626PerDst[0] = false;
 
         v.actionsMem = new TestAction[](1);
 
@@ -275,6 +284,8 @@ contract VaultSharesHandler is InvariantProtocolActions {
             v.vars.targetAmounts[0] = v.amountsPerDst;
             v.vars.targetLiqBridges = new uint8[][](1);
             v.vars.targetLiqBridges[0] = v.liqBridgesPerDst;
+            v.vars.targetReceive4626 = new bool[][](1);
+            v.vars.targetReceive4626[0] = v.receive4626PerDst;
             v.vars.AMBs = v.AMBs;
             v.vars.CHAIN_0 = v.CHAIN_0;
             v.vars.DST_CHAINS = v.DST_CHAINS;
@@ -291,150 +302,6 @@ contract VaultSharesHandler is InvariantProtocolActions {
         vaultSharesStore.setSuperPositions(v.superPositionsSum);
         vaultSharesStore.setVaultShares(v.vaultShares);
     }
-    /*
-    function singleDirectSingleVaultWithdraw() public {
-        AMBs = [2, 3];
-        CHAIN_0 = ETH;
-        DST_CHAINS = [ETH];
-        /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[ETH][0] = [2];
-        TARGET_VAULTS[ETH][0] = [0];
-        /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ETH][0] = [0];
-        /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[ETH][1] = [2];
-        TARGET_VAULTS[ETH][1] = [0];
-        /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ETH][1] = [0];
-        LIQ_BRIDGES[ETH][0] = [1];
-        LIQ_BRIDGES[ETH][1] = [1];
-        FINAL_LIQ_DST_WITHDRAW[ETH] = [ETH];
-
-        actions.push(
-            TestAction({
-                action: Actions.Deposit,
-                multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: 0,
-                testType: TestType.Pass,
-                revertError: "",
-                revertRole: "",
-                slippage: 421, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                dstSwap: false,
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
-             })
-        );
-
-        actions.push(
-            TestAction({
-                action: Actions.Withdraw,
-                multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: 0,
-                testType: TestType.Pass,
-                revertError: "",
-                revertRole: "",
-                slippage: 421, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                dstSwap: false,
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
-             })
-        );
-
-        AMOUNTS[ETH][0] = [9_000_000];
-
-        for (uint256 act = 0; act < actions.length; act++) {
-            TestAction memory action = actions[act];
-            MultiVaultSFData[] memory multiSuperformsData;
-            SingleVaultSFData[] memory singleSuperformsData;
-            MessagingAssertVars[] memory aV;
-            StagesLocalVars memory vars;
-            bool success;
-
-            if (act == 1) {
-                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
-                    uint256[] memory superPositions = _getSuperpositionsForDstChain(
-                        actions[1].user,
-                        TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
-                        TARGET_VAULTS[DST_CHAINS[i]][1],
-                        TARGET_FORM_KINDS[DST_CHAINS[i]][1],
-                        DST_CHAINS[i]
-                    );
-
-                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0]];
-                }
-            }
-
-            _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
-            console.log("depwith");
-        }
-        actions.pop();
-        actions.pop();
-    }
-
-    function singleXChainRescueFailedDeposit() public {
-        AMBs = [1, 3];
-
-        CHAIN_0 = OP;
-        DST_CHAINS = [POLY];
-
-        /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[POLY][0] = [2];
-        TARGET_VAULTS[POLY][0] = [3];
-        /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
-        TARGET_FORM_KINDS[POLY][0] = [0];
-
-        /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[OP][1] = [2];
-        TARGET_VAULTS[OP][1] = [3];
-        /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
-        TARGET_FORM_KINDS[OP][1] = [0];
-
-
-        LIQ_BRIDGES[POLY][0] = [1];
-        LIQ_BRIDGES[OP][1] = [1];
-
-        actions.push(
-            TestAction({
-                action: Actions.Deposit,
-                multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: 0,
-                testType: TestType.RevertProcessPayload,
-                revertError: "",
-                revertRole: "",
-                slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                dstSwap: false,
-                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
-             })
-        );
-
-        actions.push(
-            TestAction({
-                action: Actions.RescueFailedDeposit,
-                multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: 0,
-                testType: TestType.Pass,
-                revertError: "",
-                revertRole: "",
-                slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                dstSwap: false,
-                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
-             })
-        );
-
-        AMOUNTS[POLY][0] = [7_000_000];
-        /// @dev specifying the amount that was deposited earlier, as the amount to be rescued
-        AMOUNTS[POLY][1] = [7_000_000];
-
-        for (uint256 act; act < actions.length; act++) {
-            TestAction memory action = actions[act];
-            MultiVaultSFData[] memory multiSuperformsData;
-            SingleVaultSFData[] memory singleSuperformsData;
-            MessagingAssertVars[] memory aV;
-            StagesLocalVars memory vars;
-            bool success;
-            if (action.action == Actions.RescueFailedDeposit) _rescueFailedDeposits(action, act);
-            else _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
-        }
-    }
-    */
 
     /*///////////////////////////////////////////////////////////////
                     INTERNAL HANDLER FUNCTIONS
@@ -716,12 +583,6 @@ contract VaultSharesHandler is InvariantProtocolActions {
     {
         /// @dev sum up superposition owned by all users on all chains
         for (uint256 i = 0; i < chainIds.length; i++) {
-            // ETH - SuperPositions amount of superform X on BSC
-            // BSC - SuperPositions amount of superform X on BSC
-            // AVAX - SuperPositions amount of superform X on BSC
-            // POLY - SuperPositions amount of superform X on BSC
-            // ARBI - SuperPositions amount of superform X on BSC
-            // OP - SuperPositions amount of superform X on BSC
             uint256[] memory superPositions = _getSuperpositionsForDstChainFromSrcChain(
                 underlyingTokens_, vaultIds_, formKinds_, chainIds[i], dstChain
             );

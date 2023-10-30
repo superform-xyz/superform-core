@@ -28,6 +28,8 @@ contract SXSVDKYC4626TokenInputSlippageAMB13 is ProtocolActions {
 
         LIQ_BRIDGES[ETH][0] = [2];
 
+        RECEIVE_4626[ETH][0] = [false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

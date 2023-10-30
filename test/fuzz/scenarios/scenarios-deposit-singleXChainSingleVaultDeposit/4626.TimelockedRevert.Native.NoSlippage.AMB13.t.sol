@@ -30,6 +30,8 @@ contract SXSVDTimelockedRevert4626NoTokenInputSlippageAMB24 is ProtocolActions {
 
         LIQ_BRIDGES[POLY][0] = [1];
 
+        RECEIVE_4626[POLY][0] = [false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

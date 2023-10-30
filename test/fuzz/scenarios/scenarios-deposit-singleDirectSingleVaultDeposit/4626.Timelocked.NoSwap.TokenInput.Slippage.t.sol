@@ -32,6 +32,8 @@ contract SDSVD4626TimelockedNoSwapTokenInputSlippage is ProtocolActions {
 
         LIQ_BRIDGES[ETH][0] = [1];
 
+        RECEIVE_4626[ETH][0] = [false];
+
         actions.push(
             TestAction({
                 action: Actions.DepositPermit2,

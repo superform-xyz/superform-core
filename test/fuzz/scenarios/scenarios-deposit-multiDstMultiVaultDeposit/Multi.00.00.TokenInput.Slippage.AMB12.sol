@@ -35,6 +35,9 @@ contract MDMVDMulti0000NoTokenInputSlippageAMB12 is ProtocolActions {
         LIQ_BRIDGES[POLY][0] = [2, 1];
         LIQ_BRIDGES[ETH][0] = [2, 2];
 
+        RECEIVE_4626[POLY][0] = [false, false];
+        RECEIVE_4626[ETH][0] = [false, false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

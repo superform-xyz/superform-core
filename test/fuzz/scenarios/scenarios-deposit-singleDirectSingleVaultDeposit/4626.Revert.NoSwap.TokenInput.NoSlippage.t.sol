@@ -28,6 +28,8 @@ contract SDSVD4626RevertNoSwapNativeNoSlippage is ProtocolActions {
 
         LIQ_BRIDGES[ARBI][0] = [0];
 
+        RECEIVE_4626[ARBI][0] = [false];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,
