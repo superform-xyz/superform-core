@@ -96,7 +96,14 @@ contract PaymentHelper is IPaymentHelper {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IPaymentHelper
-    function addChain(uint64 chainId_, PaymentHelperConfig calldata config_) external override onlyProtocolAdmin {
+    function addRemoteChain(
+        uint64 chainId_,
+        PaymentHelperConfig calldata config_
+    )
+        external
+        override
+        onlyProtocolAdmin
+    {
         if (config_.nativeFeedOracle != address(0)) {
             nativeFeedOracle[chainId_] = AggregatorV3Interface(config_.nativeFeedOracle);
         }
@@ -117,7 +124,7 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @inheritdoc IPaymentHelper
-    function updateChainConfig(
+    function updateRemoteChain(
         uint64 chainId_,
         uint256 configType_,
         bytes memory config_
