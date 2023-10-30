@@ -51,6 +51,10 @@ library DataLib {
         superform_ = address(uint160(superformId_));
         formImplementationId_ = uint32(superformId_ >> 160);
         chainId_ = uint64(superformId_ >> 192);
+
+        if (chainId_ == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
     }
 
     /// @dev returns the vault-form-chain pair of an array of superforms
