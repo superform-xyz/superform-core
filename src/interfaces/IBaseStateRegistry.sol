@@ -78,13 +78,8 @@ interface IBaseStateRegistry {
     /// @return payloadHeader_ the crosschain header received
     function payloadHeader(uint256 payloadId_) external view returns (uint256 payloadHeader_);
 
-    /// @dev allows users to read the amb that delivered the payload
+    /// @dev allows users to read the ambs that delivered the payload id
     /// @param payloadId_ is the unqiue payload identifier allocated on the destination chain
-    /// @return ambId_ is the amb that delivered the payload
-    function msgAMB(uint256 payloadId_) external view returns (uint8 ambId_);
-
-    /// @dev allows users to read the amb that delivered the proof
-    /// @param proof_ is the bytes32 proof
-    /// @return ambIds_ is the identifier of ambs that delivered the proof
-    function getProofAMB(bytes32 proof_) external view returns (uint8[] memory ambIds_);
+    /// @return ambIds_ is the identifier of ambs that delivered the message and proof
+    function getMessageAMB(uint256 payloadId_) external view returns (uint8[] memory ambIds_);
 }

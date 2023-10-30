@@ -211,7 +211,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         bytes32 _proof = _message.computeProof();
 
         if (messageQuorum[_proof] < _getRequiredMessagingQuorum(srcChainId)) {
-            revert Error.QUORUM_NOT_REACHED();
+            revert Error.INSUFFICIENT_QUORUM();
         }
 
         if (callbackType == uint256(CallbackType.FAIL)) {
@@ -240,23 +240,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         IBaseStateRegistry coreStateRegistry =
             IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
 
-        uint256 payloadHeader_ = coreStateRegistry.payloadHeader(payloadId_);
-        bytes memory payloadBody_ = coreStateRegistry.payloadBody(payloadId_);
-
-        bytes32 proof = AMBMessage(payloadHeader_, payloadBody_).computeProof();
-        uint8[] memory proofIds = coreStateRegistry.getProofAMB(proof);
-
-        uint256 len = proofIds.length;
-        ambIds_ = new uint8[](len + 1);
-        ambIds_[0] = coreStateRegistry.msgAMB(payloadId_);
-
-        for (uint256 i; i < len;) {
-            ambIds_[i + 1] = proofIds[i];
-
-            unchecked {
-                ++i;
-            }
-        }
+        ambIds_ = coreStateRegistry.getMessageAMB(payloadId_);
     }
 
     /// @notice CoreStateRegistry-like function for build message back to the source. In regular flow called after

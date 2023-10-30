@@ -507,13 +507,16 @@ contract PaymentHelper is IPaymentHelper {
         uint8[] memory ambIds_,
         bytes memory message_
     )
-        public
+        internal
         view
         returns (bytes[] memory extraDataPerAMB)
     {
+        AMBMessage memory ambIdEncodedMessage = abi.decode(message_, (AMBMessage));
+        ambIdEncodedMessage.params = abi.encode(ambIds_, ambIdEncodedMessage.params);
+
         uint256 len = ambIds_.length;
         uint256 gasReqPerKB = gasPerKB[dstChainId_];
-        uint256 totalDstGasReqInWei = message_.length * gasReqPerKB;
+        uint256 totalDstGasReqInWei = abi.encode(ambIdEncodedMessage).length * gasReqPerKB;
 
         AMBMessage memory decodedMessage = abi.decode(message_, (AMBMessage));
         decodedMessage.params = message_.computeProofBytes();
@@ -544,16 +547,14 @@ contract PaymentHelper is IPaymentHelper {
         uint256 payloadHeader;
         uint8 callbackType;
         bytes payloadBody;
-        bytes32 proof;
         uint8[] ackAmbIds;
-        uint8[] proofIds;
         uint8 isMulti;
         uint64 srcChainId;
         bytes message;
     }
 
     /// @dev helps estimate the acknowledgement costs for amb processing
-    function estimateAckCost(uint256 payloadId_) external view returns (uint256 totalFees, uint256[] memory) {
+    function estimateAckCost(uint256 payloadId_) external view returns (uint256 totalFees) {
         EstimateAckCostVars memory v;
         IBaseStateRegistry coreStateRegistry =
             IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
@@ -564,12 +565,10 @@ contract PaymentHelper is IPaymentHelper {
         v.payloadHeader = coreStateRegistry.payloadHeader(payloadId_);
         v.payloadBody = coreStateRegistry.payloadBody(payloadId_);
 
-        v.proof = AMBMessage(v.payloadHeader, v.payloadBody).computeProof();
-
         (, v.callbackType, v.isMulti,,, v.srcChainId) = DataLib.decodeTxInfo(v.payloadHeader);
 
         /// if callback type is return then return 0
-        if (v.callbackType != 0) return (0, new uint256[](0));
+        if (v.callbackType != 0) return 0;
 
         if (v.isMulti == 1) {
             InitMultiVaultData memory data = abi.decode(v.payloadBody, (InitMultiVaultData));
@@ -579,43 +578,37 @@ contract PaymentHelper is IPaymentHelper {
             v.payloadBody = abi.encode(ReturnSingleData(v.currPayloadId, data.superformId, data.amount));
         }
 
-        v.proofIds = coreStateRegistry.getProofAMB(v.proof);
-        v.ackAmbIds = new uint8[](v.proofIds.length + 1);
-        v.ackAmbIds[0] = coreStateRegistry.msgAMB(payloadId_);
-
-        uint256 len = v.proofIds.length;
-
-        for (uint256 i; i < len; i++) {
-            v.ackAmbIds[i + 1] = v.proofIds[i];
-        }
+        v.ackAmbIds = coreStateRegistry.getMessageAMB(payloadId_);
 
         v.message = abi.encode(AMBMessage(coreStateRegistry.payloadHeader(payloadId_), v.payloadBody));
 
-        return estimateAMBFees(
-            v.ackAmbIds, v.srcChainId, v.message, _generateExtraData(v.srcChainId, v.ackAmbIds, v.message)
-        );
+        return _estimateAMBFees(v.ackAmbIds, v.srcChainId, v.message);
     }
 
     /// @dev helps estimate the cross-chain message costs
     function _estimateAMBFees(
-        uint8[] calldata ambIds_,
+        uint8[] memory ambIds_,
         uint64 dstChainId_,
         bytes memory message_
     )
-        public
+        internal
         view
         returns (uint256 totalFees)
     {
         uint256 len = ambIds_.length;
 
         bytes[] memory extraDataPerAMB = _generateExtraData(dstChainId_, ambIds_, message_);
+
+        AMBMessage memory ambIdEncodedMessage = abi.decode(message_, (AMBMessage));
+        ambIdEncodedMessage.params = abi.encode(ambIds_, ambIdEncodedMessage.params);
+
         bytes memory proof_ = abi.encode(AMBMessage(type(uint256).max, abi.encode(keccak256(message_))));
 
         /// @dev just checks the estimate for sending message from src -> dst
         /// @dev only ambIds_[0] = primary amb (rest of the ambs send only the proof)
         for (uint256 i; i < len;) {
             uint256 tempFee = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
-                dstChainId_, i != 0 ? proof_ : message_, extraDataPerAMB[i]
+                dstChainId_, i != 0 ? proof_ : abi.encode(ambIdEncodedMessage), extraDataPerAMB[i]
             );
 
             totalFees += tempFee;
@@ -632,10 +625,13 @@ contract PaymentHelper is IPaymentHelper {
         uint8[] calldata ambIds_,
         bytes memory message_
     )
-        public
+        internal
         view
         returns (uint256[] memory feeSplitUp, bytes[] memory extraDataPerAMB, uint256 totalFees)
     {
+        AMBMessage memory ambIdEncodedMessage = abi.decode(message_, (AMBMessage));
+        ambIdEncodedMessage.params = abi.encode(ambIds_, ambIdEncodedMessage.params);
+
         uint256 len = ambIds_.length;
 
         extraDataPerAMB = _generateExtraData(dstChainId_, ambIds_, message_);
@@ -647,7 +643,7 @@ contract PaymentHelper is IPaymentHelper {
         /// @dev just checks the estimate for sending message from src -> dst
         for (uint256 i; i < len;) {
             uint256 tempFee = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
-                dstChainId_, i != 0 ? proof_ : message_, extraDataPerAMB[i]
+                dstChainId_, i != 0 ? proof_ : abi.encode(ambIdEncodedMessage), extraDataPerAMB[i]
             );
 
             totalFees += tempFee;

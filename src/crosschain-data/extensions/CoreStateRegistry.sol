@@ -7,7 +7,6 @@ import { BaseStateRegistry } from "../BaseStateRegistry.sol";
 import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
 import { ISuperPositions } from "../../interfaces/ISuperPositions.sol";
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
-import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
 import { IPaymentHelper } from "../../interfaces/IPaymentHelper.sol";
 import { IBaseForm } from "../../interfaces/IBaseForm.sol";
 import { IDstSwapper } from "../../interfaces/IDstSwapper.sol";
@@ -205,7 +204,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     : _singleDeposit(payloadId_, payloadBody_, srcSender, srcChainId);
             }
 
-            _processAck(payloadId_, message_.computeProof(), srcChainId, returnMessage);
+            _processAck(payloadId_, srcChainId, returnMessage);
         }
 
         emit PayloadProcessed(payloadId_);
@@ -366,13 +365,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         return delay;
     }
 
-    /// @dev returns the required quorum for the src chain id from super registry
-    /// @param chainId_ is the src chain id
-    /// @return the quorum configured for the chain id
-    function _getQuorum(uint64 chainId_) internal view returns (uint256) {
-        return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId_);
-    }
-
     function _validatePayloadId(uint256 payloadId_) internal view {
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();
@@ -411,7 +403,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         (txType, callbackType, isMulti, registryId, srcSender, srcChainId) = payloadHeader_.decodeTxInfo();
 
         if (messageQuorum[payloadProof] < _getQuorum(srcChainId)) {
-            revert Error.QUORUM_NOT_REACHED();
+            revert Error.INSUFFICIENT_QUORUM();
         }
     }
 
@@ -930,28 +922,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         return "";
     }
 
-    function _processAck(
-        uint256 payloadId_,
-        bytes32 proof_,
-        uint64 srcChainId_,
-        bytes memory returnMessage_
-    )
-        internal
-    {
+    function _processAck(uint256 payloadId_, uint64 srcChainId_, bytes memory returnMessage_) internal {
         /// @dev if deposits succeeded or some withdrawal failed, dispatch a callback
         if (returnMessage_.length > 0) {
-            uint8[] memory proofIds = proofAMB[proof_];
-            uint256 len = proofIds.length;
-            uint8[] memory ambIds = new uint8[](len + 1);
-            ambIds[0] = msgAMB[payloadId_];
-
-            for (uint256 i; i < len;) {
-                ambIds[i + 1] = proofIds[i];
-
-                unchecked {
-                    ++i;
-                }
-            }
+            uint8[] memory ambIds = msgAMBs[payloadId_];
 
             (, bytes memory extraData) = IPaymentHelper(_getAddress(keccak256("PAYMENT_HELPER"))).calculateAMBData(
                 srcChainId_, ambIds, returnMessage_
@@ -1014,10 +988,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         bytes32 newPayloadProof = AMBMessage(prevPayloadHeader, newPayloadBody).computeProof();
         if (newPayloadProof != prevPayloadProof) {
             messageQuorum[newPayloadProof] = messageQuorum[prevPayloadProof];
-            proofAMB[newPayloadProof] = proofAMB[prevPayloadProof];
 
             delete messageQuorum[prevPayloadProof];
-            delete proofAMB[prevPayloadProof];
         }
     }
 }

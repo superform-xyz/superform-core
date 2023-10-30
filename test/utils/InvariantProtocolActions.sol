@@ -1471,7 +1471,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         /// @dev only generate if acknowledgement is needed
         if (targetChainId_ != srcChainId_) {
-            (nativeFee,) = PaymentHelper(getContract(targetChainId_, "PaymentHelper")).estimateAckCost(payloadId_);
+            nativeFee = PaymentHelper(getContract(targetChainId_, "PaymentHelper")).estimateAckCost(payloadId_);
         }
 
         vm.prank(deployer);
@@ -1507,7 +1507,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         );
 
         vm.prank(deployer);
-        vm.expectRevert(Error.QUORUM_NOT_REACHED.selector);
+        vm.expectRevert(Error.INSUFFICIENT_QUORUM.selector);
         TimelockStateRegistry(payable(getContract(targetChainId_, "TimelockStateRegistry"))).processPayload{
             value: msgValue
         }(payloadId_);

@@ -400,7 +400,7 @@ contract DstSwapperTest is ProtocolActions {
         if (!success) revert();
         SuperRegistry(getContract(ETH, "SuperRegistry")).setRequiredMessagingQuorum(POLY, 0);
 
-        (uint256 nativeAmount,) = PaymentHelper(getContract(ETH, "PaymentHelper")).estimateAckCost(1);
+        uint256 nativeAmount = PaymentHelper(getContract(ETH, "PaymentHelper")).estimateAckCost(1);
         CoreStateRegistry(coreStateRegistry).processPayload{ value: nativeAmount }(1);
 
         vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
@@ -437,7 +437,11 @@ contract DstSwapperTest is ProtocolActions {
             137,
             abi.encode(
                 AMBMessage(
-                    0, abi.encode(InitSingleVaultData(1, superformId, 1e18, 0, true, liq, dstRefundAddress, bytes("")))
+                    0,
+                    abi.encode(
+                        new uint8[](0),
+                        abi.encode(InitSingleVaultData(1, superformId, 1e18, 0, true, liq, dstRefundAddress, bytes("")))
+                    )
                 )
             )
         );
@@ -466,7 +470,10 @@ contract DstSwapperTest is ProtocolActions {
                     /// @dev srcSender,
                     ETH
                 ),
-                abi.encode(InitSingleVaultData(1, superformId, 1e18, 1000, true, liq, users[0], bytes("")))
+                abi.encode(
+                    new uint8[](0),
+                    abi.encode(InitSingleVaultData(1, superformId, 1e18, 1000, true, liq, users[0], bytes("")))
+                )
             )
         );
 
@@ -510,8 +517,11 @@ contract DstSwapperTest is ProtocolActions {
                 AMBMessage(
                     DataLib.packTxInfo(uint8(TransactionType.DEPOSIT), uint8(CallbackType.INIT), 1, 1, users[0], ETH),
                     abi.encode(
-                        InitMultiVaultData(
-                            1, superformIds, amounts, maxSlippages, hasDstSwaps, liq, users[0], bytes("")
+                        new uint8[](1),
+                        abi.encode(
+                            InitMultiVaultData(
+                                1, superformIds, amounts, maxSlippages, hasDstSwaps, liq, users[0], bytes("")
+                            )
                         )
                     )
                 )
@@ -539,14 +549,28 @@ contract DstSwapperTest is ProtocolActions {
         hasDstSwaps[1] = true;
 
         LiqRequest[] memory liq = new LiqRequest[](2);
+
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+
         CoreStateRegistry(coreStateRegistry).receivePayload(
             POLY,
             abi.encode(
                 AMBMessage(
                     DataLib.packTxInfo(1, 0, 1, 1, address(420), uint64(137)),
                     abi.encode(
-                        InitMultiVaultData(
-                            1, superformIds, amounts, new uint256[](2), hasDstSwaps, liq, dstRefundAddress, bytes("")
+                        ambIds,
+                        abi.encode(
+                            InitMultiVaultData(
+                                1,
+                                superformIds,
+                                amounts,
+                                new uint256[](2),
+                                hasDstSwaps,
+                                liq,
+                                dstRefundAddress,
+                                bytes("")
+                            )
                         )
                     )
                 )

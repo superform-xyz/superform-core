@@ -161,7 +161,7 @@ contract HyperlaneImplementationTest is BaseSetup {
                 ETH
             ),
             /// @dev srcChainId
-            ""
+            abi.encode(new uint8[](0), "")
         );
         /// ambData
 

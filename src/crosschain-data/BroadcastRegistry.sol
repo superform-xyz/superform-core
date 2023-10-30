@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.21;
 
-import { QuorumManager } from "./utils/QuorumManager.sol";
 import { Error } from "src/utils/Error.sol";
 import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
@@ -17,18 +16,14 @@ interface Target {
 /// @title BroadcastRegistry
 /// @author ZeroPoint Labs
 /// @notice helps core contract communicate with multiple dst chains through supported AMBs
-contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
+contract BroadcastRegistry is IBroadcastRegistry {
     using ProofLib for bytes;
 
     /*///////////////////////////////////////////////////////////////
                               STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
     ISuperRegistry public superRegistry;
-
     uint256 public payloadsCount;
-
-    /// @dev stores the message quorum
-    mapping(bytes32 => uint256) public messageQuorum;
 
     /// @dev stores the received payload after assigning
     mapping(uint256 => bytes) public payload;
@@ -84,17 +79,10 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @inheritdoc QuorumManager
-    function setRequiredMessagingQuorum(uint64 srcChainId_, uint256 quorum_) external override onlyProtocolAdmin {
-        requiredQuorum[srcChainId_] = quorum_;
-
-        emit QuorumSet(srcChainId_, quorum_);
-    }
-
     /// @inheritdoc IBroadcastRegistry
     function broadcastPayload(
         address srcSender_,
-        uint8[] memory ambIds_,
+        uint8 ambId_,
         bytes memory message_,
         bytes memory extraData_
     )
@@ -103,14 +91,9 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
         override
         onlySender
     {
-        AMBExtraData memory d = abi.decode(extraData_, (AMBExtraData));
+        (uint256 gasFee, bytes memory extraData) = abi.decode(extraData_, (uint256, bytes));
 
-        _broadcastPayload(srcSender_, ambIds_[0], d.gasPerAMB[0], message_, d.extraDataPerAMB[0]);
-
-        if (ambIds_.length > 1) {
-            bytes memory proof = message_.computeProofBytes();
-            _broadcastProof(srcSender_, ambIds_, d.gasPerAMB, proof, d.extraDataPerAMB);
-        }
+        _broadcastPayload(srcSender_, ambId_, gasFee, message_, extraData);
     }
 
     /// @inheritdoc IBroadcastRegistry
@@ -119,14 +102,10 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
             revert Error.NOT_BROADCAST_AMB_IMPLEMENTATION();
         }
 
-        if (message_.length == 32) {
-            ++messageQuorum[abi.decode(message_, (bytes32))];
-        } else {
-            ++payloadsCount;
+        ++payloadsCount;
 
-            payload[payloadsCount] = message_;
-            srcChainId[payloadsCount] = srcChainId_;
-        }
+        payload[payloadsCount] = message_;
+        srcChainId[payloadsCount] = srcChainId_;
     }
 
     /// @inheritdoc IBroadcastRegistry
@@ -140,11 +119,6 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
         }
 
         bytes memory payload_ = payload[payloadId];
-
-        /// @dev The number of valid proofs (quorum) must be equal to the required messaging quorum
-        if (messageQuorum[payload_.computeProof()] < getRequiredMessagingQuorum(srcChainId[payloadId])) {
-            revert Error.QUORUM_NOT_REACHED();
-        }
 
         BroadcastMessage memory data = abi.decode(payload_, (BroadcastMessage));
         bytes32 targetId = keccak256(data.target);
@@ -175,45 +149,5 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
         }
 
         ambImplementation.broadcastPayload{ value: gasToPay_ }(srcSender_, message_, extraData_);
-    }
-
-    /// @dev broadcasts the proof(hash of the message_) through individual message bridge implementations
-    function _broadcastProof(
-        address srcSender_,
-        uint8[] memory ambIds_,
-        uint256[] memory gasToPay_,
-        bytes memory message_,
-        bytes[] memory extraData_
-    )
-        internal
-    {
-        uint256 len = ambIds_.length;
-
-        for (uint8 i = 1; i < len;) {
-            uint8 tempAmbId = ambIds_[i];
-
-            /// @dev the loaded ambId cannot be the same as the ambId used for messaging
-            /// @notice proof ambs (ambIds after first index) should be arranged in ascending order
-            /// @notice ascending ordering of proof ambs will help prevent duplicates
-            if (tempAmbId == ambIds_[0]) {
-                revert Error.INVALID_PROOF_BRIDGE_ID();
-            }
-
-            if (ambIds_[i] <= ambIds_[i - 1]) {
-                revert Error.DUPLICATE_PROOF_BRIDGE_ID();
-            }
-
-            IBroadcastAmbImplementation tempImpl = IBroadcastAmbImplementation(superRegistry.getAmbAddress(tempAmbId));
-
-            if (address(tempImpl) == address(0)) {
-                revert Error.INVALID_BRIDGE_ID();
-            }
-
-            tempImpl.broadcastPayload{ value: gasToPay_[i] }(srcSender_, message_, extraData_[i]);
-
-            unchecked {
-                ++i;
-            }
-        }
     }
 }

@@ -472,8 +472,10 @@ contract SuperformRouterTest is ProtocolActions {
 
         MultiVaultSFData memory data =
             MultiVaultSFData(superformIds, amounts, maxSlippages, hasDstSwaps, liqReqs, "", refundAddress, "");
-        uint8[] memory ambIds = new uint8[](1);
+        uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
+        ambIds[1] = 2;
+
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
 
         /// @dev approves before call
@@ -522,8 +524,10 @@ contract SuperformRouterTest is ProtocolActions {
 
         MultiVaultSFData memory data =
             MultiVaultSFData(superformIds, amounts, maxSlippages, hasDstSwaps, liqReqs, "", refundAddress, "");
-        uint8[] memory ambIds = new uint8[](1);
+        uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
+        ambIds[1] = 2;
+
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
 
         /// @dev approves before call
@@ -574,8 +578,9 @@ contract SuperformRouterTest is ProtocolActions {
 
         MultiVaultSFData memory data =
             MultiVaultSFData(superformIds, amounts, maxSlippages, hasDstSwaps, liqReqs, "", refundAddress, "");
-        uint8[] memory ambIds = new uint8[](1);
+        uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
+        ambIds[1] = 2;
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
 
         /// @dev approves before call
@@ -1214,8 +1219,9 @@ contract SuperformRouterTest is ProtocolActions {
         });
         MockERC20(getContract(ETH, "DAI")).approve(getContract(ETH, "CanonicalPermit2"), type(uint256).max);
 
-        v.ambIds = new uint8[](1);
+        v.ambIds = new uint8[](2);
         v.ambIds[0] = 1;
+        v.ambIds[1] = 2;
 
         SuperformRouter(payable(v.superformRouter)).singleXChainMultiVaultDeposit{ value: 2 ether }(
             SingleXChainMultiVaultStateReq(
@@ -1326,8 +1332,9 @@ contract SuperformRouterTest is ProtocolActions {
 
         MockERC20(getContract(ETH, "DAI")).approve(v.superformRouter, 2e18);
 
-        v.ambIds = new uint8[](1);
+        v.ambIds = new uint8[](2);
         v.ambIds[0] = 1;
+        v.ambIds[1] = 2;
 
         SuperformRouter(payable(v.superformRouter)).singleXChainMultiVaultDeposit{ value: 2 ether }(
             SingleXChainMultiVaultStateReq(
@@ -1645,8 +1652,9 @@ contract SuperformRouterTest is ProtocolActions {
 
         MultiVaultSFData memory data =
             MultiVaultSFData(superformIds, amounts, maxSlippages, hasDstSwaps, liqReqs, "", refundAddress, "");
-        uint8[] memory ambIds = new uint8[](1);
+        uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
+        ambIds[1] = 2;
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
 
         /// @dev approves before call
@@ -1655,15 +1663,6 @@ contract SuperformRouterTest is ProtocolActions {
 
         SuperformRouter(payable(superformRouter)).singleXChainMultiVaultDeposit{ value: 2 ether }(req);
         vm.stopPrank();
-
-        /// @dev mocks the cross-chain payload delivery
-        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).helpWithEstimates(
-            LZ_ENDPOINTS[ARBI],
-            500_000,
-            /// note: using some max limit
-            FORKS[ARBI],
-            vm.getRecordedLogs()
-        );
     }
 
     function _buildMaliciousTxData(
