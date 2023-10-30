@@ -146,7 +146,7 @@ contract SuperRBACTest is BaseSetup {
         assertEq(superRBAC.hasRole(superRBAC.TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE(), address(0x1)), true);
     }
 
-    function test_revokeTwoStepsStateRegistrvyProcessorRole() public {
+    function test_revokeTimelockStateRegistrvyProcessorRole() public {
         _revokeAndCheck(
             superRBAC.TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE(),
             superRegistry.TIMELOCK_REGISTRY_PROCESSOR(),

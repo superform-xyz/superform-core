@@ -304,7 +304,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         failedDeposits_.lastProposedTimestamp = 0;
         IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
 
-        for (uint256 i; i < failedDeposits_.amounts.length;) {
+        uint256 len = failedDeposits_.amounts.length;
+
+        for (uint256 i; i < len;) {
             /// @dev refunds the amount to user specified refund address
             if (failedDeposits_.settleFromDstSwapper[i]) {
                 dstSwapper.processFailedTx(
@@ -621,7 +623,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         view
         returns (InitMultiVaultData memory)
     {
-        for (uint256 i = 0; i < multiVaultData_.liqData.length;) {
+        uint256 len = multiVaultData_.liqData.length;
+
+        for (uint256 i = 0; i < len;) {
             if (txData_[i].length != 0 && multiVaultData_.liqData[i].txData.length == 0) {
                 (address superform,,) = multiVaultData_.superformIds[i].getSuperform();
 

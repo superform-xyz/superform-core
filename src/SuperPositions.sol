@@ -85,7 +85,8 @@ contract SuperPositions is ISuperPositions, ERC1155A {
 
         /// if msg.sender isn't superformRouter then it must be state registry for that superform
         if (msg.sender != router) {
-            for (uint256 i; i < superformIds.length; ++i) {
+            uint256 len = superformIds.length;
+            for (uint256 i; i < len; ++i) {
                 (, uint32 formBeaconId,) = DataLib.getSuperform(superformIds[i]);
                 uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 

@@ -1485,7 +1485,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         return true;
     }
 
-    function _processTwoStepPayload(
+    function _processTimelockPayload(
         uint256 payloadId_,
         uint64 srcChainId_,
         uint64 targetChainId_,

@@ -74,7 +74,7 @@ interface ISuperRBAC is IAccessControl {
     /// @dev returns the id of the core state registry rescue disputer role
     function CORE_STATE_REGISTRY_DISPUTER_ROLE() external view returns (bytes32);
 
-    /// @dev returns the id of the two steps state registry processor role
+    /// @dev returns the id of the timelock state registry processor role
     function TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
 
     /// @dev returns the id of the broadcast state registry processor role
