@@ -805,10 +805,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
 
         /// @dev deposits beyond max vaults per tx is blocked
-        if (
-            CHAIN_ID != dstChainId_
-                && superformsData_.superformIds.length > superRegistry.getVaultLimitPerTx(dstChainId_)
-        ) return false;
+        if (superformsData_.superformIds.length > superRegistry.getVaultLimitPerTx(dstChainId_)) return false;
 
         /// @dev superformIds/amounts/slippages array sizes validation
         if (

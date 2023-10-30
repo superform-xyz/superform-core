@@ -217,14 +217,15 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         v.v = IERC4626(vault);
         v.collateral = address(asset);
 
-        /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same as
-        /// the vault asset
-        if (singleVaultData_.liqData.token != v.collateral) revert Error.DIRECT_WITHDRAW_INVALID_COLLATERAL();
-
         /// @dev redeem the underlying
         dstAmount = v.v.redeem(singleVaultData_.amount, v.receiver, address(this));
 
         if (v.len1 != 0) {
+            /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same
+            /// as
+            /// the vault asset
+            if (singleVaultData_.liqData.token != v.collateral) revert Error.DIRECT_WITHDRAW_INVALID_COLLATERAL();
+
             v.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
             v.amount = IBridgeValidator(v.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 

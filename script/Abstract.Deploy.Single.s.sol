@@ -33,7 +33,6 @@ import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
 import { EmergencyQueue } from "src/emergency/EmergencyQueue.sol";
-
 import { generateBroadcastParams } from "test/utils/AmbParams.sol";
 
 struct SetupVars {
@@ -115,7 +114,7 @@ abstract contract AbstractDeploySingle is Script {
         "EmergencyQueue"
     ];
 
-    bytes32 constant salt = "THIRD_DEPLOYMENT_6";
+    bytes32 constant salt = "THIRD_DEPLOYMENT_6_(3)";
 
     enum Chains {
         Ethereum,
@@ -145,6 +144,7 @@ abstract contract AbstractDeploySingle is Script {
 
     uint256 public deployerPrivateKey;
     address public ownerAddress;
+    address public multiSigAddress;
 
     /// @dev Mapping of chain enum to rpc url
     mapping(Chains chains => string rpcUrls) public forks;
@@ -282,9 +282,11 @@ abstract contract AbstractDeploySingle is Script {
         if (cycle == Cycle.Dev) {
             deployerPrivateKey = vm.envUint("LOCAL_PRIVATE_KEY");
             ownerAddress = vm.envAddress("LOCAL_OWNER_ADDRESS");
+            multiSigAddress = vm.envAddress("MULTI_SIG_ADDRESS");
         } else {
             deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
             ownerAddress = vm.envAddress("OWNER_ADDRESS");
+            multiSigAddress = vm.envAddress("MULTI_SIG_ADDRESS");
         }
 
         _;
@@ -341,7 +343,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRBAC = address(
             new SuperRBAC{salt: salt}(ISuperRBAC.InitialRoleSetup({
                         admin: ownerAddress,
-                        emergencyAdmin: ownerAddress, /// @dev FIXME this should be 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490, but must be ownerAddress on deployment
+                        emergencyAdmin: ownerAddress,
                         paymentAdmin: 0xD911673eAF0D3e15fe662D58De15511c5509bAbB,
                         csrProcessor: 0x23c658FE050B4eAeB9401768bF5911D11621629c,
                         tlProcessor: ownerAddress,
@@ -548,6 +550,15 @@ abstract contract AbstractDeploySingle is Script {
         vars.emergencyQueue = address(new EmergencyQueue{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("EmergencyQueue"))] = vars.emergencyQueue;
         vars.superRegistryC.setAddress(vars.superRegistryC.EMERGENCY_QUEUE(), vars.emergencyQueue, vars.chainId);
+
+        /// @dev 18 configure payment helper
+        PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(
+            vars.chainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
+        );
+        PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 9, abi.encode(40_000));
+        PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 10, abi.encode(50_000));
+        PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 7, abi.encode(50 * 10 ** 9 wei));
+
         vm.stopBroadcast();
 
         /// @dev Exports
@@ -561,9 +572,7 @@ abstract contract AbstractDeploySingle is Script {
     /// @dev stage 2 must be called only after stage 1 is complete for all chains!
     function _deployStage2(
         uint256 i,
-        /// 0, 1, 2
         uint256 trueIndex,
-        /// 0, 1, 2, 3, 4, 5
         Cycle cycle,
         uint64[] memory targetDeploymentChains,
         uint64[] memory finalDeployedChains
@@ -612,20 +621,35 @@ abstract contract AbstractDeploySingle is Script {
                         vars.superRegistryC
                     )
                 );
-            } else {
-                /// ack gas cost: 40000
-                /// timelock form cost: 50000
-                /// default gas price: 50 Gwei
-                PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(
-                    vars.chainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
-                );
-                PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 9, abi.encode(40_000));
-                PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 10, abi.encode(50_000));
-                PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(
-                    vars.chainId, 7, abi.encode(50 * 10 ** 9 wei)
-                );
             }
         }
+        vm.stopBroadcast();
+    }
+
+    /// @dev pass roles from burner wallets to multi sigs
+    function _deployStage3(
+        uint256 i,
+        uint256 trueIndex,
+        Cycle cycle,
+        uint64[] memory s_superFormChainIds
+    )
+        internal
+        setEnvDeploy(cycle)
+    {
+        SetupVars memory vars;
+
+        vars.chainId = s_superFormChainIds[i];
+
+        vm.startBroadcast(deployerPrivateKey);
+        SuperRBAC srbac = SuperRBAC(payable(_readContract(chainNames[trueIndex], vars.chainId, "SuperRBAC")));
+        bytes32 protocolAdminRole = srbac.PROTOCOL_ADMIN_ROLE();
+        bytes32 emergencyAdminRole = srbac.EMERGENCY_ADMIN_ROLE();
+        srbac.grantRole(protocolAdminRole, multiSigAddress);
+        srbac.grantRole(emergencyAdminRole, multiSigAddress);
+
+        srbac.revokeRole(emergencyAdminRole, ownerAddress);
+        srbac.revokeRole(protocolAdminRole, ownerAddress);
+
         vm.stopBroadcast();
     }
 
@@ -680,37 +704,6 @@ abstract contract AbstractDeploySingle is Script {
 
         vm.stopBroadcast();
     }
-
-    /*
-    /// @dev stage 3 is to be done by emergency admin (to be added later in a future deployment we obtain the emergency
-    /// admin private Key)
-    function _deployStage3(
-        uint256 i,
-        /// 0, 1, 2
-        uint256 trueIndex,
-        /// 0, 1, 2, 3, 4, 5
-        Cycle cycle,
-        uint64[] memory s_superFormChainIds
-    )
-        internal
-        setEnvDeploy(cycle)
-    {
-        SetupVars memory vars;
-
-        vars.chainId = s_superFormChainIds[i];
-        /// @dev this must be the emergency admin private key
-        vm.startBroadcast(deployerPrivateKey);
-
-        vars.paymentHelper = _readContract(chainNames[trueIndex], vars.chainId, "PaymentHelper");
-        PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(
-            vars.chainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
-        );
-        PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 9, abi.encode(40_000));
-        PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 10, abi.encode(50_000));
-        PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 7, abi.encode(50 * 10 ** 9 wei));
-        vm.stopBroadcast();
-    }
-    */
 
     struct CurrentChainBasedOnDstvars {
         uint64 chainId;

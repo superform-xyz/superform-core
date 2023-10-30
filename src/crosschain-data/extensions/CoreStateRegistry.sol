@@ -710,7 +710,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 multiVaultData.amounts[i] = 0;
             } catch {
                 /// @dev detect if there is at least one failed withdraw
-                if (!errors) errors = true;
+                errors = true;
             }
 
             unchecked {
