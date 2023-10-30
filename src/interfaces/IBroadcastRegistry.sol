@@ -7,12 +7,12 @@ pragma solidity ^0.8.21;
 interface IBroadcastRegistry {
     /// @dev allows core contracts to send payload to all configured destination chain.
     /// @param srcSender_ is the caller of the function (used for gas refunds).
-    /// @param ambIds_ is the identifier of the arbitrary message bridge to be used
+    /// @param ambId_ is the identifier of the arbitrary message bridge to be used
     /// @param message_ is the crosschain payload to be broadcasted
     /// @param extraData_ defines all the message bridge realted overrides
     function broadcastPayload(
         address srcSender_,
-        uint8[] memory ambIds_,
+        uint8 ambId_,
         bytes memory message_,
         bytes memory extraData_
     )

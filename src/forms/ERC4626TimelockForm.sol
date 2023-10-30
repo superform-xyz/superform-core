@@ -23,17 +23,21 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     /*///////////////////////////////////////////////////////////////
                             MODIFIER
     //////////////////////////////////////////////////////////////*/
-    modifier onlyTwoStepStateRegistry() {
+    modifier onlyTimelockStateRegistry() {
         if (msg.sender != superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY"))) {
-            revert Error.NOT_TWO_STEP_STATE_REGISTRY();
+            revert Error.NOT_TIMELOCK_STATE_REGISTRY();
         }
         _;
     }
 
     /*///////////////////////////////////////////////////////////////
-                            CONSTRUCTOR
+                            INITIALIZATION
     //////////////////////////////////////////////////////////////*/
-    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_, 2) { }
+
+    uint8 constant stateRegistryId = 2; // TimelockStateRegistry
+
+    constructor(address superRegistry_) 
+        ERC4626FormImplementation(superRegistry_, stateRegistryId) {}
 
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL FUNCTIONS
@@ -56,7 +60,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         TimelockPayload memory p_
     )
         external
-        onlyTwoStepStateRegistry
+        onlyTimelockStateRegistry
         returns (uint256 dstAmount)
     {
         if (_isPaused(p_.data.superformId)) {
@@ -135,7 +139,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     }
 
     /// @inheritdoc BaseForm
-    /// @dev this is the step-1 for two step form withdrawal, direct case
+    /// @dev this is the step-1 for timelock form withdrawal, direct case
     /// @dev will mandatorily process unlock
     /// @return dstAmount is always 0
     function _directWithdrawFromVault(
@@ -148,8 +152,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         returns (uint256)
     {
         uint256 lockedTill = _requestUnlock(singleVaultData_.amount);
-        /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to the two
-        /// step
+        /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to timelock
         /// @dev state registry for re-processing at a later date
         _storePayload(0, srcSender_, CHAIN_ID, lockedTill, singleVaultData_);
 
@@ -171,7 +174,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     }
 
     /// @inheritdoc BaseForm
-    /// @dev this is the step-1 for two step form withdrawal, xchain case
+    /// @dev this is the step-1 for timelock form withdrawal, xchain case
     /// @dev will mandatorily process unlock
     /// @return dstAmount is always 0
     function _xChainWithdrawFromVault(
@@ -185,8 +188,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         returns (uint256)
     {
         uint256 lockedTill = _requestUnlock(singleVaultData_.amount);
-        /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to the two
-        /// step
+        /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to timelock
         /// @dev state registry for re-processing at a later date
         _storePayload(1, srcSender_, srcChainId_, lockedTill, singleVaultData_);
 

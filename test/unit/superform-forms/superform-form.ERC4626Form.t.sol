@@ -339,7 +339,15 @@ contract SuperformERC4626FormTest is ProtocolActions {
         uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, 1e18, 100, false, false, LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0), "", refundAddress, ""
+            superformId,
+            1e18,
+            100,
+            false,
+            false,
+            LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
+            "",
+            refundAddress,
+            ""
         );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
@@ -365,7 +373,15 @@ contract SuperformERC4626FormTest is ProtocolActions {
         uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, 2e18, 100, false, false, LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0), "", refundAddress, ""
+            superformId,
+            2e18,
+            100,
+            false,
+            false,
+            LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
+            "",
+            refundAddress,
+            ""
         );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
@@ -574,7 +590,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             100,
             false,
             false,
-            LiqRequest(1, "", getContract(ETH, "WETH"), ETH, 0),
+            LiqRequest(1, "0x2222", getContract(ETH, "WETH"), ETH, 0),
             "",
             refundAddress,
             ""
@@ -684,8 +700,9 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         liqReqs[0] = LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0);
 
-        MultiVaultSFData memory data =
-            MultiVaultSFData(superformIds, amounts, maxSlippages, new bool[](1), new bool[](1), liqReqs, "", refundAddress, "");
+        MultiVaultSFData memory data = MultiVaultSFData(
+            superformIds, amounts, maxSlippages, new bool[](1), new bool[](1), liqReqs, "", refundAddress, ""
+        );
 
         SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
 
@@ -732,8 +749,9 @@ contract SuperformERC4626FormTest is ProtocolActions {
             0
         );
 
-        MultiVaultSFData memory data =
-            MultiVaultSFData(superformIds, amounts, maxSlippages, new bool[](1), new bool[](1), liqReqs, "", refundAddress, "");
+        MultiVaultSFData memory data = MultiVaultSFData(
+            superformIds, amounts, maxSlippages, new bool[](1), new bool[](1), liqReqs, "", refundAddress, ""
+        );
 
         SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
 
@@ -757,7 +775,15 @@ contract SuperformERC4626FormTest is ProtocolActions {
         uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, 1e18, 100, false, false, LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0), "", refundAddress, ""
+            superformId,
+            1e18,
+            100,
+            false,
+            false,
+            LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
+            "",
+            refundAddress,
+            ""
         );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
@@ -827,7 +853,15 @@ contract SuperformERC4626FormTest is ProtocolActions {
         uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, 1e18, 100, false, false, LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0), "", refundAddress, ""
+            superformId,
+            1e18,
+            100,
+            false,
+            false,
+            LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
+            "",
+            refundAddress,
+            ""
         );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);

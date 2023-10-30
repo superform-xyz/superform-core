@@ -11,7 +11,7 @@ contract SDMVDMulti021NoNativeSlippageAMB23 is ProtocolActions {
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
         //////////////////////////////////////////////////////////////*/
 
-        AMBs = [2, 3];
+        AMBs = [3, 2];
 
         CHAIN_0 = ARBI;
         DST_CHAINS = [ETH];

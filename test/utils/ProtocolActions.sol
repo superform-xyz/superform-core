@@ -1180,10 +1180,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
                 vm.selectFork(FORKS[DST_CHAINS[i]]);
 
-                ITimelockStateRegistry timelockFormStateRegistry =
+                ITimelockStateRegistry timelockStateRegistry =
                     ITimelockStateRegistry(contracts[DST_CHAINS[i]][bytes32(bytes("TimelockStateRegistry"))]);
 
-                currentUnlockId = timelockFormStateRegistry.timelockPayloadCounter();
+                currentUnlockId = timelockStateRegistry.timelockPayloadCounter();
                 if (currentUnlockId > 0) {
                     vm.recordLogs();
 
@@ -1196,7 +1196,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         vm.prank(deployer);
                         /// @dev tries to process the payload during lock-in period
                         vm.expectRevert(Error.LOCKED.selector);
-                        timelockFormStateRegistry.finalizePayload{ value: nativeFee }(
+                        timelockStateRegistry.finalizePayload{ value: nativeFee }(
                             currentUnlockId - j + 1,
                             GENERATE_WITHDRAW_TX_DATA_ON_DST
                                 ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][timeLockedIndexes[DST_CHAINS[i]][j]]
@@ -1215,7 +1215,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         vm.prank(deployer);
 
                         /// @dev if needed in certain test scenarios, re-feed txData for timelocked here
-                        timelockFormStateRegistry.finalizePayload{ value: nativeFee }(
+
+                        timelockStateRegistry.finalizePayload{ value: nativeFee }(
                             currentUnlockId - j + 1,
                             GENERATE_WITHDRAW_TX_DATA_ON_DST
                                 ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][timeLockedIndexes[DST_CHAINS[i]][j]]
@@ -1225,7 +1226,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         /// @dev tries to process already finalized payload
                         vm.prank(deployer);
                         vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
-                        timelockFormStateRegistry.finalizePayload{ value: nativeFee }(
+                        timelockStateRegistry.finalizePayload{ value: nativeFee }(
                             currentUnlockId - j + 1,
                             GENERATE_WITHDRAW_TX_DATA_ON_DST
                                 ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][timeLockedIndexes[DST_CHAINS[i]][j]]
@@ -1255,24 +1256,23 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             if (CHAIN_0 != DST_CHAINS[i] && revertingWithdrawTimelockedSFs[i].length > 0) {
-                IBaseStateRegistry timelockFormStateRegistry =
+                IBaseStateRegistry timelockStateRegistry =
                     IBaseStateRegistry(contracts[CHAIN_0][bytes32(bytes("TimelockStateRegistry"))]);
 
                 /// @dev if a payload exists to be processed, process it
-                if (_payload(address(timelockFormStateRegistry), CHAIN_0, TWO_STEP_PAYLOAD_ID[CHAIN_0] + 1).length > 0)
-                {
+                if (_payload(address(timelockStateRegistry), CHAIN_0, TIMELOCK_PAYLOAD_ID[CHAIN_0] + 1).length > 0) {
                     unchecked {
-                        TWO_STEP_PAYLOAD_ID[CHAIN_0]++;
+                        TIMELOCK_PAYLOAD_ID[CHAIN_0]++;
                     }
 
                     (address srcSender, uint64 srcChainId,,,) = PayloadHelper(getContract(CHAIN_0, "PayloadHelper"))
-                        .decodeTimeLockFailedPayload(TWO_STEP_PAYLOAD_ID[CHAIN_0]);
+                        .decodeTimeLockFailedPayload(TIMELOCK_PAYLOAD_ID[CHAIN_0]);
 
                     assertEq(srcChainId, DST_CHAINS[i]);
                     assertEq(srcSender, users[action.user]);
 
-                    success = _processTwoStepPayload(
-                        TWO_STEP_PAYLOAD_ID[CHAIN_0], DST_CHAINS[i], CHAIN_0, action.testType, action.revertError
+                    success = _processTimelockPayload(
+                        TIMELOCK_PAYLOAD_ID[CHAIN_0], DST_CHAINS[i], CHAIN_0, action.testType, action.revertError
                     );
                 }
             }
@@ -2183,7 +2183,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         /// @dev only generate if acknowledgement is needed
         if (targetChainId_ != CHAIN_0) {
-            (nativeFee,) = PaymentHelper(getContract(targetChainId_, "PaymentHelper")).estimateAckCost(payloadId_);
+            nativeFee = PaymentHelper(getContract(targetChainId_, "PaymentHelper")).estimateAckCost(payloadId_);
         }
 
         vm.prank(deployer);
@@ -2207,7 +2207,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         return true;
     }
 
-    function _processTwoStepPayload(
+    function _processTimelockPayload(
         uint256 payloadId_,
         uint64 srcChainId_,
         uint64 targetChainId_,
@@ -2228,7 +2228,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         );
 
         vm.prank(deployer);
-        vm.expectRevert(Error.QUORUM_NOT_REACHED.selector);
+        vm.expectRevert(Error.INSUFFICIENT_QUORUM.selector);
         TimelockStateRegistry(payable(getContract(targetChainId_, "TimelockStateRegistry"))).processPayload{
             value: msgValue
         }(payloadId_);
@@ -3466,7 +3466,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(payloadId, amounts);
 
-        (uint256 nativeAmount,) = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(1);
+        uint256 nativeAmount = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(1);
 
         vm.recordLogs();
         vm.prank(deployer);

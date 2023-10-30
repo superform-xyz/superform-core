@@ -707,6 +707,127 @@ contract EmergencyQueueTest is ProtocolActions {
         vm.stopPrank();
     }
 
+    function _successfulDepositXChain(uint256 payloadId, string memory vaultKind, uint256 formImplId) internal {
+        /// scenario: user deposits with his own collateral and has approved enough tokens
+        vm.selectFork(FORKS[ETH]);
+
+        vm.prank(deployer);
+        MockERC20(getContract(ETH, "DAI")).transfer(mrperfect, 2e18);
+
+        address superformRouter = getContract(ETH, "SuperformRouter");
+
+        address superform = getContract(
+            ARBI, string.concat("DAI", vaultKind, "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[formImplId]))
+        );
+
+        vm.selectFork(FORKS[ARBI]);
+
+        KYCDaoNFTMock(getContract(ARBI, "KYCDAOMock")).mint(mrperfect);
+        vm.selectFork(FORKS[ETH]);
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[formImplId], ARBI);
+
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
+            getContract(ARBI, "DAI"),
+            superformRouter,
+            ETH,
+            ARBI,
+            ARBI,
+            false,
+            getContract(ARBI, "CoreStateRegistry"),
+            uint256(ARBI),
+            2e18,
+            false,
+            /// @dev placeholder value, not used
+            0,
+            1,
+            1,
+            1
+        );
+
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            2e18,
+            1000,
+            false,
+            false,
+            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), ARBI, 0),
+            "",
+            mrimperfect,
+            ""
+        );
+
+        uint8[] memory ambIds = new uint8[](2);
+        ambIds[0] = 1;
+        ambIds[1] = 2;
+
+        SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds, ARBI, data);
+
+        /// @dev approves before call
+        vm.prank(mrperfect);
+        MockERC20(getContract(ETH, "DAI")).approve(superformRouter, 2e18);
+        vm.recordLogs();
+
+        vm.prank(mrperfect);
+        vm.deal(mrperfect, 2 ether);
+        SuperformRouter(payable(superformRouter)).singleXChainSingleVaultDeposit{ value: 2 ether }(req);
+
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        /// @dev simulate cross-chain payload delivery
+        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).helpWithEstimates(
+            LZ_ENDPOINTS[ARBI],
+            500_000,
+            /// note: using some max limit
+            FORKS[ARBI],
+            logs
+        );
+
+        HyperlaneHelper(getContract(ETH, "HyperlaneHelper")).help(
+            address(HyperlaneMailbox), address(HyperlaneMailbox), FORKS[ARBI], logs
+        );
+
+        /// @dev update and process the payload on ARBI
+        vm.selectFork(FORKS[ARBI]);
+        vm.prank(deployer);
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 2e18;
+
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(payloadId, amounts);
+
+        uint256 nativeAmount = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(1);
+
+        vm.recordLogs();
+        vm.prank(deployer);
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(
+            payloadId
+        );
+
+        logs = vm.getRecordedLogs();
+
+        /// @dev simulate cross-chain payload delivery
+        LayerZeroHelper(getContract(ARBI, "LayerZeroHelper")).helpWithEstimates(
+            LZ_ENDPOINTS[ETH],
+            500_000,
+            /// note: using some max limit
+            FORKS[ETH],
+            logs
+        );
+
+        HyperlaneHelper(getContract(ARBI, "HyperlaneHelper")).help(
+            address(HyperlaneMailbox), address(HyperlaneMailbox), FORKS[ETH], logs
+        );
+
+        /// @dev mint super positions on source chain
+        vm.selectFork(FORKS[ETH]);
+        vm.prank(deployer);
+        CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload(payloadId);
+    }
+
     function _getTestSuperformId() internal view returns (uint256) {
         address superform = getContract(
             ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))

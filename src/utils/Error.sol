@@ -18,6 +18,9 @@ library Error {
     /// @dev error thrown when value input is 0
     error ZERO_INPUT_VALUE();
 
+    /// @dev error thrown when amb ids length is 0
+    error ZERO_AMB_ID_LENGTH();
+
     /// @dev error thrown when beacon id already exists
     error FORM_IMPLEMENTATION_ID_ALREADY_EXISTS();
 
@@ -30,8 +33,8 @@ library Error {
     /// @dev thrown when msg.sender is not form
     error NOT_SUPERFORM();
 
-    /// @dev thrown when msg.sender is not two step form
-    error NOT_TWO_STEP_SUPERFORM();
+    /// @dev thrown when msg.sender is not timelock form
+    error NOT_TIMELOCK_SUPERFORM();
 
     /// @dev thrown when msg.sender is not a valid amb implementation
     error NOT_AMB_IMPLEMENTATION();
@@ -57,8 +60,8 @@ library Error {
     /// @dev thrown if the underlying collateral mismatches
     error INVALID_DEPOSIT_TOKEN();
 
-    /// @dev thrown when msg.sender is not two step state registry
-    error NOT_TWO_STEP_STATE_REGISTRY();
+    /// @dev thrown when msg.sender is not timelock state registry
+    error NOT_TIMELOCK_STATE_REGISTRY();
 
     /// @dev thrown when msg.sender is not protocol admin
     error NOT_PROTOCOL_ADMIN();
@@ -257,8 +260,8 @@ library Error {
     /// @dev thrown if withdrawal TX_DATA is not updated
     error WITHDRAW_TX_DATA_NOT_UPDATED();
 
-    /// @dev thrown if message hasn't reached the specified level of quorum needed
-    error QUORUM_NOT_REACHED();
+    /// @dev thrown if message failed to reach the specified level of quorum needed
+    error INSUFFICIENT_QUORUM();
 
     /// @dev thrown if message amb and proof amb are the same
     error INVALID_PROOF_BRIDGE_ID();
@@ -369,6 +372,9 @@ library Error {
     /// @dev in case of no txData, if liqData.token != collateral. In case of txData, if token output of swap ==
     /// vault.asset()
     error DIFFERENT_TOKENS();
+
+    /// @dev thrown in KYCDAO form if no KYC token is present 
+    error NO_VALID_KYC_TOKEN();
 
     /*///////////////////////////////////////////////////////////////
                         PAYMASTER ERRORS

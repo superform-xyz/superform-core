@@ -1479,7 +1479,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         /// @dev only generate if acknowledgement is needed
         if (targetChainId_ != srcChainId_) {
-            (nativeFee,) = PaymentHelper(getContract(targetChainId_, "PaymentHelper")).estimateAckCost(payloadId_);
+            nativeFee = PaymentHelper(getContract(targetChainId_, "PaymentHelper")).estimateAckCost(payloadId_);
         }
 
         vm.prank(deployer);
@@ -1493,7 +1493,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         return true;
     }
 
-    function _processTwoStepPayload(
+    function _processTimelockPayload(
         uint256 payloadId_,
         uint64 srcChainId_,
         uint64 targetChainId_,
@@ -1515,7 +1515,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         );
 
         vm.prank(deployer);
-        vm.expectRevert(Error.QUORUM_NOT_REACHED.selector);
+        vm.expectRevert(Error.INSUFFICIENT_QUORUM.selector);
         TimelockStateRegistry(payable(getContract(targetChainId_, "TimelockStateRegistry"))).processPayload{
             value: msgValue
         }(payloadId_);

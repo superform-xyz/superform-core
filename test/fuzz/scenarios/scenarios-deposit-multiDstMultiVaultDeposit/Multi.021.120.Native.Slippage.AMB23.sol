@@ -11,7 +11,7 @@ contract MDMVDMulti021120NoNativeSlippageAMB23 is ProtocolActions {
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
         //////////////////////////////////////////////////////////////*/
 
-        AMBs = [2, 3];
+        AMBs = [3, 2];
         MultiDstAMBs = [AMBs, AMBs];
 
         CHAIN_0 = ARBI;

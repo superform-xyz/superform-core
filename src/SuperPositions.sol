@@ -85,7 +85,8 @@ contract SuperPositions is ISuperPositions, ERC1155A {
 
         /// if msg.sender isn't superformRouter then it must be state registry for that superform
         if (msg.sender != router) {
-            for (uint256 i; i < superformIds.length; ++i) {
+            uint256 len = superformIds.length;
+            for (uint256 i; i < len; ++i) {
                 (, uint32 formBeaconId,) = DataLib.getSuperform(superformIds[i]);
                 uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
@@ -376,7 +377,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         (uint256 totalFees, bytes memory extraData) =
             IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER"))).calculateRegisterTransmuterAMBData();
 
-        (uint8[] memory ambIds, bytes memory broadcastParams) = abi.decode(extraData, (uint8[], bytes));
+        (uint8 ambId, bytes memory broadcastParams) = abi.decode(extraData, (uint8, bytes));
 
         if (msg.value < totalFees) {
             revert Error.INVALID_BROADCAST_FEE();
@@ -386,7 +387,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         /// @dev broadcastParams if wrong will revert in the amb implementation
         IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{
             value: msg.value
-        }(msg.sender, ambIds, message_, broadcastParams);
+        }(msg.sender, ambId, message_, broadcastParams);
     }
 
     /// @dev deploys new transmuter on broadcasting

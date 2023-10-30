@@ -36,7 +36,7 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
 
         /// @dev approves before call
         MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
-        vm.expectRevert(ERC4626KYCDaoForm.NO_VALID_KYC_TOKEN.selector);
+        vm.expectRevert(Error.NO_VALID_KYC_TOKEN.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
 
         vm.stopPrank();

@@ -22,7 +22,7 @@ import "../../types/DataTypes.sol";
 
 /// @title TimelockStateRegistry
 /// @author Zeropoint Labs
-/// @notice handles communication in two stepped forms
+/// @notice handles communication in timelocked forms
 
 contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, ReentrancyGuard {
     using DataLib for uint256;
@@ -54,7 +54,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         (address superform,,) = superformId.getSuperform();
         if (msg.sender != superform) revert Error.NOT_SUPERFORM();
         if (IBaseForm(superform).getStateRegistryId() != superRegistry.getStateRegistryId(address(this))) {
-            revert Error.NOT_TWO_STEP_SUPERFORM();
+            revert Error.NOT_TIMELOCK_SUPERFORM();
         }
         _;
     }
@@ -104,7 +104,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     {
         ++timelockPayloadCounter;
         timelockPayload[timelockPayloadCounter] =
-            TimelockPayload(type_, srcSender_, srcChainId_, lockedTill_, data_, TwoStepsStatus.PENDING);
+            TimelockPayload(type_, srcSender_, srcChainId_, lockedTill_, data_, TimelockStatus.PENDING);
     }
 
     /// @inheritdoc ITimelockStateRegistry
@@ -122,7 +122,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         IBridgeValidator bridgeValidator = IBridgeValidator(superRegistry.getBridgeValidator(p.data.liqData.bridgeId));
         uint256 finalAmount;
 
-        if (p.status != TwoStepsStatus.PENDING) {
+        if (p.status != TimelockStatus.PENDING) {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
 
@@ -130,7 +130,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
             revert Error.LOCKED();
         }
         /// @dev set status here to prevent re-entrancy
-        p.status = TwoStepsStatus.PROCESSED;
+        p.status = TimelockStatus.PROCESSED;
 
         (address superform,,) = p.data.superformId.getSuperform();
 
@@ -211,7 +211,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         bytes32 _proof = _message.computeProof();
 
         if (messageQuorum[_proof] < _getRequiredMessagingQuorum(srcChainId)) {
-            revert Error.QUORUM_NOT_REACHED();
+            revert Error.INSUFFICIENT_QUORUM();
         }
 
         if (callbackType == uint256(CallbackType.FAIL)) {
@@ -240,23 +240,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         IBaseStateRegistry coreStateRegistry =
             IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
 
-        uint256 payloadHeader_ = coreStateRegistry.payloadHeader(payloadId_);
-        bytes memory payloadBody_ = coreStateRegistry.payloadBody(payloadId_);
-
-        bytes32 proof = AMBMessage(payloadHeader_, payloadBody_).computeProof();
-        uint8[] memory proofIds = coreStateRegistry.getProofAMB(proof);
-
-        uint256 len = proofIds.length;
-        ambIds_ = new uint8[](len + 1);
-        ambIds_[0] = coreStateRegistry.msgAMB(payloadId_);
-
-        for (uint256 i; i < len;) {
-            ambIds_[i + 1] = proofIds[i];
-
-            unchecked {
-                ++i;
-            }
-        }
+        ambIds_ = coreStateRegistry.getMessageAMB(payloadId_);
     }
 
     /// @notice CoreStateRegistry-like function for build message back to the source. In regular flow called after

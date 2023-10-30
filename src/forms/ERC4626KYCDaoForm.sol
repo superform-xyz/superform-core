@@ -11,28 +11,33 @@ import { Error } from "../utils/Error.sol";
 /// @notice The Form implementation for IERC4626 vaults with kycDAO NFT checks
 /// @notice This form must hold a kycDAO NFT to operate
 contract ERC4626KYCDaoForm is ERC4626FormImplementation {
-    /*//////////////////////////////////////////////////////////////
-                                ERRORS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev error thrown when the sender doesn't the KYCDAO
-    error NO_VALID_KYC_TOKEN();
 
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_, 1) { }
+    uint8 constant stateRegistryId = 1; // CoreStateRegistry
+
+    constructor(address superRegistry_) 
+        ERC4626FormImplementation(superRegistry_, stateRegistryId) {}
+
 
     /*///////////////////////////////////////////////////////////////
-                            INTERNAL OVERRIDES
+                            MODIFIERS
     //////////////////////////////////////////////////////////////*/
 
     /// @dev this function calls the kycDAO vault kycCheck function to verify if the beneficiary holds a kycDAO token
     /// @dev note that this form must also be a holder of a kycDAO NFT
-    function _kycCheck(address srcSender_) internal view {
-        if (!kycDAO4626(vault).kycCheck(srcSender_)) revert NO_VALID_KYC_TOKEN();
+    modifier onlyKYC(address srcSender_) {
+        if (!kycDAO4626(vault).kycCheck(srcSender_)) {
+            revert Error.NO_VALID_KYC_TOKEN();
+        }
+        _;
     }
+
+    /*///////////////////////////////////////////////////////////////
+                            INTERNAL OVERRIDES
+    //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc BaseForm
     function _directDepositIntoVault(
@@ -41,10 +46,9 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
     )
         internal
         override
+        onlyKYC(srcSender_)
         returns (uint256 dstAmount)
     {
-        _kycCheck(srcSender_);
-
         dstAmount = _processDirectDeposit(singleVaultData_);
     }
 
@@ -55,10 +59,9 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
     )
         internal
         override
+        onlyKYC(srcSender_)
         returns (uint256 dstAmount)
     {
-        _kycCheck(srcSender_);
-
         dstAmount = _processDirectWithdraw(singleVaultData_, srcSender_);
     }
 
@@ -69,10 +72,9 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
     )
         internal
         override
+        onlyKYC(srcSender_)
         returns (uint256 dstAmount)
     {
-        _kycCheck(srcSender_);
-
         dstAmount = _processXChainDeposit(singleVaultData_, srcChainId_);
     }
 
@@ -84,17 +86,18 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
     )
         internal
         override
+        onlyKYC(srcSender_)
         returns (uint256 dstAmount)
     {
-        _kycCheck(srcSender_);
-
         dstAmount = _processXChainWithdraw(singleVaultData_, srcSender_, srcChainId_);
     }
 
     /// @inheritdoc BaseForm
-    function _emergencyWithdraw(address srcSender_, address refundAddress_, uint256 amount_) internal override {
-        _kycCheck(srcSender_);
-
+    function _emergencyWithdraw(address srcSender_, address refundAddress_, uint256 amount_)
+        internal
+        override
+        onlyKYC(srcSender_) 
+    {
         _processEmergencyWithdraw(refundAddress_, amount_);
     }
 

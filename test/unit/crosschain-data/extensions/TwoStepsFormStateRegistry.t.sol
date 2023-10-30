@@ -140,7 +140,10 @@ contract TimelockStateRegistryTest is ProtocolActions {
         (, uint256 superformId) = _legacySuperformPackWithShift();
 
         bytes memory _message = abi.encode(
-            AMBMessage(DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH), abi.encode(ReturnSingleData(1, superformId, 420)))
+            AMBMessage(
+                DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH),
+                abi.encode(new uint8[](0), abi.encode(ReturnSingleData(1, superformId, 420)))
+            )
         );
 
         vm.prank(getContract(AVAX, "SuperformRouter"));

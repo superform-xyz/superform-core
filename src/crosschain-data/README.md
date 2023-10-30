@@ -11,7 +11,7 @@ The following components are a key part of superform's robust crosschain communi
 - **Base State Registry [BaseStateRegistry.sol](./BaseStateRegistry.sol)**: The base implementation of the state registry, exposes sending and receiving payload interfaces. Any cross-chain message is also called a "payload".
 - **Core State Registry [CoreStateRegistry.sol](./extensions/CoreStateRegistry.sol)**: Child contract inheriting base state registry which enables core contracts, including routers & form implementations, to communicate with their counterparts on a different network. Contains its custom logic for payload processing & updation (during deposits).
 - **Factory State Registry [FactoryStateRegistry.sol](./extensions/FactoryStateRegistry.sol)**: Child contract inheriting base state registry which enables crosschain communication between factory contracts.
-- **Two Steps Form State Registry [TimelockStateRegistry.sol](./extensions/TimelockStateRegistry.sol)**: Special state registry implementation contract, specifically designed to process withdrawal request for two step forms, such as timelocked. Inherits base state registry to send acknowledgement on failure withdrawals for two steps' forms.
+- **Timelock Form State Registry [TimelockStateRegistry.sol](./extensions/TimelockStateRegistry.sol)**: Special state registry implementation contract, specifically designed to process withdrawal request for timelock forms, such as timelocked. Inherits base state registry to send acknowledgement on failure withdrawals for timelock' forms.
 
 Each individual AMB wrapper will be placed inside a folder named after the Arbitrary Message Bridge (AMB).
 
