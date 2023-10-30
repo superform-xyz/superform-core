@@ -49,11 +49,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
 
-    modifier onlyAllowedCaller(bytes32 role_) {
-        if (!_hasRole(role_, msg.sender)) revert Error.NOT_PRIVILEGED_CALLER(role_);
-        _;
-    }
-
     modifier onlySender() override {
         if (msg.sender != superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"))) revert Error.NOT_SUPER_ROUTER();
         _;
@@ -69,15 +64,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ICoreStateRegistry
-    function updateDepositPayload(
-        uint256 payloadId_,
-        uint256[] calldata finalAmounts_
-    )
-        external
-        virtual
-        override
-        onlyAllowedCaller(keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE"))
-    {
+    function updateDepositPayload(uint256 payloadId_, uint256[] calldata finalAmounts_) external virtual override {
+        /// @dev validates the caller
+        _onlyAllowedCaller(keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE"));
+
         /// @dev validates the payload id
         _validatePayloadId(payloadId_);
 
@@ -104,15 +94,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     }
 
     /// @inheritdoc ICoreStateRegistry
-    function updateWithdrawPayload(
-        uint256 payloadId_,
-        bytes[] calldata txData_
-    )
-        external
-        virtual
-        override
-        onlyAllowedCaller(keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE"))
-    {
+    function updateWithdrawPayload(uint256 payloadId_, bytes[] calldata txData_) external virtual override {
+        /// @dev validates the caller
+        _onlyAllowedCaller(keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE"));
+
         /// @dev validates the payload id
         _validatePayloadId(payloadId_);
 
@@ -139,13 +124,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     }
 
     /// @inheritdoc BaseStateRegistry
-    function processPayload(uint256 payloadId_)
-        external
-        payable
-        virtual
-        override
-        onlyAllowedCaller(keccak256("CORE_STATE_REGISTRY_PROCESSOR_ROLE"))
-    {
+    function processPayload(uint256 payloadId_) external payable virtual override {
+        /// @dev validates the caller
+        _onlyAllowedCaller(keccak256("CORE_STATE_REGISTRY_PROCESSOR_ROLE"));
+
         /// @dev validates the payload id
         _validatePayloadId(payloadId_);
 
@@ -201,14 +183,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     }
 
     /// @inheritdoc ICoreStateRegistry
-    function proposeRescueFailedDeposits(
-        uint256 payloadId_,
-        uint256[] calldata proposedAmounts_
-    )
-        external
-        override
-        onlyAllowedCaller(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"))
-    {
+    function proposeRescueFailedDeposits(uint256 payloadId_, uint256[] calldata proposedAmounts_) external override {
+        /// @dev validates the caller
+        _onlyAllowedCaller(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"));
+
         /// @dev validates the payload id
         _validatePayloadId(payloadId_);
 
@@ -359,6 +337,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         }
     }
 
+    function _onlyAllowedCaller(bytes32 role_) internal view {
+        if (!_hasRole(role_, msg.sender)) revert Error.NOT_PRIVILEGED_CALLER(role_);
+    }
+
     /// @dev retrieves information associated with the payload and validates quorum
     /// @param payloadId_ is the payload id
     /// @return payloadHeader_ is the payload header
@@ -440,18 +422,18 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         }
 
         if (validLen > 0) {
-            multiVaultData.superformIds = new uint256[](validLen);
-            multiVaultData.amounts = new uint256[](validLen);
-            multiVaultData.maxSlippages = new uint256[](validLen);
-            multiVaultData.hasDstSwaps = new bool[](validLen);
+            uint256[] memory finalSuperformIds = new uint256[](validLen);
+            uint256[] memory finalAmounts = new uint256[](validLen);
+            uint256[] memory maxSlippage = new uint256[](validLen);
+            bool[] memory hasDstSwaps = new bool[](validLen);
 
             uint256 currLen;
             for (uint256 i; i < arrLen;) {
                 if (multiVaultData.amounts[i] != 0) {
-                    multiVaultData.superformIds[currLen] = multiVaultData.superformIds[i];
-                    multiVaultData.amounts[currLen] = multiVaultData.amounts[i];
-                    multiVaultData.maxSlippages[currLen] = multiVaultData.maxSlippages[i];
-                    multiVaultData.hasDstSwaps[currLen] = multiVaultData.hasDstSwaps[i];
+                    finalSuperformIds[currLen] = multiVaultData.superformIds[i];
+                    finalAmounts[currLen] = multiVaultData.amounts[i];
+                    maxSlippage[currLen] = multiVaultData.maxSlippages[i];
+                    hasDstSwaps[currLen] = multiVaultData.hasDstSwaps[i];
                     unchecked {
                         ++currLen;
                     }
@@ -461,6 +443,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 }
             }
 
+            multiVaultData.amounts = finalAmounts;
+            multiVaultData.superformIds = finalSuperformIds;
+            multiVaultData.maxSlippages = maxSlippage;
+            multiVaultData.hasDstSwaps = hasDstSwaps;
             finalState_ = PayloadState.UPDATED;
         } else {
             finalState_ = PayloadState.PROCESSED;
