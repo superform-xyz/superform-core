@@ -96,7 +96,6 @@ contract PayloadHelper is IPayloadHelper {
         )
     {
         IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
-
         _isValidPayloadId(dstPayloadId_, coreStateRegistry);
 
         DecodeDstPayloadInternalVars memory v;
@@ -132,10 +131,9 @@ contract PayloadHelper is IPayloadHelper {
         )
     {
         IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
-
         _isValidPayloadId(dstPayloadId_, coreStateRegistry);
-        DecodeDstPayloadLiqDataInternalVars memory v;
 
+        DecodeDstPayloadLiqDataInternalVars memory v;
         (, v.callbackType, v.multi,,) = _decodePayloadHeader(dstPayloadId_, coreStateRegistry);
 
         if (v.multi == 1) {
@@ -167,16 +165,22 @@ contract PayloadHelper is IPayloadHelper {
         override
         returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
     {
-        TimelockPayload memory payload = ITimelockStateRegistry(
-            superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY"))
-        ).getTimelockPayload(timelockPayloadId_);
+        ITimelockStateRegistry timelockStateRegistry =
+            ITimelockStateRegistry(superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY")));
+
+        if (timelockPayloadId_ > timelockStateRegistry.timelockPayloadCounter()) {
+            revert Error.INVALID_PAYLOAD_ID();
+        }
+
+        TimelockPayload memory payload = timelockStateRegistry.getTimelockPayload(timelockPayloadId_);
 
         return (
             payload.srcSender, payload.srcChainId, payload.data.payloadId, payload.data.superformId, payload.data.amount
         );
     }
 
-    function decodeTimeLockFailedPayload(uint256 timelockPayloadId_)
+    /// @inheritdoc IPayloadHelper
+    function decodeTimeLockFailedPayload(uint256 payloadId_)
         external
         view
         override
@@ -184,8 +188,11 @@ contract PayloadHelper is IPayloadHelper {
     {
         IBaseStateRegistry timelockPayloadRegistry =
             IBaseStateRegistry(superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY")));
-        bytes memory payloadBody = timelockPayloadRegistry.payloadBody(timelockPayloadId_);
-        uint256 payloadHeader = timelockPayloadRegistry.payloadHeader(timelockPayloadId_);
+
+        _isValidPayloadId(payloadId_, timelockPayloadRegistry);
+
+        bytes memory payloadBody = timelockPayloadRegistry.payloadBody(payloadId_);
+        uint256 payloadHeader = timelockPayloadRegistry.payloadHeader(payloadId_);
 
         (, uint8 callbackType_,,, address srcSender_, uint64 srcChainId_) = payloadHeader.decodeTxInfo();
 
@@ -205,8 +212,8 @@ contract PayloadHelper is IPayloadHelper {
                         INTERNAL HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function _isValidPayloadId(uint256 payloadId_, IBaseStateRegistry coreStateRegistry) internal view {
-        if (payloadId_ > coreStateRegistry.payloadsCount()) {
+    function _isValidPayloadId(uint256 payloadId_, IBaseStateRegistry stateRegistry) internal view {
+        if (payloadId_ > stateRegistry.payloadsCount()) {
             revert Error.INVALID_PAYLOAD_ID();
         }
     }
