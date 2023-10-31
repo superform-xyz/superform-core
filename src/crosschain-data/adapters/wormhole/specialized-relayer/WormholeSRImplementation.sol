@@ -161,8 +161,9 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         processedMessages[wormholeMessage.hash] = true;
 
         /// @dev decoding payload
-        IBroadcastRegistry targetRegistry = IBroadcastRegistry(superRegistry.getStateRegistry(BROADCAST_REGISTRY_ID));
-        targetRegistry.receiveBroadcastPayload(superChainId[wormholeMessage.emitterChainId], wormholeMessage.payload);
+        IBroadcastRegistry(superRegistry.getStateRegistry(BROADCAST_REGISTRY_ID)).receiveBroadcastPayload(
+            superChainId[wormholeMessage.emitterChainId], wormholeMessage.payload
+        );
     }
 
     /// @dev allows protocol admin to add new chain ids in future

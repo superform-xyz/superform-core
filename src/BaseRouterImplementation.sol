@@ -45,11 +45,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     /// @dev getter for PERMIT2 in case it is not supported or set on a given chain
     function _getPermit2() internal view returns (address) {
-        address permit2 = superRegistry.PERMIT2();
-        if (permit2 == address(0)) {
-            revert Error.PERMIT2_NOT_SUPPORTED();
-        }
-        return permit2;
+        return superRegistry.PERMIT2();
     }
 
     /// @dev handles cross-chain multi vault deposit
@@ -904,8 +900,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             if (len == 0) {
                 amount = vaultData_.amount;
             } else {
-                address bridgeValidator = superRegistry.getBridgeValidator(vaultData_.liqData.bridgeId);
-                amount = IBridgeValidator(bridgeValidator).decodeAmountIn(vaultData_.liqData.txData, false);
+                amount = IBridgeValidator(superRegistry.getBridgeValidator(vaultData_.liqData.bridgeId)).decodeAmountIn(
+                    vaultData_.liqData.txData, false
+                );
                 /// e.g asset in is USDC (6 decimals), we use this amount to approve the transfer to superform
             }
 
@@ -991,9 +988,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 } else if (len == 0 && xChain) {
                     revert Error.NO_TXDATA_PRESENT();
                 } else {
-                    address bridgeValidator = superRegistry.getBridgeValidator(vaultData_.liqData[i].bridgeId);
-                    v.approvalAmounts[i] =
-                        IBridgeValidator(bridgeValidator).decodeAmountIn(vaultData_.liqData[i].txData, false);
+                    v.approvalAmounts[i] = IBridgeValidator(
+                        superRegistry.getBridgeValidator(vaultData_.liqData[i].bridgeId)
+                    ).decodeAmountIn(vaultData_.liqData[i].txData, false);
                 }
 
                 v.totalAmount += v.approvalAmounts[i];

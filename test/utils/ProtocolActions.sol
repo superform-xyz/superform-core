@@ -1224,8 +1224,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         );
 
                         /// @dev tries to process already finalized payload
+                        /// @dev this does not reach error INVALID_PAYLOAD_STATUS anymore because timelock payload is
+                        /// deleted and therefore bridgeid is 0
                         vm.prank(deployer);
-                        vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
+                        vm.expectRevert(Error.ZERO_ADDRESS.selector);
                         timelockStateRegistry.finalizePayload{ value: nativeFee }(
                             currentUnlockId - j + 1,
                             GENERATE_WITHDRAW_TX_DATA_ON_DST

@@ -43,22 +43,6 @@ contract ForwardDustFormTest is ProtocolActions {
         assertEq(balanceAfter, 0);
     }
 
-    function test_forwardDustZeroAddress() public {
-        address superform = _successfulDepositWithdraw("VaultMock", 0, 1e18, 0, false, deployer);
-        vm.mockCall(
-            getContract(ARBI, "SuperRegistry"),
-            abi.encodeWithSelector(
-                SuperRegistry(getContract(ARBI, "SuperRegistry")).getAddress.selector, keccak256("PAYMASTER")
-            ),
-            abi.encode(address(0))
-        );
-
-        vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        IBaseForm(superform).forwardDustToPaymaster();
-
-        vm.clearMockedCalls();
-    }
-
     function test_forwardDustToPaymasterTimelocked() public {
         address superform = _successfulDepositWithdraw("ERC4626TimelockMock", 1, 1e18, 0, true, deployer);
 

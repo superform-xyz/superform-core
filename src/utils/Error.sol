@@ -132,9 +132,6 @@ library Error {
     /// @dev thrown if receiver address is not set when the contract is a smart contract wallet
     error RECEIVER_ADDRESS_NOT_SET();
 
-    /// @dev thrown if permit2 not supported on given chain
-    error PERMIT2_NOT_SUPPORTED();
-
     /// @dev thrown if tx history is not found while state sync
     error TX_HISTORY_NOT_FOUND();
 
@@ -214,9 +211,6 @@ library Error {
 
     /// @dev is emitted when the chain id brought in the cross chain message is invalid
     error INVALID_CHAIN_ID();
-
-    /// @dev thrown if ambId is not valid leading to an address 0 of the implementation
-    error INVALID_BRIDGE_ID();
 
     /// @dev thrown if payload id does not exist
     error INVALID_PAYLOAD_ID();
@@ -373,7 +367,7 @@ library Error {
     /// vault.asset()
     error DIFFERENT_TOKENS();
 
-    /// @dev thrown in KYCDAO form if no KYC token is present 
+    /// @dev thrown in KYCDAO form if no KYC token is present
     error NO_VALID_KYC_TOKEN();
 
     /*///////////////////////////////////////////////////////////////
