@@ -177,6 +177,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             }
 
             _processAck(payloadId_, srcChainId, returnMessage);
+        } else {
+            revert Error.INVALID_PAYLOAD_TYPE();
         }
 
         emit PayloadProcessed(payloadId_);

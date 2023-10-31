@@ -459,7 +459,15 @@ contract CoreStateRegistryTest is ProtocolActions {
         liqReqArr[1] = liqReqArr[0];
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, uint256MemArr, uint256MemArr, new bool[](2), new bool[](2), liqReqArr, bytes(""), receiverAddress, bytes("")
+            superformIds,
+            uint256MemArr,
+            uint256MemArr,
+            new bool[](2),
+            new bool[](2),
+            liqReqArr,
+            bytes(""),
+            receiverAddress,
+            bytes("")
         );
         /// @dev approves before call
         MockERC20(getContract(ETH, "DAI")).approve(superformRouter, 1e18);
@@ -530,7 +538,15 @@ contract CoreStateRegistryTest is ProtocolActions {
         liqReqArr[1] = liqReqArr[0];
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, uint256MemArr, uint256MemArr, new bool[](2), new bool[](2), liqReqArr, bytes(""), receiverAddress, bytes("")
+            superformIds,
+            uint256MemArr,
+            uint256MemArr,
+            new bool[](2),
+            new bool[](2),
+            liqReqArr,
+            bytes(""),
+            receiverAddress,
+            bytes("")
         );
         /// @dev approves before call
         MockERC20(getContract(ETH, "DAI")).approve(superformRouter, 1e18);
@@ -572,7 +588,15 @@ contract CoreStateRegistryTest is ProtocolActions {
         maxSlippages[1] = 1000;
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amountArr, maxSlippages, new bool[](2), new bool[](2), liqReqArr, bytes(""), receiverAddress, bytes("")
+            superformIds,
+            amountArr,
+            maxSlippages,
+            new bool[](2),
+            new bool[](2),
+            liqReqArr,
+            bytes(""),
+            receiverAddress,
+            bytes("")
         );
 
         vm.prank(deployer);
