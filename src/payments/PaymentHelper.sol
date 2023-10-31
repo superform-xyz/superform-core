@@ -53,7 +53,7 @@ contract PaymentHelper is IPaymentHelper {
     mapping(uint64 chainId => uint256 gasForOps) public withdrawGasUsed;
     mapping(uint64 chainId => uint256 defaultNativePrice) public nativePrice;
     mapping(uint64 chainId => uint256 defaultGasPrice) public gasPrice;
-    mapping(uint64 chainId => uint256 gasPerKB) public gasPerKB;
+    mapping(uint64 chainId => uint256 gasPerByte) public gasPerByte;
     mapping(uint64 chainId => uint256 gasForOps) public ackGasCost;
     mapping(uint64 chainId => uint256 gasForOps) public timelockCost;
 
@@ -117,7 +117,7 @@ contract PaymentHelper is IPaymentHelper {
         withdrawGasUsed[chainId_] = config_.withdrawGasUsed;
         nativePrice[chainId_] = config_.defaultNativePrice;
         gasPrice[chainId_] = config_.defaultGasPrice;
-        gasPerKB[chainId_] = config_.dstGasPerKB;
+        gasPerByte[chainId_] = config_.dstGasPerKB;
         ackGasCost[chainId_] = config_.ackGasCost;
         timelockCost[chainId_] = config_.timelockCost;
         swapGasUsed[chainId_] = config_.swapGasUsed;
@@ -170,7 +170,7 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev Type 8: GAS PRICE PER KB of Message
         if (configType_ == 8) {
-            gasPerKB[chainId_] = abi.decode(config_, (uint256));
+            gasPerByte[chainId_] = abi.decode(config_, (uint256));
         }
 
         /// @dev Type 9: ACK GAS COST
@@ -526,7 +526,7 @@ contract PaymentHelper is IPaymentHelper {
         ambIdEncodedMessage.params = abi.encode(ambIds_, ambIdEncodedMessage.params);
 
         uint256 len = ambIds_.length;
-        uint256 gasReqPerKB = gasPerKB[dstChainId_];
+        uint256 gasReqPerKB = gasPerByte[dstChainId_];
         uint256 totalDstGasReqInWei = abi.encode(ambIdEncodedMessage).length * gasReqPerKB;
 
         AMBMessage memory decodedMessage = abi.decode(message_, (AMBMessage));

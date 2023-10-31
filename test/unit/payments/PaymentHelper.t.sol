@@ -650,7 +650,7 @@ contract PaymentHelperTest is ProtocolActions {
         vm.prank(deployer);
         paymentHelper.updateRemoteChain(420, 8, abi.encode(428));
 
-        uint256 result8 = paymentHelper.gasPerKB(420);
+        uint256 result8 = paymentHelper.gasPerByte(420);
         assertEq(result8, 428);
     }
 
