@@ -89,8 +89,8 @@ contract LayerzeroImplementationTest is BaseSetup {
         /// @dev chainIds = [1, 56, 43114, 137, 42161, 10];
         /// @dev notice chainId = 1 is invalid
         vm.assume(chainId != 137 && chainId != 42_161 && chainId != 10 && chainId != 56 && chainId != 43_114);
-        uint256 fees = layerzeroImplementation.estimateFees(chainId, abi.encode(420), bytes(""));
-        assertEq(fees, 0);
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        layerzeroImplementation.estimateFees(chainId, abi.encode(420), bytes(""));
     }
 
     function test_estimateFeesWithValidChainId(uint256 chainIdSeed_) public {

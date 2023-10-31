@@ -490,9 +490,11 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev just checks the estimate for sending message from src -> dst
         for (uint256 i; i < len;) {
-            fees[i] = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
-                dstChainId_, message_, extraData_[i]
-            );
+            fees[i] = CHAIN_ID != dstChainId_
+                ? IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
+                    dstChainId_, message_, extraData_[i]
+                )
+                : 0;
 
             totalFees += fees[i];
 
@@ -614,9 +616,11 @@ contract PaymentHelper is IPaymentHelper {
         /// @dev just checks the estimate for sending message from src -> dst
         /// @dev only ambIds_[0] = primary amb (rest of the ambs send only the proof)
         for (uint256 i; i < len;) {
-            uint256 tempFee = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
-                dstChainId_, i != 0 ? proof_ : abi.encode(ambIdEncodedMessage), extraDataPerAMB[i]
-            );
+            uint256 tempFee = CHAIN_ID != dstChainId_
+                ? IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
+                    dstChainId_, i != 0 ? proof_ : abi.encode(ambIdEncodedMessage), extraDataPerAMB[i]
+                )
+                : 0;
 
             totalFees += tempFee;
 
@@ -649,9 +653,11 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev just checks the estimate for sending message from src -> dst
         for (uint256 i; i < len;) {
-            uint256 tempFee = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
-                dstChainId_, i != 0 ? proof_ : abi.encode(ambIdEncodedMessage), extraDataPerAMB[i]
-            );
+            uint256 tempFee = CHAIN_ID != dstChainId_
+                ? IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
+                    dstChainId_, i != 0 ? proof_ : abi.encode(ambIdEncodedMessage), extraDataPerAMB[i]
+                )
+                : 0;
 
             totalFees += tempFee;
             feeSplitUp[i] = tempFee;
