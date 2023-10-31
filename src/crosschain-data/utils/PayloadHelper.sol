@@ -37,7 +37,9 @@ contract PayloadHelper is IPayloadHelper {
         uint256[] amounts;
         uint256[] slippages;
         uint256[] superformIds;
+        bool[] hasDstSwaps;
         uint256 srcPayloadId;
+        address receiverAddress;
         uint8 multi;
         ReturnMultiData rd;
         ReturnSingleData rsd;
@@ -54,8 +56,6 @@ contract PayloadHelper is IPayloadHelper {
         uint64[] liqDataChainIds;
         uint256[] liqDataAmountsIn;
         uint256[] liqDataNativeAmounts;
-        bool[] hasDstSwaps;
-        address receiverAddress;
         InitMultiVaultData imvd;
         InitSingleVaultData isvd;
         uint256 i;
@@ -92,7 +92,9 @@ contract PayloadHelper is IPayloadHelper {
             uint256[] memory amounts,
             uint256[] memory slippages,
             uint256[] memory superformIds,
-            uint256 srcPayloadId
+            uint256 srcPayloadId,
+            bool[] memory hasDstSwaps,
+            address receiverAddress
         )
     {
         IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
@@ -106,12 +108,21 @@ contract PayloadHelper is IPayloadHelper {
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
             (v.amounts, v.srcPayloadId) = _decodeReturnData(dstPayloadId_, v.multi, coreStateRegistry);
         } else if (v.callbackType == uint256(CallbackType.INIT)) {
-            (v.amounts, v.slippages, v.superformIds, v.srcPayloadId) =
+            (v.amounts, v.slippages, v.superformIds, v.srcPayloadId, v.hasDstSwaps, v.receiverAddress) =
                 _decodeInitData(dstPayloadId_, v.multi, coreStateRegistry);
         }
 
         return (
-            v.txType, v.callbackType, v.srcSender, v.srcChainId, v.amounts, v.slippages, v.superformIds, v.srcPayloadId
+            v.txType,
+            v.callbackType,
+            v.srcSender,
+            v.srcChainId,
+            v.amounts,
+            v.slippages,
+            v.superformIds,
+            v.srcPayloadId,
+            v.hasDstSwaps,
+            v.receiverAddress
         );
     }
 
@@ -126,9 +137,7 @@ contract PayloadHelper is IPayloadHelper {
             address[] memory tokens,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
-            uint256[] memory nativeAmounts,
-            bool[] memory hasDstSwaps,
-            address receiverAddress
+            uint256[] memory nativeAmounts
         )
     {
         IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
@@ -259,14 +268,23 @@ contract PayloadHelper is IPayloadHelper {
             uint256[] memory amounts,
             uint256[] memory slippages,
             uint256[] memory superformIds,
-            uint256 srcPayloadId
+            uint256 srcPayloadId,
+            bool[] memory hasDstSwaps,
+            address receiverAddress
         )
     {
         if (multi_ == 1) {
             InitMultiVaultData memory imvd =
                 abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (InitMultiVaultData));
 
-            return (imvd.amounts, imvd.maxSlippages, imvd.superformIds, imvd.payloadId);
+            return (
+                imvd.amounts,
+                imvd.maxSlippages,
+                imvd.superformIds,
+                imvd.payloadId,
+                imvd.hasDstSwaps,
+                imvd.receiverAddress
+            );
         } else {
             InitSingleVaultData memory isvd =
                 abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (InitSingleVaultData));
@@ -276,8 +294,11 @@ contract PayloadHelper is IPayloadHelper {
             slippages[0] = isvd.maxSlippage;
             superformIds = new uint256[](1);
             superformIds[0] = isvd.superformId;
+            hasDstSwaps = new bool[](1);
+            hasDstSwaps[0] = isvd.hasDstSwap;
+            receiverAddress = isvd.receiverAddress;
 
-            return (amounts, slippages, superformIds, isvd.payloadId);
+            return (amounts, slippages, superformIds, isvd.payloadId, hasDstSwaps, receiverAddress);
         }
     }
 
@@ -293,9 +314,7 @@ contract PayloadHelper is IPayloadHelper {
             address[] memory tokens,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
-            uint256[] memory nativeAmounts,
-            bool[] memory hasDstSwaps,
-            address receiverAddress
+            uint256[] memory nativeAmounts
         )
     {
         InitMultiVaultData memory imvd = abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (InitMultiVaultData));
@@ -306,8 +325,6 @@ contract PayloadHelper is IPayloadHelper {
         liqDstChainIds = new uint64[](imvd.liqData.length);
         amountsIn = new uint256[](imvd.liqData.length);
         nativeAmounts = new uint256[](imvd.liqData.length);
-        hasDstSwaps = imvd.hasDstSwaps;
-        receiverAddress = imvd.receiverAddress;
 
         uint256 len = imvd.liqData.length;
 
@@ -324,7 +341,7 @@ contract PayloadHelper is IPayloadHelper {
             }
         }
 
-        return (bridgeIds, txDatas, tokens, liqDstChainIds, amountsIn, nativeAmounts, hasDstSwaps, receiverAddress);
+        return (bridgeIds, txDatas, tokens, liqDstChainIds, amountsIn, nativeAmounts);
     }
 
     function _decodeSingleLiqData(
@@ -339,9 +356,7 @@ contract PayloadHelper is IPayloadHelper {
             address[] memory tokens,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
-            uint256[] memory nativeAmounts,
-            bool[] memory hasDstSwaps,
-            address receiverAddress
+            uint256[] memory nativeAmounts
         )
     {
         InitSingleVaultData memory isvd =
@@ -366,11 +381,6 @@ contract PayloadHelper is IPayloadHelper {
         nativeAmounts = new uint256[](1);
         nativeAmounts[0] = isvd.liqData.nativeAmount;
 
-        hasDstSwaps = new bool[](1);
-        hasDstSwaps[0] = isvd.hasDstSwap;
-
-        receiverAddress = isvd.receiverAddress;
-
-        return (bridgeIds, txDatas, tokens, liqDstChainIds, amountsIn, nativeAmounts, hasDstSwaps, receiverAddress);
+        return (bridgeIds, txDatas, tokens, liqDstChainIds, amountsIn, nativeAmounts);
     }
 }
