@@ -80,6 +80,13 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         _;
     }
 
+    modifier onlyBroadcastRegistry() {
+        if (msg.sender != superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))) {
+            revert Error.NOT_BROADCAST_REGISTRY();
+        }
+        _;
+    }
+
     modifier onlyBatchMinter(uint256[] memory superformIds) {
         address router = superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"));
 
@@ -259,12 +266,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     }
 
     /// @inheritdoc ISuperPositions
-    function stateSyncBroadcast(bytes memory data_) external payable override {
-        /// @dev this function is only accessible through broadcast registry
-        if (msg.sender != superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))) {
-            revert Error.NOT_BROADCAST_REGISTRY();
-        }
-
+    function stateSyncBroadcast(bytes memory data_) external payable override onlyBroadcastRegistry {
         BroadcastMessage memory transmuterPayload = abi.decode(data_, (BroadcastMessage));
 
         if (transmuterPayload.messageType == DEPLOY_NEW_SERC20) {

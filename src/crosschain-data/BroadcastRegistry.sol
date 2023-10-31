@@ -75,6 +75,13 @@ contract BroadcastRegistry is IBroadcastRegistry {
         _;
     }
 
+    modifier onlyBroadcasterAMBImplementation() {
+        if (!superRegistry.isValidBroadcastAmbImpl(msg.sender)) {
+            revert Error.NOT_BROADCAST_AMB_IMPLEMENTATION();
+        }
+        _;
+    }
+
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -97,11 +104,14 @@ contract BroadcastRegistry is IBroadcastRegistry {
     }
 
     /// @inheritdoc IBroadcastRegistry
-    function receiveBroadcastPayload(uint64 srcChainId_, bytes memory message_) external override {
-        if (!superRegistry.isValidBroadcastAmbImpl(msg.sender)) {
-            revert Error.NOT_BROADCAST_AMB_IMPLEMENTATION();
-        }
-
+    function receiveBroadcastPayload(
+        uint64 srcChainId_,
+        bytes memory message_
+    )
+        external
+        override
+        onlyBroadcasterAMBImplementation
+    {
         ++payloadsCount;
 
         payload[payloadsCount] = message_;
