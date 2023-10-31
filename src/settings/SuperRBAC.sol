@@ -187,7 +187,6 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
 
     /// @inheritdoc ISuperRBAC
     function hasProtocolAdminRole(address admin_) external view override returns (bool) {
-        if (admin_ == address(0)) return false;
         return hasRole(PROTOCOL_ADMIN_ROLE, admin_);
     }
 
