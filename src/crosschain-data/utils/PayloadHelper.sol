@@ -107,6 +107,8 @@ contract PayloadHelper is IPayloadHelper {
         } else if (v.callbackType == uint256(CallbackType.INIT)) {
             (v.amounts, v.slippages, v.superformIds, v.srcPayloadId) =
                 _decodeInitData(dstPayloadId_, v.multi, coreStateRegistry);
+        } else {
+            revert Error.INVALID_PAYLOAD();
         }
 
         return (
@@ -202,6 +204,8 @@ contract PayloadHelper is IPayloadHelper {
             amount = rsd.amount;
             superformId = rsd.superformId;
             srcPayloadId = rsd.payloadId;
+        } else {
+            revert Error.INVALID_PAYLOAD();
         }
 
         srcSender = srcSender_;
