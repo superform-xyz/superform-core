@@ -196,7 +196,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         /// @dev decode initial payload info stored on source chain in this contract
         (txType,,,, srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
-        /// @dev verify this is a single vault mint
+        /// @dev verify this is a not single vault mint
         if (multi == 0) revert Error.INVALID_PAYLOAD();
         /// @dev compare final shares beneficiary to be the same (dst/src)
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
@@ -244,7 +244,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         /// @dev decode initial payload info stored on source chain in this contract
         (txType,,,, srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
-        /// @dev verify this is a multi vault mint
+        /// @dev this is a not multi vault mint
         if (multi == 1) revert Error.INVALID_PAYLOAD();
 
         /// @dev compare final shares beneficiary to be the same (dst/src)
