@@ -125,9 +125,7 @@ contract PayloadHelper is IPayloadHelper {
             address[] memory tokens,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
-            uint256[] memory nativeAmounts,
-            bool[] memory hasDstSwaps,
-            address receiverAddress
+            uint256[] memory nativeAmounts
         )
     {
         IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
@@ -153,9 +151,11 @@ contract PayloadHelper is IPayloadHelper {
         uint256 txInfo =
             ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).txHistory(srcPayloadId_);
 
-        if (txInfo != 0) {
-            (txType, callbackType, multi,, srcSender, srcChainId) = txInfo.decodeTxInfo();
+        if (txInfo == 0) {
+            revert Error.INVALID_PAYLOAD_ID();
         }
+
+        (txType, callbackType, multi,, srcSender, srcChainId) = txInfo.decodeTxInfo();
     }
 
     /// @inheritdoc IPayloadHelper
@@ -300,9 +300,7 @@ contract PayloadHelper is IPayloadHelper {
             address[] memory tokens,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
-            uint256[] memory nativeAmounts,
-            bool[] memory hasDstSwaps,
-            address receiverAddress
+            uint256[] memory nativeAmounts
         )
     {
         InitMultiVaultData memory imvd = abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (InitMultiVaultData));
@@ -313,8 +311,6 @@ contract PayloadHelper is IPayloadHelper {
         liqDstChainIds = new uint64[](imvd.liqData.length);
         amountsIn = new uint256[](imvd.liqData.length);
         nativeAmounts = new uint256[](imvd.liqData.length);
-        hasDstSwaps = imvd.hasDstSwaps;
-        receiverAddress = imvd.receiverAddress;
 
         uint256 len = imvd.liqData.length;
 
@@ -331,7 +327,7 @@ contract PayloadHelper is IPayloadHelper {
             }
         }
 
-        return (bridgeIds, txDatas, tokens, liqDstChainIds, amountsIn, nativeAmounts, hasDstSwaps, receiverAddress);
+        return (bridgeIds, txDatas, tokens, liqDstChainIds, amountsIn, nativeAmounts);
     }
 
     function _decodeSingleLiqData(
@@ -346,9 +342,7 @@ contract PayloadHelper is IPayloadHelper {
             address[] memory tokens,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
-            uint256[] memory nativeAmounts,
-            bool[] memory hasDstSwaps,
-            address receiverAddress
+            uint256[] memory nativeAmounts
         )
     {
         InitSingleVaultData memory isvd =
@@ -373,11 +367,6 @@ contract PayloadHelper is IPayloadHelper {
         nativeAmounts = new uint256[](1);
         nativeAmounts[0] = isvd.liqData.nativeAmount;
 
-        hasDstSwaps = new bool[](1);
-        hasDstSwaps[0] = isvd.hasDstSwap;
-
-        receiverAddress = isvd.receiverAddress;
-
-        return (bridgeIds, txDatas, tokens, liqDstChainIds, amountsIn, nativeAmounts, hasDstSwaps, receiverAddress);
+        return (bridgeIds, txDatas, tokens, liqDstChainIds, amountsIn, nativeAmounts);
     }
 }
