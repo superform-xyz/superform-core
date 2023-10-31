@@ -31,6 +31,8 @@ contract SuperformFactory is ISuperformFactory {
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
     uint256 public xChainPayloadCounter;
+    uint256 public superformCounter;
+
     ISuperRegistry public immutable superRegistry;
 
     /// @dev all form beacon addresses
@@ -130,7 +132,10 @@ contract SuperformFactory is ISuperformFactory {
         }
 
         /// @dev instantiate the superform
-        superform_ = tFormImplementation.clone();
+        superform_ =
+            tFormImplementation.cloneDeterministic(keccak256(abi.encodePacked(uint256(CHAIN_ID), superformCounter)));
+        ++superformCounter;
+
         BaseForm(payable(superform_)).initialize(
             address(superRegistry), vault_, formImplementationId_, address(IERC4626(vault_).asset())
         );
