@@ -280,6 +280,16 @@ contract PaymentHelper is IPaymentHelper {
             /// note: execution cost includes acknowledgement messaging cost
             totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], superformIdsLen);
 
+            /// @dev step 6: estimate if timelock form processing costs are involved
+            if (!isDeposit_) {
+                for (uint256 j; j < superformIdsLen; ++j) {
+                    (, uint32 formId,) = req_.superformsData[i].superformIds[j].getSuperform();
+                    if (formId == TIMELOCK_FORM_ID) {
+                        totalDstGas += timelockCost[req_.dstChainIds[i]];
+                    }
+                }
+            }
+
             /// @dev step 7: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
 
@@ -331,7 +341,13 @@ contract PaymentHelper is IPaymentHelper {
             /// note: execution cost includes acknowledgement messaging cost
             totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], 1);
 
-            /// @dev step 6: convert all dst gas estimates to src chain estimate
+            /// @dev step 6: estimate if timelock form processing costs are involved
+            (, uint32 formId,) = req_.superformsData[i].superformId.getSuperform();
+            if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
+                totalDstGas += timelockCost[req_.dstChainIds[i]];
+            }
+
+            /// @dev step 7: convert all dst gas estimates to src chain estimate
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
 
             unchecked {
@@ -377,7 +393,18 @@ contract PaymentHelper is IPaymentHelper {
         /// @dev step 6: estimate if swap costs are involved
         if (isDeposit_) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformsData.hasDstSwaps);
 
-        /// @dev step 7: convert all dst gas estimates to src chain estimate
+        /// @dev step 7: estimate if timelock form processing costs are involved
+        if (!isDeposit_) {
+            for (uint256 i; i < superformIdsLen; ++i) {
+                (, uint32 formId,) = req_.superformsData.superformIds[i].getSuperform();
+
+                if (formId == TIMELOCK_FORM_ID) {
+                    totalDstGas += timelockCost[CHAIN_ID];
+                }
+            }
+        }
+
+        /// @dev step 8: convert all dst gas estimates to src chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
 
         totalAmount = srcAmount + dstAmount + liqAmount;
@@ -418,7 +445,13 @@ contract PaymentHelper is IPaymentHelper {
             totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformData.hasDstSwap.castBoolToArray());
         }
 
-        /// @dev step 7: convert all dst gas estimates to src chain estimate
+        /// @dev step 7: estimate if timelock form processing costs are involved
+        (, uint32 formId,) = req_.superformData.superformId.getSuperform();
+        if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
+            totalDstGas += timelockCost[CHAIN_ID];
+        }
+
+        /// @dev step 8: convert all dst gas estimates to src chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
 
         totalAmount = srcAmount + dstAmount + liqAmount;
