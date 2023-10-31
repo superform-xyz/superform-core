@@ -202,9 +202,11 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
 
         uint16 dstChainId = ambChainId[dstChainId_];
 
-        if (dstChainId != 0) {
-            (fees,) = relayer.quoteEVMDeliveryPrice(dstChainId, dstNativeAirdrop, dstGasLimit);
+        if (dstChainId == 0) {
+            revert Error.INVALID_CHAIN_ID();
         }
+
+        (fees,) = relayer.quoteEVMDeliveryPrice(dstChainId, dstNativeAirdrop, dstGasLimit);
     }
 
     /*///////////////////////////////////////////////////////////////

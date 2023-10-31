@@ -197,9 +197,11 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     {
         uint32 domain = ambChainId[dstChainId_];
 
-        if (domain != 0) {
-            fees = igp.quoteGasPayment(domain, abi.decode(extraData_, (uint256)));
+        if (domain == 0) {
+            revert Error.INVALID_CHAIN_ID();
         }
+
+        fees = igp.quoteGasPayment(domain, abi.decode(extraData_, (uint256)));
     }
 
     /*///////////////////////////////////////////////////////////////

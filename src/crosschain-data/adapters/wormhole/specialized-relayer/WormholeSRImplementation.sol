@@ -19,6 +19,10 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
+
+    /// @notice before deployment make sure the broadcast state registry id is updated accordingly
+    uint8 constant BROADCAST_REGISTRY_ID = 3;
+
     ISuperRegistry public immutable superRegistry;
     IWormhole public wormhole;
     address public relayer;
@@ -165,7 +169,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         processedMessages[wormholeMessage.hash] = true;
 
         /// @dev decoding payload
-        IBroadcastRegistry targetRegistry = IBroadcastRegistry(superRegistry.getStateRegistry(3));
+        IBroadcastRegistry targetRegistry = IBroadcastRegistry(superRegistry.getStateRegistry(BROADCAST_REGISTRY_ID));
         targetRegistry.receiveBroadcastPayload(superChainId[wormholeMessage.emitterChainId], wormholeMessage.payload);
     }
 
