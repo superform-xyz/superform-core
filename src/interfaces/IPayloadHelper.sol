@@ -14,6 +14,9 @@ interface IPayloadHelper {
     /// @return amounts is the amount to deposit/withdraw
     /// @return slippage is the max slippage configured by the user (only for deposits)
     /// @return superformIds is the unique identifiers of the superforms
+    /// @return hasDstSwaps is the array of flags indicating if the original liqData has a dstSwaps
+    /// @return extraFormData is the extra form data (optional: passed for forms with special needs)
+    /// @return receiverAddress is the address to be used for refunds
     /// @return srcPayloadId is the identifier of the corresponding payload on srcChain
     function decodeCoreStateRegistryPayload(uint256 dstPayloadId_)
         external
@@ -26,6 +29,9 @@ interface IPayloadHelper {
             uint256[] memory amounts,
             uint256[] memory slippage,
             uint256[] memory superformIds,
+            bool[] memory hasDstSwaps,
+            bytes memory extraFormData,
+            address receiverAddress,
             uint256 srcPayloadId
         );
 

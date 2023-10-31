@@ -37,7 +37,10 @@ contract PayloadHelper is IPayloadHelper {
         uint256[] amounts;
         uint256[] slippages;
         uint256[] superformIds;
+        bool[] hasDstSwaps;
+        address receiverAddress;
         uint256 srcPayloadId;
+        bytes extraFormData;
         uint8 multi;
         ReturnMultiData rd;
         ReturnSingleData rsd;
@@ -85,14 +88,17 @@ contract PayloadHelper is IPayloadHelper {
         view
         override
         returns (
-            uint8 txType,
-            uint8 callbackType,
-            address srcSender,
-            uint64 srcChainId,
-            uint256[] memory amounts,
-            uint256[] memory slippages,
-            uint256[] memory superformIds,
-            uint256 srcPayloadId
+            uint8,
+            uint8,
+            address,
+            uint64,
+            uint256[] memory,
+            uint256[] memory,
+            uint256[] memory,
+            bool[] memory,
+            bytes memory,
+            address,
+            uint256
         )
     {
         IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
@@ -105,14 +111,24 @@ contract PayloadHelper is IPayloadHelper {
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
             (v.amounts, v.srcPayloadId) = _decodeReturnData(dstPayloadId_, v.multi, coreStateRegistry);
         } else if (v.callbackType == uint256(CallbackType.INIT)) {
-            (v.amounts, v.slippages, v.superformIds, v.srcPayloadId) =
-                _decodeInitData(dstPayloadId_, v.multi, coreStateRegistry);
+            (v.amounts, v.slippages, v.superformIds, v.hasDstSwaps, v.extraFormData, v.receiverAddress, v.srcPayloadId)
+            = _decodeInitData(dstPayloadId_, v.multi, coreStateRegistry);
         } else {
             revert Error.INVALID_PAYLOAD();
         }
 
         return (
-            v.txType, v.callbackType, v.srcSender, v.srcChainId, v.amounts, v.slippages, v.superformIds, v.srcPayloadId
+            v.txType,
+            v.callbackType,
+            v.srcSender,
+            v.srcChainId,
+            v.amounts,
+            v.slippages,
+            v.superformIds,
+            v.hasDstSwaps,
+            v.extraFormData,
+            v.receiverAddress,
+            v.srcPayloadId
         );
     }
 
@@ -270,6 +286,9 @@ contract PayloadHelper is IPayloadHelper {
             uint256[] memory amounts,
             uint256[] memory slippages,
             uint256[] memory superformIds,
+            bool[] memory hasDstSwaps,
+            bytes memory extraFormData,
+            address receiverAddress,
             uint256 srcPayloadId
         )
     {
@@ -277,18 +296,34 @@ contract PayloadHelper is IPayloadHelper {
             InitMultiVaultData memory imvd =
                 abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (InitMultiVaultData));
 
-            return (imvd.amounts, imvd.maxSlippages, imvd.superformIds, imvd.payloadId);
+            return (
+                imvd.amounts,
+                imvd.maxSlippages,
+                imvd.superformIds,
+                imvd.hasDstSwaps,
+                imvd.extraFormData,
+                imvd.receiverAddress,
+                imvd.payloadId
+            );
         } else {
             InitSingleVaultData memory isvd =
                 abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (InitSingleVaultData));
+
             amounts = new uint256[](1);
             amounts[0] = isvd.amount;
+
             slippages = new uint256[](1);
             slippages[0] = isvd.maxSlippage;
+
             superformIds = new uint256[](1);
             superformIds[0] = isvd.superformId;
 
-            return (amounts, slippages, superformIds, isvd.payloadId);
+            hasDstSwaps = new bool[](1);
+            hasDstSwaps[0] = isvd.hasDstSwap;
+
+            return (
+                amounts, slippages, superformIds, hasDstSwaps, isvd.extraFormData, isvd.receiverAddress, isvd.payloadId
+            );
         }
     }
 
