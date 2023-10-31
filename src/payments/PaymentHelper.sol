@@ -247,8 +247,10 @@ contract PaymentHelper is IPaymentHelper {
     {
         uint256 len = req_.dstChainIds.length;
         uint256 superformIdsLen;
+        uint256 totalDstGas;
+
         for (uint256 i; i < len;) {
-            uint256 totalDstGas;
+            totalDstGas = 0;
 
             /// @dev step 1: estimate amb costs
             uint256 ambFees = _estimateAMBFees(
