@@ -370,6 +370,8 @@ contract SuperPositions is ISuperPositions, ERC1155A {
 
         _broadcast(abi.encode(transmuterPayload));
 
+        emit SyntheticTokenRegistered(id, syntheticToken);
+
         return syntheticToken;
     }
 
@@ -407,5 +409,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         );
 
         synthethicTokenId[superformId] = syntheticToken;
+
+        emit SyntheticTokenRegistered(superformId, syntheticToken);
     }
 }
