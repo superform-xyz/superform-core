@@ -173,7 +173,7 @@ library Error {
     error INVALID_INDEX();
 
     /// @dev thrown if msg.sender is not the refund address to dispute
-    error INVALID_DISUPTER();
+    error INVALID_DISPUTER();
 
     /// @dev thrown if the rescue passed dispute deadline
     error DISPUTE_TIME_ELAPSED();
@@ -373,7 +373,7 @@ library Error {
     /// vault.asset()
     error DIFFERENT_TOKENS();
 
-    /// @dev thrown in KYCDAO form if no KYC token is present 
+    /// @dev thrown in KYCDAO form if no KYC token is present
     error NO_VALID_KYC_TOKEN();
 
     /*///////////////////////////////////////////////////////////////
