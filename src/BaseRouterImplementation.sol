@@ -121,7 +121,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             )
         );
 
-        emit CrossChainInitiated(vars.currentPayloadId);
+        emit CrossChainInitiatedMulti(
+            vars.currentPayloadId, req_.dstChainId, req_.superformsData.superformIds, uint8(TransactionType.DEPOSIT)
+        );
     }
 
     /// @dev handles cross-chain single vault deposit
@@ -188,7 +190,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             )
         );
 
-        emit CrossChainInitiated(vars.currentPayloadId);
+        emit CrossChainInitiatedSingle(
+            vars.currentPayloadId, req_.dstChainId, req_.superformData.superformId, uint8(TransactionType.DEPOSIT)
+        );
     }
 
     /// @dev handles same-chain single vault deposit
@@ -299,7 +303,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             )
         );
 
-        emit CrossChainInitiated(vars.currentPayloadId);
+        emit CrossChainInitiatedMulti(
+            vars.currentPayloadId, req_.dstChainId, req_.superformsData.superformIds, uint8(TransactionType.WITHDRAW)
+        );
     }
 
     /// @dev handles cross-chain single vault withdraw
@@ -354,7 +360,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             )
         );
 
-        emit CrossChainInitiated(vars.currentPayloadId);
+        emit CrossChainInitiatedSingle(
+            vars.currentPayloadId, req_.dstChainId, req_.superformData.superformId, uint8(TransactionType.WITHDRAW)
+        );
     }
 
     /// @dev handles same-chain single vault withdraw
