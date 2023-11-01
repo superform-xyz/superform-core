@@ -6,6 +6,9 @@ import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { IPayMaster } from "../interfaces/IPayMaster.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
+import { ILayerZeroEndpoint } from "../vendor/layerzero/ILayerZeroEndpoint.sol";
+import { IInterchainGasPaymaster } from "../vendor/hyperlane/IInterchainGasPaymaster.sol";
+import { IWormholeRelayerSend, VaaKey } from "../vendor/wormhole/IWormholeRelayer.sol";
 import { LiquidityHandler } from "../crosschain-liquidity/LiquidityHandler.sol";
 import "../types/LiquidityTypes.sol";
 
@@ -93,6 +96,42 @@ contract PayMaster is IPayMaster, LiquidityHandler {
         totalFeesPaid[user_] += msg.value;
 
         emit Payment(user_, msg.value);
+    }
+
+    function treatLayerzero(uint16 srcChainId_, bytes calldata srcAddress_, bytes memory payload_) external {
+        /// FIXME: figure out how to get this
+        ILayerZeroEndpoint(address(0)).retryPayload(srcChainId_, srcAddress_, payload_);
+    }
+
+    function treatHyperlane(
+        bytes32 messageId_,
+        uint32 destinationDomain_,
+        uint256 gasAmount_,
+        address refundAddress_
+    )
+        external
+        payable
+    {
+        /// FIXME: figure out how to get this
+        /// FIXME: validate refund address
+        IInterchainGasPaymaster(address(0)).payForGas{ value: msg.value }(
+            messageId_, destinationDomain_, gasAmount_, refundAddress_
+        );
+    }
+
+    function testWormhole(
+        VaaKey memory deliveryVaaKey_,
+        uint16 targetChain_,
+        uint256 newReceiverValue_,
+        uint256 newGasLimit_,
+        address newDeliveryProviderAddress_
+    )
+        external
+        payable
+    {
+        IWormholeRelayerSend(address(0)).resendToEvm{ value: msg.value }(
+            deliveryVaaKey_, targetChain_, newReceiverValue_, newGasLimit_, newDeliveryProviderAddress_
+        );
     }
 
     /*///////////////////////////////////////////////////////////////
