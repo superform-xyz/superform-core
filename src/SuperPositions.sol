@@ -167,7 +167,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         (uint256 returnTxType, uint256 callbackType, uint8 multi,, address returnDataSrcSender,) =
             data_.txInfo.decodeTxInfo();
 
-        if (callbackType == uint256(CallbackType.INIT)) {
+        if (callbackType != uint256(CallbackType.RETURN) && callbackType != uint256(CallbackType.FAIL)) {
             revert Error.INVALID_PAYLOAD();
         }
 
@@ -216,7 +216,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         (uint256 returnTxType, uint256 callbackType, uint8 multi,, address returnDataSrcSender,) =
             data_.txInfo.decodeTxInfo();
 
-        if (callbackType == uint256(CallbackType.INIT)) {
+        if (callbackType != uint256(CallbackType.RETURN) && callbackType != uint256(CallbackType.FAIL)) {
             revert Error.INVALID_PAYLOAD();
         }
 
