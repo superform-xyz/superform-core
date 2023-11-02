@@ -53,16 +53,16 @@ interface IPaymentHelper {
                         PRIVILEGED ADMIN ONLY FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev admin config destination chain config for estimation
+    /// @dev admin can configure a remote chain for first time
     /// @param chainId_ is the identifier of new chain id
     /// @param config_ is the chain config
-    function addChain(uint64 chainId_, PaymentHelperConfig calldata config_) external;
+    function addRemoteChain(uint64 chainId_, PaymentHelperConfig calldata config_) external;
 
-    /// @dev admin update remote chain config for estimation
+    /// @dev admin can specifically configure/update certain configuration of a remote chain
     /// @param chainId_ is the remote chain's identifier
     /// @param configType_ is the type of config from 1 -> 6
     /// @param config_ is the encoded new configuration
-    function updateChainConfig(uint64 chainId_, uint256 configType_, bytes memory config_) external;
+    function updateRemoteChain(uint64 chainId_, uint256 configType_, bytes memory config_) external;
 
     /// @dev admin updates config for register transmuter amb params
     /// @param totalTransmuterFees_ is the native value fees for registering transmuter on all supported chains

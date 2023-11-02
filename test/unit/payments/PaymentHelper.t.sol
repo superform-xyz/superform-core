@@ -30,7 +30,7 @@ contract PaymentHelperTest is ProtocolActions {
 
     function test_getGasPrice_chainlink_malfunction() public {
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(1, 2, abi.encode(address(0x222)));
+        paymentHelper.updateRemoteChain(1, 2, abi.encode(address(0x222)));
 
         address gasPriceOracle = address(paymentHelper.gasPriceOracle(ETH));
         vm.mockCall(
@@ -64,7 +64,7 @@ contract PaymentHelperTest is ProtocolActions {
 
     function test_getGasPrice_chainlink_incomplete_round() public {
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(1, 2, abi.encode(address(0x222)));
+        paymentHelper.updateRemoteChain(1, 2, abi.encode(address(0x222)));
 
         address gasPriceOracle = address(paymentHelper.gasPriceOracle(ETH));
 
@@ -220,10 +220,10 @@ contract PaymentHelperTest is ProtocolActions {
         /// @dev scenario: when the dst native fee is returned as zero by oracle
 
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(137, 1, abi.encode(address(0)));
+        paymentHelper.updateRemoteChain(137, 1, abi.encode(address(0)));
 
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(137, 6, abi.encode(0));
+        paymentHelper.updateRemoteChain(137, 6, abi.encode(0));
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
@@ -269,10 +269,10 @@ contract PaymentHelperTest is ProtocolActions {
     function test_usageOfSrcNativePrice() public {
         /// @dev scenario: when the source native fee oracle is zero address
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(1, 1, abi.encode(address(0)));
+        paymentHelper.updateRemoteChain(1, 1, abi.encode(address(0)));
 
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(1, 6, abi.encode(1e8));
+        paymentHelper.updateRemoteChain(1, 6, abi.encode(1e8));
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
@@ -319,7 +319,7 @@ contract PaymentHelperTest is ProtocolActions {
         /// @dev scenario: when the source native fee oracle is zero address
 
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(1, 11, abi.encode(1e8));
+        paymentHelper.updateRemoteChain(1, 11, abi.encode(1e8));
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
@@ -371,10 +371,10 @@ contract PaymentHelperTest is ProtocolActions {
     function test_chainlink_malfunction() public {
         /// @dev scenario: when the source native fee oracle is zero address
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(1, 1, abi.encode(address(0)));
+        paymentHelper.updateRemoteChain(1, 1, abi.encode(address(0)));
 
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(1, 6, abi.encode(1e8));
+        paymentHelper.updateRemoteChain(1, 6, abi.encode(1e8));
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
@@ -429,10 +429,10 @@ contract PaymentHelperTest is ProtocolActions {
     function test_chainlink_incompleteround() public {
         /// @dev scenario: when the source native fee oracle is zero address
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(1, 1, abi.encode(address(0)));
+        paymentHelper.updateRemoteChain(1, 1, abi.encode(address(0)));
 
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(1, 6, abi.encode(1e8));
+        paymentHelper.updateRemoteChain(1, 6, abi.encode(1e8));
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
@@ -487,10 +487,10 @@ contract PaymentHelperTest is ProtocolActions {
     function test_usageOfGasPriceOracle() public {
         /// @dev scenario: using mock gas price oracle
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(1, 2, abi.encode(address(mockGasPriceOracle)));
+        paymentHelper.updateRemoteChain(1, 2, abi.encode(address(mockGasPriceOracle)));
 
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(137, 2, abi.encode(address(mockGasPriceOracle)));
+        paymentHelper.updateRemoteChain(137, 2, abi.encode(address(mockGasPriceOracle)));
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
@@ -538,119 +538,119 @@ contract PaymentHelperTest is ProtocolActions {
 
         /// set config type: 1
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(1, 1, abi.encode(address(420)));
+        paymentHelper.updateRemoteChain(1, 1, abi.encode(address(420)));
 
         address result1 = address(paymentHelper.nativeFeedOracle(1));
         assertEq(result1, address(420));
 
         /// set config type: 2
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(1, 2, abi.encode(address(421)));
+        paymentHelper.updateRemoteChain(1, 2, abi.encode(address(421)));
 
         address result2 = address(paymentHelper.gasPriceOracle(1));
         assertEq(result2, address(421));
 
         /// set config type: 9
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(1, 9, abi.encode(422));
+        paymentHelper.updateRemoteChain(1, 9, abi.encode(422));
 
         uint256 result3 = paymentHelper.ackGasCost(1);
         assertEq(result3, 422);
 
         /// set config type: 10
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(1, 10, abi.encode(423));
+        paymentHelper.updateRemoteChain(1, 10, abi.encode(423));
 
         uint256 result4 = paymentHelper.timelockCost(1);
         assertEq(result4, 423);
 
         /// set config type: 6
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(1, 6, abi.encode(424));
+        paymentHelper.updateRemoteChain(1, 6, abi.encode(424));
 
         uint256 result5 = paymentHelper.nativePrice(1);
         assertEq(result5, 424);
 
         /// set config type: 7
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(1, 7, abi.encode(425));
+        paymentHelper.updateRemoteChain(1, 7, abi.encode(425));
 
         uint256 result6 = paymentHelper.gasPrice(1);
         assertEq(result6, 425);
 
         /// set config type: 11
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(1, 11, abi.encode(423));
+        paymentHelper.updateRemoteChain(1, 11, abi.encode(423));
 
         uint256 result7 = paymentHelper.swapGasUsed(1);
         assertEq(result7, 423);
     }
 
-    function test_addChain() public {
+    function test_addRemoteChain() public {
         vm.prank(deployer);
-        paymentHelper.addChain(
+        paymentHelper.addRemoteChain(
             420,
             IPaymentHelper.PaymentHelperConfig(address(420), address(421), 321, 423, 424, 425, 426, 427, 428, 429, 430)
         );
     }
 
-    function test_updateChainConfig() public {
+    function test_updateRemoteChain() public {
         /// chain id used: 420
 
         /// set config type: 1
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(420, 1, abi.encode(address(420)));
+        paymentHelper.updateRemoteChain(420, 1, abi.encode(address(420)));
 
         address result1 = address(paymentHelper.nativeFeedOracle(420));
         assertEq(result1, address(420));
 
         /// set config type: 2
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(420, 2, abi.encode(address(421)));
+        paymentHelper.updateRemoteChain(420, 2, abi.encode(address(421)));
 
         address result2 = address(paymentHelper.gasPriceOracle(420));
         assertEq(result2, address(421));
 
         /// set config type: 3
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(420, 3, abi.encode(423));
+        paymentHelper.updateRemoteChain(420, 3, abi.encode(423));
 
         uint256 result3 = paymentHelper.updateGasUsed(420);
         assertEq(result3, 423);
 
         /// set config type: 4
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(420, 4, abi.encode(424));
+        paymentHelper.updateRemoteChain(420, 4, abi.encode(424));
 
         uint256 result4 = paymentHelper.depositGasUsed(420);
         assertEq(result4, 424);
 
         /// set config type: 5
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(420, 5, abi.encode(425));
+        paymentHelper.updateRemoteChain(420, 5, abi.encode(425));
 
         uint256 result5 = paymentHelper.withdrawGasUsed(420);
         assertEq(result5, 425);
 
         /// set config type: 6
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(420, 6, abi.encode(426));
+        paymentHelper.updateRemoteChain(420, 6, abi.encode(426));
 
         uint256 result6 = paymentHelper.nativePrice(420);
         assertEq(result6, 426);
 
         /// set config type: 7
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(420, 7, abi.encode(427));
+        paymentHelper.updateRemoteChain(420, 7, abi.encode(427));
 
         uint256 result7 = paymentHelper.gasPrice(420);
         assertEq(result7, 427);
 
         /// set config type: 8
         vm.prank(deployer);
-        paymentHelper.updateChainConfig(420, 8, abi.encode(428));
+        paymentHelper.updateRemoteChain(420, 8, abi.encode(428));
 
-        uint256 result8 = paymentHelper.gasPerKB(420);
+        uint256 result8 = paymentHelper.gasPerByte(420);
         assertEq(result8, 428);
     }
 

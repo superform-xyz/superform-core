@@ -60,7 +60,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (vars.srcChainId == req_.dstChainId) revert Error.INVALID_ACTION();
 
         /// @dev validate superformsData
-        if (!_validateSuperformsDepositData(req_.superformsData, req_.dstChainId)) {
+        if (!_validateSuperformsData(req_.superformsData, req_.dstChainId, true)) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
@@ -134,7 +134,18 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (vars.srcChainId == req_.dstChainId) revert Error.INVALID_ACTION();
 
         /// @dev validate superformData
-        if (!_validateSuperformData(req_.superformData, req_.dstChainId, true)) {
+        if (
+            !_validateSuperformData(
+                req_.superformData.superformId,
+                req_.superformData.maxSlippage,
+                req_.superformData.amount,
+                req_.superformData.retain4626,
+                req_.superformData.receiverAddress,
+                req_.dstChainId,
+                true,
+                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")))
+            )
+        ) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
@@ -201,7 +212,18 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         vars.srcChainId = CHAIN_ID;
 
         /// @dev validate superformData
-        if (!_validateSuperformData(req_.superformData, vars.srcChainId, true)) {
+        if (
+            !_validateSuperformData(
+                req_.superformData.superformId,
+                req_.superformData.maxSlippage,
+                req_.superformData.amount,
+                req_.superformData.retain4626,
+                req_.superformData.receiverAddress,
+                vars.srcChainId,
+                true,
+                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")))
+            )
+        ) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
@@ -230,7 +252,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         vars.srcChainId = CHAIN_ID;
 
         /// @dev validate superformData
-        if (!_validateSuperformsDepositData(req_.superformData, vars.srcChainId)) {
+        if (!_validateSuperformsData(req_.superformData, vars.srcChainId, true)) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
@@ -263,7 +285,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
 
         /// @dev validate superformsData
-        if (!_validateSuperformsWithdrawData(req_.superformsData, req_.dstChainId)) {
+        if (!_validateSuperformsData(req_.superformsData, req_.dstChainId, false)) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
@@ -318,7 +340,18 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
 
         /// @dev validate the Superforms data
-        if (!_validateSuperformData(req_.superformData, req_.dstChainId, false)) {
+        if (
+            !_validateSuperformData(
+                req_.superformData.superformId,
+                req_.superformData.maxSlippage,
+                req_.superformData.amount,
+                req_.superformData.retain4626,
+                req_.superformData.receiverAddress,
+                req_.dstChainId,
+                false,
+                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")))
+            )
+        ) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
@@ -371,7 +404,18 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         vars.srcChainId = CHAIN_ID;
 
         /// @dev validate Superform data
-        if (!_validateSuperformData(req_.superformData, vars.srcChainId, false)) {
+        if (
+            !_validateSuperformData(
+                req_.superformData.superformId,
+                req_.superformData.maxSlippage,
+                req_.superformData.amount,
+                req_.superformData.retain4626,
+                req_.superformData.receiverAddress,
+                vars.srcChainId,
+                false,
+                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")))
+            )
+        ) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
@@ -404,7 +448,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         vars.srcChainId = CHAIN_ID;
 
         /// @dev validates the Superform data
-        if (!_validateSuperformsWithdrawData(req_.superformData, vars.srcChainId)) {
+        if (!_validateSuperformsData(req_.superformData, vars.srcChainId, false)) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
@@ -725,9 +769,14 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     //////////////////////////////////////////////////////////////*/
 
     function _validateSuperformData(
-        SingleVaultSFData memory superformData_,
+        uint256 superformId_,
+        uint256 maxSlippage_,
+        uint256 amount_,
+        bool retain4626_,
+        address receiverAddress_,
         uint64 dstChainId_,
-        bool isDeposit_
+        bool isDeposit_,
+        ISuperformFactory factory_
     )
         internal
         view
@@ -736,7 +785,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     {
         /// @dev the dstChainId_ (in the state request) must match the superforms' chainId (superform must exist on
         /// destination)
-        (, uint32 formImplementationId, uint64 sfDstChainId) = superformData_.superformId.getSuperform();
+        (, uint32 formImplementationId, uint64 sfDstChainId) = superformId_.getSuperform();
 
         if (dstChainId_ != sfDstChainId) return false;
 
@@ -744,28 +793,24 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (sfDstChainId == 0) return false;
 
         /// @dev 10000 = 100% slippage
-        if (superformData_.maxSlippage > 10_000) return false;
+        if (maxSlippage_ > 10_000) return false;
 
         /// @dev amount can't be 0
-        if (superformData_.amount == 0) return false;
+        if (amount_ == 0) return false;
 
-        if (
-            isDeposit_
-                && ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
-                    formImplementationId
-                )
-        ) return false;
+        if (isDeposit_ && factory_.isFormImplementationPaused(formImplementationId)) return false;
 
         /// @dev ensure that receiver address is sent if user wants to keep the 4626
-        if (superformData_.retain4626 && superformData_.receiverAddress == address(0)) return false;
+        if (isDeposit_ && retain4626_ && receiverAddress_ == address(0)) return false;
 
         /// if it reaches this point then is valid
         return true;
     }
 
-    function _validateSuperformsDepositData(
+    function _validateSuperformsData(
         MultiVaultSFData memory superformsData_,
-        uint64 dstChainId_
+        uint64 dstChainId_,
+        bool deposit_
     )
         internal
         view
@@ -794,22 +839,23 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             return false;
         }
         ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+        bool valid;
         /// @dev slippage, amount, paused status validation
         for (uint256 i; i < len;) {
-            /// @dev 10000 = 100% slippage
-            if (superformsData_.maxSlippages[i] > 10_000) return false;
-            /// @dev amount can't be 0
-            if (superformsData_.amounts[i] == 0) return false;
-            (, uint32 formImplementationId, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
-            if (dstChainId_ != sfDstChainId) return false;
+            valid = _validateSuperformData(
+                superformsData_.superformIds[i],
+                superformsData_.maxSlippages[i],
+                superformsData_.amounts[i],
+                superformsData_.retain4626s[i],
+                superformsData_.receiverAddress,
+                dstChainId_,
+                deposit_,
+                factory
+            );
 
-            /// @dev no chainId 0 allowed on superform
-            if (sfDstChainId == 0) return false;
-
-            if (factory.isFormImplementationPaused(formImplementationId)) return false;
-
-            /// @dev ensure that receiver address is sent if user wants to keep the 4626
-            if (superformsData_.retain4626s[i] && superformsData_.receiverAddress == address(0)) return false;
+            if (!valid) {
+                return valid;
+            }
 
             unchecked {
                 ++i;
@@ -825,55 +871,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 revert Error.RECEIVER_ADDRESS_NOT_SET();
             }
         }
-    }
-
-    function _validateSuperformsWithdrawData(
-        MultiVaultSFData memory superformsData_,
-        uint64 dstChainId_
-    )
-        internal
-        view
-        virtual
-        returns (bool)
-    {
-        uint256 len = superformsData_.amounts.length;
-        uint256 liqRequestsLen = superformsData_.liqRequests.length;
-
-        /// @dev empty requests are not allowed, as well as requests with length mismatch
-        if (len == 0 || liqRequestsLen == 0) return false;
-
-        if (liqRequestsLen != len) {
-            return false;
-        }
-
-        /// @dev deposits beyond max vaults per tx is blocked
-        if (superformsData_.superformIds.length > superRegistry.getVaultLimitPerTx(dstChainId_)) return false;
-
-        /// @dev superformIds/amounts/slippages array sizes validation
-        if (
-            !(
-                superformsData_.superformIds.length == superformsData_.amounts.length
-                    && superformsData_.superformIds.length == superformsData_.maxSlippages.length
-            )
-        ) {
-            return false;
-        }
-
-        /// @dev slippage and paused status validation
-        for (uint256 i; i < len;) {
-            /// @dev 10000 = 100% slippage
-            if (superformsData_.maxSlippages[i] > 10_000) return false;
-            /// @dev amount can't be 0
-            if (superformsData_.amounts[i] == 0) return false;
-            (,, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
-            if (dstChainId_ != sfDstChainId) return false;
-            if (sfDstChainId == 0) return false;
-            unchecked {
-                ++i;
-            }
-        }
-
-        return true;
     }
 
     /*///////////////////////////////////////////////////////////////

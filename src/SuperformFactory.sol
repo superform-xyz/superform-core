@@ -175,6 +175,8 @@ contract SuperformFactory is ISuperformFactory {
 
             _broadcast(abi.encode(factoryPayload), extraData_);
         }
+
+        emit FormImplementationPaused(formImplementationId_, paused_);
     }
 
     /// @inheritdoc ISuperformFactory
@@ -289,5 +291,7 @@ contract SuperformFactory is ISuperformFactory {
 
         if (formImplementation[formImplementationId] == address(0)) revert Error.INVALID_FORM_ID();
         formImplementationPaused[formImplementationId] = paused;
+
+        emit FormImplementationPaused(formImplementationId, paused);
     }
 }

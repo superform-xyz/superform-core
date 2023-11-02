@@ -27,6 +27,11 @@ interface ISuperformFactory {
     /// @param superRegistry is the address of the super registry
     event SuperRegistrySet(address indexed superRegistry);
 
+    /// @dev emitted when a form implementation is paused
+    /// @param formImplementationId is the id of the form implementation
+    /// @param paused is the new paused status
+    event FormImplementationPaused(uint256 indexed formImplementationId, bool indexed paused);
+
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/

@@ -218,6 +218,9 @@ library Error {
     /// @dev thrown if ambId is not valid leading to an address 0 of the implementation
     error INVALID_BRIDGE_ID();
 
+    /// @dev thrown if payload type is invalid
+    error INVALID_PAYLOAD_TYPE();
+
     /// @dev thrown if payload id does not exist
     error INVALID_PAYLOAD_ID();
 
@@ -373,7 +376,7 @@ library Error {
     /// vault.asset()
     error DIFFERENT_TOKENS();
 
-    /// @dev thrown in KYCDAO form if no KYC token is present 
+    /// @dev thrown in KYCDAO form if no KYC token is present
     error NO_VALID_KYC_TOKEN();
 
     /*///////////////////////////////////////////////////////////////

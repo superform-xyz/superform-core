@@ -74,7 +74,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         (uint256 prevPayloadHeader, bytes memory prevPayloadBody, bytes32 prevPayloadProof,,, uint8 isMulti,,,) =
             _getPayload(payloadId_);
 
-        PayloadUpdaterLib.validateDepositPayloadUpdate(prevPayloadHeader, payloadTracking[payloadId_], isMulti);
+        PayloadUpdaterLib.validatePayloadUpdate(
+            prevPayloadHeader, uint8(TransactionType.DEPOSIT), payloadTracking[payloadId_], isMulti
+        );
 
         PayloadState finalState;
         if (isMulti != 0) {
@@ -114,7 +116,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         ) = _getPayload(payloadId_);
 
         /// @dev validate payload update
-        PayloadUpdaterLib.validateWithdrawPayloadUpdate(prevPayloadHeader, payloadTracking[payloadId_], isMulti);
+        PayloadUpdaterLib.validatePayloadUpdate(
+            prevPayloadHeader, uint8(TransactionType.WITHDRAW), payloadTracking[payloadId_], isMulti
+        );
         prevPayloadBody = _updateWithdrawPayload(prevPayloadBody, srcSender, srcChainId, txData_, isMulti);
 
         /// @dev updates the payload proof
@@ -177,6 +181,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             }
 
             _processAck(payloadId_, srcChainId, returnMessage);
+        } else {
+            revert Error.INVALID_PAYLOAD_TYPE();
         }
 
         emit PayloadProcessed(payloadId_);
@@ -342,16 +348,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     }
 
     /// @dev retrieves information associated with the payload and validates quorum
-    /// @param payloadId_ is the payload id
-    /// @return payloadHeader_ is the payload header
-    /// @return payloadBody_ is the payload body
-    /// @return payloadProof is the payload proof
-    /// @return txType is the transaction type
-    /// @return callbackType is the callback type
-    /// @return isMulti is the multi flag
-    /// @return registryId is the registry id
-    /// @return srcSender is the source sender
-    /// @return srcChainId is the source chain id
     function _getPayload(uint256 payloadId_)
         internal
         view
@@ -372,6 +368,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         payloadProof = AMBMessage(payloadHeader_, payloadBody_).computeProof();
         (txType, callbackType, isMulti, registryId, srcSender, srcChainId) = payloadHeader_.decodeTxInfo();
 
+        /// @dev the number of valid proofs (quorum) must be equal or larger to the required messaging quorum
         if (messageQuorum[payloadProof] < _getQuorum(srcChainId)) {
             revert Error.INSUFFICIENT_QUORUM();
         }
@@ -599,6 +596,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             if (txData_[i].length != 0 && multiVaultData_.liqData[i].txData.length == 0) {
                 (address superform,,) = multiVaultData_.superformIds[i].getSuperform();
 
+                /// @dev for withdrawals the payload update can happen on core state registry (for normal forms)
+                /// and also can happen in timelock state registry (for timelock form)
+
+                /// @notice this check validates if the state registry is elligible to update tx data for the
+                /// corresponding superform
                 if (IBaseForm(superform).getStateRegistryId() == _getStateRegistryId(address(this))) {
                     PayloadUpdaterLib.validateLiqReq(multiVaultData_.liqData[i]);
 

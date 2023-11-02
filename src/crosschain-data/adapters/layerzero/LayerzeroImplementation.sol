@@ -325,8 +325,10 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     {
         uint16 chainId = ambChainId[dstChainId_];
 
-        if (chainId != 0) {
-            (fees,) = lzEndpoint.estimateFees(chainId, address(this), message_, false, extraData_);
+        if (chainId == 0) {
+            revert Error.INVALID_CHAIN_ID();
         }
+
+        (fees,) = lzEndpoint.estimateFees(chainId, address(this), message_, false, extraData_);
     }
 }

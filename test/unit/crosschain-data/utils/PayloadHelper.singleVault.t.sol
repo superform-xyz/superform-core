@@ -92,9 +92,10 @@ contract PayloadHelperSingleTest is ProtocolActions {
         uint256[] amounts;
         uint256[] slippage;
         uint256[] superformIds;
-        uint256 srcPayloadId;
         bool[] hasDstSwaps;
+        bytes extraFormData;
         address receiverAddress;
+        uint256 srcPayloadId;
     }
 
     function _checkSrcPayload() internal {
@@ -125,14 +126,15 @@ contract PayloadHelperSingleTest is ProtocolActions {
         (
             v.txType,
             v.callbackType,
-            ,
+            v.srcSender,
             v.srcChainId,
             v.amounts,
             v.slippage,
             ,
-            v.srcPayloadId,
-            v.hasDstSwaps,
-            v.receiverAddress
+            ,
+            ,
+            v.receiverAddress,
+            v.srcPayloadId
         ) = IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
 
         v.extraDataGenerated = new bytes[](2);
@@ -151,8 +153,6 @@ contract PayloadHelperSingleTest is ProtocolActions {
         assertEq(v.srcPayloadId, 1);
 
         assertEq(v.receiverAddress, users[0]);
-
-        assertEq(v.hasDstSwaps[0], false);
 
         for (uint256 i = 0; i < v.slippage.length; ++i) {
             console.log("v.amounts[i]: %s", v.amounts[i]);
@@ -175,7 +175,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
 
         CheckDstPayloadInternalVars memory v;
 
-        (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId,,) =
+        (v.txType, v.callbackType, v.srcSender, v.srcChainId, v.amounts, v.slippage,, v.hasDstSwaps,,, v.srcPayloadId) =
             IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
 
         /// @dev 0 for deposit

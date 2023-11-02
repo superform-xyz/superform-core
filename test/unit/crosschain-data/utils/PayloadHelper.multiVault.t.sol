@@ -181,8 +181,9 @@ contract PayloadHelperMultiTest is ProtocolActions {
         uint256[] amounts;
         uint256[] slippage;
         uint256[] superformIds;
-        uint256 srcPayloadId;
         bool[] hasDstSwaps;
+        bytes extraFormData;
+        uint256 srcPayloadId;
         address receiverAddress;
         uint256 daiAfterFirstSwap;
         uint256 daiAfterSecondSwap;
@@ -206,9 +207,10 @@ contract PayloadHelperMultiTest is ProtocolActions {
             v.amounts,
             v.slippage,
             ,
-            v.srcPayloadId,
             ,
-            v.receiverAddress
+            ,
+            v.receiverAddress,
+            v.srcPayloadId
         ) = IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
 
         v.extraDataGenerated = new bytes[](2);
@@ -282,7 +284,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
         CheckDstPayloadInternalVars memory v;
 
-        (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId,,) =
+        (v.txType, v.callbackType, v.srcSender, v.srcChainId, v.amounts, v.slippage,, v.hasDstSwaps,,, v.srcPayloadId) =
             IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
 
         assertEq(v.txType, 0);
