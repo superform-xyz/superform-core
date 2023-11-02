@@ -714,9 +714,7 @@ contract PaymentHelper is IPaymentHelper {
     function _estimateLiqAmount(LiqRequest[] memory req_) internal pure returns (uint256 liqAmount) {
         uint256 len = req_.length;
         for (uint256 i; i < len;) {
-            if (req_[i].token == NATIVE) {
-                liqAmount += req_[i].nativeAmount;
-            }
+            liqAmount += req_[i].nativeAmount;
 
             unchecked {
                 ++i;
