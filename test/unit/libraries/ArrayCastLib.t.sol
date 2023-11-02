@@ -32,7 +32,7 @@ contract ArrayCastLibTest is Test {
     }
 
     function test_castBoolToArray() external {
-        bool value = true; 
+        bool value = true;
         bool[] memory castedValue = arrayCastLib.castBoolToArray(value);
         assertEq(castedValue.length, 1);
     }

@@ -11,16 +11,13 @@ import { Error } from "../utils/Error.sol";
 /// @notice The Form implementation for IERC4626 vaults with kycDAO NFT checks
 /// @notice This form must hold a kycDAO NFT to operate
 contract ERC4626KYCDaoForm is ERC4626FormImplementation {
-
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
 
     uint8 constant stateRegistryId = 1; // CoreStateRegistry
 
-    constructor(address superRegistry_) 
-        ERC4626FormImplementation(superRegistry_, stateRegistryId) {}
-
+    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_, stateRegistryId) { }
 
     /*///////////////////////////////////////////////////////////////
                             MODIFIERS
@@ -93,10 +90,14 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
     }
 
     /// @inheritdoc BaseForm
-    function _emergencyWithdraw(address srcSender_, address refundAddress_, uint256 amount_)
+    function _emergencyWithdraw(
+        address srcSender_,
+        address refundAddress_,
+        uint256 amount_
+    )
         internal
         override
-        onlyKYC(srcSender_) 
+        onlyKYC(srcSender_)
     {
         _processEmergencyWithdraw(refundAddress_, amount_);
     }
