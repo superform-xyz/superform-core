@@ -168,7 +168,7 @@ contract PaymentHelper is IPaymentHelper {
             gasPrice[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 8: GAS PRICE PER KB of Message
+        /// @dev Type 8: GAS PRICE PER Byte of Message
         if (configType_ == 8) {
             gasPerByte[chainId_] = abi.decode(config_, (uint256));
         }
