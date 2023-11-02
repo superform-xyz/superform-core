@@ -92,7 +92,7 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /*///////////////////////////////////////////////////////////////
-                        PREVILAGES ADMIN ONLY FUNCTIONS
+                        PRIVILEGES ADMIN ONLY FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IPaymentHelper

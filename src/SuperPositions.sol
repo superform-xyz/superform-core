@@ -80,6 +80,13 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         _;
     }
 
+    modifier onlyBroadcastRegistry() {
+        if (msg.sender != superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))) {
+            revert Error.NOT_BROADCAST_REGISTRY();
+        }
+        _;
+    }
+
     modifier onlyBatchMinter(uint256[] memory superformIds) {
         address router = superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"));
 
@@ -189,7 +196,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         /// @dev decode initial payload info stored on source chain in this contract
         (txType,,,, srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
-        /// @dev verify this is a single vault mint
+        /// @dev verify this is a not single vault mint
         if (multi == 0) revert Error.INVALID_PAYLOAD();
         /// @dev compare final shares beneficiary to be the same (dst/src)
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
@@ -237,7 +244,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         /// @dev decode initial payload info stored on source chain in this contract
         (txType,,,, srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
-        /// @dev verify this is a multi vault mint
+        /// @dev this is a not multi vault mint
         if (multi == 1) revert Error.INVALID_PAYLOAD();
 
         /// @dev compare final shares beneficiary to be the same (dst/src)
@@ -259,12 +266,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     }
 
     /// @inheritdoc ISuperPositions
-    function stateSyncBroadcast(bytes memory data_) external payable override {
-        /// @dev this function is only accessible through broadcast registry
-        if (msg.sender != superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))) {
-            revert Error.NOT_BROADCAST_REGISTRY();
-        }
-
+    function stateSyncBroadcast(bytes memory data_) external payable override onlyBroadcastRegistry {
         BroadcastMessage memory transmuterPayload = abi.decode(data_, (BroadcastMessage));
 
         if (transmuterPayload.messageType == DEPLOY_NEW_SERC20) {
@@ -368,6 +370,8 @@ contract SuperPositions is ISuperPositions, ERC1155A {
 
         _broadcast(abi.encode(transmuterPayload));
 
+        emit SyntheticTokenRegistered(id, syntheticToken);
+
         return syntheticToken;
     }
 
@@ -405,5 +409,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         );
 
         synthethicTokenId[superformId] = syntheticToken;
+
+        emit SyntheticTokenRegistered(superformId, syntheticToken);
     }
 }

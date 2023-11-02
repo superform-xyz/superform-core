@@ -167,7 +167,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
     }
 
-    struct ProcessDirectWithdawLocalVars {
+    struct ProcessDirectWithdrawLocalVars {
         uint64 chainId;
         address collateral;
         address receiver;
@@ -184,7 +184,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         internal
         returns (uint256 dstAmount)
     {
-        ProcessDirectWithdawLocalVars memory v;
+        ProcessDirectWithdrawLocalVars memory v;
         v.len1 = singleVaultData_.liqData.txData.length;
         /// @dev if there is no txData, on withdraws the receiver is the original beneficiary (srcSender), otherwise it
         /// is this contract (before swap)

@@ -44,6 +44,24 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         _;
     }
 
+    modifier onlyWormholeVAARelayer() {
+        if (
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
+                keccak256("WORMHOLE_VAA_RELAYER_ROLE"), msg.sender
+            )
+        ) {
+            revert Error.CALLER_NOT_RELAYER();
+        }
+        _;
+    }
+
+    modifier onlyValidStateRegistry() {
+        if (!superRegistry.isValidStateRegistry(msg.sender)) {
+            revert Error.NOT_STATE_REGISTRY();
+        }
+        _;
+    }
+
     /*///////////////////////////////////////////////////////////////
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
@@ -96,11 +114,8 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         external
         payable
         virtual
+        onlyValidStateRegistry
     {
-        if (!superRegistry.isValidStateRegistry(msg.sender)) {
-            revert Error.NOT_STATE_REGISTRY();
-        }
-
         /// @dev is wormhole's inherent fee for sending a message
         uint256 msgFee = wormhole.messageFee();
 
@@ -127,18 +142,11 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         }
     }
 
-    function receiveMessage(bytes memory encodedMessage_) public {
+    function receiveMessage(bytes memory encodedMessage_) public onlyWormholeVAARelayer {
         /// @dev 1. validate caller
         /// @dev 2. validate not broadcasted to emitter chain
         /// @dev 3. validate src chain sender
         /// @dev 4. validate message uniqueness
-        if (
-            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
-                keccak256("WORMHOLE_VAA_RELAYER_ROLE"), msg.sender
-            )
-        ) {
-            revert Error.CALLER_NOT_RELAYER();
-        }
 
         (IWormhole.VM memory wormholeMessage, bool valid,) = wormhole.parseAndVerifyVM(encodedMessage_);
 

@@ -72,6 +72,21 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     uint256 public xChainPayloadCounter;
     ISuperRegistry public superRegistry;
 
+    /*///////////////////////////////////////////////////////////////
+                                MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+
+    modifier onlyBroadcastRegistry() {
+        if (msg.sender != superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))) {
+            revert Error.NOT_BROADCAST_REGISTRY();
+        }
+        _;
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                                CONSTRUCTOR
+    //////////////////////////////////////////////////////////////*/
+
     constructor(InitialRoleSetup memory roles) {
         _grantRole(PROTOCOL_ADMIN_ROLE, roles.admin);
         _grantRole(EMERGENCY_ADMIN_ROLE, roles.emergencyAdmin);
@@ -145,11 +160,7 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     }
 
     /// @inheritdoc ISuperRBAC
-    function stateSyncBroadcast(bytes memory data_) external override {
-        if (msg.sender != superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))) {
-            revert Error.NOT_BROADCAST_REGISTRY();
-        }
-
+    function stateSyncBroadcast(bytes memory data_) external override onlyBroadcastRegistry {
         BroadcastMessage memory rolesPayload = abi.decode(data_, (BroadcastMessage));
 
         if (rolesPayload.messageType == SYNC_REVOKE) {
@@ -176,7 +187,6 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
 
     /// @inheritdoc ISuperRBAC
     function hasProtocolAdminRole(address admin_) external view override returns (bool) {
-        if (admin_ == address(0)) return false;
         return hasRole(PROTOCOL_ADMIN_ROLE, admin_);
     }
 

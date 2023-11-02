@@ -47,6 +47,20 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         _;
     }
 
+    modifier onlyValidStateRegistry() {
+        if (!superRegistry.isValidStateRegistry(msg.sender)) {
+            revert Error.NOT_STATE_REGISTRY();
+        }
+        _;
+    }
+
+    modifier onlyMailbox() {
+        if (msg.sender != address(mailbox)) {
+            revert Error.CALLER_NOT_MAILBOX();
+        }
+        _;
+    }
+
     /*///////////////////////////////////////////////////////////////
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
@@ -84,11 +98,8 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         payable
         virtual
         override
+        onlyValidStateRegistry
     {
-        if (!superRegistry.isValidStateRegistry(msg.sender)) {
-            revert Error.NOT_STATE_REGISTRY();
-        }
-
         uint32 domain = ambChainId[dstChainId_];
         bytes32 messageId = mailbox.dispatch(domain, _castAddr(authorizedImpl[domain]), message_);
 
@@ -141,13 +152,10 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     }
 
     /// @inheritdoc IMessageRecipient
-    function handle(uint32 origin_, bytes32 sender_, bytes calldata body_) external override {
+    function handle(uint32 origin_, bytes32 sender_, bytes calldata body_) external override onlyMailbox {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
-        if (msg.sender != address(mailbox)) {
-            revert Error.CALLER_NOT_MAILBOX();
-        }
 
         if (sender_ != _castAddr(authorizedImpl[origin_])) {
             revert Error.INVALID_SRC_SENDER();
