@@ -21,7 +21,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev canonical permit2 contract
-    address public PERMIT2;
+    address private permit2Address;
 
     /// @dev rescue timelock delay config
     uint256 public delay;
@@ -135,10 +135,10 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     /// @inheritdoc ISuperRegistry
     function setPermit2(address permit2_) external override onlyProtocolAdmin {
-        if (PERMIT2 != address(0)) revert Error.DISABLED();
+        if (permit2Address != address(0)) revert Error.DISABLED();
         if (permit2_ == address(0)) revert Error.ZERO_ADDRESS();
 
-        PERMIT2 = permit2_;
+        permit2Address = permit2_;
 
         emit SetPermit2(permit2_);
     }
@@ -277,8 +277,9 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
                     External View Functions
     //////////////////////////////////////////////////////////////*/
 
-    function getAddress(bytes32 id_) external view override returns (address) {
-        return registry[id_][CHAIN_ID];
+    function getAddress(bytes32 id_) external view override returns (address addr) {
+        addr = registry[id_][CHAIN_ID];
+        if (addr == address(0)) revert Error.ZERO_ADDRESS();
     }
 
     function getAddressByChainId(bytes32 id_, uint64 chainId_) external view override returns (address) {
@@ -288,16 +289,19 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @inheritdoc ISuperRegistry
     function getBridgeAddress(uint8 bridgeId_) external view override returns (address bridgeAddress_) {
         bridgeAddress_ = bridgeAddresses[bridgeId_];
+        if (bridgeAddress_ == address(0)) revert Error.ZERO_ADDRESS();
     }
 
     /// @inheritdoc ISuperRegistry
     function getBridgeValidator(uint8 bridgeId_) external view override returns (address bridgeValidator_) {
         bridgeValidator_ = bridgeValidator[bridgeId_];
+        if (bridgeValidator_ == address(0)) revert Error.ZERO_ADDRESS();
     }
 
     /// @inheritdoc ISuperRegistry
     function getAmbAddress(uint8 ambId_) external view override returns (address ambAddress_) {
         ambAddress_ = ambAddresses[ambId_];
+        if (ambAddress_ == address(0)) revert Error.ZERO_ADDRESS();
     }
 
     /// @inheritdoc ISuperRegistry
@@ -308,6 +312,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @inheritdoc ISuperRegistry
     function getStateRegistry(uint8 registryId_) external view override returns (address registryAddress_) {
         registryAddress_ = registryAddresses[registryId_];
+        if (registryAddress_ == address(0)) revert Error.ZERO_ADDRESS();
     }
 
     /// @inheritdoc ISuperRegistry
@@ -341,5 +346,10 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         if (ambId != 0 && isBroadcastAMB[ambId]) return true;
 
         return false;
+    }
+
+    function PERMIT2() external view override returns (address) {
+        if (permit2Address == address(0)) revert Error.ZERO_ADDRESS();
+        return permit2Address;
     }
 }

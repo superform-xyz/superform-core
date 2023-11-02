@@ -49,12 +49,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
             revert Error.INSUFFICIENT_NATIVE_AMOUNT();
         }
 
-        address receiver = superRegistry.getAddress(superRegistryId_);
-        if (receiver == address(0)) {
-            revert Error.ZERO_ADDRESS();
-        }
-
-        _withdrawNative(receiver, nativeAmount_);
+        _withdrawNative(superRegistry.getAddress(superRegistryId_), nativeAmount_);
     }
 
     /// @inheritdoc IPayMaster

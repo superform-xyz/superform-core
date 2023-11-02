@@ -25,9 +25,9 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
     constructor(address superRegistry_, uint8 stateRegistryId_) BaseForm(superRegistry_) {
-        if (superRegistry.getStateRegistry(stateRegistryId_) == address(0)) {
-            revert Error.NOT_STATE_REGISTRY();
-        }
+        /// @dev check if state registry id is valid
+        superRegistry.getStateRegistry(stateRegistryId_);
+
         STATE_REGISTRY_ID = stateRegistryId_;
     }
 
@@ -280,7 +280,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// @dev allowance is modified inside of the IERC20.transferFrom() call
         IERC20(asset).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
 
-        /// @dev Deposit into vault 
+        /// @dev Deposit into vault
         if (singleVaultData_.retain4626) {
             dstAmount = v.deposit(singleVaultData_.amount, singleVaultData_.receiverAddress);
         } else {
@@ -379,15 +379,11 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
     function _processForwardDustToPaymaster() internal {
         address paymaster = superRegistry.getAddress(keccak256("PAYMASTER"));
-        if (paymaster != address(0)) {
-            IERC20 token = IERC20(getVaultAsset());
+        IERC20 token = IERC20(getVaultAsset());
 
-            uint256 dust = token.balanceOf(address(this));
-            if (dust > 0) {
-                token.safeTransfer(paymaster, dust);
-            }
-        } else {
-            revert Error.ZERO_ADDRESS();
+        uint256 dust = token.balanceOf(address(this));
+        if (dust > 0) {
+            token.safeTransfer(paymaster, dust);
         }
     }
 

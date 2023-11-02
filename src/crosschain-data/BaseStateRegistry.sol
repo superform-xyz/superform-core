@@ -193,10 +193,5 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
 
     function _getAMBImpl(uint8 id_) internal view returns (IAmbImplementation ambImplementation) {
         ambImplementation = IAmbImplementation(_getAmbAddress(id_));
-
-        /// @dev revert if an unknown amb id is used
-        if (address(ambImplementation) == address(0)) {
-            revert Error.INVALID_BRIDGE_ID();
-        }
     }
 }

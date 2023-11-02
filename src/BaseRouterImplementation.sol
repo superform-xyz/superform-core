@@ -45,11 +45,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     /// @dev getter for PERMIT2 in case it is not supported or set on a given chain
     function _getPermit2() internal view returns (address) {
-        address permit2 = superRegistry.PERMIT2();
-        if (permit2 == address(0)) {
-            revert Error.PERMIT2_NOT_SUPPORTED();
-        }
-        return permit2;
+        return superRegistry.PERMIT2();
     }
 
     /// @dev handles cross-chain multi vault deposit

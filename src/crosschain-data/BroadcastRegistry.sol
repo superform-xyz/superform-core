@@ -151,13 +151,8 @@ contract BroadcastRegistry is IBroadcastRegistry {
     )
         internal
     {
-        IBroadcastAmbImplementation ambImplementation = IBroadcastAmbImplementation(superRegistry.getAmbAddress(ambId_));
-
-        /// @dev reverts if an unknown amb id is used
-        if (address(ambImplementation) == address(0)) {
-            revert Error.INVALID_BRIDGE_ID();
-        }
-
-        ambImplementation.broadcastPayload{ value: gasToPay_ }(srcSender_, message_, extraData_);
+        IBroadcastAmbImplementation(superRegistry.getAmbAddress(ambId_)).broadcastPayload{ value: gasToPay_ }(
+            srcSender_, message_, extraData_
+        );
     }
 }

@@ -38,7 +38,7 @@ contract BaseStateRegistryTest is BaseSetup {
         uint256[] memory gasPerAMB = new uint256[](2);
         bytes[] memory extraDataPerAMB = new bytes[](2);
 
-        vm.expectRevert(Error.INVALID_BRIDGE_ID.selector);
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
         vm.prank(getContract(ETH, "SuperformRouter"));
         coreStateRegistry.dispatchPayload(
             bond,
@@ -75,7 +75,7 @@ contract BaseStateRegistryTest is BaseSetup {
         );
 
         ambIds[1] = 9;
-        vm.expectRevert(Error.INVALID_BRIDGE_ID.selector);
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
         vm.prank(getContract(ETH, "SuperformRouter"));
         vm.deal(getContract(ETH, "SuperformRouter"), 2 wei);
 
