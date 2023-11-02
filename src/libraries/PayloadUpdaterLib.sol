@@ -64,8 +64,9 @@ library PayloadUpdaterLib {
         }
     }
 
-    function validateDepositPayloadUpdate(
+    function validatePayloadUpdate(
         uint256 txInfo_,
+        uint8 txType_,
         PayloadState currentPayloadState_,
         uint8 isMulti_
     )
@@ -74,30 +75,7 @@ library PayloadUpdaterLib {
     {
         (uint256 txType, uint256 callbackType, uint8 multi,,,) = DataLib.decodeTxInfo(txInfo_);
 
-        if (!(txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.INIT))) {
-            revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();
-        }
-
-        if (currentPayloadState_ != PayloadState.STORED) {
-            revert Error.PAYLOAD_ALREADY_UPDATED();
-        }
-
-        if (multi != isMulti_) {
-            revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();
-        }
-    }
-
-    function validateWithdrawPayloadUpdate(
-        uint256 txInfo_,
-        PayloadState currentPayloadState_,
-        uint8 isMulti_
-    )
-        internal
-        pure
-    {
-        (uint256 txType, uint256 callbackType, uint8 multi,,,) = DataLib.decodeTxInfo(txInfo_);
-
-        if (!(txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.INIT))) {
+        if (!(txType == txType_ && callbackType == uint256(CallbackType.INIT))) {
             revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();
         }
 

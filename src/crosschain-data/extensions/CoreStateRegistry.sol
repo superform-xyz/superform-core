@@ -74,7 +74,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         (uint256 prevPayloadHeader, bytes memory prevPayloadBody, bytes32 prevPayloadProof,,, uint8 isMulti,,,) =
             _getPayload(payloadId_);
 
-        PayloadUpdaterLib.validateDepositPayloadUpdate(prevPayloadHeader, payloadTracking[payloadId_], isMulti);
+        PayloadUpdaterLib.validatePayloadUpdate(
+            prevPayloadHeader, uint8(TransactionType.DEPOSIT), payloadTracking[payloadId_], isMulti
+        );
 
         PayloadState finalState;
         if (isMulti != 0) {
@@ -114,7 +116,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         ) = _getPayload(payloadId_);
 
         /// @dev validate payload update
-        PayloadUpdaterLib.validateWithdrawPayloadUpdate(prevPayloadHeader, payloadTracking[payloadId_], isMulti);
+        PayloadUpdaterLib.validatePayloadUpdate(
+            prevPayloadHeader, uint8(TransactionType.WITHDRAW), payloadTracking[payloadId_], isMulti
+        );
         prevPayloadBody = _updateWithdrawPayload(prevPayloadBody, srcSender, srcChainId, txData_, isMulti);
 
         /// @dev updates the payload proof
@@ -177,6 +181,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             }
 
             _processAck(payloadId_, srcChainId, returnMessage);
+        } else {
+            revert Error.INVALID_PAYLOAD_TYPE();
         }
 
         emit PayloadProcessed(payloadId_);

@@ -212,6 +212,12 @@ library Error {
     /// @dev is emitted when the chain id brought in the cross chain message is invalid
     error INVALID_CHAIN_ID();
 
+    /// @dev thrown if ambId is not valid leading to an address 0 of the implementation
+    error INVALID_BRIDGE_ID();
+
+    /// @dev thrown if payload type is invalid
+    error INVALID_PAYLOAD_TYPE();
+
     /// @dev thrown if payload id does not exist
     error INVALID_PAYLOAD_ID();
 
