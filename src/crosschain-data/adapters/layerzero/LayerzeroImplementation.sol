@@ -54,6 +54,21 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         _;
     }
 
+    modifier onlyValidStateRegistry() {
+        if (!superRegistry.isValidStateRegistry(msg.sender)) {
+            revert Error.NOT_STATE_REGISTRY();
+        }
+        _;
+    }
+
+    modifier onlyLzEndpoint() {
+        // lzReceive must be called by the endpoint for security
+        if (msg.sender != address(lzEndpoint)) {
+            revert Error.CALLER_NOT_ENDPOINT();
+        }
+        _;
+    }
+
     /*///////////////////////////////////////////////////////////////
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
@@ -77,11 +92,8 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         external
         payable
         override
+        onlyValidStateRegistry
     {
-        if (!superRegistry.isValidStateRegistry(msg.sender)) {
-            revert Error.NOT_STATE_REGISTRY();
-        }
-
         _lzSend(ambChainId[dstChainId_], message_, payable(srcSender_), address(0x0), extraData_, msg.value);
     }
 
@@ -139,12 +151,8 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     )
         public
         override
+        onlyLzEndpoint
     {
-        // lzReceive must be called by the endpoint for security
-        if (msg.sender != address(lzEndpoint)) {
-            revert Error.CALLER_NOT_ENDPOINT();
-        }
-
         if (isValid[srcChainId_][nonce_]) {
             revert Error.DUPLICATE_PAYLOAD();
         }

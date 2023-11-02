@@ -114,7 +114,9 @@ contract PayloadHelperMultiTest is ProtocolActions {
         (, int256 USDPerETHonOP,,,) = AggregatorV3Interface(tokenPriceFeeds[OP][NATIVE_TOKEN]).latestRoundData();
         (, int256 USDPerDAIonOP,,,) =
             AggregatorV3Interface(tokenPriceFeeds[OP][getContract(OP, "DAI")]).latestRoundData();
-        _checkDstPayloadInit(uint256(USDPerDAIonPOLY), uint256(USDPerETHonOP), uint256(USDPerDAIonOP));
+        _checkDstPayloadInit(
+            CheckDstPayloadInitArgs(uint256(USDPerDAIonPOLY), uint256(USDPerETHonOP), uint256(USDPerDAIonOP))
+        );
 
         _checkDstPayloadReturn();
     }
@@ -181,16 +183,35 @@ contract PayloadHelperMultiTest is ProtocolActions {
         uint256[] superformIds;
         bool[] hasDstSwaps;
         bytes extraFormData;
-        address receiverAddress;
         uint256 srcPayloadId;
+        address receiverAddress;
+        uint256 daiAfterFirstSwap;
+        uint256 daiAfterSecondSwap;
     }
 
-    function _checkDstPayloadInit(uint256 USDPerDAIonPOLY_, uint256 USDPerETHonOP_, uint256 USDPerDAIonOP_) internal {
+    struct CheckDstPayloadInitArgs {
+        uint256 USDPerDAIonPOLY_;
+        uint256 USDPerETHonOP_;
+        uint256 USDPerDAIonOP_;
+    }
+
+    function _checkDstPayloadInit(CheckDstPayloadInitArgs memory args) internal {
         vm.selectFork(FORKS[DST_CHAINS[0]]);
         CheckDstPayloadInternalVars memory v;
 
-        (v.txType, v.callbackType, v.srcSender, v.srcChainId, v.amounts, v.slippage,, v.hasDstSwaps,,, v.srcPayloadId) =
-            IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
+        (
+            v.txType,
+            v.callbackType,
+            v.srcSender,
+            v.srcChainId,
+            v.amounts,
+            v.slippage,
+            ,
+            ,
+            ,
+            v.receiverAddress,
+            v.srcPayloadId
+        ) = IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
 
         v.extraDataGenerated = new bytes[](2);
         v.extraDataGenerated[0] = abi.encode("500000");
@@ -205,13 +226,15 @@ contract PayloadHelperMultiTest is ProtocolActions {
         /// chain id of optimism is 10
         assertEq(v.srcPayloadId, 1);
 
+        assertEq(v.receiverAddress, users[0]);
+
         for (uint256 i; i < v.amounts.length; i++) {
             /// @dev ETH<>DAI swap on OP
-            uint256 daiAfterFirstSwap = (AMOUNTS[POLY][0][i] * USDPerETHonOP_) / USDPerDAIonOP_;
+            v.daiAfterFirstSwap = (AMOUNTS[POLY][0][i] * args.USDPerETHonOP_) / args.USDPerDAIonOP_;
             /// @dev DAI on OP <> DAI on POLY
-            uint256 daiAfterSecondSwap = (daiAfterFirstSwap * USDPerDAIonOP_) / USDPerDAIonPOLY_;
+            v.daiAfterSecondSwap = (v.daiAfterFirstSwap * args.USDPerDAIonOP_) / args.USDPerDAIonPOLY_;
             /// @dev daiAfterSecondSwap doesn't include bridge slippage hence should be greater
-            assertLe(v.amounts[i], daiAfterSecondSwap);
+            assertLe(v.amounts[i], v.daiAfterSecondSwap);
         }
 
         for (uint256 i = 0; i < v.slippage.length; ++i) {
@@ -233,8 +256,6 @@ contract PayloadHelperMultiTest is ProtocolActions {
         uint64[] liqDstChainIds;
         uint256[] amounts;
         uint256[] nativeAmounts;
-        bool[] hasDstSwaps;
-        address receiverAddress;
     }
 
     function _checkDstPayloadLiqData() internal {

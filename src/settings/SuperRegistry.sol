@@ -29,11 +29,12 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     uint64 public immutable CHAIN_ID;
 
     mapping(bytes32 id => mapping(uint64 chainid => address moduleAddress)) private registry;
-    /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
+    /// @dev liquidityBridge id is mapped to a liquidityBridge address (to prevent interaction with unauthorized
+    /// bridges)
     mapping(uint8 bridgeId => address bridgeAddress) public bridgeAddresses;
     mapping(uint8 bridgeId => address bridgeValidator) public bridgeValidator;
-    mapping(uint8 bridgeId => address ambAddresses) public ambAddresses;
-    mapping(uint8 bridgeId => bool isBroadcastAMB) public isBroadcastAMB;
+    mapping(uint8 ambId => address ambAddresses) public ambAddresses;
+    mapping(uint8 ambId => bool isBroadcastAMB) public isBroadcastAMB;
 
     mapping(uint64 chainId => uint256 vaultLimitPerTx) public vaultLimitPerTx;
 
@@ -41,7 +42,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @dev is the reverse mapping of registryAddresses
     mapping(address registryAddress => uint8 registryId) public stateRegistryIds;
     /// @dev is the reverse mapping of ambAddresses
-    mapping(address ambAddress => uint8 bridgeId) public ambIds;
+    mapping(address ambAddress => uint8 ambId) public ambIds;
 
     /// @dev core protocol - identifiers
     /// @notice SUPERFORM_FACTORY, CORE_STATE_REGISTRY, TIMELOCK_STATE_REGISTRY, BROADCAST_REGISTRY, SUPER_RBAC,

@@ -51,6 +51,14 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         _;
     }
 
+    modifier onlyValidAmbImplementation() {
+        if (!superRegistry.isValidAmbImpl(msg.sender)) {
+            revert Error.NOT_AMB_IMPLEMENTATION();
+        }
+
+        _;
+    }
+
     /*///////////////////////////////////////////////////////////////
                         CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
@@ -139,11 +147,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     }
 
     /// @inheritdoc IBaseStateRegistry
-    function receivePayload(uint64 srcChainId_, bytes memory message_) external override {
-        if (!superRegistry.isValidAmbImpl(msg.sender)) {
-            revert Error.NOT_AMB_IMPLEMENTATION();
-        }
-
+    function receivePayload(uint64 srcChainId_, bytes memory message_) external override onlyValidAmbImplementation {
         AMBMessage memory data = abi.decode(message_, (AMBMessage));
 
         /// @dev proofHash will always be 32 bytes length due to keccak256

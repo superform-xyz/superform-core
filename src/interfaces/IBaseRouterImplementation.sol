@@ -38,9 +38,38 @@ interface IBaseRouterImplementation is IBaseRouter {
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev is emitted when a cross-chain transaction is initiated.
-    event CrossChainInitiated(uint256 indexed payloadId);
+    /// @dev is emitted when a cross-chain deposit multi vault transaction is initiated.
+    event CrossChainInitiatedDepositMulti(
+        uint256 indexed payloadId,
+        uint64 indexed dstChainId,
+        uint256[] superformIds,
+        uint8 txType,
+        uint256[] amountsIn,
+        uint8[] bridgeIds,
+        uint8[] ambIds
+    );
+
+    /// @dev is emitted when a cross-chain deposit single vault transaction is initiated.
+    event CrossChainInitiatedDepositSingle(
+        uint256 indexed payloadId,
+        uint64 indexed dstChainId,
+        uint256 superformIds,
+        uint8 txType,
+        uint256 amountIn,
+        uint8 bridgeId,
+        uint8[] ambIds
+    );
+
+    /// @dev is emitted when a cross-chain withdraw multi vault transaction is initiated.
+    event CrossChainInitiatedWithdrawMulti(
+        uint256 indexed payloadId, uint64 indexed dstChainId, uint256[] superformIds, uint8 txType, uint8[] ambIds
+    );
+
+    /// @dev is emitted when a cross-chain withdraw single vault transaction is initiated.
+    event CrossChainInitiatedWithdrawSingle(
+        uint256 indexed payloadId, uint64 indexed dstChainId, uint256 superformIds, uint8 txType, uint8[] ambIds
+    );
 
     /// @dev is emitted when a cross-chain transaction is completed.
-    event Completed(uint256 payloadId);
+    event Completed(uint256 indexed payloadId);
 }
