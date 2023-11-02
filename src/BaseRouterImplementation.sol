@@ -982,10 +982,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                     revert Error.INVALID_DEPOSIT_TOKEN();
                 }
 
-                uint256 txDataLenght = vaultData_.liqData[i].txData.length;
-                if (txDataLenght == 0 && !xChain) {
+                uint256 txDataLength = vaultData_.liqData[i].txData.length;
+                if (txDataLength == 0 && !xChain) {
                     v.approvalAmounts[i] = vaultData_.amounts[i];
-                } else if (txDataLenght == 0 && xChain) {
+                } else if (txDataLength == 0 && xChain) {
                     revert Error.NO_TXDATA_PRESENT();
                 } else {
                     address bridgeValidator = superRegistry.getBridgeValidator(vaultData_.liqData[i].bridgeId);
