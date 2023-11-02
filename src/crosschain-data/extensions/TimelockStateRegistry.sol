@@ -119,9 +119,6 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         nonReentrant
     {
         TimelockPayload storage p = timelockPayload[timeLockPayloadId_];
-        IBridgeValidator bridgeValidator = IBridgeValidator(superRegistry.getBridgeValidator(p.data.liqData.bridgeId));
-        uint256 finalAmount;
-
         if (p.status != TimelockStatus.PENDING) {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
@@ -129,6 +126,10 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         if (p.lockedTill > block.timestamp) {
             revert Error.LOCKED();
         }
+
+        IBridgeValidator bridgeValidator = IBridgeValidator(superRegistry.getBridgeValidator(p.data.liqData.bridgeId));
+        uint256 finalAmount;
+
         /// @dev set status here to prevent re-entrancy
         p.status = TimelockStatus.PROCESSED;
 

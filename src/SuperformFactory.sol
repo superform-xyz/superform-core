@@ -31,6 +31,8 @@ contract SuperformFactory is ISuperformFactory {
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
     uint256 public xChainPayloadCounter;
+    uint256 public superformCounter;
+
     ISuperRegistry public immutable superRegistry;
 
     /// @dev all form beacon addresses
@@ -66,6 +68,14 @@ contract SuperformFactory is ISuperformFactory {
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
+        }
+        _;
+    }
+
+    modifier onlyBroadcastRegistry() {
+        /// @dev this function is only accessible through broadcast registry
+        if (msg.sender != superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))) {
+            revert Error.NOT_BROADCAST_REGISTRY();
         }
         _;
     }
@@ -130,7 +140,10 @@ contract SuperformFactory is ISuperformFactory {
         }
 
         /// @dev instantiate the superform
-        superform_ = tFormImplementation.clone();
+        superform_ =
+            tFormImplementation.cloneDeterministic(keccak256(abi.encodePacked(uint256(CHAIN_ID), superformCounter)));
+        ++superformCounter;
+
         BaseForm(payable(superform_)).initialize(
             address(superRegistry), vault_, formImplementationId_, address(IERC4626(vault_).asset())
         );
@@ -180,12 +193,7 @@ contract SuperformFactory is ISuperformFactory {
     }
 
     /// @inheritdoc ISuperformFactory
-    function stateSyncBroadcast(bytes memory data_) external payable override {
-        /// @dev this function is only accessible through broadcast registry
-        if (msg.sender != superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))) {
-            revert Error.NOT_BROADCAST_REGISTRY();
-        }
-
+    function stateSyncBroadcast(bytes memory data_) external payable override onlyBroadcastRegistry {
         BroadcastMessage memory factoryPayload = abi.decode(data_, (BroadcastMessage));
 
         if (factoryPayload.messageType == SYNC_IMPLEMENTATION_STATUS) {

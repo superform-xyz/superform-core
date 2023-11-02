@@ -54,9 +54,17 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         _;
     }
 
-    modifier onlyPayMaster() {
-        if (msg.sender != superRegistry.getAddress(keccak256("PAYMASTER"))) {
-            revert Error.NOT_PAYMASTER();
+    modifier onlyValidStateRegistry() {
+        if (!superRegistry.isValidStateRegistry(msg.sender)) {
+            revert Error.NOT_STATE_REGISTRY();
+        }
+        _;
+    }
+
+    modifier onlyLzEndpoint() {
+        // lzReceive must be called by the endpoint for security
+        if (msg.sender != address(lzEndpoint)) {
+            revert Error.CALLER_NOT_ENDPOINT();
         }
         _;
     }
@@ -84,16 +92,13 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         external
         payable
         override
+        onlyValidStateRegistry
     {
-        if (!superRegistry.isValidStateRegistry(msg.sender)) {
-            revert Error.NOT_STATE_REGISTRY();
-        }
-
         _lzSend(ambChainId[dstChainId_], message_, payable(srcSender_), address(0x0), extraData_, msg.value);
     }
 
     /// @inheritdoc IAmbImplementation
-    function retryPayload(bytes memory data_) external payable override onlyPayMaster {
+    function retryPayload(bytes memory data_) external payable override {
         (uint16 srcChainId, bytes memory srcAddress, bytes memory payload) = abi.decode(data_, (uint16, bytes, bytes));
         lzEndpoint.retryPayload(srcChainId, srcAddress, payload);
     }
@@ -153,12 +158,8 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     )
         public
         override
+        onlyLzEndpoint
     {
-        // lzReceive must be called by the endpoint for security
-        if (msg.sender != address(lzEndpoint)) {
-            revert Error.CALLER_NOT_ENDPOINT();
-        }
-
         if (isValid[srcChainId_][nonce_]) {
             revert Error.DUPLICATE_PAYLOAD();
         }

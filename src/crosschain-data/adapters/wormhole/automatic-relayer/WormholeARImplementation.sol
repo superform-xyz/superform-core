@@ -39,13 +39,19 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         _;
     }
 
-    modifier onlyPayMaster() {
-        if (msg.sender != superRegistry.getAddress(keccak256("PAYMASTER"))) {
-            revert Error.NOT_PAYMASTER();
+    modifier onlyValidStateRegistry() {
+        if (!superRegistry.isValidStateRegistry(msg.sender)) {
+            revert Error.NOT_STATE_REGISTRY();
         }
         _;
     }
 
+    modifier onlyRelayer() {
+        if (msg.sender != address(relayer)) {
+            revert Error.CALLER_NOT_RELAYER();
+        }
+        _;
+    }
     /*///////////////////////////////////////////////////////////////
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
@@ -81,11 +87,8 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         payable
         virtual
         override
+        onlyValidStateRegistry
     {
-        if (!superRegistry.isValidStateRegistry(msg.sender)) {
-            revert Error.NOT_STATE_REGISTRY();
-        }
-
         uint16 dstChainId = ambChainId[dstChainId_];
 
         (uint256 dstNativeAirdrop, uint256 dstGasLimit) = abi.decode(extraData_, (uint256, uint256));
@@ -96,7 +99,7 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     }
 
     /// @inheritdoc IAmbImplementation
-    function retryPayload(bytes memory data_) external payable override onlyPayMaster {
+    function retryPayload(bytes memory data_) external payable override {
         (
             VaaKey memory deliveryVaaKey,
             uint16 targetChain,
@@ -120,13 +123,11 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         public
         payable
         override
+        onlyRelayer
     {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
-        if (msg.sender != address(relayer)) {
-            revert Error.CALLER_NOT_RELAYER();
-        }
 
         if (_bytes32ToAddress(sourceAddress_) != authorizedImpl[sourceChain_]) {
             revert Error.INVALID_SRC_SENDER();

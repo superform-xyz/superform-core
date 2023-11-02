@@ -176,7 +176,7 @@ library Error {
     error INVALID_INDEX();
 
     /// @dev thrown if msg.sender is not the refund address to dispute
-    error INVALID_DISUPTER();
+    error INVALID_DISPUTER();
 
     /// @dev thrown if the rescue passed dispute deadline
     error DISPUTE_TIME_ELAPSED();

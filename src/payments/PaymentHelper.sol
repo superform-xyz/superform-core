@@ -53,7 +53,7 @@ contract PaymentHelper is IPaymentHelper {
     mapping(uint64 chainId => uint256 gasForOps) public withdrawGasUsed;
     mapping(uint64 chainId => uint256 defaultNativePrice) public nativePrice;
     mapping(uint64 chainId => uint256 defaultGasPrice) public gasPrice;
-    mapping(uint64 chainId => uint256 gasPerKB) public gasPerKB;
+    mapping(uint64 chainId => uint256 gasPerByte) public gasPerByte;
     mapping(uint64 chainId => uint256 gasForOps) public ackGasCost;
     mapping(uint64 chainId => uint256 gasForOps) public timelockCost;
 
@@ -92,7 +92,7 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /*///////////////////////////////////////////////////////////////
-                        PREVILAGES ADMIN ONLY FUNCTIONS
+                        PRIVILEGES ADMIN ONLY FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IPaymentHelper
@@ -117,7 +117,7 @@ contract PaymentHelper is IPaymentHelper {
         withdrawGasUsed[chainId_] = config_.withdrawGasUsed;
         nativePrice[chainId_] = config_.defaultNativePrice;
         gasPrice[chainId_] = config_.defaultGasPrice;
-        gasPerKB[chainId_] = config_.dstGasPerKB;
+        gasPerByte[chainId_] = config_.dstGasPerKB;
         ackGasCost[chainId_] = config_.ackGasCost;
         timelockCost[chainId_] = config_.timelockCost;
         swapGasUsed[chainId_] = config_.swapGasUsed;
@@ -168,9 +168,9 @@ contract PaymentHelper is IPaymentHelper {
             gasPrice[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 8: GAS PRICE PER KB of Message
+        /// @dev Type 8: GAS PRICE PER Byte of Message
         if (configType_ == 8) {
-            gasPerKB[chainId_] = abi.decode(config_, (uint256));
+            gasPerByte[chainId_] = abi.decode(config_, (uint256));
         }
 
         /// @dev Type 9: ACK GAS COST
@@ -247,8 +247,10 @@ contract PaymentHelper is IPaymentHelper {
     {
         uint256 len = req_.dstChainIds.length;
         uint256 superformIdsLen;
+        uint256 totalDstGas;
+
         for (uint256 i; i < len;) {
-            uint256 totalDstGas;
+            totalDstGas = 0;
 
             /// @dev step 1: estimate amb costs
             uint256 ambFees = _estimateAMBFees(
@@ -277,6 +279,16 @@ contract PaymentHelper is IPaymentHelper {
             /// @dev step 6: estimate execution costs in dst (withdraw / deposit)
             /// note: execution cost includes acknowledgement messaging cost
             totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], superformIdsLen);
+
+            /// @dev step 6: estimate if timelock form processing costs are involved
+            if (!isDeposit_) {
+                for (uint256 j; j < superformIdsLen; ++j) {
+                    (, uint32 formId,) = req_.superformsData[i].superformIds[j].getSuperform();
+                    if (formId == TIMELOCK_FORM_ID) {
+                        totalDstGas += timelockCost[req_.dstChainIds[i]];
+                    }
+                }
+            }
 
             /// @dev step 7: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
@@ -329,7 +341,13 @@ contract PaymentHelper is IPaymentHelper {
             /// note: execution cost includes acknowledgement messaging cost
             totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], 1);
 
-            /// @dev step 6: convert all dst gas estimates to src chain estimate
+            /// @dev step 6: estimate if timelock form processing costs are involved
+            (, uint32 formId,) = req_.superformsData[i].superformId.getSuperform();
+            if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
+                totalDstGas += timelockCost[req_.dstChainIds[i]];
+            }
+
+            /// @dev step 7: convert all dst gas estimates to src chain estimate
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
 
             unchecked {
@@ -375,7 +393,18 @@ contract PaymentHelper is IPaymentHelper {
         /// @dev step 6: estimate if swap costs are involved
         if (isDeposit_) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformsData.hasDstSwaps);
 
-        /// @dev step 7: convert all dst gas estimates to src chain estimate
+        /// @dev step 7: estimate if timelock form processing costs are involved
+        if (!isDeposit_) {
+            for (uint256 i; i < superformIdsLen; ++i) {
+                (, uint32 formId,) = req_.superformsData.superformIds[i].getSuperform();
+
+                if (formId == TIMELOCK_FORM_ID) {
+                    totalDstGas += timelockCost[CHAIN_ID];
+                }
+            }
+        }
+
+        /// @dev step 8: convert all dst gas estimates to src chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
 
         totalAmount = srcAmount + dstAmount + liqAmount;
@@ -416,7 +445,13 @@ contract PaymentHelper is IPaymentHelper {
             totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformData.hasDstSwap.castBoolToArray());
         }
 
-        /// @dev step 7: convert all dst gas estimates to src chain estimate
+        /// @dev step 7: estimate if timelock form processing costs are involved
+        (, uint32 formId,) = req_.superformData.superformId.getSuperform();
+        if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
+            totalDstGas += timelockCost[CHAIN_ID];
+        }
+
+        /// @dev step 8: convert all dst gas estimates to src chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
 
         totalAmount = srcAmount + dstAmount + liqAmount;
@@ -524,19 +559,26 @@ contract PaymentHelper is IPaymentHelper {
         ambIdEncodedMessage.params = abi.encode(ambIds_, ambIdEncodedMessage.params);
 
         uint256 len = ambIds_.length;
-        uint256 gasReqPerKB = gasPerKB[dstChainId_];
-        uint256 totalDstGasReqInWei = abi.encode(ambIdEncodedMessage).length * gasReqPerKB;
+        uint256 gasReqPerByte = gasPerByte[dstChainId_];
+        uint256 totalDstGasReqInWei = abi.encode(ambIdEncodedMessage).length * gasReqPerByte;
 
         AMBMessage memory decodedMessage = abi.decode(message_, (AMBMessage));
         decodedMessage.params = message_.computeProofBytes();
 
-        uint256 totalDstGasReqInWeiForProof = abi.encode(decodedMessage).length * gasReqPerKB;
+        uint256 totalDstGasReqInWeiForProof = abi.encode(decodedMessage).length * gasReqPerByte;
 
         extraDataPerAMB = new bytes[](len);
 
         for (uint256 i; i < len;) {
             uint256 gasReq = i != 0 ? totalDstGasReqInWeiForProof : totalDstGasReqInWei;
 
+            /// @dev amb id 1: layerzero
+            /// @dev amb id 2: hyperlane
+            /// @dev amb id 3: wormhole
+
+            /// @notice id 1: encoded layerzero adapter params (version 2). Other values are not used atm.
+            /// @notice id 2: encoded dst gas limit
+            /// @notice id 3: encoded dst gas limit
             if (ambIds_[i] == 1) {
                 extraDataPerAMB[i] = abi.encodePacked(uint16(2), gasReq, uint256(0), address(0));
             } else if (ambIds_[i] == 2) {

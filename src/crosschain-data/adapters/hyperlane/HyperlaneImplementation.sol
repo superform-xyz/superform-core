@@ -47,9 +47,16 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         _;
     }
 
-    modifier onlyPayMaster() {
-        if (msg.sender != superRegistry.getAddress(keccak256("PAYMASTER"))) {
-            revert Error.NOT_PAYMASTER();
+    modifier onlyValidStateRegistry() {
+        if (!superRegistry.isValidStateRegistry(msg.sender)) {
+            revert Error.NOT_STATE_REGISTRY();
+        }
+        _;
+    }
+
+    modifier onlyMailbox() {
+        if (msg.sender != address(mailbox)) {
+            revert Error.CALLER_NOT_MAILBOX();
         }
         _;
     }
@@ -91,11 +98,8 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         payable
         virtual
         override
+        onlyValidStateRegistry
     {
-        if (!superRegistry.isValidStateRegistry(msg.sender)) {
-            revert Error.NOT_STATE_REGISTRY();
-        }
-
         uint32 domain = ambChainId[dstChainId_];
         bytes32 messageId = mailbox.dispatch(domain, _castAddr(authorizedImpl[domain]), message_);
 
@@ -105,7 +109,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     }
 
     /// @inheritdoc IAmbImplementation
-    function retryPayload(bytes memory data_) external payable override onlyPayMaster {
+    function retryPayload(bytes memory data_) external payable override {
         (bytes32 messageId, uint32 destinationDomain, uint256 gasAmount) = abi.decode(data_, (bytes32, uint32, uint256));
         igp.payForGas{ value: msg.value }(messageId, destinationDomain, gasAmount, msg.sender);
     }
@@ -154,13 +158,10 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     }
 
     /// @inheritdoc IMessageRecipient
-    function handle(uint32 origin_, bytes32 sender_, bytes calldata body_) external override {
+    function handle(uint32 origin_, bytes32 sender_, bytes calldata body_) external override onlyMailbox {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
-        if (msg.sender != address(mailbox)) {
-            revert Error.CALLER_NOT_MAILBOX();
-        }
 
         if (sender_ != _castAddr(authorizedImpl[origin_])) {
             revert Error.INVALID_SRC_SENDER();

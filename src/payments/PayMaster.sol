@@ -79,17 +79,11 @@ contract PayMaster is IPayMaster, LiquidityHandler {
 
     /// @inheritdoc IPayMaster
     function treatAMB(uint8 ambId_, uint256 nativeValue_, bytes memory data_) external override onlyPaymentAdmin {
-        address ambImplementation = superRegistry.getAmbAddress(ambId_);
-
-        if (ambImplementation == address(0)) {
-            revert Error.INVALID_BRIDGE_ID();
-        }
-
         if (address(this).balance < nativeValue_) {
             revert Error.INSUFFICIENT_NATIVE_AMOUNT();
         }
 
-        IAmbImplementation(ambImplementation).retryPayload{ value: nativeValue_ }(data_);
+        IAmbImplementation(superRegistry.getAmbAddress(ambId_)).retryPayload{ value: nativeValue_ }(data_);
     }
 
     /*///////////////////////////////////////////////////////////////
