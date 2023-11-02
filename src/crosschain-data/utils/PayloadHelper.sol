@@ -57,8 +57,6 @@ contract PayloadHelper is IPayloadHelper {
         uint64[] liqDataChainIds;
         uint256[] liqDataAmountsIn;
         uint256[] liqDataNativeAmounts;
-        bool[] hasDstSwaps;
-        address receiverAddress;
         InitMultiVaultData imvd;
         InitSingleVaultData isvd;
         uint256 i;
@@ -88,17 +86,17 @@ contract PayloadHelper is IPayloadHelper {
         view
         override
         returns (
-            uint8,
-            uint8,
-            address,
-            uint64,
-            uint256[] memory,
-            uint256[] memory,
-            uint256[] memory,
-            bool[] memory,
-            bytes memory,
-            address,
-            uint256
+            uint8 txType,
+            uint8 callbackType,
+            address srcSender,
+            uint64 srcChainId,
+            uint256[] memory amounts,
+            uint256[] memory slippages,
+            uint256[] memory superformIds,
+            bool[] memory hasDstSwaps,
+            bytes memory extraFormData,
+            address receiverAddress,
+            uint256 srcPayloadId
         )
     {
         IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
@@ -317,9 +315,9 @@ contract PayloadHelper is IPayloadHelper {
 
             superformIds = new uint256[](1);
             superformIds[0] = isvd.superformId;
-
             hasDstSwaps = new bool[](1);
             hasDstSwaps[0] = isvd.hasDstSwap;
+            receiverAddress = isvd.receiverAddress;
 
             return (
                 amounts, slippages, superformIds, hasDstSwaps, isvd.extraFormData, isvd.receiverAddress, isvd.payloadId
