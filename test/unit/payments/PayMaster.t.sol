@@ -69,11 +69,11 @@ contract PayMasterTest is ProtocolActions {
 
         /// @dev make zero payment
         vm.expectRevert(Error.ZERO_MSG_VALUE.selector);
-        PayMaster(getContract(ETH, "PayMaster")).makePayment(deployer);
+        PayMaster(payable(getContract(ETH, "PayMaster"))).makePayment(deployer);
 
         /// @dev try to make payment for zero address
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        PayMaster(getContract(ETH, "PayMaster")).makePayment{ value: 1 wei }(address(0));
+        PayMaster(payable(getContract(ETH, "PayMaster"))).makePayment{ value: 1 wei }(address(0));
     }
 
     function test_withdrawNativeToTxProcessor() public {
@@ -83,23 +83,23 @@ contract PayMasterTest is ProtocolActions {
         address feeCollector = getContract(ETH, "PayMaster");
 
         /// @dev makes payment of 1 wei
-        PayMaster(feeCollector).makePayment{ value: 1 wei }(deployer);
+        PayMaster(payable(feeCollector)).makePayment{ value: 1 wei }(deployer);
         assertEq(feeCollector.balance, 1 wei);
 
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
         vm.expectRevert(Error.INSUFFICIENT_NATIVE_AMOUNT.selector);
-        PayMaster(feeCollector).withdrawTo(keccak256("CORE_REGISTRY_PROCESSOR"), 2 wei);
+        PayMaster(payable(feeCollector)).withdrawTo(keccak256("CORE_REGISTRY_PROCESSOR"), 2 wei);
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
         superRegistry.setAddress(keccak256("CORE_REGISTRY_PROCESSOR"), address(0), ETH);
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        PayMaster(feeCollector).withdrawTo(keccak256("CORE_REGISTRY_PROCESSOR"), 1 wei);
+        PayMaster(payable(feeCollector)).withdrawTo(keccak256("CORE_REGISTRY_PROCESSOR"), 1 wei);
 
         superRegistry.setAddress(keccak256("CORE_REGISTRY_PROCESSOR"), txProcessorETH, ETH);
 
         /// @dev admin moves the payment from fee collector to tx processor
-        PayMaster(feeCollector).withdrawTo(keccak256("CORE_REGISTRY_PROCESSOR"), 1 wei);
+        PayMaster(payable(feeCollector)).withdrawTo(keccak256("CORE_REGISTRY_PROCESSOR"), 1 wei);
         assertEq(feeCollector.balance, 0);
         assertEq(txProcessorETH.balance, 1 wei);
     }
@@ -111,23 +111,23 @@ contract PayMasterTest is ProtocolActions {
         address feeCollector = getContract(ETH, "PayMaster");
 
         /// @dev makes payment of 1 wei
-        PayMaster(feeCollector).makePayment{ value: 1 wei }(deployer);
+        PayMaster(payable(feeCollector)).makePayment{ value: 1 wei }(deployer);
         assertEq(feeCollector.balance, 1 wei);
 
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
         vm.expectRevert(Error.INSUFFICIENT_NATIVE_AMOUNT.selector);
-        PayMaster(feeCollector).withdrawTo(keccak256("CORE_REGISTRY_UPDATER"), 2 wei);
+        PayMaster(payable(feeCollector)).withdrawTo(keccak256("CORE_REGISTRY_UPDATER"), 2 wei);
 
         /// @dev admin tries withdraw if updater address is zero (check if handled gracefully)
         superRegistry.setAddress(keccak256("CORE_REGISTRY_UPDATER"), address(0), ETH);
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        PayMaster(feeCollector).withdrawTo(keccak256("CORE_REGISTRY_UPDATER"), 1 wei);
+        PayMaster(payable(feeCollector)).withdrawTo(keccak256("CORE_REGISTRY_UPDATER"), 1 wei);
 
         superRegistry.setAddress(keccak256("CORE_REGISTRY_UPDATER"), txUpdaterETH, ETH);
 
         /// @dev admin moves the payment from fee collector to tx updater
-        PayMaster(feeCollector).withdrawTo(keccak256("CORE_REGISTRY_UPDATER"), 1 wei);
+        PayMaster(payable(feeCollector)).withdrawTo(keccak256("CORE_REGISTRY_UPDATER"), 1 wei);
         assertEq(feeCollector.balance, 0);
         assertEq(txUpdaterETH.balance, 1 wei);
     }
@@ -137,7 +137,7 @@ contract PayMasterTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address feeCollector = getContract(ETH, "PayMaster");
-        PayMaster(feeCollector).makePayment{ value: 2 wei }(deployer);
+        PayMaster(payable(feeCollector)).makePayment{ value: 2 wei }(deployer);
 
         address mock = address(new KeeperMockThatWontAcceptEth());
 
@@ -145,7 +145,7 @@ contract PayMasterTest is ProtocolActions {
 
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
         vm.expectRevert(Error.FAILED_WITHDRAW.selector);
-        PayMaster(feeCollector).withdrawTo(keccak256("KEEPER_MOCK"), 1 wei);
+        PayMaster(payable(feeCollector)).withdrawTo(keccak256("KEEPER_MOCK"), 1 wei);
     }
 
     function test_rebalanceToCoreStateRegistryTxProcessor() public {
@@ -156,7 +156,7 @@ contract PayMasterTest is ProtocolActions {
         address feeCollectorDst = getContract(ARBI, "PayMaster");
 
         /// @dev makes payment of 1 ether
-        PayMaster(feeCollector).makePayment{ value: 1 ether }(deployer);
+        PayMaster(payable(feeCollector)).makePayment{ value: 1 ether }(deployer);
         assertEq(feeCollector.balance, 1 ether);
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
@@ -167,7 +167,7 @@ contract PayMasterTest is ProtocolActions {
         );
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        PayMaster(feeCollector).rebalanceTo(
+        PayMaster(payable(feeCollector)).rebalanceTo(
             keccak256("CORE_REGISTRY_PROCESSOR"), LiqRequest(1, txData, NATIVE, ARBI, 1 ether), 420
         );
 
@@ -177,7 +177,7 @@ contract PayMasterTest is ProtocolActions {
         );
         /// @dev admin moves the payment from fee collector to different address on another chain
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
-        PayMaster(feeCollector).rebalanceTo(
+        PayMaster(payable(feeCollector)).rebalanceTo(
             keccak256("CORE_REGISTRY_PROCESSOR"), LiqRequest(1, txData, NATIVE, ARBI, 1 ether), ARBI
         );
         txData = _buildDummyTxDataUnitTests(
@@ -185,12 +185,12 @@ contract PayMasterTest is ProtocolActions {
         );
         /// @dev admin moves the payment from fee collector to different address on another chain
         vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
-        PayMaster(feeCollector).rebalanceTo(
+        PayMaster(payable(feeCollector)).rebalanceTo(
             keccak256("CORE_REGISTRY_PROCESSOR"), LiqRequest(1, txData, NATIVE, ETH, 1 ether), ARBI
         );
 
         /// @dev admin moves the payment from fee collector (ideal conditions)
-        PayMaster(feeCollector).rebalanceTo(
+        PayMaster(payable(feeCollector)).rebalanceTo(
             keccak256("CORE_REGISTRY_PROCESSOR"),
             LiqRequest(
                 1,
@@ -224,7 +224,7 @@ contract PayMasterTest is ProtocolActions {
         address feeCollectorDst = getContract(ARBI, "PayMaster");
 
         /// @dev makes payment of 1 ether
-        PayMaster(feeCollector).makePayment{ value: 1 ether }(deployer);
+        PayMaster(payable(feeCollector)).makePayment{ value: 1 ether }(deployer);
         assertEq(feeCollector.balance, 1 ether);
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
@@ -234,7 +234,7 @@ contract PayMasterTest is ProtocolActions {
         );
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        PayMaster(feeCollector).rebalanceTo(
+        PayMaster(payable(feeCollector)).rebalanceTo(
             keccak256("CORE_REGISTRY_UPDATER"), LiqRequest(1, txData, NATIVE, ARBI, 1 ether), 420
         );
 
@@ -246,12 +246,12 @@ contract PayMasterTest is ProtocolActions {
 
         /// @dev admin moves the payment from fee collector to different address on another chain
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
-        PayMaster(feeCollector).rebalanceTo(
+        PayMaster(payable(feeCollector)).rebalanceTo(
             keccak256("CORE_REGISTRY_UPDATER"), LiqRequest(1, txData, NATIVE, ARBI, 1 ether), ARBI
         );
 
         /// @dev admin moves the payment from fee collector (ideal conditions)
-        PayMaster(feeCollector).rebalanceTo(
+        PayMaster(payable(feeCollector)).rebalanceTo(
             keccak256("CORE_REGISTRY_UPDATER"),
             LiqRequest(
                 1,

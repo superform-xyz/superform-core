@@ -32,6 +32,12 @@ interface IPayMaster {
     /// @param dstChainId_ is the destination chain id
     function rebalanceTo(bytes32 superRegistryId_, LiqRequest memory req_, uint64 dstChainId_) external;
 
+    /// @dev retries a stuck payload on any supported amb using funds from paymaster
+    /// @param ambId_ is the identifier of the AMB
+    /// @param nativeValue_ is the native fees to be sent along the transaction
+    /// @param data_ is the amb specific encoded retry data [check individual AMB implementations]
+    function treatAMB(uint8 ambId_, uint256 nativeValue_, bytes memory data_) external;
+
     /*///////////////////////////////////////////////////////////////
                     EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/

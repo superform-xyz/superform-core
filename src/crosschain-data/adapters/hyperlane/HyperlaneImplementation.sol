@@ -108,6 +108,12 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         );
     }
 
+    /// @inheritdoc IAmbImplementation
+    function retryPayload(bytes memory data_) external payable override {
+        (bytes32 messageId, uint32 destinationDomain, uint256 gasAmount) = abi.decode(data_, (bytes32, uint32, uint256));
+        igp.payForGas{ value: msg.value }(messageId, destinationDomain, gasAmount, msg.sender);
+    }
+
     /// @dev allows protocol admin to add new chain ids in future
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB

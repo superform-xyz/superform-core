@@ -29,6 +29,10 @@ interface IAmbImplementation {
         external
         payable;
 
+    /// @dev allows paymaster to call the retry mechanism for encoded data
+    /// @param data_ is the encoded retry data (differ per AMB)
+    function retryPayload(bytes memory data_) external payable;
+
     /*///////////////////////////////////////////////////////////////
                     View Functions
     //////////////////////////////////////////////////////////////*/

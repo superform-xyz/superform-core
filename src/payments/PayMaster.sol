@@ -6,6 +6,7 @@ import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { IPayMaster } from "../interfaces/IPayMaster.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
+import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
 import { LiquidityHandler } from "../crosschain-liquidity/LiquidityHandler.sol";
 import "../types/LiquidityTypes.sol";
 
@@ -71,9 +72,21 @@ contract PayMaster is IPayMaster, LiquidityHandler {
         _validateAndDispatchTokens(req_, receiver);
     }
 
+    /// @inheritdoc IPayMaster
+    function treatAMB(uint8 ambId_, uint256 nativeValue_, bytes memory data_) external override onlyPaymentAdmin {
+        if (address(this).balance < nativeValue_) {
+            revert Error.INSUFFICIENT_NATIVE_AMOUNT();
+        }
+
+        IAmbImplementation(superRegistry.getAmbAddress(ambId_)).retryPayload{ value: nativeValue_ }(data_);
+    }
+
     /*///////////////////////////////////////////////////////////////
                     EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev to receive amb refunds
+    receive() external payable { }
 
     /// @inheritdoc IPayMaster
     function makePayment(address user_) external payable override {

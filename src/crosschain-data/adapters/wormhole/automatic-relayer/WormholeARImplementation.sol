@@ -7,7 +7,7 @@ import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { AMBMessage } from "src/types/DataTypes.sol";
 import { Error } from "src/utils/Error.sol";
-import { IWormholeRelayer } from "src/vendor/wormhole/IWormholeRelayer.sol";
+import { IWormholeRelayer, VaaKey } from "src/vendor/wormhole/IWormholeRelayer.sol";
 import { IWormholeReceiver } from "src/vendor/wormhole/IWormholeReceiver.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
@@ -95,6 +95,20 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
 
         relayer.sendPayloadToEvm{ value: msg.value }(
             dstChainId, authorizedImpl[dstChainId], message_, dstNativeAirdrop, dstGasLimit
+        );
+    }
+
+    /// @inheritdoc IAmbImplementation
+    function retryPayload(bytes memory data_) external payable override {
+        (
+            VaaKey memory deliveryVaaKey,
+            uint16 targetChain,
+            uint256 newReceiverValue,
+            uint256 newGasLimit,
+            address newDeliveryProviderAddress
+        ) = abi.decode(data_, (VaaKey, uint16, uint256, uint256, address));
+        relayer.resendToEvm{ value: msg.value }(
+            deliveryVaaKey, targetChain, newReceiverValue, newGasLimit, newDeliveryProviderAddress
         );
     }
 

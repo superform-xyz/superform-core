@@ -97,6 +97,12 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         _lzSend(ambChainId[dstChainId_], message_, payable(srcSender_), address(0x0), extraData_, msg.value);
     }
 
+    /// @inheritdoc IAmbImplementation
+    function retryPayload(bytes memory data_) external payable override {
+        (uint16 srcChainId, bytes memory srcAddress, bytes memory payload) = abi.decode(data_, (uint16, bytes, bytes));
+        lzEndpoint.retryPayload(srcChainId, srcAddress, payload);
+    }
+
     /// @dev allows protocol admin to add new chain ids in future
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
