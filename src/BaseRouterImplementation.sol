@@ -122,7 +122,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
 
         emit CrossChainInitiatedMulti(
-            vars.currentPayloadId, req_.dstChainId, req_.superformsData.superformIds, uint8(TransactionType.DEPOSIT)
+            vars.currentPayloadId,
+            req_.dstChainId,
+            req_.superformsData.superformIds,
+            uint8(TransactionType.DEPOSIT),
+            req_.ambIds
         );
     }
 
@@ -202,7 +206,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
 
         emit CrossChainInitiatedSingle(
-            vars.currentPayloadId, req_.dstChainId, req_.superformData.superformId, uint8(TransactionType.DEPOSIT)
+            vars.currentPayloadId,
+            req_.dstChainId,
+            req_.superformData.superformId,
+            uint8(TransactionType.DEPOSIT),
+            req_.ambIds
         );
     }
 
@@ -326,7 +334,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
 
         emit CrossChainInitiatedMulti(
-            vars.currentPayloadId, req_.dstChainId, req_.superformsData.superformIds, uint8(TransactionType.WITHDRAW)
+            vars.currentPayloadId,
+            req_.dstChainId,
+            req_.superformsData.superformIds,
+            uint8(TransactionType.WITHDRAW),
+            req_.ambIds
         );
     }
 
@@ -394,7 +406,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
 
         emit CrossChainInitiatedSingle(
-            vars.currentPayloadId, req_.dstChainId, req_.superformData.superformId, uint8(TransactionType.WITHDRAW)
+            vars.currentPayloadId,
+            req_.dstChainId,
+            req_.superformData.superformId,
+            uint8(TransactionType.WITHDRAW),
+            req_.ambIds
         );
     }
 

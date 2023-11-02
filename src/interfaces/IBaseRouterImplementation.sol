@@ -40,11 +40,11 @@ interface IBaseRouterImplementation is IBaseRouter {
 
     /// @dev is emitted when a cross-chain transaction is initiated.
     event CrossChainInitiatedMulti(
-        uint256 indexed payloadId, uint64 indexed dstChainId, uint256[] superformIds, uint8 txType
+        uint256 indexed payloadId, uint64 indexed dstChainId, uint256[] superformIds, uint8 txType, uint8[] ambIds
     );
 
     event CrossChainInitiatedSingle(
-        uint256 indexed payloadId, uint64 indexed dstChainId, uint256 superformIds, uint8 txType
+        uint256 indexed payloadId, uint64 indexed dstChainId, uint256 superformIds, uint8 txType, uint8[] ambIds
     );
 
     /// @dev is emitted when a cross-chain transaction is completed.
