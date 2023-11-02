@@ -140,8 +140,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         /// NOTE: experimental split of registry contracts
         (,,, uint8 registryId,,) = decoded.txInfo.decodeTxInfo();
 
-        address registryAddress = superRegistry.getStateRegistry(registryId);
-        IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
+        IBaseStateRegistry targetRegistry = IBaseStateRegistry(superRegistry.getStateRegistry(registryId));
 
         targetRegistry.receivePayload(superChainId[_srcChainId], _payload);
     }

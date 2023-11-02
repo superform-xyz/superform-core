@@ -142,8 +142,7 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         /// @dev decoding payload
         AMBMessage memory decoded = abi.decode(payload_, (AMBMessage));
         (,,, uint8 registryId,,) = decoded.txInfo.decodeTxInfo();
-        address registryAddress = superRegistry.getStateRegistry(registryId);
-        IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
+        IBaseStateRegistry targetRegistry = IBaseStateRegistry(superRegistry.getStateRegistry(registryId));
 
         targetRegistry.receivePayload(superChainId[sourceChain_], payload_);
     }

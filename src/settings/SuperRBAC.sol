@@ -166,9 +166,6 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         if (rolesPayload.messageType == SYNC_REVOKE) {
             (, bytes32 role, bytes32 superRegistryAddressId) =
                 abi.decode(rolesPayload.message, (uint256, bytes32, bytes32));
-            address addressToRevoke = superRegistry.getAddress(superRegistryAddressId);
-
-            if (addressToRevoke == address(0)) revert Error.ZERO_ADDRESS();
 
             /// @dev broadcasting cannot update the PROTOCOL_ADMIN_ROLE, EMERGENCY_ADMIN_ROLE, BROADCASTER_ROLE
             /// and WORMHOLE_VAA_RELAYER_ROLE
@@ -177,7 +174,7 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
                     role == PROTOCOL_ADMIN_ROLE || role == EMERGENCY_ADMIN_ROLE || role == BROADCASTER_ROLE
                         || role == WORMHOLE_VAA_RELAYER_ROLE
                 )
-            ) _revokeRole(role, addressToRevoke);
+            ) _revokeRole(role, superRegistry.getAddress(superRegistryAddressId));
         }
     }
 
