@@ -77,6 +77,21 @@ contract PayMaster is IPayMaster, LiquidityHandler {
         _validateAndDispatchTokens(req_, receiver);
     }
 
+    /// @inheritdoc IPayMaster
+    function treatAMB(uint8 ambId_, uint256 nativeValue_, bytes memory data_) external override onlyPaymentAdmin {
+        address ambImplementation = superRegistry.getAmbAddress(ambId_);
+
+        if (ambImplementation == address(0)) {
+            revert Error.INVALID_BRIDGE_ID();
+        }
+
+        if (address(this).balance < nativeValue_) {
+            revert Error.INSUFFICIENT_NATIVE_AMOUNT();
+        }
+
+        IAmbImplementation(ambImplementation).retryPayload{ value: nativeValue_ }(data_);
+    }
+
     /*///////////////////////////////////////////////////////////////
                     EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -97,20 +112,6 @@ contract PayMaster is IPayMaster, LiquidityHandler {
         totalFeesPaid[user_] += msg.value;
 
         emit Payment(user_, msg.value);
-    }
-
-    function treatAMB(uint8 ambId_, uint256 nativeValue_, bytes memory data_) external {
-        address ambImplementation = superRegistry.getAmbAddress(ambId_);
-
-        if (ambImplementation == address(0)) {
-            revert Error.INVALID_BRIDGE_ID();
-        }
-
-        if (address(this).balance < nativeValue_) {
-            revert Error.INSUFFICIENT_NATIVE_AMOUNT();
-        }
-
-        IAmbImplementation(ambImplementation).retryPayload{ value: nativeValue_ }(data_);
     }
 
     /*///////////////////////////////////////////////////////////////
