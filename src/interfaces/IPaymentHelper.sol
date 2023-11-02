@@ -26,22 +26,21 @@ interface IPaymentHelper {
     /// @param withdrawGasUsed is the withdraw per vault gas on the chain
     /// @param defaultNativePrice is the native price on the specified chain
     /// @param defaultGasPrice is the gas price on the specified chain
-    /// @param dstGasPerKB is the gas per size of data on the specified chain
+    /// @param dstGasPerByte is the gas per size of data on the specified chain
     /// @param ackGasCost is the gas cost for processing acknowledgements on src chain
     /// @param timelockCost is the extra cost for processing timelocked payloads
-    /// @param swapGasUsed is the cost for dst swap
     struct PaymentHelperConfig {
         address nativeFeedOracle;
         address gasPriceOracle;
+        uint256 swapGasUsed;
         uint256 updateGasUsed;
         uint256 depositGasUsed;
         uint256 withdrawGasUsed;
         uint256 defaultNativePrice;
         uint256 defaultGasPrice;
-        uint256 dstGasPerKB;
+        uint256 dstGasPerByte;
         uint256 ackGasCost;
         uint256 timelockCost;
-        uint256 swapGasUsed;
     }
 
     /*///////////////////////////////////////////////////////////////

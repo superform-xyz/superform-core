@@ -223,7 +223,7 @@ contract PaymentHelperTest is ProtocolActions {
         paymentHelper.updateRemoteChain(137, 1, abi.encode(address(0)));
 
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(137, 6, abi.encode(0));
+        paymentHelper.updateRemoteChain(137, 8, abi.encode(0));
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
@@ -272,7 +272,7 @@ contract PaymentHelperTest is ProtocolActions {
         paymentHelper.updateRemoteChain(1, 1, abi.encode(address(0)));
 
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(1, 6, abi.encode(1e8));
+        paymentHelper.updateRemoteChain(1, 8, abi.encode(1e8));
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
@@ -316,10 +316,10 @@ contract PaymentHelperTest is ProtocolActions {
     }
 
     function test_dstSwaps_swapFees() public {
-        /// @dev scenario: when the source native fee oracle is zero address
+        /// @dev scenario: when swap fees is set to 0
 
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(1, 11, abi.encode(1e8));
+        paymentHelper.updateRemoteChain(1, 3, abi.encode(1e8));
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
@@ -374,7 +374,7 @@ contract PaymentHelperTest is ProtocolActions {
         paymentHelper.updateRemoteChain(1, 1, abi.encode(address(0)));
 
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(1, 6, abi.encode(1e8));
+        paymentHelper.updateRemoteChain(1, 8, abi.encode(1e8));
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
@@ -432,7 +432,7 @@ contract PaymentHelperTest is ProtocolActions {
         paymentHelper.updateRemoteChain(1, 1, abi.encode(address(0)));
 
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(1, 6, abi.encode(1e8));
+        paymentHelper.updateRemoteChain(1, 8, abi.encode(1e8));
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
@@ -550,47 +550,76 @@ contract PaymentHelperTest is ProtocolActions {
         address result2 = address(paymentHelper.gasPriceOracle(1));
         assertEq(result2, address(421));
 
-        /// set config type: 9
+        /// set config type: 3
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(1, 9, abi.encode(422));
+        paymentHelper.updateRemoteChain(1, 3, abi.encode(422));
 
-        uint256 result3 = paymentHelper.ackGasCost(1);
+        uint256 result3 = paymentHelper.swapGasUsed(1);
         assertEq(result3, 422);
 
-        /// set config type: 10
+        /// set config type: 4
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(1, 10, abi.encode(423));
+        paymentHelper.updateRemoteChain(1, 4, abi.encode(423));
 
-        uint256 result4 = paymentHelper.timelockCost(1);
+        uint256 result4 = paymentHelper.updateGasUsed(1);
         assertEq(result4, 423);
+
+        /// set config type: 5
+        vm.prank(deployer);
+        paymentHelper.updateRemoteChain(1, 5, abi.encode(424));
+
+        uint256 result5 = paymentHelper.depositGasUsed(1);
+        assertEq(result5, 424);
 
         /// set config type: 6
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(1, 6, abi.encode(424));
+        paymentHelper.updateRemoteChain(1, 6, abi.encode(425));
 
-        uint256 result5 = paymentHelper.nativePrice(1);
-        assertEq(result5, 424);
+        uint256 result6 = paymentHelper.withdrawGasUsed(1);
+        assertEq(result6, 425);
 
         /// set config type: 7
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(1, 7, abi.encode(425));
+        paymentHelper.updateRemoteChain(1, 7, abi.encode(426));
 
-        uint256 result6 = paymentHelper.gasPrice(1);
-        assertEq(result6, 425);
+        uint256 result7 = paymentHelper.nativePrice(1);
+        assertEq(result7, 426);
+
+        /// set config type: 8
+        vm.prank(deployer);
+        paymentHelper.updateRemoteChain(1, 8, abi.encode(427));
+
+        uint256 result8 = paymentHelper.gasPrice(1);
+        assertEq(result8, 427);
+
+        /// set config type: 9
+        vm.prank(deployer);
+        paymentHelper.updateRemoteChain(1, 9, abi.encode(428));
+
+        uint256 result9 = paymentHelper.gasPerByte(1);
+        assertEq(result9, 428);
+
+        /// set config type: 10
+        vm.prank(deployer);
+        paymentHelper.updateRemoteChain(1, 10, abi.encode(429));
+
+        uint256 result10 = paymentHelper.ackGasCost(1);
+        assertEq(result10, 429);
 
         /// set config type: 11
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(1, 11, abi.encode(423));
+        paymentHelper.updateRemoteChain(1, 11, abi.encode(430));
 
-        uint256 result7 = paymentHelper.swapGasUsed(1);
-        assertEq(result7, 423);
+        uint256 result11 = paymentHelper.timelockCost(1);
+        assertEq(result11, 430);
+
     }
 
     function test_addRemoteChain() public {
         vm.prank(deployer);
         paymentHelper.addRemoteChain(
             420,
-            IPaymentHelper.PaymentHelperConfig(address(420), address(421), 321, 423, 424, 425, 426, 427, 428, 429, 430)
+            IPaymentHelper.PaymentHelperConfig(address(420), address(421), 422, 423, 424, 425, 426, 427, 428, 429, 430)
         );
     }
 
@@ -613,45 +642,66 @@ contract PaymentHelperTest is ProtocolActions {
 
         /// set config type: 3
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(420, 3, abi.encode(423));
+        paymentHelper.updateRemoteChain(420, 3, abi.encode(422));
 
-        uint256 result3 = paymentHelper.updateGasUsed(420);
-        assertEq(result3, 423);
+        uint256 result3 = paymentHelper.swapGasUsed(420);
+        assertEq(result3, 422);
 
         /// set config type: 4
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(420, 4, abi.encode(424));
+        paymentHelper.updateRemoteChain(420, 4, abi.encode(423));
 
-        uint256 result4 = paymentHelper.depositGasUsed(420);
-        assertEq(result4, 424);
+        uint256 result4 = paymentHelper.updateGasUsed(420);
+        assertEq(result4, 423);
 
         /// set config type: 5
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(420, 5, abi.encode(425));
+        paymentHelper.updateRemoteChain(420, 5, abi.encode(424));
 
-        uint256 result5 = paymentHelper.withdrawGasUsed(420);
-        assertEq(result5, 425);
+        uint256 result5 = paymentHelper.depositGasUsed(420);
+        assertEq(result5, 424);
 
         /// set config type: 6
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(420, 6, abi.encode(426));
+        paymentHelper.updateRemoteChain(420, 6, abi.encode(425));
 
-        uint256 result6 = paymentHelper.nativePrice(420);
-        assertEq(result6, 426);
+        uint256 result6 = paymentHelper.withdrawGasUsed(420);
+        assertEq(result6, 425);
 
         /// set config type: 7
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(420, 7, abi.encode(427));
+        paymentHelper.updateRemoteChain(420, 7, abi.encode(426));
 
-        uint256 result7 = paymentHelper.gasPrice(420);
-        assertEq(result7, 427);
+        uint256 result7 = paymentHelper.nativePrice(420);
+        assertEq(result7, 426);
 
         /// set config type: 8
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(420, 8, abi.encode(428));
+        paymentHelper.updateRemoteChain(420, 8, abi.encode(427));
 
-        uint256 result8 = paymentHelper.gasPerByte(420);
-        assertEq(result8, 428);
+        uint256 result8 = paymentHelper.gasPrice(420);
+        assertEq(result8, 427);
+
+        /// set config type: 9
+        vm.prank(deployer);
+        paymentHelper.updateRemoteChain(420, 9, abi.encode(428));
+
+        uint256 result9 = paymentHelper.gasPerByte(420);
+        assertEq(result9, 428);
+
+        /// set config type: 10
+        vm.prank(deployer);
+        paymentHelper.updateRemoteChain(1, 10, abi.encode(429));
+
+        uint256 result10 = paymentHelper.ackGasCost(1);
+        assertEq(result10, 429);
+
+        /// set config type: 11
+        vm.prank(deployer);
+        paymentHelper.updateRemoteChain(1, 11, abi.encode(430));
+
+        uint256 result11 = paymentHelper.timelockCost(1);
+        assertEq(result11, 430);
     }
 
     function _generateTimelockSuperformPackWithShift() internal pure returns (uint256 superformId_) {
