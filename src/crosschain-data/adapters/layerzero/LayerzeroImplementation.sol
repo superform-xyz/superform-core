@@ -54,6 +54,13 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         _;
     }
 
+    modifier onlyPayMaster() {
+        if (msg.sender != superRegistry.getAddress(keccak256("PAYMASTER"))) {
+            revert Error.NOT_PAYMASTER();
+        }
+        _;
+    }
+
     /*///////////////////////////////////////////////////////////////
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
@@ -83,6 +90,12 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         }
 
         _lzSend(ambChainId[dstChainId_], message_, payable(srcSender_), address(0x0), extraData_, msg.value);
+    }
+
+    /// @inheritdoc IAmbImplementation
+    function retryPayload(bytes memory data_) external payable override onlyPayMaster {
+        (uint16 srcChainId, bytes memory srcAddress, bytes memory payload) = abi.decode(data_, (uint16, bytes, bytes));
+        lzEndpoint.retryPayload(srcChainId, srcAddress, payload);
     }
 
     /// @dev allows protocol admin to add new chain ids in future

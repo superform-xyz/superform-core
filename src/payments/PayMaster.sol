@@ -6,9 +6,7 @@ import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { IPayMaster } from "../interfaces/IPayMaster.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
-import { ILayerZeroEndpoint } from "../vendor/layerzero/ILayerZeroEndpoint.sol";
-import { IInterchainGasPaymaster } from "../vendor/hyperlane/IInterchainGasPaymaster.sol";
-import { IWormholeRelayerSend, VaaKey } from "../vendor/wormhole/IWormholeRelayer.sol";
+import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
 import { LiquidityHandler } from "../crosschain-liquidity/LiquidityHandler.sol";
 import "../types/LiquidityTypes.sol";
 
@@ -83,6 +81,9 @@ contract PayMaster is IPayMaster, LiquidityHandler {
                     EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev to receive amb refunds
+    receive() external payable { }
+
     /// @inheritdoc IPayMaster
     function makePayment(address user_) external payable override {
         if (msg.value == 0) {
@@ -98,40 +99,18 @@ contract PayMaster is IPayMaster, LiquidityHandler {
         emit Payment(user_, msg.value);
     }
 
-    function treatLayerzero(uint16 srcChainId_, bytes calldata srcAddress_, bytes memory payload_) external {
-        /// FIXME: figure out how to get this
-        ILayerZeroEndpoint(address(0)).retryPayload(srcChainId_, srcAddress_, payload_);
-    }
+    function treatAMB(uint8 ambId_, uint256 nativeValue_, bytes memory data_) external {
+        address ambImplementation = superRegistry.getAmbAddress(ambId_);
 
-    function treatHyperlane(
-        bytes32 messageId_,
-        uint32 destinationDomain_,
-        uint256 gasAmount_,
-        address refundAddress_
-    )
-        external
-        payable
-    {
-        /// FIXME: figure out how to get this
-        /// FIXME: validate refund address
-        IInterchainGasPaymaster(address(0)).payForGas{ value: msg.value }(
-            messageId_, destinationDomain_, gasAmount_, refundAddress_
-        );
-    }
+        if (ambImplementation == address(0)) {
+            revert Error.INVALID_BRIDGE_ID();
+        }
 
-    function testWormhole(
-        VaaKey memory deliveryVaaKey_,
-        uint16 targetChain_,
-        uint256 newReceiverValue_,
-        uint256 newGasLimit_,
-        address newDeliveryProviderAddress_
-    )
-        external
-        payable
-    {
-        IWormholeRelayerSend(address(0)).resendToEvm{ value: msg.value }(
-            deliveryVaaKey_, targetChain_, newReceiverValue_, newGasLimit_, newDeliveryProviderAddress_
-        );
+        if (address(this).balance < nativeValue_) {
+            revert Error.INSUFFICIENT_NATIVE_AMOUNT();
+        }
+
+        IAmbImplementation(ambImplementation).retryPayload{ value: nativeValue_ }(data_);
     }
 
     /*///////////////////////////////////////////////////////////////

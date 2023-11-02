@@ -93,6 +93,9 @@ library Error {
     /// @dev thrown if the msg-sender does not have SWAPPER role
     error NOT_SWAPPER();
 
+    /// @dev thrown if msg-sender is not paymaster
+    error NOT_PAYMASTER();
+
     /// @dev thrown when the bridge tokens haven't arrived to destination
     error BRIDGE_TOKENS_PENDING();
 
