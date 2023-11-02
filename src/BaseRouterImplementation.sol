@@ -84,7 +84,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         address superform;
         uint256 len = req_.superformsData.superformIds.length;
 
-        _multiVaultTokenForward(msg.sender, new address[](0), req_.superformsData.permit2data, ambData, true);
+        (uint256[] memory amountsIn, uint8[] memory bridgeIds) =
+            _multiVaultTokenForward(msg.sender, new address[](0), req_.superformsData.permit2data, ambData, true);
 
         /// @dev this loop is what allows to deposit to >1 different underlying on destination
         /// @dev if a loop fails in a validation the whole chain should be reverted
@@ -121,11 +122,13 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             )
         );
 
-        emit CrossChainInitiatedMulti(
+        emit CrossChainInitiatedDepositMulti(
             vars.currentPayloadId,
             req_.dstChainId,
             req_.superformsData.superformIds,
             uint8(TransactionType.DEPOSIT),
+            amountsIn,
+            bridgeIds,
             req_.ambIds
         );
     }
@@ -175,7 +178,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         vars.liqRequest = req_.superformData.liqRequest;
         (address superform,,) = req_.superformData.superformId.getSuperform();
 
-        _singleVaultTokenForward(msg.sender, address(0), req_.superformData.permit2data, ambData);
+       (uint256 amountIn, uint8 bridgeId) _singleVaultTokenForward(msg.sender, address(0), req_.superformData.permit2data, ambData);
 
         LiqRequest memory emptyRequest;
         ambData.liqData = emptyRequest;
@@ -205,11 +208,13 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             )
         );
 
-        emit CrossChainInitiatedSingle(
+        emit CrossChainInitiatedDepositSingle(
             vars.currentPayloadId,
             req_.dstChainId,
             req_.superformData.superformId,
             uint8(TransactionType.DEPOSIT),
+            amountIn,
+            bridgeId,
             req_.ambIds
         );
     }
@@ -333,7 +338,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             )
         );
 
-        emit CrossChainInitiatedMulti(
+        emit CrossChainInitiatedWithdrawMulti(
             vars.currentPayloadId,
             req_.dstChainId,
             req_.superformsData.superformIds,
@@ -405,7 +410,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             )
         );
 
-        emit CrossChainInitiatedSingle(
+        emit CrossChainInitiatedWithdrawSingle(
             vars.currentPayloadId,
             req_.dstChainId,
             req_.superformData.superformId,
@@ -916,6 +921,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     )
         internal
         virtual
+        returns (uint256 amountIn, uint8 bridgeId)
     {
         if (vaultData_.liqData.token != NATIVE) {
             IERC20 token = IERC20(vaultData_.liqData.token);
@@ -925,8 +931,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             if (len == 0) {
                 amount = vaultData_.amount;
             } else {
-                address bridgeValidator = superRegistry.getBridgeValidator(vaultData_.liqData.bridgeId);
-                amount = IBridgeValidator(bridgeValidator).decodeAmountIn(vaultData_.liqData.txData, false);
+                bridgeId = vaultData_.liqData.bridgeId;
+                amountIn = IBridgeValidator(superRegistry.getBridgeValidator(bridgeId)).decodeAmountIn(
+                    vaultData_.liqData.txData, false
+                );
+                amount = amountIn;
                 /// e.g asset in is USDC (6 decimals), we use this amount to approve the transfer to superform
             }
 
@@ -969,6 +978,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 token.safeIncreaseAllowance(target_, amount);
             }
         }
+
+        return (amountIn, bridgeId)
     }
 
     struct MultiTokenForwardLocalVars {
@@ -977,7 +988,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         uint256 totalAmount;
         uint256 permit2dataLen;
         address permit2;
+        uint256 targetLen;
         uint256[] approvalAmounts;
+        uint256[] amountsIn;
+        uint8[] bridgeIds;
     }
 
     function _multiVaultTokenForward(
@@ -989,12 +1003,28 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     )
         internal
         virtual
+        returns (uint256[] memory, uint8[] memory)
     {
         address token = vaultData_.liqData[0].token;
+        v.len = vaultData_.liqData.length;
+
+        v.amountsIn = new uint256[](v.len);
+        v.bridgeIds = new uint8[](v.len);
+
+        for (uint256 i; i < v.len;) {
+            v.bridgeIds[i] = vaultData_.liqData[i].bridgeId;
+            v.amountsIn[i] = IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[i])).decodeAmountIn(
+                vaultData_.liqData[i].txData, false
+            );
+
+            unchecked {
+                ++i;
+            }
+        }
+
         if (token != NATIVE) {
             MultiTokenForwardLocalVars memory v;
             v.token = IERC20(token);
-            v.len = vaultData_.liqData.length;
 
             v.totalAmount;
 
@@ -1012,9 +1042,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 } else if (len == 0 && xChain) {
                     revert Error.NO_TXDATA_PRESENT();
                 } else {
-                    address bridgeValidator = superRegistry.getBridgeValidator(vaultData_.liqData[i].bridgeId);
-                    v.approvalAmounts[i] =
-                        IBridgeValidator(bridgeValidator).decodeAmountIn(vaultData_.liqData[i].txData, false);
+                    v.approvalAmounts[i] = v.amountsIn[i];
                 }
 
                 v.totalAmount += v.approvalAmounts[i];
@@ -1060,8 +1088,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             }
 
             /// @dev approves individual final targets if needed here
-            uint256 targetLen = targets_.length;
-            for (uint256 j; j < targetLen;) {
+            v.targetLen = targets_.length;
+            for (uint256 j; j < v.targetLen;) {
                 /// @dev approves the superform
                 v.token.safeIncreaseAllowance(targets_[j], v.approvalAmounts[j]);
 
@@ -1070,5 +1098,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 }
             }
         }
+
+        return (v.amountsIn, v.bridgeIds);
     }
 }
