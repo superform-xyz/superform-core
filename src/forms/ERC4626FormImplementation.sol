@@ -223,7 +223,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         emit Processed(srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
     }
 
-
     struct ProcessDirectWithdrawLocalVars {
         uint64 chainId;
         address collateral;
