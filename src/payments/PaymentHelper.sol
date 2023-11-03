@@ -5,7 +5,6 @@ import { AggregatorV3Interface } from "../vendor/chainlink/AggregatorV3Interface
 import { IPaymentHelper } from "../interfaces/IPaymentHelper.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
-import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
 import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
 import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
 import { Error } from "../utils/Error.sol";

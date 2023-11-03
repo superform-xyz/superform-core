@@ -139,7 +139,7 @@ contract PaymentHelperTest is ProtocolActions {
             true
         );
 
-        assertEq(fees2, 0);
+        assertGt(fees2, 0);
 
         (,, uint256 fees3) = paymentHelper.estimateSingleDirectSingleVault(
             SingleDirectSingleVaultStateReq(
@@ -213,7 +213,8 @@ contract PaymentHelperTest is ProtocolActions {
             true
         );
 
-        assertEq(fees2, 0);
+        /// @dev there are always liq fees if there is liqRequests (native tokens to pay)
+        assertGt(fees2, 0);
     }
 
     function test_ifZeroIsReturnedWhenDstValueIsZero() public {
@@ -612,7 +613,6 @@ contract PaymentHelperTest is ProtocolActions {
 
         uint256 result11 = paymentHelper.timelockCost(1);
         assertEq(result11, 430);
-
     }
 
     function test_addRemoteChain() public {
