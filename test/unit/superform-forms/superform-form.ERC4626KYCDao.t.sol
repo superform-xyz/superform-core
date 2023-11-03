@@ -27,7 +27,15 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
         uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[2], ETH);
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, 1e18, 100, false, false, LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0), "", refundAddress, ""
+            superformId,
+            1e18,
+            100,
+            false,
+            false,
+            LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
+            "",
+            refundAddress,
+            ""
         );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);

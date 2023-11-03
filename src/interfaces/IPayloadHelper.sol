@@ -18,9 +18,7 @@ interface IPayloadHelper {
     /// @return extraFormData is the extra form data (optional: passed for forms with special needs)
     /// @return receiverAddress is the address to be used for refunds
     /// @return srcPayloadId is the identifier of the corresponding payload on srcChain
-    function decodeCoreStateRegistryPayload(
-        uint256 dstPayloadId_
-    )
+    function decodeCoreStateRegistryPayload(uint256 dstPayloadId_)
         external
         view
         returns (
@@ -46,9 +44,7 @@ interface IPayloadHelper {
     /// withdraws)
     /// @return amountsIn are the from amounts to the liquidity bridge
     /// @return nativeAmounts is the native amounts to be used in the liqData
-    function decodeCoreStateRegistryPayloadLiqData(
-        uint256 dstPayloadId_
-    )
+    function decodeCoreStateRegistryPayloadLiqData(uint256 dstPayloadId_)
         external
         view
         returns (
@@ -67,53 +63,27 @@ interface IPayloadHelper {
     /// @return isMulti indicates if the transaction involves operations to multiple vaults
     /// @return srcSender is the user who initiated the transaction on the srcChain
     /// @return srcChainId is the unique identifier of the srcChain
-    function decodePayloadHistory(
-        uint256 srcPayloadId_
-    )
+    function decodePayloadHistory(uint256 srcPayloadId_)
         external
         view
-        returns (
-            uint8 txType,
-            uint8 callbackType,
-            uint8 isMulti,
-            address srcSender,
-            uint64 srcChainId
-        );
+        returns (uint8 txType, uint8 callbackType, uint8 isMulti, address srcSender, uint64 srcChainId);
 
     /// @dev returns decoded timelock form payloads
     /// @param timelockPayloadId_ is the unique identifier of payload in timelock state registry
-    function decodeTimeLockPayload(
-        uint256 timelockPayloadId_
-    )
+    function decodeTimeLockPayload(uint256 timelockPayloadId_)
         external
         view
-        returns (
-            address srcSender,
-            uint64 srcChainId,
-            uint256 srcPayloadId,
-            uint256 superformId,
-            uint256 amount
-        );
+        returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
 
     /// @dev returns decoded failed timelock form payloads
     /// @param timelockPayloadId_ is the unique identifier of payload in timelock state registry
-    function decodeTimeLockFailedPayload(
-        uint256 timelockPayloadId_
-    )
+    function decodeTimeLockFailedPayload(uint256 timelockPayloadId_)
         external
         view
-        returns (
-            address srcSender,
-            uint64 srcChainId,
-            uint256 srcPayloadId,
-            uint256 superformId,
-            uint256 amount
-        );
+        returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
 
     /// @dev returns proof for payloads
     /// @param dstPayloadId_ is the unique identifier of payload in dst core state registry
     /// @return proof is the proof for the payload
-    function getDstPayloadProof(
-        uint256 dstPayloadId_
-    ) external view returns (bytes32);
+    function getDstPayloadProof(uint256 dstPayloadId_) external view returns (bytes32);
 }
