@@ -8,7 +8,7 @@ contract MainnetDeploy is AbstractDeploySingle {
                         SELECT CHAIN IDS TO DEPLOY HERE
     //////////////////////////////////////////////////////////////*/
 
-    uint64[] TARGET_DEPLOYMENT_CHAINS = [ETH, ARBI, GNOSIS];
+    uint64[] TARGET_DEPLOYMENT_CHAINS = [BSC, POLY, AVAX];
 
     /// @notice The main stage 1 script entrypoint
     function deployStage1(uint256 selectedChainIndex) external {
