@@ -73,6 +73,14 @@ interface ISuperformFactory {
                             View Functions
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev returns the number of forms
+    /// @return forms_ is the number of forms
+    function getFormCount() external view returns (uint256 forms_);
+
+    /// @dev returns the number of superforms
+    /// @return superforms_ is the number of superforms
+    function getSuperformCount() external view returns (uint256 superforms_);
+
     /// @dev returns the address of a form implementation
     /// @param formImplementationId_ is the id of the form implementation
     /// @return formImplementation_ is the address of the form implementation
@@ -111,12 +119,4 @@ interface ISuperformFactory {
     /// @return superformIds_ is the id of the superform
     /// @return vaults_ is the address of the vault
     function getAllSuperforms() external view returns (uint256[] memory superformIds_, address[] memory vaults_);
-
-    /// @dev returns the number of forms
-    /// @return forms_ is the number of forms
-    function getFormCount() external view returns (uint256 forms_);
-
-    /// @dev returns the number of superforms
-    /// @return superforms_ is the number of superforms
-    function getSuperformCount() external view returns (uint256 superforms_);
 }
