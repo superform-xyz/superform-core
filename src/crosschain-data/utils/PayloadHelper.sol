@@ -15,9 +15,12 @@ import {
     InitMultiVaultData,
     InitSingleVaultData,
     TimelockPayload,
-    LiqRequest
+    LiqRequest,
+    AMBMessage
 } from "../../types/DataTypes.sol";
 import { DataLib } from "../../libraries/DataLib.sol";
+import { ProofLib } from "../../libraries/ProofLib.sol";
+
 /// @title PayloadHelper
 /// @author ZeroPoint Labs
 /// @dev helps decode payload data more easily. Used for off-chain purposes
@@ -192,6 +195,16 @@ contract PayloadHelper is IPayloadHelper {
 
         return (
             payload.srcSender, payload.srcChainId, payload.data.payloadId, payload.data.superformId, payload.data.amount
+        );
+    }
+
+    /// @inheritdoc IPayloadHelper
+    function getDstPayloadProof(uint256 dstPayloadId_) external view override returns (bytes32) {
+        IBaseStateRegistry coreStateRegistry =
+            IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
+
+        return ProofLib.computeProof(
+            AMBMessage(coreStateRegistry.payloadHeader(dstPayloadId_), coreStateRegistry.payloadBody(dstPayloadId_))
         );
     }
 

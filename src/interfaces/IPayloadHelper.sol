@@ -81,4 +81,9 @@ interface IPayloadHelper {
         external
         view
         returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
+
+    /// @dev returns proof for payloads
+    /// @param dstPayloadId_ is the unique identifier of payload in dst core state registry
+    /// @return proof is the proof for the payload
+    function getDstPayloadProof(uint256 dstPayloadId_) external view returns (bytes32);
 }
