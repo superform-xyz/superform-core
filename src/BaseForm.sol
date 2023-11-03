@@ -278,15 +278,6 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         virtual
         returns (uint256 dstAmount);
 
-    /// @dev Withdraws underlying tokens from a vault
-    function _directWithdrawFromVault(
-        InitSingleVaultData memory singleVaultData_,
-        address srcSender_
-    )
-        internal
-        virtual
-        returns (uint256 dstAmount_);
-
     /// @dev Deposits underlying tokens into a vault
     function _xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
@@ -296,6 +287,15 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         internal
         virtual
         returns (uint256 dstAmount);
+
+    /// @dev Withdraws underlying tokens from a vault
+    function _directWithdrawFromVault(
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_
+    )
+        internal
+        virtual
+        returns (uint256 dstAmount_);
 
     /// @dev Withdraws underlying tokens from a vault
     function _xChainWithdrawFromVault(

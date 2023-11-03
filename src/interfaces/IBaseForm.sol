@@ -38,17 +38,6 @@ interface IBaseForm is IERC165 {
         payable
         returns (uint256 dstAmount);
 
-    /// @dev process withdrawal of collateral from a vault
-    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
-    /// @param srcSender_ The address of the sender of the transaction
-    /// @return dstAmount  The amount of tokens withdrawn in same chain action
-    function directWithdrawFromVault(
-        InitSingleVaultData memory singleVaultData_,
-        address srcSender_
-    )
-        external
-        returns (uint256 dstAmount);
-
     /// @dev process same chain id deposits
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
     /// @param srcSender_ The address of the sender of the transaction
@@ -59,6 +48,17 @@ interface IBaseForm is IERC165 {
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
         uint64 srcChainId_
+    )
+        external
+        returns (uint256 dstAmount);
+
+    /// @dev process withdrawal of collateral from a vault
+    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
+    /// @param srcSender_ The address of the sender of the transaction
+    /// @return dstAmount  The amount of tokens withdrawn in same chain action
+    function directWithdrawFromVault(
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_
     )
         external
         returns (uint256 dstAmount);
