@@ -203,10 +203,9 @@ contract PayloadHelper is IPayloadHelper {
         IBaseStateRegistry coreStateRegistry =
             IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
 
-        AMBMessage memory message =
-            AMBMessage(coreStateRegistry.payloadHeader(dstPayloadId_), coreStateRegistry.payloadBody(dstPayloadId_));
-
-        return ProofLib.computeProof(message);
+        return ProofLib.computeProof(
+            AMBMessage(coreStateRegistry.payloadHeader(dstPayloadId_), coreStateRegistry.payloadBody(dstPayloadId_))
+        );
     }
 
     /// @inheritdoc IPayloadHelper
