@@ -93,6 +93,16 @@ interface IBaseForm is IERC165 {
     /// @return The ERC20 symbol
     function superformYieldTokenSymbol() external view returns (string memory);
 
+    /// @dev get which Form implementation the vault corresponds to
+    function formImplementationId() external view returns (uint32);
+
+    /// @notice get the state registry id associated with the vault
+    function getStateRegistryId() external view returns (uint8);
+
+    /// @notice Returns the vault address
+    /// @return The address of the vault
+    function getVaultAddress() external view returns (address);
+
     /// @notice Returns the vault address
     /// @return The address of the vault asset
     function getVaultAsset() external view returns (address);
@@ -109,10 +119,6 @@ interface IBaseForm is IERC165 {
     /// @return The number of decimals in the vault balance
     function getVaultDecimals() external view returns (uint256);
 
-    /// @notice Returns the vault address
-    /// @return The address of the vault
-    function getVaultAddress() external view returns (address);
-
     /// @notice Returns the amount of underlying tokens each share of a vault is worth.
     /// @return The pricePerVaultShare value
     function getPricePerVaultShare() external view returns (uint256);
@@ -128,9 +134,6 @@ interface IBaseForm is IERC165 {
     /// @notice https://eips.ethereum.org/EIPS/eip-4626
     function getPreviewPricePerVaultShare() external view returns (uint256);
 
-    /// @notice get the state registry id
-    function getStateRegistryId() external view returns (uint8);
-
     /// @dev API may need to know state of funds deployed
     function previewDepositTo(uint256 assets_) external view returns (uint256);
 
@@ -141,5 +144,4 @@ interface IBaseForm is IERC165 {
     /// @dev API may need to know state of funds deployed
     function previewRedeemFrom(uint256 shares_) external view returns (uint256);
 
-    function formImplementationId() external view returns (uint32);
 }

@@ -211,6 +211,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     function forwardDustToPaymaster() external override {
         _forwardDustToPaymaster();
     }
+
     /*///////////////////////////////////////////////////////////////
                     PURE/VIEW VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -220,6 +221,14 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
 
     /// @inheritdoc IBaseForm
     function superformYieldTokenSymbol() external view virtual override returns (string memory);
+
+    /// @inheritdoc IBaseForm
+    function getStateRegistryId() external view virtual override returns (uint8);
+
+    // @inheritdoc IBaseForm
+    function getVaultAddress() external view override returns (address) {
+        return vault;
+    }
 
     // @inheritdoc IBaseForm
     function getVaultAsset() public view override returns (address) {
@@ -235,11 +244,6 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     /// @inheritdoc IBaseForm
     function getVaultDecimals() public view virtual override returns (uint256);
 
-    // @inheritdoc IBaseForm
-    function getVaultAddress() external view override returns (address) {
-        return vault;
-    }
-
     /// @inheritdoc IBaseForm
     function getPricePerVaultShare() public view virtual override returns (uint256);
 
@@ -248,9 +252,6 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
 
     /// @inheritdoc IBaseForm
     function getTotalAssets() public view virtual override returns (uint256);
-
-    /// @inheritdoc IBaseForm
-    function getStateRegistryId() external view virtual override returns (uint8);
 
     // @inheritdoc IBaseForm
     function getPreviewPricePerVaultShare() public view virtual override returns (uint256);
@@ -311,6 +312,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
 
     /// @dev forwards dust to paymaster
     function _forwardDustToPaymaster() internal virtual;
+
     /*///////////////////////////////////////////////////////////////
                     INTERNAL VIEW VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
