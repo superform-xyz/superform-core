@@ -241,6 +241,7 @@ contract PayloadHelper is IPayloadHelper {
         );
     }
 
+    /// @inheritdoc IPayloadHelper
     function getDstPayloadProof(
         uint256 dstPayloadId_
     ) external view override returns (bytes32) {
