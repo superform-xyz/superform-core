@@ -48,85 +48,44 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         return superRegistry.PERMIT2();
     }
 
-    /// @dev handles cross-chain multi vault deposit
-    function _singleXChainMultiVaultDeposit(SingleXChainMultiVaultStateReq memory req_) internal virtual {
-        /// @dev validate the action
+    /// @dev handles same-chain single vault deposit
+    function _singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq memory req_) internal virtual {
         ActionLocalVars memory vars;
         vars.srcChainId = CHAIN_ID;
-        if (vars.srcChainId == req_.dstChainId) revert Error.INVALID_ACTION();
 
-        /// @dev validate superformsData
-        if (!_validateSuperformsData(req_.superformsData, req_.dstChainId, true)) {
+        /// @dev validate superformData
+        if (
+            !_validateSuperformData(
+                req_.superformData.superformId,
+                req_.superformData.maxSlippage,
+                req_.superformData.amount,
+                req_.superformData.retain4626,
+                req_.superformData.receiverAddress,
+                vars.srcChainId,
+                true,
+                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")))
+            )
+        ) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
-        /// @dev validates the receiver address
-        _validateReceiverAddress(req_.superformsData.receiverAddress);
-
         vars.currentPayloadId = ++payloadIds;
 
-        InitMultiVaultData memory ambData = InitMultiVaultData(
+        InitSingleVaultData memory vaultData = InitSingleVaultData(
             vars.currentPayloadId,
-            req_.superformsData.superformIds,
-            req_.superformsData.amounts,
-            req_.superformsData.maxSlippages,
-            req_.superformsData.hasDstSwaps,
-            req_.superformsData.retain4626s,
-            req_.superformsData.liqRequests,
-            req_.superformsData.receiverAddress,
-            req_.superformsData.extraFormData
+            req_.superformData.superformId,
+            req_.superformData.amount,
+            req_.superformData.maxSlippage,
+            false,
+            req_.superformData.retain4626,
+            req_.superformData.liqRequest,
+            req_.superformData.receiverAddress,
+            req_.superformData.extraFormData
         );
 
-        address superform;
-        uint256 len = req_.superformsData.superformIds.length;
-
-        (uint256[] memory amountsIn, uint8[] memory bridgeIds) =
-            _multiVaultTokenForward(msg.sender, new address[](0), req_.superformsData.permit2data, ambData, true);
-
-        /// @dev this loop is what allows to deposit to >1 different underlying on destination
-        /// @dev if a loop fails in a validation the whole chain should be reverted
-        for (uint256 j; j < len;) {
-            vars.liqRequest = req_.superformsData.liqRequests[j];
-
-            (superform,,) = req_.superformsData.superformIds[j].getSuperform();
-
-            /// @dev dispatch liquidity data
-            _validateAndDispatchTokens(
-                ValidateAndDispatchTokensArgs(
-                    vars.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
-                )
-            );
-            unchecked {
-                ++j;
-            }
-        }
-
-        ambData.liqData = new LiqRequest[](len);
-
-        /// @dev dispatch message information, notice multiVaults is set to 1
-        _dispatchAmbMessage(
-            DispatchAMBMessageVars(
-                TransactionType.DEPOSIT,
-                abi.encode(ambData),
-                req_.superformsData.superformIds,
-                msg.sender,
-                req_.ambIds,
-                1,
-                vars.srcChainId,
-                req_.dstChainId,
-                vars.currentPayloadId
-            )
-        );
-
-        emit CrossChainInitiatedDepositMulti(
-            vars.currentPayloadId,
-            req_.dstChainId,
-            req_.superformsData.superformIds,
-            uint8(TransactionType.DEPOSIT),
-            amountsIn,
-            bridgeIds,
-            req_.ambIds
-        );
+        /// @dev same chain action & forward residual payment to payment collector
+        _directSingleDeposit(msg.sender, req_.superformData.permit2data, vaultData);
+        emit Completed(vars.currentPayloadId);
     }
 
     /// @dev handles cross-chain single vault deposit
@@ -216,46 +175,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
     }
 
-    /// @dev handles same-chain single vault deposit
-    function _singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq memory req_) internal virtual {
-        ActionLocalVars memory vars;
-        vars.srcChainId = CHAIN_ID;
-
-        /// @dev validate superformData
-        if (
-            !_validateSuperformData(
-                req_.superformData.superformId,
-                req_.superformData.maxSlippage,
-                req_.superformData.amount,
-                req_.superformData.retain4626,
-                req_.superformData.receiverAddress,
-                vars.srcChainId,
-                true,
-                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")))
-            )
-        ) {
-            revert Error.INVALID_SUPERFORMS_DATA();
-        }
-
-        vars.currentPayloadId = ++payloadIds;
-
-        InitSingleVaultData memory vaultData = InitSingleVaultData(
-            vars.currentPayloadId,
-            req_.superformData.superformId,
-            req_.superformData.amount,
-            req_.superformData.maxSlippage,
-            false,
-            req_.superformData.retain4626,
-            req_.superformData.liqRequest,
-            req_.superformData.receiverAddress,
-            req_.superformData.extraFormData
-        );
-
-        /// @dev same chain action & forward residual payment to payment collector
-        _directSingleDeposit(msg.sender, req_.superformData.permit2data, vaultData);
-        emit Completed(vars.currentPayloadId);
-    }
-
     /// @dev handles same-chain multi vault deposit
     function _singleDirectMultiVaultDeposit(SingleDirectMultiVaultStateReq memory req_) internal virtual {
         ActionLocalVars memory vars;
@@ -285,45 +204,65 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         emit Completed(vars.currentPayloadId);
     }
 
-    /// @dev handles cross-chain multi vault withdraw
-    function _singleXChainMultiVaultWithdraw(SingleXChainMultiVaultStateReq memory req_) internal virtual {
+    /// @dev handles cross-chain multi vault deposit
+    function _singleXChainMultiVaultDeposit(SingleXChainMultiVaultStateReq memory req_) internal virtual {
         /// @dev validate the action
         ActionLocalVars memory vars;
         vars.srcChainId = CHAIN_ID;
-        if (vars.srcChainId == req_.dstChainId) {
-            revert Error.INVALID_ACTION();
-        }
+        if (vars.srcChainId == req_.dstChainId) revert Error.INVALID_ACTION();
 
         /// @dev validate superformsData
-        if (!_validateSuperformsData(req_.superformsData, req_.dstChainId, false)) {
+        if (!_validateSuperformsData(req_.superformsData, req_.dstChainId, true)) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
-        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnBatch(
-            msg.sender, req_.superformsData.superformIds, req_.superformsData.amounts
-        );
-
-        InitMultiVaultData memory ambData;
+        /// @dev validates the receiver address
+        _validateReceiverAddress(req_.superformsData.receiverAddress);
 
         vars.currentPayloadId = ++payloadIds;
 
-        /// @dev write packed txData
-        ambData = InitMultiVaultData(
+        InitMultiVaultData memory ambData = InitMultiVaultData(
             vars.currentPayloadId,
             req_.superformsData.superformIds,
             req_.superformsData.amounts,
             req_.superformsData.maxSlippages,
-            new bool[](req_.superformsData.amounts.length),
-            new bool[](req_.superformsData.amounts.length),
+            req_.superformsData.hasDstSwaps,
+            req_.superformsData.retain4626s,
             req_.superformsData.liqRequests,
             req_.superformsData.receiverAddress,
             req_.superformsData.extraFormData
         );
 
+        address superform;
+        uint256 len = req_.superformsData.superformIds.length;
+
+        (uint256[] memory amountsIn, uint8[] memory bridgeIds) =
+            _multiVaultTokenForward(msg.sender, new address[](0), req_.superformsData.permit2data, ambData, true);
+
+        /// @dev this loop is what allows to deposit to >1 different underlying on destination
+        /// @dev if a loop fails in a validation the whole chain should be reverted
+        for (uint256 j; j < len;) {
+            vars.liqRequest = req_.superformsData.liqRequests[j];
+
+            (superform,,) = req_.superformsData.superformIds[j].getSuperform();
+
+            /// @dev dispatch liquidity data
+            _validateAndDispatchTokens(
+                ValidateAndDispatchTokensArgs(
+                    vars.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
+                )
+            );
+            unchecked {
+                ++j;
+            }
+        }
+
+        ambData.liqData = new LiqRequest[](len);
+
         /// @dev dispatch message information, notice multiVaults is set to 1
         _dispatchAmbMessage(
             DispatchAMBMessageVars(
-                TransactionType.WITHDRAW,
+                TransactionType.DEPOSIT,
                 abi.encode(ambData),
                 req_.superformsData.superformIds,
                 msg.sender,
@@ -335,14 +274,61 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             )
         );
 
-        emit CrossChainInitiatedWithdrawMulti(
+        emit CrossChainInitiatedDepositMulti(
             vars.currentPayloadId,
             req_.dstChainId,
             req_.superformsData.superformIds,
-            uint8(TransactionType.WITHDRAW),
+            uint8(TransactionType.DEPOSIT),
+            amountsIn,
+            bridgeIds,
             req_.ambIds
         );
     }
+
+    /// @dev handles same-chain single vault withdraw
+    function _singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq memory req_) internal virtual {
+        ActionLocalVars memory vars;
+        vars.srcChainId = CHAIN_ID;
+
+        /// @dev validate Superform data
+        if (
+            !_validateSuperformData(
+                req_.superformData.superformId,
+                req_.superformData.maxSlippage,
+                req_.superformData.amount,
+                req_.superformData.retain4626,
+                req_.superformData.receiverAddress,
+                vars.srcChainId,
+                false,
+                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")))
+            )
+        ) {
+            revert Error.INVALID_SUPERFORMS_DATA();
+        }
+
+        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnSingle(
+            msg.sender, req_.superformData.superformId, req_.superformData.amount
+        );
+
+        vars.currentPayloadId = ++payloadIds;
+
+        InitSingleVaultData memory vaultData = InitSingleVaultData(
+            vars.currentPayloadId,
+            req_.superformData.superformId,
+            req_.superformData.amount,
+            req_.superformData.maxSlippage,
+            false,
+            false,
+            req_.superformData.liqRequest,
+            req_.superformData.receiverAddress,
+            req_.superformData.extraFormData
+        );
+
+        /// @dev same chain action
+        _directSingleWithdraw(vaultData, msg.sender);
+        emit Completed(vars.currentPayloadId);
+    }
+
 
     /// @dev handles cross-chain single vault withdraw
     function _singleXChainSingleVaultWithdraw(SingleXChainSingleVaultStateReq memory req_) internal virtual {
@@ -416,50 +402,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
     }
 
-    /// @dev handles same-chain single vault withdraw
-    function _singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq memory req_) internal virtual {
-        ActionLocalVars memory vars;
-        vars.srcChainId = CHAIN_ID;
-
-        /// @dev validate Superform data
-        if (
-            !_validateSuperformData(
-                req_.superformData.superformId,
-                req_.superformData.maxSlippage,
-                req_.superformData.amount,
-                req_.superformData.retain4626,
-                req_.superformData.receiverAddress,
-                vars.srcChainId,
-                false,
-                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")))
-            )
-        ) {
-            revert Error.INVALID_SUPERFORMS_DATA();
-        }
-
-        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnSingle(
-            msg.sender, req_.superformData.superformId, req_.superformData.amount
-        );
-
-        vars.currentPayloadId = ++payloadIds;
-
-        InitSingleVaultData memory vaultData = InitSingleVaultData(
-            vars.currentPayloadId,
-            req_.superformData.superformId,
-            req_.superformData.amount,
-            req_.superformData.maxSlippage,
-            false,
-            false,
-            req_.superformData.liqRequest,
-            req_.superformData.receiverAddress,
-            req_.superformData.extraFormData
-        );
-
-        /// @dev same chain action
-        _directSingleWithdraw(vaultData, msg.sender);
-        emit Completed(vars.currentPayloadId);
-    }
-
     /// @dev handles same-chain multi vault withdraw
     function _singleDirectMultiVaultWithdraw(SingleDirectMultiVaultStateReq memory req_) internal virtual {
         ActionLocalVars memory vars;
@@ -492,6 +434,65 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev same chain action & forward residual payment to payment collector
         _directMultiWithdraw(vaultData, msg.sender);
         emit Completed(vars.currentPayloadId);
+    }
+
+    /// @dev handles cross-chain multi vault withdraw
+    function _singleXChainMultiVaultWithdraw(SingleXChainMultiVaultStateReq memory req_) internal virtual {
+        /// @dev validate the action
+        ActionLocalVars memory vars;
+        vars.srcChainId = CHAIN_ID;
+        if (vars.srcChainId == req_.dstChainId) {
+            revert Error.INVALID_ACTION();
+        }
+
+        /// @dev validate superformsData
+        if (!_validateSuperformsData(req_.superformsData, req_.dstChainId, false)) {
+            revert Error.INVALID_SUPERFORMS_DATA();
+        }
+
+        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnBatch(
+            msg.sender, req_.superformsData.superformIds, req_.superformsData.amounts
+        );
+
+        InitMultiVaultData memory ambData;
+
+        vars.currentPayloadId = ++payloadIds;
+
+        /// @dev write packed txData
+        ambData = InitMultiVaultData(
+            vars.currentPayloadId,
+            req_.superformsData.superformIds,
+            req_.superformsData.amounts,
+            req_.superformsData.maxSlippages,
+            new bool[](req_.superformsData.amounts.length),
+            new bool[](req_.superformsData.amounts.length),
+            req_.superformsData.liqRequests,
+            req_.superformsData.receiverAddress,
+            req_.superformsData.extraFormData
+        );
+
+        /// @dev dispatch message information, notice multiVaults is set to 1
+        _dispatchAmbMessage(
+            DispatchAMBMessageVars(
+                TransactionType.WITHDRAW,
+                abi.encode(ambData),
+                req_.superformsData.superformIds,
+                msg.sender,
+                req_.ambIds,
+                1,
+                vars.srcChainId,
+                req_.dstChainId,
+                vars.currentPayloadId
+            )
+        );
+
+        emit CrossChainInitiatedWithdrawMulti(
+            vars.currentPayloadId,
+            req_.dstChainId,
+            req_.superformsData.superformIds,
+            uint8(TransactionType.WITHDRAW),
+            req_.ambIds
+        );
     }
 
     /*///////////////////////////////////////////////////////////////
