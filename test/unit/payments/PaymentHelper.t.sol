@@ -223,7 +223,7 @@ contract PaymentHelperTest is ProtocolActions {
         paymentHelper.updateRemoteChain(137, 1, abi.encode(address(0)));
 
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(137, 8, abi.encode(0));
+        paymentHelper.updateRemoteChain(137, 7, abi.encode(0));
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
@@ -272,7 +272,7 @@ contract PaymentHelperTest is ProtocolActions {
         paymentHelper.updateRemoteChain(1, 1, abi.encode(address(0)));
 
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(1, 8, abi.encode(1e8));
+        paymentHelper.updateRemoteChain(1, 7, abi.encode(1e8));
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
@@ -374,7 +374,7 @@ contract PaymentHelperTest is ProtocolActions {
         paymentHelper.updateRemoteChain(1, 1, abi.encode(address(0)));
 
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(1, 8, abi.encode(1e8));
+        paymentHelper.updateRemoteChain(1, 7, abi.encode(1e8));
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
@@ -432,7 +432,7 @@ contract PaymentHelperTest is ProtocolActions {
         paymentHelper.updateRemoteChain(1, 1, abi.encode(address(0)));
 
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(1, 8, abi.encode(1e8));
+        paymentHelper.updateRemoteChain(1, 7, abi.encode(1e8));
 
         bytes memory emptyBytes;
         bytes memory txData = _buildDummyTxDataUnitTests(
