@@ -18,30 +18,29 @@ interface IPaymentHelper {
                                 STRUCTS
     //////////////////////////////////////////////////////////////*/
 
-    /// @param nativeFeedOracle_ is the native price feed oracle
-    /// @param gasPriceOracle_ is the gas price oracle
-    /// @param swapGasUsed_ is the swap gas params
-    /// @param updateGasUsed_ is the update gas params
-    /// @param depositGasUsed_ is the deposit per vault gas on the chain
-    /// @param withdrawGasUsed_ is the withdraw per vault gas on the chain
-    /// @param defaultNativePrice_ is the native price on the specified chain
-    /// @param defaultGasPrice_ is the gas price on the specified chain
-    /// @param dstGasPerKB_ is the gas per size of data on the specified chain
-    /// @param ackGasCost_ is the gas cost for processing acknowledgements on src chain
-    /// @param timelockCost_ is the extra cost for processing timelocked payloads
-    /// @param swapGasUsed_ is the cost for dst swap
+    /// @param nativeFeedOracle is the native price feed oracle
+    /// @param gasPriceOracle is the gas price oracle
+    /// @param swapGasUsed is the swap gas params
+    /// @param updateGasUsed is the update gas params
+    /// @param depositGasUsed is the deposit per vault gas on the chain
+    /// @param withdrawGasUsed is the withdraw per vault gas on the chain
+    /// @param defaultNativePrice is the native price on the specified chain
+    /// @param defaultGasPrice is the gas price on the specified chain
+    /// @param dstGasPerByte is the gas per size of data on the specified chain
+    /// @param ackGasCost is the gas cost for processing acknowledgements on src chain
+    /// @param timelockCost is the extra cost for processing timelocked payloads
     struct PaymentHelperConfig {
         address nativeFeedOracle;
         address gasPriceOracle;
+        uint256 swapGasUsed;
         uint256 updateGasUsed;
         uint256 depositGasUsed;
         uint256 withdrawGasUsed;
         uint256 defaultNativePrice;
         uint256 defaultGasPrice;
-        uint256 dstGasPerKB;
+        uint256 dstGasPerByte;
         uint256 ackGasCost;
         uint256 timelockCost;
-        uint256 swapGasUsed;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -108,13 +107,14 @@ interface IPaymentHelper {
 
     /// @dev estimates the gas fees for multiple destination and multi vault operation
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
+    /// @param isDeposit_ indicated if the datatype will be used for a deposit
     /// @return liqAmount is the amount of liquidity to be provided in native tokens
     /// @return srcAmount is the gas expense on source chain in native tokens
     /// @return dstAmount is the gas expense on dst chain in terms of src chain's native tokens
     /// @return totalAmount is the native_tokens to be sent along the transaction
     function estimateMultiDstMultiVault(
         MultiDstMultiVaultStateReq calldata req_,
-        bool isDeposit
+        bool isDeposit_
     )
         external
         view
@@ -122,28 +122,29 @@ interface IPaymentHelper {
 
     /// @dev estimates the gas fees for multiple destination and single vault operation
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
+    /// @param isDeposit_ indicated if the datatype will be used for a deposit
     /// @return liqAmount is the amount of liquidity to be provided in native tokens
     /// @return srcAmount is the gas expense on source chain in native tokens
     /// @return dstAmount is the gas expense on dst chain in terms of src chain's native tokens
     /// @return totalAmount is the native_tokens to be sent along the transaction
     function estimateMultiDstSingleVault(
         MultiDstSingleVaultStateReq calldata req_,
-        bool isDeposit
+        bool isDeposit_
     )
         external
         view
         returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount);
 
     /// @dev estimates the gas fees for single destination and multi vault operation
-    /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter    ///
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
+    /// @param isDeposit_ indicated if the datatype will be used for a deposit
     /// @return liqAmount is the amount of liquidity to be provided in native tokens
     /// @return srcAmount is the gas expense on source chain in native tokens
     /// @return dstAmount is the gas expense on dst chain in terms of src chain's native tokens
     /// @return totalAmount is the native_tokens to be sent along the transaction
     function estimateSingleXChainMultiVault(
         SingleXChainMultiVaultStateReq calldata req_,
-        bool isDeposit
+        bool isDeposit_
     )
         external
         view
@@ -151,13 +152,14 @@ interface IPaymentHelper {
 
     /// @dev estimates the gas fees for single destination and single vault operation
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
+    /// @param isDeposit_ indicated if the datatype will be used for a deposit
     /// @return liqAmount is the amount of liquidity to be provided in native tokens
     /// @return srcAmount is the gas expense on source chain in native tokens
     /// @return dstAmount is the gas expense on dst chain in terms of src chain's native tokens
     /// @return totalAmount is the native_tokens to be sent along the transaction
     function estimateSingleXChainSingleVault(
         SingleXChainSingleVaultStateReq calldata req_,
-        bool isDeposit
+        bool isDeposit_
     )
         external
         view
@@ -165,12 +167,13 @@ interface IPaymentHelper {
 
     /// @dev estimates the gas fees for same chain operation
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
+    /// @param isDeposit_ indicated if the datatype will be used for a deposit
     /// @return liqAmount is the amount of liquidity to be provided in native tokens
     /// @return srcAmount is the gas expense on source chain in native tokens
     /// @return totalAmount is the native_tokens to be sent along the transaction
     function estimateSingleDirectSingleVault(
         SingleDirectSingleVaultStateReq calldata req_,
-        bool isDeposit
+        bool isDeposit_
     )
         external
         view
@@ -178,12 +181,13 @@ interface IPaymentHelper {
 
     /// @dev estimates the gas fees for multiple same chain operation
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
+    /// @param isDeposit_ indicated if the datatype will be used for a deposit
     /// @return liqAmount is the amount of liquidity to be provided in native tokens
     /// @return srcAmount is the gas expense on source chain in native tokens
     /// @return totalAmount is the native_tokens to be sent along the transaction
     function estimateSingleDirectMultiVault(
         SingleDirectMultiVaultStateReq calldata req_,
-        bool isDeposit
+        bool isDeposit_
     )
         external
         view

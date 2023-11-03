@@ -5,7 +5,6 @@ import { AggregatorV3Interface } from "../vendor/chainlink/AggregatorV3Interface
 import { IPaymentHelper } from "../interfaces/IPaymentHelper.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
-import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
 import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
 import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
 import { Error } from "../utils/Error.sol";
@@ -112,15 +111,15 @@ contract PaymentHelper is IPaymentHelper {
             gasPriceOracle[chainId_] = AggregatorV3Interface(config_.gasPriceOracle);
         }
 
+        swapGasUsed[chainId_] = config_.swapGasUsed;
         updateGasUsed[chainId_] = config_.updateGasUsed;
         depositGasUsed[chainId_] = config_.depositGasUsed;
         withdrawGasUsed[chainId_] = config_.withdrawGasUsed;
         nativePrice[chainId_] = config_.defaultNativePrice;
         gasPrice[chainId_] = config_.defaultGasPrice;
-        gasPerByte[chainId_] = config_.dstGasPerKB;
+        gasPerByte[chainId_] = config_.dstGasPerByte;
         ackGasCost[chainId_] = config_.ackGasCost;
         timelockCost[chainId_] = config_.timelockCost;
-        swapGasUsed[chainId_] = config_.swapGasUsed;
     }
 
     /// @inheritdoc IPaymentHelper
@@ -143,49 +142,49 @@ contract PaymentHelper is IPaymentHelper {
             gasPriceOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
         }
 
-        /// @dev Type 3: PAYLOAD UPDATE GAS COST PER TX FOR DEPOSIT
+        /// @dev Type 3: SWAP GAS USED
         if (configType_ == 3) {
+            swapGasUsed[chainId_] = abi.decode(config_, (uint256));
+        }
+
+        /// @dev Type 4: PAYLOAD UPDATE GAS COST PER TX FOR DEPOSIT
+        if (configType_ == 4) {
             updateGasUsed[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 4: DEPOSIT GAS COST PER TX
-        if (configType_ == 4) {
+        /// @dev Type 5: DEPOSIT GAS COST PER TX
+        if (configType_ == 5) {
             depositGasUsed[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 5: WITHDRAW GAS COST PER TX
-        if (configType_ == 5) {
+        /// @dev Type 6: WITHDRAW GAS COST PER TX
+        if (configType_ == 6) {
             withdrawGasUsed[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 6: DEFAULT NATIVE PRICE
-        if (configType_ == 6) {
+        /// @dev Type 7: DEFAULT NATIVE PRICE
+        if (configType_ == 7) {
             nativePrice[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 7: DEFAULT GAS PRICE
-        if (configType_ == 7) {
+        /// @dev Type 8: DEFAULT GAS PRICE
+        if (configType_ == 8) {
             gasPrice[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 8: GAS PRICE PER Byte of Message
-        if (configType_ == 8) {
+        /// @dev Type 9: GAS PRICE PER Byte of Message
+        if (configType_ == 9) {
             gasPerByte[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 9: ACK GAS COST
-        if (configType_ == 9) {
+        /// @dev Type 10: ACK GAS COST
+        if (configType_ == 10) {
             ackGasCost[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 10: TIMELOCK PROCESSING COST
-        if (configType_ == 10) {
-            timelockCost[chainId_] = abi.decode(config_, (uint256));
-        }
-
-        /// @dev Type 11: SWAP GAS USED
+        /// @dev Type 11: TIMELOCK PROCESSING COST
         if (configType_ == 11) {
-            swapGasUsed[chainId_] = abi.decode(config_, (uint256));
+            timelockCost[chainId_] = abi.decode(config_, (uint256));
         }
 
         emit ChainConfigUpdated(chainId_, configType_, config_);
@@ -714,9 +713,7 @@ contract PaymentHelper is IPaymentHelper {
     function _estimateLiqAmount(LiqRequest[] memory req_) internal pure returns (uint256 liqAmount) {
         uint256 len = req_.length;
         for (uint256 i; i < len;) {
-            if (req_[i].token == NATIVE) {
-                liqAmount += req_[i].nativeAmount;
-            }
+            liqAmount += req_[i].nativeAmount;
 
             unchecked {
                 ++i;
