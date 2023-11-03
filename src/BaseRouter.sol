@@ -47,13 +47,7 @@ abstract contract BaseRouter is IBaseRouter {
     receive() external payable { }
 
     /// @inheritdoc IBaseRouter
-    function multiDstMultiVaultDeposit(MultiDstMultiVaultStateReq calldata req_) external payable virtual override;
-
-    /// @inheritdoc IBaseRouter
-    function multiDstSingleVaultDeposit(MultiDstSingleVaultStateReq calldata req_) external payable virtual override;
-
-    /// @inheritdoc IBaseRouter
-    function singleXChainMultiVaultDeposit(SingleXChainMultiVaultStateReq memory req_)
+    function singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq memory req_)
         external
         payable
         virtual
@@ -74,24 +68,33 @@ abstract contract BaseRouter is IBaseRouter {
         override;
 
     /// @inheritdoc IBaseRouter
-    function singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq memory req_)
+    function singleXChainMultiVaultDeposit(SingleXChainMultiVaultStateReq memory req_)
         external
         payable
         virtual
         override;
 
     /// @inheritdoc IBaseRouter
-    function multiDstMultiVaultWithdraw(MultiDstMultiVaultStateReq calldata req_) external payable virtual override;
-
-    /// @inheritdoc IBaseRouter
-    function multiDstSingleVaultWithdraw(MultiDstSingleVaultStateReq calldata req_) external payable virtual override;
-
-    /// @inheritdoc IBaseRouter
-    function singleXChainMultiVaultWithdraw(SingleXChainMultiVaultStateReq memory req_)
+    function multiDstSingleVaultDeposit(MultiDstSingleVaultStateReq calldata req_)
         external
         payable
         virtual
         override;
+
+    /// @inheritdoc IBaseRouter
+    function multiDstMultiVaultDeposit(MultiDstMultiVaultStateReq calldata req_)
+        external
+        payable
+        virtual
+        override;
+
+    /// @inheritdoc IBaseRouter
+    function singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq memory req_)
+        external
+        payable
+        virtual
+        override;
+
     /// @inheritdoc IBaseRouter
     function singleXChainSingleVaultWithdraw(SingleXChainSingleVaultStateReq memory req_)
         external
@@ -107,7 +110,21 @@ abstract contract BaseRouter is IBaseRouter {
         override;
 
     /// @inheritdoc IBaseRouter
-    function singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq memory req_)
+    function singleXChainMultiVaultWithdraw(SingleXChainMultiVaultStateReq memory req_)
+        external
+        payable
+        virtual
+        override;
+
+    /// @inheritdoc IBaseRouter
+    function multiDstSingleVaultWithdraw(MultiDstSingleVaultStateReq calldata req_)
+        external
+        payable
+        virtual
+        override;
+
+    /// @inheritdoc IBaseRouter
+    function multiDstMultiVaultWithdraw(MultiDstMultiVaultStateReq calldata req_)
         external
         payable
         virtual

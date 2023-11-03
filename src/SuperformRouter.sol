@@ -22,27 +22,50 @@ contract SuperformRouter is BaseRouterImplementation {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IBaseRouter
-    function multiDstMultiVaultDeposit(MultiDstMultiVaultStateReq calldata req_)
+    function singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq memory req_)
         external
         payable
         override(BaseRouter, IBaseRouter)
     {
-        uint64 chainId = CHAIN_ID;
         uint256 balanceBefore = address(this).balance - msg.value;
-        uint256 len = req_.dstChainIds.length;
-        for (uint256 i; i < len;) {
-            if (chainId == req_.dstChainIds[i]) {
-                _singleDirectMultiVaultDeposit(SingleDirectMultiVaultStateReq(req_.superformsData[i]));
-            } else {
-                _singleXChainMultiVaultDeposit(
-                    SingleXChainMultiVaultStateReq(req_.ambIds[i], req_.dstChainIds[i], req_.superformsData[i])
-                );
-            }
-            unchecked {
-                ++i;
-            }
-        }
 
+        _singleDirectSingleVaultDeposit(req_);
+        _forwardPayment(balanceBefore);
+    }
+
+    /// @inheritdoc IBaseRouter
+    function singleXChainSingleVaultDeposit(SingleXChainSingleVaultStateReq memory req_)
+        external
+        payable
+        override(BaseRouter, IBaseRouter)
+    {
+        uint256 balanceBefore = address(this).balance - msg.value;
+
+        _singleXChainSingleVaultDeposit(req_);
+        _forwardPayment(balanceBefore);
+    }
+
+    /// @inheritdoc IBaseRouter
+    function singleDirectMultiVaultDeposit(SingleDirectMultiVaultStateReq memory req_)
+        external
+        payable
+        override(BaseRouter, IBaseRouter)
+    {
+        uint256 balanceBefore = address(this).balance - msg.value;
+
+        _singleDirectMultiVaultDeposit(req_);
+        _forwardPayment(balanceBefore);
+    }
+
+    /// @inheritdoc IBaseRouter
+    function singleXChainMultiVaultDeposit(SingleXChainMultiVaultStateReq memory req_)
+        external
+        payable
+        override(BaseRouter, IBaseRouter)
+    {
+        uint256 balanceBefore = address(this).balance - msg.value;
+
+        _singleXChainMultiVaultDeposit(req_);
         _forwardPayment(balanceBefore);
     }
 
@@ -73,55 +96,7 @@ contract SuperformRouter is BaseRouterImplementation {
     }
 
     /// @inheritdoc IBaseRouter
-    function singleXChainMultiVaultDeposit(SingleXChainMultiVaultStateReq memory req_)
-        external
-        payable
-        override(BaseRouter, IBaseRouter)
-    {
-        uint256 balanceBefore = address(this).balance - msg.value;
-
-        _singleXChainMultiVaultDeposit(req_);
-        _forwardPayment(balanceBefore);
-    }
-
-    /// @inheritdoc IBaseRouter
-    function singleXChainSingleVaultDeposit(SingleXChainSingleVaultStateReq memory req_)
-        external
-        payable
-        override(BaseRouter, IBaseRouter)
-    {
-        uint256 balanceBefore = address(this).balance - msg.value;
-
-        _singleXChainSingleVaultDeposit(req_);
-        _forwardPayment(balanceBefore);
-    }
-
-    /// @inheritdoc IBaseRouter
-    function singleDirectMultiVaultDeposit(SingleDirectMultiVaultStateReq memory req_)
-        external
-        payable
-        override(BaseRouter, IBaseRouter)
-    {
-        uint256 balanceBefore = address(this).balance - msg.value;
-
-        _singleDirectMultiVaultDeposit(req_);
-        _forwardPayment(balanceBefore);
-    }
-
-    /// @inheritdoc IBaseRouter
-    function singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq memory req_)
-        external
-        payable
-        override(BaseRouter, IBaseRouter)
-    {
-        uint256 balanceBefore = address(this).balance - msg.value;
-
-        _singleDirectSingleVaultDeposit(req_);
-        _forwardPayment(balanceBefore);
-    }
-
-    /// @inheritdoc IBaseRouter
-    function multiDstMultiVaultWithdraw(MultiDstMultiVaultStateReq calldata req_)
+    function multiDstMultiVaultDeposit(MultiDstMultiVaultStateReq calldata req_)
         external
         payable
         override(BaseRouter, IBaseRouter)
@@ -129,21 +104,67 @@ contract SuperformRouter is BaseRouterImplementation {
         uint64 chainId = CHAIN_ID;
         uint256 balanceBefore = address(this).balance - msg.value;
         uint256 len = req_.dstChainIds.length;
-
         for (uint256 i; i < len;) {
             if (chainId == req_.dstChainIds[i]) {
-                _singleDirectMultiVaultWithdraw(SingleDirectMultiVaultStateReq(req_.superformsData[i]));
+                _singleDirectMultiVaultDeposit(SingleDirectMultiVaultStateReq(req_.superformsData[i]));
             } else {
-                _singleXChainMultiVaultWithdraw(
+                _singleXChainMultiVaultDeposit(
                     SingleXChainMultiVaultStateReq(req_.ambIds[i], req_.dstChainIds[i], req_.superformsData[i])
                 );
             }
-
             unchecked {
                 ++i;
             }
         }
 
+        _forwardPayment(balanceBefore);
+    }
+
+    /// @inheritdoc IBaseRouter
+    function singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq memory req_)
+        external
+        payable
+        override(BaseRouter, IBaseRouter)
+    {
+        uint256 balanceBefore = address(this).balance - msg.value;
+
+        _singleDirectSingleVaultWithdraw(req_);
+        _forwardPayment(balanceBefore);
+    }
+
+    /// @inheritdoc IBaseRouter
+    function singleXChainSingleVaultWithdraw(SingleXChainSingleVaultStateReq memory req_)
+        external
+        payable
+        override(BaseRouter, IBaseRouter)
+    {
+        uint256 balanceBefore = address(this).balance - msg.value;
+
+        _singleXChainSingleVaultWithdraw(req_);
+        _forwardPayment(balanceBefore);
+    }
+
+    /// @inheritdoc IBaseRouter
+    function singleDirectMultiVaultWithdraw(SingleDirectMultiVaultStateReq memory req_)
+        external
+        payable
+        override(BaseRouter, IBaseRouter)
+    {
+        uint256 balanceBefore = address(this).balance - msg.value;
+
+        _singleDirectMultiVaultWithdraw(req_);
+        _forwardPayment(balanceBefore);
+    }
+
+    /// @inheritdoc IBaseRouter
+    function singleXChainMultiVaultWithdraw(SingleXChainMultiVaultStateReq memory req_)
+        external
+        payable
+        override(BaseRouter, IBaseRouter)
+    {
+        uint256 balanceBefore = address(this).balance - msg.value;
+
+        _singleXChainMultiVaultWithdraw(req_);
         _forwardPayment(balanceBefore);
     }
 
@@ -173,50 +194,29 @@ contract SuperformRouter is BaseRouterImplementation {
     }
 
     /// @inheritdoc IBaseRouter
-    function singleXChainMultiVaultWithdraw(SingleXChainMultiVaultStateReq memory req_)
+    function multiDstMultiVaultWithdraw(MultiDstMultiVaultStateReq calldata req_)
         external
         payable
         override(BaseRouter, IBaseRouter)
     {
+        uint64 chainId = CHAIN_ID;
         uint256 balanceBefore = address(this).balance - msg.value;
+        uint256 len = req_.dstChainIds.length;
 
-        _singleXChainMultiVaultWithdraw(req_);
-        _forwardPayment(balanceBefore);
-    }
+        for (uint256 i; i < len;) {
+            if (chainId == req_.dstChainIds[i]) {
+                _singleDirectMultiVaultWithdraw(SingleDirectMultiVaultStateReq(req_.superformsData[i]));
+            } else {
+                _singleXChainMultiVaultWithdraw(
+                    SingleXChainMultiVaultStateReq(req_.ambIds[i], req_.dstChainIds[i], req_.superformsData[i])
+                );
+            }
 
-    /// @inheritdoc IBaseRouter
-    function singleXChainSingleVaultWithdraw(SingleXChainSingleVaultStateReq memory req_)
-        external
-        payable
-        override(BaseRouter, IBaseRouter)
-    {
-        uint256 balanceBefore = address(this).balance - msg.value;
+            unchecked {
+                ++i;
+            }
+        }
 
-        _singleXChainSingleVaultWithdraw(req_);
-        _forwardPayment(balanceBefore);
-    }
-
-    /// @inheritdoc IBaseRouter
-    function singleDirectMultiVaultWithdraw(SingleDirectMultiVaultStateReq memory req_)
-        external
-        payable
-        override(BaseRouter, IBaseRouter)
-    {
-        uint256 balanceBefore = address(this).balance - msg.value;
-
-        _singleDirectMultiVaultWithdraw(req_);
-        _forwardPayment(balanceBefore);
-    }
-
-    /// @inheritdoc IBaseRouter
-    function singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq memory req_)
-        external
-        payable
-        override(BaseRouter, IBaseRouter)
-    {
-        uint256 balanceBefore = address(this).balance - msg.value;
-
-        _singleDirectSingleVaultWithdraw(req_);
         _forwardPayment(balanceBefore);
     }
 }
