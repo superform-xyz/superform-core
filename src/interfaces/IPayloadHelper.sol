@@ -11,10 +11,10 @@ interface IPayloadHelper {
     /// @return callbackType is the type of payload. check {CallbackType} enum in DataTypes.sol
     /// @return srcSender is the user who initiated the transaction on the srcChain
     /// @return srcChainId is the unique identifier of the srcChain
-    /// @return amounts is the amount to deposit/withdraw
-    /// @return slippage is the max slippage configured by the user (only for deposits)
-    /// @return superformIds is the unique identifiers of the superforms
-    /// @return hasDstSwaps is the array of flags indicating if the original liqData has a dstSwaps
+    /// @return amounts are the amounts to deposit/withdraw
+    /// @return slippages are the max slippages configured by the user (only for deposits)
+    /// @return superformIds are the unique identifiers of the superforms
+    /// @return hasDstSwaps are the array of flags indicating if the original liqData has a dstSwaps
     /// @return extraFormData is the extra form data (optional: passed for forms with special needs)
     /// @return receiverAddress is the address to be used for refunds
     /// @return srcPayloadId is the identifier of the corresponding payload on srcChain
@@ -27,7 +27,7 @@ interface IPayloadHelper {
             address srcSender,
             uint64 srcChainId,
             uint256[] memory amounts,
-            uint256[] memory slippage,
+            uint256[] memory slippages,
             uint256[] memory superformIds,
             bool[] memory hasDstSwaps,
             bytes memory extraFormData,
@@ -37,13 +37,13 @@ interface IPayloadHelper {
 
     /// @dev reads the payload from the core state registry and decodes liqData for it (to be used in withdraw cases)
     /// @param dstPayloadId_ is the unique identifier of the payload received in dst core state registry
-    /// @return bridgeIds is the ids of the bridges to be used
-    /// @return txDatas is the array of txData to be sent to the bridges
-    /// @return tokens is the tokens to be used in the liqData
+    /// @return bridgeIds are the ids of the bridges to be used
+    /// @return txDatas are the array of txData to be sent to the bridges
+    /// @return tokens are the tokens to be used in the liqData
     /// @return liqDstChainIds are the final destination chain id for the underlying token (can be arbitrary on
     /// withdraws)
     /// @return amountsIn are the from amounts to the liquidity bridge
-    /// @return nativeAmounts is the native amounts to be used in the liqData
+    /// @return nativeAmounts are the native amounts to be used in the liqData
     function decodeCoreStateRegistryPayloadLiqData(uint256 dstPayloadId_)
         external
         view
@@ -81,4 +81,9 @@ interface IPayloadHelper {
         external
         view
         returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
+
+    /// @dev returns proof for payloads
+    /// @param dstPayloadId_ is the unique identifier of payload in dst core state registry
+    /// @return proof is the proof for the payload
+    function getDstPayloadProof(uint256 dstPayloadId_) external view returns (bytes32);
 }

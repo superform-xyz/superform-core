@@ -783,6 +783,8 @@ abstract contract AbstractDeploySingle is Script {
             vars.dstWormholeChainId, vars.dstWormholeSRImplementation
         );
 
+        /// @dev FIXME missing attribution of WORMHOLE_VAA_RELAYER_ROLE
+
         SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
 
         vars.superRegistryC.setVaultLimitPerTx(vars.dstChainId, 30);
