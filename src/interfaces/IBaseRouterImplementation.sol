@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.21;
 
-import {IBaseRouter} from "./IBaseRouter.sol";
+import { IBaseRouter } from "./IBaseRouter.sol";
 
 import "../types/DataTypes.sol";
 
@@ -60,18 +60,12 @@ interface IBaseRouterImplementation is IBaseRouter {
 
     /// @dev is emitted when a cross-chain withdraw multi vault transaction is initiated.
     event CrossChainInitiatedWithdrawMulti(
-        uint256 indexed payloadId,
-        uint64 indexed dstChainId,
-        uint256[] superformIds,
-        uint8[] ambIds
+        uint256 indexed payloadId, uint64 indexed dstChainId, uint256[] superformIds, uint8[] ambIds
     );
 
     /// @dev is emitted when a cross-chain withdraw single vault transaction is initiated.
     event CrossChainInitiatedWithdrawSingle(
-        uint256 indexed payloadId,
-        uint64 indexed dstChainId,
-        uint256 superformIds,
-        uint8[] ambIds
+        uint256 indexed payloadId, uint64 indexed dstChainId, uint256 superformIds, uint8[] ambIds
     );
 
     /// @dev is emitted when a cross-chain transaction is completed.
