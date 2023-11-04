@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.21;
 
-import { IBaseRouter } from "./IBaseRouter.sol";
+import {IBaseRouter} from "./IBaseRouter.sol";
 
 import "../types/DataTypes.sol";
 
@@ -43,7 +43,6 @@ interface IBaseRouterImplementation is IBaseRouter {
         uint256 indexed payloadId,
         uint64 indexed dstChainId,
         uint256[] superformIds,
-        uint8 txType,
         uint256[] amountsIn,
         uint8[] bridgeIds,
         uint8[] ambIds
@@ -54,7 +53,6 @@ interface IBaseRouterImplementation is IBaseRouter {
         uint256 indexed payloadId,
         uint64 indexed dstChainId,
         uint256 superformIds,
-        uint8 txType,
         uint256 amountIn,
         uint8 bridgeId,
         uint8[] ambIds
@@ -65,7 +63,6 @@ interface IBaseRouterImplementation is IBaseRouter {
         uint256 indexed payloadId,
         uint64 indexed dstChainId,
         uint256[] superformIds,
-        uint8 txType,
         uint8[] ambIds
     );
 
@@ -74,7 +71,6 @@ interface IBaseRouterImplementation is IBaseRouter {
         uint256 indexed payloadId,
         uint64 indexed dstChainId,
         uint256 superformIds,
-        uint8 txType,
         uint8[] ambIds
     );
 
