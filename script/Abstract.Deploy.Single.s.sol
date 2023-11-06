@@ -188,10 +188,6 @@ abstract contract AbstractDeploySingle is Script {
 
     address public constant CHAINLINK_lzOracle = 0x150A58e9E6BF69ccEb1DBA5ae97C166DC8792539;
 
-    IMailbox public constant HyperlaneMailbox = IMailbox(0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70);
-    IInterchainGasPaymaster public constant HyperlaneGasPaymaster =
-        IInterchainGasPaymaster(0x6cA0B6D22da47f091B7613223cD4BB03a2d77918);
-
     address[] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
         0x3c2269811836af69497E5F486A85D7316753cf62,
@@ -206,15 +202,27 @@ abstract contract AbstractDeploySingle is Script {
 
     /// @dev NOTE: hyperlane does not support FTM
     address[] public hyperlaneMailboxes = [
-        0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
-        0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
-        0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
-        0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
-        0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
-        0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
+        0xc005dc82818d67AF737725bD4bf75435d065D239,
+        0x2971b9Aec44bE4eb673DF1B88cDB57b96eefe8a4,
+        0xFf06aFcaABaDDd1fb08371f9ccA15D73D51FeBD6,
+        0x5d934f4e2f797775e53561bB72aca21ba36B96BB,
+        0x979Ca5202784112f4738403dBec5D0F3B9daabB9,
+        0xd4C1905BB1D26BC93DAC913e13CaCC278CdCC80D,
         address(0),
+        0xeA87ae93Fa0019a82A727bfd3eBd1cFCa8f64f1D,
+        0xaD09d78f4c6b9dA2Ae82b1D34107802d380Bb74f
+    ];
+
+    address[] public hyperlanePaymasters = [
+        0x9e6B1022bE9BBF5aFd152483DAD9b88911bC8611,
+        0x78E25e7f84416e69b9339B0A6336EB6EFfF6b451,
+        0x95519ba800BBd0d34eeAE026fEc620AD978176C0,
+        0x0071740Bf129b05C4684abfbBeD248D80971cce2,
+        0x3b6044acd6767f017e99318AA6Ef93b7B06A5a22,
+        0xD8A76C4D91fCbB7Cc8eA795DFDF870E48368995C,
         address(0),
-        0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70
+        0xc3F23848Ed2e04C0c6d41bd7804fa8f89F940B94,
+        0xDd260B99d302f0A3fF885728c086f729c06f227f
     ];
 
     address[] public wormholeCore = [
@@ -412,7 +420,7 @@ abstract contract AbstractDeploySingle is Script {
         /// @dev 5.2- deploy Hyperlane Implementation
         vars.hyperlaneImplementation = address(new HyperlaneImplementation{salt: salt}(vars.superRegistryC));
         HyperlaneImplementation(vars.hyperlaneImplementation).setHyperlaneConfig(
-            HyperlaneMailbox, HyperlaneGasPaymaster
+            IMailbox(hyperlaneMailboxes[trueIndex]), IInterchainGasPaymaster(hyperlanePaymasters[trueIndex])
         );
         contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
 

@@ -826,7 +826,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             if (AMBs[index] == 2) {
                 /// @dev see pigeon for this implementation
                 HyperlaneHelper(getContract(CHAIN_0, "HyperlaneHelper")).help(
-                    address(HyperlaneMailbox),
+                    address(HYPERLANE_MAILBOXES[CHAIN_0]),
                     internalVars.toMailboxes,
                     internalVars.expDstDomains,
                     internalVars.forkIds,
@@ -2351,7 +2351,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
             /// @notice ID: 2 Hyperlane
             if (AMBs[i] == 2) {
                 HyperlaneHelper(getContract(TO_CHAIN, "HyperlaneHelper")).help(
-                    address(HyperlaneMailbox), address(HyperlaneMailbox), FORKS[FROM_CHAIN], logs
+                    address(HYPERLANE_MAILBOXES[TO_CHAIN]),
+                    address(HYPERLANE_MAILBOXES[FROM_CHAIN]),
+                    FORKS[FROM_CHAIN],
+                    logs
                 );
             }
 
@@ -3454,7 +3457,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         );
 
         HyperlaneHelper(getContract(ETH, "HyperlaneHelper")).help(
-            address(HyperlaneMailbox), address(HyperlaneMailbox), FORKS[ARBI], logs
+            address(HYPERLANE_MAILBOXES[ETH]), address(HYPERLANE_MAILBOXES[ARBI]), FORKS[ARBI], logs
         );
 
         /// @dev update and process the payload on ARBI
@@ -3487,7 +3490,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             );
 
             HyperlaneHelper(getContract(ARBI, "HyperlaneHelper")).help(
-                address(HyperlaneMailbox), address(HyperlaneMailbox), FORKS[ETH], logs
+                address(HYPERLANE_MAILBOXES[ARBI]), address(HYPERLANE_MAILBOXES[ETH]), FORKS[ETH], logs
             );
 
             /// @dev mint super positions on source chain

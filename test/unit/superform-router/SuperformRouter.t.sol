@@ -788,7 +788,7 @@ contract SuperformRouterTest is ProtocolActions {
         );
 
         HyperlaneHelper(getContract(ETH, "HyperlaneHelper")).help(
-            address(HyperlaneMailbox), address(HyperlaneMailbox), FORKS[ARBI], logs
+            HYPERLANE_MAILBOXES[ETH], HYPERLANE_MAILBOXES[ARBI], FORKS[ARBI], logs
         );
 
         vm.selectFork(FORKS[ARBI]);

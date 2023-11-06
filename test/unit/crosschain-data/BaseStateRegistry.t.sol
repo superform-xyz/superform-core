@@ -57,16 +57,16 @@ contract BaseStateRegistryTest is BaseSetup {
         ambIds[1] = 2;
 
         uint256[] memory gasPerAMB = new uint256[](2);
-        gasPerAMB[0] = 1 wei;
-        gasPerAMB[1] = 1 wei;
+        gasPerAMB[0] = 1 ether;
+        gasPerAMB[1] = 1 ether;
 
         bytes[] memory extraDataPerAMB = new bytes[](2);
 
         vm.expectRevert(Error.INVALID_PROOF_BRIDGE_ID.selector);
         vm.prank(getContract(ETH, "SuperformRouter"));
-        vm.deal(getContract(ETH, "SuperformRouter"), 2 wei);
+        vm.deal(getContract(ETH, "SuperformRouter"), 2 ether);
 
-        coreStateRegistry.dispatchPayload{ value: 2 wei }(
+        coreStateRegistry.dispatchPayload{ value: 2 ether }(
             bond,
             ambIds,
             ARBI,
@@ -77,9 +77,9 @@ contract BaseStateRegistryTest is BaseSetup {
         ambIds[1] = 9;
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         vm.prank(getContract(ETH, "SuperformRouter"));
-        vm.deal(getContract(ETH, "SuperformRouter"), 2 wei);
+        vm.deal(getContract(ETH, "SuperformRouter"), 2 ether);
 
-        coreStateRegistry.dispatchPayload{ value: 2 wei }(
+        coreStateRegistry.dispatchPayload{ value: 2 ether }(
             bond,
             ambIds,
             ARBI,
