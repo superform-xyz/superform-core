@@ -194,6 +194,35 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         }
     }
 
+    function _processXChainDeposit(
+        InitSingleVaultData memory singleVaultData_,
+        uint64 srcChainId_
+    )
+        internal
+        returns (uint256 dstAmount)
+    {
+        (,, uint64 dstChainId) = singleVaultData_.superformId.getSuperform();
+        address vaultLoc = vault;
+
+        IERC4626 v = IERC4626(vaultLoc);
+
+        /// @dev pulling from sender, to auto-send tokens back in case of failed deposits / reverts
+        IERC20(asset).safeTransferFrom(msg.sender, address(this), singleVaultData_.amount);
+
+        /// @dev allowance is modified inside of the IERC20.transferFrom() call
+        IERC20(asset).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
+
+        /// @dev Deposit into vault
+        if (singleVaultData_.retain4626) {
+            dstAmount = v.deposit(singleVaultData_.amount, singleVaultData_.receiverAddress);
+        } else {
+            /// This makes ERC4626Form (address(this)) owner of v.shares
+            dstAmount = v.deposit(singleVaultData_.amount, address(this));
+        }
+
+        emit Processed(srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
+    }
+
     struct ProcessDirectWithdrawLocalVars {
         uint64 chainId;
         address collateral;
@@ -260,35 +289,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 singleVaultData_.liqData.nativeAmount
             );
         }
-    }
-
-    function _processXChainDeposit(
-        InitSingleVaultData memory singleVaultData_,
-        uint64 srcChainId_
-    )
-        internal
-        returns (uint256 dstAmount)
-    {
-        (,, uint64 dstChainId) = singleVaultData_.superformId.getSuperform();
-        address vaultLoc = vault;
-
-        IERC4626 v = IERC4626(vaultLoc);
-
-        /// @dev pulling from sender, to auto-send tokens back in case of failed deposits / reverts
-        IERC20(asset).safeTransferFrom(msg.sender, address(this), singleVaultData_.amount);
-
-        /// @dev allowance is modified inside of the IERC20.transferFrom() call
-        IERC20(asset).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
-
-        /// @dev Deposit into vault
-        if (singleVaultData_.retain4626) {
-            dstAmount = v.deposit(singleVaultData_.amount, singleVaultData_.receiverAddress);
-        } else {
-            /// This makes ERC4626Form (address(this)) owner of v.shares
-            dstAmount = v.deposit(singleVaultData_.amount, address(this));
-        }
-
-        emit Processed(srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
     }
 
     struct xChainWithdrawLocalVars {
