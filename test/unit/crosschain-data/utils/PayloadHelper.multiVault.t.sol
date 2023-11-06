@@ -22,28 +22,28 @@ contract PayloadHelperMultiTest is ProtocolActions {
         AMBs = [1, 2];
 
         CHAIN_0 = OP;
-        DST_CHAINS = [POLY];
+        DST_CHAINS = [ARBI];
 
-        TARGET_UNDERLYINGS[POLY][0] = [0, 0];
-        TARGET_UNDERLYINGS[POLY][1] = [0, 0];
+        TARGET_UNDERLYINGS[ARBI][0] = [0, 0];
+        TARGET_UNDERLYINGS[ARBI][1] = [0, 0];
 
-        TARGET_VAULTS[POLY][0] = [0, 0];
-        TARGET_VAULTS[POLY][1] = [0, 0];
+        TARGET_VAULTS[ARBI][0] = [0, 0];
+        TARGET_VAULTS[ARBI][1] = [0, 0];
 
-        TARGET_FORM_KINDS[POLY][0] = [0, 0];
-        TARGET_FORM_KINDS[POLY][1] = [0, 0];
+        TARGET_FORM_KINDS[ARBI][0] = [0, 0];
+        TARGET_FORM_KINDS[ARBI][1] = [0, 0];
 
-        AMOUNTS[POLY][0] = [23_183, 213];
-        // AMOUNTS[POLY][1] = [23_183, 213];
+        AMOUNTS[ARBI][0] = [23_183, 213];
+        // AMOUNTS[ARBI][1] = [23_183, 213];
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[POLY][0] = [1, 1];
-        LIQ_BRIDGES[POLY][1] = [1, 1];
-        RECEIVE_4626[POLY][0] = [false, false];
-        RECEIVE_4626[POLY][1] = [false, false];
+        LIQ_BRIDGES[ARBI][0] = [1, 1];
+        LIQ_BRIDGES[ARBI][1] = [1, 1];
+        RECEIVE_4626[ARBI][0] = [false, false];
+        RECEIVE_4626[ARBI][1] = [false, false];
 
-        FINAL_LIQ_DST_WITHDRAW[POLY] = [OP, OP];
+        FINAL_LIQ_DST_WITHDRAW[ARBI] = [OP, OP];
 
         actions.push(
             TestAction({
@@ -106,16 +106,16 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
         _checkSrcPayload();
 
-        vm.selectFork(FORKS[POLY]);
-        (, int256 USDPerDAIonPOLY,,,) =
-            AggregatorV3Interface(tokenPriceFeeds[POLY][getContract(POLY, "DAI")]).latestRoundData();
+        vm.selectFork(FORKS[ARBI]);
+        (, int256 USDPerDAIonARBI,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[ARBI][getContract(ARBI, "DAI")]).latestRoundData();
 
         vm.selectFork(FORKS[OP]);
         (, int256 USDPerETHonOP,,,) = AggregatorV3Interface(tokenPriceFeeds[OP][NATIVE_TOKEN]).latestRoundData();
         (, int256 USDPerDAIonOP,,,) =
             AggregatorV3Interface(tokenPriceFeeds[OP][getContract(OP, "DAI")]).latestRoundData();
         _checkDstPayloadInit(
-            CheckDstPayloadInitArgs(uint256(USDPerDAIonPOLY), uint256(USDPerETHonOP), uint256(USDPerDAIonOP))
+            CheckDstPayloadInitArgs(uint256(USDPerDAIonARBI), uint256(USDPerETHonOP), uint256(USDPerDAIonOP))
         );
 
         _checkDstPayloadReturn();
@@ -190,7 +190,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
     }
 
     struct CheckDstPayloadInitArgs {
-        uint256 USDPerDAIonPOLY_;
+        uint256 USDPerDAIonARBI_;
         uint256 USDPerETHonOP_;
         uint256 USDPerDAIonOP_;
     }
@@ -230,9 +230,9 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
         for (uint256 i; i < v.amounts.length; i++) {
             /// @dev ETH<>DAI swap on OP
-            v.daiAfterFirstSwap = (AMOUNTS[POLY][0][i] * args.USDPerETHonOP_) / args.USDPerDAIonOP_;
-            /// @dev DAI on OP <> DAI on POLY
-            v.daiAfterSecondSwap = (v.daiAfterFirstSwap * args.USDPerDAIonOP_) / args.USDPerDAIonPOLY_;
+            v.daiAfterFirstSwap = (AMOUNTS[ARBI][0][i] * args.USDPerETHonOP_) / args.USDPerDAIonOP_;
+            /// @dev DAI on OP <> DAI on ARBI
+            v.daiAfterSecondSwap = (v.daiAfterFirstSwap * args.USDPerDAIonOP_) / args.USDPerDAIonARBI_;
             /// @dev daiAfterSecondSwap doesn't include bridge slippage hence should be greater
             assertLe(v.amounts[i], v.daiAfterSecondSwap);
         }
@@ -270,9 +270,9 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
         assertGt(v.txDatas[0].length, 0);
 
-        assertEq(v.tokens[0], getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[POLY][1][0]]));
+        assertEq(v.tokens[0], getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[ARBI][1][0]]));
 
-        assertEq(v.liqDstChainIds[0], FINAL_LIQ_DST_WITHDRAW[POLY][0]);
+        assertEq(v.liqDstChainIds[0], FINAL_LIQ_DST_WITHDRAW[ARBI][0]);
 
         /// @dev number of superpositions to burn in withdraws are not meant to be same as deposit amounts
 
@@ -292,12 +292,12 @@ contract PayloadHelperMultiTest is ProtocolActions {
         /// 0 for deposit
         assertEq(v.callbackType, 1);
         /// 1 for return
-        assertEq(v.srcChainId, 137);
-        /// chain id of polygon is 137
+        assertEq(v.srcChainId, 42_161);
+        /// chain id of polygon is 42161
         assertEq(v.srcPayloadId, 1);
 
         for (uint256 i = 0; i < v.slippage.length; ++i) {
-            assertLe(v.amounts[i], AMOUNTS[POLY][0][i]);
+            assertLe(v.amounts[i], AMOUNTS[ARBI][0][i]);
             assertEq(v.slippage[i], MAX_SLIPPAGE);
         }
     }

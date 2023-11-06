@@ -1011,12 +1011,12 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     function _preDeploymentSetup() internal virtual {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
-        forks[ETH] = vm.createFork(ETHEREUM_RPC_URL);
-        forks[BSC] = vm.createFork(BSC_RPC_URL);
-        forks[AVAX] = vm.createFork(AVALANCHE_RPC_URL);
-        forks[POLY] = vm.createFork(POLYGON_RPC_URL);
-        forks[ARBI] = vm.createFork(ARBITRUM_RPC_URL);
-        forks[OP] = vm.createFork(OPTIMISM_RPC_URL);
+        forks[ETH] = vm.createFork(ETHEREUM_RPC_URL, 18_432_589);
+        forks[BSC] = vm.createFork(BSC_RPC_URL, 32_899_049);
+        forks[AVAX] = vm.createFork(AVALANCHE_RPC_URL, 36_974_720);
+        forks[POLY] = vm.createFork(POLYGON_RPC_URL, 49_118_079);
+        forks[ARBI] = vm.createFork(ARBITRUM_RPC_URL, 143_659_807);
+        forks[OP] = vm.createFork(OPTIMISM_RPC_URL, 111_390_769);
         //forks[FTM] = vm.createFork(FANTOM_RPC_URL);
 
         mapping(uint64 => string) storage rpcURLs = RPC_URLS;
