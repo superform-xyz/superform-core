@@ -43,7 +43,6 @@ interface IBaseRouterImplementation is IBaseRouter {
         uint256 indexed payloadId,
         uint64 indexed dstChainId,
         uint256[] superformIds,
-        uint8 txType,
         uint256[] amountsIn,
         uint8[] bridgeIds,
         uint8[] ambIds
@@ -54,7 +53,6 @@ interface IBaseRouterImplementation is IBaseRouter {
         uint256 indexed payloadId,
         uint64 indexed dstChainId,
         uint256 superformIds,
-        uint8 txType,
         uint256 amountIn,
         uint8 bridgeId,
         uint8[] ambIds
@@ -62,20 +60,12 @@ interface IBaseRouterImplementation is IBaseRouter {
 
     /// @dev is emitted when a cross-chain withdraw multi vault transaction is initiated.
     event CrossChainInitiatedWithdrawMulti(
-        uint256 indexed payloadId,
-        uint64 indexed dstChainId,
-        uint256[] superformIds,
-        uint8 txType,
-        uint8[] ambIds
+        uint256 indexed payloadId, uint64 indexed dstChainId, uint256[] superformIds, uint8[] ambIds
     );
 
     /// @dev is emitted when a cross-chain withdraw single vault transaction is initiated.
     event CrossChainInitiatedWithdrawSingle(
-        uint256 indexed payloadId,
-        uint64 indexed dstChainId,
-        uint256 superformIds,
-        uint8 txType,
-        uint8[] ambIds
+        uint256 indexed payloadId, uint64 indexed dstChainId, uint256 superformIds, uint8[] ambIds
     );
 
     /// @dev is emitted when a cross-chain transaction is completed.
