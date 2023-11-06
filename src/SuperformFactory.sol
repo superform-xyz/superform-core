@@ -206,6 +206,16 @@ contract SuperformFactory is ISuperformFactory {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ISuperformFactory
+    function getFormCount() external view override returns (uint256 forms_) {
+        forms_ = formImplementations.length;
+    }
+
+    /// @inheritdoc ISuperformFactory
+    function getSuperformCount() external view override returns (uint256 superforms_) {
+        superforms_ = superforms.length;
+    }
+
+    /// @inheritdoc ISuperformFactory
     function getFormImplementation(uint32 formImplementationId_) external view override returns (address) {
         return formImplementation[formImplementationId_];
     }
@@ -213,6 +223,16 @@ contract SuperformFactory is ISuperformFactory {
     /// @inheritdoc ISuperformFactory
     function isFormImplementationPaused(uint32 formImplementationId_) external view override returns (bool) {
         return formImplementationPaused[formImplementationId_];
+    }
+
+    /// @inheritdoc ISuperformFactory
+    function getSuperform(uint256 superformId_)
+        external
+        pure
+        override
+        returns (address superform_, uint32 formImplementationId_, uint64 chainId_)
+    {
+        (superform_, formImplementationId_, chainId_) = superformId_.getSuperform();
     }
 
     /// @inheritdoc ISuperformFactory
@@ -236,16 +256,6 @@ contract SuperformFactory is ISuperformFactory {
     }
 
     /// @inheritdoc ISuperformFactory
-    function getSuperform(uint256 superformId_)
-        external
-        pure
-        override
-        returns (address superform_, uint32 formImplementationId_, uint64 chainId_)
-    {
-        (superform_, formImplementationId_, chainId_) = superformId_.getSuperform();
-    }
-
-    /// @inheritdoc ISuperformFactory
     function getAllSuperforms()
         external
         view
@@ -262,16 +272,6 @@ contract SuperformFactory is ISuperformFactory {
                 ++i;
             }
         }
-    }
-
-    /// @inheritdoc ISuperformFactory
-    function getFormCount() external view override returns (uint256 forms_) {
-        forms_ = formImplementations.length;
-    }
-
-    /// @inheritdoc ISuperformFactory
-    function getSuperformCount() external view override returns (uint256 superforms_) {
-        superforms_ = superforms.length;
     }
 
     /*///////////////////////////////////////////////////////////////
