@@ -128,7 +128,6 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
-
         if (_bytes32ToAddress(sourceAddress_) != authorizedImpl[sourceChain_]) {
             revert Error.INVALID_SRC_SENDER();
         }
