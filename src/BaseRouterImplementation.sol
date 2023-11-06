@@ -165,13 +165,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
 
         emit CrossChainInitiatedDepositSingle(
-            vars.currentPayloadId,
-            req_.dstChainId,
-            req_.superformData.superformId,
-            uint8(TransactionType.DEPOSIT),
-            amountIn,
-            bridgeId,
-            req_.ambIds
+            vars.currentPayloadId, req_.dstChainId, req_.superformData.superformId, amountIn, bridgeId, req_.ambIds
         );
     }
 
@@ -275,13 +269,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
 
         emit CrossChainInitiatedDepositMulti(
-            vars.currentPayloadId,
-            req_.dstChainId,
-            req_.superformsData.superformIds,
-            uint8(TransactionType.DEPOSIT),
-            amountsIn,
-            bridgeIds,
-            req_.ambIds
+            vars.currentPayloadId, req_.dstChainId, req_.superformsData.superformIds, amountsIn, bridgeIds, req_.ambIds
         );
     }
 
@@ -393,11 +381,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
 
         emit CrossChainInitiatedWithdrawSingle(
-            vars.currentPayloadId,
-            req_.dstChainId,
-            req_.superformData.superformId,
-            uint8(TransactionType.WITHDRAW),
-            req_.ambIds
+            vars.currentPayloadId, req_.dstChainId, req_.superformData.superformId, req_.ambIds
         );
     }
 
@@ -486,11 +470,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
 
         emit CrossChainInitiatedWithdrawMulti(
-            vars.currentPayloadId,
-            req_.dstChainId,
-            req_.superformsData.superformIds,
-            uint8(TransactionType.WITHDRAW),
-            req_.ambIds
+            vars.currentPayloadId, req_.dstChainId, req_.superformsData.superformIds, req_.ambIds
         );
     }
 
@@ -819,7 +799,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (isDeposit_ && factory_.isFormImplementationPaused(formImplementationId)) return false;
 
         /// @dev ensure that receiver address is sent if user wants to keep the 4626
-        if (isDeposit_ && retain4626_ && receiverAddress_ == address(0)) return false;
+        if (isDeposit_ && retain4626_ && receiverAddress_ == address(0)) {
+            return false;
+        }
 
         /// if it reaches this point then is valid
         return true;

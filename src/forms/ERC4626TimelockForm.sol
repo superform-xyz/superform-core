@@ -138,6 +138,20 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     }
 
     /// @inheritdoc BaseForm
+    function _xChainDepositIntoVault(
+        InitSingleVaultData memory singleVaultData_,
+        address,
+        uint64 srcChainId_
+    )
+        internal
+        virtual
+        override
+        returns (uint256 dstAmount)
+    {
+        dstAmount = _processXChainDeposit(singleVaultData_, srcChainId_);
+    }
+
+    /// @inheritdoc BaseForm
     /// @dev this is the step-1 for timelock form withdrawal, direct case
     /// @dev will mandatorily process unlock
     /// @return dstAmount is always 0
@@ -156,20 +170,6 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         _storePayload(0, srcSender_, CHAIN_ID, lockedTill, singleVaultData_);
 
         return 0;
-    }
-
-    /// @inheritdoc BaseForm
-    function _xChainDepositIntoVault(
-        InitSingleVaultData memory singleVaultData_,
-        address,
-        uint64 srcChainId_
-    )
-        internal
-        virtual
-        override
-        returns (uint256 dstAmount)
-    {
-        dstAmount = _processXChainDeposit(singleVaultData_, srcChainId_);
     }
 
     /// @inheritdoc BaseForm

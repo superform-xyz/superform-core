@@ -31,18 +31,6 @@ contract ERC4626Form is ERC4626FormImplementation {
     }
 
     /// @inheritdoc BaseForm
-    function _directWithdrawFromVault(
-        InitSingleVaultData memory singleVaultData_,
-        address srcSender_
-    )
-        internal
-        override
-        returns (uint256 dstAmount)
-    {
-        dstAmount = _processDirectWithdraw(singleVaultData_, srcSender_);
-    }
-
-    /// @inheritdoc BaseForm
     function _xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
         address,
@@ -53,6 +41,18 @@ contract ERC4626Form is ERC4626FormImplementation {
         returns (uint256 dstAmount)
     {
         dstAmount = _processXChainDeposit(singleVaultData_, srcChainId_);
+    }
+
+    /// @inheritdoc BaseForm
+    function _directWithdrawFromVault(
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_
+    )
+        internal
+        override
+        returns (uint256 dstAmount)
+    {
+        dstAmount = _processDirectWithdraw(singleVaultData_, srcSender_);
     }
 
     /// @inheritdoc BaseForm

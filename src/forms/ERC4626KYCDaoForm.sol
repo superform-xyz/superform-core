@@ -49,19 +49,6 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
         dstAmount = _processDirectDeposit(singleVaultData_);
     }
 
-    /// @inheritdoc BaseForm
-    function _directWithdrawFromVault(
-        InitSingleVaultData memory singleVaultData_,
-        address srcSender_
-    )
-        internal
-        override
-        onlyKYC(srcSender_)
-        returns (uint256 dstAmount)
-    {
-        dstAmount = _processDirectWithdraw(singleVaultData_, srcSender_);
-    }
-
     function _xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
@@ -73,6 +60,19 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
         returns (uint256 dstAmount)
     {
         dstAmount = _processXChainDeposit(singleVaultData_, srcChainId_);
+    }
+
+    /// @inheritdoc BaseForm
+    function _directWithdrawFromVault(
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_
+    )
+        internal
+        override
+        onlyKYC(srcSender_)
+        returns (uint256 dstAmount)
+    {
+        dstAmount = _processDirectWithdraw(singleVaultData_, srcSender_);
     }
 
     /// @inheritdoc BaseForm
