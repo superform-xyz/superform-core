@@ -92,7 +92,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         address srcSender_,
         uint64 dstChainId_,
         bytes memory message_,
-        bytes memory extraData_
+        bytes memory /* extraData_ */
     )
         external
         payable
@@ -101,11 +101,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         onlyValidStateRegistry
     {
         uint32 domain = ambChainId[dstChainId_];
-        bytes32 messageId = mailbox.dispatch(domain, _castAddr(authorizedImpl[domain]), message_);
-
-        igp.payForGas{ value: msg.value }(
-            messageId, domain, extraData_.length > 0 ? abi.decode(extraData_, (uint256)) : 0, srcSender_
-        );
+        mailbox.dispatch{ value: msg.value }(domain, _castAddr(authorizedImpl[domain]), message_);
     }
 
     /// @inheritdoc IAmbImplementation
@@ -192,8 +188,8 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /// @inheritdoc IAmbImplementation
     function estimateFees(
         uint64 dstChainId_,
-        bytes memory,
-        bytes memory extraData_
+        bytes memory message_,
+        bytes memory /*extraData_*/
     )
         external
         view
@@ -206,7 +202,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
             revert Error.INVALID_CHAIN_ID();
         }
 
-        fees = igp.quoteGasPayment(domain, abi.decode(extraData_, (uint256)));
+        fees = mailbox.quoteDispatch(domain, _castAddr(authorizedImpl[domain]), message_);
     }
 
     /*///////////////////////////////////////////////////////////////

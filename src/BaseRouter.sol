@@ -75,18 +75,10 @@ abstract contract BaseRouter is IBaseRouter {
         override;
 
     /// @inheritdoc IBaseRouter
-    function multiDstSingleVaultDeposit(MultiDstSingleVaultStateReq calldata req_)
-        external
-        payable
-        virtual
-        override;
+    function multiDstSingleVaultDeposit(MultiDstSingleVaultStateReq calldata req_) external payable virtual override;
 
     /// @inheritdoc IBaseRouter
-    function multiDstMultiVaultDeposit(MultiDstMultiVaultStateReq calldata req_)
-        external
-        payable
-        virtual
-        override;
+    function multiDstMultiVaultDeposit(MultiDstMultiVaultStateReq calldata req_) external payable virtual override;
 
     /// @inheritdoc IBaseRouter
     function singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq memory req_)
@@ -117,16 +109,8 @@ abstract contract BaseRouter is IBaseRouter {
         override;
 
     /// @inheritdoc IBaseRouter
-    function multiDstSingleVaultWithdraw(MultiDstSingleVaultStateReq calldata req_)
-        external
-        payable
-        virtual
-        override;
+    function multiDstSingleVaultWithdraw(MultiDstSingleVaultStateReq calldata req_) external payable virtual override;
 
     /// @inheritdoc IBaseRouter
-    function multiDstMultiVaultWithdraw(MultiDstMultiVaultStateReq calldata req_)
-        external
-        payable
-        virtual
-        override;
+    function multiDstMultiVaultWithdraw(MultiDstMultiVaultStateReq calldata req_) external payable virtual override;
 }

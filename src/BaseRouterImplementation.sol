@@ -329,7 +329,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         emit Completed(vars.currentPayloadId);
     }
 
-
     /// @dev handles cross-chain single vault withdraw
     function _singleXChainSingleVaultWithdraw(SingleXChainSingleVaultStateReq memory req_) internal virtual {
         /// @dev validate the action

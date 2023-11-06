@@ -618,7 +618,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             if (vars.AMBs[index] == 2) {
                 /// @dev see pigeon for this implementation
                 HyperlaneHelper(getContract(vars.CHAIN_0, "HyperlaneHelper")).help(
-                    address(HyperlaneMailbox),
+                    HYPERLANE_MAILBOXES[vars.CHAIN_0],
                     internalVars.toMailboxes,
                     internalVars.expDstDomains,
                     internalVars.forkIds,
@@ -1635,7 +1635,10 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             /// @notice ID: 2 Hyperlane
             if (AMBs[i] == 2) {
                 HyperlaneHelper(getContract(TO_CHAIN, "HyperlaneHelper")).help(
-                    address(HyperlaneMailbox), address(HyperlaneMailbox), FORKS[FROM_CHAIN], logs
+                    address(HYPERLANE_MAILBOXES[FROM_CHAIN]),
+                    address(HYPERLANE_MAILBOXES[TO_CHAIN]),
+                    FORKS[FROM_CHAIN],
+                    logs
                 );
             }
 

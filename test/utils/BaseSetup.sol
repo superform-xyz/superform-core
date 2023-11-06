@@ -189,6 +189,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
     mapping(uint64 => address) public LZ_ENDPOINTS;
     mapping(uint64 => uint16) public WORMHOLE_CHAIN_IDS;
+    mapping(uint64 => address) public HYPERLANE_MAILBOXES;
 
     address public constant ETH_lzEndpoint = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
     address public constant BSC_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
@@ -209,12 +210,21 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     ];
 
     address[] public hyperlaneMailboxes = [
-        0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
-        0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
-        0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
-        0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
-        0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
-        0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70
+        0xc005dc82818d67AF737725bD4bf75435d065D239,
+        0x2971b9Aec44bE4eb673DF1B88cDB57b96eefe8a4,
+        0xFf06aFcaABaDDd1fb08371f9ccA15D73D51FeBD6,
+        0x5d934f4e2f797775e53561bB72aca21ba36B96BB,
+        0x979Ca5202784112f4738403dBec5D0F3B9daabB9,
+        0xd4C1905BB1D26BC93DAC913e13CaCC278CdCC80D
+    ];
+
+    address[] public hyperlanePaymasters = [
+        0x9e6B1022bE9BBF5aFd152483DAD9b88911bC8611,
+        0x78E25e7f84416e69b9339B0A6336EB6EFfF6b451,
+        0x95519ba800BBd0d34eeAE026fEc620AD978176C0,
+        0x0071740Bf129b05C4684abfbBeD248D80971cce2,
+        0x3b6044acd6767f017e99318AA6Ef93b7B06A5a22,
+        0xD8A76C4D91fCbB7Cc8eA795DFDF870E48368995C
     ];
 
     address[] public wormholeCore = [
@@ -242,10 +252,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     /*//////////////////////////////////////////////////////////////
                         HYPERLANE VARIABLES
     //////////////////////////////////////////////////////////////*/
-    IMailbox public constant HyperlaneMailbox = IMailbox(0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70);
-    IInterchainGasPaymaster public constant HyperlaneGasPaymaster =
-        IInterchainGasPaymaster(0x6cA0B6D22da47f091B7613223cD4BB03a2d77918);
-
     uint64 public constant ETH = 1;
     uint64 public constant BSC = 56;
     uint64 public constant AVAX = 43_114;
@@ -476,7 +482,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                 )
             );
             HyperlaneImplementation(vars.hyperlaneImplementation).setHyperlaneConfig(
-                HyperlaneMailbox, HyperlaneGasPaymaster
+                IMailbox(hyperlaneMailboxes[i]), IInterchainGasPaymaster(hyperlanePaymasters[i])
             );
             contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
 
@@ -1005,13 +1011,13 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     function _preDeploymentSetup() internal virtual {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
-        forks[ETH] = vm.createFork(ETHEREUM_RPC_URL, 18_092_097);
-        forks[BSC] = vm.createFork(BSC_RPC_URL, 31_564_343);
-        forks[AVAX] = vm.createFork(AVALANCHE_RPC_URL, 34_923_446);
-        forks[POLY] = vm.createFork(POLYGON_RPC_URL, 47_296_382);
-        forks[ARBI] = vm.createFork(ARBITRUM_RPC_URL, 129_217_926);
-        forks[OP] = vm.createFork(OPTIMISM_RPC_URL, 109_291_345);
-        //forks[FTM] = vm.createFork(FANTOM_RPC_URL, 56806404);
+        forks[ETH] = vm.createFork(ETHEREUM_RPC_URL);
+        forks[BSC] = vm.createFork(BSC_RPC_URL);
+        forks[AVAX] = vm.createFork(AVALANCHE_RPC_URL);
+        forks[POLY] = vm.createFork(POLYGON_RPC_URL);
+        forks[ARBI] = vm.createFork(ARBITRUM_RPC_URL);
+        forks[OP] = vm.createFork(OPTIMISM_RPC_URL);
+        //forks[FTM] = vm.createFork(FANTOM_RPC_URL);
 
         mapping(uint64 => string) storage rpcURLs = RPC_URLS;
         rpcURLs[ETH] = ETHEREUM_RPC_URL;
@@ -1030,6 +1036,14 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         lzEndpointsStorage[ARBI] = ARBI_lzEndpoint;
         lzEndpointsStorage[OP] = OP_lzEndpoint;
         //lzEndpointsStorage[FTM] = FTM_lzEndpoint;
+
+        mapping(uint64 => address) storage hyperlaneMailboxesStorage = HYPERLANE_MAILBOXES;
+        hyperlaneMailboxesStorage[ETH] = hyperlaneMailboxes[0];
+        hyperlaneMailboxesStorage[BSC] = hyperlaneMailboxes[1];
+        hyperlaneMailboxesStorage[AVAX] = hyperlaneMailboxes[2];
+        hyperlaneMailboxesStorage[POLY] = hyperlaneMailboxes[3];
+        hyperlaneMailboxesStorage[ARBI] = hyperlaneMailboxes[4];
+        hyperlaneMailboxesStorage[OP] = hyperlaneMailboxes[5];
 
         mapping(uint64 => uint16) storage wormholeChainIdsStorage = WORMHOLE_CHAIN_IDS;
 
@@ -1178,13 +1192,13 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         existingVaults[43_114][1]["USDC"][0] = 0xB4001622c02F1354A3CfF995b7DaA15b1d47B0fe;
         existingVaults[43_114][1]["WETH"][0] = 0x1a225008efffB6e07D01671127c9E40f6f787c8C;
 
-        existingVaults[42_161][1]["DAI"][0] = 0x105bdc0990947318FA1c873623730F332A6f6203;
+        existingVaults[42_161][1]["DAI"][0] = address(0);
         existingVaults[42_161][1]["USDC"][0] = address(0);
         existingVaults[42_161][1]["WETH"][0] = 0xe4c2A17f38FEA3Dcb3bb59CEB0aC0267416806e2;
 
-        existingVaults[1][1]["DAI"][0] = 0x36F8d0D0573ae92326827C4a82Fe4CE4C244cAb6;
+        existingVaults[1][1]["DAI"][0] = address(0);
         existingVaults[1][1]["USDC"][0] = 0x6bAD6A9BcFdA3fd60Da6834aCe5F93B8cFed9598;
-        existingVaults[1][1]["WETH"][0] = 0x490BBbc2485e99989Ba39b34802faFa58e26ABa4;
+        existingVaults[1][1]["WETH"][0] = address(0);
 
         existingVaults[10][1]["DAI"][0] = address(0);
         existingVaults[10][1]["USDC"][0] = 0x81C9A7B55A4df39A9B7B5F781ec0e53539694873;

@@ -10,7 +10,7 @@ import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegis
 import { Error } from "src/utils/Error.sol";
 
 contract HyperlaneImplementationTest is BaseSetup {
-    address public constant MAILBOX = 0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70;
+    address public constant MAILBOX = 0xc005dc82818d67AF737725bD4bf75435d065D239;
     ISuperRegistry public superRegistry;
     HyperlaneImplementation hyperlaneImplementation;
 

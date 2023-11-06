@@ -566,7 +566,7 @@ contract EmergencyQueueTest is ProtocolActions {
         );
 
         HyperlaneHelper(getContract(ETH, "HyperlaneHelper")).help(
-            address(HyperlaneMailbox), address(HyperlaneMailbox), FORKS[ARBI], logs
+            HYPERLANE_MAILBOXES[ETH], HYPERLANE_MAILBOXES[ARBI], FORKS[ARBI], logs
         );
 
         /// @dev update and process the payload on ARBI
@@ -647,7 +647,7 @@ contract EmergencyQueueTest is ProtocolActions {
         );
 
         HyperlaneHelper(getContract(ETH, "HyperlaneHelper")).help(
-            address(HyperlaneMailbox), address(HyperlaneMailbox), FORKS[ARBI], logs
+            HYPERLANE_MAILBOXES[ETH], HYPERLANE_MAILBOXES[ARBI], FORKS[ARBI], logs
         );
 
         /// @dev update and process the payload on ARBI
@@ -787,7 +787,7 @@ contract EmergencyQueueTest is ProtocolActions {
         );
 
         HyperlaneHelper(getContract(ETH, "HyperlaneHelper")).help(
-            address(HyperlaneMailbox), address(HyperlaneMailbox), FORKS[ARBI], logs
+            HYPERLANE_MAILBOXES[ETH], HYPERLANE_MAILBOXES[ARBI], FORKS[ARBI], logs
         );
 
         /// @dev update and process the payload on ARBI
@@ -819,7 +819,7 @@ contract EmergencyQueueTest is ProtocolActions {
         );
 
         HyperlaneHelper(getContract(ARBI, "HyperlaneHelper")).help(
-            address(HyperlaneMailbox), address(HyperlaneMailbox), FORKS[ETH], logs
+            HYPERLANE_MAILBOXES[ARBI], HYPERLANE_MAILBOXES[ETH], FORKS[ETH], logs
         );
 
         /// @dev mint super positions on source chain
