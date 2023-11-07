@@ -17,18 +17,6 @@ contract SocketOneInchValidator is BridgeValidator {
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    /// @inheritdoc BridgeValidator
-    function validateLiqDstChainId(
-        bytes calldata, /*txData_*/
-        uint64 /*liqDstChainId_*/
-    )
-        external
-        pure
-        override
-        returns (bool)
-    {
-        revert();
-    }
 
     /// @inheritdoc BridgeValidator
     function validateReceiver(bytes calldata txData_, address receiver) external pure override returns (bool) {

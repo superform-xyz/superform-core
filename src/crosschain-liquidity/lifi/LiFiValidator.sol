@@ -18,19 +18,6 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
     constructor(address superRegistry_) BridgeValidator(superRegistry_) { }
 
     /// @inheritdoc BridgeValidator
-    function validateLiqDstChainId(
-        bytes calldata txData_,
-        uint64 liqDstChainId_
-    )
-        external
-        pure
-        override
-        returns (bool)
-    {
-        return (uint256(liqDstChainId_) == _extractBridgeData(txData_).destinationChainId);
-    }
-
-    /// @inheritdoc BridgeValidator
     function validateReceiver(bytes calldata txData_, address receiver_) external pure override returns (bool valid_) {
         return _extractBridgeData(txData_).receiver == receiver_;
     }

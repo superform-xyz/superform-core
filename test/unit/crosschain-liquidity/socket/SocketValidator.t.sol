@@ -108,14 +108,4 @@ contract SocketValidatorTest is ProtocolActions {
 
         assertEq(SocketValidator(getContract(ETH, "SocketValidator")).decodeAmountIn(txData, true), uint256(100));
     }
-
-    function test_validate_liq_dst_chain_id() public {
-        bytes memory txData = _buildDummyTxDataUnitTests(
-            BuildDummyTxDataUnitTestsVars(
-                2, address(0), address(0), deployer, ETH, BSC, uint256(100), getContract(BSC, "PayMaster"), false
-            )
-        );
-
-        assertTrue(SocketValidator(getContract(ETH, "SocketValidator")).validateLiqDstChainId(txData, BSC));
-    }
 }

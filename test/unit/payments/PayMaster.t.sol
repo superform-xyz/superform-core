@@ -183,11 +183,6 @@ contract PayMasterTest is ProtocolActions {
         txData = _buildDummyTxDataUnitTests(
             BuildDummyTxDataUnitTestsVars(1, NATIVE, NATIVE, feeCollector, ETH, ARBI, 1 ether, txProcessorARBI, false)
         );
-        /// @dev admin moves the payment from fee collector to different address on another chain
-        vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
-        PayMaster(payable(feeCollector)).rebalanceTo(
-            keccak256("CORE_REGISTRY_PROCESSOR"), LiqRequest(1, txData, NATIVE, ETH, 1 ether), ARBI
-        );
 
         /// @dev admin moves the payment from fee collector (ideal conditions)
         PayMaster(payable(feeCollector)).rebalanceTo(
