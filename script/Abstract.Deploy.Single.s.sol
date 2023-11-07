@@ -460,6 +460,7 @@ abstract contract AbstractDeploySingle is Script {
 
         contracts[vars.chainId][bytes32(bytes("SuperformFactory"))] = vars.factory;
 
+        /// @dev FIXME does SuperRBAC itself need broadcaster role?
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_FACTORY(), vars.factory, vars.chainId);
         vars.superRBACC.grantRole(vars.superRBACC.BROADCASTER_ROLE(), vars.factory);
 
@@ -496,6 +497,7 @@ abstract contract AbstractDeploySingle is Script {
         contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);
 
+        /// @dev FIXME does SuperRBAC itself need broadcaster role?
         vars.superRBACC.grantRole(
             vars.superRBACC.BROADCASTER_ROLE(), contracts[vars.chainId][bytes32(bytes("SuperPositions"))]
         );
