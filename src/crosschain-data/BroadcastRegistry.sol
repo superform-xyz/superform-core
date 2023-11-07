@@ -5,7 +5,7 @@ import { Error } from "src/utils/Error.sol";
 import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
-import { BroadcastMessage, AMBExtraData, PayloadState } from "src/types/DataTypes.sol";
+import { BroadcastMessage, PayloadState } from "src/types/DataTypes.sol";
 import { IBroadcastAmbImplementation } from "src/interfaces/IBroadcastAmbImplementation.sol";
 import { ProofLib } from "../libraries/ProofLib.sol";
 

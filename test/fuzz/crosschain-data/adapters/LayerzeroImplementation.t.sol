@@ -7,7 +7,7 @@ import "pigeon/layerzero/lib/LZPacket.sol";
 import { TransactionType, CallbackType, AMBMessage } from "src/types/DataTypes.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { ILayerZeroEndpoint } from "src/vendor/layerzero/ILayerZeroEndpoint.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
 import { Error } from "src/utils/Error.sol";
@@ -378,6 +378,24 @@ contract LayerzeroImplementationTest is BaseSetup {
 
         vm.prank(malice_);
         layerzeroImplementation.nonblockingLzReceive(lzChainId, srcAddressOP, "");
+    }
+
+    function test_retryPayload() public {
+        bytes memory data = abi.encode(ETH, abi.encode(deployer), "");
+
+        vm.selectFork(FORKS[ETH]);
+
+        vm.mockCall(
+            address(layerzeroImplementation.lzEndpoint()),
+            abi.encodeWithSelector(
+                ILayerZeroEndpoint(address(layerzeroImplementation.lzEndpoint())).retryPayload.selector
+            ),
+            abi.encode("")
+        );
+
+        layerzeroImplementation.retryPayload(data);
+
+        vm.clearMockedCalls();
     }
 
     function _depositFromETHtoOPNewStateRegistry(uint256 gasLimit_) internal returns (Vm.Log[] memory) {

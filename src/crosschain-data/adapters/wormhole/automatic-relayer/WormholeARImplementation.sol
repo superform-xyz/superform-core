@@ -10,11 +10,11 @@ import { Error } from "src/utils/Error.sol";
 import { IWormholeRelayer, VaaKey } from "src/vendor/wormhole/IWormholeRelayer.sol";
 import { IWormholeReceiver } from "src/vendor/wormhole/IWormholeReceiver.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
-
 /// @title WormholeImplementation
 /// @author Zeropoint Labs
 /// @notice allows state registries to use wormhole for crosschain communication
 /// @dev uses automatic relayers of wormhole for 1:1 messaging
+
 contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     using DataLib for uint256;
 
@@ -128,7 +128,6 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
-
         if (_bytes32ToAddress(sourceAddress_) != authorizedImpl[sourceChain_]) {
             revert Error.INVALID_SRC_SENDER();
         }
