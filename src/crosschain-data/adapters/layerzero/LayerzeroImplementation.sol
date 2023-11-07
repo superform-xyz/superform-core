@@ -79,6 +79,70 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     }
 
     /*///////////////////////////////////////////////////////////////
+                           LZ APPLICATION CONFIG
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev allows protocol admin to configure layerzero endpoint
+    /// @param endpoint_ is the layerzero endpoint on the deployed network
+    function setLzEndpoint(address endpoint_) external onlyProtocolAdmin {
+        if (endpoint_ == address(0)) revert Error.ZERO_ADDRESS();
+
+        if (address(lzEndpoint) == address(0)) {
+            lzEndpoint = ILayerZeroEndpoint(endpoint_);
+            emit EndpointUpdated(address(0), endpoint_);
+        }
+    }
+
+    /// @dev returns the configuration of this contract
+    function getConfig(
+        uint16 version_,
+        uint16 chainId_,
+        address,
+        uint256 configType_
+    )
+        external
+        view
+        returns (bytes memory)
+    {
+        return lzEndpoint.getConfig(version_, chainId_, address(this), configType_);
+    }
+
+    /// @dev allows protocol admin to configure UA on layerzero
+    function setConfig(
+        uint16 version_,
+        uint16 chainId_,
+        uint256 configType_,
+        bytes calldata config_
+    )
+        external
+        override
+        onlyProtocolAdmin
+    {
+        lzEndpoint.setConfig(version_, chainId_, configType_, config_);
+    }
+
+    /// @dev allows protocol admin to configure send version on layerzero
+    function setSendVersion(uint16 version_) external override onlyProtocolAdmin {
+        lzEndpoint.setSendVersion(version_);
+    }
+
+    /// @dev allows protocol admin to configure receive version on layerzero
+    function setReceiveVersion(uint16 version_) external override onlyProtocolAdmin {
+        lzEndpoint.setReceiveVersion(version_);
+    }
+
+    /// @dev allows protocol admin to unblock queue of messages if needed
+    function forceResumeReceive(uint16 srcChainId_, bytes calldata srcAddress_) external override onlyProtocolAdmin {
+        lzEndpoint.forceResumeReceive(srcChainId_, srcAddress_);
+    }
+
+    /// @dev allows protocol admin to set contract which can receive messages
+    function setTrustedRemote(uint16 srcChainId_, bytes calldata srcAddress_) external onlyProtocolAdmin {
+        trustedRemoteLookup[srcChainId_] = srcAddress_;
+        emit SetTrustedRemote(srcChainId_, srcAddress_);
+    }
+
+    /*///////////////////////////////////////////////////////////////
                                 EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
@@ -128,21 +192,6 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         superChainId[ambChainId_] = superChainId_;
 
         emit ChainAdded(superChainId_);
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                        CORE INTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-    function _nonblockingLzReceive(uint16 _srcChainId, bytes memory, bytes memory _payload) internal {
-        /// @dev decodes payload received
-        AMBMessage memory decoded = abi.decode(_payload, (AMBMessage));
-
-        /// NOTE: experimental split of registry contracts
-        (,,, uint8 registryId,,) = decoded.txInfo.decodeTxInfo();
-
-        IBaseStateRegistry targetRegistry = IBaseStateRegistry(superRegistry.getStateRegistry(registryId));
-
-        targetRegistry.receivePayload(superChainId[_srcChainId], _payload);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -216,8 +265,47 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     }
 
     /*///////////////////////////////////////////////////////////////
-                        HELPER/INTERNAL FUNCTIONS
+                            READ-ONLY FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    function isTrustedRemote(uint16 srcChainId_, bytes calldata srcAddress_) external view returns (bool) {
+        return keccak256(trustedRemoteLookup[srcChainId_]) == keccak256(srcAddress_);
+    }
+
+    /// @inheritdoc IAmbImplementation
+    function estimateFees(
+        uint64 dstChainId_,
+        bytes memory message_,
+        bytes memory extraData_
+    )
+        external
+        view
+        override
+        returns (uint256 fees)
+    {
+        uint16 chainId = ambChainId[dstChainId_];
+
+        if (chainId == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
+        (fees,) = lzEndpoint.estimateFees(chainId, address(this), message_, false, extraData_);
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                        INTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+    function _nonblockingLzReceive(uint16 _srcChainId, bytes memory, bytes memory _payload) internal {
+        /// @dev decodes payload received
+        AMBMessage memory decoded = abi.decode(_payload, (AMBMessage));
+
+        /// NOTE: experimental split of registry contracts
+        (,,, uint8 registryId,,) = decoded.txInfo.decodeTxInfo();
+
+        IBaseStateRegistry targetRegistry = IBaseStateRegistry(superRegistry.getStateRegistry(registryId));
+
+        targetRegistry.receivePayload(superChainId[_srcChainId], _payload);
+    }
 
     function _lzSend(
         uint16 dstChainId_,
@@ -255,93 +343,5 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
             failedMessages[srcChainId_][srcAddress_][nonce_] = keccak256(payload_);
             emit MessageFailed(srcChainId_, srcAddress_, nonce_, payload_);
         }
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                           LZ APPLICATION CONFIG
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev allows protocol admin to configure layerzero endpoint
-    /// @param endpoint_ is the layerzero endpoint on the deployed network
-    function setLzEndpoint(address endpoint_) external onlyProtocolAdmin {
-        if (endpoint_ == address(0)) revert Error.ZERO_ADDRESS();
-
-        if (address(lzEndpoint) == address(0)) {
-            lzEndpoint = ILayerZeroEndpoint(endpoint_);
-            emit EndpointUpdated(address(0), endpoint_);
-        }
-    }
-
-    function getConfig(
-        uint16 version_,
-        uint16 chainId_,
-        address,
-        uint256 configType_
-    )
-        external
-        view
-        returns (bytes memory)
-    {
-        return lzEndpoint.getConfig(version_, chainId_, address(this), configType_);
-    }
-
-    /// @dev allows protocol admin to configure UA on layerzero
-    function setConfig(
-        uint16 version_,
-        uint16 chainId_,
-        uint256 configType_,
-        bytes calldata config_
-    )
-        external
-        override
-        onlyProtocolAdmin
-    {
-        lzEndpoint.setConfig(version_, chainId_, configType_, config_);
-    }
-
-    function setSendVersion(uint16 version_) external override onlyProtocolAdmin {
-        lzEndpoint.setSendVersion(version_);
-    }
-
-    function setReceiveVersion(uint16 version_) external override onlyProtocolAdmin {
-        lzEndpoint.setReceiveVersion(version_);
-    }
-
-    function forceResumeReceive(uint16 srcChainId_, bytes calldata srcAddress_) external override onlyProtocolAdmin {
-        lzEndpoint.forceResumeReceive(srcChainId_, srcAddress_);
-    }
-
-    // allow owner to set it multiple times.
-    function setTrustedRemote(uint16 srcChainId_, bytes calldata srcAddress_) external onlyProtocolAdmin {
-        trustedRemoteLookup[srcChainId_] = srcAddress_;
-        emit SetTrustedRemote(srcChainId_, srcAddress_);
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                            READ-ONLY FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    function isTrustedRemote(uint16 srcChainId_, bytes calldata srcAddress_) external view returns (bool) {
-        return keccak256(trustedRemoteLookup[srcChainId_]) == keccak256(srcAddress_);
-    }
-
-    /// @inheritdoc IAmbImplementation
-    function estimateFees(
-        uint64 dstChainId_,
-        bytes memory message_,
-        bytes memory extraData_
-    )
-        external
-        view
-        override
-        returns (uint256 fees)
-    {
-        uint16 chainId = ambChainId[dstChainId_];
-
-        if (chainId == 0) {
-            revert Error.INVALID_CHAIN_ID();
-        }
-
-        (fees,) = lzEndpoint.estimateFees(chainId, address(this), message_, false, extraData_);
     }
 }

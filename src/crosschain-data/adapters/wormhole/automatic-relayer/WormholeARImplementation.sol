@@ -30,6 +30,12 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     mapping(bytes32 => bool) public processedMessages;
 
     /*///////////////////////////////////////////////////////////////
+                                EVENTS
+    //////////////////////////////////////////////////////////////*/
+    /// @dev emited when wormhole relayer is set
+    event WormholeRelayerSet(address wormholeRelayer);
+
+    /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
     modifier onlyProtocolAdmin() {
@@ -70,8 +76,10 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         if (relayer_ == address(0)) revert Error.ZERO_ADDRESS();
         if (address(relayer) == address(0)) {
             relayer = IWormholeRelayer(relayer_);
+            emit WormholeRelayerSet(address(relayer));
         }
     }
+
     /*///////////////////////////////////////////////////////////////
                                 EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/

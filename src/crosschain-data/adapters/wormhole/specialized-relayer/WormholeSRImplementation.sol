@@ -35,6 +35,16 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
     mapping(bytes32 => bool) public processedMessages;
 
     /*///////////////////////////////////////////////////////////////
+                                EVENTS
+    //////////////////////////////////////////////////////////////*/
+    /// @dev emited when wormhole core is set
+    event WormholeCoreSet(address wormholeCore);
+    /// @dev emited when wormhole relyaer is set
+    event WormholeRelayerSet(address wormholeRelayer);
+    /// @dev emited when broadcast finality is set
+    event BroadcastFinalitySet(uint8 finality);
+
+    /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
     modifier onlyProtocolAdmin() {
@@ -81,6 +91,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         if (wormhole_ == address(0)) revert Error.ZERO_ADDRESS();
         if (address(wormhole) == address(0)) {
             wormhole = IWormhole(wormhole_);
+            emit WormholeCoreSet(address(wormhole));
         }
     }
 
@@ -89,6 +100,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
     function setRelayer(address relayer_) external onlyProtocolAdmin {
         if (relayer_ == address(0)) revert Error.ZERO_ADDRESS();
         relayer = relayer_;
+        emit WormholeRelayerSet(address(relayer));
     }
 
     /// @dev allows protocol admin to set broadcast finality
@@ -99,6 +111,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         }
 
         broadcastFinality = finality_;
+        emit BroadcastFinalitySet(broadcastFinality);
     }
 
     /*///////////////////////////////////////////////////////////////
