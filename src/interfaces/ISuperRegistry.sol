@@ -5,6 +5,7 @@ pragma solidity ^0.8.21;
 /// @author Zeropoint Labs.
 /// @dev interface for Super Registry
 interface ISuperRegistry {
+
     /*///////////////////////////////////////////////////////////////
                                 Events
     //////////////////////////////////////////////////////////////*/
@@ -169,27 +170,43 @@ interface ISuperRegistry {
     /// @param id_ is the id of the contract
     /// @param chainId_ is the chain id of that chain
     function getAddressByChainId(bytes32 id_, uint64 chainId_) external view returns (address);
-
+    
     /// @dev gets the address of a bridge
     /// @param bridgeId_ is the id of a bridge
     /// @return bridgeAddress_ is the address of the form
     function getBridgeAddress(uint8 bridgeId_) external view returns (address bridgeAddress_);
 
-    /// @dev gets the address of the registry
-    /// @param registryId_ is the id of the state registry
-    /// @return registryAddress_ is the address of the state registry
-    function getStateRegistry(uint8 registryId_) external view returns (address registryAddress_);
+    /// @dev gets the address of a bridge validator
+    /// @param bridgeId_ is the id of a bridge
+    /// @return bridgeValidator_ is the address of the form
+    function getBridgeValidator(uint8 bridgeId_) external view returns (address bridgeValidator_);
+
+    /// @dev gets the address of a amb
+    /// @param ambId_ is the id of a bridge
+    /// @return ambAddress_ is the address of the form
+    function getAmbAddress(uint8 ambId_) external view returns (address ambAddress_);
 
     /// @dev gets the id of the amb
     /// @param ambAddress_ is the address of an amb
     /// @return ambId_ is the identifier of an amb
     function getAmbId(address ambAddress_) external view returns (uint8 ambId_);
 
+    /// @dev gets the address of the registry
+    /// @param registryId_ is the id of the state registry
+    /// @return registryAddress_ is the address of the state registry
+    function getStateRegistry(uint8 registryId_) external view returns (address registryAddress_);
+
     /// @dev gets the id of the registry
     /// @notice reverts if the id is not found
     /// @param registryAddress_ is the address of the state registry
     /// @return registryId_ is the id of the state registry
     function getStateRegistryId(address registryAddress_) external view returns (uint8 registryId_);
+
+    /// @dev gets the safe vault limit
+    /// @param chainId_ is the id of the remote chain
+    /// @return vaultLimitPerTx_ is the safe number of vaults to deposit
+    /// without hitting out of gas error
+    function getVaultLimitPerTx(uint64 chainId_) external view returns (uint256 vaultLimitPerTx_);
 
     /// @dev helps validate if an address is a valid state registry
     /// @param registryAddress_ is the address of the state registry
@@ -205,20 +222,4 @@ interface ISuperRegistry {
     /// @param ambAddress_ is the address of the broadcast amb implementation
     /// @return valid_ a flag indicating if its valid.
     function isValidBroadcastAmbImpl(address ambAddress_) external view returns (bool valid_);
-
-    /// @dev gets the address of a bridge validator
-    /// @param bridgeId_ is the id of a bridge
-    /// @return bridgeValidator_ is the address of the form
-    function getBridgeValidator(uint8 bridgeId_) external view returns (address bridgeValidator_);
-
-    /// @dev gets the address of a amb
-    /// @param ambId_ is the id of a bridge
-    /// @return ambAddress_ is the address of the form
-    function getAmbAddress(uint8 ambId_) external view returns (address ambAddress_);
-
-    /// @dev gets the safe vault limit
-    /// @param chainId_ is the id of the remote chain
-    /// @return vaultLimitPerTx_ is the safe number of vaults to deposit
-    /// without hitting out of gas error
-    function getVaultLimitPerTx(uint64 chainId_) external view returns (uint256 vaultLimitPerTx_);
 }
