@@ -93,6 +93,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         }
     }
 
+    /// @dev returns the configuration of this contract
     function getConfig(
         uint16 version_,
         uint16 chainId_,
@@ -120,19 +121,22 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         lzEndpoint.setConfig(version_, chainId_, configType_, config_);
     }
 
+    /// @dev allows protocol admin to configure send version on layerzero
     function setSendVersion(uint16 version_) external override onlyProtocolAdmin {
         lzEndpoint.setSendVersion(version_);
     }
 
+    /// @dev allows protocol admin to configure receive version on layerzero
     function setReceiveVersion(uint16 version_) external override onlyProtocolAdmin {
         lzEndpoint.setReceiveVersion(version_);
     }
 
+    /// @dev allows protocol admin to unblock queue of messages if needed
     function forceResumeReceive(uint16 srcChainId_, bytes calldata srcAddress_) external override onlyProtocolAdmin {
         lzEndpoint.forceResumeReceive(srcChainId_, srcAddress_);
     }
 
-    // allow owner to set it multiple times.
+    /// @dev allows protocol admin to set contract which can receive messages
     function setTrustedRemote(uint16 srcChainId_, bytes calldata srcAddress_) external onlyProtocolAdmin {
         trustedRemoteLookup[srcChainId_] = srcAddress_;
         emit SetTrustedRemote(srcChainId_, srcAddress_);
