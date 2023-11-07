@@ -17,18 +17,6 @@ contract SocketValidator is BridgeValidator {
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    /// @inheritdoc BridgeValidator
-    function validateLiqDstChainId(
-        bytes calldata txData_,
-        uint64 liqDstChainId_
-    )
-        external
-        pure
-        override
-        returns (bool)
-    {
-        return (uint256(liqDstChainId_) == _decodeTxData(txData_).toChainId);
-    }
 
     /// @inheritdoc BridgeValidator
     function validateReceiver(bytes calldata txData_, address receiver) external pure override returns (bool) {
