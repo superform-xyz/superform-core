@@ -111,11 +111,9 @@ contract PayloadHelper is IPayloadHelper {
 
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
             (v.amounts, v.srcPayloadId) = _decodeReturnData(dstPayloadId_, v.multi, coreStateRegistry);
-        } else if (v.callbackType == uint256(CallbackType.INIT)) {
+        } else {
             (v.amounts, v.slippages, v.superformIds, v.hasDstSwaps, v.extraFormData, v.receiverAddress, v.srcPayloadId)
             = _decodeInitData(dstPayloadId_, v.multi, coreStateRegistry);
-        } else {
-            revert Error.INVALID_PAYLOAD();
         }
 
         return (

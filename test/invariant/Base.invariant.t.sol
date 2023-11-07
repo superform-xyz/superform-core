@@ -11,13 +11,6 @@ contract BaseInvariantTest is BaseSetup {
     /*//////////////////////////////////////////////////////////////////////////
                                      MODIFIERS
     //////////////////////////////////////////////////////////////////////////*/
-    /// @dev uses the warped timestamp from the handler
-    modifier useCurrentTimestamp() {
-        vm.selectFork(FORKS[0]);
-
-        vm.warp(timestampStore.currentTimestamp());
-        _;
-    }
 
     function setUp() public virtual override {
         super.setUp();

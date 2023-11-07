@@ -27,20 +27,27 @@ contract PayloadHelperSingleTest is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
 
         TARGET_UNDERLYINGS[POLY][0] = [0];
+        TARGET_UNDERLYINGS[POLY][1] = [0];
 
         TARGET_VAULTS[POLY][0] = [0];
+        TARGET_VAULTS[POLY][1] = [0];
 
         /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[POLY][0] = [0];
+        TARGET_FORM_KINDS[POLY][1] = [0];
 
         AMOUNTS[POLY][0] = [23_183];
 
         MAX_SLIPPAGE = 1000;
 
         LIQ_BRIDGES[POLY][0] = [1];
+        LIQ_BRIDGES[POLY][1] = [1];
 
         RECEIVE_4626[POLY][0] = [false];
+        RECEIVE_4626[POLY][1] = [false];
+
+        FINAL_LIQ_DST_WITHDRAW[POLY] = [OP];
 
         actions.push(
             TestAction({
@@ -55,6 +62,20 @@ contract PayloadHelperSingleTest is ProtocolActions {
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
+
+        actions.push(
+            TestAction({
+                action: Actions.Withdraw,
+                multiVaults: true,
+                user: 0,
+                testType: TestType.Pass,
+                revertError: "",
+                revertRole: "",
+                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: false,
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
+             })
+        );
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -62,9 +83,6 @@ contract PayloadHelperSingleTest is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_payloadHelperSingle() public {
-        address _superformRouter = contracts[CHAIN_0][bytes32(bytes("SuperformRouter"))];
-        superformRouter = IBaseRouter(_superformRouter);
-
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
@@ -72,7 +90,19 @@ contract PayloadHelperSingleTest is ProtocolActions {
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
+            if (act == 1) {
+                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                    uint256[] memory superPositions = _getSuperpositionsForDstChain(
+                        actions[1].user,
+                        TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
+                        TARGET_VAULTS[DST_CHAINS[i]][1],
+                        TARGET_FORM_KINDS[DST_CHAINS[i]][1],
+                        DST_CHAINS[i]
+                    );
 
+                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0]];
+                }
+            }
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }
 
@@ -80,6 +110,33 @@ contract PayloadHelperSingleTest is ProtocolActions {
 
         _checkDstPayloadInit();
         _checkDstPayloadReturn();
+    }
+
+    function test_payloadHelperLiqSingle() public {
+        for (uint256 act = 0; act < actions.length; act++) {
+            TestAction memory action = actions[act];
+            MultiVaultSFData[] memory multiSuperformsData;
+            SingleVaultSFData[] memory singleSuperformsData;
+            MessagingAssertVars[] memory aV;
+            StagesLocalVars memory vars;
+            bool success;
+            if (act == 1) {
+                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                    uint256[] memory superPositions = _getSuperpositionsForDstChain(
+                        actions[1].user,
+                        TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
+                        TARGET_VAULTS[DST_CHAINS[i]][1],
+                        TARGET_FORM_KINDS[DST_CHAINS[i]][1],
+                        DST_CHAINS[i]
+                    );
+
+                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0]];
+                }
+            }
+            _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
+        }
+
+        _checkDstPayloadLiqData();
     }
 
     struct CheckDstPayloadInternalVars {
@@ -192,5 +249,35 @@ contract PayloadHelperSingleTest is ProtocolActions {
             assertLe(v.amounts[i], AMOUNTS[POLY][0][i]);
             assertEq(v.slippage[i], MAX_SLIPPAGE);
         }
+    }
+
+    struct CheckDstPayloadLiqDataInternalVars {
+        uint8[] bridgeIds;
+        bytes[] txDatas;
+        address[] tokens;
+        uint64[] liqDstChainIds;
+        uint256[] amounts;
+        uint256[] nativeAmounts;
+    }
+
+    function _checkDstPayloadLiqData() internal {
+        vm.selectFork(FORKS[DST_CHAINS[0]]);
+        CheckDstPayloadLiqDataInternalVars memory v;
+
+        (v.bridgeIds, v.txDatas, v.tokens, v.liqDstChainIds, v.amounts, v.nativeAmounts) = IPayloadHelper(
+            contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]
+        ).decodeCoreStateRegistryPayloadLiqData(2);
+
+        assertEq(v.bridgeIds[0], 1);
+
+        assertGt(v.txDatas[0].length, 0);
+
+        assertEq(v.tokens[0], getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[POLY][0][0]]));
+
+        assertEq(v.liqDstChainIds[0], FINAL_LIQ_DST_WITHDRAW[POLY][0]);
+
+        /// @dev number of superpositions to burn in withdraws are not meant to be same as deposit amounts
+
+        assertEq(v.amounts, actualAmountWithdrawnPerDst[0]);
     }
 }
