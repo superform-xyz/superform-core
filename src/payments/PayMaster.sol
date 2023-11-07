@@ -132,6 +132,12 @@ contract PayMaster is IPayMaster, LiquidityHandler {
             revert Error.INVALID_TXDATA_RECEIVER();
         }
 
+        valid = IBridgeValidator(bridgeValidator).validateLiqDstChainId(liqRequest_.txData, liqRequest_.liqDstChainId);
+
+        if (!valid) {
+            revert Error.INVALID_TXDATA_CHAIN_ID();
+        }
+
         _dispatchTokens(
             superRegistry.getBridgeAddress(liqRequest_.bridgeId),
             liqRequest_.txData,
