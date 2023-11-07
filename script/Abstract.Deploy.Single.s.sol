@@ -605,7 +605,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRegistryC =
             SuperRegistry(payable(_readContract(chainNames[trueIndex], vars.chainId, "SuperRegistry")));
 
-        vars.superRegistryC.setVaultLimitPerTx(vars.chainId, 30);
+        vars.superRegistryC.setVaultLimitPerTx(vars.chainId, 5);
 
         /// @dev Set all trusted remotes for each chain & configure amb chains ids
         for (uint256 j = 0; j < finalDeployedChains.length; j++) {
@@ -797,7 +797,7 @@ abstract contract AbstractDeploySingle is Script {
 
         SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
 
-        vars.superRegistryC.setVaultLimitPerTx(vars.dstChainId, 30);
+        vars.superRegistryC.setVaultLimitPerTx(vars.dstChainId, 5);
 
         /// @dev these values are mocks and has to be replaced
         /// swap gas cost: 50000
