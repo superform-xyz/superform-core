@@ -22,12 +22,7 @@ interface IBridgeValidator {
                             External Functions
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev validates the destination chainId of the liquidity request
-    /// @param txData_ the txData of the deposit
-    /// @param liqDstChainId_ the chainId of the destination chain for liquidity
-    function validateLiqDstChainId(bytes calldata txData_, uint64 liqDstChainId_) external pure returns (bool);
-
-    /// @dev decoded txData and returns the receiver address
+    /// @dev validates the receiver of the liquidity request
     /// @param txData_ is the txData of the cross chain deposit
     /// @param receiver_ is the address of the receiver to validate
     /// @return valid_ if the address is valid
@@ -37,7 +32,7 @@ interface IBridgeValidator {
     /// @param args_ the txData arguments to validate in txData
     function validateTxData(ValidateTxDataArgs calldata args_) external view;
 
-    /// @dev decodes the txData and returns the amount of external token on source
+    /// @dev decodes the txData and returns the amount of input token on source
     /// @param txData_ is the txData of the cross chain deposit
     /// @param genericSwapDisallowed_ true if generic swaps are disallowed
     /// @return amount_ the amount expected
@@ -49,7 +44,7 @@ interface IBridgeValidator {
         view
         returns (uint256 amount_);
 
-    /// @dev decodes the amount in from the txData that just involves a swap
+    /// @dev decodes neccesary information for processing swaps on the destination chain
     /// @param txData_ is the txData to be decoded
     /// @return token_ is the address of the token
     /// @return amount_ the amount expected

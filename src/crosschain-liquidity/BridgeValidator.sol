@@ -27,17 +27,6 @@ abstract contract BridgeValidator is IBridgeValidator {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IBridgeValidator
-    function validateLiqDstChainId(
-        bytes calldata txData_,
-        uint64 liqDstChainId_
-    )
-        external
-        pure
-        virtual
-        override
-        returns (bool);
-
-    /// @inheritdoc IBridgeValidator
     function validateReceiver(
         bytes calldata txData_,
         address receiver_
