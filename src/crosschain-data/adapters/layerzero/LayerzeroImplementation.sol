@@ -79,6 +79,66 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     }
 
     /*///////////////////////////////////////////////////////////////
+                           LZ APPLICATION CONFIG
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev allows protocol admin to configure layerzero endpoint
+    /// @param endpoint_ is the layerzero endpoint on the deployed network
+    function setLzEndpoint(address endpoint_) external onlyProtocolAdmin {
+        if (endpoint_ == address(0)) revert Error.ZERO_ADDRESS();
+
+        if (address(lzEndpoint) == address(0)) {
+            lzEndpoint = ILayerZeroEndpoint(endpoint_);
+            emit EndpointUpdated(address(0), endpoint_);
+        }
+    }
+
+    function getConfig(
+        uint16 version_,
+        uint16 chainId_,
+        address,
+        uint256 configType_
+    )
+        external
+        view
+        returns (bytes memory)
+    {
+        return lzEndpoint.getConfig(version_, chainId_, address(this), configType_);
+    }
+
+    /// @dev allows protocol admin to configure UA on layerzero
+    function setConfig(
+        uint16 version_,
+        uint16 chainId_,
+        uint256 configType_,
+        bytes calldata config_
+    )
+        external
+        override
+        onlyProtocolAdmin
+    {
+        lzEndpoint.setConfig(version_, chainId_, configType_, config_);
+    }
+
+    function setSendVersion(uint16 version_) external override onlyProtocolAdmin {
+        lzEndpoint.setSendVersion(version_);
+    }
+
+    function setReceiveVersion(uint16 version_) external override onlyProtocolAdmin {
+        lzEndpoint.setReceiveVersion(version_);
+    }
+
+    function forceResumeReceive(uint16 srcChainId_, bytes calldata srcAddress_) external override onlyProtocolAdmin {
+        lzEndpoint.forceResumeReceive(srcChainId_, srcAddress_);
+    }
+
+    // allow owner to set it multiple times.
+    function setTrustedRemote(uint16 srcChainId_, bytes calldata srcAddress_) external onlyProtocolAdmin {
+        trustedRemoteLookup[srcChainId_] = srcAddress_;
+        emit SetTrustedRemote(srcChainId_, srcAddress_);
+    }
+
+    /*///////////////////////////////////////////////////////////////
                                 EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
@@ -255,66 +315,6 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
             failedMessages[srcChainId_][srcAddress_][nonce_] = keccak256(payload_);
             emit MessageFailed(srcChainId_, srcAddress_, nonce_, payload_);
         }
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                           LZ APPLICATION CONFIG
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev allows protocol admin to configure layerzero endpoint
-    /// @param endpoint_ is the layerzero endpoint on the deployed network
-    function setLzEndpoint(address endpoint_) external onlyProtocolAdmin {
-        if (endpoint_ == address(0)) revert Error.ZERO_ADDRESS();
-
-        if (address(lzEndpoint) == address(0)) {
-            lzEndpoint = ILayerZeroEndpoint(endpoint_);
-            emit EndpointUpdated(address(0), endpoint_);
-        }
-    }
-
-    function getConfig(
-        uint16 version_,
-        uint16 chainId_,
-        address,
-        uint256 configType_
-    )
-        external
-        view
-        returns (bytes memory)
-    {
-        return lzEndpoint.getConfig(version_, chainId_, address(this), configType_);
-    }
-
-    /// @dev allows protocol admin to configure UA on layerzero
-    function setConfig(
-        uint16 version_,
-        uint16 chainId_,
-        uint256 configType_,
-        bytes calldata config_
-    )
-        external
-        override
-        onlyProtocolAdmin
-    {
-        lzEndpoint.setConfig(version_, chainId_, configType_, config_);
-    }
-
-    function setSendVersion(uint16 version_) external override onlyProtocolAdmin {
-        lzEndpoint.setSendVersion(version_);
-    }
-
-    function setReceiveVersion(uint16 version_) external override onlyProtocolAdmin {
-        lzEndpoint.setReceiveVersion(version_);
-    }
-
-    function forceResumeReceive(uint16 srcChainId_, bytes calldata srcAddress_) external override onlyProtocolAdmin {
-        lzEndpoint.forceResumeReceive(srcChainId_, srcAddress_);
-    }
-
-    // allow owner to set it multiple times.
-    function setTrustedRemote(uint16 srcChainId_, bytes calldata srcAddress_) external onlyProtocolAdmin {
-        trustedRemoteLookup[srcChainId_] = srcAddress_;
-        emit SetTrustedRemote(srcChainId_, srcAddress_);
     }
 
     /*///////////////////////////////////////////////////////////////
