@@ -1264,6 +1264,26 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     unchecked {
                         TIMELOCK_PAYLOAD_ID[CHAIN_0]++;
                     }
+                    IBaseStateRegistry timelockPayloadRegistry = IBaseStateRegistry(
+                        ISuperRegistry(getContract(CHAIN_0, "SuperRegistry")).getAddress(
+                            keccak256("TIMELOCK_STATE_REGISTRY")
+                        )
+                    );
+
+                    vm.mockCall(
+                        address(timelockPayloadRegistry),
+                        abi.encodeWithSelector(
+                            timelockPayloadRegistry.payloadHeader.selector, TIMELOCK_PAYLOAD_ID[CHAIN_0]
+                        ),
+                        abi.encode(0)
+                    );
+
+                    vm.expectRevert(Error.INVALID_PAYLOAD.selector);
+                    PayloadHelper(getContract(CHAIN_0, "PayloadHelper")).decodeTimeLockFailedPayload(
+                        TIMELOCK_PAYLOAD_ID[CHAIN_0]
+                    );
+
+                    vm.clearMockedCalls();
 
                     (address srcSender, uint64 srcChainId,,,) = PayloadHelper(getContract(CHAIN_0, "PayloadHelper"))
                         .decodeTimeLockFailedPayload(TIMELOCK_PAYLOAD_ID[CHAIN_0]);

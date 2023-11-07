@@ -261,7 +261,6 @@ contract PayloadHelper is IPayloadHelper {
     {
         (txType, callbackType, multi,, srcSender, srcChainId) =
             coreStateRegistry_.payloadHeader(dstPayloadId_).decodeTxInfo();
-        return (txType, callbackType, multi, srcSender, srcChainId);
     }
 
     function _decodeReturnData(

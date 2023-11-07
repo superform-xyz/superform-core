@@ -66,7 +66,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
         actions.push(
             TestAction({
                 action: Actions.Withdraw,
-                multiVaults: true,
+                multiVaults: false,
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",
@@ -139,6 +139,20 @@ contract PayloadHelperSingleTest is ProtocolActions {
         _checkDstPayloadLiqData();
     }
 
+    function test_decodePayloadHistory_InvalidPayloadId() public {
+        vm.selectFork(FORKS[ETH]);
+
+        vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);
+        IPayloadHelper(contracts[ETH][bytes32(bytes("PayloadHelper"))]).decodePayloadHistory(2);
+    }
+
+    function test_decodeTimelockPayload_InvalidPayloadId() public {
+        vm.selectFork(FORKS[ETH]);
+
+        vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);
+        IPayloadHelper(contracts[ETH][bytes32(bytes("PayloadHelper"))]).decodeTimeLockPayload(2);
+    }
+
     struct CheckDstPayloadInternalVars {
         bytes[] extraDataGenerated;
         uint256 ambFees;
@@ -179,6 +193,8 @@ contract PayloadHelperSingleTest is ProtocolActions {
         vm.selectFork(FORKS[DST_CHAINS[0]]);
 
         CheckDstPayloadInternalVars memory v;
+        vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);
+        IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(3);
 
         (
             v.txType,
@@ -193,7 +209,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
             v.receiverAddress,
             v.srcPayloadId
         ) = IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
-
+        IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).getDstPayloadProof(1);
         v.extraDataGenerated = new bytes[](2);
         v.extraDataGenerated[0] = abi.encode("500000");
         v.extraDataGenerated[1] = abi.encode("0");
