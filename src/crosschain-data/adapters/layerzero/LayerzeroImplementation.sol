@@ -195,21 +195,6 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     }
 
     /*///////////////////////////////////////////////////////////////
-                        CORE INTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-    function _nonblockingLzReceive(uint16 _srcChainId, bytes memory, bytes memory _payload) internal {
-        /// @dev decodes payload received
-        AMBMessage memory decoded = abi.decode(_payload, (AMBMessage));
-
-        /// NOTE: experimental split of registry contracts
-        (,,, uint8 registryId,,) = decoded.txInfo.decodeTxInfo();
-
-        IBaseStateRegistry targetRegistry = IBaseStateRegistry(superRegistry.getStateRegistry(registryId));
-
-        targetRegistry.receivePayload(superChainId[_srcChainId], _payload);
-    }
-
-    /*///////////////////////////////////////////////////////////////
                         LZ EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
     /// @inheritdoc ILayerZeroReceiver
@@ -280,8 +265,48 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     }
 
     /*///////////////////////////////////////////////////////////////
-                        HELPER/INTERNAL FUNCTIONS
+                            READ-ONLY FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    function isTrustedRemote(uint16 srcChainId_, bytes calldata srcAddress_) external view returns (bool) {
+        return keccak256(trustedRemoteLookup[srcChainId_]) == keccak256(srcAddress_);
+    }
+
+    /// @inheritdoc IAmbImplementation
+    function estimateFees(
+        uint64 dstChainId_,
+        bytes memory message_,
+        bytes memory extraData_
+    )
+        external
+        view
+        override
+        returns (uint256 fees)
+    {
+        uint16 chainId = ambChainId[dstChainId_];
+
+        if (chainId == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
+        (fees,) = lzEndpoint.estimateFees(chainId, address(this), message_, false, extraData_);
+    }
+
+
+    /*///////////////////////////////////////////////////////////////
+                        INTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+    function _nonblockingLzReceive(uint16 _srcChainId, bytes memory, bytes memory _payload) internal {
+        /// @dev decodes payload received
+        AMBMessage memory decoded = abi.decode(_payload, (AMBMessage));
+
+        /// NOTE: experimental split of registry contracts
+        (,,, uint8 registryId,,) = decoded.txInfo.decodeTxInfo();
+
+        IBaseStateRegistry targetRegistry = IBaseStateRegistry(superRegistry.getStateRegistry(registryId));
+
+        targetRegistry.receivePayload(superChainId[_srcChainId], _payload);
+    }
 
     function _lzSend(
         uint16 dstChainId_,
@@ -321,31 +346,4 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         }
     }
 
-    /*///////////////////////////////////////////////////////////////
-                            READ-ONLY FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    function isTrustedRemote(uint16 srcChainId_, bytes calldata srcAddress_) external view returns (bool) {
-        return keccak256(trustedRemoteLookup[srcChainId_]) == keccak256(srcAddress_);
-    }
-
-    /// @inheritdoc IAmbImplementation
-    function estimateFees(
-        uint64 dstChainId_,
-        bytes memory message_,
-        bytes memory extraData_
-    )
-        external
-        view
-        override
-        returns (uint256 fees)
-    {
-        uint16 chainId = ambChainId[dstChainId_];
-
-        if (chainId == 0) {
-            revert Error.INVALID_CHAIN_ID();
-        }
-
-        (fees,) = lzEndpoint.estimateFees(chainId, address(this), message_, false, extraData_);
-    }
 }
