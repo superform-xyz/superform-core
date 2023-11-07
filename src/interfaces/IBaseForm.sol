@@ -143,5 +143,4 @@ interface IBaseForm is IERC165 {
 
     /// @dev API may need to know state of funds deployed
     function previewRedeemFrom(uint256 shares_) external view returns (uint256);
-
 }

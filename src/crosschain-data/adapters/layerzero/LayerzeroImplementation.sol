@@ -292,7 +292,6 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         (fees,) = lzEndpoint.estimateFees(chainId, address(this), message_, false, extraData_);
     }
 
-
     /*///////////////////////////////////////////////////////////////
                         INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -345,5 +344,4 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
             emit MessageFailed(srcChainId_, srcAddress_, nonce_, payload_);
         }
     }
-
 }

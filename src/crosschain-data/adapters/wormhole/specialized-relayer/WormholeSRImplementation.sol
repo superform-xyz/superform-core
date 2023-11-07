@@ -37,9 +37,12 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
     /*///////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
-    event WormholeCoreSet(address _wormholeCore);
-    event WormholeRelayerSet(address _wormholeRelayer);
-    event BroadcastFinalitySet(uint8 _finality);
+    /// @dev emited when wormhole core is set
+    event WormholeCoreSet(address wormholeCore);
+    /// @dev emited when wormhole relyaer is set
+    event WormholeRelayerSet(address wormholeRelayer);
+    /// @dev emited when broadcast finality is set
+    event BroadcastFinalitySet(uint8 finality);
 
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
