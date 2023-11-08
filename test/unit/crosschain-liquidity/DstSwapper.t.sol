@@ -5,6 +5,12 @@ import { Error } from "src/utils/Error.sol";
 
 import "test/utils/ProtocolActions.sol";
 
+contract FakeUser {
+    receive() external payable {
+        revert();
+    }
+}
+
 contract DstSwapperTest is ProtocolActions {
     address receiverAddress = address(444);
 
@@ -26,12 +32,16 @@ contract DstSwapperTest is ProtocolActions {
         (bool success,) = payable(dstSwapper).call{ value: 1e18 }("");
 
         if (success) {
+            bytes memory txData =
+                _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
+            vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);
+            DstSwapper(dstSwapper).processTx(1000, 0, 1, txData);
+
             DstSwapper(dstSwapper).processTx(
                 1, 0, 1, _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0)
             );
 
-            bytes memory txData =
-                _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
+            txData = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
 
             /// @dev try with a non-existent index
             vm.expectRevert(Error.INVALID_INDEX.selector);
@@ -212,7 +222,6 @@ contract DstSwapperTest is ProtocolActions {
         SuperRegistry(getContract(OP, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
         CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, amounts);
-
         vm.stopPrank();
 
         AMBs = [2, 3];
@@ -426,6 +435,17 @@ contract DstSwapperTest is ProtocolActions {
         /// @dev txData with amount 0 should revert
         vm.expectRevert(Error.INVALID_SWAP_OUTPUT.selector);
         DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
+    }
+
+    function test_processFailedTx_invalidUserCall() public {
+        address payable fakeUser = payable(address(new FakeUser()));
+        vm.selectFork(FORKS[ETH]);
+        vm.prank(deployer);
+        payable(getContract(ETH, "DstSwapper")).transfer(1);
+
+        vm.prank(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
+        DstSwapper(payable(getContract(ETH, "DstSwapper"))).processFailedTx(fakeUser, getContract(ETH, "WETH"), 1);
     }
 
     function _simulateSingleVaultExistingPayload(address payable coreStateRegistry)

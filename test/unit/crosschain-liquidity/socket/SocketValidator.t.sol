@@ -40,6 +40,34 @@ contract SocketValidatorTest is ProtocolActions {
         );
     }
 
+    function test_socket_validator_revert_withdraw_differentReceiver() public {
+        vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
+        SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                _buildDummyTxDataUnitTests(
+                    BuildDummyTxDataUnitTestsVars(
+                        2,
+                        address(0),
+                        address(0),
+                        deployer,
+                        ETH,
+                        BSC,
+                        uint256(100),
+                        getContract(BSC, "CoreStateRegistry"),
+                        false
+                    )
+                ),
+                ETH,
+                BSC,
+                BSC,
+                false,
+                address(0),
+                address(0x7777),
+                address(0)
+            )
+        );
+    }
+
     function test_socket_invalid_receiver() public {
         bytes memory txData = _buildDummyTxDataUnitTests(
             BuildDummyTxDataUnitTestsVars(
