@@ -8,6 +8,16 @@ Interaction with Superforms happens through the four implemented external functi
 
 Here's what's included in this directory:
 
+### In scope
+
 **ERC4626FormImplementation.sol:** Abstract implementation of a Form contract with functions that are commonly used across forms. All functions can be overriden in specific form implementations.
 
 **ERC4626Form.sol:** The standard implementation of a Form contract. This Form interacts with a corresponding ERC4626 compliant vault.
+
+### Out of scope
+
+These are example Form implementations to showcase the ability of additional yield types to be added to Superform. 
+
+**ERC4626KYCDAOForm.sol:** The standard implementation of a Form contract integrated with KYCDao's whitelist NFT. This Form interacts with a corresponding ERC4626 compliant vault.
+
+**ERC4626TimelockForm.sol:** A variant of the standard Form contract that includes timelock functionality. This Form contract is used when time-based conditions need to be met during the deposit or withdrawal process. This Form requires a [TimelockRegistry](../crosschain-data/TimelockStateRegistry.sol) to execute redemption at a later time through the processUnlock() function.

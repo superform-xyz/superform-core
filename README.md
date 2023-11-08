@@ -74,7 +74,7 @@ We recommend visiting our technical documentation at https://docs.superform.xyz.
 3. Any individual tx must be of a specific kind, either all deposits or all withdraws, for all vaults and destinations
 4. Vaults themselves can be added permissionlessly to Forms in `SuperformFactory.sol` by calling `createSuperform()`. Forms are code implementations that adapt to the needs of a given vault. The only Form under scope of this audit is `ERC4626Form.sol`, which is a wrapper around the [ERC-4626 Standard](https://erc4626.info/). Any user can wrap a vault into a SuperForm using the SuperForm Factory but only the protocol may add new Form implementations.
 5. This wrapping action leads to the creation of Superforms which are assigned a unique id, made up of the superForm address, formId, and chainId.
-6. Users are minted SuperPositions on successful deposits, a type of ERC-1155 we modified called ERC-1155A. On withdrawals these are burned. Users may also within each "StateRequest" deposit choose whether to retain4626 which sends the vault share directly to the user instead of holding in the appropriate Superform, but only SuperPositions can be withdrawn through SuperformRouter.   
+6. Users are minted SuperPositions on successful deposits, a type of ERC-1155 we modify called ERC-1155A. On withdrawals these are burned. Users may also within each "StateRequest" deposit choose whether to retain4626 which sends the vault share directly to the user instead of holding in the appropriate Superform, but only SuperPositions can be withdrawn through SuperformRouter.   
 
 ## User Flow
 
@@ -97,11 +97,12 @@ In this section we will run through examples where users deposit and withdraw in
 - Create an `AMBMessage` with the information about what is going to be deposited and by whom.
 - Message the information about the deposits to the vaults using `CoreStateRegistry.sol`. This is done with the combination of a main AMB and a configurable number of proof AMBs for added security, a measure set via `setRequiredMessagingQuorum` in `SuperRegistry.sol`.
 - Forward remaining payment to `PayMaster.sol` to cover the costs of cross-chain transactions and relayer payments. 
-- Receive the information on the destination chain's `CoreStateRegistry.sol`. Assuming no swap was required in `DstSwapper.sol`, at this step, a keeper updates the messaged amounts to-be deposited with the actual amounts received through the liquidity bridge using `updateDepositPayload`. This number can only be updated within the bounds of what the user specified, with the maximum being the StateReq.amount and the minimum bieng the StateReq.amount*(10000-StateReq.maxSlippage). 
-- Assuming both the payload and proof have arrived, the keeper can then process the received message using `processPayload`. Here the deposit action is try-catched for errors. Should the action pass, a message is sent back to source acknowledging the action and mints SuperPositions to the user. If the action fails, no message is sent back and no SuperPositions are minted.
-- Funds bridged can be automatically recovered by the keeper in case of error catching and sent back to source using one of `rescueFailedDeposit` functions.
+- Receive the information on the destination chain's `CoreStateRegistry.sol`. Assuming no swap was required in `DstSwapper.sol`, at this step, assuming both the payload and proof have arrived, a keeper updates the messaged amounts to-be deposited with the actual amounts received through the liquidity bridge using `updateDepositPayload`. The maximum number it can be updated to is what the user specified in StateReq.amount. If the end number of tokens received is below the minimum bound of what the user specified, calculated by StateReq.amount*(10000-StateReq.maxSlippage), the deposit is marked as failed and must be rescued through the `rescueFailedDeposit` function to return funds back to the user through an optimisic dispute process.   
+- The keeper can then process the received message using `processPayload`. Here the deposit action is try-catched for errors. Should the action pass, a message is sent back to source acknowledging the action and mints SuperPositions to the user. If the action fails, no message is sent back, no SuperPositions are minted, and the `rescueFailedDeposit` function must be used.
 
 ### Same-chain Withdrawal Flow
+
+*INSERT SAME CHAIN WITHDRAWAL DIAGRAM HERE*
 
 - Validation of the input data in `SuperformRouter.sol`.
 - Burn the corresponding SuperPositions owned by the user and call `directWithdrawFromVault` in the Superform, which redeems funds from the vault.
@@ -114,8 +115,8 @@ In this section we will run through examples where users deposit and withdraw in
 - Create the `AMBMessage` with the information about what is going to be withdrawn and by whom.
 - Message the information about the withdrawals from the vaults using `CoreStateRegistry.sol`. This is done with the combination of a main AMB and a configurable number of proof AMBs for added security, a measure set via `setRequiredMessagingQuorum` in `SuperRegistry.sol`.
 - Forward remaining payment to `PayMaster.sol` to cover the costs of cross-chain transactions and relayer payments. 
-- If no transaction data was provided with the transaction, but the user defined an intended token and chain to recieve assets back on, a keeper can call `updateWithdrawPayload` to update the payload with transaction data. This can be done to reduce the chance of transaction data failure due to latency. 
-- Assuming both the payload and proof have arrived, the keeper can then process the received message using `processPayload`. Here the withdraw action is try-catched for errors. Should the action pass, the underlying obtained is bridged back to the user in the form of the desired tokens to be received. If the action fails, a message is sent back indicating that SuperPositions need to be re-minted for the user according to the original amounts that were burned. No rescue methods are implemented given the re-minting behavior on withdrawals. 
+- If no transaction data was provided with the transaction, but the user defined an intended token and chain to recieve assets back on, assuming both the payload and proof have arrived, a keeper can call `updateWithdrawPayload` to update the payload with transaction data. This can be done to reduce the chance of transaction data failure due to latency. 
+- The keeper can then process the received message using `processPayload`. Here the withdraw action is try-catched for errors. Should the action pass, the underlying obtained is bridged back to the user in the form of the desired tokens to be received. If the action fails, a message is sent back indicating that SuperPositions need to be re-minted for the user according to the original amounts that were burned. No rescue methods are implemented given the re-minting behavior on withdrawals. 
 
 ## Off-chain Architecture
 
@@ -135,7 +136,12 @@ For the purpose of this audit, exploits concerning the inappropriate behavior of
 
 ## Out of scope
 
-- Anything in src/vendor
+We leave these in the repository to see intended behavior, but the following contracts and behaviors are out of scope:
+
+- Anything in [`src/vendor`](./src/vendor)
+- [`/src/crosschain-data/extensions/TimelockStateRegistry.sol`](./src/crosschain-data/extensions/TimelockStateRegistry.sol`)
+- [`/src/forms/ERC4626KYCDaoForm.sol`](./src/forms/ERC4626KYCDaoForm.sol`)
+- [`/src/forms/ERC4626TimelockForm.sol`](./src/forms/ERC4626TimelockForm.sol`)
 - Exploits concerning the inappropriate behavior of permissioned roles
 
 ## Gas Costs (28 July 2023) -- #TODO UPDATE
