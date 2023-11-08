@@ -1450,7 +1450,43 @@ abstract contract ProtocolActions is CommonProtocolActions {
             vm.prank(deployer);
             CoreStateRegistry(v.coreStateRegistryDst).proposeRescueFailedDeposits(payloadId, v.amounts);
 
+            vm.prank(deployer);
+            vm.expectRevert(Error.RESCUE_ALREADY_PROPOSED.selector);
+            CoreStateRegistry(v.coreStateRegistryDst).proposeRescueFailedDeposits(payloadId, v.amounts);
+
+            vm.prank(address(0x777));
+            vm.expectRevert(Error.INVALID_DISPUTER.selector);
+            CoreStateRegistry(v.coreStateRegistryDst).disputeRescueFailedDeposits(payloadId);
+
+            vm.mockCall(
+                getContract(DST_CHAINS[0], "SuperRegistry"),
+                abi.encodeWithSelector(SuperRegistry(getContract(DST_CHAINS[0], "SuperRegistry")).delay.selector),
+                abi.encode(0)
+            );
+
+            vm.prank(deployer);
+            vm.expectRevert(Error.DELAY_NOT_SET.selector);
+            CoreStateRegistry(v.coreStateRegistryDst).disputeRescueFailedDeposits(payloadId);
+
+            vm.clearMockedCalls();
+
+            vm.prank(deployer);
+            CoreStateRegistry(v.coreStateRegistryDst).disputeRescueFailedDeposits(payloadId);
+
+            vm.prank(deployer);
+            CoreStateRegistry(v.coreStateRegistryDst).proposeRescueFailedDeposits(payloadId, v.amounts);
+
+            vm.prank(deployer);
+            vm.expectRevert(Error.RESCUE_LOCKED.selector);
+            CoreStateRegistry(v.coreStateRegistryDst).finalizeRescueFailedDeposits(payloadId);
+
             vm.warp(block.timestamp + 25 hours);
+
+            vm.prank(deployer);
+            vm.expectRevert(Error.DISPUTE_TIME_ELAPSED.selector);
+            CoreStateRegistry(v.coreStateRegistryDst).disputeRescueFailedDeposits(payloadId);
+
+            vm.prank(deployer);
             CoreStateRegistry(v.coreStateRegistryDst).finalizeRescueFailedDeposits(payloadId);
 
             v.userBalanceAfter = action.externalToken == 3

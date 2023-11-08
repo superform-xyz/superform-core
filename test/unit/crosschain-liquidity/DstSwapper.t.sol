@@ -85,6 +85,11 @@ contract DstSwapperTest is ProtocolActions {
         SuperRegistry(getContract(OP, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
         uint256[] memory finalAmounts = new uint256[](1);
+
+        finalAmounts[0] = 2e18;
+        vm.expectRevert(Error.INVALID_DST_SWAP_AMOUNT.selector);
+        CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, finalAmounts);
+
         finalAmounts[0] = 1e18;
         CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, finalAmounts);
 
@@ -560,8 +565,8 @@ contract DstSwapperTest is ProtocolActions {
 
         LiqRequest[] memory liq = new LiqRequest[](2);
 
-        uint8[] memory ambIds = new uint8[](1);
-        ambIds[0] = 1;
+        uint8[] memory ambIds_ = new uint8[](1);
+        ambIds_[0] = 1;
 
         CoreStateRegistry(coreStateRegistry).receivePayload(
             POLY,
@@ -569,7 +574,7 @@ contract DstSwapperTest is ProtocolActions {
                 AMBMessage(
                     DataLib.packTxInfo(1, 0, 1, 1, address(420), uint64(137)),
                     abi.encode(
-                        ambIds,
+                        ambIds_,
                         abi.encode(
                             InitMultiVaultData(
                                 1,
