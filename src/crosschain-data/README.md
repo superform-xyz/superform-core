@@ -1,17 +1,14 @@
 # State Registry
 
-This directory contains the components to enable crosschain communication functionality to Superform Protocol. It also includes the wrapper contracts for different arbitrary message bridges (AMBs) leveraged by Superform. Layerzero, Hyperlane & Wormhole have completed wrapper implementation.
+This directory contains the components to enable crosschain communication functionality to Superform Protocol. It also includes wrapper contracts for different arbitrary message bridges (AMBs) leveraged by Superform: Layerzero, Hyperlane & Wormhole.
 
 ## Components Overview
 
----
-
-The following components are a key part of superform's robust crosschain communication.
+The following components are a key part of superform's robust crosschain communication. New State Registries may be added by the Protocol Admin if new Form types are added to support new deposit/withdrawal flows. 
 
 - **Base State Registry [BaseStateRegistry.sol](./BaseStateRegistry.sol)**: The base implementation of the state registry, exposes sending and receiving payload interfaces. Any cross-chain message is also called a "payload".
-- **Core State Registry [CoreStateRegistry.sol](./extensions/CoreStateRegistry.sol)**: Child contract inheriting base state registry which enables core contracts, including routers & form implementations, to communicate with their counterparts on a different network. Contains its custom logic for payload processing & updation (during deposits).
-- **Factory State Registry [FactoryStateRegistry.sol](./extensions/FactoryStateRegistry.sol)**: Child contract inheriting base state registry which enables crosschain communication between factory contracts.
-- **Timelock Form State Registry [TimelockStateRegistry.sol](./extensions/TimelockStateRegistry.sol)**: Special state registry implementation contract, specifically designed to process withdrawal request for timelock forms, such as timelocked. Inherits base state registry to send acknowledgement on failure withdrawals for timelock' forms.
+- **Core State Registry [CoreStateRegistry.sol](./extensions/CoreStateRegistry.sol)**: Child contract inheriting base state registry which enables core contracts, including routers & form implementations, to communicate with their counterparts on a different network. Contains its custom logic for payload processing & updating (during deposits).
+- **Broadcast State Registry [BroadcastRegistry.sol](./BroadcastRegistry.sol)**: BroadcastRegistry proposes a unique form of communication from Chain A to all chains Superform is on, as opposed to BaseStateRegistry which assumes communication between only two chains. 
 
 Each individual AMB wrapper will be placed inside a folder named after the Arbitrary Message Bridge (AMB).
 
@@ -19,15 +16,15 @@ Each individual AMB wrapper will be placed inside a folder named after the Arbit
 
 - **[HyperlaneImplementation.sol](./adapters/hyperlane/Implementation.sol)**: Wrapper for Hyperlane AMB
 
+- **[WormholeARImplementation.sol](./adapters/wormhole/automatic-relayer/WormholeARImplemntation.sol)**: Wrapper for Wormhole Automatic Relayer AMB
+
+- **[WormholeSRImplementation.sol](./adapters/wormhole/specialized-relayer/WormholeSRImplemntation.sol)**: Wrapper for Wormhole Specialized Relayer AMB, used specifically in `BroadcastRegistry.sol`
+
 ## Architecture
 
----
-
-The entire architecture can be viewed here on Figma: [Architecture Diagram](https://www.figma.com/file/pVU5nivxGIixdagMpaaKjJ/State-Registry?type=whiteboard&node-id=0-1&t=Tv3mz31gmvlJtw5t-0)
+*INSERT REVISED ARCH DIAGRAM*
 
 ## State Registry: Functional Description
-
----
 
 ### Send Payload
 
