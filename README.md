@@ -86,6 +86,7 @@ In this section we will run through examples where users deposit and withdraw in
 
 <img width="1410" alt="Screenshot 2023-11-08 at 2 21 19 PM" src="https://github.com/superform-xyz/superform-core/assets/33469661/815b4e6d-8665-4aa6-89ff-96d07c26fe42">
 
+
 - Validation of the input data in `SuperformRouter.sol`.
 - Process swap transaction data if provided to allow SuperformRouter to move tokens from the user to the Superform and call `directDepositIntoVault` to move tokens from the Superform into the vault.
 - Store ERC-4626 shares in the Superform and mint the apppropriate amount of SuperPositions back to the user.
@@ -94,17 +95,19 @@ In this section we will run through examples where users deposit and withdraw in
 
 <img width="1450" alt="Screenshot 2023-11-08 at 2 22 12 PM" src="https://github.com/superform-xyz/superform-core/assets/33469661/f9643ebd-b267-4d9e-8eea-f9fcaabda5eb">
 
+
 - Validation of the input data in `SuperformRouter.sol`.
 - Dispatch the input token to the liquidity bridge using an implementation of a `BridgeValidator.sol` and `LiquidityHandler.sol`.
 - Create an `AMBMessage` with the information about what is going to be deposited and by whom.
 - Message the information about the deposits to the vaults using `CoreStateRegistry.sol`. This is done with the combination of a main AMB and a configurable number of proof AMBs for added security, a measure set via `setRequiredMessagingQuorum` in `SuperRegistry.sol`.
 - Forward remaining payment to `PayMaster.sol` to cover the costs of cross-chain transactions and relayer payments. 
-- Receive the information on the destination chain's `CoreStateRegistry.sol`. Assuming no swap was required in `DstSwapper.sol`, at this step, assuming both the payload and proof have arrived, a keeper updates the messaged amounts to-be deposited with the actual amounts received through the liquidity bridge using `updateDepositPayload`. The maximum number it can be updated to is what the user specified in StateReq.amount. If the end number of tokens received is below the minimum bound of what the user specified, calculated by StateReq.amount*(10000-StateReq.maxSlippage), the deposit is marked as failed and must be rescued through the `rescueFailedDeposit` function to return funds back to the user through an optimisic dispute process.   
+- Receive the information on the destination chain's `CoreStateRegistry.sol`. Assuming no swap was required in `DstSwapper.sol`, at this step, assuming both the payload and proof have arrived, a keeper updates the messaged amounts to-be deposited with the actual amounts received through the liquidity bridge using `updateDepositPayload`. The maximum number it can be updated to is what the user specified in StateReq.amount. If the end number of tokens received is below the minimum bound of what the user specified, calculated by StateReq.amount*(10000-StateReq.maxSlippage), the deposit is marked as failed and must be rescued through the `rescueFailedDeposit` function to return funds back to the user through an optimisic dispute process.  
 - The keeper can then process the received message using `processPayload`. Here the deposit action is try-catched for errors. Should the action pass, a message is sent back to source acknowledging the action and mints SuperPositions to the user. If the action fails, no message is sent back, no SuperPositions are minted, and the `rescueFailedDeposit` function must be used.
 
 ### Same-chain Withdrawal Flow
 
 <img width="1442" alt="Screenshot 2023-11-08 at 2 21 50 PM" src="https://github.com/superform-xyz/superform-core/assets/33469661/3c688423-9ba7-4472-9e9f-b3cafefc45f5">
+
 
 - Validation of the input data in `SuperformRouter.sol`.
 - Burn the corresponding SuperPositions owned by the user and call `directWithdrawFromVault` in the Superform, which redeems funds from the vault.
@@ -229,3 +232,9 @@ forge install
 ```sh
 $ forge test
 ```
+
+## Audits
+
+- [Gerard Pearson](https://twitter.com/gpersoon): [2023-09-superform.pdf](https://github.com/superform-xyz/superform-core/files/13300598/2023-09-superform.pdf)
+
+- [Hans Friese](https://twitter.com/hansfriese): [Superform_Core_Review_Final_Hans_20230921.pdf](https://github.com/superform-xyz/superform-core/files/13300591/Superform_Core_Review_Final_Hans_20230921.pdf)
