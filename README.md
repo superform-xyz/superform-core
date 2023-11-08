@@ -80,9 +80,11 @@ We recommend visiting our technical documentation at https://docs.superform.xyz.
 
 In this section we will run through examples where users deposit and withdraw into vault(s) using Superform. 
 
+<img width="943" alt="Screenshot 2023-11-08 at 2 20 43 PM" src="https://github.com/superform-xyz/superform-core/assets/33469661/5c4dee7a-a711-438f-a145-d97f9fd19b85">
+
 ### Same-chain Deposit Flow
 
-*INSERT SAME-CHAIN DEPOSIT DIAGRAM HERE*
+<img width="1410" alt="Screenshot 2023-11-08 at 2 21 19 PM" src="https://github.com/superform-xyz/superform-core/assets/33469661/815b4e6d-8665-4aa6-89ff-96d07c26fe42">
 
 - Validation of the input data in `SuperformRouter.sol`.
 - Process swap transaction data if provided to allow SuperformRouter to move tokens from the user to the Superform and call `directDepositIntoVault` to move tokens from the Superform into the vault.
@@ -90,7 +92,7 @@ In this section we will run through examples where users deposit and withdraw in
 
 ### Cross-chain Deposit Flow
 
-*INSERT XCHAIN DEPOSIT DIAGRAM HERE*
+<img width="1450" alt="Screenshot 2023-11-08 at 2 22 12 PM" src="https://github.com/superform-xyz/superform-core/assets/33469661/f9643ebd-b267-4d9e-8eea-f9fcaabda5eb">
 
 - Validation of the input data in `SuperformRouter.sol`.
 - Dispatch the input token to the liquidity bridge using an implementation of a `BridgeValidator.sol` and `LiquidityHandler.sol`.
@@ -102,7 +104,7 @@ In this section we will run through examples where users deposit and withdraw in
 
 ### Same-chain Withdrawal Flow
 
-*INSERT SAME CHAIN WITHDRAWAL DIAGRAM HERE*
+<img width="1442" alt="Screenshot 2023-11-08 at 2 21 50 PM" src="https://github.com/superform-xyz/superform-core/assets/33469661/3c688423-9ba7-4472-9e9f-b3cafefc45f5">
 
 - Validation of the input data in `SuperformRouter.sol`.
 - Burn the corresponding SuperPositions owned by the user and call `directWithdrawFromVault` in the Superform, which redeems funds from the vault.
