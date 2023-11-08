@@ -77,6 +77,113 @@ contract CoreStateRegistryTest is ProtocolActions {
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: nativeValue }(1);
     }
 
+    /// @dev this test ensures that if a superform update failed because of slippage in 2 of 4 vaults
+    /// @dev that the other 2 get processed and the loop doesn't become infinite
+    function test_processPayload_loop() public {
+        uint8[] memory ambIds_ = new uint8[](2);
+        ambIds_[0] = 1;
+        ambIds_[1] = 2;
+
+        /// scenario: user deposits with his own collateral and has approved enough tokens
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superform = getContract(
+            AVAX, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], AVAX);
+
+        address superformRouter = getContract(ETH, "SuperformRouter");
+
+        uint256[] memory superformIds = new uint256[](4);
+        superformIds[0] = superformId;
+        superformIds[1] = superformId;
+        superformIds[2] = superformId;
+        superformIds[3] = superformId;
+
+        uint256[] memory uint256MemArr = new uint256[](4);
+        uint256MemArr[0] = 420;
+        uint256MemArr[1] = 420;
+        uint256MemArr[2] = 420;
+        uint256MemArr[3] = 420;
+
+        LiqRequest[] memory liqReqArr = new LiqRequest[](4);
+
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
+            getContract(AVAX, "DAI"),
+            superformRouter,
+            ETH,
+            AVAX,
+            AVAX,
+            false,
+            getContract(AVAX, "CoreStateRegistry"),
+            uint256(AVAX),
+            420,
+            //420,
+            false,
+            /// @dev placeholder value, not used
+            0,
+            1,
+            1,
+            1
+        );
+
+        liqReqArr[0] =
+            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), AVAX, 0);
+        liqReqArr[1] = liqReqArr[0];
+        liqReqArr[2] = liqReqArr[0];
+        liqReqArr[3] = liqReqArr[0];
+
+        MultiVaultSFData memory data = MultiVaultSFData(
+            superformIds,
+            uint256MemArr,
+            uint256MemArr,
+            new bool[](4),
+            new bool[](4),
+            liqReqArr,
+            bytes(""),
+            receiverAddress,
+            bytes("")
+        );
+        /// @dev approves before call
+        MockERC20(getContract(ETH, "DAI")).approve(superformRouter, 1e18);
+
+        vm.recordLogs();
+        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultDeposit{ value: 2 ether }(
+            SingleXChainMultiVaultStateReq(ambIds_, AVAX, data)
+        );
+        vm.stopPrank();
+
+        /// @dev mocks the cross-chain payload delivery
+        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).helpWithEstimates(
+            LZ_ENDPOINTS[AVAX],
+            5_000_000,
+            /// note: using some max limit
+            FORKS[AVAX],
+            vm.getRecordedLogs()
+        );
+        vm.selectFork(FORKS[AVAX]);
+        vm.prank(deployer);
+        SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
+
+        uint256[] memory finalAmounts = new uint256[](4);
+        finalAmounts[0] = 419;
+        finalAmounts[1] = 100;
+        finalAmounts[2] = 419;
+        finalAmounts[3] = 100;
+
+        vm.prank(deployer);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
+        uint256 nativeValue = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
+
+        vm.prank(deployer);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: nativeValue }(1);
+    }
+
     /// @dev test processPayload with just 1 AMB
     function test_processPayloadWithoutReachingQuorum() public {
         uint8[] memory ambIds_ = new uint8[](2);

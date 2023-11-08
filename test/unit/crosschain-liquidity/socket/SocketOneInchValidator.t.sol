@@ -127,4 +127,42 @@ contract SocketOneInchValidatorTest is ProtocolActions {
             uint256(100)
         );
     }
+
+    function test_validateTxData_reverts() public {
+        vm.expectRevert(Error.INVALID_ACTION.selector);
+        SocketOneInchValidator(getContract(BSC, "SocketOneInchValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                _buildDummyTxDataUnitTests(
+                    BuildDummyTxDataUnitTestsVars(
+                        3, address(0), address(0), deployer, ETH, BSC, uint256(100), deployer, false
+                    )
+                ),
+                ETH,
+                BSC,
+                BSC,
+                true,
+                deployer,
+                deployer,
+                address(0)
+            )
+        );
+
+        vm.expectRevert(Error.INVALID_TXDATA_TOKEN.selector);
+        SocketOneInchValidator(getContract(BSC, "SocketOneInchValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                _buildDummyTxDataUnitTests(
+                    BuildDummyTxDataUnitTestsVars(
+                        3, address(0), address(0), deployer, ETH, BSC, uint256(100), deployer, false
+                    )
+                ),
+                BSC,
+                BSC,
+                BSC,
+                true,
+                deployer,
+                deployer,
+                address(0x777)
+            )
+        );
+    }
 }
