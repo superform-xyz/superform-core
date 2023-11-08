@@ -13,6 +13,7 @@ contract FakeUser {
 
 contract DstSwapperTest is ProtocolActions {
     address receiverAddress = address(444);
+    address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     function setUp() public override {
         super.setUp();
@@ -438,14 +439,15 @@ contract DstSwapperTest is ProtocolActions {
     }
 
     function test_processFailedTx_invalidUserCall() public {
-        address payable fakeUser = payable(address(new FakeUser()));
         vm.selectFork(FORKS[ETH]);
+        address payable fakeUser = payable(address(new FakeUser()));
+
         vm.prank(deployer);
         payable(getContract(ETH, "DstSwapper")).transfer(1);
 
         vm.prank(getContract(ETH, "CoreStateRegistry"));
         vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
-        DstSwapper(payable(getContract(ETH, "DstSwapper"))).processFailedTx(fakeUser, getContract(ETH, "WETH"), 1);
+        DstSwapper(payable(getContract(ETH, "DstSwapper"))).processFailedTx(fakeUser, NATIVE, 1);
     }
 
     function _simulateSingleVaultExistingPayload(address payable coreStateRegistry)
