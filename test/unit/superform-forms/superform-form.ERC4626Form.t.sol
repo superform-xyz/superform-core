@@ -358,7 +358,11 @@ contract SuperformERC4626FormTest is ProtocolActions {
     }
 
     function test_superformDirectDepositWithAllowance() public {
-        _successfulDeposit();
+        _successfulDeposit(false);
+    }
+
+    function test_superformDirectDepositWithAllowance_retain4626() public {
+        _successfulDeposit(true);
     }
 
     function test_superformDirectDepositWithoutEnoughAllowanceWithTokensForceSent() public {
@@ -455,7 +459,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
     }
 
     function test_superformDirectWithdrawalWithMaliciousTxData() public {
-        _successfulDeposit();
+        _successfulDeposit(false);
 
         /// scenario: user could hack the funds from the form
         vm.selectFork(FORKS[ETH]);
@@ -492,7 +496,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
     function test_superformXChainWithdrawalWithoutUpdatingTxData() public {
         /// @dev prank deposits (just mint super-shares)
-        _successfulDeposit();
+        _successfulDeposit(false);
 
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
@@ -528,7 +532,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
     function test_superformXChainWithdrawalWithMaliciousTxData() public {
         /// @dev prank deposits (just mint super-shares)
-        _successfulDeposit();
+        _successfulDeposit(false);
 
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
@@ -571,7 +575,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
     function test_superformDirectWithdrawWithInvalidLiqDataToken() public {
         /// @dev prank deposits (just mint super-shares)
-        _successfulDeposit();
+        _successfulDeposit(false);
 
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
@@ -609,7 +613,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
     function test_superformXChainWithInvalidLiqDataToken() public {
         /// @dev prank deposits (just mint super-shares)
-        _successfulDeposit();
+        _successfulDeposit(false);
 
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
@@ -841,7 +845,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
                         INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function _successfulDeposit() internal {
+    function _successfulDeposit(bool retain4626) internal {
         /// scenario: user deposits with his own collateral and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
@@ -857,7 +861,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             1e18,
             100,
             false,
-            false,
+            retain4626,
             LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
             "",
             refundAddress,

@@ -129,7 +129,7 @@ contract LiquidityHandlerTest is ProtocolActions {
             )
         );
         vm.prank(deployer);
-        vm.expectRevert(abi.encodeWithSelector(Error.FAILED_TO_EXECUTE_TXDATA.selector, token));
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
         liquidityHandler.dispatchTokensTest{ value: 1e18 }(address(0), txData, token, transferAmount, transferAmount);
     }
 }
