@@ -153,6 +153,21 @@ contract PayloadHelperSingleTest is ProtocolActions {
         IPayloadHelper(contracts[ETH][bytes32(bytes("PayloadHelper"))]).decodeTimeLockPayload(2);
     }
 
+    function test_decodeCoreStateRegistryPayload_invalidPayload() public {
+        uint8[] memory ambIds_ = new uint8[](2);
+        ambIds_[0] = 1;
+        ambIds_[1] = 2;
+        vm.selectFork(FORKS[ETH]);
+        vm.prank(getContract(ETH, "LayerzeroImplementation"));
+        CoreStateRegistry(getContract(ETH, "CoreStateRegistry")).receivePayload(
+            POLY,
+            abi.encode(AMBMessage(DataLib.packTxInfo(1, 5, 1, 1, address(420), uint64(137)), abi.encode(ambIds_, "")))
+        );
+
+        vm.expectRevert(Error.INVALID_PAYLOAD.selector);
+        PayloadHelper(getContract(ETH, "PayloadHelper")).decodeCoreStateRegistryPayload(1);
+    }
+
     struct CheckDstPayloadInternalVars {
         bytes[] extraDataGenerated;
         uint256 ambFees;

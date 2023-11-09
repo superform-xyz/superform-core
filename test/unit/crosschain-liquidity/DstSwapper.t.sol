@@ -92,6 +92,9 @@ contract DstSwapperTest is ProtocolActions {
 
         DstSwapper(dstSwapper).updateFailedTx(1, 0, weth, 1e18);
 
+        vm.expectRevert(Error.FAILED_DST_SWAP_ALREADY_UPDATED.selector);
+        DstSwapper(dstSwapper).updateFailedTx(1, 0, weth, 1e18);
+
         /// @dev set quorum to 0 for simplicity in testing setup
         SuperRegistry(getContract(OP, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
@@ -104,6 +107,8 @@ contract DstSwapperTest is ProtocolActions {
         finalAmounts[0] = 1e18;
         CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, finalAmounts);
 
+        vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
+        DstSwapper(dstSwapper).updateFailedTx(1, 0, weth, 1e18);
         vm.stopPrank();
 
         AMBs = [2, 3];
@@ -435,6 +440,54 @@ contract DstSwapperTest is ProtocolActions {
             _buildLiqBridgeTxDataDstSwap(1, getContract(ETH, "WETH"), getContract(ETH, "DAI"), dstSwapper, ETH, 0, 0);
         /// @dev txData with amount 0 should revert
         vm.expectRevert(Error.INVALID_SWAP_OUTPUT.selector);
+        DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
+    }
+
+    function test_failed_MAX_SLIPPAGE_INVARIANT_BROKEN() public {
+        address payable dstSwapper = payable(getContract(ETH, "DstSwapper"));
+        address payable coreStateRegistry = payable(getContract(ETH, "CoreStateRegistry"));
+
+        vm.selectFork(FORKS[ETH]);
+
+        /// simulate an existing payload in csr
+        address superform = getContract(ETH, string.concat("DAI", "VaultMock", "Superform", "1"));
+        uint256 superformId = DataLib.packSuperform(superform, 1, ETH);
+
+        LiqRequest memory liq;
+        vm.prank(getContract(ETH, "LayerzeroImplementation"));
+        CoreStateRegistry(coreStateRegistry).receivePayload(
+            137,
+            abi.encode(
+                AMBMessage(
+                    0,
+                    abi.encode(
+                        new uint8[](0),
+                        abi.encode(
+                            InitSingleVaultData(
+                                1,
+                                superformId,
+                                1_798_823_082_965_464_723_525,
+                                0,
+                                true,
+                                false,
+                                liq,
+                                receiverAddress,
+                                bytes("")
+                            )
+                        )
+                    )
+                )
+            )
+        );
+
+        vm.startPrank(deployer);
+        deal(getContract(ETH, "WETH"), dstSwapper, 1e18);
+
+        bytes memory txData = _buildLiqBridgeTxDataDstSwap(
+            1, getContract(ETH, "WETH"), getContract(ETH, "DAI"), dstSwapper, ETH, 1e17, 1001
+        );
+        /// @dev txData with amount 0 should revert
+        vm.expectRevert(Error.MAX_SLIPPAGE_INVARIANT_BROKEN.selector);
         DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
     }
 
