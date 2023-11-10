@@ -34,6 +34,9 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.prank(getContract(AVAX, "CoreStateRegistry"));
         MockERC20(getContract(AVAX, "DAI")).transfer(deployer, 999_900_000_000_000_000);
 
+        vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);
+        PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(100);
+
         uint256 nativeAmount = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
 
         vm.prank(deployer);

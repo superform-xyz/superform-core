@@ -9,6 +9,7 @@ import { AggregatorV3Interface } from "../../src/vendor/chainlink/AggregatorV3In
 import { LiFiMock } from "../mocks/LiFiMock.sol";
 import { SocketMock } from "../mocks/SocketMock.sol";
 import { SocketOneInchMock } from "../mocks/SocketOneInchMock.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
 
 abstract contract CommonProtocolActions is BaseSetup {
     /// @dev percentage of total slippage that is used for dstSwap
@@ -508,5 +509,53 @@ abstract contract CommonProtocolActions is BaseSetup {
                 abi.encode(v.from_, USDPerUnderlyingToken, USDPerUnderlyingTokenDst)
             );
         }
+    }
+
+    function setupBroadcastPayloadAMBData(
+        address _srcSender,
+        address amb
+    )
+        public
+        returns (AMBMessage memory, BroadCastAMBExtraData memory, address)
+    {
+        AMBMessage memory ambMessage = AMBMessage(
+            DataLib.packTxInfo(
+                uint8(TransactionType.DEPOSIT),
+                /// @dev TransactionType
+                uint8(CallbackType.INIT),
+                0,
+                /// @dev isMultiVaults
+                1,
+                /// @dev STATE_REGISTRY_TYPE,
+                _srcSender,
+                /// @dev srcSender,
+                ETH
+            ),
+            /// @dev srcChainId
+            abi.encode(new uint8[](0), "")
+        );
+        /// ambData
+
+        /// @dev gasFees for chainIds = [56, 43114, 137, 42161, 10];
+        /// @dev excluding chainIds[0] = 1 i.e. ETH, as no point broadcasting to same chain
+        uint256[] memory gasPerDst = new uint256[](5);
+        for (uint256 i = 0; i < gasPerDst.length; i++) {
+            gasPerDst[i] = 0.1 ether;
+        }
+
+        /// @dev keeping extraDataPerDst empty for now
+        bytes[] memory extraDataPerDst = new bytes[](5);
+
+        BroadCastAMBExtraData memory ambExtraData = BroadCastAMBExtraData(gasPerDst, extraDataPerDst);
+
+        address coreStateRegistry = getContract(1, "CoreStateRegistry");
+
+        vm.deal(coreStateRegistry, 10 ether);
+        vm.deal(amb, 10 ether);
+
+        /// @dev need to stop unused deployer prank, to use new prank, AND changePrank() doesn't work smh
+        vm.stopPrank();
+
+        return (ambMessage, ambExtraData, coreStateRegistry);
     }
 }
