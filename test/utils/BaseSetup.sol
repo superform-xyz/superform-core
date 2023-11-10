@@ -803,8 +803,9 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                             10_000
                         )
                     );
+                    /// @dev 0.01 ether is just a mock value. Wormhole fees are currently 0
                     PaymentHelper(payable(vars.paymentHelper)).updateRegisterSERC20Params(
-                        0, generateBroadcastParams(5, 1)
+                        0.01 ether, generateBroadcastParams(5, 1)
                     );
 
                     vars.superRegistryC.setAddress(

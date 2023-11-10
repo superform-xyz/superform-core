@@ -7,6 +7,8 @@ import { ERC4626FormInterfaceNotSupported } from "test/mocks/InterfaceNotSupport
 import "test/utils/BaseSetup.sol";
 import { Error } from "src/utils/Error.sol";
 
+import { DataLib } from "src/libraries/DataLib.sol";
+
 contract SuperformFactoryCreateSuperformTest is BaseSetup {
     uint64 internal chainId = ETH;
     address public vault;
@@ -190,5 +192,15 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         /// @dev Creating superform using same form and vault
         vm.expectRevert(Error.FORM_DOES_NOT_EXIST.selector);
         SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formImplementationId, vault);
+    }
+
+    function test_getSuperform() public {
+        vm.selectFork(FORKS[chainId]);
+        address superform = getContract(
+            ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
+        SuperformFactory(getContract(chainId, "SuperformFactory")).getSuperform(superformId);
     }
 }
