@@ -36,17 +36,14 @@ contract VaultSharesInvariantTest is BaseInvariantTest {
         selectors[1] = VaultSharesHandler.singleDirectSingleVaultDeposit.selector;
         targetSelector(FuzzSelector({ addr: address(vaultSharesHandler), selectors: selectors }));
         targetContract(address(vaultSharesHandler));
-
-        // Prevent these contracts from being fuzzed as `msg.sender`.
-        excludeSender(address(vaultSharesStore));
-        excludeSender(address(vaultSharesHandler));
+        targetSender(users[0]);
     }
 
     /*///////////////////////////////////////////////////////////////
                     INVARIANT TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function invariant_vaultShares() public useCurrentTimestamp {
+    function invariant_vaultShares() public {
         assertEq(vaultSharesStore.superPositionsSum(), vaultSharesStore.vaultShares());
     }
 }

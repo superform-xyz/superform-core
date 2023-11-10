@@ -262,7 +262,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
 
         /// @dev get the address of the bridge to send the txData to.
         v.to = superRegistry.getBridgeAddress(bridgeId_);
-        (v.underlying, v.expAmount, v.maxSlippage) = _getFormUnderlyingFrom(payloadId_, index_);
+        (v.underlying, v.expAmount, v.maxSlippage) = _getFormUnderlyingFrom(coreStateRegistry_, payloadId_, index_);
 
         v.balanceBefore = IERC20(v.underlying).balanceOf(v.finalDst);
         uint256 nativeAmount = (v.approvalToken == NATIVE) ? v.amount : 0;
@@ -317,24 +317,22 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
     }
 
     function _getFormUnderlyingFrom(
+        IBaseStateRegistry coreStateRegistry_,
         uint256 payloadId_,
         uint256 index_
     )
         internal
         view
-        returns (address underlying_, uint256 amount_, uint256 maxSlippage_)
+        returns (address underlying, uint256 amount, uint256 maxSlippage)
     {
-        IBaseStateRegistry coreStateRegistry =
-            IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
-
-        PayloadState currState = coreStateRegistry.payloadTracking(payloadId_);
+        PayloadState currState = coreStateRegistry_.payloadTracking(payloadId_);
 
         if (currState != PayloadState.STORED) {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
 
-        uint256 payloadHeader = coreStateRegistry.payloadHeader(payloadId_);
-        bytes memory payload = coreStateRegistry.payloadBody(payloadId_);
+        uint256 payloadHeader = coreStateRegistry_.payloadHeader(payloadId_);
+        bytes memory payload = coreStateRegistry_.payloadBody(payloadId_);
 
         (,, uint8 multi,,,) = DataLib.decodeTxInfo(payloadHeader);
 
@@ -345,20 +343,20 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
                 revert Error.INVALID_INDEX();
             }
 
-            (address form_,,) = DataLib.getSuperform(data.superformIds[index_]);
-            underlying_ = IERC4626Form(form_).getVaultAsset();
-            maxSlippage_ = data.maxSlippages[index_];
-            amount_ = data.amounts[index_];
+            (address superform,,) = DataLib.getSuperform(data.superformIds[index_]);
+            underlying = IERC4626Form(superform).getVaultAsset();
+            maxSlippage = data.maxSlippages[index_];
+            amount = data.amounts[index_];
         } else {
             if (index_ != 0) {
                 revert Error.INVALID_INDEX();
             }
 
             InitSingleVaultData memory data = abi.decode(payload, (InitSingleVaultData));
-            (address form_,,) = DataLib.getSuperform(data.superformId);
-            underlying_ = IERC4626Form(form_).getVaultAsset();
-            maxSlippage_ = data.maxSlippage;
-            amount_ = data.amount;
+            (address superform,,) = DataLib.getSuperform(data.superformId);
+            underlying = IERC4626Form(superform).getVaultAsset();
+            maxSlippage = data.maxSlippage;
+            amount = data.amount;
         }
     }
 }

@@ -29,10 +29,10 @@ import {
     InitSingleVaultData
 } from "../../types/DataTypes.sol";
 import { LiqRequest } from "../../types/LiquidityTypes.sol";
-
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
 /// @dev enables communication between Superform Core Contracts deployed on all supported networks
+
 contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     using SafeERC20 for IERC20;
     using DataLib for uint256;
@@ -418,6 +418,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             }
         }
 
+        /// @dev validLen > 0 for the cases where there was at least one deposit update that had valid slippage
+        /// @dev (v1: passedSlippage, v2: failedSlippage, v3: passedSlippage)
+        /// @dev final vaults: (v1, v3) / PayloadState.UPDATED
+        /// @dev if validLen is 0 then Payload is marked as processed and can be extracted via rescue
         if (validLen > 0) {
             uint256[] memory finalSuperformIds = new uint256[](validLen);
             uint256[] memory finalAmounts = new uint256[](validLen);
@@ -448,7 +452,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         } else {
             finalState_ = PayloadState.PROCESSED;
         }
-
         newPayloadBody_ = abi.encode(multiVaultData);
     }
 
@@ -522,6 +525,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         }
 
         /// @dev validate payload update
+        /// @dev validLen may only be increased here in the case where slippage for the update is valid
         if (!failedSwapQueued) {
             if (PayloadUpdaterLib.validateSlippage(finalAmount_, amount_, maxSlippage_)) {
                 /// @dev sets amount to finalAmount_ and will mark the payload as UPDATED
@@ -724,7 +728,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         bool fulfilment;
         bool errors;
         address superformFactory = _getAddress(keccak256("SUPERFORM_FACTORY"));
-
         for (uint256 i; i < numberOfVaults;) {
             if (!ISuperformFactory(superformFactory).isSuperform(multiVaultData.superformIds[i])) {
                 revert Error.SUPERFORM_ID_NONEXISTENT();
@@ -781,9 +784,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 } else {
                     revert Error.BRIDGE_TOKENS_PENDING();
                 }
-                unchecked {
-                    ++i;
-                }
+            }
+            unchecked {
+                ++i;
             }
         }
 

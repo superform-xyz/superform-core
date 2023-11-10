@@ -119,4 +119,17 @@ contract LiquidityHandlerTest is ProtocolActions {
         vm.expectRevert(abi.encodeWithSelector(Error.FAILED_TO_EXECUTE_TXDATA.selector, token));
         liquidityHandler.dispatchTokensTest{ value: 1e18 }(bridgeAddress, txData, token, transferAmount, transferAmount);
     }
+
+    function test_bridgeAddress0() public {
+        uint256 transferAmount = 1e18; // 1 token
+        address token = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            BuildDummyTxDataUnitTestsVars(
+                1, token, token, address(liquidityHandler), ETH, ARBI, transferAmount, address(liquidityHandler), false
+            )
+        );
+        vm.prank(deployer);
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        liquidityHandler.dispatchTokensTest{ value: 1e18 }(address(0), txData, token, transferAmount, transferAmount);
+    }
 }

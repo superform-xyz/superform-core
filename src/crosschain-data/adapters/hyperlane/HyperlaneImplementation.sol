@@ -89,7 +89,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
-        address srcSender_,
+        address, /*srcSender_*/
         uint64 dstChainId_,
         bytes memory message_,
         bytes memory /* extraData_ */

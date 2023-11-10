@@ -40,6 +40,34 @@ contract SocketValidatorTest is ProtocolActions {
         );
     }
 
+    function test_socket_validator_revert_withdraw_differentReceiver() public {
+        vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
+        SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                _buildDummyTxDataUnitTests(
+                    BuildDummyTxDataUnitTestsVars(
+                        2,
+                        address(0),
+                        address(0),
+                        deployer,
+                        ETH,
+                        BSC,
+                        uint256(100),
+                        getContract(BSC, "CoreStateRegistry"),
+                        false
+                    )
+                ),
+                ETH,
+                BSC,
+                BSC,
+                false,
+                address(0),
+                address(0x7777),
+                address(0)
+            )
+        );
+    }
+
     function test_socket_invalid_receiver() public {
         bytes memory txData = _buildDummyTxDataUnitTests(
             BuildDummyTxDataUnitTestsVars(
@@ -107,5 +135,69 @@ contract SocketValidatorTest is ProtocolActions {
         );
 
         assertEq(SocketValidator(getContract(ETH, "SocketValidator")).decodeAmountIn(txData, true), uint256(100));
+    }
+
+    function test_socket_validator_reverts() public {
+        vm.expectRevert(Error.INVALID_ACTION.selector);
+        SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                _buildDummyTxDataUnitTests(
+                    BuildDummyTxDataUnitTestsVars(
+                        2,
+                        address(0),
+                        address(0),
+                        deployer,
+                        ETH,
+                        BSC,
+                        uint256(100),
+                        getContract(BSC, "CoreStateRegistry"),
+                        false
+                    )
+                ),
+                ETH,
+                ETH,
+                BSC,
+                true,
+                address(0),
+                deployer,
+                address(0)
+            )
+        );
+
+        vm.expectRevert(Error.INVALID_TXDATA_TOKEN.selector);
+        SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                _buildDummyTxDataUnitTests(
+                    BuildDummyTxDataUnitTestsVars(
+                        2,
+                        address(0),
+                        address(0),
+                        deployer,
+                        ETH,
+                        BSC,
+                        uint256(100),
+                        getContract(BSC, "CoreStateRegistry"),
+                        false
+                    )
+                ),
+                ETH,
+                BSC,
+                BSC,
+                true,
+                address(0),
+                deployer,
+                address(0x777)
+            )
+        );
+    }
+
+    function test_decodeDstSwap() public {
+        vm.expectRevert();
+        SocketValidator(getContract(ETH, "SocketValidator")).decodeDstSwap("");
+    }
+
+    function test_decodeSwapOutputToken() public {
+        vm.expectRevert(Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN.selector);
+        SocketValidator(getContract(ETH, "SocketValidator")).decodeSwapOutputToken("");
     }
 }
