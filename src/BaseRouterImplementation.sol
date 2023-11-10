@@ -50,9 +50,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     /// @dev handles same-chain single vault deposit
     function _singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq memory req_) internal virtual {
-        ActionLocalVars memory vars;
-        vars.srcChainId = CHAIN_ID;
-
         /// @dev validate superformData
         if (
             !_validateSuperformData(
@@ -61,7 +58,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 req_.superformData.amount,
                 req_.superformData.retain4626,
                 req_.superformData.receiverAddress,
-                vars.srcChainId,
+                CHAIN_ID,
                 true,
                 ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")))
             )
@@ -69,10 +66,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
-        vars.currentPayloadId = ++payloadIds;
+        uint256 currentPayloadId = ++payloadIds;
 
         InitSingleVaultData memory vaultData = InitSingleVaultData(
-            vars.currentPayloadId,
+            currentPayloadId,
             req_.superformData.superformId,
             req_.superformData.amount,
             req_.superformData.maxSlippage,
@@ -85,7 +82,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev same chain action & forward residual payment to payment collector
         _directSingleDeposit(msg.sender, req_.superformData.permit2data, vaultData);
-        emit Completed(vars.currentPayloadId);
+        emit Completed(currentPayloadId);
     }
 
     /// @dev handles cross-chain single vault deposit
@@ -171,18 +168,15 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     /// @dev handles same-chain multi vault deposit
     function _singleDirectMultiVaultDeposit(SingleDirectMultiVaultStateReq memory req_) internal virtual {
-        ActionLocalVars memory vars;
-        vars.srcChainId = CHAIN_ID;
-
         /// @dev validate superformData
-        if (!_validateSuperformsData(req_.superformData, vars.srcChainId, true)) {
+        if (!_validateSuperformsData(req_.superformData, CHAIN_ID, true)) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
-        vars.currentPayloadId = ++payloadIds;
+        uint256 currentPayloadId = ++payloadIds;
 
         InitMultiVaultData memory vaultData = InitMultiVaultData(
-            vars.currentPayloadId,
+            currentPayloadId,
             req_.superformData.superformIds,
             req_.superformData.amounts,
             req_.superformData.maxSlippages,
@@ -195,7 +189,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev same chain action & forward residual payment to payment collector
         _directMultiDeposit(msg.sender, req_.superformData.permit2data, vaultData);
-        emit Completed(vars.currentPayloadId);
+        emit Completed(currentPayloadId);
     }
 
     /// @dev handles cross-chain multi vault deposit
