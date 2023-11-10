@@ -79,7 +79,9 @@ contract EmergencyQueue is IEmergencyQueue {
         override
         onlySuperform(data_.superformId)
     {
-        ++queueCounter;
+        unchecked {
+            ++queueCounter;
+        }
 
         queuedWithdrawal[queueCounter] = QueuedWithdrawal(
             srcSender_,
@@ -100,7 +102,7 @@ contract EmergencyQueue is IEmergencyQueue {
         _executeQueuedWithdrawal(id_);
     }
 
-    function batchExecuteQueuedWithdrawal(uint256[] memory ids_) external override onlyEmergencyAdmin {
+    function batchExecuteQueuedWithdrawal(uint256[] calldata ids_) external override onlyEmergencyAdmin {
         for (uint256 i; i < ids_.length;) {
             _executeQueuedWithdrawal(ids_[i]);
             unchecked {

@@ -57,6 +57,9 @@ library Error {
     /// @dev thrown if the broadcast fee is invalid
     error INVALID_BROADCAST_FEE();
 
+    /// @dev thrown if tx info is invalid
+    error INVALID_TX_INFO();
+
     /// @dev thrown if the underlying collateral mismatches
     error INVALID_DEPOSIT_TOKEN();
 

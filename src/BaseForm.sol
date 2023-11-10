@@ -119,8 +119,6 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
-    receive() external payable { }
-
     function supportsInterface(bytes4 interfaceId_) public view virtual override(ERC165, IERC165) returns (bool) {
         return interfaceId_ == type(IBaseForm).interfaceId || super.supportsInterface(interfaceId_);
     }
