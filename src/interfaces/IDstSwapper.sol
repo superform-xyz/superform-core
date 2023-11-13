@@ -85,7 +85,7 @@ interface IDstSwapper {
     /// @notice returns the swapped amounts (if dst swap is successful)
     /// @param payloadId_ is the id of payload
     /// @param index_ represents the index in the payload (0 for single vault payload)
-    /// @return amount is the amount fowarded to core state registry after the swap
+    /// @return amount is the amount forwarded to core state registry after the swap
     function swappedAmount(uint256 payloadId_, uint256 index_) external view returns (uint256 amount);
 
     /// @notice returns the interim amounts (if dst swap is failing)

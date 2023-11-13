@@ -137,7 +137,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         emit ChainAdded(superChainId_);
     }
 
-    /// @dev allows protocol admin to set receiver implmentation on a new chain id
+    /// @dev allows protocol admin to set receiver implementation on a new chain id
     /// @param domain_ is the identifier of the destination chain within hyperlane
     /// @param authorizedImpl_ is the implementation of the hyperlane message bridge on the specified destination
     /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)

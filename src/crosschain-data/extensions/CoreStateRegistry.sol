@@ -603,7 +603,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 /// @dev for withdrawals the payload update can happen on core state registry (for normal forms)
                 /// and also can happen in timelock state registry (for timelock form)
 
-                /// @notice this check validates if the state registry is elligible to update tx data for the
+                /// @notice this check validates if the state registry is eligible to update tx data for the
                 /// corresponding superform
                 if (IBaseForm(superform).getStateRegistryId() == _getStateRegistryId(address(this))) {
                     PayloadUpdaterLib.validateLiqReq(multiVaultData_.liqData[i]);
@@ -775,7 +775,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
                         failedDeposits[payloadId_].superformIds.push(multiVaultData.superformIds[i]);
 
-                        /// @dev clearing multiVaultData.amounts so that in case that fullfilment is true these amounts
+                        /// @dev clearing multiVaultData.amounts so that in case that fulfillment is true these amounts
                         /// are not minted
                         multiVaultData.amounts[i] = 0;
                         failedDeposits[payloadId_].settlementToken.push(IBaseForm(superforms[i]).getVaultAsset());

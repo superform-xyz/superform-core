@@ -46,7 +46,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         }
     }
 
-    /// @dev allows only form to write to the receive paylod
+    /// @dev allows only form to write to the receive payload
     modifier onlyTimelockSuperform(uint256 superformId) {
         if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId)) {
             revert Error.SUPERFORM_ID_NONEXISTENT();
@@ -245,7 +245,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     }
 
     /// @notice CoreStateRegistry-like function for build message back to the source. In regular flow called after
-    /// xChainWithdraw succeds.
+    /// xChainWithdraw succeeds.
     /// @dev Constructs return message in case of a FAILURE to perform redemption of already unlocked assets
     function _constructSingleReturnData(
         address srcSender_,

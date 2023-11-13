@@ -32,7 +32,7 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     /*///////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
-    /// @dev emited when wormhole relayer is set
+    /// @dev emitted when wormhole relayer is set
     event WormholeRelayerSet(address wormholeRelayer);
 
     /*///////////////////////////////////////////////////////////////
@@ -181,7 +181,7 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         emit ChainAdded(superChainId_);
     }
 
-    /// @dev allows protocol admin to set receiver implmentation on a new chain id
+    /// @dev allows protocol admin to set receiver implementation on a new chain id
     /// @param chainId_ is the identifier of the destination chain within wormhole
     /// @param authorizedImpl_ is the implementation of the wormhole message bridge on the specified destination
     /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)

@@ -37,11 +37,11 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
     /*///////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
-    /// @dev emited when wormhole core is set
+    /// @dev emitted when wormhole core is set
     event WormholeCoreSet(address wormholeCore);
-    /// @dev emited when wormhole relyaer is set
+    /// @dev emitted when wormhole relyaer is set
     event WormholeRelayerSet(address wormholeRelayer);
-    /// @dev emited when broadcast finality is set
+    /// @dev emitted when broadcast finality is set
     event BroadcastFinalitySet(uint8 finality);
 
     /*///////////////////////////////////////////////////////////////
@@ -214,7 +214,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         emit ChainAdded(superChainId_);
     }
 
-    /// @dev allows protocol admin to set receiver implmentation on a new chain id
+    /// @dev allows protocol admin to set receiver implementation on a new chain id
     /// @param chainId_ is the identifier of the destination chain within wormhole
     /// @param authorizedImpl_ is the implementation of the wormhole message bridge on the specified destination
     /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)

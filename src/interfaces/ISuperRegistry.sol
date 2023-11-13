@@ -61,7 +61,7 @@ interface ISuperRegistry {
 
     /// @dev allows admin to set the bridge address for an bridge id.
     /// @notice this function operates in an APPEND-ONLY fashion.
-    /// @param bridgeId_         represents the bridge unqiue identifier.
+    /// @param bridgeId_         represents the bridge unique identifier.
     /// @param bridgeAddress_    represents the bridge address.
     /// @param bridgeValidator_  represents the bridge validator address.
     function setBridgeAddresses(
@@ -73,7 +73,7 @@ interface ISuperRegistry {
 
     /// @dev allows admin to set the amb address for an amb id.
     /// @notice this function operates in an APPEND-ONLY fashion.
-    /// @param ambId_         represents the bridge unqiue identifier.
+    /// @param ambId_         represents the bridge unique identifier.
     /// @param ambAddress_    represents the bridge address.
     /// @param isBroadcastAMB_ represents whether the amb implementation supports broadcasting
     function setAmbAddress(
@@ -85,7 +85,7 @@ interface ISuperRegistry {
 
     /// @dev allows admin to set the state registry address for an state registry id.
     /// @notice this function operates in an APPEND-ONLY fashion.
-    /// @param registryId_    represents the state registry's unqiue identifier.
+    /// @param registryId_    represents the state registry's unique identifier.
     /// @param registryAddress_    represents the state registry's address.
     function setStateRegistryAddress(uint8[] memory registryId_, address[] memory registryAddress_) external;
 

@@ -9,7 +9,7 @@ interface IBroadcastRegistry {
     /// @param srcSender_ is the caller of the function (used for gas refunds).
     /// @param ambId_ is the identifier of the arbitrary message bridge to be used
     /// @param message_ is the crosschain payload to be broadcasted
-    /// @param extraData_ defines all the message bridge realted overrides
+    /// @param extraData_ defines all the message bridge related overrides
     function broadcastPayload(
         address srcSender_,
         uint8 ambId_,

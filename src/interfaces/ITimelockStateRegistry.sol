@@ -28,7 +28,7 @@ interface ITimelockStateRegistry {
     function finalizePayload(uint256 payloadId_, bytes memory txData_) external payable;
 
     /// @dev allows users to read the timeLockPayload_ stored per payloadId_
-    /// @param payloadId_ is the unqiue payload identifier allocated on the destination chain
+    /// @param payloadId_ is the unique payload identifier allocated on the destination chain
     /// @return timeLockPayload_ the timelock payload stored
     function getTimelockPayload(uint256 payloadId_) external view returns (TimelockPayload memory timeLockPayload_);
 
