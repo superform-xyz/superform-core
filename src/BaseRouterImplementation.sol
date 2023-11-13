@@ -322,9 +322,13 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev validate the action
         ActionLocalVars memory vars;
         vars.srcChainId = CHAIN_ID;
+
         if (vars.srcChainId == req_.dstChainId) {
             revert Error.INVALID_ACTION();
         }
+
+        /// @dev validates the receiver address
+        _validateReceiverAddress(req_.superformData.receiverAddress);
 
         /// @dev validate the Superforms data
         if (
@@ -432,6 +436,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (!_validateSuperformsData(req_.superformsData, req_.dstChainId, false)) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
+
+        /// @dev validates the receiver address
+        _validateReceiverAddress(req_.superformsData.receiverAddress);
 
         ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnBatch(
             msg.sender, req_.superformsData.superformIds, req_.superformsData.amounts
