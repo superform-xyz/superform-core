@@ -787,9 +787,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         if (dstChainId_ != sfDstChainId) return false;
 
-        /// @dev no chainId 0 allowed on superform
-        if (sfDstChainId == 0) return false;
-
         /// @dev 10000 = 100% slippage
         if (maxSlippage_ > 10_000) return false;
 
@@ -866,10 +863,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     }
 
     function _validateReceiverAddress(address receiverAddress_) internal view virtual {
-        if (tx.origin != msg.sender) {
-            if (receiverAddress_ == address(0)) {
-                revert Error.RECEIVER_ADDRESS_NOT_SET();
-            }
+        if (tx.origin != msg.sender && receiverAddress_ == address(0)) {
+            revert Error.RECEIVER_ADDRESS_NOT_SET();
         }
     }
 
