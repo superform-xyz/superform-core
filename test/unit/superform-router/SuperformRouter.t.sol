@@ -1443,7 +1443,7 @@ contract SuperformRouterTest is ProtocolActions {
         vm.stopPrank();
     }
 
-    function test_multiVaultTokenForward_noTxData_withPermit2_passing() public {
+    function test_multiVaultTokenForward_withPermit2_passing() public {
         MultiVaultDepositVars memory v;
         /// @dev in this test no tokens would be bridged (no txData)
         vm.selectFork(FORKS[ETH]);
@@ -1555,6 +1555,126 @@ contract SuperformRouterTest is ProtocolActions {
                     abi.encode(
                         v.permit.nonce, v.permit.deadline, _signPermit(v.permit, v.superformRouter, userKeys[1], ETH)
                     ),
+                    receiverAddress,
+                    ""
+                )
+            )
+        );
+        vm.stopPrank();
+    }
+
+    function test_multiVaultTokenForward_withPermit2_noAmounts() public {
+        MultiVaultDepositVars memory v;
+        /// @dev in this test no tokens would be bridged (no txData)
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(users[1]);
+
+        v.superformRouter = getContract(ETH, "SuperformRouter");
+
+        v.superformIds = new uint256[](2);
+        v.superformIds[0] = DataLib.packSuperform(
+            getContract(
+                ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+            ),
+            FORM_IMPLEMENTATION_IDS[0],
+            ARBI
+        );
+        v.superformIds[1] = DataLib.packSuperform(
+            getContract(
+                ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+            ),
+            FORM_IMPLEMENTATION_IDS[0],
+            ARBI
+        );
+
+        v.amounts = new uint256[](2);
+        v.amounts[0] = 1e18;
+        v.amounts[1] = 1e18;
+
+        v.maxSlippages = new uint256[](2);
+        v.maxSlippages[0] = 1000;
+        v.maxSlippages[1] = 1000;
+
+        v.hasDstSwaps = new bool[](2);
+
+        v.retain4626s = new bool[](2);
+
+        v.liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
+            getContract(ARBI, "DAI"),
+            v.superformRouter,
+            ETH,
+            ARBI,
+            ARBI,
+            false,
+            getContract(ARBI, "CoreStateRegistry"),
+            uint256(ARBI),
+            0,
+            //1e18,
+            false,
+            /// @dev placeholder value, not used
+            0,
+            1,
+            1,
+            1
+        );
+
+        v.liqReqs = new LiqRequest[](2);
+        v.liqReqs[0] =
+            LiqRequest(1, _buildLiqBridgeTxData(v.liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), ARBI, 0);
+
+        v.liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
+            getContract(ARBI, "WETH"),
+            v.superformRouter,
+            ETH,
+            ARBI,
+            ARBI,
+            false,
+            getContract(ARBI, "CoreStateRegistry"),
+            uint256(ARBI),
+            0,
+            //1e18,
+            false,
+            /// @dev placeholder value, not used
+            0,
+            1,
+            1,
+            1
+        );
+
+        v.liqReqs[1] =
+            LiqRequest(1, _buildLiqBridgeTxData(v.liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), ARBI, 0);
+        /// @dev approve total amount
+        v.permit = IPermit2.PermitTransferFrom({
+            permitted: IPermit2.TokenPermissions({ token: IERC20(getContract(ETH, "DAI")), amount: 2e18 }),
+            nonce: _randomUint256(),
+            deadline: block.timestamp
+        });
+        MockERC20(getContract(ETH, "DAI")).approve(getContract(ETH, "CanonicalPermit2"), type(uint256).max);
+
+        v.ambIds = new uint8[](2);
+        v.ambIds[0] = 1;
+        v.ambIds[1] = 2;
+
+        bytes memory permitSigned = _signPermit(v.permit, v.superformRouter, userKeys[1], ETH);
+        vm.expectRevert(Error.ZERO_AMOUNT.selector);
+        SuperformRouter(payable(v.superformRouter)).singleXChainMultiVaultDeposit{ value: 2 ether }(
+            SingleXChainMultiVaultStateReq(
+                v.ambIds,
+                ARBI,
+                MultiVaultSFData(
+                    v.superformIds,
+                    v.amounts,
+                    v.maxSlippages,
+                    v.hasDstSwaps,
+                    v.retain4626s,
+                    v.liqReqs,
+                    abi.encode(v.permit.nonce, v.permit.deadline, permitSigned),
                     receiverAddress,
                     ""
                 )

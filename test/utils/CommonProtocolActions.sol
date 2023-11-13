@@ -30,7 +30,6 @@ abstract contract CommonProtocolActions is BaseSetup {
         address toDst;
         uint256 liqBridgeToChainId;
         uint256 amount;
-        //uint256 finalAmountDst;
         bool withdraw;
         int256 slippage;
         uint256 USDPerExternalToken;
