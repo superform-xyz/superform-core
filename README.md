@@ -19,8 +19,8 @@ This repository includes all of our contracts, but our protocol can be split int
 
 - Core contracts contain fundamental logic to create new Superforms and move liquidity and data across chains
 - Periphery contracts represent the main touchpoints for users to interface with and include helper contracts to ease 3rd party integrations
-
-*INSERT NEW CONTRACT ARCHITECTURE DIAGRAM HERE*
+  
+<img width="1000" alt="Screenshot 2023-11-14 at 11 40 38 AM" src="https://github.com/superform-xyz/superform-core/assets/33469661/4f38849c-8dcd-4a59-b59d-b62a9eeafdba">
 
 ## Resources
 
