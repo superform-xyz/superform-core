@@ -7,9 +7,10 @@ import "../types/LiquidityTypes.sol";
 /// @author ZeroPoint Labs
 /// @dev contract for destination transaction costs payment
 interface IPayMaster {
-    /*///////////////////////////////////////////////////////////////
-                        EVENTS
-    //////////////////////////////////////////////////////////////*/
+
+    //////////////////////////////////////////////////////////////
+    //                          EVENTS                          //
+    //////////////////////////////////////////////////////////////
 
     /// @dev is emitted when a new payment is made
     event Payment(address indexed user, uint256 amount);
@@ -17,9 +18,9 @@ interface IPayMaster {
     /// @dev is emitted when payments are moved out of collector
     event PaymentWithdrawn(address indexed receiver, uint256 amount);
 
-    /*///////////////////////////////////////////////////////////////
-                    PRIVILEGED ADMIN FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @dev withdraws funds from pay master to target id from superRegistry
     /// @param superRegistryId_ is the id of the target address in superRegistry
@@ -37,10 +38,6 @@ interface IPayMaster {
     /// @param nativeValue_ is the native fees to be sent along the transaction
     /// @param data_ is the amb specific encoded retry data [check individual AMB implementations]
     function treatAMB(uint8 ambId_, uint256 nativeValue_, bytes memory data_) external;
-
-    /*///////////////////////////////////////////////////////////////
-                    EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
 
     /// @dev accepts payment from user
     /// @param user_ is the wallet address of the paying user

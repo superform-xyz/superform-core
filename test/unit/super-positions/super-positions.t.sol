@@ -267,12 +267,11 @@ contract SuperPositionsTest is BaseSetup {
     function test_registerSERC20() public {
         (uint256 superformId,) =
             SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
-
         vm.prank(getContract(ETH, "SuperformRouter"));
 
         superPositions.mintSingle(address(0x888), superformId, 1);
 
-        superPositions.registerSERC20(superformId);
+        superPositions.registerSERC20{ value: 0.01 ether }(superformId);
     }
 
     function test_registerSERC20_notMintedYet() public {
@@ -280,7 +279,7 @@ contract SuperPositionsTest is BaseSetup {
             SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
         vm.expectRevert(IERC1155A.ID_NOT_MINTED_YET.selector);
 
-        superPositions.registerSERC20(superformId);
+        superPositions.registerSERC20{ value: 0.01 ether }(superformId);
     }
 
     function test_withdrawFromInvalidChainId() public {
@@ -295,7 +294,7 @@ contract SuperPositionsTest is BaseSetup {
 
         vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
 
-        superPositions.registerSERC20(superformId);
+        superPositions.registerSERC20{ value: 0.01 ether }(superformId);
     }
 
     function test_InvalidSuperFormAddress() public {
@@ -303,7 +302,7 @@ contract SuperPositionsTest is BaseSetup {
         vm.prank(getContract(ETH, "SuperformRouter"));
         superPositions.mintSingle(address(0x888), invalidSuperFormId, 1);
         vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
-        superPositions.registerSERC20(invalidSuperFormId);
+        superPositions.registerSERC20{ value: 0.01 ether }(invalidSuperFormId);
     }
 
     function test_InvalidFormImplementation() public {
@@ -311,7 +310,7 @@ contract SuperPositionsTest is BaseSetup {
         vm.prank(getContract(ETH, "SuperformRouter"));
         superPositions.mintSingle(address(0x888), invalidSuperFormId, 1);
         vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
-        superPositions.registerSERC20(invalidSuperFormId);
+        superPositions.registerSERC20{ value: 0.01 ether }(invalidSuperFormId);
     }
 
     function test_alreadyRegistered() public {
@@ -320,10 +319,20 @@ contract SuperPositionsTest is BaseSetup {
         vm.prank(getContract(ETH, "SuperformRouter"));
         superPositions.mintSingle(address(0x888), superformId, 1);
 
-        superPositions.registerSERC20(superformId);
+        superPositions.registerSERC20{ value: 0.01 ether }(superformId);
 
         vm.expectRevert(IERC1155A.SYNTHETIC_ERC20_ALREADY_REGISTERED.selector);
-        superPositions.registerSERC20(superformId);
+        superPositions.registerSERC20{ value: 0.01 ether }(superformId);
+    }
+
+    function test_invalidBroadcastFee() public {
+        (uint256 superformId,) =
+            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
+        vm.prank(getContract(ETH, "SuperformRouter"));
+        superPositions.mintSingle(address(0x888), superformId, 1);
+
+        vm.expectRevert(Error.INVALID_BROADCAST_FEE.selector);
+        superPositions.registerSERC20{ value: 0.009 ether }(superformId);
     }
 
     function test_broadcastAndDeploy() public {
@@ -333,7 +342,7 @@ contract SuperPositionsTest is BaseSetup {
         superPositions.mintSingle(address(0x888), superformId, 1);
 
         vm.recordLogs();
-        superPositions.registerSERC20(superformId);
+        superPositions.registerSERC20{ value: 0.01 ether }(superformId);
 
         vm.startPrank(deployer);
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());

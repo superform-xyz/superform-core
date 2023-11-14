@@ -29,39 +29,55 @@ import {
     InitSingleVaultData
 } from "../../types/DataTypes.sol";
 import { LiqRequest } from "../../types/LiquidityTypes.sol";
-
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
 /// @dev enables communication between Superform Core Contracts deployed on all supported networks
+
 contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     using SafeERC20 for IERC20;
     using DataLib for uint256;
     using ProofLib for AMBMessage;
 
-    /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                     STATE VARIABLES                      //
+    //////////////////////////////////////////////////////////////
 
     /// @dev just stores the superformIds that failed in a specific payload id
     mapping(uint256 payloadId => FailedDeposit) internal failedDeposits;
 
-    /*///////////////////////////////////////////////////////////////
-                                MODIFIERS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
 
     modifier onlySender() override {
         if (msg.sender != superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"))) revert Error.NOT_SUPER_ROUTER();
         _;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                                CONSTRUCTOR
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
+
     constructor(ISuperRegistry superRegistry_) BaseStateRegistry(superRegistry_) { }
 
-    /*///////////////////////////////////////////////////////////////
-                            EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc ICoreStateRegistry
+    function getFailedDeposits(uint256 payloadId_)
+        external
+        view
+        override
+        returns (uint256[] memory superformIds, uint256[] memory amounts)
+    {
+        superformIds = failedDeposits[payloadId_].superformIds;
+        amounts = failedDeposits[payloadId_].amounts;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @inheritdoc ICoreStateRegistry
     function updateDepositPayload(uint256 payloadId_, uint256[] calldata finalAmounts_) external virtual override {
@@ -298,20 +314,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         emit RescueFinalized(payloadId_);
     }
 
-    /// @inheritdoc ICoreStateRegistry
-    function getFailedDeposits(uint256 payloadId_)
-        external
-        view
-        override
-        returns (uint256[] memory superformIds, uint256[] memory amounts)
-    {
-        superformIds = failedDeposits[payloadId_].superformIds;
-        amounts = failedDeposits[payloadId_].amounts;
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                            INTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
 
     /// @dev returns if an address has a specific role
     function _hasRole(bytes32 id_, address addressToCheck_) internal view returns (bool) {
@@ -418,6 +423,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             }
         }
 
+        /// @dev validLen > 0 for the cases where there was at least one deposit update that had valid slippage
+        /// @dev (v1: passedSlippage, v2: failedSlippage, v3: passedSlippage)
+        /// @dev final vaults: (v1, v3) / PayloadState.UPDATED
+        /// @dev if validLen is 0 then Payload is marked as processed and can be extracted via rescue
         if (validLen > 0) {
             uint256[] memory finalSuperformIds = new uint256[](validLen);
             uint256[] memory finalAmounts = new uint256[](validLen);
@@ -448,7 +457,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         } else {
             finalState_ = PayloadState.PROCESSED;
         }
-
         newPayloadBody_ = abi.encode(multiVaultData);
     }
 
@@ -522,6 +530,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         }
 
         /// @dev validate payload update
+        /// @dev validLen may only be increased here in the case where slippage for the update is valid
         if (!failedSwapQueued) {
             if (PayloadUpdaterLib.validateSlippage(finalAmount_, amount_, maxSlippage_)) {
                 /// @dev sets amount to finalAmount_ and will mark the payload as UPDATED
@@ -599,7 +608,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 /// @dev for withdrawals the payload update can happen on core state registry (for normal forms)
                 /// and also can happen in timelock state registry (for timelock form)
 
-                /// @notice this check validates if the state registry is elligible to update tx data for the
+                /// @notice this check validates if the state registry is eligible to update tx data for the
                 /// corresponding superform
                 if (IBaseForm(superform).getStateRegistryId() == _getStateRegistryId(address(this))) {
                     PayloadUpdaterLib.validateLiqReq(multiVaultData_.liqData[i]);
@@ -724,7 +733,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         bool fulfilment;
         bool errors;
         address superformFactory = _getAddress(keccak256("SUPERFORM_FACTORY"));
-
         for (uint256 i; i < numberOfVaults;) {
             if (!ISuperformFactory(superformFactory).isSuperform(multiVaultData.superformIds[i])) {
                 revert Error.SUPERFORM_ID_NONEXISTENT();
@@ -772,7 +780,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
                         failedDeposits[payloadId_].superformIds.push(multiVaultData.superformIds[i]);
 
-                        /// @dev clearing multiVaultData.amounts so that in case that fullfilment is true these amounts
+                        /// @dev clearing multiVaultData.amounts so that in case that fulfillment is true these amounts
                         /// are not minted
                         multiVaultData.amounts[i] = 0;
                         failedDeposits[payloadId_].settlementToken.push(IBaseForm(superforms[i]).getVaultAsset());
@@ -781,9 +789,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 } else {
                     revert Error.BRIDGE_TOKENS_PENDING();
                 }
-                unchecked {
-                    ++i;
-                }
+            }
+            unchecked {
+                ++i;
             }
         }
 

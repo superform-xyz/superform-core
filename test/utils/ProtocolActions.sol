@@ -720,7 +720,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     /// @dev payment estimation, differs according to the type of entry point used
 
                     (liqValue,,, msgValue) =
-                        paymentHelper.estimateMultiDstSingleVault(vars.multiDstSingleVaultStateReq, true);
+                        paymentHelper.estimateMultiDstSingleVault(vars.multiDstSingleVaultStateReq, false);
                     vm.prank(users[action.user]);
 
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
@@ -1264,6 +1264,26 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     unchecked {
                         TIMELOCK_PAYLOAD_ID[CHAIN_0]++;
                     }
+                    IBaseStateRegistry timelockPayloadRegistry = IBaseStateRegistry(
+                        ISuperRegistry(getContract(CHAIN_0, "SuperRegistry")).getAddress(
+                            keccak256("TIMELOCK_STATE_REGISTRY")
+                        )
+                    );
+
+                    vm.mockCall(
+                        address(timelockPayloadRegistry),
+                        abi.encodeWithSelector(
+                            timelockPayloadRegistry.payloadHeader.selector, TIMELOCK_PAYLOAD_ID[CHAIN_0]
+                        ),
+                        abi.encode(0)
+                    );
+
+                    vm.expectRevert(Error.INVALID_PAYLOAD.selector);
+                    PayloadHelper(getContract(CHAIN_0, "PayloadHelper")).decodeTimeLockFailedPayload(
+                        TIMELOCK_PAYLOAD_ID[CHAIN_0]
+                    );
+
+                    vm.clearMockedCalls();
 
                     (address srcSender, uint64 srcChainId,,,) = PayloadHelper(getContract(CHAIN_0, "PayloadHelper"))
                         .decodeTimeLockFailedPayload(TIMELOCK_PAYLOAD_ID[CHAIN_0]);
@@ -1430,7 +1450,43 @@ abstract contract ProtocolActions is CommonProtocolActions {
             vm.prank(deployer);
             CoreStateRegistry(v.coreStateRegistryDst).proposeRescueFailedDeposits(payloadId, v.amounts);
 
+            vm.prank(deployer);
+            vm.expectRevert(Error.RESCUE_ALREADY_PROPOSED.selector);
+            CoreStateRegistry(v.coreStateRegistryDst).proposeRescueFailedDeposits(payloadId, v.amounts);
+
+            vm.prank(address(0x777));
+            vm.expectRevert(Error.INVALID_DISPUTER.selector);
+            CoreStateRegistry(v.coreStateRegistryDst).disputeRescueFailedDeposits(payloadId);
+
+            vm.mockCall(
+                getContract(DST_CHAINS[0], "SuperRegistry"),
+                abi.encodeWithSelector(SuperRegistry(getContract(DST_CHAINS[0], "SuperRegistry")).delay.selector),
+                abi.encode(0)
+            );
+
+            vm.prank(deployer);
+            vm.expectRevert(Error.DELAY_NOT_SET.selector);
+            CoreStateRegistry(v.coreStateRegistryDst).disputeRescueFailedDeposits(payloadId);
+
+            vm.clearMockedCalls();
+
+            vm.prank(deployer);
+            CoreStateRegistry(v.coreStateRegistryDst).disputeRescueFailedDeposits(payloadId);
+
+            vm.prank(deployer);
+            CoreStateRegistry(v.coreStateRegistryDst).proposeRescueFailedDeposits(payloadId, v.amounts);
+
+            vm.prank(deployer);
+            vm.expectRevert(Error.RESCUE_LOCKED.selector);
+            CoreStateRegistry(v.coreStateRegistryDst).finalizeRescueFailedDeposits(payloadId);
+
             vm.warp(block.timestamp + 25 hours);
+
+            vm.prank(deployer);
+            vm.expectRevert(Error.DISPUTE_TIME_ELAPSED.selector);
+            CoreStateRegistry(v.coreStateRegistryDst).disputeRescueFailedDeposits(payloadId);
+
+            vm.prank(deployer);
             CoreStateRegistry(v.coreStateRegistryDst).finalizeRescueFailedDeposits(payloadId);
 
             v.userBalanceAfter = action.externalToken == 3

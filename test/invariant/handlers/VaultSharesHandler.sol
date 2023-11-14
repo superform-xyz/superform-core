@@ -381,6 +381,14 @@ contract VaultSharesHandler is InvariantProtocolActions {
         lzEndpointsStorage[OP] = OP_lzEndpoint;
         //lzEndpointsStorage[FTM] = FTM_lzEndpoint;
 
+        mapping(uint64 => address) storage hyperlaneMailboxesStorage = HYPERLANE_MAILBOXES;
+        hyperlaneMailboxesStorage[ETH] = hyperlaneMailboxes[0];
+        hyperlaneMailboxesStorage[BSC] = hyperlaneMailboxes[1];
+        hyperlaneMailboxesStorage[AVAX] = hyperlaneMailboxes[2];
+        hyperlaneMailboxesStorage[POLY] = hyperlaneMailboxes[3];
+        hyperlaneMailboxesStorage[ARBI] = hyperlaneMailboxes[4];
+        hyperlaneMailboxesStorage[OP] = hyperlaneMailboxes[5];
+
         mapping(uint64 => uint16) storage wormholeChainIdsStorage = WORMHOLE_CHAIN_IDS;
 
         for (uint256 i = 0; i < chainIds.length; i++) {

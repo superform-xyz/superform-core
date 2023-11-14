@@ -14,9 +14,10 @@ import {
 /// @author ZeroPoint Labs
 /// @dev helps decoding the bytes payload and returns meaningful information
 interface IPaymentHelper {
-    /*///////////////////////////////////////////////////////////////
-                                STRUCTS
-    //////////////////////////////////////////////////////////////*/
+
+    //////////////////////////////////////////////////////////////
+    //                           STRUCTS                         //
+    //////////////////////////////////////////////////////////////
 
     /// @param nativeFeedOracle is the native price feed oracle
     /// @param gasPriceOracle is the gas price oracle
@@ -43,33 +44,15 @@ interface IPaymentHelper {
         uint256 timelockCost;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                                EVENTS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                          EVENTS                          //
+    //////////////////////////////////////////////////////////////
+
     event ChainConfigUpdated(uint64 chainId_, uint256 configType_, bytes config_);
 
-    /*///////////////////////////////////////////////////////////////
-                        PRIVILEGED ADMIN ONLY FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev admin can configure a remote chain for first time
-    /// @param chainId_ is the identifier of new chain id
-    /// @param config_ is the chain config
-    function addRemoteChain(uint64 chainId_, PaymentHelperConfig calldata config_) external;
-
-    /// @dev admin can specifically configure/update certain configuration of a remote chain
-    /// @param chainId_ is the remote chain's identifier
-    /// @param configType_ is the type of config from 1 -> 6
-    /// @param config_ is the encoded new configuration
-    function updateRemoteChain(uint64 chainId_, uint256 configType_, bytes memory config_) external;
-
-    /// @dev admin updates config for register transmuter amb params
-    /// @param totalTransmuterFees_ is the native value fees for registering transmuter on all supported chains
-    /// @param extraDataForTransmuter_ is the broadcast extra data
-    function updateRegisterSERC20Params(uint256 totalTransmuterFees_, bytes memory extraDataForTransmuter_) external;
-    /*///////////////////////////////////////////////////////////////
-                        EXTERNAL VIEW FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
 
     /// @dev returns the amb overrides & gas to be used
     /// @param dstChainId_ is the unique dst chain identifier
@@ -192,4 +175,24 @@ interface IPaymentHelper {
         external
         view
         returns (uint256 liqAmount, uint256 srcAmount, uint256 totalAmount);
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev admin can configure a remote chain for first time
+    /// @param chainId_ is the identifier of new chain id
+    /// @param config_ is the chain config
+    function addRemoteChain(uint64 chainId_, PaymentHelperConfig calldata config_) external;
+
+    /// @dev admin can specifically configure/update certain configuration of a remote chain
+    /// @param chainId_ is the remote chain's identifier
+    /// @param configType_ is the type of config from 1 -> 6
+    /// @param config_ is the encoded new configuration
+    function updateRemoteChain(uint64 chainId_, uint256 configType_, bytes memory config_) external;
+
+    /// @dev admin updates config for register transmuter amb params
+    /// @param totalTransmuterFees_ is the native value fees for registering transmuter on all supported chains
+    /// @param extraDataForTransmuter_ is the broadcast extra data
+    function updateRegisterSERC20Params(uint256 totalTransmuterFees_, bytes memory extraDataForTransmuter_) external;
 }

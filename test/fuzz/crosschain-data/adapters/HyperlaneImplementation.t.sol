@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.21;
 
-import "../../../utils/BaseSetup.sol";
-import { TransactionType, CallbackType, AMBMessage } from "src/types/DataTypes.sol";
-import { DataLib } from "src/libraries/DataLib.sol";
+import "../../../utils/CommonProtocolActions.sol";
+import { AMBMessage } from "src/types/DataTypes.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
 import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
 import { Error } from "src/utils/Error.sol";
 
-contract HyperlaneImplementationTest is BaseSetup {
+contract HyperlaneImplementationTest is CommonProtocolActions {
     address public constant MAILBOX = 0xc005dc82818d67AF737725bD4bf75435d065D239;
     ISuperRegistry public superRegistry;
     HyperlaneImplementation hyperlaneImplementation;
@@ -101,7 +100,8 @@ contract HyperlaneImplementationTest is BaseSetup {
         BroadCastAMBExtraData memory ambExtraData;
         address coreStateRegistry;
 
-        (ambMessage, ambExtraData, coreStateRegistry) = setupBroadcastPayloadAMBData(users[userIndex]);
+        (ambMessage, ambExtraData, coreStateRegistry) =
+            setupBroadcastPayloadAMBData(users[userIndex], address(hyperlaneImplementation));
 
         vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
         vm.deal(malice_, 100 ether);
@@ -109,6 +109,30 @@ contract HyperlaneImplementationTest is BaseSetup {
         hyperlaneImplementation.dispatchPayload{ value: 0.1 ether }(
             users[userIndex], chainIds[5], abi.encode(ambMessage), abi.encode(ambExtraData)
         );
+    }
+
+    function test_dispatchPayload_retryPayload(uint256 userSeed_) public {
+        vm.startPrank(deployer);
+        uint256 userIndex = userSeed_ % users.length;
+
+        AMBMessage memory ambMessage;
+        BroadCastAMBExtraData memory ambExtraData;
+        address coreStateRegistry;
+
+        (ambMessage, ambExtraData, coreStateRegistry) =
+            setupBroadcastPayloadAMBData(users[userIndex], address(hyperlaneImplementation));
+
+        vm.deal(getContract(ETH, "CoreStateRegistry"), 100 ether);
+        vm.prank(getContract(ETH, "CoreStateRegistry"));
+        hyperlaneImplementation.dispatchPayload{ value: 0.1 ether }(
+            users[userIndex], chainIds[5], abi.encode(ambMessage), abi.encode(ambExtraData)
+        );
+        uint32 destination = 10;
+        bytes32 messageId = 0x024a45f20750393b28c9aac33aafc694857b6d09e9da4a8ed9f2b0e144685348;
+
+        vm.prank(deployer);
+        /// @dev note these values don't make sense, should be estimated properly
+        hyperlaneImplementation.retryPayload{ value: 10 ether }(abi.encode(messageId, destination, 1_500_000));
     }
 
     function test_revert_handle_duplicatePayload_invalidSrcChainSender_invalidCaller(address malice_) public {
@@ -119,7 +143,8 @@ contract HyperlaneImplementationTest is BaseSetup {
         /// in BaseSetup)
         hyperlaneImplementation.setReceiver(uint32(ETH), getContract(ETH, "HyperlaneImplementation"));
 
-        (ambMessage,,) = setupBroadcastPayloadAMBData(address(hyperlaneImplementation));
+        (ambMessage,,) =
+            setupBroadcastPayloadAMBData(address(hyperlaneImplementation), address(hyperlaneImplementation));
 
         vm.prank(MAILBOX);
         hyperlaneImplementation.handle(
@@ -143,48 +168,8 @@ contract HyperlaneImplementationTest is BaseSetup {
         );
     }
 
-    function setupBroadcastPayloadAMBData(address _srcSender)
-        public
-        returns (AMBMessage memory, BroadCastAMBExtraData memory, address)
-    {
-        AMBMessage memory ambMessage = AMBMessage(
-            DataLib.packTxInfo(
-                uint8(TransactionType.DEPOSIT),
-                /// @dev TransactionType
-                uint8(CallbackType.INIT),
-                0,
-                /// @dev isMultiVaults
-                1,
-                /// @dev STATE_REGISTRY_TYPE,
-                _srcSender,
-                /// @dev srcSender,
-                ETH
-            ),
-            /// @dev srcChainId
-            abi.encode(new uint8[](0), "")
-        );
-        /// ambData
-
-        /// @dev gasFees for chainIds = [56, 43114, 137, 42161, 10];
-        /// @dev excluding chainIds[0] = 1 i.e. ETH, as no point broadcasting to same chain
-        uint256[] memory gasPerDst = new uint256[](5);
-        for (uint256 i = 0; i < gasPerDst.length; i++) {
-            gasPerDst[i] = 0.1 ether;
-        }
-
-        /// @dev keeping extraDataPerDst empty for now
-        bytes[] memory extraDataPerDst = new bytes[](5);
-
-        BroadCastAMBExtraData memory ambExtraData = BroadCastAMBExtraData(gasPerDst, extraDataPerDst);
-
-        address coreStateRegistry = getContract(1, "CoreStateRegistry");
-
-        vm.deal(coreStateRegistry, 10 ether);
-        vm.deal(address(hyperlaneImplementation), 10 ether);
-
-        /// @dev need to stop unused deployer prank, to use new prank, AND changePrank() doesn't work smh
-        vm.stopPrank();
-
-        return (ambMessage, ambExtraData, coreStateRegistry);
+    function test_estimateFees_InvalidDstChainId() public {
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        hyperlaneImplementation.estimateFees(100, "", "");
     }
 }

@@ -18,7 +18,7 @@ interface ISocketRegistry {
     }
 
     /// @param id route id of bridge to be used
-    /// @param optionalNativeAmount optinal native amount, to be used when bridge needs native token along with ERC20
+    /// @param optionalNativeAmount optional native amount, to be used when bridge needs native token along with ERC20
     /// @param inputToken token addresss which will be bridged
     /// @param data bridgeData to be used by bridge
     struct BridgeRequest {

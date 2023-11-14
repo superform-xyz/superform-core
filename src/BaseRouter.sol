@@ -15,18 +15,17 @@ import "./types/DataTypes.sol";
 abstract contract BaseRouter is IBaseRouter {
     using SafeERC20 for IERC20;
 
-    /*///////////////////////////////////////////////////////////////
-                        CONSTANT/IMMUTABLE
-    //////////////////////////////////////////////////////////////*/
-
-    uint8 public constant STATE_REGISTRY_TYPE = 1;
-    uint64 public immutable CHAIN_ID;
+    //////////////////////////////////////////////////////////////
+    //                         CONSTANTS                        //
+    //////////////////////////////////////////////////////////////
 
     ISuperRegistry public immutable superRegistry;
+    uint64 public immutable CHAIN_ID;
+    uint8 public constant STATE_REGISTRY_TYPE = 1;
 
-    /*///////////////////////////////////////////////////////////////
-                            CONSTRUCTOR
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
 
     /// @param superRegistry_ the superform registry contract
     constructor(address superRegistry_) {
@@ -38,9 +37,9 @@ abstract contract BaseRouter is IBaseRouter {
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
-    /*///////////////////////////////////////////////////////////////
-                          EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @notice receive enables processing native token transfers into the smart contract.
     /// @notice liquidity bridge fails without a native receive function.

@@ -5,9 +5,10 @@ pragma solidity ^0.8.21;
 /// @author ZeroPoint Labs
 /// @notice Interface for Core State Registry
 interface ICoreStateRegistry {
-    /*///////////////////////////////////////////////////////////////
-                               STRUCTS
-    //////////////////////////////////////////////////////////////*/
+
+    //////////////////////////////////////////////////////////////
+    //                           STRUCTS                        //
+    //////////////////////////////////////////////////////////////
 
     /// @dev holds all information about a failed deposit mapped to a payload id
     /// @param superformIds is an array of failing superform ids
@@ -24,9 +25,9 @@ interface ICoreStateRegistry {
         uint256 lastProposedTimestamp;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                               EVENTS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                          EVENTS                          //
+    //////////////////////////////////////////////////////////////
 
     /// @dev is emitted when any deposit fails
     event FailedXChainDeposits(uint256 indexed payloadId);
@@ -42,9 +43,9 @@ interface ICoreStateRegistry {
     /// @dev is emitted when deposit rescue is finalized
     event RescueFinalized(uint256 indexed payloadId);
 
-    /*///////////////////////////////////////////////////////////////
-                          EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
 
     /// @dev allows users to read the superformIds that failed in a specific payloadId_
     /// @param payloadId_ is the identifier of the cross-chain payload.
@@ -53,6 +54,10 @@ interface ICoreStateRegistry {
         external
         view
         returns (uint256[] memory superformIds_, uint256[] memory amounts);
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @dev allows accounts with {CORE_STATE_REGISTRY_UPDATER_ROLE} to modify a received cross-chain deposit payload.
     /// @param payloadId_ is the identifier of the cross-chain payload to be updated.

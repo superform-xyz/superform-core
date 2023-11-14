@@ -358,7 +358,11 @@ contract SuperformERC4626FormTest is ProtocolActions {
     }
 
     function test_superformDirectDepositWithAllowance() public {
-        _successfulDeposit();
+        _successfulDeposit(false);
+    }
+
+    function test_superformDirectDepositWithAllowance_retain4626() public {
+        _successfulDeposit(true);
     }
 
     function test_superformDirectDepositWithoutEnoughAllowanceWithTokensForceSent() public {
@@ -455,7 +459,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
     }
 
     function test_superformDirectWithdrawalWithMaliciousTxData() public {
-        _successfulDeposit();
+        _successfulDeposit(false);
 
         /// scenario: user could hack the funds from the form
         vm.selectFork(FORKS[ETH]);
@@ -492,7 +496,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
     function test_superformXChainWithdrawalWithoutUpdatingTxData() public {
         /// @dev prank deposits (just mint super-shares)
-        _successfulDeposit();
+        _successfulDeposit(false);
 
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
@@ -526,9 +530,37 @@ contract SuperformERC4626FormTest is ProtocolActions {
         IBaseForm(superform).xChainWithdrawFromVault(data, deployer, ARBI);
     }
 
+    function test_superformXChainWithdrawal_NonExistentSuperform() public {
+        /// @dev prank deposits (just mint super-shares)
+        _successfulDeposit(false);
+
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
+        IBaseForm(superform).getVaultAddress();
+
+        MockERC20(getContract(ETH, "DAI")).transfer(superform, 1e18);
+        vm.stopPrank();
+
+        /// @dev simulating withdrawals with malicious tx data
+        vm.startPrank(getContract(ETH, "CoreStateRegistry"));
+
+        InitSingleVaultData memory data = InitSingleVaultData(
+            1, 1, 1e18, 100, false, false, LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ARBI, 0), refundAddress, ""
+        );
+
+        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
+        IBaseForm(superform).xChainWithdrawFromVault(data, deployer, ARBI);
+    }
+
     function test_superformXChainWithdrawalWithMaliciousTxData() public {
         /// @dev prank deposits (just mint super-shares)
-        _successfulDeposit();
+        _successfulDeposit(false);
 
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
@@ -571,7 +603,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
     function test_superformDirectWithdrawWithInvalidLiqDataToken() public {
         /// @dev prank deposits (just mint super-shares)
-        _successfulDeposit();
+        _successfulDeposit(false);
 
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
@@ -609,7 +641,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
     function test_superformXChainWithInvalidLiqDataToken() public {
         /// @dev prank deposits (just mint super-shares)
-        _successfulDeposit();
+        _successfulDeposit(false);
 
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
@@ -841,7 +873,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
                         INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function _successfulDeposit() internal {
+    function _successfulDeposit(bool retain4626) internal {
         /// scenario: user deposits with his own collateral and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
@@ -857,7 +889,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             1e18,
             100,
             false,
-            false,
+            retain4626,
             LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
             "",
             refundAddress,

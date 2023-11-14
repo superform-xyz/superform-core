@@ -10,16 +10,17 @@ import "./types/DataTypes.sol";
 /// @author Zeropoint Labs.
 /// @dev SuperformRouter users funds and action information to a remote execution chain.
 contract SuperformRouter is BaseRouterImplementation {
-    /*///////////////////////////////////////////////////////////////
-                            CONSTRUCTOR
-    //////////////////////////////////////////////////////////////*/
+
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
 
     /// @param superRegistry_ the superform registry contract
     constructor(address superRegistry_) BaseRouterImplementation(superRegistry_) { }
 
-    /*///////////////////////////////////////////////////////////////
-                          EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IBaseRouter
     function singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq memory req_)

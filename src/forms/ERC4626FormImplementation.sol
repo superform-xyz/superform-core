@@ -19,11 +19,53 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     using SafeERC20 for IERC4626;
     using DataLib for uint256;
 
+    //////////////////////////////////////////////////////////////
+    //                         CONSTANTS                         //
+    //////////////////////////////////////////////////////////////
+
     uint8 internal immutable STATE_REGISTRY_ID;
 
-    /*///////////////////////////////////////////////////////////////
-                            INITIALIZATION
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                           STRUCTS                        //
+    //////////////////////////////////////////////////////////////
+
+    struct directDepositLocalVars {
+        uint64 chainId;
+        address collateral;
+        address bridgeValidator;
+        uint256 dstAmount;
+        uint256 balanceBefore;
+        uint256 collateralDifference;
+        uint256 nonce;
+        uint256 deadline;
+        uint256 inputAmount;
+        bytes signature;
+    }
+
+    struct directWithdrawLocalVars {
+        uint64 chainId;
+        address collateral;
+        address receiver;
+        address bridgeValidator;
+        uint256 len1;
+        uint256 amount;
+        IERC4626 v;
+    }
+
+    struct xChainWithdrawLocalVars {
+        uint64 dstChainId;
+        address receiver;
+        address collateral;
+        address bridgeValidator;
+        uint256 balanceBefore;
+        uint256 balanceAfter;
+        uint256 amount;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
+
     constructor(address superRegistry_, uint8 stateRegistryId_) BaseForm(superRegistry_) {
         /// @dev check if state registry id is valid
         superRegistry.getStateRegistry(stateRegistryId_);
@@ -31,9 +73,9 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         STATE_REGISTRY_ID = stateRegistryId_;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                            VIEW/PURE OVERRIDES
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
 
     /// @inheritdoc BaseForm
     function getVaultName() public view virtual override returns (string memory) {
@@ -87,23 +129,24 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         return IERC4626(vault).previewRedeem(shares_);
     }
 
-    /*///////////////////////////////////////////////////////////////
-                            INTERNAL OVERRIDES
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev to avoid stack too deep errors
-    struct directDepositLocalVars {
-        uint64 chainId;
-        address collateral;
-        address bridgeValidator;
-        uint256 dstAmount;
-        uint256 balanceBefore;
-        uint256 collateralDifference;
-        uint256 nonce;
-        uint256 deadline;
-        uint256 inputAmount;
-        bytes signature;
+    /// @inheritdoc BaseForm
+    function superformYieldTokenName() external view virtual override returns (string memory) {
+        return string(abi.encodePacked("Superform ", IERC20Metadata(vault).name()));
     }
+
+    /// @inheritdoc BaseForm
+    function superformYieldTokenSymbol() external view virtual override returns (string memory) {
+        return string(abi.encodePacked("SUP-", IERC20Metadata(vault).symbol()));
+    }
+
+    /// @inheritdoc BaseForm
+    function getStateRegistryId() external view override returns (uint8) {
+        return STATE_REGISTRY_ID;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
 
     function _processDirectDeposit(InitSingleVaultData memory singleVaultData_) internal returns (uint256 dstAmount) {
         directDepositLocalVars memory vars;
@@ -223,16 +266,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         emit Processed(srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
     }
 
-    struct ProcessDirectWithdrawLocalVars {
-        uint64 chainId;
-        address collateral;
-        address receiver;
-        address bridgeValidator;
-        uint256 len1;
-        uint256 amount;
-        IERC4626 v;
-    }
-
     function _processDirectWithdraw(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_
@@ -240,7 +273,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         internal
         returns (uint256 dstAmount)
     {
-        ProcessDirectWithdrawLocalVars memory v;
+        directWithdrawLocalVars memory v;
         v.len1 = singleVaultData_.liqData.txData.length;
 
         /// @dev if there is no txData, on withdraws the receiver is the original beneficiary (srcSender_), otherwise it
@@ -289,16 +322,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 singleVaultData_.liqData.nativeAmount
             );
         }
-    }
-
-    struct xChainWithdrawLocalVars {
-        uint64 dstChainId;
-        address receiver;
-        address collateral;
-        address bridgeValidator;
-        uint256 balanceBefore;
-        uint256 balanceAfter;
-        uint256 amount;
     }
 
     function _processXChainWithdraw(
@@ -386,29 +409,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             token.safeTransfer(paymaster, dust);
         }
     }
-
-    /*///////////////////////////////////////////////////////////////
-                EXTERNAL VIEW VIRTUAL FUNCTIONS OVERRIDES
-    //////////////////////////////////////////////////////////////*/
-
-    /// @inheritdoc BaseForm
-    function superformYieldTokenName() external view virtual override returns (string memory) {
-        return string(abi.encodePacked("Superform ", IERC20Metadata(vault).name()));
-    }
-
-    /// @inheritdoc BaseForm
-    function superformYieldTokenSymbol() external view virtual override returns (string memory) {
-        return string(abi.encodePacked("SUP-", IERC20Metadata(vault).symbol()));
-    }
-
-    /// @inheritdoc BaseForm
-    function getStateRegistryId() external view override returns (uint8) {
-        return STATE_REGISTRY_ID;
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                INTERNAL VIEW VIRTUAL FUNCTIONS OVERRIDES
-    //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc BaseForm
     function _vaultSharesAmountToUnderlyingAmount(

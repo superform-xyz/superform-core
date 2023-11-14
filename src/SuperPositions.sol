@@ -27,15 +27,17 @@ import { DataLib } from "src/libraries/DataLib.sol";
 contract SuperPositions is ISuperPositions, ERC1155A {
     using DataLib for uint256;
 
-    /*///////////////////////////////////////////////////////////////
-                        STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
-    bytes32 constant DEPLOY_NEW_SERC20 = keccak256("DEPLOY_NEW_SERC20");
-
-    /// @dev is the super registry address
+    //////////////////////////////////////////////////////////////
+    //                         CONSTANTS                        //
+    //////////////////////////////////////////////////////////////
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
+    bytes32 constant DEPLOY_NEW_SERC20 = keccak256("DEPLOY_NEW_SERC20");
 
+    //////////////////////////////////////////////////////////////
+    //                     STATE VARIABLES                      //
+    //////////////////////////////////////////////////////////////
+    
     /// @dev maps all transaction data routed through the smart contract.
     mapping(uint256 transactionId => uint256 txInfo) public override txHistory;
 
@@ -48,9 +50,9 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     /// @dev nonce for sERC20 broadcast
     uint256 public xChainPayloadCounter;
 
-    /*///////////////////////////////////////////////////////////////
-                            MODIFIER
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
 
     modifier onlyRouter() {
         if (msg.sender != superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"))) revert Error.NOT_SUPER_ROUTER();
@@ -109,9 +111,9 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         _;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                            CONSTRUCTOR
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
 
     /// @param dynamicURI_  URL for external metadata of ERC1155 SuperPositions
     /// @param superRegistry_ the superform registry contract
@@ -126,9 +128,23 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         dynamicURI = dynamicURI_;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                        EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc ERC1155A
+    function supportsInterface(bytes4 interfaceId_) public view virtual override(ERC1155A, IERC165) returns (bool) {
+        return super.supportsInterface(interfaceId_);
+    }
+
+    /// @notice Used to construct return url
+    function _baseURI() internal view override returns (string memory) {
+        return dynamicURI;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @inheritdoc ISuperPositions
     function updateTxHistory(uint256 payloadId_, uint256 txInfo_) external override onlyRouter {
@@ -277,9 +293,6 @@ contract SuperPositions is ISuperPositions, ERC1155A {
             _deployTransmuter(transmuterPayload.message);
         }
     }
-    /*///////////////////////////////////////////////////////////////
-                        PRIVILEGED FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ISuperPositions
     function setDynamicURI(string memory dynamicURI_, bool freeze_) external override onlyProtocolAdmin {
@@ -294,23 +307,9 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         emit DynamicURIUpdated(oldURI, dynamicURI_, freeze_);
     }
 
-    /*///////////////////////////////////////////////////////////////
-                        READ-ONLY FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @inheritdoc ERC1155A
-    function supportsInterface(bytes4 interfaceId_) public view virtual override(ERC1155A, IERC165) returns (bool) {
-        return super.supportsInterface(interfaceId_);
-    }
-
-    /// @notice Used to construct return url
-    function _baseURI() internal view override returns (string memory) {
-        return dynamicURI;
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                        INTERNAL/HELPER FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
 
     /// @dev helps validate the state registry id for minting superform id
     function _validateStateSyncer(uint256 superformId_) internal view {

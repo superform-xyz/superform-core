@@ -9,8 +9,17 @@ import { InitSingleVaultData, TimelockPayload } from "../../types/DataTypes.sol"
 /// @notice Interface used by ERC4626TimelockForm. Required by TimelockStateRegistry to call processUnlock()
 /// function
 interface IERC4626TimelockForm is IERC4626Form {
-    /// @notice Process unlock request
-    function withdrawAfterCoolDown(uint256 amount_, TimelockPayload memory p_) external;
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
 
     function unlockId(uint256 unlockCounter_) external view returns (InitSingleVaultData memory singleVaultData);
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Process unlock request
+    function withdrawAfterCoolDown(uint256 amount_, TimelockPayload memory p_) external;
 }

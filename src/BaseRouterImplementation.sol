@@ -25,23 +25,65 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     using SafeERC20 for IERC20;
     using DataLib for uint256;
 
-    /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                     STATE VARIABLES                      //
+    //////////////////////////////////////////////////////////////
 
     /// @dev tracks the total payloads
     uint256 public payloadIds;
 
-    /*///////////////////////////////////////////////////////////////
-                            CONSTRUCTOR
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                           STRUCTS                        //
+    //////////////////////////////////////////////////////////////
+
+    struct ValidateAndDispatchTokensArgs {
+        LiqRequest liqRequest;
+        address superform;
+        uint64 srcChainId;
+        uint64 dstChainId;
+        address srcSender;
+        bool deposit;
+    }
+
+    struct MultiDepositLocalVars {
+        uint256 len;
+        address[] superforms;
+        uint256[] dstAmounts;
+        bool[] mints;
+    }
+
+    struct SingleTokenForwardLocalVars {
+        IERC20 token;
+        uint256 txDataLength;
+        uint256 totalAmount;
+        address permit2;
+        uint256 approvalAmount;
+        uint256 amountIn;
+        uint8 bridgeId;
+    }
+
+    struct MultiTokenForwardLocalVars {
+        IERC20 token;
+        uint256 len;
+        uint256 totalAmount;
+        uint256 permit2dataLen;
+        address permit2;
+        uint256 targetLen;
+        uint256[] approvalAmounts;
+        uint256[] amountsIn;
+        uint8[] bridgeIds;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
 
     /// @param superRegistry_ the superform registry contract
     constructor(address superRegistry_) BaseRouter(superRegistry_) { }
 
-    /*///////////////////////////////////////////////////////////////
-                        INTERNAL/HELPER FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                CORE INTERNAL FUNCTIONS                   //
+    //////////////////////////////////////////////////////////////
 
     /// @dev getter for PERMIT2 in case it is not supported or set on a given chain
     function _getPermit2() internal view returns (address) {
@@ -316,9 +358,13 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev validate the action
         ActionLocalVars memory vars;
         vars.srcChainId = CHAIN_ID;
+
         if (vars.srcChainId == req_.dstChainId) {
             revert Error.INVALID_ACTION();
         }
+
+        /// @dev validates the receiver address
+        _validateReceiverAddress(req_.superformData.receiverAddress);
 
         /// @dev validate the Superforms data
         if (
@@ -427,6 +473,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
+        /// @dev validates the receiver address
+        _validateReceiverAddress(req_.superformsData.receiverAddress);
+
         ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnBatch(
             msg.sender, req_.superformsData.superformIds, req_.superformsData.amounts
         );
@@ -466,19 +515,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         emit CrossChainInitiatedWithdrawMulti(
             vars.currentPayloadId, req_.dstChainId, req_.superformsData.superformIds, req_.ambIds
         );
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                         HELPER FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    struct ValidateAndDispatchTokensArgs {
-        LiqRequest liqRequest;
-        address superform;
-        uint64 srcChainId;
-        uint64 dstChainId;
-        address srcSender;
-        bool deposit;
     }
 
     function _validateAndDispatchTokens(ValidateAndDispatchTokensArgs memory args_) internal virtual {
@@ -533,9 +569,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
     }
 
-    /*///////////////////////////////////////////////////////////////
-                            DEPOSIT HELPERS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                INTERNAL DEPOSIT HELPERS                  //
+    //////////////////////////////////////////////////////////////
 
     /// @notice fulfils the final stage of same chain deposit action
     function _directDeposit(
@@ -614,13 +650,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
     }
 
-    struct MultiDepositLocalVars {
-        uint256 len;
-        address[] superforms;
-        uint256[] dstAmounts;
-        bool[] mints;
-    }
-
     /// @notice deposits to multiple vaults on the same chain
     /// @dev loops and call `_directDeposit`
     function _directMultiDeposit(
@@ -674,9 +703,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
     }
 
-    /*///////////////////////////////////////////////////////////////
-                            WITHDRAW HELPERS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                INTERNAL WITHDRAW HELPERS                 //
+    //////////////////////////////////////////////////////////////
 
     /// @notice fulfils the final stage of same chain withdrawal action
     function _directWithdraw(
@@ -756,9 +785,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
     }
 
-    /*///////////////////////////////////////////////////////////////
-                            VALIDATION HELPERS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //               INTERNAL VALIDATION HELPERS                //
+    //////////////////////////////////////////////////////////////
 
     function _validateSuperformData(
         uint256 superformId_,
@@ -780,9 +809,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         (, uint32 formImplementationId, uint64 sfDstChainId) = superformId_.getSuperform();
 
         if (dstChainId_ != sfDstChainId) return false;
-
-        /// @dev no chainId 0 allowed on superform
-        if (sfDstChainId == 0) return false;
 
         /// @dev 10000 = 100% slippage
         if (maxSlippage_ > 10_000) return false;
@@ -860,16 +886,14 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     }
 
     function _validateReceiverAddress(address receiverAddress_) internal view virtual {
-        if (tx.origin != msg.sender) {
-            if (receiverAddress_ == address(0)) {
-                revert Error.RECEIVER_ADDRESS_NOT_SET();
-            }
+        if (tx.origin != msg.sender && receiverAddress_ == address(0)) {
+            revert Error.RECEIVER_ADDRESS_NOT_SET();
         }
     }
 
-    /*///////////////////////////////////////////////////////////////
-                        FEE FORWARDING HELPERS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //             INTERNAL FEE FORWARDING HELPERS              //
+    //////////////////////////////////////////////////////////////
 
     /// @dev forwards the residual payment to payment collector
     function _forwardPayment(uint256 _balanceBefore) internal virtual {
@@ -883,19 +907,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
     }
 
-    /*///////////////////////////////////////////////////////////////
-                    SAME CHAIN TOKEN SETTLEMENT HELPERS
-    //////////////////////////////////////////////////////////////*/
-
-    struct SingleTokenForwardLocalVars {
-        IERC20 token;
-        uint256 txDataLength;
-        uint256 totalAmount;
-        address permit2;
-        uint256 approvalAmount;
-        uint256 amountIn;
-        uint8 bridgeId;
-    }
+    //////////////////////////////////////////////////////////////
+    //       INTERNAL SAME CHAIN TOKEN SETTLEMENT HELPERS       //
+    //////////////////////////////////////////////////////////////
 
     function _singleVaultTokenForward(
         address srcSender_,
@@ -970,18 +984,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
 
         return (v.amountIn, v.bridgeId);
-    }
-
-    struct MultiTokenForwardLocalVars {
-        IERC20 token;
-        uint256 len;
-        uint256 totalAmount;
-        uint256 permit2dataLen;
-        address permit2;
-        uint256 targetLen;
-        uint256[] approvalAmounts;
-        uint256[] amountsIn;
-        uint8[] bridgeIds;
     }
 
     function _multiVaultTokenForward(

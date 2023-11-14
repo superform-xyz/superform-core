@@ -272,6 +272,35 @@ contract PayMasterTest is ProtocolActions {
         );
     }
 
+    function test_treatAMB() public {
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+        address feeCollector = getContract(ETH, "PayMaster");
+        vm.expectRevert(Error.INSUFFICIENT_NATIVE_AMOUNT.selector);
+        PayMaster(payable(feeCollector)).treatAMB(2, 10 ether, "");
+
+        AMBMessage memory ambMessage;
+        BroadCastAMBExtraData memory ambExtraData;
+        address coreStateRegistry;
+        address hyperlane = superRegistry.getAmbAddress(2);
+
+        (ambMessage, ambExtraData, coreStateRegistry) = setupBroadcastPayloadAMBData(users[0], hyperlane);
+        vm.stopPrank();
+        vm.deal(getContract(ETH, "CoreStateRegistry"), 100 ether);
+        vm.prank(getContract(ETH, "CoreStateRegistry"));
+        HyperlaneImplementation(hyperlane).dispatchPayload{ value: 0.1 ether }(
+            users[0], chainIds[5], abi.encode(ambMessage), abi.encode(ambExtraData)
+        );
+        uint32 destination = 10;
+        bytes32 messageId = 0x024a45f20750393b28c9aac33aafc694857b6d09e9da4a8ed9f2b0e144685348;
+
+        bytes memory data = abi.encode(messageId, destination, 1_500_000);
+
+        vm.prank(deployer);
+        vm.deal(feeCollector, 10 ether);
+        PayMaster(payable(feeCollector)).treatAMB(2, 10 ether, data);
+    }
+
     function _successfulDeposit() internal {
         /// scenario: user deposits with his own collateral and has approved enough tokens
         vm.selectFork(FORKS[ETH]);

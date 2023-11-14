@@ -12,9 +12,10 @@ import { BroadcastMessage } from "../types/DataTypes.sol";
 /// @author Zeropoint Labs.
 /// @dev Contract to manage roles in the entire superform protocol
 contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
-    /*///////////////////////////////////////////////////////////////
-                            CONSTANTS
-    //////////////////////////////////////////////////////////////*/
+
+    //////////////////////////////////////////////////////////////
+    //                         CONSTANTS                        //
+    //////////////////////////////////////////////////////////////
 
     bytes32 public constant SYNC_REVOKE = keccak256("SYNC_REVOKE");
 
@@ -77,16 +78,16 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     /// @dev multi address (revoke broadcast should be restricted)
     bytes32 public constant override WORMHOLE_VAA_RELAYER_ROLE = keccak256("WORMHOLE_VAA_RELAYER_ROLE");
 
-    /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                     STATE VARIABLES                      //
+    //////////////////////////////////////////////////////////////
 
-    uint256 public xChainPayloadCounter;
     ISuperRegistry public superRegistry;
+    uint256 public xChainPayloadCounter;
 
-    /*///////////////////////////////////////////////////////////////
-                                MODIFIERS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
 
     modifier onlyBroadcastRegistry() {
         if (msg.sender != superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))) {
@@ -95,9 +96,9 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         _;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                                CONSTRUCTOR
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
 
     constructor(InitialRoleSetup memory roles) {
         _grantRole(PROTOCOL_ADMIN_ROLE, roles.admin);
@@ -128,9 +129,23 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         _setRoleAdmin(WORMHOLE_VAA_RELAYER_ROLE, PROTOCOL_ADMIN_ROLE);
     }
 
-    /*///////////////////////////////////////////////////////////////
-                        EXTERNAL WRITE FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc ISuperRBAC
+    function hasProtocolAdminRole(address admin_) external view override returns (bool) {
+        return hasRole(PROTOCOL_ADMIN_ROLE, admin_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function hasEmergencyAdminRole(address emergencyAdmin_) external view override returns (bool) {
+        return hasRole(EMERGENCY_ADMIN_ROLE, emergencyAdmin_);
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
     
     /// @inheritdoc ISuperRBAC
     function setSuperRegistry(address superRegistry_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
@@ -185,23 +200,9 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         }
     }
 
-    /*///////////////////////////////////////////////////////////////
-                        CONVENIENCE VIEW FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @inheritdoc ISuperRBAC
-    function hasProtocolAdminRole(address admin_) external view override returns (bool) {
-        return hasRole(PROTOCOL_ADMIN_ROLE, admin_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function hasEmergencyAdminRole(address emergencyAdmin_) external view override returns (bool) {
-        return hasRole(EMERGENCY_ADMIN_ROLE, emergencyAdmin_);
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                            INTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
 
     /**
      * @dev Overload {_revokeRole} to track enumerable memberships

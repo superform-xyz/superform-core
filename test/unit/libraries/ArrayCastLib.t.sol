@@ -3,9 +3,9 @@ pragma solidity ^0.8.21;
 
 import "forge-std/Test.sol";
 
-import { Error } from "src/utils/Error.sol";
 import { ArrayCastLib } from "src/libraries/ArrayCastLib.sol";
 import { LiqRequest } from "src/types/LiquidityTypes.sol";
+import { InitSingleVaultData, InitMultiVaultData } from "src/types/DataTypes.sol";
 
 contract ArrayCastLibUser {
     function castLiqRequestToArray(LiqRequest memory a) external pure returns (LiqRequest[] memory) {
@@ -14,6 +14,14 @@ contract ArrayCastLibUser {
 
     function castBoolToArray(bool a) external pure returns (bool[] memory) {
         return ArrayCastLib.castBoolToArray(a);
+    }
+
+    function castToMultiVaultData(InitSingleVaultData memory a)
+        external
+        pure
+        returns (InitMultiVaultData memory castedData_)
+    {
+        return ArrayCastLib.castToMultiVaultData(a);
     }
 }
 
@@ -35,5 +43,13 @@ contract ArrayCastLibTest is Test {
         bool value = true;
         bool[] memory castedValue = arrayCastLib.castBoolToArray(value);
         assertEq(castedValue.length, 1);
+    }
+
+    function test_castToMultiVaultData() external {
+        InitSingleVaultData memory data = InitSingleVaultData(
+            1, 1, 1e18, 100, false, false, LiqRequest(1, bytes(""), address(0), 1, 0), address(0), ""
+        );
+        InitMultiVaultData memory castedValue = arrayCastLib.castToMultiVaultData(data);
+        assertEq(castedValue.superformIds.length, 1);
     }
 }
