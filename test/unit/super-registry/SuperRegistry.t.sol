@@ -352,6 +352,21 @@ contract SuperRegistryTest is BaseSetup {
         superRegistry.setDelay(11 hours);
     }
 
+    function test_getAmbId() public {
+        uint256 ambId_ = superRegistry.getAmbId(getContract(ETH, "LayerzeroImplementation"));
+        assertEq(ambId_, 1);
+    }
+
+    function test_getBridgeAddress_zero() public {
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        superRegistry.getBridgeAddress(10);
+    }
+
+    function test_getBridgeValidator_zero() public {
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        superRegistry.getBridgeValidator(10);
+    }
+
     function _setAndAssert(bytes32 id_, address contractAddress) internal {
         vm.prank(deployer);
         bool isLocked = false;

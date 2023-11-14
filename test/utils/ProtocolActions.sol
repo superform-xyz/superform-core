@@ -720,7 +720,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     /// @dev payment estimation, differs according to the type of entry point used
 
                     (liqValue,,, msgValue) =
-                        paymentHelper.estimateMultiDstSingleVault(vars.multiDstSingleVaultStateReq, true);
+                        paymentHelper.estimateMultiDstSingleVault(vars.multiDstSingleVaultStateReq, false);
                     vm.prank(users[action.user]);
 
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
