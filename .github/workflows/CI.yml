@@ -155,7 +155,6 @@ jobs:
         run: |
           echo "## Fork tests result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
-
                   
   coverage:
     needs: ["build"]
