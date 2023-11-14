@@ -27,9 +27,9 @@ contract MDMVW84002408NativeInputSlipageAMB14 is ProtocolActions {
 
         /// all superforms are different
         TARGET_UNDERLYINGS[POLY][0] = [0, 1, 2];
-        TARGET_VAULTS[POLY][0] = [0, 2, 4];
+        TARGET_VAULTS[POLY][0] = [0, 1, 4];
         /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[POLY][0] = [0, 2, 1];
+        TARGET_FORM_KINDS[POLY][0] = [0, 1, 1];
 
         /// all superforms are different
         TARGET_UNDERLYINGS[AVAX][0] = [2, 2];
@@ -44,9 +44,9 @@ contract MDMVW84002408NativeInputSlipageAMB14 is ProtocolActions {
 
         /// all superforms are different
         TARGET_UNDERLYINGS[POLY][1] = [0, 1, 2];
-        TARGET_VAULTS[POLY][1] = [0, 2, 4];
+        TARGET_VAULTS[POLY][1] = [0, 1, 4];
         /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[POLY][1] = [0, 2, 1];
+        TARGET_FORM_KINDS[POLY][1] = [0, 1, 1];
 
         /// all superforms are different
         TARGET_UNDERLYINGS[AVAX][1] = [2, 2];

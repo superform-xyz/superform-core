@@ -4,7 +4,7 @@ pragma solidity ^0.8.21;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract SXSVWRevertKycNativeNoSlippageAMB13 is ProtocolActions {
+contract SXSVWRevertTimelockNativeNoSlippageAMB13 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -18,20 +18,20 @@ contract SXSVWRevertKycNativeNoSlippageAMB13 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[AVAX][0] = [2];
 
-        TARGET_VAULTS[AVAX][0] = [7];
+        TARGET_VAULTS[AVAX][0] = [4];
 
         /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[AVAX][0] = [2];
+        TARGET_FORM_KINDS[AVAX][0] = [1];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[AVAX][1] = [2];
 
-        TARGET_VAULTS[AVAX][1] = [7];
+        TARGET_VAULTS[AVAX][1] = [4];
 
         /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[AVAX][1] = [2];
+        TARGET_FORM_KINDS[AVAX][1] = [1];
 
         MAX_SLIPPAGE = 1000;
 

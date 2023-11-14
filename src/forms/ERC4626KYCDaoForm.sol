@@ -11,7 +11,6 @@ import { Error } from "../utils/Error.sol";
 /// @notice The Form implementation for IERC4626 vaults with kycDAO NFT checks
 /// @notice This form must hold a kycDAO NFT to operate
 contract ERC4626KYCDaoForm is ERC4626FormImplementation {
-
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
@@ -55,16 +54,15 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
     }
 
     function _xChainDepositIntoVault(
-        InitSingleVaultData memory singleVaultData_,
-        address srcSender_,
-        uint64 srcChainId_
+        InitSingleVaultData memory, /*singleVaultData_*/
+        address, /*srcSender_*/
+        uint64 /*srcChainId_*/
     )
         internal
         override
-        onlyKYC(srcSender_)
-        returns (uint256 dstAmount)
+        returns (uint256 /*dstAmount*/ )
     {
-        dstAmount = _processXChainDeposit(singleVaultData_, srcChainId_);
+        revert Error.NOT_IMPLEMENTED();
     }
 
     /// @inheritdoc BaseForm
@@ -82,16 +80,15 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
 
     /// @inheritdoc BaseForm
     function _xChainWithdrawFromVault(
-        InitSingleVaultData memory singleVaultData_,
-        address srcSender_,
-        uint64 srcChainId_
+        InitSingleVaultData memory, /*singleVaultData_*/
+        address, /*srcSender_*/
+        uint64 /*srcChainId_*/
     )
         internal
         override
-        onlyKYC(srcSender_)
-        returns (uint256 dstAmount)
+        returns (uint256 /*dstAmount*/ )
     {
-        dstAmount = _processXChainWithdraw(singleVaultData_, srcSender_, srcChainId_);
+        revert Error.NOT_IMPLEMENTED();
     }
 
     /// @inheritdoc BaseForm

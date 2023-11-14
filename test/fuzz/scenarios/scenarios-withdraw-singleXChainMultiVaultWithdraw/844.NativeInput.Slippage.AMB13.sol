@@ -4,7 +4,7 @@ pragma solidity ^0.8.21;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract SDMVW874NativeInputSlippageAMB13 is ProtocolActions {
+contract SDMVW844NativeInputSlippageAMB13 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -18,14 +18,14 @@ contract SDMVW874NativeInputSlippageAMB13 is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ARBI][0] = [0, 0, 1];
-        TARGET_VAULTS[ARBI][0] = [8, 7, 4];
+        TARGET_VAULTS[ARBI][0] = [8, 4, 4];
         /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ARBI][0] = [0, 2, 1];
+        TARGET_FORM_KINDS[ARBI][0] = [0, 1, 1];
 
         TARGET_UNDERLYINGS[ARBI][1] = [0, 0, 1];
-        TARGET_VAULTS[ARBI][1] = [8, 7, 4];
+        TARGET_VAULTS[ARBI][1] = [8, 4, 4];
         /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ARBI][1] = [0, 2, 1];
+        TARGET_FORM_KINDS[ARBI][1] = [0, 1, 1];
 
         MAX_SLIPPAGE = 1000;
 

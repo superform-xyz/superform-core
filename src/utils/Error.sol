@@ -379,6 +379,9 @@ library Error {
     /// @dev thrown in KYCDAO form if no KYC token is present
     error NO_VALID_KYC_TOKEN();
 
+    /// @dev thrown in forms where a certain functionality is not allowed or implemented
+    error NOT_IMPLEMENTED();
+
     /*///////////////////////////////////////////////////////////////
                         PAYMASTER ERRORS
     //////////////////////////////////////////////////////////////*/

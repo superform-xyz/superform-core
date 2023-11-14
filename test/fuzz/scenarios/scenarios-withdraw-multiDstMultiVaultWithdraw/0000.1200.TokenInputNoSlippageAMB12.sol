@@ -28,9 +28,9 @@ contract MDMVW00001200TokenInputSlippageAMB12 is ProtocolActions {
 
         /// all superforms are different
         TARGET_UNDERLYINGS[POLY][0] = [0, 0, 0, 2];
-        TARGET_VAULTS[POLY][0] = [1, 2, 0, 0];
+        TARGET_VAULTS[POLY][0] = [1, 1, 0, 0];
         /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[POLY][0] = [1, 2, 0, 0];
+        TARGET_FORM_KINDS[POLY][0] = [1, 1, 0, 0];
 
         TARGET_UNDERLYINGS[ARBI][1] = [1, 1, 1, 0];
         TARGET_VAULTS[ARBI][1] = [0, 0, 0, 0];
@@ -38,9 +38,9 @@ contract MDMVW00001200TokenInputSlippageAMB12 is ProtocolActions {
         TARGET_FORM_KINDS[ARBI][1] = [0, 0, 0, 0];
 
         TARGET_UNDERLYINGS[POLY][1] = [0, 0, 0, 2];
-        TARGET_VAULTS[POLY][1] = [1, 2, 0, 0];
+        TARGET_VAULTS[POLY][1] = [1, 1, 0, 0];
         /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[POLY][1] = [1, 2, 0, 0];
+        TARGET_FORM_KINDS[POLY][1] = [1, 1, 0, 0];
 
         /// @dev first 3 vaults are equal, we mark them all as partial, even if only 1 amount is partial, otherwise
         /// assertions do not pass
