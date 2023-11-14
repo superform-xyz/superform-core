@@ -46,7 +46,7 @@ interface ISuperRegistry {
     /// @dev returns the permit2 address
     function PERMIT2() external view returns (address);
 
-    /// @dev returns the id of the super router module
+    /// @dev returns the id of the superform router module
     function SUPERFORM_ROUTER() external view returns (bytes32);
 
     /// @dev returns the id of the superform factory module

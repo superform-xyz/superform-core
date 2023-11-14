@@ -50,7 +50,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     //////////////////////////////////////////////////////////////
 
     modifier onlySender() override {
-        if (msg.sender != superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"))) revert Error.NOT_SUPER_ROUTER();
+        if (msg.sender != superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"))) revert Error.NOT_SUPERFORM_ROUTER();
         _;
     }
 
@@ -256,7 +256,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     || _hasRole(keccak256("CORE_STATE_REGISTRY_DISPUTER_ROLE"), msg.sender)
             )
         ) {
-            revert Error.NOT_DISPUTER();
+            revert Error.NOT_VALID_DISPUTER();
         }
 
         /// @dev the timelock is already elapsed to dispute

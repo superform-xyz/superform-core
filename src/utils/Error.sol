@@ -8,17 +8,17 @@ library Error {
     //////////////////////////////////////////////////////////////
     ///@notice errors thrown in protocol setup
     
-    /// @dev thrown when trying to set again pseudo immutables in SuperRegistry
-    error DISABLED();
+    /// @dev thrown if chain id exceeds max(uint64)
+    error BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
+
+    /// @dev thrown when not possible to revoke a role in broadcasting
+    error CANNOT_REVOKE_NON_BROADCASTABLE_ROLES();
 
     /// @dev thrown when not possible to revoke last admin
     error CANNOT_REVOKE_LAST_ADMIN();
 
-    /// @dev thrown when not possible to revoke a role in broadcast mode
-    error CANNOT_REVOKE_NON_BROADCASTABLE_ROLES();
-
-    /// @dev thrown if chain id exceeds max(uint64)
-    error BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
+    /// @dev thrown when trying to set again pseudo immutables in SuperRegistry
+    error DISABLED();
 
     /// @dev thrown if rescue delay is not yet set for a chain
     error DELAY_NOT_SET();
@@ -32,44 +32,27 @@ library Error {
     ///@notice errors thrown when functions cannot be called
 
     /// COMMON AUTHORIZATION ERRORS
-    /// @dev thrown when msg.sender is not core state registry
-    error NOT_CORE_STATE_REGISTRY();
-
-    /// @dev thrown when msg.sender is not emergency queue
-    error NOT_EMERGENCY_QUEUE();
-
-    /// @dev thrown when msg.sender is not form
-    error NOT_SUPERFORM();
-
-    /// @dev thrown when msg.sender is not timelock form
-    error NOT_TIMELOCK_SUPERFORM();
 
     /// @dev thrown when msg.sender is not a valid amb implementation
     error NOT_AMB_IMPLEMENTATION();
 
-    /// @dev thrown when msg.sender is not state registry
-    error NOT_STATE_REGISTRY();
-
     /// @dev thrown when msg.sender is not an allowed broadcaster
     error NOT_ALLOWED_BROADCASTER();
-
-    /// @dev thrown when msg.sender is not broadcast state registry
-    error NOT_BROADCAST_REGISTRY();
 
     /// @dev thrown when msg.sender is not broadcast amb implementation
     error NOT_BROADCAST_AMB_IMPLEMENTATION();
 
-    /// @dev thrown when msg.sender is not timelock state registry
-    error NOT_TIMELOCK_STATE_REGISTRY();
+    /// @dev thrown when msg.sender is not broadcast state registry
+    error NOT_BROADCAST_REGISTRY();
 
-    /// @dev thrown when msg.sender is not protocol admin
-    error NOT_PROTOCOL_ADMIN();
+    /// @dev thrown when msg.sender is not core state registry
+    error NOT_CORE_STATE_REGISTRY();
 
     /// @dev thrown when msg.sender is not emergency admin
     error NOT_EMERGENCY_ADMIN();
 
-    /// @dev thrown when msg.sender is not super router
-    error NOT_SUPER_ROUTER();
+    /// @dev thrown when msg.sender is not emergency queue
+    error NOT_EMERGENCY_QUEUE();
 
     /// @dev thrown when msg.sender is not minter
     error NOT_MINTER();
@@ -77,36 +60,52 @@ library Error {
     /// @dev thrown when msg.sender is not minter state registry
     error NOT_MINTER_STATE_REGISTRY_ROLE();
 
-    /// @dev if the msg.sender is not superform factory
-    error NOT_SUPERFORM_FACTORY();
-
-    /// @dev thrown if the msg.sender is not super registry
-    error NOT_SUPER_REGISTRY();
-
-    /// @dev thrown if the msg.sender does not have SWAPPER role
-    error NOT_SWAPPER();
-
-    /// @dev thrown if msg.sender is not paymaster
+    /// @dev thrown when msg.sender is not paymaster
     error NOT_PAYMASTER();
 
-    /// @dev - when msg.sender is not payment admin
+    /// @dev thrown when msg.sender is not payment admin
     error NOT_PAYMENT_ADMIN();
 
-    /// @dev thrown if msg.sender is not the refund address to dispute
-    error NOT_DISPUTER();
+    /// @dev thrown when msg.sender is not protocol admin
+    error NOT_PROTOCOL_ADMIN();
+
+    /// @dev thrown when msg.sender is not state registry
+    error NOT_STATE_REGISTRY();
+
+    /// @dev thrown when msg.sender is not super registry
+    error NOT_SUPER_REGISTRY();
+
+    /// @dev thrown when msg.sender is not superform router
+    error NOT_SUPERFORM_ROUTER();
+
+    /// @dev thrown when msg.sender is not a superform
+    error NOT_SUPERFORM();
+
+    /// @dev thrown when msg.sender is not superform factory
+    error NOT_SUPERFORM_FACTORY();
+
+    /// @dev thrown when msg.sender is not timelock form
+    error NOT_TIMELOCK_SUPERFORM();
+
+    /// @dev thrown when msg.sender is not timelock state registry
+    error NOT_TIMELOCK_STATE_REGISTRY();
+
+    /// @dev thrown if msg.sender is not user or disputer
+    error NOT_VALID_DISPUTER();
 
     /// @dev thrown if the msg.sender is not privileged caller
     error NOT_PRIVILEGED_CALLER(bytes32 role);
 
     /// STATE REGISTRY AUTHORIZATION ERRORS
+
+    /// @dev layerzero adapter specific error, when caller not layerzero endpoint
+    error CALLER_NOT_ENDPOINT();
+
     /// @dev hyperlane adapter specific error, when caller not hyperlane mailbox
     error CALLER_NOT_MAILBOX();
 
     /// @dev wormhole relayer specific error, when caller not wormhole relayer
     error CALLER_NOT_RELAYER();
-
-    /// @dev layerzero adapter specific error, when caller not layerzero endpoint
-    error CALLER_NOT_ENDPOINT();
 
     /// @dev thrown when src chain sender is not valid
     error INVALID_SRC_SENDER();
