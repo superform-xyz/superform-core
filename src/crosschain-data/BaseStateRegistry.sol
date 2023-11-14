@@ -19,15 +19,17 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     using ProofLib for AMBMessage;
     using ProofLib for bytes;
 
-    /*///////////////////////////////////////////////////////////////
-                            CONSTANTS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                         CONSTANTS                         //
+    //////////////////////////////////////////////////////////////
+
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
 
-    /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                     STATE VARIABLES                      //
+    //////////////////////////////////////////////////////////////
+
     uint256 public payloadsCount;
 
     /// @dev stores received payload after assigning them an unique identifier upon receiving
@@ -45,6 +47,10 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     /// @dev maps payloads to the amb ids that delivered them
     mapping(uint256 => uint8[]) internal msgAMBs;
 
+    //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
+
     /// @dev sender varies based on functionality
     /// @notice inheriting contracts should override this function (else not safe)
     modifier onlySender() virtual {
@@ -59,9 +65,10 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         _;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                        CONSTRUCTOR
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
+
     constructor(ISuperRegistry superRegistry_) {
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
@@ -71,9 +78,18 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         superRegistry = superRegistry_;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                            EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc IBaseStateRegistry
+    function getMessageAMB(uint256 payloadId_) external view override returns (uint8[] memory) {
+        return msgAMBs[payloadId_];
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IBaseStateRegistry
     function dispatchPayload(
@@ -90,6 +106,34 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     {
         _dispatchPayload(srcSender_, ambIds_, dstChainId_, message_, extraData_);
     }
+
+    /// @inheritdoc IBaseStateRegistry
+    function receivePayload(uint64 srcChainId_, bytes memory message_) external override onlyValidAmbImplementation {
+        AMBMessage memory data = abi.decode(message_, (AMBMessage));
+
+        /// @dev proofHash will always be 32 bytes length due to keccak256
+        if (data.params.length == 32) {
+            bytes32 proofHash = abi.decode(data.params, (bytes32));
+            ++messageQuorum[proofHash];
+
+            emit ProofReceived(data.params);
+        } else {
+            /// @dev if message, store header and body of it
+            ++payloadsCount;
+
+            payloadHeader[payloadsCount] = data.txInfo;
+            (msgAMBs[payloadsCount], payloadBody[payloadsCount]) = abi.decode(data.params, (uint8[], bytes));
+
+            emit PayloadReceived(srcChainId_, CHAIN_ID, payloadsCount);
+        }
+    }
+
+    /// @inheritdoc IBaseStateRegistry
+    function processPayload(uint256 payloadId_) external payable virtual override;
+
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
 
     function _dispatchPayload(
         address srcSender_,
@@ -145,39 +189,6 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             }
         }
     }
-
-    /// @inheritdoc IBaseStateRegistry
-    function receivePayload(uint64 srcChainId_, bytes memory message_) external override onlyValidAmbImplementation {
-        AMBMessage memory data = abi.decode(message_, (AMBMessage));
-
-        /// @dev proofHash will always be 32 bytes length due to keccak256
-        if (data.params.length == 32) {
-            bytes32 proofHash = abi.decode(data.params, (bytes32));
-            ++messageQuorum[proofHash];
-
-            emit ProofReceived(data.params);
-        } else {
-            /// @dev if message, store header and body of it
-            ++payloadsCount;
-
-            payloadHeader[payloadsCount] = data.txInfo;
-            (msgAMBs[payloadsCount], payloadBody[payloadsCount]) = abi.decode(data.params, (uint8[], bytes));
-
-            emit PayloadReceived(srcChainId_, CHAIN_ID, payloadsCount);
-        }
-    }
-
-    /// @inheritdoc IBaseStateRegistry
-    function processPayload(uint256 payloadId_) external payable virtual override;
-
-    /// @inheritdoc IBaseStateRegistry
-    function getMessageAMB(uint256 payloadId_) external view override returns (uint8[] memory) {
-        return msgAMBs[payloadId_];
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                            INTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
 
     /// @dev returns the required quorum for the src chain id from super registry
     /// @param chainId_ is the src chain id

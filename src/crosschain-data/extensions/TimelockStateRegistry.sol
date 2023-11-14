@@ -28,9 +28,25 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     using DataLib for uint256;
     using ProofLib for AMBMessage;
 
-    /*///////////////////////////////////////////////////////////////
-                                MODIFIERS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                         CONSTANTS                        //
+    //////////////////////////////////////////////////////////////
+
+    bytes32 immutable WITHDRAW_COOLDOWN_PERIOD = keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));
+
+    //////////////////////////////////////////////////////////////
+    //                     STATE VARIABLES                      //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev tracks the total time lock payloads
+    uint256 public timelockPayloadCounter;
+
+    /// @dev stores the timelock payloads
+    mapping(uint256 timelockPayloadId => TimelockPayload) public timelockPayload;
+
+    //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
 
     modifier onlyTimelockStateRegistryProcessor() {
         bytes32 role = keccak256("TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE");
@@ -66,29 +82,31 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         _;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                            CONSTANTS
-    //////////////////////////////////////////////////////////////*/
-    bytes32 immutable WITHDRAW_COOLDOWN_PERIOD = keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
 
-    /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev tracks the total time lock payloads
-    uint256 public timelockPayloadCounter;
-
-    /// @dev stores the timelock payloads
-    mapping(uint256 timelockPayloadId => TimelockPayload) public timelockPayload;
-
-    /*///////////////////////////////////////////////////////////////
-                            CONSTRUCTOR
-    //////////////////////////////////////////////////////////////*/
     constructor(ISuperRegistry superRegistry_) BaseStateRegistry(superRegistry_) { }
 
-    /*///////////////////////////////////////////////////////////////
-                            EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev returns the required quorum for the src chain id from super registry
+    /// @param chainId is the src chain id
+    /// @return the quorum configured for the chain id
+    function _getRequiredMessagingQuorum(uint64 chainId) internal view returns (uint256) {
+        return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId);
+    }
+
+    /// @inheritdoc ITimelockStateRegistry
+    function getTimelockPayload(uint256 payloadId_) external view returns (TimelockPayload memory timelockPayload_) {
+        return timelockPayload[payloadId_];
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @inheritdoc ITimelockStateRegistry
     function receivePayload(
@@ -220,21 +238,9 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         }
     }
 
-    /// @dev returns the required quorum for the src chain id from super registry
-    /// @param chainId is the src chain id
-    /// @return the quorum configured for the chain id
-    function _getRequiredMessagingQuorum(uint64 chainId) internal view returns (uint256) {
-        return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId);
-    }
-
-    /// @inheritdoc ITimelockStateRegistry
-    function getTimelockPayload(uint256 payloadId_) external view returns (TimelockPayload memory timelockPayload_) {
-        return timelockPayload[payloadId_];
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                            INTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
 
     /// @dev allows users to read the ids of ambs that delivered a payload
     function _getDeliveryAMB(uint256 payloadId_) internal view returns (uint8[] memory ambIds_) {

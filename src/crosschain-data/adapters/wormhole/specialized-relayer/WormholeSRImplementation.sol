@@ -16,17 +16,20 @@ import { DataLib } from "src/libraries/DataLib.sol";
 contract WormholeSRImplementation is IBroadcastAmbImplementation {
     using DataLib for uint256;
 
-    /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                         CONSTANTS                        //
+    //////////////////////////////////////////////////////////////
 
     /// @notice before deployment make sure the broadcast state registry id is updated accordingly
     uint8 constant BROADCAST_REGISTRY_ID = 3;
-
     ISuperRegistry public immutable superRegistry;
+
+    //////////////////////////////////////////////////////////////
+    //                     STATE VARIABLES                      //
+    //////////////////////////////////////////////////////////////
+
     IWormhole public wormhole;
     address public relayer;
-
     uint8 public broadcastFinality;
 
     mapping(uint64 => uint16) public ambChainId;
@@ -34,9 +37,10 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
     mapping(uint16 => address) public authorizedImpl;
     mapping(bytes32 => bool) public processedMessages;
 
-    /*///////////////////////////////////////////////////////////////
-                                EVENTS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                          EVENTS                          //
+    //////////////////////////////////////////////////////////////
+
     /// @dev emitted when wormhole core is set
     event WormholeCoreSet(address wormholeCore);
     /// @dev emitted when wormhole relyaer is set
@@ -44,9 +48,10 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
     /// @dev emitted when broadcast finality is set
     event BroadcastFinalitySet(uint8 finality);
 
-    /*///////////////////////////////////////////////////////////////
-                                MODIFIERS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
+
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
@@ -72,18 +77,18 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         _;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                                CONSTRUCTOR
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
 
     /// @param superRegistry_ is super registry address for respective chain
     constructor(ISuperRegistry superRegistry_) {
         superRegistry = superRegistry_;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                            WORMHOLE APPLICATION CONFIG
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                         CONFIG                           //
+    //////////////////////////////////////////////////////////////
 
     /// @dev allows protocol admin to configure wormhole core contract
     /// @param wormhole_ is wormhole address for respective chain
@@ -114,9 +119,26 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         emit BroadcastFinalitySet(broadcastFinality);
     }
 
-    /*///////////////////////////////////////////////////////////////
-                                EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc IBroadcastAmbImplementation
+    function estimateFees(
+        bytes memory, /*message_*/
+        bytes memory /*extraData_*/
+    )
+        external
+        view
+        override
+        returns (uint256 fees)
+    {
+        return wormhole.messageFee();
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IBroadcastAmbImplementation
     function broadcastPayload(
@@ -231,26 +253,9 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         emit AuthorizedImplAdded(chainId_, authorizedImpl_);
     }
 
-    /*///////////////////////////////////////////////////////////////
-                    READ-ONLY FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @inheritdoc IBroadcastAmbImplementation
-    function estimateFees(
-        bytes memory, /*message_*/
-        bytes memory /*extraData_*/
-    )
-        external
-        view
-        override
-        returns (uint256 fees)
-    {
-        return wormhole.messageFee();
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                    INTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
 
     /// @dev casts a bytes32 string to address
     /// @param buf_ is the bytes32 string to be casted

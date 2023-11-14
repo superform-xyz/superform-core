@@ -18,10 +18,16 @@ import { DataLib } from "src/libraries/DataLib.sol";
 contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     using DataLib for uint256;
 
-    /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                         CONSTANTS                        //
+    //////////////////////////////////////////////////////////////
+
     ISuperRegistry public immutable superRegistry;
+
+    //////////////////////////////////////////////////////////////
+    //                     STATE VARIABLES                      //
+    //////////////////////////////////////////////////////////////
+
     IWormholeRelayer public relayer;
 
     mapping(uint64 => uint16) public ambChainId;
@@ -29,15 +35,17 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     mapping(uint16 => address) public authorizedImpl;
     mapping(bytes32 => bool) public processedMessages;
 
-    /*///////////////////////////////////////////////////////////////
-                                EVENTS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                          EVENTS                          //
+    //////////////////////////////////////////////////////////////
+
     /// @dev emitted when wormhole relayer is set
     event WormholeRelayerSet(address wormholeRelayer);
 
-    /*///////////////////////////////////////////////////////////////
-                                MODIFIERS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
+
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
@@ -58,18 +66,20 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         }
         _;
     }
-    /*///////////////////////////////////////////////////////////////
-                                CONSTRUCTOR
-    //////////////////////////////////////////////////////////////*/
+
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
 
     /// @param superRegistry_ is super registry address for respective chain
     constructor(ISuperRegistry superRegistry_) {
         superRegistry = superRegistry_;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                           WORMHOLE APPLICATION CONFIG
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                         CONFIG                           //
+    //////////////////////////////////////////////////////////////
+
     /// @dev allows protocol admin to configure wormhole relayer contract
     /// @param relayer_ is the automatic relayer address for respective chain
     function setWormholeRelayer(address relayer_) external onlyProtocolAdmin {
@@ -80,9 +90,40 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         }
     }
 
-    /*///////////////////////////////////////////////////////////////
-                                EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc IAmbImplementation
+    function estimateFees(
+        uint64 dstChainId_,
+        bytes memory,
+        bytes memory extraData_
+    )
+        external
+        view
+        override
+        returns (uint256 fees)
+    {
+        uint256 dstNativeAirdrop;
+        uint256 dstGasLimit;
+
+        if (extraData_.length > 0) {
+            (dstNativeAirdrop, dstGasLimit) = abi.decode(extraData_, (uint256, uint256));
+        }
+
+        uint16 dstChainId = ambChainId[dstChainId_];
+
+        if (dstChainId == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
+        (fees,) = relayer.quoteEVMDeliveryPrice(dstChainId, dstNativeAirdrop, dstGasLimit);
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
@@ -198,40 +239,9 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         emit AuthorizedImplAdded(chainId_, authorizedImpl_);
     }
 
-    /*///////////////////////////////////////////////////////////////
-                    View Functions
-    //////////////////////////////////////////////////////////////*/
-
-    /// @inheritdoc IAmbImplementation
-    function estimateFees(
-        uint64 dstChainId_,
-        bytes memory,
-        bytes memory extraData_
-    )
-        external
-        view
-        override
-        returns (uint256 fees)
-    {
-        uint256 dstNativeAirdrop;
-        uint256 dstGasLimit;
-
-        if (extraData_.length > 0) {
-            (dstNativeAirdrop, dstGasLimit) = abi.decode(extraData_, (uint256, uint256));
-        }
-
-        uint16 dstChainId = ambChainId[dstChainId_];
-
-        if (dstChainId == 0) {
-            revert Error.INVALID_CHAIN_ID();
-        }
-
-        (fees,) = relayer.quoteEVMDeliveryPrice(dstChainId, dstNativeAirdrop, dstGasLimit);
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                    INTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
 
     /// @dev casts a bytes32 string to address
     /// @param buf_ is the bytes32 string to be casted

@@ -5,6 +5,11 @@ pragma solidity ^0.8.21;
 /// @author ZeroPoint Labs
 /// @dev is an helper for base state registry with broadcasting abilities.
 interface IBroadcastRegistry {
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
+
     /// @dev allows core contracts to send payload to all configured destination chain.
     /// @param srcSender_ is the caller of the function (used for gas refunds).
     /// @param ambId_ is the identifier of the arbitrary message bridge to be used

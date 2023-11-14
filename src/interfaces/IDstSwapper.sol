@@ -6,18 +6,19 @@ pragma solidity ^0.8.21;
 /// @dev handles all destination chain swaps.
 /// @notice all write functions can only be accessed by superform keepers.
 interface IDstSwapper {
-    /*///////////////////////////////////////////////////////////////
-                               STRUCTS
-    //////////////////////////////////////////////////////////////*/
+
+    //////////////////////////////////////////////////////////////
+    //                           STRUCTS                         //
+    //////////////////////////////////////////////////////////////
 
     struct FailedSwap {
         address interimToken;
         uint256 amount;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                                EVENTS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                          EVENTS                          //
+    //////////////////////////////////////////////////////////////
 
     /// @dev is emitted when the super registry is updated.
     event SuperRegistryUpdated(address indexed superRegistry);
@@ -28,9 +29,32 @@ interface IDstSwapper {
     /// @dev is emitted when a dst swap fails and intermediary tokens are sent to CoreStateRegistry for rescue
     event SwapFailed(uint256 payloadId, uint256 index, address intermediaryToken, uint256 amount);
 
-    /*///////////////////////////////////////////////////////////////
-                            EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
+
+    /// @notice returns the swapped amounts (if dst swap is successful)
+    /// @param payloadId_ is the id of payload
+    /// @param index_ represents the index in the payload (0 for single vault payload)
+    /// @return amount is the amount forwarded to core state registry after the swap
+    function swappedAmount(uint256 payloadId_, uint256 index_) external view returns (uint256 amount);
+
+    /// @notice returns the interim amounts (if dst swap is failing)
+    /// @param payloadId_ is the id of payload
+    /// @param index_ represents the index in the payload (0 for single vault payload)
+    /// @return interimToken is the token that is to be refunded
+    /// @return amount is the amount of interim token to be refunded
+    function getPostDstSwapFailureUpdatedTokenAmount(
+        uint256 payloadId_,
+        uint256 index_
+    )
+        external
+        view
+        returns (address interimToken, uint256 amount);
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @notice will process dst swap through a liquidity bridge
     /// @param payloadId_ represents the id of the payload
@@ -77,27 +101,4 @@ interface IDstSwapper {
     /// @param interimToken_ is the refund token
     /// @param amount_ is the refund amount
     function processFailedTx(address user_, address interimToken_, uint256 amount_) external;
-
-    /*///////////////////////////////////////////////////////////////
-                        HELPER/VIEW-ONLY FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice returns the swapped amounts (if dst swap is successful)
-    /// @param payloadId_ is the id of payload
-    /// @param index_ represents the index in the payload (0 for single vault payload)
-    /// @return amount is the amount forwarded to core state registry after the swap
-    function swappedAmount(uint256 payloadId_, uint256 index_) external view returns (uint256 amount);
-
-    /// @notice returns the interim amounts (if dst swap is failing)
-    /// @param payloadId_ is the id of payload
-    /// @param index_ represents the index in the payload (0 for single vault payload)
-    /// @return interimToken is the token that is to be refunded
-    /// @return amount is the amount of interim token to be refunded
-    function getPostDstSwapFailureUpdatedTokenAmount(
-        uint256 payloadId_,
-        uint256 index_
-    )
-        external
-        view
-        returns (address interimToken, uint256 amount);
 }

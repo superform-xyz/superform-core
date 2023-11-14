@@ -20,27 +20,15 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     using SafeERC20 for IERC20;
     using DataLib for uint256;
 
-    /*///////////////////////////////////////////////////////////////
-                            MODIFIER
-    //////////////////////////////////////////////////////////////*/
-    modifier onlyTimelockStateRegistry() {
-        if (msg.sender != superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY"))) {
-            revert Error.NOT_TIMELOCK_STATE_REGISTRY();
-        }
-        _;
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                            INITIALIZATION
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                         CONSTANTS                         //
+    //////////////////////////////////////////////////////////////
 
     uint8 constant stateRegistryId = 2; // TimelockStateRegistry
 
-    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_, stateRegistryId) { }
-
-    /*///////////////////////////////////////////////////////////////
-                        EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                           STRUCTS                         //
+    //////////////////////////////////////////////////////////////
 
     struct withdrawAfterCoolDownLocalVars {
         uint256 len1;
@@ -50,6 +38,27 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         uint256 amount;
         LiqRequest liqData;
     }
+
+    //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
+
+    modifier onlyTimelockStateRegistry() {
+        if (msg.sender != superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY"))) {
+            revert Error.NOT_TIMELOCK_STATE_REGISTRY();
+        }
+        _;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
+
+    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_, stateRegistryId) { }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @dev this function is called when the timelock deposit is ready to be withdrawn after being unlocked
     /// @param amount_ the amount of tokens to withdraw
@@ -120,9 +129,9 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         }
     }
 
-    /*///////////////////////////////////////////////////////////////
-                        INTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
 
     /// @inheritdoc BaseForm
     function _directDepositIntoVault(

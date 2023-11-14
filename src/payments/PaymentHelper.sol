@@ -29,9 +29,9 @@ contract PaymentHelper is IPaymentHelper {
     using ProofLib for bytes;
     using ProofLib for AMBMessage;
 
-    /*///////////////////////////////////////////////////////////////
-                               CONSTANTS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                         CONSTANTS                        //
+    //////////////////////////////////////////////////////////////
 
     /// @dev is the address of the superRegistry on the chain
     ISuperRegistry public immutable superRegistry;
@@ -39,9 +39,9 @@ contract PaymentHelper is IPaymentHelper {
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     uint32 public constant TIMELOCK_FORM_ID = 2;
 
-    /*///////////////////////////////////////////////////////////////
-                                STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                     STATE VARIABLES                      //
+    //////////////////////////////////////////////////////////////
 
     /// @dev xchain params
     mapping(uint64 chainId => AggregatorV3Interface) public nativeFeedOracle;
@@ -60,9 +60,24 @@ contract PaymentHelper is IPaymentHelper {
     uint256 public totalTransmuterFees;
     bytes public extraDataForTransmuter;
 
-    /*///////////////////////////////////////////////////////////////
-                                MODIFIERS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                           STRUCTS                        //
+    //////////////////////////////////////////////////////////////
+
+    struct EstimateAckCostVars {
+        uint256 currPayloadId;
+        uint256 payloadHeader;
+        uint8 callbackType;
+        bytes payloadBody;
+        uint8[] ackAmbIds;
+        uint8 isMulti;
+        uint64 srcChainId;
+        bytes message;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
 
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
@@ -78,9 +93,10 @@ contract PaymentHelper is IPaymentHelper {
         _;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                                CONSTRUCTOR
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
+
     constructor(address superRegistry_) {
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
@@ -90,121 +106,9 @@ contract PaymentHelper is IPaymentHelper {
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
-    /*///////////////////////////////////////////////////////////////
-                        PRIVILEGES ADMIN ONLY FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @inheritdoc IPaymentHelper
-    function addRemoteChain(
-        uint64 chainId_,
-        PaymentHelperConfig calldata config_
-    )
-        external
-        override
-        onlyProtocolAdmin
-    {
-        if (config_.nativeFeedOracle != address(0)) {
-            nativeFeedOracle[chainId_] = AggregatorV3Interface(config_.nativeFeedOracle);
-        }
-
-        if (config_.gasPriceOracle != address(0)) {
-            gasPriceOracle[chainId_] = AggregatorV3Interface(config_.gasPriceOracle);
-        }
-
-        swapGasUsed[chainId_] = config_.swapGasUsed;
-        updateGasUsed[chainId_] = config_.updateGasUsed;
-        depositGasUsed[chainId_] = config_.depositGasUsed;
-        withdrawGasUsed[chainId_] = config_.withdrawGasUsed;
-        nativePrice[chainId_] = config_.defaultNativePrice;
-        gasPrice[chainId_] = config_.defaultGasPrice;
-        gasPerByte[chainId_] = config_.dstGasPerByte;
-        ackGasCost[chainId_] = config_.ackGasCost;
-        timelockCost[chainId_] = config_.timelockCost;
-    }
-
-    /// @inheritdoc IPaymentHelper
-    function updateRemoteChain(
-        uint64 chainId_,
-        uint256 configType_,
-        bytes memory config_
-    )
-        external
-        override
-        onlyEmergencyAdmin
-    {
-        /// @dev Type 1: DST TOKEN PRICE FEED ORACLE
-        if (configType_ == 1) {
-            nativeFeedOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
-        }
-
-        /// @dev Type 2: DST GAS PRICE ORACLE
-        if (configType_ == 2) {
-            gasPriceOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
-        }
-
-        /// @dev Type 3: SWAP GAS USED
-        if (configType_ == 3) {
-            swapGasUsed[chainId_] = abi.decode(config_, (uint256));
-        }
-
-        /// @dev Type 4: PAYLOAD UPDATE GAS COST PER TX FOR DEPOSIT
-        if (configType_ == 4) {
-            updateGasUsed[chainId_] = abi.decode(config_, (uint256));
-        }
-
-        /// @dev Type 5: DEPOSIT GAS COST PER TX
-        if (configType_ == 5) {
-            depositGasUsed[chainId_] = abi.decode(config_, (uint256));
-        }
-
-        /// @dev Type 6: WITHDRAW GAS COST PER TX
-        if (configType_ == 6) {
-            withdrawGasUsed[chainId_] = abi.decode(config_, (uint256));
-        }
-
-        /// @dev Type 7: DEFAULT NATIVE PRICE
-        if (configType_ == 7) {
-            nativePrice[chainId_] = abi.decode(config_, (uint256));
-        }
-
-        /// @dev Type 8: DEFAULT GAS PRICE
-        if (configType_ == 8) {
-            gasPrice[chainId_] = abi.decode(config_, (uint256));
-        }
-
-        /// @dev Type 9: GAS PRICE PER Byte of Message
-        if (configType_ == 9) {
-            gasPerByte[chainId_] = abi.decode(config_, (uint256));
-        }
-
-        /// @dev Type 10: ACK GAS COST
-        if (configType_ == 10) {
-            ackGasCost[chainId_] = abi.decode(config_, (uint256));
-        }
-
-        /// @dev Type 11: TIMELOCK PROCESSING COST
-        if (configType_ == 11) {
-            timelockCost[chainId_] = abi.decode(config_, (uint256));
-        }
-
-        emit ChainConfigUpdated(chainId_, configType_, config_);
-    }
-
-    /// @inheritdoc IPaymentHelper
-    function updateRegisterSERC20Params(
-        uint256 totalTransmuterFees_,
-        bytes memory extraDataForTransmuter_
-    )
-        external
-        onlyEmergencyAdmin
-    {
-        totalTransmuterFees = totalTransmuterFees_;
-        extraDataForTransmuter = extraDataForTransmuter_;
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                                VIEW FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IPaymentHelper
     function calculateAMBData(
@@ -540,9 +444,121 @@ contract PaymentHelper is IPaymentHelper {
         return (totalFees, fees);
     }
 
-    /*///////////////////////////////////////////////////////////////
-                        INTERNAL/HELPER FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc IPaymentHelper
+    function addRemoteChain(
+        uint64 chainId_,
+        PaymentHelperConfig calldata config_
+    )
+        external
+        override
+        onlyProtocolAdmin
+    {
+        if (config_.nativeFeedOracle != address(0)) {
+            nativeFeedOracle[chainId_] = AggregatorV3Interface(config_.nativeFeedOracle);
+        }
+
+        if (config_.gasPriceOracle != address(0)) {
+            gasPriceOracle[chainId_] = AggregatorV3Interface(config_.gasPriceOracle);
+        }
+
+        swapGasUsed[chainId_] = config_.swapGasUsed;
+        updateGasUsed[chainId_] = config_.updateGasUsed;
+        depositGasUsed[chainId_] = config_.depositGasUsed;
+        withdrawGasUsed[chainId_] = config_.withdrawGasUsed;
+        nativePrice[chainId_] = config_.defaultNativePrice;
+        gasPrice[chainId_] = config_.defaultGasPrice;
+        gasPerByte[chainId_] = config_.dstGasPerByte;
+        ackGasCost[chainId_] = config_.ackGasCost;
+        timelockCost[chainId_] = config_.timelockCost;
+    }
+
+    /// @inheritdoc IPaymentHelper
+    function updateRemoteChain(
+        uint64 chainId_,
+        uint256 configType_,
+        bytes memory config_
+    )
+        external
+        override
+        onlyEmergencyAdmin
+    {
+        /// @dev Type 1: DST TOKEN PRICE FEED ORACLE
+        if (configType_ == 1) {
+            nativeFeedOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
+        }
+
+        /// @dev Type 2: DST GAS PRICE ORACLE
+        if (configType_ == 2) {
+            gasPriceOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
+        }
+
+        /// @dev Type 3: SWAP GAS USED
+        if (configType_ == 3) {
+            swapGasUsed[chainId_] = abi.decode(config_, (uint256));
+        }
+
+        /// @dev Type 4: PAYLOAD UPDATE GAS COST PER TX FOR DEPOSIT
+        if (configType_ == 4) {
+            updateGasUsed[chainId_] = abi.decode(config_, (uint256));
+        }
+
+        /// @dev Type 5: DEPOSIT GAS COST PER TX
+        if (configType_ == 5) {
+            depositGasUsed[chainId_] = abi.decode(config_, (uint256));
+        }
+
+        /// @dev Type 6: WITHDRAW GAS COST PER TX
+        if (configType_ == 6) {
+            withdrawGasUsed[chainId_] = abi.decode(config_, (uint256));
+        }
+
+        /// @dev Type 7: DEFAULT NATIVE PRICE
+        if (configType_ == 7) {
+            nativePrice[chainId_] = abi.decode(config_, (uint256));
+        }
+
+        /// @dev Type 8: DEFAULT GAS PRICE
+        if (configType_ == 8) {
+            gasPrice[chainId_] = abi.decode(config_, (uint256));
+        }
+
+        /// @dev Type 9: GAS PRICE PER Byte of Message
+        if (configType_ == 9) {
+            gasPerByte[chainId_] = abi.decode(config_, (uint256));
+        }
+
+        /// @dev Type 10: ACK GAS COST
+        if (configType_ == 10) {
+            ackGasCost[chainId_] = abi.decode(config_, (uint256));
+        }
+
+        /// @dev Type 11: TIMELOCK PROCESSING COST
+        if (configType_ == 11) {
+            timelockCost[chainId_] = abi.decode(config_, (uint256));
+        }
+
+        emit ChainConfigUpdated(chainId_, configType_, config_);
+    }
+
+    /// @inheritdoc IPaymentHelper
+    function updateRegisterSERC20Params(
+        uint256 totalTransmuterFees_,
+        bytes memory extraDataForTransmuter_
+    )
+        external
+        onlyEmergencyAdmin
+    {
+        totalTransmuterFees = totalTransmuterFees_;
+        extraDataForTransmuter = extraDataForTransmuter_;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
 
     /// @dev helps generate extra data per amb
     function _generateExtraData(
@@ -590,17 +606,6 @@ contract PaymentHelper is IPaymentHelper {
                 ++i;
             }
         }
-    }
-
-    struct EstimateAckCostVars {
-        uint256 currPayloadId;
-        uint256 payloadHeader;
-        uint8 callbackType;
-        bytes payloadBody;
-        uint8[] ackAmbIds;
-        uint8 isMulti;
-        uint64 srcChainId;
-        bytes message;
     }
 
     /// @dev helps estimate the acknowledgement costs for amb processing

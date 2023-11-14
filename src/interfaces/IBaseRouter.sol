@@ -7,9 +7,10 @@ import "../types/DataTypes.sol";
 /// @author Zeropoint Labs.
 /// @dev interface for abstract Router
 interface IBaseRouter {
-    /*///////////////////////////////////////////////////////////////
-                        EXTERNAL DEPOSIT FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @dev Performs single direct x single vault deposits
     /// @param req_ is the request object containing all the necessary data for the action
@@ -34,10 +35,6 @@ interface IBaseRouter {
     /// @dev Performs multi destination x multi vault deposits
     /// @param req_ is the request object containing all the necessary data for the action
     function multiDstMultiVaultDeposit(MultiDstMultiVaultStateReq calldata req_) external payable;
-
-    /*///////////////////////////////////////////////////////////////
-                        EXTERNAL WITHDRAW FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
 
     /// @dev Performs single direct x single vault withdraws
     /// @param req_ is the request object containing all the necessary data for the action

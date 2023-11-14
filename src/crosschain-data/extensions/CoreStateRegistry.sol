@@ -38,30 +38,46 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     using DataLib for uint256;
     using ProofLib for AMBMessage;
 
-    /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                     STATE VARIABLES                      //
+    //////////////////////////////////////////////////////////////
 
     /// @dev just stores the superformIds that failed in a specific payload id
     mapping(uint256 payloadId => FailedDeposit) internal failedDeposits;
 
-    /*///////////////////////////////////////////////////////////////
-                                MODIFIERS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
 
     modifier onlySender() override {
         if (msg.sender != superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"))) revert Error.NOT_SUPER_ROUTER();
         _;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                                CONSTRUCTOR
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
+
     constructor(ISuperRegistry superRegistry_) BaseStateRegistry(superRegistry_) { }
 
-    /*///////////////////////////////////////////////////////////////
-                            EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc ICoreStateRegistry
+    function getFailedDeposits(uint256 payloadId_)
+        external
+        view
+        override
+        returns (uint256[] memory superformIds, uint256[] memory amounts)
+    {
+        superformIds = failedDeposits[payloadId_].superformIds;
+        amounts = failedDeposits[payloadId_].amounts;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @inheritdoc ICoreStateRegistry
     function updateDepositPayload(uint256 payloadId_, uint256[] calldata finalAmounts_) external virtual override {
@@ -298,20 +314,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         emit RescueFinalized(payloadId_);
     }
 
-    /// @inheritdoc ICoreStateRegistry
-    function getFailedDeposits(uint256 payloadId_)
-        external
-        view
-        override
-        returns (uint256[] memory superformIds, uint256[] memory amounts)
-    {
-        superformIds = failedDeposits[payloadId_].superformIds;
-        amounts = failedDeposits[payloadId_].amounts;
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                            INTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
 
     /// @dev returns if an address has a specific role
     function _hasRole(bytes32 id_, address addressToCheck_) internal view returns (bool) {

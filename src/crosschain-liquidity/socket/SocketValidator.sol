@@ -9,19 +9,24 @@ import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
 /// @author Zeropoint Labs
 /// @dev to assert input txData is valid
 contract SocketValidator is BridgeValidator {
-    /*///////////////////////////////////////////////////////////////
-                              CONSTRUCTOR
-    //////////////////////////////////////////////////////////////*/
+
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
     constructor(address superRegistry_) BridgeValidator(superRegistry_) { }
 
-    /*///////////////////////////////////////////////////////////////
-                            EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @inheritdoc BridgeValidator
     function validateReceiver(bytes calldata txData_, address receiver) external pure override returns (bool) {
         return (receiver == _decodeTxData(txData_).receiverAddress);
     }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
 
     /// @inheritdoc BridgeValidator
     function validateTxData(ValidateTxDataArgs calldata args_) external view override {
@@ -86,9 +91,9 @@ contract SocketValidator is BridgeValidator {
         revert Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
     }
 
-    /*///////////////////////////////////////////////////////////////
-                            INTERNAL HELPER FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
 
     /// @dev helps decode socket user request
     /// returns the user request

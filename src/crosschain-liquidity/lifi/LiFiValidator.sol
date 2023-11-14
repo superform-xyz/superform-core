@@ -12,10 +12,16 @@ import { StandardizedCallFacet } from "src/vendor/lifi/StandardizedCallFacet.sol
 /// @author Zeropoint Labs
 /// @dev To assert input txData is valid
 contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
-    /*///////////////////////////////////////////////////////////////
-                                CONSTRUCTOR
-    //////////////////////////////////////////////////////////////*/
+
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
+
     constructor(address superRegistry_) BridgeValidator(superRegistry_) { }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
 
     /// @inheritdoc BridgeValidator
     function validateReceiver(bytes calldata txData_, address receiver_) external pure override returns (bool valid_) {

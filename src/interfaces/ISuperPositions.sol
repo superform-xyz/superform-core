@@ -8,9 +8,10 @@ import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 /// @author Zeropoint Labs.
 /// @dev interface for Super Positions
 interface ISuperPositions is IERC1155A {
-    /*///////////////////////////////////////////////////////////////
-                                EVENTS
-    //////////////////////////////////////////////////////////////*/
+
+    //////////////////////////////////////////////////////////////
+    //                          EVENTS                          //
+    //////////////////////////////////////////////////////////////
 
     /// @dev is emitted when a dynamic uri is updated
     event DynamicURIUpdated(string oldURI, string newURI, bool frozen);
@@ -21,9 +22,17 @@ interface ISuperPositions is IERC1155A {
     /// @dev is emitted when a synthetic token is registered
     event SyntheticTokenRegistered(uint256 indexed tokenId, address indexed tokenAddress);
 
-    /*///////////////////////////////////////////////////////////////
-                        EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev returns the payload header for a tx id on the source chain
+    /// @param txId_ is the identifier of the transaction issued by super router
+    function txHistory(uint256 txId_) external view returns (uint256);
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @dev saves the message being sent together with the associated id formulated in a router
     /// @param payloadId_ is the id of the message being saved
@@ -74,11 +83,4 @@ interface ISuperPositions is IERC1155A {
     /// @dev allows to create sERC0 using broadcast state registry
     /// @param data_ is the crosschain payload
     function stateSyncBroadcast(bytes memory data_) external payable;
-    /*///////////////////////////////////////////////////////////////
-                        VIEW FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev returns the payload header for a tx id on the source chain
-    /// @param txId_ is the identifier of the transaction issued by super router
-    function txHistory(uint256 txId_) external view returns (uint256);
 }
