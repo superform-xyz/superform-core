@@ -114,7 +114,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
             ETH,
             ETH,
             false,
-            deployer,
+            receiverAddress,
             uint256(ETH),
             /// @dev amount is 1 less than 420 * 0.9 i.e. exceeding maxSlippage of 10% by 1
             377,

@@ -101,7 +101,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 req_.superformData.superformId,
                 req_.superformData.maxSlippage,
                 req_.superformData.amount,
-                req_.superformData.retain4626,
                 req_.superformData.receiverAddress,
                 vars.srcChainId,
                 true,
@@ -143,7 +142,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 req_.superformData.superformId,
                 req_.superformData.maxSlippage,
                 req_.superformData.amount,
-                req_.superformData.retain4626,
                 req_.superformData.receiverAddress,
                 req_.dstChainId,
                 true,
@@ -152,9 +150,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         ) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
-
-        /// @dev validates the receiver address
-        _validateReceiverAddress(req_.superformData.receiverAddress);
 
         InitSingleVaultData memory ambData;
 
@@ -252,9 +247,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
-        /// @dev validates the receiver address
-        _validateReceiverAddress(req_.superformsData.receiverAddress);
-
         vars.currentPayloadId = ++payloadIds;
 
         InitMultiVaultData memory ambData = InitMultiVaultData(
@@ -326,7 +318,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 req_.superformData.superformId,
                 req_.superformData.maxSlippage,
                 req_.superformData.amount,
-                req_.superformData.retain4626,
                 req_.superformData.receiverAddress,
                 vars.srcChainId,
                 false,
@@ -369,16 +360,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_ACTION();
         }
 
-        /// @dev validates the receiver address
-        _validateReceiverAddress(req_.superformData.receiverAddress);
-
         /// @dev validate the Superforms data
         if (
             !_validateSuperformData(
                 req_.superformData.superformId,
                 req_.superformData.maxSlippage,
                 req_.superformData.amount,
-                req_.superformData.retain4626,
                 req_.superformData.receiverAddress,
                 req_.dstChainId,
                 false,
@@ -478,9 +465,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (!_validateSuperformsData(req_.superformsData, req_.dstChainId, false)) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
-
-        /// @dev validates the receiver address
-        _validateReceiverAddress(req_.superformsData.receiverAddress);
 
         ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnBatch(
             msg.sender, req_.superformsData.superformIds, req_.superformsData.amounts
@@ -799,7 +783,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         uint256 superformId_,
         uint256 maxSlippage_,
         uint256 amount_,
-        bool retain4626_,
         address receiverAddress_,
         uint64 dstChainId_,
         bool isDeposit_,
@@ -824,8 +807,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         if (isDeposit_ && factory_.isFormImplementationPaused(formImplementationId)) return false;
 
-        /// @dev ensure that receiver address is sent if user wants to keep the 4626
-        if (isDeposit_ && retain4626_ && receiverAddress_ == address(0)) {
+        /// @dev ensure that receiver address is set always
+        /// @dev in deposits, this is important for receive4626 (on destination). It is also important for refunds on
+        /// destination
+        /// @dev in withdraws, this is important for cross chain cases where user uses smart contract wallets without
+        /// create2
+        if (receiverAddress_ == address(0)) {
             return false;
         }
 
@@ -872,7 +859,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 superformsData_.superformIds[i],
                 superformsData_.maxSlippages[i],
                 superformsData_.amounts[i],
-                superformsData_.retain4626s[i],
                 superformsData_.receiverAddress,
                 dstChainId_,
                 deposit_,
@@ -889,12 +875,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
 
         return true;
-    }
-
-    function _validateReceiverAddress(address receiverAddress_) internal view virtual {
-        if (tx.origin != msg.sender && receiverAddress_ == address(0)) {
-            revert Error.RECEIVER_ADDRESS_NOT_SET();
-        }
     }
 
     //////////////////////////////////////////////////////////////

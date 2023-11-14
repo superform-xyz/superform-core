@@ -168,7 +168,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
                     p.data.liqData.liqDstChainId,
                     false,
                     superform,
-                    p.srcSender,
+                    p.data.receiverAddress,
                     p.data.liqData.token
                 )
             );

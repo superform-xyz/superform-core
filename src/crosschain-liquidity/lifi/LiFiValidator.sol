@@ -8,11 +8,9 @@ import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import { StandardizedCallFacet } from "src/vendor/lifi/StandardizedCallFacet.sol";
 
-import "forge-std/console.sol";
 /// @title LiFiValidator
 /// @author Zeropoint Labs
 /// @dev To assert input txData is valid
-
 contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
@@ -75,8 +73,6 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
                     }
                 }
             } else {
-                console.log("receiver", receiver);
-                console.log("args_.srcSender", args_.srcSender);
                 /// @dev if withdraws, then receiver address must be the srcSender
                 if (receiver != args_.srcSender) revert Error.INVALID_TXDATA_RECEIVER();
             }

@@ -326,7 +326,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
     function _processXChainWithdraw(
         InitSingleVaultData memory singleVaultData_,
-        address srcSender_,
+        address, /*srcSender_*/
         uint64 srcChainId_
     )
         internal
@@ -342,19 +342,12 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         xChainWithdrawLocalVars memory vars;
         (,, vars.dstChainId) = singleVaultData_.superformId.getSuperform();
 
-        /// @dev assumes user has an incentive to set the correct address for the target liqDstChain (or this chain)
-        bool smartContractWallet = singleVaultData_.receiverAddress != srcSender_;
+        /// @dev receiverAddress is checked for existence on source
+        /// @dev user will either provide an address equal to msg.sender (if EOA)
+        /// @dev or user will specify an address on the target chain for the collateral extraction (if Smart Contract
+        /// Wallet)
+        vars.receiver = len == 0 ? singleVaultData_.receiverAddress : address(this);
 
-        /// @dev if there is no txData, on withdraws the receiver is the original beneficiary (srcSender_) or
-        /// @dev receiverAddress (in this chain) in case of smart contract wallets
-        /// @dev otherwise it is this contract (before swap)
-        if (smartContractWallet && len == 0) {
-            vars.receiver = singleVaultData_.receiverAddress;
-        } else if (!smartContractWallet && len == 0) {
-            vars.receiver = srcSender_;
-        } else if (len > 0) {
-            vars.receiver = address(this);
-        }
         IERC4626 v = IERC4626(vault);
         vars.collateral = asset;
 
@@ -369,12 +362,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
             vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
-            /// @dev if there is txData:
-            /// @dev note if the data is to bridge, then receiverAddress must exist at the liqDstChainId
-            /// @dev note if the data is just to swap, then receiverAddress must be at current dstChainId
-            /// @dev It is not checked if this address exists in the validator
-            vars.receiver = smartContractWallet ? singleVaultData_.receiverAddress : srcSender_;
-
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
             if (vars.amount > dstAmount) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
 
@@ -387,7 +374,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                     singleVaultData_.liqData.liqDstChainId,
                     false,
                     address(this),
-                    vars.receiver,
+                    singleVaultData_.receiverAddress,
                     singleVaultData_.liqData.token
                 )
             );

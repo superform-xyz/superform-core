@@ -135,7 +135,7 @@ contract ForwardDustFormTest is ProtocolActions {
                         ETH,
                         nasty_ ? 0.2e18 : IBaseForm(superform).previewRedeemFrom(superPositionBalance), // nastiness
                             // here
-                        user,
+                        refundAddress,
                         false
                     )
                 ),

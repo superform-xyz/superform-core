@@ -229,7 +229,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         failedDeposits[payloadId_].amounts = proposedAmounts_;
         failedDeposits[payloadId_].lastProposedTimestamp = block.timestamp;
 
-        (,, uint8 multi,, address srcSender,) = DataLib.decodeTxInfo(payloadHeader[payloadId_]);
+        (,, uint8 multi,,,) = DataLib.decodeTxInfo(payloadHeader[payloadId_]);
 
         address refundAddress;
         if (multi == 1) {
@@ -238,7 +238,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             refundAddress = abi.decode(payloadBody[payloadId_], (InitSingleVaultData)).receiverAddress;
         }
 
-        failedDeposits[payloadId_].refundAddress = refundAddress == address(0) ? srcSender : refundAddress;
+        failedDeposits[payloadId_].refundAddress = refundAddress;
         emit RescueProposed(payloadId_, failedDeposits_.superformIds, proposedAmounts_, block.timestamp);
     }
 

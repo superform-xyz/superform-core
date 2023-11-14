@@ -45,38 +45,60 @@ contract SuperformRouterAATest is ProtocolActions {
     }
 
     function test_depositWithSmartContractWallet() public {
-        _xChainDeposit_SmartContractWallet(false, true);
+        _xChainDeposit_SmartContractWallet(false, true, "VaultMock", 0);
     }
 
     function test_depositWithSmartContractWallet_revertsReceive4626_noReceiveAddress() public {
-        _xChainDeposit_SmartContractWallet(false, false);
+        _xChainDeposit_SmartContractWallet(false, false, "VaultMock", 0);
     }
 
     function test_depositWithSmartContractWallet_receive4626_HasReceiveAddress() public {
-        _xChainDeposit_SmartContractWallet(true, true);
+        _xChainDeposit_SmartContractWallet(true, true, "VaultMock", 0);
     }
 
     function test_withdrawWithSmartContractWallet() public {
-        _xChainDeposit_SmartContractWallet(false, true);
+        _xChainDeposit_SmartContractWallet(false, true, "VaultMock", 0);
 
-        _xChainWithdraw_SmartContractWallet(ETH, address(walletDestination), false, true);
+        _xChainWithdraw_SmartContractWallet(ETH, address(walletDestination), false, "VaultMock", 0);
     }
 
     function test_withdrawWithSmartContractWallet_3rdChainId() public {
-        _xChainDeposit_SmartContractWallet(false, true);
+        _xChainDeposit_SmartContractWallet(false, true, "VaultMock", 0);
         vm.selectFork(FORKS[AVAX]);
         SmartContractWallet walletDestinationAVAX =
         new SmartContractWallet(SuperformRouter(payable(getContract(AVAX, "SuperformRouter"))), getContract(AVAX, "DAI"));
 
-        _xChainWithdraw_SmartContractWallet(AVAX, address(walletDestinationAVAX), false, true);
+        _xChainWithdraw_SmartContractWallet(AVAX, address(walletDestinationAVAX), false, "VaultMock", 0);
     }
 
-    function _xChainDeposit_SmartContractWallet(bool receive4626_, bool receiveAddress_) internal {
+    function test_withdrawWithSmartContractWallet_timelock() public {
+        _xChainDeposit_SmartContractWallet(false, true, "ERC4626TimelockMock", 1);
+
+        _xChainWithdraw_SmartContractWallet(ETH, address(walletDestination), false, "ERC4626TimelockMock", 1);
+    }
+
+    function test_withdrawWithSmartContractWallet_3rdChainId_timelock() public {
+        _xChainDeposit_SmartContractWallet(false, true, "ERC4626TimelockMock", 1);
+        vm.selectFork(FORKS[AVAX]);
+        SmartContractWallet walletDestinationAVAX =
+        new SmartContractWallet(SuperformRouter(payable(getContract(AVAX, "SuperformRouter"))), getContract(AVAX, "DAI"));
+
+        _xChainWithdraw_SmartContractWallet(AVAX, address(walletDestinationAVAX), false, "ERC4626TimelockMock", 1);
+    }
+
+    function _xChainDeposit_SmartContractWallet(
+        bool receive4626_,
+        bool receiveAddress_,
+        string memory vaultKind,
+        uint256 formImplId
+    )
+        internal
+    {
         address superform = getContract(
-            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+            ARBI, string.concat("DAI", vaultKind, "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[formImplId]))
         );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[formImplId], ARBI);
         vm.startPrank(deployer);
 
         vm.selectFork(FORKS[ETH]);
@@ -133,8 +155,8 @@ contract SuperformRouterAATest is ProtocolActions {
 
         vm.prank(deployer);
 
-        if (!receiveAddress_ && !receive4626_) {
-            vm.expectRevert(Error.RECEIVER_ADDRESS_NOT_SET.selector);
+        if (!receiveAddress_) {
+            vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
             /// @dev msg sender is wallet, tx origin is deployer
             walletSource.singleXChainSingleVaultDeposit{ value: 2 ether }(req);
             return;
@@ -192,6 +214,11 @@ contract SuperformRouterAATest is ProtocolActions {
             vm.selectFork(FORKS[ETH]);
             vm.prank(deployer);
             CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload(1);
+            assertGt(
+                SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(address(walletSource), superformId), 0
+            );
+
+            assertEq(SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(deployer, superformId), 0);
         }
     }
 
@@ -199,7 +226,8 @@ contract SuperformRouterAATest is ProtocolActions {
         uint64 liqDstChainId_,
         address scWalletAtLiqDst_,
         bool sameChainTxData_,
-        bool receiveAddress_
+        string memory vaultKind,
+        uint256 formImplId
     )
         internal
     {
@@ -209,47 +237,44 @@ contract SuperformRouterAATest is ProtocolActions {
         address superformRouter = getContract(ETH, "SuperformRouter");
 
         address superform = getContract(
-            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+            ARBI, string.concat("DAI", vaultKind, "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[formImplId]))
         );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[formImplId], ARBI);
 
-        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
-            1,
-            getContract(ARBI, "DAI"),
-            getContract(ARBI, "DAI"),
-            getContract(ETH, "DAI"),
-            superform,
-            ARBI,
-            ETH,
-            liqDstChainId_,
-            false,
-            scWalletAtLiqDst_,
-            uint256(liqDstChainId_),
-            1e18,
-            true,
-            /// @dev placeholder value, not used
-            0,
-            1,
-            1,
-            1
+        bytes memory txData = _buildLiqBridgeTxData(
+            LiqBridgeTxDataArgs(
+                1,
+                getContract(ARBI, "DAI"),
+                getContract(ARBI, "DAI"),
+                getContract(liqDstChainId_, "DAI"),
+                superform,
+                ARBI,
+                ETH,
+                liqDstChainId_,
+                false,
+                scWalletAtLiqDst_,
+                uint256(liqDstChainId_),
+                1e18,
+                true,
+                /// @dev placeholder value, not used
+                0,
+                1,
+                1,
+                1
+            ),
+            sameChainTxData_
         );
-        address walletDst = liqDstChainId_ != ETH ? scWalletAtLiqDst_ : address(walletDestination);
+
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             1e18,
             1000,
             false,
             false,
-            LiqRequest(
-                1,
-                _buildLiqBridgeTxData(liqBridgeTxDataArgs, sameChainTxData_),
-                getContract(ARBI, "DAI"),
-                liqDstChainId_,
-                0
-            ),
+            LiqRequest(1, txData, getContract(ARBI, "DAI"), liqDstChainId_, 0),
             "",
-            receiveAddress_ ? walletDst : address(0),
+            liqDstChainId_ != ETH ? scWalletAtLiqDst_ : address(walletDestination),
             ""
         );
 
@@ -288,5 +313,15 @@ contract SuperformRouterAATest is ProtocolActions {
 
         vm.prank(deployer);
         CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload(2);
+
+        if (formImplId == 1) {
+            vm.warp(block.timestamp + (86_400 * 5));
+            vm.prank(deployer);
+
+            TimelockStateRegistry(getContract(ARBI, "TimelockStateRegistry")).finalizePayload{ value: 2 ether }(1, "");
+        }
+        vm.selectFork(FORKS[ETH]);
+
+        assertEq(SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(address(walletSource), superformId), 0);
     }
 }
