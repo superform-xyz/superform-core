@@ -18,28 +18,35 @@ import { DataLib } from "src/libraries/DataLib.sol";
 contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     using DataLib for uint256;
 
-    /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                         CONSTANTS                        //
+    //////////////////////////////////////////////////////////////
+
+    ISuperRegistry public immutable superRegistry;
+
+    //////////////////////////////////////////////////////////////
+    //                     STATE VARIABLES                      //
+    //////////////////////////////////////////////////////////////
+
     IMailbox public mailbox;
     IInterchainGasPaymaster public igp;
-    ISuperRegistry public immutable superRegistry;
 
     mapping(uint64 => uint32) public ambChainId;
     mapping(uint32 => uint64) public superChainId;
     mapping(uint32 => address) public authorizedImpl;
-
     mapping(bytes32 => bool) public processedMessages;
 
-    /*///////////////////////////////////////////////////////////////
-                                EVENTS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                          EVENTS                          //
+    //////////////////////////////////////////////////////////////
+
     event MailboxAdded(address _newMailbox);
     event GasPayMasterAdded(address _igp);
 
-    /*///////////////////////////////////////////////////////////////
-                                MODIFIERS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
+
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
@@ -61,16 +68,17 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         _;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                                CONSTRUCTOR
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
+    
     constructor(ISuperRegistry superRegistry_) {
         superRegistry = superRegistry_;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                           HYPERLANE APPLICATION CONFIG
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                         CONFIG                            //
+    //////////////////////////////////////////////////////////////
 
     /// @dev allows protocol admin to configure hyperlane mailbox and gas paymaster
     /// @param mailbox_ is the address of hyperlane mailbox
@@ -83,9 +91,33 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         emit GasPayMasterAdded(address(igp_));
     }
 
-    /*///////////////////////////////////////////////////////////////
-                                EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc IAmbImplementation
+    function estimateFees(
+        uint64 dstChainId_,
+        bytes memory message_,
+        bytes memory /*extraData_*/
+    )
+        external
+        view
+        override
+        returns (uint256 fees)
+    {
+        uint32 domain = ambChainId[dstChainId_];
+
+        if (domain == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
+        fees = mailbox.quoteDispatch(domain, _castAddr(authorizedImpl[domain]), message_);
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
@@ -137,7 +169,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         emit ChainAdded(superChainId_);
     }
 
-    /// @dev allows protocol admin to set receiver implmentation on a new chain id
+    /// @dev allows protocol admin to set receiver implementation on a new chain id
     /// @param domain_ is the identifier of the destination chain within hyperlane
     /// @param authorizedImpl_ is the implementation of the hyperlane message bridge on the specified destination
     /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
@@ -181,33 +213,9 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         targetRegistry.receivePayload(superChainId[origin_], body_);
     }
 
-    /*///////////////////////////////////////////////////////////////
-                            READ-ONLY FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @inheritdoc IAmbImplementation
-    function estimateFees(
-        uint64 dstChainId_,
-        bytes memory message_,
-        bytes memory /*extraData_*/
-    )
-        external
-        view
-        override
-        returns (uint256 fees)
-    {
-        uint32 domain = ambChainId[dstChainId_];
-
-        if (domain == 0) {
-            revert Error.INVALID_CHAIN_ID();
-        }
-
-        fees = mailbox.quoteDispatch(domain, _castAddr(authorizedImpl[domain]), message_);
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                         INTERNAL/HELPER FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
 
     /// @dev casts an address to bytes32
     /// @param addr_ is the address to be casted

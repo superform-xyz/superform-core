@@ -18,30 +18,29 @@ import { DataLib } from "./libraries/DataLib.sol";
 abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     using DataLib for uint256;
 
-    /*///////////////////////////////////////////////////////////////
-                            CONSTANTS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                         CONSTANTS                        //
+    //////////////////////////////////////////////////////////////
 
+    ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
 
-    /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                     STATE VARIABLES                      //
+    //////////////////////////////////////////////////////////////
 
-    /// @dev The superRegistry address is used to access relevant protocol addresses
-    ISuperRegistry public immutable superRegistry;
-
-    /// @dev the vault this form pertains to
+    /// @dev the address of the vault that was added
     address public vault;
 
     /// @dev underlying asset of vault this form pertains to
     address public asset;
 
+    /// @dev form which this vault was added to
     uint32 public formImplementationId;
 
-    /*///////////////////////////////////////////////////////////////
-                            MODIFIERS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
 
     modifier notPaused(InitSingleVaultData memory singleVaultData_) {
         if (
@@ -82,9 +81,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         _;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                            INITIALIZATION
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
 
     constructor(address superRegistry_) {
         if (block.chainid > type(uint64).max) {
@@ -96,6 +95,69 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
 
         _disableInitializers();
     }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
+
+    function supportsInterface(bytes4 interfaceId_) public view virtual override(ERC165, IERC165) returns (bool) {
+        return interfaceId_ == type(IBaseForm).interfaceId || super.supportsInterface(interfaceId_);
+    }
+
+    /// @inheritdoc IBaseForm
+    function superformYieldTokenName() external view virtual override returns (string memory);
+
+    /// @inheritdoc IBaseForm
+    function superformYieldTokenSymbol() external view virtual override returns (string memory);
+
+    /// @inheritdoc IBaseForm
+    function getStateRegistryId() external view virtual override returns (uint8);
+
+    // @inheritdoc IBaseForm
+    function getVaultAddress() external view override returns (address) {
+        return vault;
+    }
+
+    // @inheritdoc IBaseForm
+    function getVaultAsset() public view override returns (address) {
+        return asset;
+    }
+
+    /// @inheritdoc IBaseForm
+    function getVaultName() public view virtual override returns (string memory);
+
+    /// @inheritdoc IBaseForm
+    function getVaultSymbol() public view virtual override returns (string memory);
+
+    /// @inheritdoc IBaseForm
+    function getVaultDecimals() public view virtual override returns (uint256);
+
+    /// @inheritdoc IBaseForm
+    function getPricePerVaultShare() public view virtual override returns (uint256);
+
+    /// @inheritdoc IBaseForm
+    function getVaultShareBalance() public view virtual override returns (uint256);
+
+    /// @inheritdoc IBaseForm
+    function getTotalAssets() public view virtual override returns (uint256);
+
+    // @inheritdoc IBaseForm
+    function getPreviewPricePerVaultShare() public view virtual override returns (uint256);
+
+    /// @inheritdoc IBaseForm
+    function previewDepositTo(uint256 assets_) public view virtual override returns (uint256);
+
+    /// @inheritdoc IBaseForm
+    function previewWithdrawFrom(uint256 assets_) public view virtual override returns (uint256);
+
+    /// @inheritdoc IBaseForm
+    function previewRedeemFrom(uint256 shares_) public view virtual override returns (uint256);
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
+
+    receive() external payable { }
 
     /// @param superRegistry_        ISuperRegistry address deployed
     /// @param vault_         The vault address this form pertains to
@@ -114,15 +176,6 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         formImplementationId = formImplementationId_;
         vault = vault_;
         asset = asset_;
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                        External Write Functions
-    //////////////////////////////////////////////////////////////*/
-    receive() external payable { }
-
-    function supportsInterface(bytes4 interfaceId_) public view virtual override(ERC165, IERC165) returns (bool) {
-        return interfaceId_ == type(IBaseForm).interfaceId || super.supportsInterface(interfaceId_);
     }
 
     /// @inheritdoc IBaseForm
@@ -212,62 +265,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         _forwardDustToPaymaster();
     }
 
-    /*///////////////////////////////////////////////////////////////
-                    PURE/VIEW VIRTUAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @inheritdoc IBaseForm
-    function superformYieldTokenName() external view virtual override returns (string memory);
-
-    /// @inheritdoc IBaseForm
-    function superformYieldTokenSymbol() external view virtual override returns (string memory);
-
-    /// @inheritdoc IBaseForm
-    function getStateRegistryId() external view virtual override returns (uint8);
-
-    // @inheritdoc IBaseForm
-    function getVaultAddress() external view override returns (address) {
-        return vault;
-    }
-
-    // @inheritdoc IBaseForm
-    function getVaultAsset() public view override returns (address) {
-        return asset;
-    }
-
-    /// @inheritdoc IBaseForm
-    function getVaultName() public view virtual override returns (string memory);
-
-    /// @inheritdoc IBaseForm
-    function getVaultSymbol() public view virtual override returns (string memory);
-
-    /// @inheritdoc IBaseForm
-    function getVaultDecimals() public view virtual override returns (uint256);
-
-    /// @inheritdoc IBaseForm
-    function getPricePerVaultShare() public view virtual override returns (uint256);
-
-    /// @inheritdoc IBaseForm
-    function getVaultShareBalance() public view virtual override returns (uint256);
-
-    /// @inheritdoc IBaseForm
-    function getTotalAssets() public view virtual override returns (uint256);
-
-    // @inheritdoc IBaseForm
-    function getPreviewPricePerVaultShare() public view virtual override returns (uint256);
-
-    /// @inheritdoc IBaseForm
-    function previewDepositTo(uint256 assets_) public view virtual override returns (uint256);
-
-    /// @inheritdoc IBaseForm
-    function previewWithdrawFrom(uint256 assets_) public view virtual override returns (uint256);
-
-    /// @inheritdoc IBaseForm
-    function previewRedeemFrom(uint256 shares_) public view virtual override returns (uint256);
-
-    /*///////////////////////////////////////////////////////////////
-                INTERNAL STATE CHANGING VIRTUAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
 
     /// @dev Deposits underlying tokens into a vault
     function _directDepositIntoVault(
@@ -313,11 +313,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     /// @dev forwards dust to paymaster
     function _forwardDustToPaymaster() internal virtual;
 
-    /*///////////////////////////////////////////////////////////////
-                    INTERNAL VIEW VIRTUAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
     /// @dev returns if a form id is paused
-
     function _isPaused(uint256 superformId) internal view returns (bool) {
         if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId)) {
             revert Error.SUPERFORM_ID_NONEXISTENT();

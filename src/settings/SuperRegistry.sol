@@ -10,39 +10,14 @@ import { Error } from "../utils/Error.sol";
 /// @author Zeropoint Labs.
 /// @dev Keeps information on all addresses used in the Superforms ecosystem.
 contract SuperRegistry is ISuperRegistry, QuorumManager {
-    /*///////////////////////////////////////////////////////////////
-                          Constants
-    //////////////////////////////////////////////////////////////*/
+
+    //////////////////////////////////////////////////////////////
+    //                         CONSTANTS                        //
+    //////////////////////////////////////////////////////////////
+
     uint256 public constant MIN_DELAY = 1 hours;
     uint256 public constant MAX_DELAY = 24 hours;
-
-    /*///////////////////////////////////////////////////////////////
-                        State Variables
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev canonical permit2 contract
-    address private permit2Address;
-
-    /// @dev rescue timelock delay config
-    uint256 public delay;
-
     uint64 public immutable CHAIN_ID;
-
-    mapping(bytes32 id => mapping(uint64 chainid => address moduleAddress)) private registry;
-    /// @dev liquidityBridge id is mapped to a liquidityBridge address (to prevent interaction with unauthorized
-    /// bridges)
-    mapping(uint8 bridgeId => address bridgeAddress) public bridgeAddresses;
-    mapping(uint8 bridgeId => address bridgeValidator) public bridgeValidator;
-    mapping(uint8 ambId => address ambAddresses) public ambAddresses;
-    mapping(uint8 ambId => bool isBroadcastAMB) public isBroadcastAMB;
-
-    mapping(uint64 chainId => uint256 vaultLimitPerTx) public vaultLimitPerTx;
-
-    mapping(uint8 registryId => address registryAddress) public registryAddresses;
-    /// @dev is the reverse mapping of registryAddresses
-    mapping(address registryAddress => uint8 registryId) public stateRegistryIds;
-    /// @dev is the reverse mapping of ambAddresses
-    mapping(address ambAddress => uint8 ambId) public ambIds;
 
     /// @dev core protocol - identifiers
     /// @notice SUPERFORM_FACTORY, CORE_STATE_REGISTRY, TIMELOCK_STATE_REGISTRY, BROADCAST_REGISTRY, SUPER_RBAC,
@@ -99,12 +74,46 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     bytes32 public constant override CORE_REGISTRY_DISPUTER = keccak256("CORE_REGISTRY_DISPUTER");
     bytes32 public constant override DST_SWAPPER_PROCESSOR = keccak256("DST_SWAPPER_PROCESSOR");
 
+    //////////////////////////////////////////////////////////////
+    //                     STATE VARIABLES                      //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev canonical permit2 contract
+    address private permit2Address;
+
+    /// @dev rescue timelock delay config
+    uint256 public delay;
+
+    mapping(bytes32 id => mapping(uint64 chainid => address moduleAddress)) private registry;
+    /// @dev liquidityBridge id is mapped to a liquidityBridge address (to prevent interaction with unauthorized
+    /// bridges)
+    mapping(uint8 bridgeId => address bridgeAddress) public bridgeAddresses;
+    mapping(uint8 bridgeId => address bridgeValidator) public bridgeValidator;
+    mapping(uint8 ambId => address ambAddresses) public ambAddresses;
+    mapping(uint8 ambId => bool isBroadcastAMB) public isBroadcastAMB;
+
+    mapping(uint64 chainId => uint256 vaultLimitPerTx) public vaultLimitPerTx;
+
+    mapping(uint8 registryId => address registryAddress) public registryAddresses;
+    /// @dev is the reverse mapping of registryAddresses
+    mapping(address registryAddress => uint8 registryId) public stateRegistryIds;
+    /// @dev is the reverse mapping of ambAddresses
+    mapping(address ambAddress => uint8 ambId) public ambIds;
+
+    //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
+
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(registry[SUPER_RBAC][CHAIN_ID]).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
         }
         _;
     }
+
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
 
     constructor(address superRBAC_) {
         if (block.chainid > type(uint64).max) {
@@ -117,9 +126,89 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         emit AddressUpdated(SUPER_RBAC, CHAIN_ID, address(0), superRBAC_);
     }
 
-    /*///////////////////////////////////////////////////////////////
-                        External Write Functions
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
+
+    function getAddress(bytes32 id_) external view override returns (address addr) {
+        addr = registry[id_][CHAIN_ID];
+        if (addr == address(0)) revert Error.ZERO_ADDRESS();
+    }
+
+    function getAddressByChainId(bytes32 id_, uint64 chainId_) external view override returns (address) {
+        return registry[id_][chainId_];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getBridgeAddress(uint8 bridgeId_) external view override returns (address bridgeAddress_) {
+        bridgeAddress_ = bridgeAddresses[bridgeId_];
+        if (bridgeAddress_ == address(0)) revert Error.ZERO_ADDRESS();
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getBridgeValidator(uint8 bridgeId_) external view override returns (address bridgeValidator_) {
+        bridgeValidator_ = bridgeValidator[bridgeId_];
+        if (bridgeValidator_ == address(0)) revert Error.ZERO_ADDRESS();
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getAmbAddress(uint8 ambId_) external view override returns (address ambAddress_) {
+        ambAddress_ = ambAddresses[ambId_];
+        if (ambAddress_ == address(0)) revert Error.ZERO_ADDRESS();
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getAmbId(address ambAddress_) external view override returns (uint8 ambId_) {
+        ambId_ = ambIds[ambAddress_];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getStateRegistry(uint8 registryId_) external view override returns (address registryAddress_) {
+        registryAddress_ = registryAddresses[registryId_];
+        if (registryAddress_ == address(0)) revert Error.ZERO_ADDRESS();
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getStateRegistryId(address registryAddress_) external view override returns (uint8 registryId_) {
+        registryId_ = stateRegistryIds[registryAddress_];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getVaultLimitPerTx(uint64 chainId_) external view override returns (uint256 vaultLimitPerTx_) {
+        vaultLimitPerTx_ = vaultLimitPerTx[chainId_];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function isValidStateRegistry(address registryAddress_) external view override returns (bool valid_) {
+        if (stateRegistryIds[registryAddress_] != 0) return true;
+
+        return false;
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function isValidAmbImpl(address ambAddress_) external view override returns (bool valid_) {
+        uint8 ambId = ambIds[ambAddress_];
+        if (ambId != 0 && !isBroadcastAMB[ambId]) return true;
+
+        return false;
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function isValidBroadcastAmbImpl(address ambAddress_) external view override returns (bool valid_) {
+        uint8 ambId = ambIds[ambAddress_];
+        if (ambId != 0 && isBroadcastAMB[ambId]) return true;
+
+        return false;
+    }
+
+    function PERMIT2() external view override returns (address) {
+        if (permit2Address == address(0)) revert Error.ZERO_ADDRESS();
+        return permit2Address;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @inheritdoc ISuperRegistry
     function setDelay(uint256 delay_) external override onlyProtocolAdmin {
@@ -271,85 +360,5 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         requiredQuorum[srcChainId_] = quorum_;
 
         emit QuorumSet(srcChainId_, quorum_);
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                    External View Functions
-    //////////////////////////////////////////////////////////////*/
-
-    function getAddress(bytes32 id_) external view override returns (address addr) {
-        addr = registry[id_][CHAIN_ID];
-        if (addr == address(0)) revert Error.ZERO_ADDRESS();
-    }
-
-    function getAddressByChainId(bytes32 id_, uint64 chainId_) external view override returns (address) {
-        return registry[id_][chainId_];
-    }
-
-    /// @inheritdoc ISuperRegistry
-    function getBridgeAddress(uint8 bridgeId_) external view override returns (address bridgeAddress_) {
-        bridgeAddress_ = bridgeAddresses[bridgeId_];
-        if (bridgeAddress_ == address(0)) revert Error.ZERO_ADDRESS();
-    }
-
-    /// @inheritdoc ISuperRegistry
-    function getBridgeValidator(uint8 bridgeId_) external view override returns (address bridgeValidator_) {
-        bridgeValidator_ = bridgeValidator[bridgeId_];
-        if (bridgeValidator_ == address(0)) revert Error.ZERO_ADDRESS();
-    }
-
-    /// @inheritdoc ISuperRegistry
-    function getAmbAddress(uint8 ambId_) external view override returns (address ambAddress_) {
-        ambAddress_ = ambAddresses[ambId_];
-        if (ambAddress_ == address(0)) revert Error.ZERO_ADDRESS();
-    }
-
-    /// @inheritdoc ISuperRegistry
-    function getAmbId(address ambAddress_) external view override returns (uint8 ambId_) {
-        ambId_ = ambIds[ambAddress_];
-    }
-
-    /// @inheritdoc ISuperRegistry
-    function getStateRegistry(uint8 registryId_) external view override returns (address registryAddress_) {
-        registryAddress_ = registryAddresses[registryId_];
-        if (registryAddress_ == address(0)) revert Error.ZERO_ADDRESS();
-    }
-
-    /// @inheritdoc ISuperRegistry
-    function getStateRegistryId(address registryAddress_) external view override returns (uint8 registryId_) {
-        registryId_ = stateRegistryIds[registryAddress_];
-    }
-
-    /// @inheritdoc ISuperRegistry
-    function getVaultLimitPerTx(uint64 chainId_) external view override returns (uint256 vaultLimitPerTx_) {
-        vaultLimitPerTx_ = vaultLimitPerTx[chainId_];
-    }
-
-    /// @inheritdoc ISuperRegistry
-    function isValidStateRegistry(address registryAddress_) external view override returns (bool valid_) {
-        if (stateRegistryIds[registryAddress_] != 0) return true;
-
-        return false;
-    }
-
-    /// @inheritdoc ISuperRegistry
-    function isValidAmbImpl(address ambAddress_) external view override returns (bool valid_) {
-        uint8 ambId = ambIds[ambAddress_];
-        if (ambId != 0 && !isBroadcastAMB[ambId]) return true;
-
-        return false;
-    }
-
-    /// @inheritdoc ISuperRegistry
-    function isValidBroadcastAmbImpl(address ambAddress_) external view override returns (bool valid_) {
-        uint8 ambId = ambIds[ambAddress_];
-        if (ambId != 0 && isBroadcastAMB[ambId]) return true;
-
-        return false;
-    }
-
-    function PERMIT2() external view override returns (address) {
-        if (permit2Address == address(0)) revert Error.ZERO_ADDRESS();
-        return permit2Address;
     }
 }

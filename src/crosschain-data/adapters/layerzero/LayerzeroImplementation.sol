@@ -18,34 +18,37 @@ import { DataLib } from "src/libraries/DataLib.sol";
 contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicationConfig, ILayerZeroReceiver {
     using DataLib for uint256;
 
+    //////////////////////////////////////////////////////////////
+    //                         CONSTANTS                         //
+    //////////////////////////////////////////////////////////////
+
+    ISuperRegistry public immutable superRegistry;
     uint256 private constant RECEIVER_OFFSET = 1;
 
-    /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
-    ISuperRegistry public immutable superRegistry;
+    //////////////////////////////////////////////////////////////
+    //                     STATE VARIABLES                      //
+    //////////////////////////////////////////////////////////////
+
     ILayerZeroEndpoint public lzEndpoint;
 
     /// @dev prevents layerzero relayer from replaying payload
     mapping(uint16 => mapping(uint64 => bool)) public isValid;
-
     mapping(uint64 => uint16) public ambChainId;
     mapping(uint16 => uint64) public superChainId;
-
     mapping(uint16 => bytes) public trustedRemoteLookup;
     mapping(uint16 => mapping(bytes => mapping(uint64 => bytes32))) public failedMessages;
 
-    /*///////////////////////////////////////////////////////////////
-                                EVENTS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                          EVENTS                          //
+    //////////////////////////////////////////////////////////////
 
     event EndpointUpdated(address oldEndpoint_, address newEndpoint_);
     event MessageFailed(uint16 srcChainId_, bytes srcAddress_, uint64 nonce_, bytes payload_);
     event SetTrustedRemote(uint16 srcChainId_, bytes srcAddress_);
 
-    /*///////////////////////////////////////////////////////////////
-                                MODIFIERS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
 
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
@@ -69,18 +72,18 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         _;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                                CONSTRUCTOR
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
 
     /// @param superRegistry_ is the super registry address
     constructor(ISuperRegistry superRegistry_) {
         superRegistry = superRegistry_;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                           LZ APPLICATION CONFIG
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                         CONFIG                           //
+    //////////////////////////////////////////////////////////////
 
     /// @dev allows protocol admin to configure layerzero endpoint
     /// @param endpoint_ is the layerzero endpoint on the deployed network
@@ -142,9 +145,37 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         emit SetTrustedRemote(srcChainId_, srcAddress_);
     }
 
-    /*///////////////////////////////////////////////////////////////
-                                EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
+
+    function isTrustedRemote(uint16 srcChainId_, bytes calldata srcAddress_) external view returns (bool) {
+        return keccak256(trustedRemoteLookup[srcChainId_]) == keccak256(srcAddress_);
+    }
+
+    /// @inheritdoc IAmbImplementation
+    function estimateFees(
+        uint64 dstChainId_,
+        bytes memory message_,
+        bytes memory extraData_
+    )
+        external
+        view
+        override
+        returns (uint256 fees)
+    {
+        uint16 chainId = ambChainId[dstChainId_];
+
+        if (chainId == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
+        (fees,) = lzEndpoint.estimateFees(chainId, address(this), message_, false, extraData_);
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
@@ -194,9 +225,6 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         emit ChainAdded(superChainId_);
     }
 
-    /*///////////////////////////////////////////////////////////////
-                        LZ EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
     /// @inheritdoc ILayerZeroReceiver
     function lzReceive(
         uint16 srcChainId_,
@@ -264,37 +292,10 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         _nonblockingLzReceive(srcChainId_, srcAddress_, payload_);
     }
 
-    /*///////////////////////////////////////////////////////////////
-                            READ-ONLY FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    function isTrustedRemote(uint16 srcChainId_, bytes calldata srcAddress_) external view returns (bool) {
-        return keccak256(trustedRemoteLookup[srcChainId_]) == keccak256(srcAddress_);
-    }
-
-    /// @inheritdoc IAmbImplementation
-    function estimateFees(
-        uint64 dstChainId_,
-        bytes memory message_,
-        bytes memory extraData_
-    )
-        external
-        view
-        override
-        returns (uint256 fees)
-    {
-        uint16 chainId = ambChainId[dstChainId_];
-
-        if (chainId == 0) {
-            revert Error.INVALID_CHAIN_ID();
-        }
-
-        (fees,) = lzEndpoint.estimateFees(chainId, address(this), message_, false, extraData_);
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                        INTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
+    
     function _nonblockingLzReceive(uint16 _srcChainId, bytes memory, bytes memory _payload) internal {
         /// @dev decodes payload received
         AMBMessage memory decoded = abi.decode(_payload, (AMBMessage));

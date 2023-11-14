@@ -14,7 +14,15 @@ import { Error } from "../utils/Error.sol";
 abstract contract LiquidityHandler {
     using SafeERC20 for IERC20;
 
+    //////////////////////////////////////////////////////////////
+    //                         CONSTANTS                         //
+    //////////////////////////////////////////////////////////////
+
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
 
     /// @dev dispatches tokens via a liquidity bridge or exchange
     /// @param bridge_ Bridge address to pass tokens to

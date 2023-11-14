@@ -21,22 +21,41 @@ import "../types/DataTypes.sol";
 contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
     using SafeERC20 for IERC20;
 
-    /*///////////////////////////////////////////////////////////////
-                            CONSTANTS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                         CONSTANTS                         //
+    //////////////////////////////////////////////////////////////
+
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
 
-    /*///////////////////////////////////////////////////////////////
-                        STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                     STATE VARIABLES                      //
+    //////////////////////////////////////////////////////////////
 
     mapping(uint256 payloadId => mapping(uint256 index => FailedSwap)) internal failedSwap;
     mapping(uint256 payloadId => mapping(uint256 index => uint256 amount)) public swappedAmount;
 
-    /*///////////////////////////////////////////////////////////////
-                            MODIFIERS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                           STRUCTS                         //
+    //////////////////////////////////////////////////////////////
+
+    struct ProcessTxVars {
+        address finalDst;
+        address to;
+        address underlying;
+        address approvalToken;
+        uint256 amount;
+        uint256 expAmount;
+        uint256 maxSlippage;
+        uint256 balanceBefore;
+        uint256 balanceAfter;
+        uint256 balanceDiff;
+        uint64 chainId;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
 
     modifier onlySwapper() {
         if (
@@ -56,6 +75,10 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         _;
     }
 
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
+
     /// @param superRegistry_ superform registry contract
     constructor(address superRegistry_) {
         if (block.chainid > type(uint64).max) {
@@ -66,9 +89,27 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
-    /*///////////////////////////////////////////////////////////////
-                        EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc IDstSwapper
+    function getPostDstSwapFailureUpdatedTokenAmount(
+        uint256 payloadId_,
+        uint256 index_
+    )
+        external
+        view
+        override
+        returns (address interimToken, uint256 amount)
+    {
+        interimToken = failedSwap[payloadId_][index_].interimToken;
+        amount = failedSwap[payloadId_][index_].amount;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @notice receive enables processing native token transfers into the smart contract.
     /// @dev liquidity bridge fails without a native receive function.
@@ -180,27 +221,9 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         }
     }
 
-    /*///////////////////////////////////////////////////////////////
-                        VIEW-ONLY FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @inheritdoc IDstSwapper
-    function getPostDstSwapFailureUpdatedTokenAmount(
-        uint256 payloadId_,
-        uint256 index_
-    )
-        external
-        view
-        override
-        returns (address interimToken, uint256 amount)
-    {
-        interimToken = failedSwap[payloadId_][index_].interimToken;
-        amount = failedSwap[payloadId_][index_].amount;
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                        INTERNAL HELPER FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
 
     function _getCoreStateRegistry() internal view returns (IBaseStateRegistry) {
         return IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
@@ -210,20 +233,6 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         if (payloadId_ > coreStateRegistry.payloadsCount()) {
             revert Error.INVALID_PAYLOAD_ID();
         }
-    }
-
-    struct ProcessTxVars {
-        address finalDst;
-        address to;
-        address underlying;
-        address approvalToken;
-        uint256 amount;
-        uint256 expAmount;
-        uint256 maxSlippage;
-        uint256 balanceBefore;
-        uint256 balanceAfter;
-        uint256 balanceDiff;
-        uint64 chainId;
     }
 
     function _processTx(

@@ -5,9 +5,10 @@ pragma solidity ^0.8.21;
 /// @author ZeroPoint Labs
 /// @notice Interface for Superform Factory
 interface ISuperformFactory {
-    /*///////////////////////////////////////////////////////////////
-                                Events
-    //////////////////////////////////////////////////////////////*/
+
+    //////////////////////////////////////////////////////////////
+    //                          EVENTS                          //
+    //////////////////////////////////////////////////////////////
 
     /// @dev emitted when a new formImplementation is entered into the factory
     /// @param formImplementation is the address of the new form implementation
@@ -32,46 +33,9 @@ interface ISuperformFactory {
     /// @param paused is the new paused status
     event FormImplementationPaused(uint256 indexed formImplementationId, bool indexed paused);
 
-    /*///////////////////////////////////////////////////////////////
-                        External Write Functions
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev allows an admin to add a Form implementation to the factory
-    /// @param formImplementation_ is the address of a form implementation
-    /// @param formImplementationId_ is the id of the form implementation (generated off-chain and equal in all chains)
-    function addFormImplementation(address formImplementation_, uint32 formImplementationId_) external;
-
-    /// @dev To add new vaults to Form implementations, fusing them together into Superforms
-    /// @param formImplementationId_ is the form implementation we want to attach the vault to
-    /// @param vault_ is the address of the vault
-    /// @return superformId_ is the id of the created superform
-    /// @return superform_ is the address of the created superform
-    function createSuperform(
-        uint32 formImplementationId_,
-        address vault_
-    )
-        external
-        returns (uint256 superformId_, address superform_);
-
-    /// @dev to synchronize superforms added to different chains using broadcast registry
-    /// @param data_ is the cross-chain superform id
-    function stateSyncBroadcast(bytes memory data_) external payable;
-
-    /// @dev allows an admin to change the status of a form
-    /// @param formImplementationId_ is the id of the form implementation
-    /// @param status_ is the new status
-    /// @param extraData_ is optional & passed when broadcasting of status is needed
-    function changeFormImplementationPauseStatus(
-        uint32 formImplementationId_,
-        bool status_,
-        bytes memory extraData_
-    )
-        external
-        payable;
-
-    /*///////////////////////////////////////////////////////////////
-                            View Functions
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
 
     /// @dev returns the number of forms
     /// @return forms_ is the number of forms
@@ -119,4 +83,41 @@ interface ISuperformFactory {
     /// @return superformIds_ is the id of the superform
     /// @return vaults_ is the address of the vault
     function getAllSuperforms() external view returns (uint256[] memory superformIds_, address[] memory vaults_);
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev allows an admin to add a Form implementation to the factory
+    /// @param formImplementation_ is the address of a form implementation
+    /// @param formImplementationId_ is the id of the form implementation (generated off-chain and equal in all chains)
+    function addFormImplementation(address formImplementation_, uint32 formImplementationId_) external;
+
+    /// @dev To add new vaults to Form implementations, fusing them together into Superforms
+    /// @param formImplementationId_ is the form implementation we want to attach the vault to
+    /// @param vault_ is the address of the vault
+    /// @return superformId_ is the id of the created superform
+    /// @return superform_ is the address of the created superform
+    function createSuperform(
+        uint32 formImplementationId_,
+        address vault_
+    )
+        external
+        returns (uint256 superformId_, address superform_);
+
+    /// @dev to synchronize superforms added to different chains using broadcast registry
+    /// @param data_ is the cross-chain superform id
+    function stateSyncBroadcast(bytes memory data_) external payable;
+
+    /// @dev allows an admin to change the status of a form
+    /// @param formImplementationId_ is the id of the form implementation
+    /// @param status_ is the new status
+    /// @param extraData_ is optional & passed when broadcasting of status is needed
+    function changeFormImplementationPauseStatus(
+        uint32 formImplementationId_,
+        bool status_,
+        bytes memory extraData_
+    )
+        external
+        payable;
 }

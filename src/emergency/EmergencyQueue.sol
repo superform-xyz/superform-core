@@ -16,15 +16,16 @@ import "../types/DataTypes.sol";
 contract EmergencyQueue is IEmergencyQueue {
     using DataLib for uint256;
 
-    /// @dev is the chain id
+    //////////////////////////////////////////////////////////////
+    //                         CONSTANTS                         //
+    //////////////////////////////////////////////////////////////
+
+    ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
 
-    /// @dev is the address of super registry
-    ISuperRegistry public immutable superRegistry;
-
-    /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                     STATE VARIABLES                      //
+    //////////////////////////////////////////////////////////////
 
     /// @dev is the count of actions queued
     uint256 public queueCounter;
@@ -32,9 +33,10 @@ contract EmergencyQueue is IEmergencyQueue {
     /// @dev is the queue of pending actions
     mapping(uint256 id => QueuedWithdrawal) public queuedWithdrawal;
 
-    /*///////////////////////////////////////////////////////////////
-                            MODIFIER
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
+
     modifier onlySuperform(uint256 superformId) {
         if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId)) {
             revert Error.SUPERFORM_ID_NONEXISTENT();
@@ -52,9 +54,9 @@ contract EmergencyQueue is IEmergencyQueue {
         _;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                            CONSTRUCTOR
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
 
     /// @param superRegistry_ the superform registry contract
     constructor(address superRegistry_) {
@@ -66,9 +68,18 @@ contract EmergencyQueue is IEmergencyQueue {
         CHAIN_ID = uint64(block.chainid);
     }
 
-    /*///////////////////////////////////////////////////////////////
-                        EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc IEmergencyQueue
+    function queuedWithdrawalStatus(uint256 id) external view override returns (bool) {
+        return queuedWithdrawal[id].isProcessed;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IEmergencyQueue
     function queueWithdrawal(
@@ -109,18 +120,9 @@ contract EmergencyQueue is IEmergencyQueue {
         }
     }
 
-    /*///////////////////////////////////////////////////////////////
-                        VIEW/HELPER FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @inheritdoc IEmergencyQueue
-    function queuedWithdrawalStatus(uint256 id) external view override returns (bool) {
-        return queuedWithdrawal[id].isProcessed;
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                        INTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
 
     function _executeQueuedWithdrawal(uint256 id_) internal {
         QueuedWithdrawal storage data = queuedWithdrawal[id_];

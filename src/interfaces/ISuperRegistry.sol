@@ -6,9 +6,9 @@ pragma solidity ^0.8.21;
 /// @dev interface for Super Registry
 interface ISuperRegistry {
 
-    /*///////////////////////////////////////////////////////////////
-                                Events
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                          EVENTS                          //
+    //////////////////////////////////////////////////////////////
 
     /// @dev emitted when permit2 is set.
     event SetPermit2(address indexed permit2);
@@ -36,62 +36,9 @@ interface ISuperRegistry {
     /// @dev is emitted when a new vault limit is configured
     event SetVaultLimitPerTx(uint64 chainId_, uint256 vaultLimit_);
 
-    /*///////////////////////////////////////////////////////////////
-                        External Write Functions
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev sets the deposit rescue delay
-    /// @param delay_ the delay in seconds before the deposit rescue can be finalized
-    function setDelay(uint256 delay_) external;
-
-    /// @dev sets the permit2 address
-    /// @param permit2_ the address of the permit2 contract
-    function setPermit2(address permit2_) external;
-
-    /// @dev sets the safe vault limit
-    /// @param chainId_ is the remote chain identifier
-    /// @param vaultLimit_ is the max limit of vaults per transaction
-    function setVaultLimitPerTx(uint64 chainId_, uint256 vaultLimit_) external;
-
-    /// @dev sets a new address on a specific chain.
-    /// @param id_ the identifier of the address on that chain
-    /// @param newAddress_ the new address on that chain
-    /// @param chainId_ the chain id of that chain
-    function setAddress(bytes32 id_, address newAddress_, uint64 chainId_) external;
-
-    /// @dev allows admin to set the bridge address for an bridge id.
-    /// @notice this function operates in an APPEND-ONLY fashion.
-    /// @param bridgeId_         represents the bridge unqiue identifier.
-    /// @param bridgeAddress_    represents the bridge address.
-    /// @param bridgeValidator_  represents the bridge validator address.
-    function setBridgeAddresses(
-        uint8[] memory bridgeId_,
-        address[] memory bridgeAddress_,
-        address[] memory bridgeValidator_
-    )
-        external;
-
-    /// @dev allows admin to set the amb address for an amb id.
-    /// @notice this function operates in an APPEND-ONLY fashion.
-    /// @param ambId_         represents the bridge unqiue identifier.
-    /// @param ambAddress_    represents the bridge address.
-    /// @param isBroadcastAMB_ represents whether the amb implementation supports broadcasting
-    function setAmbAddress(
-        uint8[] memory ambId_,
-        address[] memory ambAddress_,
-        bool[] memory isBroadcastAMB_
-    )
-        external;
-
-    /// @dev allows admin to set the state registry address for an state registry id.
-    /// @notice this function operates in an APPEND-ONLY fashion.
-    /// @param registryId_    represents the state registry's unqiue identifier.
-    /// @param registryAddress_    represents the state registry's address.
-    function setStateRegistryAddress(uint8[] memory registryId_, address[] memory registryAddress_) external;
-
-    /*///////////////////////////////////////////////////////////////
-                            View Functions
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
 
     /// @dev gets the deposit rescue delay
     function delay() external view returns (uint256);
@@ -222,4 +169,57 @@ interface ISuperRegistry {
     /// @param ambAddress_ is the address of the broadcast amb implementation
     /// @return valid_ a flag indicating if its valid.
     function isValidBroadcastAmbImpl(address ambAddress_) external view returns (bool valid_);
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev sets the deposit rescue delay
+    /// @param delay_ the delay in seconds before the deposit rescue can be finalized
+    function setDelay(uint256 delay_) external;
+
+    /// @dev sets the permit2 address
+    /// @param permit2_ the address of the permit2 contract
+    function setPermit2(address permit2_) external;
+
+    /// @dev sets the safe vault limit
+    /// @param chainId_ is the remote chain identifier
+    /// @param vaultLimit_ is the max limit of vaults per transaction
+    function setVaultLimitPerTx(uint64 chainId_, uint256 vaultLimit_) external;
+
+    /// @dev sets a new address on a specific chain.
+    /// @param id_ the identifier of the address on that chain
+    /// @param newAddress_ the new address on that chain
+    /// @param chainId_ the chain id of that chain
+    function setAddress(bytes32 id_, address newAddress_, uint64 chainId_) external;
+
+    /// @dev allows admin to set the bridge address for an bridge id.
+    /// @notice this function operates in an APPEND-ONLY fashion.
+    /// @param bridgeId_         represents the bridge unique identifier.
+    /// @param bridgeAddress_    represents the bridge address.
+    /// @param bridgeValidator_  represents the bridge validator address.
+    function setBridgeAddresses(
+        uint8[] memory bridgeId_,
+        address[] memory bridgeAddress_,
+        address[] memory bridgeValidator_
+    )
+        external;
+
+    /// @dev allows admin to set the amb address for an amb id.
+    /// @notice this function operates in an APPEND-ONLY fashion.
+    /// @param ambId_         represents the bridge unique identifier.
+    /// @param ambAddress_    represents the bridge address.
+    /// @param isBroadcastAMB_ represents whether the amb implementation supports broadcasting
+    function setAmbAddress(
+        uint8[] memory ambId_,
+        address[] memory ambAddress_,
+        bool[] memory isBroadcastAMB_
+    )
+        external;
+
+    /// @dev allows admin to set the state registry address for an state registry id.
+    /// @notice this function operates in an APPEND-ONLY fashion.
+    /// @param registryId_    represents the state registry's unique identifier.
+    /// @param registryAddress_    represents the state registry's address.
+    function setStateRegistryAddress(uint8[] memory registryId_, address[] memory registryAddress_) external;
 }

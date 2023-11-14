@@ -21,19 +21,20 @@ contract SuperformFactory is ISuperformFactory {
     using DataLib for uint256;
     using Clones for address;
 
-    /*///////////////////////////////////////////////////////////////
-                            CONSTANTS
-    //////////////////////////////////////////////////////////////*/
-    bytes32 constant SYNC_IMPLEMENTATION_STATUS = keccak256("SYNC_IMPLEMENTATION_STATUS");
-
-    uint64 public immutable CHAIN_ID;
-    /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
-    uint256 public xChainPayloadCounter;
-    uint256 public superformCounter;
+    //////////////////////////////////////////////////////////////
+    //                         CONSTANTS                        //
+    //////////////////////////////////////////////////////////////
 
     ISuperRegistry public immutable superRegistry;
+    uint64 public immutable CHAIN_ID;
+    bytes32 constant SYNC_IMPLEMENTATION_STATUS = keccak256("SYNC_IMPLEMENTATION_STATUS");
+
+    //////////////////////////////////////////////////////////////
+    //                     STATE VARIABLES                      //
+    //////////////////////////////////////////////////////////////
+
+    uint256 public xChainPayloadCounter;
+    uint256 public superformCounter;
 
     /// @dev all form beacon addresses
     address[] public formImplementations;
@@ -54,9 +55,9 @@ contract SuperformFactory is ISuperformFactory {
     mapping(bytes32 vaultFormImplementationCombination => uint256 superformIds) public
         vaultFormImplCombinationToSuperforms;
 
-    /*///////////////////////////////////////////////////////////////
-                            MODIFIERS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
 
     modifier onlyEmergencyAdmin() {
         if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasEmergencyAdminRole(msg.sender)) {
@@ -80,6 +81,10 @@ contract SuperformFactory is ISuperformFactory {
         _;
     }
 
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
+
     /// @param superRegistry_ the superform registry contract
     constructor(address superRegistry_) {
         if (block.chainid > type(uint64).max) {
@@ -90,9 +95,82 @@ contract SuperformFactory is ISuperformFactory {
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
-    /*///////////////////////////////////////////////////////////////
-                        External Write Functions
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc ISuperformFactory
+    function getFormCount() external view override returns (uint256 forms_) {
+        forms_ = formImplementations.length;
+    }
+
+    /// @inheritdoc ISuperformFactory
+    function getSuperformCount() external view override returns (uint256 superforms_) {
+        superforms_ = superforms.length;
+    }
+
+    /// @inheritdoc ISuperformFactory
+    function getFormImplementation(uint32 formImplementationId_) external view override returns (address) {
+        return formImplementation[formImplementationId_];
+    }
+
+    /// @inheritdoc ISuperformFactory
+    function isFormImplementationPaused(uint32 formImplementationId_) external view override returns (bool) {
+        return formImplementationPaused[formImplementationId_];
+    }
+
+    /// @inheritdoc ISuperformFactory
+    function getSuperform(uint256 superformId_)
+        external
+        pure
+        override
+        returns (address superform_, uint32 formImplementationId_, uint64 chainId_)
+    {
+        (superform_, formImplementationId_, chainId_) = superformId_.getSuperform();
+    }
+
+    /// @inheritdoc ISuperformFactory
+    function getAllSuperformsFromVault(address vault_)
+        external
+        view
+        override
+        returns (uint256[] memory superformIds_, address[] memory superforms_)
+    {
+        superformIds_ = vaultToSuperforms[vault_];
+        uint256 len = superformIds_.length;
+        superforms_ = new address[](len);
+
+        for (uint256 i; i < len;) {
+            (superforms_[i],,) = superformIds_[i].getSuperform();
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /// @inheritdoc ISuperformFactory
+    function getAllSuperforms()
+        external
+        view
+        override
+        returns (uint256[] memory superformIds_, address[] memory superforms_)
+    {
+        superformIds_ = superforms;
+        uint256 len = superformIds_.length;
+        superforms_ = new address[](len);
+
+        for (uint256 i; i < len;) {
+            (superforms_[i],,) = superformIds_[i].getSuperform();
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @inheritdoc ISuperformFactory
     function addFormImplementation(
@@ -201,82 +279,9 @@ contract SuperformFactory is ISuperformFactory {
         }
     }
 
-    /*///////////////////////////////////////////////////////////////
-                        External View Functions
-    //////////////////////////////////////////////////////////////*/
-
-    /// @inheritdoc ISuperformFactory
-    function getFormCount() external view override returns (uint256 forms_) {
-        forms_ = formImplementations.length;
-    }
-
-    /// @inheritdoc ISuperformFactory
-    function getSuperformCount() external view override returns (uint256 superforms_) {
-        superforms_ = superforms.length;
-    }
-
-    /// @inheritdoc ISuperformFactory
-    function getFormImplementation(uint32 formImplementationId_) external view override returns (address) {
-        return formImplementation[formImplementationId_];
-    }
-
-    /// @inheritdoc ISuperformFactory
-    function isFormImplementationPaused(uint32 formImplementationId_) external view override returns (bool) {
-        return formImplementationPaused[formImplementationId_];
-    }
-
-    /// @inheritdoc ISuperformFactory
-    function getSuperform(uint256 superformId_)
-        external
-        pure
-        override
-        returns (address superform_, uint32 formImplementationId_, uint64 chainId_)
-    {
-        (superform_, formImplementationId_, chainId_) = superformId_.getSuperform();
-    }
-
-    /// @inheritdoc ISuperformFactory
-    function getAllSuperformsFromVault(address vault_)
-        external
-        view
-        override
-        returns (uint256[] memory superformIds_, address[] memory superforms_)
-    {
-        superformIds_ = vaultToSuperforms[vault_];
-        uint256 len = superformIds_.length;
-        superforms_ = new address[](len);
-
-        for (uint256 i; i < len;) {
-            (superforms_[i],,) = superformIds_[i].getSuperform();
-
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
-    /// @inheritdoc ISuperformFactory
-    function getAllSuperforms()
-        external
-        view
-        override
-        returns (uint256[] memory superformIds_, address[] memory superforms_)
-    {
-        superformIds_ = superforms;
-        uint256 len = superformIds_.length;
-        superforms_ = new address[](len);
-
-        for (uint256 i; i < len;) {
-            (superforms_[i],,) = superformIds_[i].getSuperform();
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                        Internal Functions
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
 
     /// @dev interacts with broadcast state registry to broadcasting state changes to all connected remote chains
     /// @param message_ is the crosschain message to be sent.

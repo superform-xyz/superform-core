@@ -38,30 +38,46 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     using DataLib for uint256;
     using ProofLib for AMBMessage;
 
-    /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                     STATE VARIABLES                      //
+    //////////////////////////////////////////////////////////////
 
     /// @dev just stores the superformIds that failed in a specific payload id
     mapping(uint256 payloadId => FailedDeposit) internal failedDeposits;
 
-    /*///////////////////////////////////////////////////////////////
-                                MODIFIERS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
 
     modifier onlySender() override {
         if (msg.sender != superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"))) revert Error.NOT_SUPER_ROUTER();
         _;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                                CONSTRUCTOR
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                      CONSTRUCTOR                         //
+    //////////////////////////////////////////////////////////////
+
     constructor(ISuperRegistry superRegistry_) BaseStateRegistry(superRegistry_) { }
 
-    /*///////////////////////////////////////////////////////////////
-                            EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc ICoreStateRegistry
+    function getFailedDeposits(uint256 payloadId_)
+        external
+        view
+        override
+        returns (uint256[] memory superformIds, uint256[] memory amounts)
+    {
+        superformIds = failedDeposits[payloadId_].superformIds;
+        amounts = failedDeposits[payloadId_].amounts;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
 
     /// @inheritdoc ICoreStateRegistry
     function updateDepositPayload(uint256 payloadId_, uint256[] calldata finalAmounts_) external virtual override {
@@ -298,20 +314,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         emit RescueFinalized(payloadId_);
     }
 
-    /// @inheritdoc ICoreStateRegistry
-    function getFailedDeposits(uint256 payloadId_)
-        external
-        view
-        override
-        returns (uint256[] memory superformIds, uint256[] memory amounts)
-    {
-        superformIds = failedDeposits[payloadId_].superformIds;
-        amounts = failedDeposits[payloadId_].amounts;
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                            INTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
 
     /// @dev returns if an address has a specific role
     function _hasRole(bytes32 id_, address addressToCheck_) internal view returns (bool) {
@@ -603,7 +608,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 /// @dev for withdrawals the payload update can happen on core state registry (for normal forms)
                 /// and also can happen in timelock state registry (for timelock form)
 
-                /// @notice this check validates if the state registry is elligible to update tx data for the
+                /// @notice this check validates if the state registry is eligible to update tx data for the
                 /// corresponding superform
                 if (IBaseForm(superform).getStateRegistryId() == _getStateRegistryId(address(this))) {
                     PayloadUpdaterLib.validateLiqReq(multiVaultData_.liqData[i]);
@@ -775,7 +780,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
                         failedDeposits[payloadId_].superformIds.push(multiVaultData.superformIds[i]);
 
-                        /// @dev clearing multiVaultData.amounts so that in case that fullfilment is true these amounts
+                        /// @dev clearing multiVaultData.amounts so that in case that fulfillment is true these amounts
                         /// are not minted
                         multiVaultData.amounts[i] = 0;
                         failedDeposits[payloadId_].settlementToken.push(IBaseForm(superforms[i]).getVaultAsset());

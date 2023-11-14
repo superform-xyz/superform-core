@@ -9,9 +9,10 @@ import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.s
 /// @author ZeroPoint Labs
 /// @notice Interface for Base Form
 interface IBaseForm is IERC165 {
-    /*///////////////////////////////////////////////////////////////
-                                EVENTS
-    //////////////////////////////////////////////////////////////*/
+
+    //////////////////////////////////////////////////////////////
+    //                          EVENTS                           //
+    //////////////////////////////////////////////////////////////
 
     /// @dev is emitted when a new vault is added by the admin.
     event VaultAdded(uint256 id, IERC4626 vault);
@@ -22,68 +23,9 @@ interface IBaseForm is IERC165 {
     /// @dev is emitted when an emergency withdrawal is processed
     event EmergencyWithdrawalProcessed(address refundAddress, uint256 amount);
 
-    /*///////////////////////////////////////////////////////////////
-                        EXTERNAL WRITE FUNCTONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev process same chain id deposits
-    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
-    /// @param srcSender_ The address of the sender of the transaction
-    /// @return dstAmount  The amount of tokens deposited in same chain action
-    function directDepositIntoVault(
-        InitSingleVaultData memory singleVaultData_,
-        address srcSender_
-    )
-        external
-        payable
-        returns (uint256 dstAmount);
-
-    /// @dev process same chain id deposits
-    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
-    /// @param srcSender_ The address of the sender of the transaction
-    /// @param srcChainId_ The chain id of the source chain
-    /// @return dstAmount  The amount of tokens deposited in same chain action
-    /// @dev is dstAmoutn is `0` then no further action/acknowledgement needs to be sent
-    function xChainDepositIntoVault(
-        InitSingleVaultData memory singleVaultData_,
-        address srcSender_,
-        uint64 srcChainId_
-    )
-        external
-        returns (uint256 dstAmount);
-
-    /// @dev process withdrawal of collateral from a vault
-    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
-    /// @param srcSender_ The address of the sender of the transaction
-    /// @return dstAmount  The amount of tokens withdrawn in same chain action
-    function directWithdrawFromVault(
-        InitSingleVaultData memory singleVaultData_,
-        address srcSender_
-    )
-        external
-        returns (uint256 dstAmount);
-
-    /// @dev process withdrawal of collateral from a vault
-    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
-    /// @param srcSender_ The address of the sender of the transaction
-    /// @param srcChainId_ The chain id of the source chain
-    /// @return dstAmount The amount of tokens withdrawn
-    function xChainWithdrawFromVault(
-        InitSingleVaultData memory singleVaultData_,
-        address srcSender_,
-        uint64 srcChainId_
-    )
-        external
-        returns (uint256 dstAmount);
-
-    /// @dev process withdrawal of shares if form is paused
-    /// @param srcSender_ The address of the sender of the transaction
-    /// @param refundAddress_ The address to refund the shares to
-    /// @param amount_ The amount of vault shares to refund
-    function emergencyWithdraw(address srcSender_, address refundAddress_, uint256 amount_) external;
-
-    /// @dev moves all dust in the contract to Paymaster contract
-    function forwardDustToPaymaster() external;
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
 
     /// @notice get Superform name of the ERC20 vault representation
     /// @return The ERC20 name
@@ -143,4 +85,67 @@ interface IBaseForm is IERC165 {
 
     /// @dev API may need to know state of funds deployed
     function previewRedeemFrom(uint256 shares_) external view returns (uint256);
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev process same chain id deposits
+    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
+    /// @param srcSender_ The address of the sender of the transaction
+    /// @return dstAmount  The amount of tokens deposited in same chain action
+    function directDepositIntoVault(
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_
+    )
+        external
+        payable
+        returns (uint256 dstAmount);
+
+    /// @dev process same chain id deposits
+    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
+    /// @param srcSender_ The address of the sender of the transaction
+    /// @param srcChainId_ The chain id of the source chain
+    /// @return dstAmount  The amount of tokens deposited in same chain action
+    /// @dev is dstAmoutn is `0` then no further action/acknowledgement needs to be sent
+    function xChainDepositIntoVault(
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_,
+        uint64 srcChainId_
+    )
+        external
+        returns (uint256 dstAmount);
+
+    /// @dev process withdrawal of collateral from a vault
+    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
+    /// @param srcSender_ The address of the sender of the transaction
+    /// @return dstAmount  The amount of tokens withdrawn in same chain action
+    function directWithdrawFromVault(
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_
+    )
+        external
+        returns (uint256 dstAmount);
+
+    /// @dev process withdrawal of collateral from a vault
+    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
+    /// @param srcSender_ The address of the sender of the transaction
+    /// @param srcChainId_ The chain id of the source chain
+    /// @return dstAmount The amount of tokens withdrawn
+    function xChainWithdrawFromVault(
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_,
+        uint64 srcChainId_
+    )
+        external
+        returns (uint256 dstAmount);
+
+    /// @dev process withdrawal of shares if form is paused
+    /// @param srcSender_ The address of the sender of the transaction
+    /// @param refundAddress_ The address to refund the shares to
+    /// @param amount_ The amount of vault shares to refund
+    function emergencyWithdraw(address srcSender_, address refundAddress_, uint256 amount_) external;
+
+    /// @dev moves all dust in the contract to Paymaster contract
+    function forwardDustToPaymaster() external;
 }

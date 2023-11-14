@@ -9,9 +9,10 @@ import "../types/DataTypes.sol";
 /// @author Zeropoint Labs.
 /// @dev interface for BaseRouterImplementation
 interface IBaseRouterImplementation is IBaseRouter {
-    /*///////////////////////////////////////////////////////////////
-                                STRUCTS
-    //////////////////////////////////////////////////////////////*/
+
+    //////////////////////////////////////////////////////////////
+    //                           STRUCTS                        //
+    //////////////////////////////////////////////////////////////
 
     /// @dev For local memory variable loading and avoiding stack too deep errors
     struct ActionLocalVars {
@@ -34,9 +35,9 @@ interface IBaseRouterImplementation is IBaseRouter {
         uint256 currentPayloadId;
     }
 
-    /*///////////////////////////////////////////////////////////////
-                                EVENTS
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////
+    //                          EVENTS                          //
+    //////////////////////////////////////////////////////////////
 
     /// @dev is emitted when a cross-chain deposit multi vault transaction is initiated.
     event CrossChainInitiatedDepositMulti(
