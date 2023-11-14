@@ -125,11 +125,12 @@ In this section we will run through examples where users deposit and withdraw in
 
 ## Off-chain Architecture
 
-Superform employs a variety of keepers to support best-in-class UX of interacting cross-chain. While this introduces a degree of centralization in our protocol, these roles can be decentralized over time and have no control over user funds assuming appropriate user input. These include:
+Superform employs a variety of keepers to support best-in-class UX of interacting cross-chain. While this introduces a degree of centralization in our protocol, these roles can be decentralized over time and have no control over user funds. These include:
 
 - PAYMENT_ADMIN_ROLE: Role for managing payment-related actions in `PayMaster.sol`
 - BROADCASTER_ROLE: Role for managing broadcasting payloads in `BroadcastStateRegistry.sol`
 - CORE_STATE_REGISTRY_PROCESSOR_ROLE: Role for managing processing operations in `CoreStateRegistry.sol`
+- TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE: Role for managing processing operations in `TimelockStateRegistry.sol`
 - BROADCAST_REGISTRY_PROCESSOR_ROLE : Role for managing processing broadcast payloads in `BroadcastStateRegistry.sol`
 - CORE_STATE_REGISTRY_UPDATER_ROLE: Role for managing updating operations in `CoreStateRegistry.sol`
 - DST_SWAPPER_ROLE: Role for managing swapping operations on `DstSwapper.sol`
@@ -144,73 +145,7 @@ For the purpose of this audit, exploits concerning the inappropriate behavior of
 We leave these in the repository to see intended behavior, but the following contracts and behaviors are out of scope:
 
 - Anything in [`src/vendor`](./src/vendor)
-- [`/src/crosschain-data/extensions/TimelockStateRegistry.sol`](./src/crosschain-data/extensions/TimelockStateRegistry.sol`)
-- [`/src/forms/ERC4626KYCDaoForm.sol`](./src/forms/ERC4626KYCDaoForm.sol`)
-- [`/src/forms/ERC4626TimelockForm.sol`](./src/forms/ERC4626TimelockForm.sol`)
 - Exploits concerning the inappropriate behavior of permissioned roles
-
-## Gas Costs (28 July 2023) -- #TODO UPDATE
-
-| src/SuperFormFactory.sol:SuperFormFactory contract |                 |        |        |         |         |
-| -------------------------------------------------- | --------------- | ------ | ------ | ------- | ------- |
-| Deployment Cost                                    | Deployment Size |        |        |         |         |
-| 2784387                                            | 14142           |        |        |         |         |
-| Function Name                                      | min             | avg    | median | max     | # calls |
-| addFormBeacon                                      | 4682            | 643178 | 637075 | 658975  | 2263    |
-| changeFormBeaconPauseStatus                        | 5466            | 505673 | 505673 | 1005881 | 2       |
-| createSuperForm                                    | 725             | 320587 | 319818 | 341718  | 20107   |
-| getAllSuperForms                                   | 18856           | 18856  | 18856  | 18856   | 1       |
-| getAllSuperFormsFromVault                          | 1993            | 1993   | 1993   | 1993    | 1       |
-| getBytecodeFormBeacon                              | 15170           | 15170  | 15170  | 15170   | 1       |
-| getFormBeacon                                      | 635             | 930    | 635    | 2635    | 203     |
-| getFormCount                                       | 326             | 326    | 326    | 326     | 1       |
-| getSuperForm                                       | 459             | 459    | 459    | 459     | 31      |
-| getSuperFormCount                                  | 348             | 348    | 348    | 348     | 1       |
-| isFormBeaconPaused                                 | 1357            | 1357   | 1357   | 1357    | 1       |
-| updateFormBeaconLogic                              | 2600            | 7681   | 6793   | 13416   | 5       |
-
-| src/SuperFormRouter.sol:SuperFormRouter contract |                 |         |         |         |         |
-| ------------------------------------------------ | --------------- | ------- | ------- | ------- | ------- |
-| Deployment Cost                                  | Deployment Size |         |         |         |         |
-| 4338555                                          | 22089           |         |         |         |         |
-| Function Name                                    | min             | avg     | median  | max     | # calls |
-| multiDstMultiVaultDeposit                        | 630421          | 1067055 | 1012200 | 1856786 | 11      |
-| multiDstMultiVaultWithdraw                       | 563726          | 1190243 | 1500151 | 1506852 | 3       |
-| multiDstSingleVaultDeposit                       | 465047          | 781205  | 773480  | 1377258 | 14      |
-| multiDstSingleVaultWithdraw                      | 297130          | 354790  | 331307  | 460124  | 5       |
-| singleDirectSingleVaultDeposit                   | 205460          | 252437  | 258455  | 302534  | 12      |
-| singleDirectSingleVaultWithdraw                  | 24108           | 296786  | 140501  | 882035  | 4       |
-| singleXChainMultiVaultDeposit                    | 256784          | 447997  | 455178  | 656408  | 13      |
-| singleXChainMultiVaultWithdraw                   | 217273          | 238534  | 239594  | 257884  | 5       |
-| singleXChainSingleVaultDeposit                   | 244953          | 331827  | 349072  | 397602  | 14      |
-| singleXChainSingleVaultWithdraw                  | 142336          | 163485  | 162387  | 186831  | 4       |
-
-| src/SuperPositions.sol:SuperPositions contract |                 |       |        |       |         |
-| ---------------------------------------------- | --------------- | ----- | ------ | ----- | ------- |
-| Deployment Cost                                | Deployment Size |       |        |       |         |
-| 2720972                                        | 14450           |       |        |       |         |
-| Function Name                                  | min             | avg   | median | max   | # calls |
-| balanceOf                                      | 642             | 1218  | 642    | 2642  | 493     |
-| burnBatchSP                                    | 6899            | 7812  | 8059   | 9218  | 13      |
-| burnSingleSP                                   | 3513            | 3697  | 3513   | 4391  | 19      |
-| dynamicURI                                     | 1299            | 1299  | 1299   | 1299  | 1       |
-| mintBatchSP                                    | 48618           | 48618 | 48618  | 48618 | 2       |
-| mintSingleSP                                   | 24512           | 24563 | 24512  | 25395 | 17      |
-| setApprovalForOne                              | 2933            | 23333 | 24933  | 24933 | 55      |
-| setDynamicURI                                  | 2979            | 23379 | 23546  | 43446 | 4       |
-| stateMultiSync                                 | 10292           | 49599 | 51101  | 93825 | 37      |
-| stateSync                                      | 7010            | 24276 | 26910  | 27861 | 43      |
-| supportsInterface                              | 548             | 548   | 548    | 548   | 1       |
-| updateTxHistory                                | 23495           | 23850 | 23495  | 25495 | 107     |
-| uri                                            | 2332            | 2332  | 2332   | 2332  | 1       |
-
-| src/crosschain-liquidity/DstSwapper.sol:DstSwapper contract |                 |        |        |        |         |
-| ----------------------------------------------------------------------- | --------------- | ------ | ------ | ------ | ------- |
-| Deployment Cost                                                         | Deployment Size |        |        |        |         |
-| 962913                                                                  | 5020            |        |        |        |         |
-| Function Name                                                           | min             | avg    | median | max    | # calls |
-| batchProcessTx                                                          | 122225          | 169121 | 173375 | 228495 | 17      |
-| processTx                                                               | 71500           | 73199  | 71500  | 81119  | 12      |
 
 ## Tests
 

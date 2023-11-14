@@ -10,7 +10,9 @@ The following components are a key part of superform's robust crosschain communi
 
 - **Base State Registry [BaseStateRegistry.sol](./BaseStateRegistry.sol)**: The base implementation of the state registry, exposes sending and receiving payload interfaces. Any cross-chain message is also called a "payload".
 
-- **Core State Registry [CoreStateRegistry.sol](./extensions/CoreStateRegistry.sol)**: Child contract inheriting base state registry which enables core contracts, including routers & form implementations, to communicate with their counterparts on a different network. Contains its custom logic for payload processing & updating (during deposits).
+- **Core State Registry [CoreStateRegistry.sol](./extensions/CoreStateRegistry.sol)**: Contract inheriting BaseStateRegistry which enables core contracts, including routers & form implementations, to communicate with their counterparts on a different network. Contains its custom logic for payload processing & updating (during deposits).
+
+- **Timelock Form State Registry [TimelockStateRegistry.sol](./extensions/TimelockStateRegistry.sol)**: Contract inheriting BaseStateRegistry, specifically designed to process withdrawal request for ERC4626TimelockForm. Inherits BaseStateRegistry to send acknowledgement on failure withdrawals for timelock forms.
 
 - **Broadcast State Registry [BroadcastRegistry.sol](./BroadcastRegistry.sol)**: BroadcastRegistry proposes a unique form of communication from Chain A to all chains Superform is on, as opposed to BaseStateRegistry which assumes communication between only two chains. 
 
@@ -23,10 +25,6 @@ Each individual AMB wrapper will be placed inside a folder named after the Arbit
 - **[WormholeARImplementation.sol](./adapters/wormhole/automatic-relayer/WormholeARImplementation.sol)**: Wrapper for Wormhole Automatic Relayer AMB
 
 - **[WormholeSRImplementation.sol](./adapters/wormhole/specialized-relayer/WormholeSRImplementation.sol)**: Wrapper for Wormhole Specialized Relayer AMB, used specifically in `BroadcastRegistry.sol`
-
-### Out of scope
-
-- **Timelock Form State Registry [TimelockStateRegistry.sol](./extensions/TimelockStateRegistry.sol)**: Special state registry implementation contract, specifically designed to process withdrawal request for ERC4626TimelockForm. Inherits BaseStateRegistry to send acknowledgement on failure withdrawals for timelock forms.
 
 ## Architecture
 
