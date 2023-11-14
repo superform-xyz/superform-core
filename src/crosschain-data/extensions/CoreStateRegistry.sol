@@ -256,7 +256,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     || _hasRole(keccak256("CORE_STATE_REGISTRY_DISPUTER_ROLE"), msg.sender)
             )
         ) {
-            revert Error.INVALID_DISPUTER();
+            revert Error.NOT_DISPUTER();
         }
 
         /// @dev the timelock is already elapsed to dispute
