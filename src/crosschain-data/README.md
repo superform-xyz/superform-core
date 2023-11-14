@@ -6,29 +6,9 @@ This directory contains the components to enable crosschain communication functi
 
 The following components are a key part of superform's robust crosschain communication. New State Registries may be added by the Protocol Admin if new Form types are added to support new deposit/withdrawal flows. 
 
-### In scope
-
-- **Base State Registry [BaseStateRegistry.sol](./BaseStateRegistry.sol)**: The base implementation of the state registry, exposes sending and receiving payload interfaces. Any cross-chain message is also called a "payload".
-
-- **Core State Registry [CoreStateRegistry.sol](./extensions/CoreStateRegistry.sol)**: Contract inheriting BaseStateRegistry which enables core contracts, including routers & form implementations, to communicate with their counterparts on a different network. Contains its custom logic for payload processing & updating (during deposits).
-
-- **Timelock Form State Registry [TimelockStateRegistry.sol](./extensions/TimelockStateRegistry.sol)**: Contract inheriting BaseStateRegistry, specifically designed to process withdrawal request for ERC4626TimelockForm. Inherits BaseStateRegistry to send acknowledgement on failure withdrawals for timelock forms.
-
-- **Broadcast State Registry [BroadcastRegistry.sol](./BroadcastRegistry.sol)**: BroadcastRegistry proposes a unique form of communication from Chain A to all chains Superform is on, as opposed to BaseStateRegistry which assumes communication between only two chains. 
-
-Each individual AMB wrapper will be placed inside a folder named after the Arbitrary Message Bridge (AMB).
-
-- **[LayerzeroImplementation.sol](./adapters/layerzero/Implementation.sol)**: Wrapper for Layerzero AMB
-
-- **[HyperlaneImplementation.sol](./adapters/hyperlane/Implementation.sol)**: Wrapper for Hyperlane AMB
-
-- **[WormholeARImplementation.sol](./adapters/wormhole/automatic-relayer/WormholeARImplementation.sol)**: Wrapper for Wormhole Automatic Relayer AMB
-
-- **[WormholeSRImplementation.sol](./adapters/wormhole/specialized-relayer/WormholeSRImplementation.sol)**: Wrapper for Wormhole Specialized Relayer AMB, used specifically in `BroadcastRegistry.sol`
-
 ## Architecture
 
-*INSERT REVISED ARCH DIAGRAM*
+<img width="926" alt="Screenshot 2023-11-14 at 11 58 08 AM" src="https://github.com/superform-xyz/superform-core/assets/33469661/1ca6341a-d3f5-4b54-8758-596584dde9ca">
 
 ## State Registry: Functional Description
 
@@ -55,15 +35,33 @@ On deposits, payloads must be processed once on the destination chain to deposit
 
 On withdrawals, payloads must only be processed once on the destination chain to redeem funds. 
 
-## Chain Id
+### Chain Id
 
 Every AMB has their identifier for different chains/networks. In state registries, perform assigned chains are used, which are mapped to the AMB-specific chain ids inside the amb implementation contracts.
 
-## Security Assumptions: A Primer
-
----
-
+### Key Security Assumptions
 - Only AMB implementation contracts can write new messages into state registry
 - Sender should be authenticated to interact with the AMB implmenetation contract
 - Updating and processing payloads can only be made by keepers with special privileges
 - `onlySender` modifier is overriden by all contracts inheriting base state registry
+
+## In scope
+
+- **Base State Registry [BaseStateRegistry.sol](./BaseStateRegistry.sol)**: The base implementation of the state registry, exposes sending and receiving payload interfaces. Any cross-chain message is also called a "payload".
+
+- **Core State Registry [CoreStateRegistry.sol](./extensions/CoreStateRegistry.sol)**: Contract inheriting BaseStateRegistry which enables core contracts, including routers & form implementations, to communicate with their counterparts on a different network. Contains its custom logic for payload processing & updating (during deposits).
+
+- **Timelock Form State Registry [TimelockStateRegistry.sol](./extensions/TimelockStateRegistry.sol)**: Contract inheriting BaseStateRegistry, specifically designed to process withdrawal request for ERC4626TimelockForm. Inherits BaseStateRegistry to send acknowledgement on failure withdrawals for timelock forms.
+
+- **Broadcast State Registry [BroadcastRegistry.sol](./BroadcastRegistry.sol)**: BroadcastRegistry proposes a unique form of communication from Chain A to all chains Superform is on, as opposed to BaseStateRegistry which assumes communication between only two chains. 
+
+Each individual AMB wrapper will be placed inside a folder named after the Arbitrary Message Bridge (AMB).
+
+- **[LayerzeroImplementation.sol](./adapters/layerzero/Implementation.sol)**: Wrapper for Layerzero AMB
+
+- **[HyperlaneImplementation.sol](./adapters/hyperlane/Implementation.sol)**: Wrapper for Hyperlane AMB
+
+- **[WormholeARImplementation.sol](./adapters/wormhole/automatic-relayer/WormholeARImplementation.sol)**: Wrapper for Wormhole Automatic Relayer AMB
+
+- **[WormholeSRImplementation.sol](./adapters/wormhole/specialized-relayer/WormholeSRImplementation.sol)**: Wrapper for Wormhole Specialized Relayer AMB, used specifically in `BroadcastRegistry.sol`
+- 
