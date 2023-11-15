@@ -87,7 +87,7 @@ contract PayMasterTest is ProtocolActions {
         assertEq(feeCollector.balance, 1 wei);
 
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
-        vm.expectRevert(Error.INSUFFICIENT_NATIVE_AMOUNT.selector);
+        vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
         PayMaster(payable(feeCollector)).withdrawTo(keccak256("CORE_REGISTRY_PROCESSOR"), 2 wei);
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
@@ -115,7 +115,7 @@ contract PayMasterTest is ProtocolActions {
         assertEq(feeCollector.balance, 1 wei);
 
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
-        vm.expectRevert(Error.INSUFFICIENT_NATIVE_AMOUNT.selector);
+        vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
         PayMaster(payable(feeCollector)).withdrawTo(keccak256("CORE_REGISTRY_UPDATER"), 2 wei);
 
         /// @dev admin tries withdraw if updater address is zero (check if handled gracefully)
@@ -144,7 +144,7 @@ contract PayMasterTest is ProtocolActions {
         superRegistry.setAddress(keccak256("KEEPER_MOCK"), mock, ETH);
 
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
-        vm.expectRevert(Error.FAILED_WITHDRAW.selector);
+        vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
         PayMaster(payable(feeCollector)).withdrawTo(keccak256("KEEPER_MOCK"), 1 wei);
     }
 
@@ -276,7 +276,7 @@ contract PayMasterTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
         address feeCollector = getContract(ETH, "PayMaster");
-        vm.expectRevert(Error.INSUFFICIENT_NATIVE_AMOUNT.selector);
+        vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
         PayMaster(payable(feeCollector)).treatAMB(2, 10 ether, "");
 
         AMBMessage memory ambMessage;

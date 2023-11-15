@@ -173,7 +173,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         (bool success,) = payable(relayer).call{ value: msg.value - msgFee }("");
 
         if (!success) {
-            revert Error.NATIVE_TOKEN_TRANSFER_FAILURE();
+            revert Error.FAILED_TO_SEND_NATIVE();
         }
     }
 
