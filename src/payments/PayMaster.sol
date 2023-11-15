@@ -97,7 +97,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     /// @inheritdoc IPayMaster
     function makePayment(address user_) external payable override {
         if (msg.value == 0) {
-            revert Error.ZERO_MSG_VALUE();
+            revert Error.FAILED_TO_SEND_NATIVE();
         }
 
         if (user_ == address(0)) {

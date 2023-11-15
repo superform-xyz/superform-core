@@ -68,7 +68,7 @@ contract PayMasterTest is ProtocolActions {
         vm.startPrank(deployer);
 
         /// @dev make zero payment
-        vm.expectRevert(Error.ZERO_MSG_VALUE.selector);
+        vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
         PayMaster(payable(getContract(ETH, "PayMaster"))).makePayment(deployer);
 
         /// @dev try to make payment for zero address

@@ -155,7 +155,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         uint256 msgFee = wormhole.messageFee();
 
         if (msg.value < msgFee) {
-            revert Error.CROSS_CHAIN_TX_UNDERPAID();
+            revert Error.INSUFFICIENT_NATIVE_AMOUNT();
         }
 
         wormhole.publishMessage{ value: msgFee }(
