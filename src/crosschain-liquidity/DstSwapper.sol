@@ -210,6 +210,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         override
         onlyCoreStateRegistry
     {
+        if (user_ == address(0)) revert Error.ZERO_ADDRESS();
         if (interimToken_ != NATIVE) {
             IERC20(interimToken_).safeTransfer(user_, amount_);
         } else {
