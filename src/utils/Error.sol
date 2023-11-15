@@ -8,6 +8,9 @@ library Error {
     //////////////////////////////////////////////////////////////
     ///@notice errors thrown in protocol setup
     
+    /// @dev thrown when there is an array length mismatch
+    error ARRAY_LENGTH_MISMATCH();
+
     /// @dev thrown if chain id exceeds max(uint64)
     error BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
 
@@ -116,6 +119,7 @@ library Error {
     ///@notice errors thrown when input variables are not valid
 
     /// COMMON INPUT VALIDATION ERRORS
+
     /// @dev error thrown when address input is address 0
     error ZERO_ADDRESS();
 
@@ -131,32 +135,22 @@ library Error {
     /// @dev error thrown when amb ids length is 0
     error ZERO_AMB_ID_LENGTH();
 
-    /// @dev thrown if the payload status is invalid
-    error INVALID_PAYLOAD_STATUS();
+    /// @dev thrown if payload id does not exist
+    error INVALID_PAYLOAD_ID();
 
     /// SUPERFORM ROUTER INPUT VALIDATION ERRORS
-    /// @dev thrown when form id is larger than max uint16
-    error INVALID_FORM_ID();
 
     /// @dev thrown when the vaults data is invalid
     error INVALID_SUPERFORMS_DATA();
-
-    /// @dev thrown when the chain ids data is invalid
-    error INVALID_CHAIN_IDS();
-
-    /// @dev thrown when the payload is invalid
-    error INVALID_PAYLOAD();
-
-    /// @dev thrown if src senders mismatch in state sync
-    error SRC_SENDER_MISMATCH();
-
-    /// @dev thrown if src tx types mismatch in state sync
-    error SRC_TX_TYPE_MISMATCH();
 
     /// @dev thrown if receiver address is not set when the contract is a smart contract wallet
     error RECEIVER_ADDRESS_NOT_SET();
 
     /// SUPERFORM FACTORY INPUT VALIDATION ERRORS
+
+    /// @dev thrown when form id is larger than max uint16
+    error INVALID_FORM_ID();
+
     /// @dev thrown when a form is not ERC165 compatible
     error ERC165_UNSUPPORTED();
 
@@ -175,13 +169,12 @@ library Error {
     /// @dev thrown when same vault and beacon is used to create new superform
     error VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS();
 
-    /// @dev thrown when there is an array length mismatch
-    error ARRAY_LENGTH_MISMATCH();
-
-    /// @dev thrown when slippage is outside of bounds
-    error SLIPPAGE_OUT_OF_BOUNDS();
-
     /// FORM INPUT VALIDATION ERRORS
+
+    /// @dev in case of no txData, if liqData.token != collateral. In case of txData, if token output of swap ==
+    /// vault.asset()
+    error DIFFERENT_TOKENS();
+
     /// @dev thrown when the amount in direct deposit is not correct
     error DIRECT_DEPOSIT_INVALID_DATA();
 
@@ -194,16 +187,22 @@ library Error {
     /// @dev thrown when the amount in xchain withdraw is not correct
     error XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
 
-    /// @dev thrown when liqData token is empty but txData is not
-    error EMPTY_TOKEN_NON_EMPTY_TXDATA();
-
-    /// @dev in case of no txData, if liqData.token != collateral. In case of txData, if token output of swap ==
-    /// vault.asset()
-    error DIFFERENT_TOKENS();
-
     /// LIQUIDITY BRIDGE INPUT VALIDATION ERRORS
+
+    /// @dev when a certain action of the user is not allowed given the txData provided
+    error INVALID_ACTION();
+
+    /// @dev thrown when in deposits, the liqDstChainId doesn't match the stateReq dstChainId
+    error INVALID_DEPOSIT_LIQ_DST_CHAIN_ID();
+
+    /// @dev thrown if index is invalid
+    error INVALID_INDEX();
+
     /// @dev is emitted when the chain id in the txdata is invalid
     error INVALID_TXDATA_CHAIN_ID();
+
+    /// @dev thrown when the validation of bridge txData fails due to a destination call present
+    error INVALID_TXDATA_NO_DESTINATIONCALL_ALLOWED();
 
     /// @dev thrown the when validation of bridge txData fails due to wrong receiver
     error INVALID_TXDATA_RECEIVER();
@@ -211,48 +210,10 @@ library Error {
     /// @dev thrown when the validation of bridge txData fails due to wrong token
     error INVALID_TXDATA_TOKEN();
 
-    /// @dev thrown when in deposits, the liqDstChainId doesn't match the stateReq dstChainId
-    error INVALID_DEPOSIT_LIQ_DST_CHAIN_ID();
-
-    /// @dev when a certain action of the user is not allowed given the txData provided
-    error INVALID_ACTION();
-
-    /// @dev thrown when the validation of bridge txData fails due to a destination call present
-    error INVALID_TXDATA_NO_DESTINATIONCALL_ALLOWED();
-
-    /// @dev thrown if index is invalid
-    error INVALID_INDEX();
-
     /// @dev error thrown when txData must be present (in case of xChain acitons)
     error NO_TXDATA_PRESENT();
 
-   /// STATE REGISTRY INPUT VALIDATION ERRORS
-    /// @dev thrown if message amb and proof amb are the same
-    error INVALID_PROOF_BRIDGE_ID();
-
-    /// @dev thrown if a duplicate proof amb is found
-    error DUPLICATE_PROOF_BRIDGE_ID();
-
-    /// @dev is emitted when the chain id brought in the cross chain message is invalid
-    error INVALID_CHAIN_ID();
-
-    /// @dev thrown if ambId is not valid leading to an address 0 of the implementation
-    error INVALID_BRIDGE_ID();
-
-    /// @dev thrown if payload type is invalid
-    error INVALID_PAYLOAD_TYPE();
-
-    /// @dev thrown if payload id does not exist
-    error INVALID_PAYLOAD_ID();
-
-    /// @dev thrown if update payload function was called on a wrong payload
-    error INVALID_PAYLOAD_UPDATE_REQUEST();
-
-    /// @dev thrown if payload update amount mismatch with dst swapper amount
-    error INVALID_DST_SWAP_AMOUNT();
-
-    /// @dev thrown if payload update amount mismatch with failed dst swap amount
-    error INVALID_FAILED_DST_SWAP_AMOUNT();
+    /// STATE REGISTRY INPUT VALIDATION ERRORS
 
     /// @dev thrown if payload is being updated with final amounts length different than amounts length
     error DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH();
@@ -260,8 +221,23 @@ library Error {
     /// @dev thrown if payload is being updated with tx data length different than liq data length
     error DIFFERENT_PAYLOAD_UPDATE_TX_DATA_LENGTH();
 
-    /// @dev thrown if the amounts being sent in update payload mean a negative slippage
-    error NEGATIVE_SLIPPAGE();
+    /// @dev thrown if a duplicate proof amb is found
+    error DUPLICATE_PROOF_BRIDGE_ID();
+
+    /// @dev thrown when broadcast finality for wormhole is invalid
+    error INVALID_BROADCAST_FINALITY();
+
+    /// @dev thrown if ambId is not valid leading to an address 0 of the implementation
+    error INVALID_BRIDGE_ID();
+
+    /// @dev is emitted when the chain id brought in the cross chain message is invalid
+    error INVALID_CHAIN_ID();
+
+    /// @dev thrown if payload update amount mismatch with dst swapper amount
+    error INVALID_DST_SWAP_AMOUNT();
+
+    /// @dev thrown if message amb and proof amb are the same
+    error INVALID_PROOF_BRIDGE_ID();
 
     /// @dev thrown if the rescue data lengths are invalid
     error INVALID_RESCUE_DATA();
@@ -269,8 +245,19 @@ library Error {
     /// @dev thrown if the delay is invalid
     error INVALID_TIMELOCK_DELAY();
 
-    /// @dev thrown when broadcast finality for wormhole is invalid
-    error INVALID_BROADCAST_FINALITY();
+    /// @dev thrown if the amounts being sent in update payload mean a negative slippage
+    error NEGATIVE_SLIPPAGE();
+
+    /// @dev thrown when slippage is outside of bounds
+    error SLIPPAGE_OUT_OF_BOUNDS();
+
+    /// SUPERPOSITIONS INPUT VALIDATION ERRORS
+
+    /// @dev thrown if src senders mismatch in state sync
+    error SRC_SENDER_MISMATCH();
+
+    /// @dev thrown if src tx types mismatch in state sync
+    error SRC_TX_TYPE_MISMATCH();
 
     //////////////////////////////////////////////////////////////
     //                  EXECUTION ERRORS                        //
@@ -287,6 +274,9 @@ library Error {
     /// @dev thrown if the underlying collateral mismatches
     error INVALID_DEPOSIT_TOKEN();
 
+    /// @dev thrown when the payload cannot be decoded
+    error INVALID_PAYLOAD();
+
     /// LIQUIDITY BRIDGE EXECUTION ERRORS
     /// @dev thrown when dst swap output is less than minimum expected
     error INVALID_SWAP_OUTPUT();
@@ -298,6 +288,16 @@ library Error {
     error CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
 
     /// STATE REGISTRY EXECUTION ERRORS
+
+    /// @dev thrown if the payload status is invalid
+    error INVALID_PAYLOAD_STATUS();
+
+    /// @dev thrown if payload type is invalid
+    error INVALID_PAYLOAD_TYPE();
+
+    /// @dev thrown if update payload function was called on a wrong payload
+    error INVALID_PAYLOAD_UPDATE_REQUEST();
+
     /// @dev is thrown if the payload hash is zero during `retryMessage` on Layezero implementation
     error ZERO_PAYLOAD_HASH();
 
@@ -318,6 +318,9 @@ library Error {
 
     /// @dev thrown if withdrawal TX_DATA cannot be updated
     error CANNOT_UPDATE_WITHDRAW_TX_DATA();
+
+    /// @dev thrown when withdrawl token is not updated
+    error WITHDRAW_TOKEN_NOT_UPDATED();
 
     /// @dev thrown if withdrawal TX_DATA is not updated
     error WITHDRAW_TX_DATA_NOT_UPDATED();

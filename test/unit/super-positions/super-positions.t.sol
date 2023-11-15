@@ -83,7 +83,7 @@ contract SuperPositionsTest is BaseSetup {
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         vm.broadcast(getContract(ETH, "CoreStateRegistry"));
-        vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
+        vm.expectRevert(Error.INVALID_PAYLOAD_TYPE.selector);
         superPositions.stateSync(maliciousMessage);
     }
 
@@ -121,7 +121,7 @@ contract SuperPositionsTest is BaseSetup {
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         vm.broadcast(getContract(ETH, "CoreStateRegistry"));
-        vm.expectRevert(Error.INVALID_PAYLOAD.selector);
+        vm.expectRevert(Error.INVALID_PAYLOAD_TYPE.selector);
         superPositions.stateSync(maliciousMessage);
     }
 
@@ -135,7 +135,7 @@ contract SuperPositionsTest is BaseSetup {
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         vm.broadcast(getContract(ETH, "CoreStateRegistry"));
-        vm.expectRevert(Error.INVALID_PAYLOAD.selector);
+        vm.expectRevert(Error.INVALID_PAYLOAD_TYPE.selector);
         superPositions.stateSync(maliciousMessage);
     }
 
@@ -198,7 +198,7 @@ contract SuperPositionsTest is BaseSetup {
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         vm.broadcast(getContract(ETH, "CoreStateRegistry"));
-        vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
+        vm.expectRevert(Error.INVALID_PAYLOAD_TYPE.selector);
         superPositions.stateMultiSync(maliciousMessage);
     }
 
@@ -212,7 +212,7 @@ contract SuperPositionsTest is BaseSetup {
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         vm.broadcast(getContract(ETH, "CoreStateRegistry"));
-        vm.expectRevert(Error.INVALID_PAYLOAD.selector);
+        vm.expectRevert(Error.INVALID_PAYLOAD_TYPE.selector);
         superPositions.stateMultiSync(maliciousMessage);
     }
 
@@ -228,7 +228,7 @@ contract SuperPositionsTest is BaseSetup {
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         vm.broadcast(getContract(ETH, "CoreStateRegistry"));
-        vm.expectRevert(Error.INVALID_PAYLOAD.selector);
+        vm.expectRevert(Error.INVALID_PAYLOAD_TYPE.selector);
         superPositions.stateMultiSync(maliciousMessage);
     }
 

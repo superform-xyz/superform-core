@@ -191,7 +191,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
             data_.txInfo.decodeTxInfo();
 
         if (callbackType != uint256(CallbackType.RETURN) && callbackType != uint256(CallbackType.FAIL)) {
-            revert Error.INVALID_PAYLOAD();
+            revert Error.INVALID_PAYLOAD_TYPE();
         }
 
         /// @dev decode remaining info on superPositions to mint from destination
@@ -213,7 +213,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         (txType,,,, srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
         /// @dev verify this is a not single vault mint
-        if (multi == 0) revert Error.INVALID_PAYLOAD();
+        if (multi == 0) revert Error.INVALID_PAYLOAD_TYPE();
         /// @dev compare final shares beneficiary to be the same (dst/src)
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
         /// @dev compare txType to be the same (dst/src)
@@ -226,7 +226,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         ) {
             _batchMint(srcSender, msg.sender, returnData.superformIds, returnData.amounts, "");
         } else {
-            revert Error.INVALID_PAYLOAD_STATUS();
+            revert Error.INVALID_PAYLOAD_TYPE();
         }
 
         emit Completed(returnData.payloadId);
@@ -240,7 +240,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
             data_.txInfo.decodeTxInfo();
 
         if (callbackType != uint256(CallbackType.RETURN) && callbackType != uint256(CallbackType.FAIL)) {
-            revert Error.INVALID_PAYLOAD();
+            revert Error.INVALID_PAYLOAD_TYPE();
         }
 
         /// @dev decode remaining info on superPositions to mint from destination
@@ -261,7 +261,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         (txType,,,, srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
         /// @dev this is a not multi vault mint
-        if (multi == 1) revert Error.INVALID_PAYLOAD();
+        if (multi == 1) revert Error.INVALID_PAYLOAD_TYPE();
 
         /// @dev compare final shares beneficiary to be the same (dst/src)
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
@@ -275,7 +275,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         ) {
             _mint(srcSender, msg.sender, returnData.superformId, returnData.amount, "");
         } else {
-            revert Error.INVALID_PAYLOAD_STATUS();
+            revert Error.INVALID_PAYLOAD_TYPE();
         }
 
         emit Completed(returnData.payloadId);
