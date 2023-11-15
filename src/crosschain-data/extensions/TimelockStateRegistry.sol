@@ -56,12 +56,6 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         _;
     }
 
-    modifier onlySender() override {
-        if (msg.sender != address(0)) {
-            _;
-        }
-    }
-
     /// @dev allows only form to write to the receive payload
     modifier onlyTimelockSuperform(uint256 superformId) {
         if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId)) {
