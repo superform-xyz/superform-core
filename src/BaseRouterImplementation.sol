@@ -156,11 +156,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev validates the receiver address
         _validateReceiverAddress(req_.superformData.receiverAddress);
 
-        InitSingleVaultData memory ambData;
-
         vars.currentPayloadId = ++payloadIds;
 
-        ambData = InitSingleVaultData(
+        InitSingleVaultData memory ambData = InitSingleVaultData(
             vars.currentPayloadId,
             req_.superformData.superformId,
             req_.superformData.amount,
@@ -392,11 +390,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             msg.sender, req_.superformData.superformId, req_.superformData.amount
         );
 
-        InitSingleVaultData memory ambData;
-
         vars.currentPayloadId = ++payloadIds;
 
-        ambData = InitSingleVaultData(
+        InitSingleVaultData memory ambData = InitSingleVaultData(
             vars.currentPayloadId,
             req_.superformData.superformId,
             req_.superformData.amount,
@@ -486,12 +482,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             msg.sender, req_.superformsData.superformIds, req_.superformsData.amounts
         );
 
-        InitMultiVaultData memory ambData;
-
         vars.currentPayloadId = ++payloadIds;
 
-        /// @dev write packed txData
-        ambData = InitMultiVaultData(
+        InitMultiVaultData memory ambData = InitMultiVaultData(
             vars.currentPayloadId,
             req_.superformsData.superformIds,
             req_.superformsData.amounts,
