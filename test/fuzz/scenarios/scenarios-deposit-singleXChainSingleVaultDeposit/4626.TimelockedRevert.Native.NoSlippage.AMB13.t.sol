@@ -20,8 +20,6 @@ contract SXSVDTimelockedRevert4626NoTokenInputSlippageAMB24 is ProtocolActions {
 
         TARGET_VAULTS[POLY][0] = [5];
 
-        /// @dev id 0 is normal 4626
-
         TARGET_FORM_KINDS[POLY][0] = [1];
 
         AMOUNTS[POLY][0] = [2 * 10 ** 6];

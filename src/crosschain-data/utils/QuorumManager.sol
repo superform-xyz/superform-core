@@ -9,7 +9,6 @@ import { Error } from "../../utils/Error.sol";
 /// @dev separates quorum management concerns into an abstract contract. Can be re-used (currently used by
 /// superRegistry) to set different quorums per amb in different areas of the protocol
 abstract contract QuorumManager is IQuorumManager {
-
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
     //////////////////////////////////////////////////////////////

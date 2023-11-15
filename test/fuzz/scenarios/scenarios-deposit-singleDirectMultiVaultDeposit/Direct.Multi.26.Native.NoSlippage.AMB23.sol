@@ -21,8 +21,6 @@ contract SDiMVDMulti26NativeNoSlippageAMB13 is ProtocolActions {
 
         TARGET_VAULTS[POLY][0] = [2, 6];
 
-        /// @dev id 0 is normal 4626
-
         TARGET_FORM_KINDS[POLY][0] = [2, 2];
 
         MAX_SLIPPAGE = 1000;

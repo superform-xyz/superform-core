@@ -21,8 +21,8 @@ contract MDMVW0102408NativeInputSlipageAMB13 is ProtocolActions {
         TARGET_VAULTS[ETH][0] = [0, 1];
         TARGET_FORM_KINDS[ETH][0] = [0, 1];
 
-        TARGET_UNDERLYINGS[POLY][0] = [0, 1, 2];
-        TARGET_VAULTS[POLY][0] = [0, 1, 4];
+        TARGET_UNDERLYINGS[POLY][0] = [0, 1, 0];
+        TARGET_VAULTS[POLY][0] = [0, 1, 1];
         TARGET_FORM_KINDS[POLY][0] = [0, 1, 1];
 
         TARGET_UNDERLYINGS[AVAX][0] = [2, 2];
@@ -33,8 +33,8 @@ contract MDMVW0102408NativeInputSlipageAMB13 is ProtocolActions {
         TARGET_VAULTS[ETH][1] = [0, 1];
         TARGET_FORM_KINDS[ETH][1] = [0, 1];
 
-        TARGET_UNDERLYINGS[POLY][1] = [0, 1, 2];
-        TARGET_VAULTS[POLY][1] = [0, 1, 4];
+        TARGET_UNDERLYINGS[POLY][1] = [0, 1, 0];
+        TARGET_VAULTS[POLY][1] = [0, 1, 1];
         TARGET_FORM_KINDS[POLY][1] = [0, 1, 1];
 
         /// all superforms are different

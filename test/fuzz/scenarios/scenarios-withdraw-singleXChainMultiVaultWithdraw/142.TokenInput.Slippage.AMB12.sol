@@ -17,14 +17,12 @@ contract SDMVW142TokenInputSlippageAMB12 is ProtocolActions {
         DST_CHAINS = [AVAX];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[AVAX][0] = [1, 1, 1];
+        TARGET_UNDERLYINGS[AVAX][0] = [1, 1, 2];
         TARGET_VAULTS[AVAX][0] = [1, 4, 1];
-        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[AVAX][0] = [1, 1, 1];
 
-        TARGET_UNDERLYINGS[AVAX][1] = [1, 1, 1];
+        TARGET_UNDERLYINGS[AVAX][1] = [1, 1, 2];
         TARGET_VAULTS[AVAX][1] = [1, 4, 1];
-        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[AVAX][1] = [1, 1, 1];
 
         PARTIAL[AVAX][1] = [true, false, true];

@@ -71,7 +71,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
-    
+
     constructor(ISuperRegistry superRegistry_) {
         superRegistry = superRegistry_;
     }

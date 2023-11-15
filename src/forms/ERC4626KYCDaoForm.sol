@@ -59,6 +59,7 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
         uint64 /*srcChainId_*/
     )
         internal
+        pure
         override
         returns (uint256 /*dstAmount*/ )
     {
@@ -85,6 +86,7 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
         uint64 /*srcChainId_*/
     )
         internal
+        pure
         override
         returns (uint256 /*dstAmount*/ )
     {

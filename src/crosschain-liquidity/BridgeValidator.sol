@@ -8,7 +8,6 @@ import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
 /// @author Zeropoint Labs
 /// @dev To be inherited by specific bridge handlers to verify the calldata being sent
 abstract contract BridgeValidator is IBridgeValidator {
-
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                         //
     //////////////////////////////////////////////////////////////

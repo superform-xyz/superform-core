@@ -7,7 +7,6 @@ import { IAccessControl } from "openzeppelin-contracts/contracts/access/IAccessC
 /// @author Zeropoint Labs.
 /// @dev interface for Super RBAC
 interface ISuperRBAC is IAccessControl {
-
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                         //
     //////////////////////////////////////////////////////////////
@@ -29,7 +28,7 @@ interface ISuperRBAC is IAccessControl {
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
-    
+
     /// @dev returns the id of the protocol admin role
     function PROTOCOL_ADMIN_ROLE() external view returns (bytes32);
 

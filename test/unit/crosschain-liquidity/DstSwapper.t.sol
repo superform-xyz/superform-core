@@ -119,7 +119,6 @@ contract DstSwapperTest is ProtocolActions {
         TARGET_UNDERLYINGS[OP][0] = [2];
         TARGET_VAULTS[OP][0] = [0];
 
-        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[OP][0] = [0];
 
         AMOUNTS[OP][0] = [1e18];
@@ -174,7 +173,6 @@ contract DstSwapperTest is ProtocolActions {
         TARGET_UNDERLYINGS[OP][0] = [2];
         TARGET_VAULTS[OP][0] = [0];
 
-        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[OP][0] = [0];
 
         AMOUNTS[OP][0] = [1e18];
@@ -238,7 +236,6 @@ contract DstSwapperTest is ProtocolActions {
         TARGET_UNDERLYINGS[OP][0] = [2, 2];
         TARGET_VAULTS[OP][0] = [0, 3];
 
-        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[OP][0] = [0, 0];
 
         AMOUNTS[OP][0] = [1e18, 1e18];
@@ -304,7 +301,6 @@ contract DstSwapperTest is ProtocolActions {
         TARGET_UNDERLYINGS[OP][0] = [2, 2];
         TARGET_VAULTS[OP][0] = [0, 3];
 
-        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[OP][0] = [0, 0];
 
         AMOUNTS[OP][0] = [1e18, 1e18];

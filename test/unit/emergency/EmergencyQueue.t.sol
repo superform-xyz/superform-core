@@ -353,7 +353,7 @@ contract EmergencyQueueTest is ProtocolActions {
         formImplIds[1] = 0;
         /// user deposits successfully to a form
         _successfulDepositXChain(1, vaultKinds[0], formImplIds[0], mrperfect, false);
-        _successfulDepositXChain(0, vaultKinds[1], formImplIds[1], mrperfect, false);
+        _successfulDepositXChain(2, vaultKinds[1], formImplIds[1], mrperfect, false);
 
         /// now pause the form and try to withdraw
         _pauseFormXChain(formImplIds[0]);
@@ -407,7 +407,7 @@ contract EmergencyQueueTest is ProtocolActions {
         formImplIds[1] = 0;
         /// user deposits successfully to a form
         _successfulDepositXChain(1, vaultKinds[0], formImplIds[0], mrperfect, false);
-        _successfulDepositXChain(0, vaultKinds[1], formImplIds[1], mrperfect, false);
+        _successfulDepositXChain(2, vaultKinds[1], formImplIds[1], mrperfect, false);
 
         /// now pause the form and try to withdraw
         _pauseFormXChain(formImplIds[0]);

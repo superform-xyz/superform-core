@@ -8,7 +8,6 @@ import { BaseForm } from "../BaseForm.sol";
 /// @title ERC4626Form
 /// @notice The Form implementation for IERC4626 vaults
 contract ERC4626Form is ERC4626FormImplementation {
-
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                         //
     //////////////////////////////////////////////////////////////

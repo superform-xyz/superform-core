@@ -22,9 +22,7 @@ contract MDSVW10NativeSlippageAMB23 is ProtocolActions {
 
         TARGET_VAULTS[OP][0] = [1];
 
-        /// @dev id 0 is normal 4626
         TARGET_VAULTS[ARBI][0] = [0];
-        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[OP][0] = [1];
         TARGET_FORM_KINDS[ARBI][0] = [0];
@@ -35,9 +33,7 @@ contract MDSVW10NativeSlippageAMB23 is ProtocolActions {
 
         TARGET_VAULTS[OP][1] = [1];
 
-        /// @dev id 0 is normal 4626
         TARGET_VAULTS[ARBI][1] = [0];
-        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[OP][1] = [1];
         TARGET_FORM_KINDS[ARBI][1] = [0];

@@ -20,8 +20,6 @@ contract SDSVD4626NoSwapNativeSlippage14 is ProtocolActions {
 
         TARGET_VAULTS[AVAX][0] = [0];
 
-        /// @dev id 0 is normal 4626
-
         TARGET_FORM_KINDS[AVAX][0] = [0];
 
         AMOUNTS[AVAX][0] = [2 * 10e18];

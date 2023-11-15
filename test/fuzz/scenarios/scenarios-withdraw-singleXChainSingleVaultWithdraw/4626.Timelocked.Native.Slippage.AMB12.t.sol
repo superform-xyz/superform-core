@@ -20,16 +20,12 @@ contract SXSVWTimelockedNativeSlippageAMB12 is ProtocolActions {
 
         TARGET_VAULTS[ARBI][0] = [1];
 
-        /// @dev id 0 is normal 4626
-
         TARGET_FORM_KINDS[ARBI][0] = [1];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ARBI][1] = [0];
 
         TARGET_VAULTS[ARBI][1] = [1];
-
-        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[ARBI][1] = [1];
 

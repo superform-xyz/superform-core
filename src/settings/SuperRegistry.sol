@@ -10,7 +10,6 @@ import { Error } from "../utils/Error.sol";
 /// @author Zeropoint Labs.
 /// @dev Keeps information on all addresses used in the Superforms ecosystem.
 contract SuperRegistry is ISuperRegistry, QuorumManager {
-
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////

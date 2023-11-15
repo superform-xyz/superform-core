@@ -20,8 +20,6 @@ contract SDSVD4626KycSwapNativeSlippage is ProtocolActions {
 
         TARGET_VAULTS[ETH][0] = [2];
 
-        /// @dev id 0 is normal 4626
-
         TARGET_FORM_KINDS[ETH][0] = [2];
 
         MAX_SLIPPAGE = 1000;

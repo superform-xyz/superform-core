@@ -21,8 +21,6 @@ contract SDMVDMulti021NoNativeSlippageAMB23 is ProtocolActions {
 
         TARGET_VAULTS[ETH][0] = [0, 1, 1];
 
-        /// @dev id 0 is normal 4626
-
         TARGET_FORM_KINDS[ETH][0] = [0, 1, 1];
 
         MAX_SLIPPAGE = 1000;

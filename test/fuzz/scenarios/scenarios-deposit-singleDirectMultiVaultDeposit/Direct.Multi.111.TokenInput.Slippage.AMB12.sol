@@ -21,8 +21,6 @@ contract SDiMVDMulti111NoTokenInputSlippageAMB12 is ProtocolActions {
 
         TARGET_VAULTS[AVAX][0] = [1, 1, 1];
 
-        /// @dev id 0 is normal 4626
-
         TARGET_FORM_KINDS[AVAX][0] = [1, 1, 1];
 
         MAX_SLIPPAGE = 1000;

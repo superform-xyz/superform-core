@@ -5,7 +5,6 @@ pragma solidity ^0.8.21;
 /// @author ZeroPoint Labs
 /// @dev interface for arbitrary message bridge implementation the supports broadcasting
 interface IBroadcastAmbImplementation {
-
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////

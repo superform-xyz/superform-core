@@ -1204,6 +1204,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         );
                     }
 
+                    console.log("count timelocked", countTimelocked[i]);
+
                     /// @dev perform the calls from beginning to last because of easiness in passing unlock id
                     for (uint256 j = countTimelocked[i]; j > 0; j--) {
                         (uint256 nativeFee,) = _generateAckGasFeesAndParamsForTimeLock(

@@ -7,7 +7,6 @@ import "../types/LiquidityTypes.sol";
 /// @author ZeroPoint Labs
 /// @dev contract for destination transaction costs payment
 interface IPayMaster {
-
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
