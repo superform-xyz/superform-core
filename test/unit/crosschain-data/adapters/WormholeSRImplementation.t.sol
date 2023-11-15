@@ -60,7 +60,7 @@ contract WormholeSRImplementationTest is BaseSetup {
         vm.mockCall(wormhole, abi.encodeWithSelector(IWormhole(wormhole).messageFee.selector), abi.encode(1000));
 
         vm.prank(getContract(ETH, "BroadcastRegistry"));
-        vm.expectRevert(Error.CROSS_CHAIN_TX_UNDERPAID.selector);
+        vm.expectRevert(Error.INSUFFICIENT_NATIVE_AMOUNT.selector);
         wormholeSRImpl.broadcastPayload(address(0), "", "");
 
         vm.clearMockedCalls();
@@ -118,7 +118,7 @@ contract WormholeSRImplementationTest is BaseSetup {
 
         superRegistry.setAmbAddress(ambId, ambAddress, isBroadcastAmb);
 
-        vm.expectRevert(Error.NATIVE_TOKEN_TRANSFER_FAILURE.selector);
+        vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
         sfFactory.changeFormImplementationPauseStatus(1, true, abi.encode(5, abi.encode(0, "")));
 
         vm.stopPrank();
