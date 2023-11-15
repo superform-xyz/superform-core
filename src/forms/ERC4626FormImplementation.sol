@@ -409,46 +409,4 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             token.safeTransfer(paymaster, dust);
         }
     }
-
-    /// @inheritdoc BaseForm
-    function _vaultSharesAmountToUnderlyingAmount(
-        uint256 vaultSharesAmount_,
-        uint256 /*pricePerVaultShare*/
-    )
-        internal
-        view
-        virtual
-        override
-        returns (uint256)
-    {
-        return IERC4626(vault).convertToAssets(vaultSharesAmount_);
-    }
-
-    /// @inheritdoc BaseForm
-    function _vaultSharesAmountToUnderlyingAmountRoundingUp(
-        uint256 vaultSharesAmount_,
-        uint256 /*pricePerVaultShare*/
-    )
-        internal
-        view
-        virtual
-        override
-        returns (uint256)
-    {
-        return IERC4626(vault).previewMint(vaultSharesAmount_);
-    }
-
-    /// @inheritdoc BaseForm
-    function _underlyingAmountToVaultSharesAmount(
-        uint256 underlyingAmount_,
-        uint256 /*pricePerVaultShare*/
-    )
-        internal
-        view
-        virtual
-        override
-        returns (uint256)
-    {
-        return IERC4626(vault).convertToShares(underlyingAmount_);
-    }
 }

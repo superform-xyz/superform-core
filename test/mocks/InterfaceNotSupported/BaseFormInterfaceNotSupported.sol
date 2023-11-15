@@ -269,38 +269,4 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
 
     /// @dev forwards dust to paymaster
     function _forwardDustToPaymaster() internal virtual;
-
-    /*///////////////////////////////////////////////////////////////
-                    INTERNAL VIEW VIRTUAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev Converts a vault share amount into an equivalent underlying asset amount
-    function _vaultSharesAmountToUnderlyingAmount(
-        uint256 vaultSharesAmount_,
-        uint256 pricePerVaultShare_
-    )
-        internal
-        view
-        virtual
-        returns (uint256);
-
-    /// @dev Converts a vault share amount into an equivalent underlying asset amount, rounding up
-    function _vaultSharesAmountToUnderlyingAmountRoundingUp(
-        uint256 vaultSharesAmount_,
-        uint256 pricePerVaultShare_
-    )
-        internal
-        view
-        virtual
-        returns (uint256);
-
-    /// @dev Converts an underlying asset amount into an equivalent vault shares amount
-    function _underlyingAmountToVaultSharesAmount(
-        uint256 underlyingAmount_,
-        uint256 pricePerVaultShare_
-    )
-        internal
-        view
-        virtual
-        returns (uint256);
 }
