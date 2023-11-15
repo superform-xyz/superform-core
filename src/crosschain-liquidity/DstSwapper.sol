@@ -185,6 +185,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         external
         override
         onlySwapper
+        nonReentrant
     {
         uint256 len = indices_.length;
 
@@ -209,6 +210,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         external
         override
         onlyCoreStateRegistry
+        nonReentrant
     {
         if (interimToken_ != NATIVE) {
             IERC20(interimToken_).safeTransfer(user_, amount_);
