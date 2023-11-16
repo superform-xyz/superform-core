@@ -575,7 +575,7 @@ contract CoreStateRegistryTest is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function _successfulSingleDeposit(uint8[] memory ambIds_) internal returns (uint256 superformId) {
-        /// scenario: user deposits with his own asset and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
@@ -847,7 +847,7 @@ contract CoreStateRegistryTest is ProtocolActions {
     }
 
     function _failingMultiDeposit(uint8[] memory ambIds_, bytes4 errorSelector) internal {
-        /// scenario: user deposits with his own asset and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 

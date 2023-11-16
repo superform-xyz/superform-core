@@ -329,7 +329,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
     }
 
     function test_superformDirectDepositWithoutAllowance() public {
-        /// scenario: user deposits with his own asset but failed to approve
+        /// scenario: user deposits with his own token but failed to approve
         vm.selectFork(FORKS[ETH]);
 
         address superform = getContract(
@@ -796,7 +796,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
     }
 
     function test_successfulDeposit_insufficientAllowance() public {
-        /// scenario: user deposits with his own asset and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
@@ -874,7 +874,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function _successfulDeposit(bool retain4626) internal {
-        /// scenario: user deposits with his own asset and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
