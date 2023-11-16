@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.21;
 
+import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+
 import "test/utils/BaseSetup.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { Error } from "src/utils/Error.sol";
 import { IWormhole } from "src/vendor/wormhole/IWormhole.sol";
 import { BroadcastRegistry } from "src/crosschain-data/BroadcastRegistry.sol";
 
-contract FakeRelayer {
+contract FakeRelayer is ERC1155Holder {
     receive() external payable {
         revert();
     }
