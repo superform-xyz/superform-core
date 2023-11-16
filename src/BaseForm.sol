@@ -172,7 +172,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         initializer
     {
         if (ISuperRegistry(superRegistry_) != superRegistry) revert Error.NOT_SUPER_REGISTRY();
-
+        if (vault_ == address(0) || asset_ == address(0)) revert Error.ZERO_ADDRESS();
         formImplementationId = formImplementationId_;
         vault = vault_;
         asset = asset_;
