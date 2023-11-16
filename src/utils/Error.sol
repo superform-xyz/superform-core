@@ -330,9 +330,6 @@ library Error {
     /// @dev thrown if rescue is already proposed
     error RESCUE_ALREADY_PROPOSED();
 
-    /// @dev thrown if unlock has already been requested - cooldown period didn't pass yet
-    error WITHDRAW_COOLDOWN_PERIOD();
-
     /// @dev thrown if payload hash is zero during `retryMessage` on Layezero implementation
     error ZERO_PAYLOAD_HASH();
 
