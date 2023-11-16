@@ -3424,7 +3424,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         internal
         returns (uint256 superformId)
     {
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
 
         vm.prank(deployer);

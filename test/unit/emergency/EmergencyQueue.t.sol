@@ -524,7 +524,7 @@ contract EmergencyQueueTest is ProtocolActions {
     }
 
     function _withdrawXchain(string memory vaultKind, uint256 formImplId, bool checkForEmergency) internal {
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
 
         address superformRouter = getContract(ETH, "SuperformRouter");
@@ -580,7 +580,7 @@ contract EmergencyQueueTest is ProtocolActions {
     }
 
     function _withdrawAfterPauseXChainMulti(string[] memory vaultKinds, uint256[] memory formImplIds) internal {
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
 
         address superformRouter = getContract(ETH, "SuperformRouter");
@@ -708,7 +708,7 @@ contract EmergencyQueueTest is ProtocolActions {
     }
 
     function _successfulDepositXChain(uint256 payloadId, string memory vaultKind, uint256 formImplId) internal {
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
 
         vm.prank(deployer);

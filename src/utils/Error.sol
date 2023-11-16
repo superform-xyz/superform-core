@@ -162,15 +162,15 @@ library Error {
     error VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS();
 
     /// FORM INPUT VALIDATION ERRORS
-    /// @dev thrown if in case of no txData, if liqData.token != collateral.
-    /// in case of txData, if token output of swap == vault.asset()
+    /// @dev thrown if in case of no txData, if liqData.token != vault.asset()
+    /// in case of txData, if token output of swap != vault.asset()
     error DIFFERENT_TOKENS();
 
     /// @dev thrown if the amount in direct deposit is not correct
     error DIRECT_DEPOSIT_INVALID_DATA();
 
-    /// @dev thrown if the collateral in direct withdraw is not correct
-    error DIRECT_WITHDRAW_INVALID_COLLATERAL();
+    /// @dev thrown if the token in direct withdraw is not correct
+    error DIRECT_WITHDRAW_INVALID_TOKEN();
 
     /// @dev thrown if the amount in direct withdraw is not correct
     error DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
@@ -281,7 +281,7 @@ library Error {
     /// @dev thrown if liquidity bridge fails for erc20 or native tokens
     error FAILED_TO_EXECUTE_TXDATA(address token);
 
-    /// @dev thrown if underlying collateral mismatches
+    /// @dev thrown if underlying asset mismatches
     error INVALID_DEPOSIT_TOKEN();
 
     /// STATE REGISTRY EXECUTION ERRORS

@@ -94,7 +94,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
     /// @dev to avoid stack too deep errors
     struct directDepositLocalVars {
         uint64 chainId;
-        address collateral;
+        address asset;
         address bridgeValidator;
         uint256 dstAmount;
         uint256 balanceBefore;
@@ -108,13 +108,13 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         directDepositLocalVars memory vars;
 
         IERC4626 v = IERC4626(vault);
-        vars.collateral = address(v.asset());
-        vars.balanceBefore = IERC20(vars.collateral).balanceOf(address(this));
+        vars.asset = address(v.asset());
+        vars.balanceBefore = IERC20(vars.asset).balanceOf(address(this));
 
         IERC20 token = IERC20(singleVaultData_.liqData.token);
 
         if (address(token) != NATIVE) {
-            /// @dev handles the collateral token transfers.
+            /// @dev handles the asset token transfers.
             if (token.allowance(msg.sender, address(this)) < singleVaultData_.amount) {
                 revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
             }
@@ -154,22 +154,22 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
             );
         }
 
-        vars.balanceAfter = IERC20(vars.collateral).balanceOf(address(this));
+        vars.balanceAfter = IERC20(vars.asset).balanceOf(address(this));
 
         /// @dev the balance of vault tokens, ready to be deposited is compared with the previous balance
         if (vars.balanceAfter - vars.balanceBefore < singleVaultData_.amount) {
             revert Error.DIRECT_DEPOSIT_INVALID_DATA();
         }
 
-        /// @dev the vault asset (collateral) is approved and deposited to the vault
-        IERC20(vars.collateral).safeIncreaseAllowance(vault, singleVaultData_.amount);
+        /// @dev the vault asset is approved and deposited to the vault
+        IERC20(vars.asset).safeIncreaseAllowance(vault, singleVaultData_.amount);
 
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
     }
 
     struct ProcessDirectWithdrawLocalVars {
         uint64 chainId;
-        address collateral;
+        address asset;
         address receiver;
         address bridgeValidator;
         uint256 len1;
@@ -191,11 +191,11 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         v.receiver = v.len1 == 0 ? srcSender : address(this);
 
         v.v = IERC4626(vault);
-        v.collateral = address(v.v.asset());
+        v.asset = address(v.v.asset());
 
         /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same as
         /// the vault asset
-        if (singleVaultData_.liqData.token != v.collateral) revert Error.DIRECT_WITHDRAW_INVALID_COLLATERAL();
+        if (singleVaultData_.liqData.token != v.asset) revert Error.DIRECT_WITHDRAW_INVALID_TOKEN();
 
         /// @dev redeem the underlying
         dstAmount = v.v.redeem(singleVaultData_.amount, v.receiver, address(this));
@@ -263,7 +263,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
     struct xChainWithdrawLocalVars {
         uint64 dstChainId;
         address receiver;
-        address collateral;
+        address asset;
         address bridgeValidator;
         uint256 balanceBefore;
         uint256 balanceAfter;
@@ -293,11 +293,11 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         vars.receiver = len == 0 ? srcSender : address(this);
 
         IERC4626 v = IERC4626(vault);
-        vars.collateral = v.asset();
+        vars.asset = v.asset();
 
         /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same as
         /// the vault asset
-        if (vars.collateral != singleVaultData_.liqData.token) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
+        if (vars.asset != singleVaultData_.liqData.token) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
 
         /// @dev redeem vault positions (we operate only on positions, not assets)
         dstAmount = v.redeem(singleVaultData_.amount, vars.receiver, address(this));

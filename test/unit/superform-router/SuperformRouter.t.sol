@@ -670,7 +670,7 @@ contract SuperformRouterTest is ProtocolActions {
     function test_withdrawWithMismatchingChainIdsInStateReqAndSuperformsDataMulti() public {
         _successfulMultiVaultDeposit();
 
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
@@ -727,7 +727,7 @@ contract SuperformRouterTest is ProtocolActions {
     function test_withdrawWithWrongAmountsLength() public {
         _successfulMultiVaultDeposit();
 
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
@@ -782,7 +782,7 @@ contract SuperformRouterTest is ProtocolActions {
     function test_withdrawWithInvalidMaxSlippage() public {
         _successfulMultiVaultDeposit();
 
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
@@ -1132,7 +1132,7 @@ contract SuperformRouterTest is ProtocolActions {
     function test_depositMultiVaultWithInvalidDstChainId() public {
         MultiVaultDepositVars memory v;
 
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
@@ -1343,7 +1343,7 @@ contract SuperformRouterTest is ProtocolActions {
     function test_multiVaultTokenForward_INVALID_DEPOSIT_TOKEN() public {
         MultiVaultDepositVars memory v;
 
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
@@ -1987,7 +1987,7 @@ contract SuperformRouterTest is ProtocolActions {
     }
 
     function test_multiVaultTokenForward_successfulSingleDirectWithNotxData() public {
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
         address superformRouter = getContract(ETH, "SuperformRouter");
@@ -2033,7 +2033,7 @@ contract SuperformRouterTest is ProtocolActions {
     }
 
     function test_multiVaultTokenForward_successfulSingleDirectWithNotxData_receive4626() public {
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
         address superformRouter = getContract(ETH, "SuperformRouter");
@@ -2103,7 +2103,7 @@ contract SuperformRouterTest is ProtocolActions {
     }
 
     function _successfulMultiVaultDeposit() internal {
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 

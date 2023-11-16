@@ -77,7 +77,7 @@ contract ForwardDustFormTest is ProtocolActions {
         returns (address superform)
     {
         /// @dev prank deposits (just mint super-shares)
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ARBI]);
         vm.startPrank(user);
 
