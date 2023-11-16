@@ -100,7 +100,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     function estimateFees(
         uint64 dstChainId_,
         bytes memory message_,
-        bytes memory /*extraData_*/
+        bytes memory extraData_
     )
         external
         view
@@ -113,7 +113,9 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
             revert Error.INVALID_CHAIN_ID();
         }
 
-        fees = mailbox.quoteDispatch(domain, _castAddr(authorizedImpl[domain]), message_);
+        fees = mailbox.quoteDispatch(
+            domain, _castAddr(authorizedImpl[domain]), message_, _generateHookMetadata(extraData_, msg.sender)
+        );
     }
 
     //////////////////////////////////////////////////////////////
@@ -135,14 +137,9 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     {
         uint32 domain = ambChainId[dstChainId_];
 
-        bytes memory hookMetaData;
-        if (extraData_.length > 0) {
-            // extra data is encoded gas limit on dst chain
-            uint256 gasLimit = abi.decode(extraData_, (uint256));
-            hookMetaData = StandardHookMetadata.formatMetadata(gasLimit, srcSender_);
-        }
-
-        mailbox.dispatch{ value: msg.value }(domain, _castAddr(authorizedImpl[domain]), message_, hookMetaData);
+        mailbox.dispatch{ value: msg.value }(
+            domain, _castAddr(authorizedImpl[domain]), message_, _generateHookMetadata(extraData_, srcSender_)
+        );
     }
 
     /// @inheritdoc IAmbImplementation
@@ -231,5 +228,21 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /// @return a bytes32 casted variable of the address passed in params
     function _castAddr(address addr_) internal pure returns (bytes32) {
         return bytes32(uint256(uint160(addr_)));
+    }
+
+    /// @dev casts an superform extradata to hyperlane hook metadata
+    function _generateHookMetadata(
+        bytes memory extraData_,
+        address srcSender_
+    )
+        internal
+        pure
+        returns (bytes memory hookMetaData)
+    {
+        if (extraData_.length > 0) {
+            // extra data is encoded gas limit on dst chain
+            uint256 gasLimit = abi.decode(extraData_, (uint256));
+            hookMetaData = StandardHookMetadata.formatMetadata(gasLimit, srcSender_);
+        }
     }
 }
