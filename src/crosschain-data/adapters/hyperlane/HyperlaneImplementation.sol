@@ -230,7 +230,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         return bytes32(uint256(uint160(addr_)));
     }
 
-    /// @dev casts an superform extradata to hyperlane hook metadata
+    /// @dev casts superform extraData to hyperlane hook metadata
     function _generateHookMetadata(
         bytes memory extraData_,
         address srcSender_
