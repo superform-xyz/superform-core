@@ -16,7 +16,7 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
 
     /// @dev Test Vault Symbol
     function test_superformRevertKYCDaoCheck() public {
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
