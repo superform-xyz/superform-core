@@ -152,7 +152,6 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         /// @dev this step is used to re-feed txData to avoid using old txData that would have expired by now
         if (txData_.length > 0) {
             PayloadUpdaterLib.validateLiqReq(p.data.liqData);
-
             /// @dev validate the incoming tx data
             bridgeValidator.validateTxData(
                 IBridgeValidator.ValidateTxDataArgs(
