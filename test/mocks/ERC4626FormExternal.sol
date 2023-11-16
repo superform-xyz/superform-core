@@ -76,17 +76,4 @@ contract ERC4626FormExternal is ERC4626FormImplementation {
     function _forwardDustToPaymaster() internal override {
         _processForwardDustToPaymaster();
     }
-
-    /// @dev Wrapping Internal Functions
-    function vaultSharesAmountToUnderlyingAmount(uint256 vaultSharesAmount_) public view returns (uint256) {
-        return _vaultSharesAmountToUnderlyingAmount(vaultSharesAmount_, 0);
-    }
-
-    function vaultSharesAmountToUnderlyingAmountRoundingUp(uint256 vaultSharesAmount_) public view returns (uint256) {
-        return _vaultSharesAmountToUnderlyingAmountRoundingUp(vaultSharesAmount_, 0);
-    }
-
-    function underlyingAmountToVaultSharesAmount(uint256 underlyingAmount_) public view returns (uint256) {
-        return _underlyingAmountToVaultSharesAmount(underlyingAmount_, 0);
-    }
 }
