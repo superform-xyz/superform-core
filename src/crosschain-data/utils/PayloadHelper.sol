@@ -368,8 +368,13 @@ contract PayloadHelper is IPayloadHelper {
             txDatas[i] = imvd.liqData[i].txData;
             tokens[i] = imvd.liqData[i].token;
             liqDstChainIds[i] = imvd.liqData[i].liqDstChainId;
-            amountsIn[i] =
-                IBridgeValidator(superRegistry.getBridgeValidator(bridgeIds[i])).decodeAmountIn(txDatas[i], false);
+
+            /// @dev decodes amount from txdata only if its present
+            if (imvd.liqData[i].txData.length > 0) {
+                amountsIn[i] =
+                    IBridgeValidator(superRegistry.getBridgeValidator(bridgeIds[i])).decodeAmountIn(txDatas[i], false);
+            }
+
             nativeAmounts[i] = imvd.liqData[i].nativeAmount;
             unchecked {
                 ++i;
@@ -410,8 +415,12 @@ contract PayloadHelper is IPayloadHelper {
         liqDstChainIds[0] = isvd.liqData.liqDstChainId;
 
         amountsIn = new uint256[](1);
-        amountsIn[0] =
-            IBridgeValidator(superRegistry.getBridgeValidator(bridgeIds[0])).decodeAmountIn(txDatas[0], false);
+
+        /// @dev decodes amount from txdata only if its present
+        if (isvd.liqData.txData.length > 0) {
+            amountsIn[0] =
+                IBridgeValidator(superRegistry.getBridgeValidator(bridgeIds[0])).decodeAmountIn(txDatas[0], false);
+        }
 
         nativeAmounts = new uint256[](1);
         nativeAmounts[0] = isvd.liqData.nativeAmount;

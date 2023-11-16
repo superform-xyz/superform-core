@@ -193,7 +193,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function _successfulDeposit() internal {
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 

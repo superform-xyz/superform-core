@@ -156,11 +156,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev validates the receiver address
         _validateReceiverAddress(req_.superformData.receiverAddress);
 
-        InitSingleVaultData memory ambData;
-
         vars.currentPayloadId = ++payloadIds;
 
-        ambData = InitSingleVaultData(
+        InitSingleVaultData memory ambData = InitSingleVaultData(
             vars.currentPayloadId,
             req_.superformData.superformId,
             req_.superformData.amount,
@@ -392,11 +390,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             msg.sender, req_.superformData.superformId, req_.superformData.amount
         );
 
-        InitSingleVaultData memory ambData;
-
         vars.currentPayloadId = ++payloadIds;
 
-        ambData = InitSingleVaultData(
+        InitSingleVaultData memory ambData = InitSingleVaultData(
             vars.currentPayloadId,
             req_.superformData.superformId,
             req_.superformData.amount,
@@ -486,12 +482,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             msg.sender, req_.superformsData.superformIds, req_.superformsData.amounts
         );
 
-        InitMultiVaultData memory ambData;
-
         vars.currentPayloadId = ++payloadIds;
 
-        /// @dev write packed txData
-        ambData = InitMultiVaultData(
+        InitMultiVaultData memory ambData = InitMultiVaultData(
             vars.currentPayloadId,
             req_.superformsData.superformIds,
             req_.superformsData.amounts,
@@ -597,7 +590,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         virtual
         returns (uint256 dstAmount)
     {
-        /// @dev deposits collateral to a given vault and mint vault positions directly through the form
+        /// @dev deposits token to a given vault and mint vault positions directly through the form
         dstAmount = IBaseForm(superform_).directDepositIntoVault{ value: msgValue_ }(
             InitSingleVaultData(
                 payloadId_,
@@ -633,7 +626,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         _singleVaultTokenForward(srcSender_, superform, permit2data_, vaultData_);
 
-        /// @dev deposits collateral to a given vault and mint vault positions.
+        /// @dev deposits token to a given vault and mint vault positions.
         dstAmount = _directDeposit(
             superform,
             vaultData_.payloadId,
@@ -678,7 +671,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         _multiVaultTokenForward(srcSender_, v.superforms, permit2data_, vaultData_, false);
 
         for (uint256 i; i < v.len;) {
-            /// @dev deposits collateral to a given vault and mint vault positions.
+            /// @dev deposits token to a given vault and mint vault positions.
             v.dstAmounts[i] = _directDeposit(
                 v.superforms[i],
                 vaultData_.payloadId,
@@ -772,7 +765,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         uint256 len = superforms.length;
 
         for (uint256 i; i < len;) {
-            /// @dev deposits collateral to a given vault and mint vault positions.
+            /// @dev deposits token to a given vault and mint vault positions.
             _directWithdraw(
                 superforms[i],
                 vaultData_.payloadId,

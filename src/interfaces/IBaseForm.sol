@@ -115,7 +115,7 @@ interface IBaseForm is IERC165 {
         external
         returns (uint256 dstAmount);
 
-    /// @dev process withdrawal of collateral from a vault
+    /// @dev process withdrawal of asset from a vault
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
     /// @param srcSender_ The address of the sender of the transaction
     /// @return dstAmount  The amount of tokens withdrawn in same chain action
@@ -126,7 +126,7 @@ interface IBaseForm is IERC165 {
         external
         returns (uint256 dstAmount);
 
-    /// @dev process withdrawal of collateral from a vault
+    /// @dev process withdrawal of asset from a vault
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
     /// @param srcSender_ The address of the sender of the transaction
     /// @param srcChainId_ The chain id of the source chain

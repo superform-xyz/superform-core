@@ -23,7 +23,6 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     //////////////////////////////////////////////////////////////
 
     ISuperRegistry public immutable superRegistry;
-    uint256 private constant RECEIVER_OFFSET = 1;
 
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //

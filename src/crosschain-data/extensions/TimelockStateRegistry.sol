@@ -29,12 +29,6 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     using ProofLib for AMBMessage;
 
     //////////////////////////////////////////////////////////////
-    //                         CONSTANTS                        //
-    //////////////////////////////////////////////////////////////
-
-    bytes32 immutable WITHDRAW_COOLDOWN_PERIOD = keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));
-
-    //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
     //////////////////////////////////////////////////////////////
 

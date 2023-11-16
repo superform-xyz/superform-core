@@ -2,12 +2,11 @@
 pragma solidity ^0.8.21;
 
 library Error {
-
     //////////////////////////////////////////////////////////////
     //                  CONFIGURATION ERRORS                    //
     //////////////////////////////////////////////////////////////
     ///@notice errors thrown in protocol setup
-    
+
     /// @dev thrown if there is an array length mismatch
     error ARRAY_LENGTH_MISMATCH();
 
@@ -162,15 +161,15 @@ library Error {
     error VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS();
 
     /// FORM INPUT VALIDATION ERRORS
-    /// @dev thrown if in case of no txData, if liqData.token != collateral.
-    /// in case of txData, if token output of swap == vault.asset()
+    /// @dev thrown if in case of no txData, if liqData.token != vault.asset()
+    /// in case of txData, if token output of swap != vault.asset()
     error DIFFERENT_TOKENS();
 
     /// @dev thrown if the amount in direct deposit is not correct
     error DIRECT_DEPOSIT_INVALID_DATA();
 
-    /// @dev thrown if the collateral in direct withdraw is not correct
-    error DIRECT_WITHDRAW_INVALID_COLLATERAL();
+    /// @dev thrown if the token in direct withdraw is not correct
+    error DIRECT_WITHDRAW_INVALID_TOKEN();
 
     /// @dev thrown if the amount in direct withdraw is not correct
     error DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
@@ -281,7 +280,7 @@ library Error {
     /// @dev thrown if liquidity bridge fails for erc20 or native tokens
     error FAILED_TO_EXECUTE_TXDATA(address token);
 
-    /// @dev thrown if underlying collateral mismatches
+    /// @dev thrown if underlying asset mismatches
     error INVALID_DEPOSIT_TOKEN();
 
     /// STATE REGISTRY EXECUTION ERRORS
@@ -330,9 +329,6 @@ library Error {
     /// @dev thrown if rescue is already proposed
     error RESCUE_ALREADY_PROPOSED();
 
-    /// @dev thrown if unlock has already been requested - cooldown period didn't pass yet
-    error WITHDRAW_COOLDOWN_PERIOD();
-
     /// @dev thrown if payload hash is zero during `retryMessage` on Layezero implementation
     error ZERO_PAYLOAD_HASH();
 
@@ -342,8 +338,7 @@ library Error {
     /*///////////////////////////////////////////////////////////////
                         PAYMASTER ERRORS
     //////////////////////////////////////////////////////////////*/
-    /// @dev - when msg.sender is not payment admin
-    error NOT_PAYMENT_ADMIN();
+
     /// DST SWAPPER EXECUTION ERRORS
     /// @dev thrown if process dst swap is tried for processed payload id
     error DST_SWAP_ALREADY_PROCESSED();

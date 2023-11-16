@@ -172,7 +172,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         initializer
     {
         if (ISuperRegistry(superRegistry_) != superRegistry) revert Error.NOT_SUPER_REGISTRY();
-
+        if (vault_ == address(0) || asset_ == address(0)) revert Error.ZERO_ADDRESS();
         formImplementationId = formImplementationId_;
         vault = vault_;
         asset = asset_;
@@ -326,34 +326,4 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
             formImplementationId_
         );
     }
-
-    /// @dev Converts a vault share amount into an equivalent underlying asset amount
-    function _vaultSharesAmountToUnderlyingAmount(
-        uint256 vaultSharesAmount_,
-        uint256 pricePerVaultShare_
-    )
-        internal
-        view
-        virtual
-        returns (uint256);
-
-    /// @dev Converts a vault share amount into an equivalent underlying asset amount, rounding up
-    function _vaultSharesAmountToUnderlyingAmountRoundingUp(
-        uint256 vaultSharesAmount_,
-        uint256 pricePerVaultShare_
-    )
-        internal
-        view
-        virtual
-        returns (uint256);
-
-    /// @dev Converts an underlying asset amount into an equivalent vault shares amount
-    function _underlyingAmountToVaultSharesAmount(
-        uint256 underlyingAmount_,
-        uint256 pricePerVaultShare_
-    )
-        internal
-        view
-        virtual
-        returns (uint256);
 }

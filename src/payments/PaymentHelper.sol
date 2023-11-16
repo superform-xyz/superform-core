@@ -33,10 +33,8 @@ contract PaymentHelper is IPaymentHelper {
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
 
-    /// @dev is the address of the superRegistry on the chain
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
-    address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     uint32 public constant TIMELOCK_FORM_ID = 2;
 
     //////////////////////////////////////////////////////////////
