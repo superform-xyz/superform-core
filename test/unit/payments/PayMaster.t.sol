@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.21;
 
+import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+
 import { Error } from "src/utils/Error.sol";
 import "test/utils/ProtocolActions.sol";
 
-contract KeeperMock {
+contract KeeperMock is ERC1155Holder {
     receive() external payable { }
 }
 
-contract KeeperMockThatWontAcceptEth {
+contract KeeperMockThatWontAcceptEth is ERC1155Holder {
     receive() external payable {
         revert();
     }
