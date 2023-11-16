@@ -23,7 +23,7 @@ abstract contract QuorumManager is IQuorumManager {
     function getRequiredMessagingQuorum(uint64 srcChainId_) public view returns (uint256 quorum_) {
         /// @dev no chain can have chain id zero. (validates that here)
         if (srcChainId_ == 0) {
-            revert Error.INVALID_INPUT_CHAIN_ID();
+            revert Error.ZERO_INPUT_VALUE();
         }
         return requiredQuorum[srcChainId_];
     }

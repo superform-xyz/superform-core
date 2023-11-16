@@ -26,7 +26,7 @@ interface ISuperPositions is IERC1155A {
     //////////////////////////////////////////////////////////////
 
     /// @dev returns the payload header for a tx id on the source chain
-    /// @param txId_ is the identifier of the transaction issued by super router
+    /// @param txId_ is the identifier of the transaction issued by superform router
     function txHistory(uint256 txId_) external view returns (uint256);
 
     //////////////////////////////////////////////////////////////

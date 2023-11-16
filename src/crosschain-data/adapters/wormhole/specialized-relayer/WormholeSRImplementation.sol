@@ -155,7 +155,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         uint256 msgFee = wormhole.messageFee();
 
         if (msg.value < msgFee) {
-            revert Error.CROSS_CHAIN_TX_UNDERPAID();
+            revert Error.INSUFFICIENT_NATIVE_AMOUNT();
         }
 
         wormhole.publishMessage{ value: msgFee }(
@@ -173,7 +173,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         (bool success,) = payable(relayer).call{ value: msg.value - msgFee }("");
 
         if (!success) {
-            revert Error.NATIVE_TOKEN_TRANSFER_FAILURE();
+            revert Error.FAILED_TO_SEND_NATIVE();
         }
     }
 
