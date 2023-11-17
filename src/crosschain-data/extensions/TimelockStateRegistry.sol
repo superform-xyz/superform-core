@@ -50,10 +50,10 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         _;
     }
 
+    /// @dev dispatchPayload() should be disabled by default
     modifier onlySender() override {
-        if (msg.sender != address(0)) {
-            _;
-        }
+        revert Error.DISABLED();
+        _;
     }
 
     /// @dev allows only form to write to the receive payload
@@ -63,9 +63,11 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         }
         (address superform,,) = superformId.getSuperform();
         if (msg.sender != superform) revert Error.NOT_SUPERFORM();
+
         if (IBaseForm(superform).getStateRegistryId() != superRegistry.getStateRegistryId(address(this))) {
             revert Error.NOT_TIMELOCK_SUPERFORM();
         }
+
         _;
     }
 
