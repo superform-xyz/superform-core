@@ -37,7 +37,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
     //////////////////////////////////////////////////////////////
-    
+
     /// @dev maps all transaction data routed through the smart contract.
     mapping(uint256 transactionId => uint256 txInfo) public override txHistory;
 

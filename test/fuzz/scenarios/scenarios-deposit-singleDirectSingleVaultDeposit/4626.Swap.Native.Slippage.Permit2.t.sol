@@ -20,8 +20,6 @@ contract SDSVD4626SwapNativeSlippagePermit2 is ProtocolActions {
 
         TARGET_VAULTS[ARBI][0] = [0];
 
-        /// @dev id 0 is normal 4626
-
         TARGET_FORM_KINDS[ARBI][0] = [0];
 
         MAX_SLIPPAGE = 1000;

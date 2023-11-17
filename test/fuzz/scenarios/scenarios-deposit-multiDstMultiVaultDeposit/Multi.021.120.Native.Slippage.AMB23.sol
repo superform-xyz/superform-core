@@ -21,14 +21,11 @@ contract MDMVDMulti021120NoNativeSlippageAMB23 is ProtocolActions {
         TARGET_UNDERLYINGS[ETH][0] = [1, 1, 1];
         TARGET_UNDERLYINGS[OP][0] = [2, 2, 2];
 
-        TARGET_VAULTS[ETH][0] = [0, 2, 1];
+        TARGET_VAULTS[ETH][0] = [0, 1, 1];
+        TARGET_VAULTS[OP][0] = [1, 1, 0];
 
-        /// @dev id 0 is normal 4626
-        TARGET_VAULTS[OP][0] = [1, 2, 0];
-        /// @dev id 0 is normal 4626
-
-        TARGET_FORM_KINDS[ETH][0] = [0, 2, 1];
-        TARGET_FORM_KINDS[OP][0] = [1, 2, 0];
+        TARGET_FORM_KINDS[ETH][0] = [0, 1, 1];
+        TARGET_FORM_KINDS[OP][0] = [1, 1, 0];
 
         MAX_SLIPPAGE = 1000;
 

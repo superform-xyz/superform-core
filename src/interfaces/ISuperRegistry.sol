@@ -5,7 +5,6 @@ pragma solidity ^0.8.21;
 /// @author Zeropoint Labs.
 /// @dev interface for Super Registry
 interface ISuperRegistry {
-
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
@@ -117,7 +116,7 @@ interface ISuperRegistry {
     /// @param id_ is the id of the contract
     /// @param chainId_ is the chain id of that chain
     function getAddressByChainId(bytes32 id_, uint64 chainId_) external view returns (address);
-    
+
     /// @dev gets the address of a bridge
     /// @param bridgeId_ is the id of a bridge
     /// @return bridgeAddress_ is the address of the form

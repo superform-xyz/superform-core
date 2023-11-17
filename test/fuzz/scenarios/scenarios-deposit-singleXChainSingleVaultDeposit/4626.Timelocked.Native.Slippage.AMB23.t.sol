@@ -4,44 +4,29 @@ pragma solidity ^0.8.21;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract MDSVDKYC4626TokenInputSlippageAMB13 is ProtocolActions {
+contract SXSVDTimelocked4626NoNativeSlippageAMB23 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        AMBs = [1, 3];
-        MultiDstAMBs = [AMBs, AMBs, AMBs];
+        AMBs = [2, 3];
 
-        CHAIN_0 = BSC;
-        DST_CHAINS = [AVAX, BSC, ETH];
+        CHAIN_0 = ETH;
+        DST_CHAINS = [ARBI];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[AVAX][0] = [2];
-        TARGET_UNDERLYINGS[BSC][0] = [2];
-        TARGET_UNDERLYINGS[ETH][0] = [2];
+        TARGET_UNDERLYINGS[ARBI][0] = [1];
 
-        TARGET_VAULTS[AVAX][0] = [2];
+        TARGET_VAULTS[ARBI][0] = [1];
 
-        /// @dev id 0 is normal 4626
-        TARGET_VAULTS[BSC][0] = [2];
-        /// @dev id 0 is normal 4626
-        TARGET_VAULTS[ETH][0] = [2];
-        /// @dev id 0 is normal 4626
-
-        TARGET_FORM_KINDS[AVAX][0] = [2];
-        TARGET_FORM_KINDS[BSC][0] = [2];
-        TARGET_FORM_KINDS[ETH][0] = [2];
+        TARGET_FORM_KINDS[ARBI][0] = [1];
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[AVAX][0] = [1];
-        LIQ_BRIDGES[BSC][0] = [1];
-        LIQ_BRIDGES[ETH][0] = [1];
+        LIQ_BRIDGES[ARBI][0] = [1];
 
-        RECEIVE_4626[AVAX][0] = [false];
-        RECEIVE_4626[BSC][0] = [false];
-        RECEIVE_4626[ETH][0] = [false];
+        RECEIVE_4626[ARBI][0] = [false];
 
         actions.push(
             TestAction({
@@ -51,9 +36,9 @@ contract MDSVDKYC4626TokenInputSlippageAMB13 is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 412, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 600, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
     }
@@ -62,14 +47,10 @@ contract MDSVDKYC4626TokenInputSlippageAMB13 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
+    function test_scenario(uint128 amount_) public {
         /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        amountOne_ = uint128(bound(amountOne_, 11 * 10 ** 6, TOTAL_SUPPLY_USDC / 3));
-        amountTwo_ = uint128(bound(amountTwo_, 11 * 10 ** 6, TOTAL_SUPPLY_USDC / 3));
-        amountThree_ = uint128(bound(amountThree_, 11 * 10 ** 6, TOTAL_SUPPLY_USDC / 3));
-        AMOUNTS[AVAX][0] = [amountOne_];
-        AMOUNTS[BSC][0] = [amountTwo_];
-        AMOUNTS[ETH][0] = [amountThree_];
+        amount_ = uint128(bound(amount_, 2 * 10 ** 18, TOTAL_SUPPLY_ETH));
+        AMOUNTS[ARBI][0] = [amount_];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];

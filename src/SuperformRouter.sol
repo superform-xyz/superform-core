@@ -10,7 +10,6 @@ import "./types/DataTypes.sol";
 /// @author Zeropoint Labs.
 /// @dev SuperformRouter users funds and action information to a remote execution chain.
 contract SuperformRouter is BaseRouterImplementation {
-
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////

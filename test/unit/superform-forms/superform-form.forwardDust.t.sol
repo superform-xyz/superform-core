@@ -54,17 +54,6 @@ contract ForwardDustFormTest is ProtocolActions {
         assertEq(balanceAfter, 0);
     }
 
-    function test_forwardDustToPaymasterKyc() public {
-        address superform = _successfulDepositWithdraw("kycDAO4626", 2, 1e18, 0, true, users[0]);
-
-        uint256 balanceBefore = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
-        assertGt(balanceBefore, 0);
-        IBaseForm(superform).forwardDustToPaymaster();
-        uint256 balanceAfter = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
-
-        assertEq(balanceAfter, 0);
-    }
-
     function _successfulDepositWithdraw(
         string memory vaultKind_,
         uint256 formImplementationId_,
@@ -150,6 +139,7 @@ contract ForwardDustFormTest is ProtocolActions {
 
         if (formImplementationId_ != 1) {
             vm.prank(getContract(ARBI, "CoreStateRegistry"));
+
             IBaseForm(superform).xChainWithdrawFromVault(data2, user, ETH);
         } else {
             vm.prank(getContract(ARBI, "TimelockStateRegistry"));

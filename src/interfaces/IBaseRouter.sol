@@ -7,7 +7,6 @@ import "../types/DataTypes.sol";
 /// @author Zeropoint Labs.
 /// @dev interface for abstract Router
 interface IBaseRouter {
-
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////

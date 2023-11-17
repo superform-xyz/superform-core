@@ -23,11 +23,9 @@ contract MDSVDNormal4626NoNativeNoSlippageAMB12 is ProtocolActions {
 
         TARGET_VAULTS[AVAX][0] = [0];
 
-        /// @dev id 0 is normal 4626
         TARGET_VAULTS[ETH][0] = [0];
-        /// @dev id 0 is normal 4626
+
         TARGET_VAULTS[POLY][0] = [0];
-        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[AVAX][0] = [0];
         TARGET_FORM_KINDS[ETH][0] = [0];

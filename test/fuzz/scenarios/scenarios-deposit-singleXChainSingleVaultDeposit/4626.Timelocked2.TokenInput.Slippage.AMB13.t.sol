@@ -4,7 +4,7 @@ pragma solidity ^0.8.21;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract SXSVDKYC4626TokenInputSlippageAMB13 is ProtocolActions {
+contract SXSVDTimelocked2TokenInputSlippageAMB13 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -18,11 +18,9 @@ contract SXSVDKYC4626TokenInputSlippageAMB13 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ETH][0] = [0];
 
-        TARGET_VAULTS[ETH][0] = [2];
+        TARGET_VAULTS[ETH][0] = [1];
 
-        /// @dev id 0 is normal 4626
-
-        TARGET_FORM_KINDS[ETH][0] = [2];
+        TARGET_FORM_KINDS[ETH][0] = [1];
 
         MAX_SLIPPAGE = 1000;
 

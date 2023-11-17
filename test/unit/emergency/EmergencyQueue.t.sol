@@ -346,11 +346,11 @@ contract EmergencyQueueTest is ProtocolActions {
     function test_emergencyQueueProcessingXChainMultiVault() public {
         string[] memory vaultKinds = new string[](2);
         vaultKinds[0] = "ERC4626TimelockMock";
-        vaultKinds[1] = "kycDAO4626";
+        vaultKinds[1] = "VaultMock";
 
         uint256[] memory formImplIds = new uint256[](2);
         formImplIds[0] = 1;
-        formImplIds[1] = 2;
+        formImplIds[1] = 0;
         /// user deposits successfully to a form
         _successfulDepositXChain(1, vaultKinds[0], formImplIds[0], mrperfect, false);
         _successfulDepositXChain(2, vaultKinds[1], formImplIds[1], mrperfect, false);
@@ -400,11 +400,11 @@ contract EmergencyQueueTest is ProtocolActions {
     function test_emergencyQueueProcessingXChainMultiVaultUnpause() public {
         string[] memory vaultKinds = new string[](2);
         vaultKinds[0] = "ERC4626TimelockMock";
-        vaultKinds[1] = "kycDAO4626";
+        vaultKinds[1] = "VaultMock";
 
         uint256[] memory formImplIds = new uint256[](2);
         formImplIds[0] = 1;
-        formImplIds[1] = 2;
+        formImplIds[1] = 0;
         /// user deposits successfully to a form
         _successfulDepositXChain(1, vaultKinds[0], formImplIds[0], mrperfect, false);
         _successfulDepositXChain(2, vaultKinds[1], formImplIds[1], mrperfect, false);

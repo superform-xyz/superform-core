@@ -2,12 +2,11 @@
 pragma solidity ^0.8.21;
 
 library Error {
-
     //////////////////////////////////////////////////////////////
     //                  CONFIGURATION ERRORS                    //
     //////////////////////////////////////////////////////////////
     ///@notice errors thrown in protocol setup
-    
+
     /// @dev thrown if there is an array length mismatch
     error ARRAY_LENGTH_MISMATCH();
 
@@ -332,6 +331,13 @@ library Error {
 
     /// @dev thrown if payload hash is zero during `retryMessage` on Layezero implementation
     error ZERO_PAYLOAD_HASH();
+
+    /// @dev thrown in forms where a certain functionality is not allowed or implemented
+    error NOT_IMPLEMENTED();
+
+    /*///////////////////////////////////////////////////////////////
+                        PAYMASTER ERRORS
+    //////////////////////////////////////////////////////////////*/
 
     /// DST SWAPPER EXECUTION ERRORS
     /// @dev thrown if process dst swap is tried for processed payload id

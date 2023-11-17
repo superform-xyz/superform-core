@@ -9,7 +9,6 @@ import "../types/DataTypes.sol";
 /// @author Zeropoint Labs.
 /// @dev interface for BaseRouterImplementation
 interface IBaseRouterImplementation is IBaseRouter {
-
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
     //////////////////////////////////////////////////////////////

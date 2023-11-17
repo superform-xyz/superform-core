@@ -9,7 +9,6 @@ import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.s
 /// @author ZeroPoint Labs
 /// @notice Interface for Base Form
 interface IBaseForm is IERC165 {
-
     //////////////////////////////////////////////////////////////
     //                          EVENTS                           //
     //////////////////////////////////////////////////////////////

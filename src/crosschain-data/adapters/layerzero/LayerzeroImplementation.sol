@@ -294,7 +294,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     //////////////////////////////////////////////////////////////
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
-    
+
     function _nonblockingLzReceive(uint16 _srcChainId, bytes memory, bytes memory _payload) internal {
         /// @dev decodes payload received
         AMBMessage memory decoded = abi.decode(_payload, (AMBMessage));

@@ -8,7 +8,6 @@ import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 /// @author Zeropoint Labs.
 /// @dev interface for Super Positions
 interface ISuperPositions is IERC1155A {
-
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////

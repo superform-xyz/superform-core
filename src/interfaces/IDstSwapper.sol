@@ -6,7 +6,6 @@ pragma solidity ^0.8.21;
 /// @dev handles all destination chain swaps.
 /// @notice all write functions can only be accessed by superform keepers.
 interface IDstSwapper {
-
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                         //
     //////////////////////////////////////////////////////////////

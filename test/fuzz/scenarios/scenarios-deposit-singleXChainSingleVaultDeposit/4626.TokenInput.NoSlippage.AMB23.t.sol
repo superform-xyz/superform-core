@@ -20,8 +20,6 @@ contract SXSVDNormal4626MultiTokenInputNoSlippageAMB23 is ProtocolActions {
 
         TARGET_VAULTS[OP][0] = [0];
 
-        /// @dev id 0 is normal 4626
-
         TARGET_FORM_KINDS[OP][0] = [0];
 
         AMOUNTS[OP][0] = [133];
