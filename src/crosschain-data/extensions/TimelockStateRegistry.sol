@@ -29,12 +29,6 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     using ProofLib for AMBMessage;
 
     //////////////////////////////////////////////////////////////
-    //                         CONSTANTS                        //
-    //////////////////////////////////////////////////////////////
-
-    bytes32 immutable WITHDRAW_COOLDOWN_PERIOD = keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));
-
-    //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
     //////////////////////////////////////////////////////////////
 
@@ -56,10 +50,10 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         _;
     }
 
+    /// @dev dispatchPayload() should be disabled by default
     modifier onlySender() override {
-        if (msg.sender != address(0)) {
-            _;
-        }
+        revert Error.DISABLED();
+        _;
     }
 
     /// @dev allows only form to write to the receive payload
@@ -69,9 +63,11 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         }
         (address superform,,) = superformId.getSuperform();
         if (msg.sender != superform) revert Error.NOT_SUPERFORM();
+
         if (IBaseForm(superform).getStateRegistryId() != superRegistry.getStateRegistryId(address(this))) {
             revert Error.NOT_TIMELOCK_SUPERFORM();
         }
+
         _;
     }
 
@@ -158,7 +154,6 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         /// @dev this step is used to re-feed txData to avoid using old txData that would have expired by now
         if (txData_.length > 0) {
             PayloadUpdaterLib.validateLiqReq(p.data.liqData);
-
             /// @dev validate the incoming tx data
             bridgeValidator.validateTxData(
                 IBridgeValidator.ValidateTxDataArgs(
@@ -168,7 +163,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
                     p.data.liqData.liqDstChainId,
                     false,
                     superform,
-                    p.srcSender,
+                    p.data.receiverAddress,
                     p.data.liqData.token
                 )
             );

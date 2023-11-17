@@ -6,7 +6,6 @@ import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol"
 /// @title IERC4626Form
 /// @author Zeropoint Labs
 interface IERC4626Form is IERC20 {
-
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////

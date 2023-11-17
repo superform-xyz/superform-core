@@ -20,16 +20,12 @@ contract SXSVWNormal4626TokenInputSlippage is ProtocolActions {
 
         TARGET_VAULTS[ETH][0] = [0];
 
-        /// @dev id 0 is normal 4626
-
         TARGET_FORM_KINDS[ETH][0] = [0];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ETH][1] = [1];
 
         TARGET_VAULTS[ETH][1] = [0];
-
-        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[ETH][1] = [0];
 

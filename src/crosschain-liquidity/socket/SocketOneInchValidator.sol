@@ -9,7 +9,6 @@ import { ISocketOneInchImpl } from "src/vendor/socket/ISocketOneInchImpl.sol";
 /// @author Zeropoint Labs
 /// @dev to assert input txData is valid
 contract SocketOneInchValidator is BridgeValidator {
-
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////

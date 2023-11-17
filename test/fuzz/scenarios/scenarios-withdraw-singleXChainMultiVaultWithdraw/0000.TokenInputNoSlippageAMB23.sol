@@ -21,12 +21,11 @@ contract SDMVW0000TokenInputNoSlippageAMB23 is ProtocolActions {
         TARGET_UNDERLYINGS[ARBI][0] = [1, 1, 1, 0];
         TARGET_VAULTS[ARBI][0] = [0, 0, 0, 0];
 
-        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[ARBI][0] = [0, 0, 0, 0];
 
         TARGET_UNDERLYINGS[ARBI][1] = [1, 1, 1, 0];
         TARGET_VAULTS[ARBI][1] = [0, 0, 0, 0];
-        /// @dev id 0 is normal 4626
+
         TARGET_FORM_KINDS[ARBI][1] = [0, 0, 0, 0];
 
         MAX_SLIPPAGE = 1000;

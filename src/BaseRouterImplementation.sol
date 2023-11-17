@@ -98,7 +98,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 req_.superformData.superformId,
                 req_.superformData.maxSlippage,
                 req_.superformData.amount,
-                req_.superformData.retain4626,
                 req_.superformData.receiverAddress,
                 CHAIN_ID,
                 true,
@@ -140,7 +139,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 req_.superformData.superformId,
                 req_.superformData.maxSlippage,
                 req_.superformData.amount,
-                req_.superformData.retain4626,
                 req_.superformData.receiverAddress,
                 req_.dstChainId,
                 true,
@@ -150,14 +148,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
-        /// @dev validates the receiver address
-        _validateReceiverAddress(req_.superformData.receiverAddress);
-
-        InitSingleVaultData memory ambData;
-
         vars.currentPayloadId = ++payloadIds;
 
-        ambData = InitSingleVaultData(
+        InitSingleVaultData memory ambData = InitSingleVaultData(
             vars.currentPayloadId,
             req_.superformData.superformId,
             req_.superformData.amount,
@@ -246,9 +239,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
-        /// @dev validates the receiver address
-        _validateReceiverAddress(req_.superformsData.receiverAddress);
-
         vars.currentPayloadId = ++payloadIds;
 
         InitMultiVaultData memory ambData = InitMultiVaultData(
@@ -320,7 +310,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 req_.superformData.superformId,
                 req_.superformData.maxSlippage,
                 req_.superformData.amount,
-                req_.superformData.retain4626,
                 req_.superformData.receiverAddress,
                 vars.srcChainId,
                 false,
@@ -363,16 +352,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_ACTION();
         }
 
-        /// @dev validates the receiver address
-        _validateReceiverAddress(req_.superformData.receiverAddress);
-
         /// @dev validate the Superforms data
         if (
             !_validateSuperformData(
                 req_.superformData.superformId,
                 req_.superformData.maxSlippage,
                 req_.superformData.amount,
-                req_.superformData.retain4626,
                 req_.superformData.receiverAddress,
                 req_.dstChainId,
                 false,
@@ -386,11 +371,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             msg.sender, req_.superformData.superformId, req_.superformData.amount
         );
 
-        InitSingleVaultData memory ambData;
-
         vars.currentPayloadId = ++payloadIds;
 
-        ambData = InitSingleVaultData(
+        InitSingleVaultData memory ambData = InitSingleVaultData(
             vars.currentPayloadId,
             req_.superformData.superformId,
             req_.superformData.amount,
@@ -473,19 +456,13 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
-        /// @dev validates the receiver address
-        _validateReceiverAddress(req_.superformsData.receiverAddress);
-
         ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnBatch(
             msg.sender, req_.superformsData.superformIds, req_.superformsData.amounts
         );
 
-        InitMultiVaultData memory ambData;
-
         vars.currentPayloadId = ++payloadIds;
 
-        /// @dev write packed txData
-        ambData = InitMultiVaultData(
+        InitMultiVaultData memory ambData = InitMultiVaultData(
             vars.currentPayloadId,
             req_.superformsData.superformIds,
             req_.superformsData.amounts,
@@ -591,7 +568,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         virtual
         returns (uint256 dstAmount)
     {
-        /// @dev deposits collateral to a given vault and mint vault positions directly through the form
+        /// @dev deposits token to a given vault and mint vault positions directly through the form
         dstAmount = IBaseForm(superform_).directDepositIntoVault{ value: msgValue_ }(
             InitSingleVaultData(
                 payloadId_,
@@ -627,7 +604,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         _singleVaultTokenForward(srcSender_, superform, permit2data_, vaultData_);
 
-        /// @dev deposits collateral to a given vault and mint vault positions.
+        /// @dev deposits token to a given vault and mint vault positions.
         dstAmount = _directDeposit(
             superform,
             vaultData_.payloadId,
@@ -672,7 +649,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         _multiVaultTokenForward(srcSender_, v.superforms, permit2data_, vaultData_, false);
 
         for (uint256 i; i < v.len;) {
-            /// @dev deposits collateral to a given vault and mint vault positions.
+            /// @dev deposits token to a given vault and mint vault positions.
             v.dstAmounts[i] = _directDeposit(
                 v.superforms[i],
                 vaultData_.payloadId,
@@ -766,7 +743,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         uint256 len = superforms.length;
 
         for (uint256 i; i < len;) {
-            /// @dev deposits collateral to a given vault and mint vault positions.
+            /// @dev deposits token to a given vault and mint vault positions.
             _directWithdraw(
                 superforms[i],
                 vaultData_.payloadId,
@@ -793,7 +770,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         uint256 superformId_,
         uint256 maxSlippage_,
         uint256 amount_,
-        bool retain4626_,
         address receiverAddress_,
         uint64 dstChainId_,
         bool isDeposit_,
@@ -804,6 +780,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         virtual
         returns (bool)
     {
+        /// @dev if same chain, validate if the superform exists on factory
+        if (dstChainId_ == CHAIN_ID && !factory_.isSuperform(superformId_)) {
+            return false;
+        }
+
         /// @dev the dstChainId_ (in the state request) must match the superforms' chainId (superform must exist on
         /// destination)
         (, uint32 formImplementationId, uint64 sfDstChainId) = superformId_.getSuperform();
@@ -818,8 +799,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         if (isDeposit_ && factory_.isFormImplementationPaused(formImplementationId)) return false;
 
-        /// @dev ensure that receiver address is sent if user wants to keep the 4626
-        if (isDeposit_ && retain4626_ && receiverAddress_ == address(0)) {
+        /// @dev ensure that receiver address is set always
+        /// @dev in deposits, this is important for receive4626 (on destination). It is also important for refunds on
+        /// destination
+        /// @dev in withdraws, this is important for cross chain cases where user uses smart contract wallets without
+        /// create2
+        if (receiverAddress_ == address(0)) {
             return false;
         }
 
@@ -866,7 +851,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 superformsData_.superformIds[i],
                 superformsData_.maxSlippages[i],
                 superformsData_.amounts[i],
-                superformsData_.retain4626s[i],
                 superformsData_.receiverAddress,
                 dstChainId_,
                 deposit_,
@@ -883,12 +867,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
 
         return true;
-    }
-
-    function _validateReceiverAddress(address receiverAddress_) internal view virtual {
-        if (tx.origin != msg.sender && receiverAddress_ == address(0)) {
-            revert Error.RECEIVER_ADDRESS_NOT_SET();
-        }
     }
 
     //////////////////////////////////////////////////////////////

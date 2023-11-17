@@ -23,9 +23,7 @@ contract MDMVDMulti01NoDstSwapTokenInputNoSlippageL2AMB13 is ProtocolActions {
 
         TARGET_VAULTS[ETH][0] = [0];
 
-        /// @dev id 0 is normal 4626
         TARGET_VAULTS[AVAX][0] = [0];
-        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[ETH][0] = [0];
         TARGET_FORM_KINDS[AVAX][0] = [0];

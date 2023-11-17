@@ -88,11 +88,11 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         if (vars.liqData.token != address(0) && vars.len1 == 0) {
             revert Error.WITHDRAW_TX_DATA_NOT_UPDATED();
         } else if (vars.liqData.token == address(0) && vars.len1 != 0) {
-            revert Error.EMPTY_TOKEN_NON_EMPTY_TXDATA();
+            revert Error.WITHDRAW_TOKEN_NOT_UPDATED();
         }
 
         /// @dev if the txData is empty, the tokens are sent directly to the sender, otherwise sent first to this form
-        vars.receiver = vars.len1 == 0 ? p_.srcSender : address(this);
+        vars.receiver = vars.len1 == 0 ? p_.data.receiverAddress : address(this);
 
         dstAmount = v.redeem(amount_, vars.receiver, address(this));
         /// @dev validate and dispatches the tokens
@@ -114,7 +114,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
                     vars.liqData.liqDstChainId,
                     false,
                     address(this),
-                    p_.srcSender,
+                    p_.data.receiverAddress,
                     vars.liqData.token
                 )
             );

@@ -9,7 +9,6 @@ import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
 /// @author Zeropoint Labs
 /// @dev to assert input txData is valid
 contract SocketValidator is BridgeValidator {
-
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////

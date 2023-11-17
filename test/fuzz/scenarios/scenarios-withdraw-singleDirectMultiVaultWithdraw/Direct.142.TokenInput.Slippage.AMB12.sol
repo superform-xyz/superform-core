@@ -24,7 +24,7 @@ contract SDiMVW142TokenInputSlippageAMB12 is ProtocolActions {
 
         TARGET_UNDERLYINGS[AVAX][1] = [1, 1, 1];
         TARGET_VAULTS[AVAX][1] = [1, 4, 2];
-        /// @dev id 0 is normal 4626
+
         TARGET_FORM_KINDS[AVAX][1] = [1, 1, 2];
 
         PARTIAL[AVAX][1] = [true, false, true];

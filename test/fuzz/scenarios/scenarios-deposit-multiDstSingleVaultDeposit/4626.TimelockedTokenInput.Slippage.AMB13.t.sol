@@ -4,7 +4,7 @@ pragma solidity ^0.8.21;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract MDSVDKYC4626TokenInputSlippageAMB13 is ProtocolActions {
+contract MDSVTimelocked4626TokenInputSlippageAMB13 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -21,17 +21,13 @@ contract MDSVDKYC4626TokenInputSlippageAMB13 is ProtocolActions {
         TARGET_UNDERLYINGS[BSC][0] = [2];
         TARGET_UNDERLYINGS[ETH][0] = [2];
 
-        TARGET_VAULTS[AVAX][0] = [2];
+        TARGET_VAULTS[AVAX][0] = [1];
+        TARGET_VAULTS[BSC][0] = [1];
+        TARGET_VAULTS[ETH][0] = [1];
 
-        /// @dev id 0 is normal 4626
-        TARGET_VAULTS[BSC][0] = [2];
-        /// @dev id 0 is normal 4626
-        TARGET_VAULTS[ETH][0] = [2];
-        /// @dev id 0 is normal 4626
-
-        TARGET_FORM_KINDS[AVAX][0] = [2];
-        TARGET_FORM_KINDS[BSC][0] = [2];
-        TARGET_FORM_KINDS[ETH][0] = [2];
+        TARGET_FORM_KINDS[AVAX][0] = [1];
+        TARGET_FORM_KINDS[BSC][0] = [1];
+        TARGET_FORM_KINDS[ETH][0] = [1];
 
         MAX_SLIPPAGE = 1000;
 

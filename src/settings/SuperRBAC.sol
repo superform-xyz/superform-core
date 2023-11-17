@@ -12,7 +12,6 @@ import { BroadcastMessage } from "../types/DataTypes.sol";
 /// @author Zeropoint Labs.
 /// @dev Contract to manage roles in the entire superform protocol
 contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
-
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
@@ -146,7 +145,7 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
-    
+
     /// @inheritdoc ISuperRBAC
     function setSuperRegistry(address superRegistry_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
         superRegistry = ISuperRegistry(superRegistry_);
@@ -213,7 +212,7 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         }
         return super._revokeRole(role_, account_);
     }
-    
+
     /// @dev interacts with role state registry to broadcasting state changes to all connected remote chains
     /// @param message_ is the crosschain message to be sent.
     /// @param extraData_ is the amb override information.

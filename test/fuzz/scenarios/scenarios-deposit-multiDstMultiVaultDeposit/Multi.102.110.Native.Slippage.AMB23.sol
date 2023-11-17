@@ -21,13 +21,10 @@ contract MDMVDMulti102110TokenInputSlippageAMB13 is ProtocolActions {
         TARGET_UNDERLYINGS[ARBI][0] = [0, 1, 2];
         TARGET_UNDERLYINGS[ETH][0] = [1, 1, 2];
 
-        TARGET_VAULTS[ARBI][0] = [1, 0, 2];
-
-        /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ARBI][0] = [1, 0, 1];
         TARGET_VAULTS[ETH][0] = [1, 1, 0];
-        /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[ARBI][0] = [1, 0, 2];
+        TARGET_FORM_KINDS[ARBI][0] = [1, 0, 1];
         TARGET_FORM_KINDS[ETH][0] = [1, 1, 0];
 
         MAX_SLIPPAGE = 1000;

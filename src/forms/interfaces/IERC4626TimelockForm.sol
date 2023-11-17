@@ -9,7 +9,6 @@ import { InitSingleVaultData, TimelockPayload } from "../../types/DataTypes.sol"
 /// @notice Interface used by ERC4626TimelockForm. Required by TimelockStateRegistry to call processUnlock()
 /// function
 interface IERC4626TimelockForm is IERC4626Form {
-
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////

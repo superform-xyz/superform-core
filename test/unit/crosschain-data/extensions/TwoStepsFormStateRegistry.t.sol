@@ -114,7 +114,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
             ETH,
             ETH,
             false,
-            deployer,
+            receiverAddress,
             uint256(ETH),
             /// @dev amount is 1 less than 420 * 0.9 i.e. exceeding maxSlippage of 10% by 1
             377,
@@ -159,6 +159,17 @@ contract TimelockStateRegistryTest is ProtocolActions {
 
         vm.prank(deployer);
         timelockStateRegistry.processPayload(1);
+    }
+
+    function test_dispatchPayloadRevert() external {
+        /// @dev mocks dispatch payload from any caller
+        vm.selectFork(FORKS[AVAX]);
+
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+
+        vm.expectRevert(Error.DISABLED.selector);
+        timelockStateRegistry.dispatchPayload(address(420), ambIds, uint64(1), bytes(""), bytes(""));
     }
 
     function _legacySuperformPackWithShift() internal view returns (address superform, uint256 superformId_) {

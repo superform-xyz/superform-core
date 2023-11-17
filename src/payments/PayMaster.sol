@@ -13,8 +13,6 @@ import "../types/LiquidityTypes.sol";
 /// @title PayMaster
 /// @author ZeroPoint Labs
 contract PayMaster is IPayMaster, LiquidityHandler {
-
-
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
@@ -24,7 +22,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
     //////////////////////////////////////////////////////////////
-    
+
     mapping(address => uint256) public totalFeesPaid;
 
     //////////////////////////////////////////////////////////////
@@ -57,7 +55,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     /// @inheritdoc IPayMaster
     function withdrawTo(bytes32 superRegistryId_, uint256 nativeAmount_) external override onlyPaymentAdmin {
         if (nativeAmount_ > address(this).balance) {
-            revert Error.INSUFFICIENT_NATIVE_AMOUNT();
+            revert Error.FAILED_TO_SEND_NATIVE();
         }
 
         _withdrawNative(superRegistry.getAddress(superRegistryId_), nativeAmount_);
@@ -85,7 +83,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     /// @inheritdoc IPayMaster
     function treatAMB(uint8 ambId_, uint256 nativeValue_, bytes memory data_) external override onlyPaymentAdmin {
         if (address(this).balance < nativeValue_) {
-            revert Error.INSUFFICIENT_NATIVE_AMOUNT();
+            revert Error.FAILED_TO_SEND_NATIVE();
         }
 
         IAmbImplementation(superRegistry.getAmbAddress(ambId_)).retryPayload{ value: nativeValue_ }(data_);
@@ -97,7 +95,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     /// @inheritdoc IPayMaster
     function makePayment(address user_) external payable override {
         if (msg.value == 0) {
-            revert Error.ZERO_MSG_VALUE();
+            revert Error.FAILED_TO_SEND_NATIVE();
         }
 
         if (user_ == address(0)) {
@@ -118,7 +116,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
         (bool success,) = payable(receiver_).call{ value: amount_ }("");
 
         if (!success) {
-            revert Error.FAILED_WITHDRAW();
+            revert Error.FAILED_TO_SEND_NATIVE();
         }
 
         emit PaymentWithdrawn(receiver_, amount_);

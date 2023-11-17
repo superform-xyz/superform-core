@@ -19,12 +19,12 @@ contract SDiMVW874NativeInputSlippageAMB34 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ARBI][0] = [0, 0, 1];
         TARGET_VAULTS[ARBI][0] = [8, 7, 4];
-        /// @dev id 0 is normal 4626
+
         TARGET_FORM_KINDS[ARBI][0] = [0, 2, 1];
 
         TARGET_UNDERLYINGS[ARBI][1] = [0, 0, 1];
         TARGET_VAULTS[ARBI][1] = [8, 7, 4];
-        /// @dev id 0 is normal 4626
+
         TARGET_FORM_KINDS[ARBI][1] = [0, 2, 1];
 
         MAX_SLIPPAGE = 1000;

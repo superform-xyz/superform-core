@@ -13,8 +13,8 @@ contract CoreStateRegistryTest is ProtocolActions {
         super.setUp();
     }
 
-    /// @dev test processPayload reverts with insufficient collateral
-    function test_processPayloadRevertingWithoutCollateral() public {
+    /// @dev test processPayload reverts with insufficient asset
+    function test_processPayloadRevertingWithoutAsset() public {
         uint8[] memory ambIds_ = new uint8[](2);
         ambIds_[0] = 1;
         ambIds_[1] = 2;
@@ -44,8 +44,8 @@ contract CoreStateRegistryTest is ProtocolActions {
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(1);
     }
 
-    /// @dev test processPayload reverts with insufficient collateral for multi vault case
-    function test_processPayloadRevertingWithoutCollateralMultiVault() public {
+    /// @dev test processPayload reverts with insufficient asset for multi vault case
+    function test_processPayloadRevertingWithoutAssetMultiVault() public {
         uint8[] memory ambIds_ = new uint8[](2);
         ambIds_[0] = 1;
         ambIds_[1] = 2;
@@ -87,7 +87,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         ambIds_[0] = 1;
         ambIds_[1] = 2;
 
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
@@ -575,7 +575,7 @@ contract CoreStateRegistryTest is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function _successfulSingleDeposit(uint8[] memory ambIds_) internal returns (uint256 superformId) {
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
@@ -707,7 +707,7 @@ contract CoreStateRegistryTest is ProtocolActions {
     }
 
     function _successfulMultiDeposit(uint8[] memory ambIds_) internal returns (uint256 superformId) {
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
@@ -847,7 +847,7 @@ contract CoreStateRegistryTest is ProtocolActions {
     }
 
     function _failingMultiDeposit(uint8[] memory ambIds_, bytes4 errorSelector) internal {
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 

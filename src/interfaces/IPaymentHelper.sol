@@ -14,7 +14,6 @@ import {
 /// @author ZeroPoint Labs
 /// @dev helps decoding the bytes payload and returns meaningful information
 interface IPaymentHelper {
-
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                         //
     //////////////////////////////////////////////////////////////

@@ -19,12 +19,12 @@ contract SDMVW0TokenInputNoSlippageAMB13 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ARBI][0] = [1];
         TARGET_VAULTS[ARBI][0] = [0];
-        /// @dev id 0 is normal 4626
+
         TARGET_FORM_KINDS[ARBI][0] = [0];
 
         TARGET_UNDERLYINGS[ARBI][1] = [1];
         TARGET_VAULTS[ARBI][1] = [0];
-        /// @dev id 0 is normal 4626
+
         TARGET_FORM_KINDS[ARBI][1] = [0];
 
         PARTIAL[ARBI][1] = [true];

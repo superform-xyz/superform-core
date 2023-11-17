@@ -50,7 +50,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     //////////////////////////////////////////////////////////////
 
     modifier onlySender() override {
-        if (msg.sender != superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"))) revert Error.NOT_SUPER_ROUTER();
+        if (msg.sender != superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"))) revert Error.NOT_SUPERFORM_ROUTER();
         _;
     }
 
@@ -229,7 +229,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         failedDeposits[payloadId_].amounts = proposedAmounts_;
         failedDeposits[payloadId_].lastProposedTimestamp = block.timestamp;
 
-        (,, uint8 multi,, address srcSender,) = DataLib.decodeTxInfo(payloadHeader[payloadId_]);
+        (,, uint8 multi,,,) = DataLib.decodeTxInfo(payloadHeader[payloadId_]);
 
         address refundAddress;
         if (multi == 1) {
@@ -238,7 +238,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             refundAddress = abi.decode(payloadBody[payloadId_], (InitSingleVaultData)).receiverAddress;
         }
 
-        failedDeposits[payloadId_].refundAddress = refundAddress == address(0) ? srcSender : refundAddress;
+        failedDeposits[payloadId_].refundAddress = refundAddress;
         emit RescueProposed(payloadId_, failedDeposits_.superformIds, proposedAmounts_, block.timestamp);
     }
 
@@ -256,7 +256,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     || _hasRole(keccak256("CORE_STATE_REGISTRY_DISPUTER_ROLE"), msg.sender)
             )
         ) {
-            revert Error.INVALID_DISPUTER();
+            revert Error.NOT_VALID_DISPUTER();
         }
 
         /// @dev the timelock is already elapsed to dispute

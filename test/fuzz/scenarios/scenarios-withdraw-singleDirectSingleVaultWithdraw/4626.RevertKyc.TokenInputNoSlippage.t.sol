@@ -20,16 +20,12 @@ contract SXSVWRevertKyc4626TokenInputNoSlippage is ProtocolActions {
 
         TARGET_VAULTS[AVAX][0] = [7];
 
-        /// @dev id 0 is normal 4626
-
         TARGET_FORM_KINDS[AVAX][0] = [2];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[AVAX][1] = [2];
 
         TARGET_VAULTS[AVAX][1] = [7];
-
-        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[AVAX][1] = [2];
 

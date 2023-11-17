@@ -4,7 +4,7 @@ pragma solidity ^0.8.21;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract MDSVDKyc4626NoNativeSlippageAMB23 is ProtocolActions {
+contract MDSVDTimelockedNoNativeSlippageAMB23 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -21,17 +21,15 @@ contract MDSVDKyc4626NoNativeSlippageAMB23 is ProtocolActions {
         TARGET_UNDERLYINGS[OP][0] = [2];
         TARGET_UNDERLYINGS[ARBI][0] = [2];
 
-        TARGET_VAULTS[ETH][0] = [2];
+        TARGET_VAULTS[ETH][0] = [1];
 
-        /// @dev id 0 is normal 4626
-        TARGET_VAULTS[OP][0] = [2];
-        /// @dev id 0 is normal 4626
-        TARGET_VAULTS[ARBI][0] = [2];
-        /// @dev id 0 is normal 4626
+        TARGET_VAULTS[OP][0] = [1];
 
-        TARGET_FORM_KINDS[ETH][0] = [2];
-        TARGET_FORM_KINDS[OP][0] = [2];
-        TARGET_FORM_KINDS[ARBI][0] = [2];
+        TARGET_VAULTS[ARBI][0] = [1];
+
+        TARGET_FORM_KINDS[ETH][0] = [1];
+        TARGET_FORM_KINDS[OP][0] = [1];
+        TARGET_FORM_KINDS[ARBI][0] = [1];
 
         MAX_SLIPPAGE = 1000;
 

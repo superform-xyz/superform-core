@@ -7,7 +7,6 @@ import "../types/DataTypes.sol";
 /// @author ZeroPoint Labs
 /// @dev Is the crosschain interaction point. Send, store & process crosschain messages
 interface IBaseStateRegistry {
-
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////

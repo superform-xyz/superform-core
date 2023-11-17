@@ -94,7 +94,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         IBaseForm(superform).xChainWithdrawFromVault(data, deployer, ARBI);
 
         vm.prank(getContract(ETH, "TimelockStateRegistry"));
-        vm.expectRevert(Error.EMPTY_TOKEN_NON_EMPTY_TXDATA.selector);
+        vm.expectRevert(Error.WITHDRAW_TOKEN_NOT_UPDATED.selector);
         ERC4626TimelockForm(payable(superform)).withdrawAfterCoolDown(
             420, TimelockPayload(1, deployer, ETH, block.timestamp, data, TimelockStatus.PENDING)
         );
@@ -193,7 +193,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function _successfulDeposit() internal {
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 

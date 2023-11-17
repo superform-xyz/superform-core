@@ -4,7 +4,6 @@ pragma solidity ^0.8.21;
 /// @title Bridge Handler Interface
 /// @author Zeropoint Labs
 interface IBridgeValidator {
-
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
     //////////////////////////////////////////////////////////////

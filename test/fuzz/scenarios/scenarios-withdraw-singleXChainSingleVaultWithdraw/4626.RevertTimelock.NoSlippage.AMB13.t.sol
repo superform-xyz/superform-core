@@ -4,65 +4,65 @@ pragma solidity ^0.8.21;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract SDMVW874NativeInputSlippageAMB14 is ProtocolActions {
+contract SXSVWRevertTimelockNativeNoSlippageAMB13 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
-        //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////*/
+        AMBs = [1, 3];
 
-        AMBs = [3, 1];
-
-        CHAIN_0 = ETH;
-        DST_CHAINS = [ARBI];
+        CHAIN_0 = OP;
+        DST_CHAINS = [AVAX];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[ARBI][0] = [0, 0, 1];
-        TARGET_VAULTS[ARBI][0] = [8, 7, 4];
-        /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ARBI][0] = [0, 2, 1];
+        TARGET_UNDERLYINGS[AVAX][0] = [2];
 
-        TARGET_UNDERLYINGS[ARBI][1] = [0, 0, 1];
-        TARGET_VAULTS[ARBI][1] = [8, 7, 4];
-        /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ARBI][1] = [0, 2, 1];
+        TARGET_VAULTS[AVAX][0] = [4];
+
+        TARGET_FORM_KINDS[AVAX][0] = [1];
+
+        /// @dev define vaults amounts and slippage for every destination chain and for every action
+        TARGET_UNDERLYINGS[AVAX][1] = [2];
+
+        TARGET_VAULTS[AVAX][1] = [4];
+
+        TARGET_FORM_KINDS[AVAX][1] = [1];
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[ARBI][0] = [1, 1, 1];
-        LIQ_BRIDGES[ARBI][1] = [1, 1, 1];
+        LIQ_BRIDGES[AVAX][0] = [1];
+        LIQ_BRIDGES[AVAX][1] = [1];
 
-        RECEIVE_4626[ARBI][0] = [false, false, false];
-        RECEIVE_4626[ARBI][1] = [false, false, false];
+        RECEIVE_4626[AVAX][0] = [false];
+        RECEIVE_4626[AVAX][1] = [false];
 
-        FINAL_LIQ_DST_WITHDRAW[ARBI] = [ETH, ETH, ETH];
+        FINAL_LIQ_DST_WITHDRAW[AVAX] = [OP];
 
-        /// @dev push in order the actions should be executed
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                multiVaults: true, //!!WARNING turn on or off multi vaults
+                multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 555, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
-
         actions.push(
             TestAction({
                 action: Actions.Withdraw,
-                multiVaults: true, //!!WARNING turn on or off multi vaults
+                multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 555, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
     }
@@ -71,11 +71,10 @@ contract SDMVW874NativeInputSlippageAMB14 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
-        amountOne_ = uint128(bound(amountOne_, 11 * 10 ** 18, TOTAL_SUPPLY_ETH / 3));
-        amountTwo_ = uint128(bound(amountTwo_, 11 * 10 ** 18, TOTAL_SUPPLY_ETH / 3));
-        amountThree_ = uint128(bound(amountThree_, 11 * 10 ** 18, TOTAL_SUPPLY_ETH / 3));
-        AMOUNTS[ARBI][0] = [amountOne_, amountTwo_, amountThree_];
+    function test_scenario(uint128 amountOne_) public {
+        amountOne_ = uint128(bound(amountOne_, 2 * 10 ** 18, TOTAL_SUPPLY_DAI));
+        AMOUNTS[AVAX][0] = [amountOne_];
+        // AMOUNTS[AVAX][1] = [amountOne_];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
@@ -95,7 +94,7 @@ contract SDMVW874NativeInputSlippageAMB14 is ProtocolActions {
                         DST_CHAINS[i]
                     );
 
-                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0], superPositions[1], superPositions[2]];
+                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0]];
                 }
             }
 

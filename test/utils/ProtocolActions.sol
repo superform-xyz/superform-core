@@ -1204,6 +1204,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         );
                     }
 
+                    uint256 timelockPerformed;
                     /// @dev perform the calls from beginning to last because of easiness in passing unlock id
                     for (uint256 j = countTimelocked[i]; j > 0; j--) {
                         (uint256 nativeFee,) = _generateAckGasFeesAndParamsForTimeLock(
@@ -1214,10 +1215,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         vm.warp(block.timestamp + (86_400 * 5));
                         vm.prank(deployer);
 
-                        /// @dev if needed in certain test scenarios, re-feed txData for timelocked here
-
                         timelockStateRegistry.finalizePayload{ value: nativeFee }(
-                            currentUnlockId - j + 1,
+                            currentUnlockId - timelockPerformed,
                             GENERATE_WITHDRAW_TX_DATA_ON_DST
                                 ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][timeLockedIndexes[DST_CHAINS[i]][j]]
                                 : bytes("")
@@ -1227,11 +1226,12 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         vm.prank(deployer);
                         vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
                         timelockStateRegistry.finalizePayload{ value: nativeFee }(
-                            currentUnlockId - j + 1,
+                            currentUnlockId - timelockPerformed,
                             GENERATE_WITHDRAW_TX_DATA_ON_DST
                                 ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][timeLockedIndexes[DST_CHAINS[i]][j]]
                                 : bytes("")
                         );
+                        ++timelockPerformed;
                     }
                     /// @dev deliver the message for the given destination
                     Vm.Log[] memory logs = vm.getRecordedLogs();
@@ -1455,7 +1455,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             CoreStateRegistry(v.coreStateRegistryDst).proposeRescueFailedDeposits(payloadId, v.amounts);
 
             vm.prank(address(0x777));
-            vm.expectRevert(Error.INVALID_DISPUTER.selector);
+            vm.expectRevert(Error.NOT_VALID_DISPUTER.selector);
             CoreStateRegistry(v.coreStateRegistryDst).disputeRescueFailedDeposits(payloadId);
 
             vm.mockCall(
@@ -1977,6 +1977,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
         /// @dev detects timelocked forms in scenario and counts them
         for (uint256 j; j < vars.formKinds.length; j++) {
             if (vars.formKinds[j] == 1) ++countTimelocked[dst];
+            // 0 1 1
+            // j = 1
+            // j = 2
             timeLockedIndexes[chain1][countTimelocked[dst]] = j;
         }
     }
@@ -3424,7 +3427,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         internal
         returns (uint256 superformId)
     {
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
 
         vm.prank(deployer);

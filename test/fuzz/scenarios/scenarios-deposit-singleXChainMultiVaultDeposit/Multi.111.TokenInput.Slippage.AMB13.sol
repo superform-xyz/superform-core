@@ -21,8 +21,6 @@ contract SDMVDMulti111NoTokenInputSlippageAMB14 is ProtocolActions {
 
         TARGET_VAULTS[AVAX][0] = [1, 1, 1];
 
-        /// @dev id 0 is normal 4626
-
         TARGET_FORM_KINDS[AVAX][0] = [1, 1, 1];
 
         AMOUNTS[AVAX][0] = [214 * 10e18, 798 * 10e18, 55_312 * 10e18];
