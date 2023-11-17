@@ -161,6 +161,17 @@ contract TimelockStateRegistryTest is ProtocolActions {
         timelockStateRegistry.processPayload(1);
     }
 
+    function test_dispatchPayloadRevert() external {
+        /// @dev mocks dispatch payload from any caller
+        vm.selectFork(FORKS[AVAX]);
+
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+
+        vm.expectRevert(Error.DISABLED.selector);
+        timelockStateRegistry.dispatchPayload(address(420), ambIds, uint64(1), bytes(""), bytes(""));
+    }
+
     function _legacySuperformPackWithShift() internal view returns (address superform, uint256 superformId_) {
         uint64 chainId_ = ETH;
 
