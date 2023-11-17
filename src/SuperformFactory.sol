@@ -207,8 +207,9 @@ contract SuperformFactory is ISuperformFactory {
         override
         returns (uint256 superformId_, address superform_)
     {
-        address tFormImplementation = formImplementation[formImplementationId_];
         if (vault_ == address(0)) revert Error.ZERO_ADDRESS();
+
+        address tFormImplementation = formImplementation[formImplementationId_];
         if (tFormImplementation == address(0)) revert Error.FORM_DOES_NOT_EXIST();
 
         /// @dev Same vault and beacon can be used only once to create superform

@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.21;
 
+import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+
 import { Error } from "src/utils/Error.sol";
 import "test/utils/ProtocolActions.sol";
 
-contract KeeperMock {
+contract KeeperMock is ERC1155Holder {
     receive() external payable { }
 }
 
-contract KeeperMockThatWontAcceptEth {
+contract KeeperMockThatWontAcceptEth is ERC1155Holder {
     receive() external payable {
         revert();
     }
@@ -68,7 +70,7 @@ contract PayMasterTest is ProtocolActions {
         vm.startPrank(deployer);
 
         /// @dev make zero payment
-        vm.expectRevert(Error.ZERO_MSG_VALUE.selector);
+        vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
         PayMaster(payable(getContract(ETH, "PayMaster"))).makePayment(deployer);
 
         /// @dev try to make payment for zero address
@@ -87,7 +89,7 @@ contract PayMasterTest is ProtocolActions {
         assertEq(feeCollector.balance, 1 wei);
 
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
-        vm.expectRevert(Error.INSUFFICIENT_NATIVE_AMOUNT.selector);
+        vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
         PayMaster(payable(feeCollector)).withdrawTo(keccak256("CORE_REGISTRY_PROCESSOR"), 2 wei);
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
@@ -115,7 +117,7 @@ contract PayMasterTest is ProtocolActions {
         assertEq(feeCollector.balance, 1 wei);
 
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
-        vm.expectRevert(Error.INSUFFICIENT_NATIVE_AMOUNT.selector);
+        vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
         PayMaster(payable(feeCollector)).withdrawTo(keccak256("CORE_REGISTRY_UPDATER"), 2 wei);
 
         /// @dev admin tries withdraw if updater address is zero (check if handled gracefully)
@@ -144,7 +146,7 @@ contract PayMasterTest is ProtocolActions {
         superRegistry.setAddress(keccak256("KEEPER_MOCK"), mock, ETH);
 
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
-        vm.expectRevert(Error.FAILED_WITHDRAW.selector);
+        vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
         PayMaster(payable(feeCollector)).withdrawTo(keccak256("KEEPER_MOCK"), 1 wei);
     }
 
@@ -276,7 +278,7 @@ contract PayMasterTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
         address feeCollector = getContract(ETH, "PayMaster");
-        vm.expectRevert(Error.INSUFFICIENT_NATIVE_AMOUNT.selector);
+        vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
         PayMaster(payable(feeCollector)).treatAMB(2, 10 ether, "");
 
         AMBMessage memory ambMessage;
@@ -302,7 +304,7 @@ contract PayMasterTest is ProtocolActions {
     }
 
     function _successfulDeposit() internal {
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 

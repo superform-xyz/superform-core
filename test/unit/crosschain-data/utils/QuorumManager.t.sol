@@ -18,7 +18,7 @@ contract QuorumManagerTest is BaseSetup {
     function test_getRequiredMessagingQuorum() public {
         vm.selectFork(FORKS[ETH]);
 
-        vm.expectRevert(Error.INVALID_INPUT_CHAIN_ID.selector);
+        vm.expectRevert(Error.ZERO_INPUT_VALUE.selector);
         superRegistry.getRequiredMessagingQuorum(0);
     }
 }

@@ -4,6 +4,7 @@ pragma solidity ^0.8.21;
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
 import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
+import { StandardHookMetadata } from "src/vendor/hyperlane/StandardHookMetadata.sol";
 import { IMessageRecipient } from "src/vendor/hyperlane/IMessageRecipient.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
@@ -71,7 +72,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
-    
+
     constructor(ISuperRegistry superRegistry_) {
         superRegistry = superRegistry_;
     }
@@ -99,7 +100,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     function estimateFees(
         uint64 dstChainId_,
         bytes memory message_,
-        bytes memory /*extraData_*/
+        bytes memory extraData_
     )
         external
         view
@@ -112,7 +113,9 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
             revert Error.INVALID_CHAIN_ID();
         }
 
-        fees = mailbox.quoteDispatch(domain, _castAddr(authorizedImpl[domain]), message_);
+        fees = mailbox.quoteDispatch(
+            domain, _castAddr(authorizedImpl[domain]), message_, _generateHookMetadata(extraData_, msg.sender)
+        );
     }
 
     //////////////////////////////////////////////////////////////
@@ -121,10 +124,10 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
-        address, /*srcSender_*/
+        address srcSender_,
         uint64 dstChainId_,
         bytes memory message_,
-        bytes memory /* extraData_ */
+        bytes memory extraData_
     )
         external
         payable
@@ -133,7 +136,10 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         onlyValidStateRegistry
     {
         uint32 domain = ambChainId[dstChainId_];
-        mailbox.dispatch{ value: msg.value }(domain, _castAddr(authorizedImpl[domain]), message_);
+
+        mailbox.dispatch{ value: msg.value }(
+            domain, _castAddr(authorizedImpl[domain]), message_, _generateHookMetadata(extraData_, srcSender_)
+        );
     }
 
     /// @inheritdoc IAmbImplementation
@@ -151,7 +157,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
             revert Error.INVALID_CHAIN_ID();
         }
 
-        /// @dev  reset old mappings
+        // @dev  reset old mappings
         uint64 oldSuperChainId = superChainId[ambChainId_];
         uint32 oldAmbChainId = ambChainId[superChainId_];
 
@@ -222,5 +228,21 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /// @return a bytes32 casted variable of the address passed in params
     function _castAddr(address addr_) internal pure returns (bytes32) {
         return bytes32(uint256(uint160(addr_)));
+    }
+
+    /// @dev casts superform extraData to hyperlane hook metadata
+    function _generateHookMetadata(
+        bytes memory extraData_,
+        address srcSender_
+    )
+        internal
+        pure
+        returns (bytes memory hookMetaData)
+    {
+        if (extraData_.length > 0) {
+            // extra data is encoded gas limit on dst chain
+            uint256 gasLimit = abi.decode(extraData_, (uint256));
+            hookMetaData = StandardHookMetadata.formatMetadata(gasLimit, srcSender_);
+        }
     }
 }

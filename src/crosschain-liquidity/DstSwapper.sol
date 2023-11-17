@@ -58,12 +58,9 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
     //////////////////////////////////////////////////////////////
 
     modifier onlySwapper() {
-        if (
-            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
-                keccak256("DST_SWAPPER_ROLE"), msg.sender
-            )
-        ) {
-            revert Error.NOT_SWAPPER();
+        bytes32 role = keccak256("DST_SWAPPER_ROLE");
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(role, msg.sender)) {
+            revert Error.NOT_PRIVILEGED_CALLER(role);
         }
         _;
     }
@@ -213,6 +210,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         override
         onlyCoreStateRegistry
     {
+        if (user_ == address(0)) revert Error.ZERO_ADDRESS();
         if (interimToken_ != NATIVE) {
             IERC20(interimToken_).safeTransfer(user_, amount_);
         } else {

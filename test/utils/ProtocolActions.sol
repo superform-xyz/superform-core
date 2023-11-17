@@ -1455,7 +1455,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             CoreStateRegistry(v.coreStateRegistryDst).proposeRescueFailedDeposits(payloadId, v.amounts);
 
             vm.prank(address(0x777));
-            vm.expectRevert(Error.INVALID_DISPUTER.selector);
+            vm.expectRevert(Error.NOT_VALID_DISPUTER.selector);
             CoreStateRegistry(v.coreStateRegistryDst).disputeRescueFailedDeposits(payloadId);
 
             vm.mockCall(
@@ -3424,7 +3424,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         internal
         returns (uint256 superformId)
     {
-        /// scenario: user deposits with his own collateral and has approved enough tokens
+        /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
 
         vm.prank(deployer);
