@@ -786,6 +786,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         virtual
         returns (bool)
     {
+        /// @dev if same chain, validate if the superform exists on factory
+        if (dstChainId_ == CHAIN_ID) {
+            return factory_.isSuperform(superformId_);
+        }
+
         /// @dev the dstChainId_ (in the state request) must match the superforms' chainId (superform must exist on
         /// destination)
         (, uint32 formImplementationId, uint64 sfDstChainId) = superformId_.getSuperform();
