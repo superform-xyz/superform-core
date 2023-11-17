@@ -92,14 +92,8 @@ contract EmergencyQueue is IEmergencyQueue {
     {
         ++queueCounter;
 
-        queuedWithdrawal[queueCounter] = QueuedWithdrawal(
-            srcSender_,
-            data_.receiverAddress == address(0) ? srcSender_ : data_.receiverAddress,
-            data_.superformId,
-            data_.amount,
-            data_.payloadId,
-            false
-        );
+        queuedWithdrawal[queueCounter] =
+            QueuedWithdrawal(srcSender_, data_.receiverAddress, data_.superformId, data_.amount, data_.payloadId, false);
 
         emit WithdrawalQueued(
             srcSender_, data_.receiverAddress, queueCounter, data_.superformId, data_.amount, data_.payloadId

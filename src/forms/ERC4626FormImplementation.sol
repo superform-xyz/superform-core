@@ -325,7 +325,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
     function _processXChainWithdraw(
         InitSingleVaultData memory singleVaultData_,
-        address srcSender_,
+        address, /*srcSender_*/
         uint64 srcChainId_
     )
         internal
@@ -341,9 +341,11 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         xChainWithdrawLocalVars memory vars;
         (,, vars.dstChainId) = singleVaultData_.superformId.getSuperform();
 
-        /// @dev if there is no txData, on withdraws the receiver is the original beneficiary (srcSender_), otherwise it
-        /// is this contract (before swap)
-        vars.receiver = len == 0 ? srcSender_ : address(this);
+        /// @dev receiverAddress is checked for existence on source
+        /// @dev user will either provide an address equal to msg.sender (if EOA)
+        /// @dev or user will specify an address on the target chain for the collateral extraction (if Smart Contract
+        /// Wallet)
+        vars.receiver = len == 0 ? singleVaultData_.receiverAddress : address(this);
 
         IERC4626 v = IERC4626(vault);
         vars.asset = asset;
@@ -371,7 +373,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                     singleVaultData_.liqData.liqDstChainId,
                     false,
                     address(this),
-                    srcSender_,
+                    singleVaultData_.receiverAddress,
                     singleVaultData_.liqData.token
                 )
             );

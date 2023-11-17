@@ -541,7 +541,6 @@ contract SuperformERC4626FormTest is ProtocolActions {
             ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
         );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
         IBaseForm(superform).getVaultAddress();
 
         MockERC20(getContract(ETH, "DAI")).transfer(superform, 1e18);
