@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
@@ -274,7 +274,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         uint256 len = bridgeId_.length;
         if (len != bridgeAddress_.length || len != bridgeValidator_.length) revert Error.ARRAY_LENGTH_MISMATCH();
 
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             uint8 bridgeId = bridgeId_[i];
             address bridgeAddress = bridgeAddress_[i];
             address bridgeValidatorT = bridgeValidator_[i];
@@ -285,10 +285,6 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             bridgeValidator[bridgeId] = bridgeValidatorT;
             emit SetBridgeAddress(bridgeId, bridgeAddress);
             emit SetBridgeValidator(bridgeId, bridgeValidatorT);
-
-            unchecked {
-                ++i;
-            }
         }
     }
 
@@ -305,7 +301,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         uint256 len = ambId_.length;
         if (len != ambAddress_.length || len != isBroadcastAMB_.length) revert Error.ARRAY_LENGTH_MISMATCH();
 
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             address ambAddress = ambAddress_[i];
             uint8 ambId = ambId_[i];
             bool broadcastAMB = isBroadcastAMB_[i];
@@ -317,10 +313,6 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             ambIds[ambAddress] = ambId;
             isBroadcastAMB[ambId] = broadcastAMB;
             emit SetAmbAddress(ambId, ambAddress, broadcastAMB);
-
-            unchecked {
-                ++i;
-            }
         }
     }
 
@@ -336,7 +328,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         uint256 len = registryId_.length;
         if (len != registryAddress_.length) revert Error.ARRAY_LENGTH_MISMATCH();
 
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             address registryAddress = registryAddress_[i];
             uint8 registryId = registryId_[i];
             if (registryAddress == address(0)) revert Error.ZERO_ADDRESS();
@@ -347,10 +339,6 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             registryAddresses[registryId] = registryAddress;
             stateRegistryIds[registryAddress] = registryId;
             emit SetStateRegistryAddress(registryId, registryAddress);
-
-            unchecked {
-                ++i;
-            }
         }
     }
 

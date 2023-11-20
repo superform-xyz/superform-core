@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import { BaseRouter } from "./BaseRouter.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
@@ -261,7 +261,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev this loop is what allows to deposit to >1 different underlying on destination
         /// @dev if a loop fails in a validation the whole chain should be reverted
-        for (uint256 j; j < len;) {
+        for (uint256 j; j < len; ++j) {
             vars.liqRequest = req_.superformsData.liqRequests[j];
 
             (superform,,) = req_.superformsData.superformIds[j].getSuperform();
@@ -272,9 +272,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                     vars.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
                 )
             );
-            unchecked {
-                ++j;
-            }
         }
 
         ambData.liqData = new LiqRequest[](len);
@@ -648,7 +645,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         _multiVaultTokenForward(srcSender_, v.superforms, permit2data_, vaultData_, false);
 
-        for (uint256 i; i < v.len;) {
+        for (uint256 i; i < v.len; ++i) {
             /// @dev deposits token to a given vault and mint vault positions.
             v.dstAmounts[i] = _directDeposit(
                 v.superforms[i],
@@ -667,10 +664,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             /// @dev if retain4626 is set to True, set the amount of SuperPositions to mint to 0
             if (v.dstAmounts[i] > 0 && vaultData_.retain4626s[i]) {
                 v.dstAmounts[i] = 0;
-            }
-
-            unchecked {
-                ++i;
             }
         }
 
@@ -742,7 +735,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         address[] memory superforms = DataLib.getSuperforms(vaultData_.superformIds);
         uint256 len = superforms.length;
 
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             /// @dev deposits token to a given vault and mint vault positions.
             _directWithdraw(
                 superforms[i],
@@ -755,10 +748,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 vaultData_.extraFormData,
                 srcSender_
             );
-
-            unchecked {
-                ++i;
-            }
         }
     }
 
@@ -846,7 +835,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
         bool valid;
         /// @dev slippage, amount, paused status validation
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             valid = _validateSuperformData(
                 superformsData_.superformIds[i],
                 superformsData_.maxSlippages[i],
@@ -859,10 +848,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
             if (!valid) {
                 return valid;
-            }
-
-            unchecked {
-                ++i;
             }
         }
 
@@ -983,16 +968,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         v.amountsIn = new uint256[](v.len);
         v.bridgeIds = new uint8[](v.len);
 
-        for (uint256 i; i < v.len;) {
+        for (uint256 i; i < v.len; ++i) {
             v.bridgeIds[i] = vaultData_.liqData[i].bridgeId;
             if (vaultData_.liqData[i].txData.length != 0) {
                 v.amountsIn[i] = IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[i])).decodeAmountIn(
                     vaultData_.liqData[i].txData, false
                 );
-            }
-
-            unchecked {
-                ++i;
             }
         }
 
@@ -1004,7 +985,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             v.permit2dataLen = permit2data_.length;
             v.approvalAmounts = new uint256[](v.len);
 
-            for (uint256 i; i < v.len;) {
+            for (uint256 i; i < v.len; ++i) {
                 if (vaultData_.liqData[i].token != address(v.token)) {
                     revert Error.INVALID_DEPOSIT_TOKEN();
                 }
@@ -1019,9 +1000,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 }
 
                 v.totalAmount += v.approvalAmounts[i];
-                unchecked {
-                    ++i;
-                }
             }
 
             if (v.totalAmount == 0) {
@@ -1062,13 +1040,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
             /// @dev approves individual final targets if needed here
             v.targetLen = targets_.length;
-            for (uint256 j; j < v.targetLen;) {
+            for (uint256 j; j < v.targetLen; ++j) {
                 /// @dev approves the superform
                 v.token.safeIncreaseAllowance(targets_[j], v.approvalAmounts[j]);
-
-                unchecked {
-                    ++j;
-                }
             }
         }
 

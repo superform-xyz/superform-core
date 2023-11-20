@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -148,11 +148,8 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         _isValidPayloadId(payloadId_, coreStateRegistry);
 
         uint256 len = txData_.length;
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             _processTx(payloadId_, indices[i], bridgeIds_[i], txData_[i], coreStateRegistry);
-            unchecked {
-                ++i;
-            }
         }
     }
 
@@ -191,12 +188,8 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
 
         _isValidPayloadId(payloadId_, coreStateRegistry);
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             _updateFailedTx(payloadId_, indices_[i], interimTokens_[i], amounts_[i], coreStateRegistry);
-
-            unchecked {
-                ++i;
-            }
         }
     }
 

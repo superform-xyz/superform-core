@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 /// @dev Because Foundry does not commit the state changes between invariant runs, we need to
 /// save the current timestamp in a contract with persistent storage.

@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import { BaseRouterImplementation } from "./BaseRouterImplementation.sol";
 import { BaseRouter } from "./BaseRouter.sol";
@@ -79,16 +79,13 @@ contract SuperformRouter is BaseRouterImplementation {
         uint256 balanceBefore = address(this).balance - msg.value;
         uint256 len = req_.dstChainIds.length;
 
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             if (srcChainId == req_.dstChainIds[i]) {
                 _singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq(req_.superformsData[i]));
             } else {
                 _singleXChainSingleVaultDeposit(
                     SingleXChainSingleVaultStateReq(req_.ambIds[i], req_.dstChainIds[i], req_.superformsData[i])
                 );
-            }
-            unchecked {
-                ++i;
             }
         }
 
@@ -104,16 +101,13 @@ contract SuperformRouter is BaseRouterImplementation {
         uint64 chainId = CHAIN_ID;
         uint256 balanceBefore = address(this).balance - msg.value;
         uint256 len = req_.dstChainIds.length;
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             if (chainId == req_.dstChainIds[i]) {
                 _singleDirectMultiVaultDeposit(SingleDirectMultiVaultStateReq(req_.superformsData[i]));
             } else {
                 _singleXChainMultiVaultDeposit(
                     SingleXChainMultiVaultStateReq(req_.ambIds[i], req_.dstChainIds[i], req_.superformsData[i])
                 );
-            }
-            unchecked {
-                ++i;
             }
         }
 
@@ -177,16 +171,13 @@ contract SuperformRouter is BaseRouterImplementation {
         uint256 balanceBefore = address(this).balance - msg.value;
         uint256 len = req_.dstChainIds.length;
 
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             if (CHAIN_ID == req_.dstChainIds[i]) {
                 _singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq(req_.superformsData[i]));
             } else {
                 _singleXChainSingleVaultWithdraw(
                     SingleXChainSingleVaultStateReq(req_.ambIds[i], req_.dstChainIds[i], req_.superformsData[i])
                 );
-            }
-            unchecked {
-                ++i;
             }
         }
 
@@ -203,17 +194,13 @@ contract SuperformRouter is BaseRouterImplementation {
         uint256 balanceBefore = address(this).balance - msg.value;
         uint256 len = req_.dstChainIds.length;
 
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             if (chainId == req_.dstChainIds[i]) {
                 _singleDirectMultiVaultWithdraw(SingleDirectMultiVaultStateReq(req_.superformsData[i]));
             } else {
                 _singleXChainMultiVaultWithdraw(
                     SingleXChainMultiVaultStateReq(req_.ambIds[i], req_.dstChainIds[i], req_.superformsData[i])
                 );
-            }
-
-            unchecked {
-                ++i;
             }
         }
 

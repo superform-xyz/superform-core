@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import { DataLib } from "../libraries/DataLib.sol";
 import { IBaseForm } from "../interfaces/IBaseForm.sol";
@@ -90,9 +90,7 @@ contract EmergencyQueue is IEmergencyQueue {
         override
         onlySuperform(data_.superformId)
     {
-        unchecked {
-            ++queueCounter;
-        }
+        ++queueCounter;
 
         queuedWithdrawal[queueCounter] =
             QueuedWithdrawal(srcSender_, data_.receiverAddress, data_.superformId, data_.amount, data_.payloadId, false);
@@ -108,11 +106,8 @@ contract EmergencyQueue is IEmergencyQueue {
     }
 
     function batchExecuteQueuedWithdrawal(uint256[] calldata ids_) external override onlyEmergencyAdmin {
-        for (uint256 i; i < ids_.length;) {
+        for (uint256 i; i < ids_.length; ++i) {
             _executeQueuedWithdrawal(ids_[i]);
-            unchecked {
-                ++i;
-            }
         }
     }
 

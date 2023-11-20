@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import { Error } from "src/utils/Error.sol";
 import { MockERC20 } from "test/mocks/MockERC20.sol";
