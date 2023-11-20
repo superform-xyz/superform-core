@@ -1,10 +1,10 @@
 # State Registry
 
-This directory contains the components to enable crosschain communication functionality to Superform Protocol. It also includes wrapper contracts for different arbitrary message bridges (AMBs) leveraged by Superform: Layerzero, Hyperlane & Wormhole.
+This directory contains the components to enable crosschain communication functionality to the Superform Protocol. It also includes wrapper contracts for different arbitrary message bridges (AMBs) leveraged by Superform: Layerzero, Hyperlane & Wormhole.
 
 ## Components Overview
 
-The following components are a key part of superform's robust crosschain communication. New State Registries may be added by the Protocol Admin if new Form types are added to support new deposit/withdrawal flows. 
+The following components are a key part of Superform's robust crosschain communication. New State Registries may be added by the Protocol Admin if new Form types are added to support new deposit/withdrawal flows. 
 
 ## Architecture
 
@@ -14,7 +14,7 @@ The following components are a key part of superform's robust crosschain communi
 
 ### Sending Payloads
 
-Every cross-chain communication call should be made through the state registry, starting with `dispatchPayload()` or `broadcastPayload()` on individual state registries. State registry contracts are deployed on each of the supported networks and will be the point of cross-chain communication.
+Every cross-chain communication call should be made through the state registry, starting with `dispatchPayload()` or `broadcastPayload()` on individual state registries. State egistry contracts are deployed on each of the supported networks and will be the point of cross-chain communication.
 
 - dispatchPayload() - sends a payload to one destination chain
 - broadcastPayload() - sends a payload to all supported chains
@@ -31,7 +31,7 @@ Updating payloads are performed in `CoreStateRegistry`. This is only required fo
 
 The cross-chain payload contains remote chain execution information, which can be triggered by calling the `processPayload()` function exposed by the state registry contracts. The logic is overridden in different state registries to provide flexibility in processing according to their needs. 
 
-On deposits, payloads must be processed once on the destination chain to deposit funds, and once the acknowledgement is sent back, processed again to mint SuperPositions (assuming the user )
+On deposits, payloads must be processed once on the destination chain to deposit funds, and once the acknowledgement is sent back, processed again to mint SuperPositions (assuming a successful deposit).
 
 On withdrawals, payloads must only be processed once on the destination chain to redeem funds. 
 
@@ -55,13 +55,13 @@ Every AMB has their identifier for different chains/networks. In state registrie
 
 - **Broadcast State Registry [BroadcastRegistry.sol](./BroadcastRegistry.sol)**: BroadcastRegistry proposes a unique form of communication from Chain A to all chains Superform is on, as opposed to BaseStateRegistry which assumes communication between only two chains. 
 
-Each individual AMB wrapper will be placed inside a folder named after the Arbitrary Message Bridge (AMB).
+Each individual AMB is in the adapters folder and is named after the Arbitrary Message Bridge (AMB).
 
-- **[LayerzeroImplementation.sol](./adapters/layerzero/Implementation.sol)**: Wrapper for Layerzero AMB
+- **[LayerzeroImplementation.sol](./adapters/layerzero/Implementation.sol)**: Adapter for Layerzero AMB
 
-- **[HyperlaneImplementation.sol](./adapters/hyperlane/Implementation.sol)**: Wrapper for Hyperlane AMB
+- **[HyperlaneImplementation.sol](./adapters/hyperlane/Implementation.sol)**: Adapter for Hyperlane AMB
 
-- **[WormholeARImplementation.sol](./adapters/wormhole/automatic-relayer/WormholeARImplementation.sol)**: Wrapper for Wormhole Automatic Relayer AMB
+- **[WormholeARImplementation.sol](./adapters/wormhole/automatic-relayer/WormholeARImplementation.sol)**: Adapter for Wormhole Automatic Relayer AMB
 
-- **[WormholeSRImplementation.sol](./adapters/wormhole/specialized-relayer/WormholeSRImplementation.sol)**: Wrapper for Wormhole Specialized Relayer AMB, used specifically in `BroadcastRegistry.sol`
+- **[WormholeSRImplementation.sol](./adapters/wormhole/specialized-relayer/WormholeSRImplementation.sol)**: Adapter for Wormhole Specialized Relayer AMB, used specifically in `BroadcastRegistry.sol`
   

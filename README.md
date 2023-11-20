@@ -2,27 +2,27 @@
 
 [![codecov](https://codecov.io/gh/superform-xyz/superform-core/graph/badge.svg?token=BEJIKMVWZ6)](https://codecov.io/gh/superform-xyz/superform-core)
 
-The Superform protocol is a suite of non-upgradeable, non-custodial smart contracts that act as a central repository for yield and a router for users. It is modular, permissionless to list vaults, and enables intent-based transactions across chains that allow users to execute into an arbitrary number of tokens, chains, and vaults at once.
+The Superform Protocol is a suite of non-upgradeable, non-custodial smart contracts that act as a central repository for yield and a router for users. It is modular, permissionless to list vaults, and enables intent-based transactions across chains that allow users to execute into an arbitrary number of tokens, chains, and vaults at once.
 
 For DeFi protocols, it acts as an instant out-of-the-box distribution platform for ERC4626-compliant vaults. For users, it allows access to any vault listed on the platform from the chain and asset of their choice in a single transaction. 
 
-Core capabilities for protocols include:
+**Core capabilities for protocols include:**
 - Permissionlessly list your vaults on Superform by adding your ERC4626 vault to the proper 'Form' (a vault adapter within Superform). 
 - Create a profile page with embeddable data sources for users to find more information about your protocol
 - Manage metadata for yield opportunities
 - Users can deposit into your vaults from any chain without the need to deploy your vaults on that chain
-  
-Core capabilities for users: 
+
+**Core capabilities for users:** 
 - Deposit or withdraw into any vault using any asset from any chain
 - Batch desired actions across multiple vaults and multiple chains in a single transaction
 - Automate and mange your yield portfolio from any chain
 - Automatically compound your yield position
 - Make cross-chain transactions using multiple AMBs 
 
-This repository includes all of our contracts, but our protocol can be split into two categories: Core and Periphery.
+This repository includes all of our contracts but our protocol can be split into two categories: Core and Periphery.
 
-- Core contracts contain logic to move liquidity and data across chains along with maintaining roles in the protocol
-- Periphery contracts contain the main touch-points for protocols and users to interface with and include helper contracts to ease 3rd party integrations
+- `Core` contracts contain logic to move liquidity and data across chains along with maintaining roles in the protocol
+- `Periphery` contracts contain the main touch-points for protocols and users to interface with and include helper contracts to ease 3rd party integrations
   
 ![Superform__SuperformProtocol--Updated](https://github.com/superform-xyz/superform-core/assets/33469661/ee7a58fd-e18f-4244-92b0-7cb741ac1f45)
 
