@@ -209,6 +209,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     function getTotalAssets() public view virtual override returns (uint256);
 
     /// @inheritdoc IBaseForm
+    function getTotalSupply() public view virtual override returns (uint256);
+
+    /// @inheritdoc IBaseForm
     function getStateRegistryId() external view virtual override returns (uint8);
 
     // @inheritdoc IBaseForm
