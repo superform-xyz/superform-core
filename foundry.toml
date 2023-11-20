@@ -22,13 +22,7 @@ remappings = ["solmate/=lib/ERC1155A/lib/solmate/src/"]
 solc_version = "0.8.21" # Override for the solc version (setting this ignores `auto_detect_solc`)
 evm_version = "paris"   # to prevent usage of PUSH0, which is not supported on all chains
 
-gas_reports = [
-  "SuperformRouter",
-  "BaseForm",
-  "SuperformFactory",
-  "SuperPositions",
-  "DstSwapper",
-]
+gas_reports = ["SuperformRouter"]
 libraries = []
 optimizer = false
 optimizer_runs = 200
@@ -70,8 +64,7 @@ runs = 50
 runs = 20
 depth = 2 # “Calls” refer to the number of times functions in the smart contract are called during a single test run. “Reverts” refers to the number of times a call to any function within the smart contract resulted in a transaction being reverted due to an error or exception.
 fail_on_revert = false
-call_override = true
-
+call_override = false
 
 [fmt]
 bracket_spacing = true

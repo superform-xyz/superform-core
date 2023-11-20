@@ -92,7 +92,9 @@ contract WormholeSRImplementationTest is BaseSetup {
 
         vm.prank(deployer);
         vm.expectRevert(Error.RELAYER_NOT_SET.selector);
-        sfFactory.changeFormImplementationPauseStatus(1, true, abi.encode(5, abi.encode(0, "")));
+        sfFactory.changeFormImplementationPauseStatus(
+            1, ISuperformFactory.PauseStatus.PAUSED, abi.encode(5, abi.encode(0, ""))
+        );
     }
 
     function test_broadcastPayload_RelayerInvalid() public {
@@ -121,7 +123,9 @@ contract WormholeSRImplementationTest is BaseSetup {
         superRegistry.setAmbAddress(ambId, ambAddress, isBroadcastAmb);
 
         vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
-        sfFactory.changeFormImplementationPauseStatus(1, true, abi.encode(5, abi.encode(0, "")));
+        sfFactory.changeFormImplementationPauseStatus(
+            1, ISuperformFactory.PauseStatus.PAUSED, abi.encode(5, abi.encode(0, ""))
+        );
 
         vm.stopPrank();
     }

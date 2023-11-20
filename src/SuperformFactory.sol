@@ -24,6 +24,8 @@ contract SuperformFactory is ISuperformFactory {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
+    uint8 private constant NON_PAUSED = 1;
+    uint8 private constant PAUSED = 2;
 
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
@@ -46,7 +48,7 @@ contract SuperformFactory is ISuperformFactory {
     /// @notice If formImplementationId is 0, formImplementation is not part of the protocol
     mapping(uint32 formImplementationId => address formBeaconAddress) public formImplementation;
 
-    mapping(uint32 formImplementationId => bool paused) public formImplementationPaused;
+    mapping(uint32 formImplementationId => PauseStatus) public formImplementationPaused;
 
     mapping(address vault => uint256[] superformIds) public vaultToSuperforms;
 
@@ -116,7 +118,7 @@ contract SuperformFactory is ISuperformFactory {
 
     /// @inheritdoc ISuperformFactory
     function isFormImplementationPaused(uint32 formImplementationId_) external view override returns (bool) {
-        return formImplementationPaused[formImplementationId_];
+        return formImplementationPaused[formImplementationId_] == PauseStatus.PAUSED;
     }
 
     /// @inheritdoc ISuperformFactory
@@ -246,7 +248,7 @@ contract SuperformFactory is ISuperformFactory {
     /// @inheritdoc ISuperformFactory
     function changeFormImplementationPauseStatus(
         uint32 formImplementationId_,
-        bool paused_,
+        PauseStatus status_,
         bytes memory extraData_
     )
         external
@@ -255,20 +257,20 @@ contract SuperformFactory is ISuperformFactory {
         onlyEmergencyAdmin
     {
         if (formImplementation[formImplementationId_] == address(0)) revert Error.INVALID_FORM_ID();
-        formImplementationPaused[formImplementationId_] = paused_;
+        formImplementationPaused[formImplementationId_] = status_;
 
         /// @dev broadcast the change in status to the other destination chains
         if (extraData_.length > 0) {
             BroadcastMessage memory factoryPayload = BroadcastMessage(
                 "SUPERFORM_FACTORY",
                 SYNC_IMPLEMENTATION_STATUS,
-                abi.encode(CHAIN_ID, ++xChainPayloadCounter, formImplementationId_, paused_)
+                abi.encode(CHAIN_ID, ++xChainPayloadCounter, formImplementationId_, status_)
             );
 
             _broadcast(abi.encode(factoryPayload), extraData_);
         }
 
-        emit FormImplementationPaused(formImplementationId_, paused_);
+        emit FormImplementationPaused(formImplementationId_, status_);
     }
 
     /// @inheritdoc ISuperformFactory
@@ -301,7 +303,8 @@ contract SuperformFactory is ISuperformFactory {
     /// @notice is a part of broadcasting / dispatching through factory state registry
     /// @param message_ is the crosschain message received.
     function _syncFormPausedStatus(bytes memory message_) internal {
-        (,, uint32 formImplementationId, bool paused) = abi.decode(message_, (uint64, uint256, uint32, bool));
+        (,, uint32 formImplementationId, PauseStatus paused) =
+            abi.decode(message_, (uint64, uint256, uint32, PauseStatus));
 
         if (formImplementation[formImplementationId] == address(0)) revert Error.INVALID_FORM_ID();
         formImplementationPaused[formImplementationId] = paused;

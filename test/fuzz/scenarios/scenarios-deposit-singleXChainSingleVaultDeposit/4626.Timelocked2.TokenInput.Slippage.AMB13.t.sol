@@ -10,7 +10,7 @@ contract SXSVDTimelocked2TokenInputSlippageAMB13 is ProtocolActions {
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
         //////////////////////////////////////////////////////////////*/
-        AMBs = [1, 3];
+        AMBs = [1, 2];
 
         CHAIN_0 = BSC;
         DST_CHAINS = [ETH];

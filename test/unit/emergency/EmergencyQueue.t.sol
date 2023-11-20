@@ -663,7 +663,7 @@ contract EmergencyQueueTest is ProtocolActions {
     function _pauseForm() internal {
         vm.prank(deployer);
         SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
-            FORM_IMPLEMENTATION_IDS[0], true, bytes("")
+            FORM_IMPLEMENTATION_IDS[0], ISuperformFactory.PauseStatus.PAUSED, bytes("")
         );
     }
 
@@ -671,7 +671,7 @@ contract EmergencyQueueTest is ProtocolActions {
         vm.selectFork(FORKS[ARBI]);
         vm.prank(deployer);
         SuperformFactory(getContract(ARBI, "SuperformFactory")).changeFormImplementationPauseStatus(
-            FORM_IMPLEMENTATION_IDS[formImplId], true, bytes("")
+            FORM_IMPLEMENTATION_IDS[formImplId], ISuperformFactory.PauseStatus.PAUSED, bytes("")
         );
     }
 
@@ -679,7 +679,7 @@ contract EmergencyQueueTest is ProtocolActions {
         vm.selectFork(FORKS[ARBI]);
         vm.prank(deployer);
         SuperformFactory(getContract(ARBI, "SuperformFactory")).changeFormImplementationPauseStatus(
-            FORM_IMPLEMENTATION_IDS[formImplId], false, bytes("")
+            FORM_IMPLEMENTATION_IDS[formImplId], ISuperformFactory.PauseStatus.NON_PAUSED, bytes("")
         );
     }
 

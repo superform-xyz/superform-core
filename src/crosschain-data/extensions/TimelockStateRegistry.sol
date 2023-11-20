@@ -116,7 +116,10 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         override
         onlyTimelockSuperform(data_.superformId)
     {
-        ++timelockPayloadCounter;
+        unchecked {
+            ++timelockPayloadCounter;
+        }
+
         timelockPayload[timelockPayloadCounter] =
             TimelockPayload(type_, srcSender_, srcChainId_, lockedTill_, data_, TimelockStatus.PENDING);
     }
