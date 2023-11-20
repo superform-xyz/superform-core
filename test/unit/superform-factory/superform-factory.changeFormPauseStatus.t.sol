@@ -32,7 +32,7 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
         );
 
         SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormImplementationPauseStatus(
-            formImplementationId, true, generateBroadcastParams(5, 1)
+            formImplementationId, ISuperformFactory.PauseStatus.PAUSED, generateBroadcastParams(5, 1)
         );
 
         bool status = SuperformFactory(payable(getContract(chainId, "SuperformFactory"))).isFormImplementationPaused(
@@ -60,7 +60,7 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
 
         SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormImplementationPauseStatus{
             value: 800 * 10 ** 18
-        }(formImplementationId, true, "");
+        }(formImplementationId, ISuperformFactory.PauseStatus.PAUSED, "");
 
         bool status = SuperformFactory(payable(getContract(chainId, "SuperformFactory"))).isFormImplementationPaused(
             formImplementationId
@@ -90,6 +90,6 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
         vm.expectRevert(Error.INVALID_FORM_ID.selector);
         SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormImplementationPauseStatus{
             value: 800 * 10 ** 18
-        }(formImplementationId_invalid, true, generateBroadcastParams(5, 2));
+        }(formImplementationId_invalid, ISuperformFactory.PauseStatus.PAUSED, generateBroadcastParams(5, 2));
     }
 }

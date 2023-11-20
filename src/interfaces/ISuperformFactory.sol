@@ -6,6 +6,15 @@ pragma solidity ^0.8.21;
 /// @notice Interface for Superform Factory
 interface ISuperformFactory {
     //////////////////////////////////////////////////////////////
+    //                         CONSTANTS                        //
+    //////////////////////////////////////////////////////////////
+
+    enum PauseStatus {
+        NON_PAUSED,
+        PAUSED
+    }
+
+    //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
 
@@ -30,7 +39,7 @@ interface ISuperformFactory {
     /// @dev emitted when a form implementation is paused
     /// @param formImplementationId is the id of the form implementation
     /// @param paused is the new paused status
-    event FormImplementationPaused(uint256 indexed formImplementationId, bool indexed paused);
+    event FormImplementationPaused(uint256 indexed formImplementationId, PauseStatus paused);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
@@ -114,7 +123,7 @@ interface ISuperformFactory {
     /// @param extraData_ is optional & passed when broadcasting of status is needed
     function changeFormImplementationPauseStatus(
         uint32 formImplementationId_,
-        bool status_,
+        PauseStatus status_,
         bytes memory extraData_
     )
         external
