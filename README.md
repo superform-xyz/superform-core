@@ -2,25 +2,30 @@
 
 [![codecov](https://codecov.io/gh/superform-xyz/superform-core/graph/badge.svg?token=BEJIKMVWZ6)](https://codecov.io/gh/superform-xyz/superform-core)
 
-The Superform protocol is a non-custodial yield marketplace. For DeFi protocols, it acts as an instant distribution platform for ERC4626-compliant vaults. For users, it allows them to interact with any opportunity on the platform from the chain and asset of their choice in a single transaction. 
+The Superform protocol is a suite of non-upgradeable, non-custodial smart contracts that act as a central repository for yield and a router for users. It is modular, permissionless to list vaults, and enables intent-based transactions across chains that allow users to execute into an arbitrary number of tokens, chains, and vaults at once.
 
-Core capabilities for protocol builders include:
-- List your vaults on the Superform Protocol by adding your ERC4626 vault to the proper form or by first proposing Form adapters if not compliant
-- Create a profile page for users to find more information about your protocol
+For DeFi protocols, it acts as an instant out-of-the-box distribution platform for ERC4626-compliant vaults. For users, it allows access to any vault listed on the platform from the chain and asset of their choice in a single transaction. 
+
+Core capabilities for protocols include:
+- Permissionlessly list your vaults on Superform by adding your ERC4626 vault to the proper 'Form' (a vault adapter within Superform). 
+- Create a profile page with embeddable data sources for users to find more information about your protocol
 - Manage metadata for yield opportunities
-
-Core capabilities for users include: 
-- Deposit into any vault using any asset from any chain
-- Withdraw from any vault to any asset on any chain
-- Batch transactions and deposits to/withdraw from multiple vaults in a single transaction
-- Manage your yield portfolio from any chain
+- Users can deposit into your vaults from any chain without the need to deploy your vaults on that chain
+  
+Core capabilities for users: 
+- Deposit or withdraw into any vault using any asset from any chain
+- Batch desired actions across multiple vaults and multiple chains in a single transaction
+- Automate and mange your yield portfolio from any chain
+- Automatically compound your yield position
+- Make cross-chain transactions using multiple AMBs 
 
 This repository includes all of our contracts, but our protocol can be split into two categories: Core and Periphery.
 
-- Core contracts contain fundamental logic to create new Superforms and move liquidity and data across chains
-- Periphery contracts represent the main touchpoints for users to interface with and include helper contracts to ease 3rd party integrations
+- Core contracts contain logic to move liquidity and data across chains along with maintaining roles in the protocol
+- Periphery contracts contain the main touch-points for protocols and users to interface with and include helper contracts to ease 3rd party integrations
   
-<img width="1000" alt="Screenshot 2023-11-14 at 11 40 38 AM" src="https://github.com/superform-xyz/superform-core/assets/33469661/4f38849c-8dcd-4a59-b59d-b62a9eeafdba">
+![Superform__SuperformProtocol--Updated](https://github.com/superform-xyz/superform-core/assets/33469661/ee7a58fd-e18f-4244-92b0-7cb741ac1f45)
+
 
 ## Resources
 
@@ -53,8 +58,7 @@ This repository includes all of our contracts, but our protocol can be split int
 - `src` is the source folder for all smart contract code[`/src`](./src)
   - `crosschain-data` implements the sending of messages from chain to chain via various AMBs [`/src/crosschain-data`](./src/crosschain-data)
   - `crosschain-liquidity` implements the movement of tokens from chain to chain via bridge aggregators [`/src/crosschain-liquidity`](./src/crosschain-liquidity)
-  - `emergency` implements emergency queue triggered in pausing operations [`/src/emergency`](./src/emergency)
-  - `forms` implements types of yield that can be supported on Superform [`/src/forms`](./src/forms)
+  - `forms` implements types of yield that can be supported on Superform and introduces a queue when they are paused [`/src/forms`](./src/forms)
   - `interfaces` define interactions with other contracts [`/src/interfaces`](./src/interfaces)
   - `libraries` define functions used across other contracts [`/src/libraries`](./src/libraries)
   - `payments` implements the handling and processing of payments for cross-chain actions [`/src/payments`](./src/payments)
