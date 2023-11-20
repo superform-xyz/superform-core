@@ -1,5 +1,5 @@
 ///SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import { ERC165Checker } from "openzeppelin-contracts/contracts/utils/introspection/ERC165Checker.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
@@ -142,12 +142,8 @@ contract SuperformFactory is ISuperformFactory {
         uint256 len = superformIds_.length;
         superforms_ = new address[](len);
 
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             (superforms_[i],,) = superformIds_[i].getSuperform();
-
-            unchecked {
-                ++i;
-            }
         }
     }
 
@@ -162,11 +158,8 @@ contract SuperformFactory is ISuperformFactory {
         uint256 len = superformIds_.length;
         superforms_ = new address[](len);
 
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             (superforms_[i],,) = superformIds_[i].getSuperform();
-            unchecked {
-                ++i;
-            }
         }
     }
 

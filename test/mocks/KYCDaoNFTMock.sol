@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import { ERC721 } from "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 
@@ -9,12 +9,9 @@ contract KYCDaoNFTMock is ERC721 {
     constructor() ERC721("KYCDaoNFT", "KYCDaoNFT") { }
 
     function mint(address owner) public returns (uint256) {
-        unchecked {
-            ++tokenId;
-        }
+        ++tokenId;
 
         _mint(owner, tokenId);
-
         return tokenId;
     }
 

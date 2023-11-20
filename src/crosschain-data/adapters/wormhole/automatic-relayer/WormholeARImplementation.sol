@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";

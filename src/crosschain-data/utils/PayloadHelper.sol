@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
 import { ISuperPositions } from "../../interfaces/ISuperPositions.sol";
@@ -363,7 +363,7 @@ contract PayloadHelper is IPayloadHelper {
 
         uint256 len = imvd.liqData.length;
 
-        for (uint256 i = 0; i < len;) {
+        for (uint256 i = 0; i < len; ++i) {
             bridgeIds[i] = imvd.liqData[i].bridgeId;
             txDatas[i] = imvd.liqData[i].txData;
             tokens[i] = imvd.liqData[i].token;
@@ -376,9 +376,6 @@ contract PayloadHelper is IPayloadHelper {
             }
 
             nativeAmounts[i] = imvd.liqData[i].nativeAmount;
-            unchecked {
-                ++i;
-            }
         }
 
         return (bridgeIds, txDatas, tokens, liqDstChainIds, amountsIn, nativeAmounts);

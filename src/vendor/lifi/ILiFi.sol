@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 /// @title ILiFi
 /// @notice Interface containing useful structs when using LiFi as a bridge

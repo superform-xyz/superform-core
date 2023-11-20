@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import "./CommonProtocolActions.sol";
 import { IPermit2 } from "src/vendor/dragonfly-xyz/IPermit2.sol";
@@ -1114,10 +1114,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
                             continue;
                         }
                     }
-                    unchecked {
-                        PAYLOAD_ID[CHAIN_0]++;
-                    }
 
+                    PAYLOAD_ID[CHAIN_0]++;
                     success = _processPayload(PAYLOAD_ID[CHAIN_0], CHAIN_0, action.testType);
                 }
             }
@@ -1159,9 +1157,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 /// @dev if there is any reverting withdraw normal vault, process payload on src
                 if (revertingWithdrawSFs[i].length > 0) {
                     toAssert = true;
-                    unchecked {
-                        PAYLOAD_ID[CHAIN_0]++;
-                    }
+                    PAYLOAD_ID[CHAIN_0]++;
 
                     _processPayload(PAYLOAD_ID[CHAIN_0], CHAIN_0, action.testType);
                 }
@@ -1261,9 +1257,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
                 /// @dev if a payload exists to be processed, process it
                 if (_payload(address(timelockStateRegistry), CHAIN_0, TIMELOCK_PAYLOAD_ID[CHAIN_0] + 1).length > 0) {
-                    unchecked {
-                        TIMELOCK_PAYLOAD_ID[CHAIN_0]++;
-                    }
+                    TIMELOCK_PAYLOAD_ID[CHAIN_0]++;
+
                     IBaseStateRegistry timelockPayloadRegistry = IBaseStateRegistry(
                         ISuperRegistry(getContract(CHAIN_0, "SuperRegistry")).getAddress(
                             keccak256("TIMELOCK_STATE_REGISTRY")

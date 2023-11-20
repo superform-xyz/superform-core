@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import "./CommonProtocolActions.sol";
 import { IPermit2 } from "src/vendor/dragonfly-xyz/IPermit2.sol";
@@ -837,9 +837,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
             if (vars.CHAIN_0 != toChainId) {
                 if (action.testType == TestType.Pass) {
-                    unchecked {
-                        PAYLOAD_ID[vars.CHAIN_0]++;
-                    }
+                    PAYLOAD_ID[vars.CHAIN_0]++;
 
                     success = _processPayload(
                         PAYLOAD_ID[vars.CHAIN_0], vars.CHAIN_0, vars.CHAIN_0, vars.AMBs, action.testType

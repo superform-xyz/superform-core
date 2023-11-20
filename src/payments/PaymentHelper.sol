@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import { AggregatorV3Interface } from "../vendor/chainlink/AggregatorV3Interface.sol";
 import { IPaymentHelper } from "../interfaces/IPaymentHelper.sol";
@@ -150,7 +150,7 @@ contract PaymentHelper is IPaymentHelper {
         uint256 superformIdsLen;
         uint256 totalDstGas;
 
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             totalDstGas = 0;
 
             /// @dev step 1: estimate amb costs
@@ -193,10 +193,6 @@ contract PaymentHelper is IPaymentHelper {
 
             /// @dev step 7: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
-
-            unchecked {
-                ++i;
-            }
         }
 
         totalAmount = srcAmount + dstAmount + liqAmount;
@@ -213,7 +209,7 @@ contract PaymentHelper is IPaymentHelper {
         returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
     {
         uint256 len = req_.dstChainIds.length;
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             uint256 totalDstGas;
 
             /// @dev step 1: estimate amb costs
@@ -250,10 +246,6 @@ contract PaymentHelper is IPaymentHelper {
 
             /// @dev step 7: convert all dst gas estimates to src chain estimate
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
-
-            unchecked {
-                ++i;
-            }
         }
 
         totalAmount = srcAmount + dstAmount + liqAmount;
@@ -391,16 +383,12 @@ contract PaymentHelper is IPaymentHelper {
         returns (uint256 liqAmount, uint256 srcAmount, uint256 totalAmount)
     {
         uint256 len = req_.superformData.superformIds.length;
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             (, uint32 formId,) = req_.superformData.superformIds[i].getSuperform();
             uint256 timelockPrice = timelockCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
             /// @dev only if timelock form withdrawal is involved
             if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
                 srcAmount += timelockPrice;
-            }
-
-            unchecked {
-                ++i;
             }
         }
 
@@ -425,7 +413,7 @@ contract PaymentHelper is IPaymentHelper {
         uint256[] memory fees = new uint256[](len);
 
         /// @dev just checks the estimate for sending message from src -> dst
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             fees[i] = CHAIN_ID != dstChainId_
                 ? IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
                     dstChainId_, message_, extraData_[i]
@@ -433,10 +421,6 @@ contract PaymentHelper is IPaymentHelper {
                 : 0;
 
             totalFees += fees[i];
-
-            unchecked {
-                ++i;
-            }
         }
 
         return (totalFees, fees);
@@ -582,7 +566,7 @@ contract PaymentHelper is IPaymentHelper {
 
         extraDataPerAMB = new bytes[](len);
 
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             uint256 gasReq = i != 0 ? totalDstGasReqInWeiForProof : totalDstGasReqInWei;
 
             /// @dev amb id 1: layerzero
@@ -598,10 +582,6 @@ contract PaymentHelper is IPaymentHelper {
                 extraDataPerAMB[i] = abi.encode(gasReq);
             } else if (ambIds_[i] == 3) {
                 extraDataPerAMB[i] = abi.encode(0, gasReq);
-            }
-
-            unchecked {
-                ++i;
             }
         }
     }
@@ -659,7 +639,7 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev just checks the estimate for sending message from src -> dst
         /// @dev only ambIds_[0] = primary amb (rest of the ambs send only the proof)
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             uint256 tempFee = CHAIN_ID != dstChainId_
                 ? IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
                     dstChainId_, i != 0 ? proof_ : abi.encode(ambIdEncodedMessage), extraDataPerAMB[i]
@@ -667,10 +647,6 @@ contract PaymentHelper is IPaymentHelper {
                 : 0;
 
             totalFees += tempFee;
-
-            unchecked {
-                ++i;
-            }
         }
     }
 
@@ -696,7 +672,7 @@ contract PaymentHelper is IPaymentHelper {
         bytes memory proof_ = abi.encode(AMBMessage(type(uint256).max, abi.encode(keccak256(message_))));
 
         /// @dev just checks the estimate for sending message from src -> dst
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             uint256 tempFee = CHAIN_ID != dstChainId_
                 ? IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
                     dstChainId_, i != 0 ? proof_ : abi.encode(ambIdEncodedMessage), extraDataPerAMB[i]
@@ -705,22 +681,14 @@ contract PaymentHelper is IPaymentHelper {
 
             totalFees += tempFee;
             feeSplitUp[i] = tempFee;
-
-            unchecked {
-                ++i;
-            }
         }
     }
 
     /// @dev helps estimate the liq amount involved in the tx
     function _estimateLiqAmount(LiqRequest[] memory req_) internal pure returns (uint256 liqAmount) {
         uint256 len = req_.length;
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             liqAmount += req_[i].nativeAmount;
-
-            unchecked {
-                ++i;
-            }
         }
     }
 
@@ -740,13 +708,10 @@ contract PaymentHelper is IPaymentHelper {
         }
 
         uint256 len = hasDstSwaps_.length;
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             /// @dev checks if hasDstSwap is true
             if (hasDstSwaps_[i]) {
                 ++totalSwaps;
-            }
-            unchecked {
-                ++i;
             }
         }
 

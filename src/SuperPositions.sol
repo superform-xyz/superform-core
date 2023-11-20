@@ -1,5 +1,5 @@
 ///SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import { ERC1155A } from "ERC1155A/ERC1155A.sol";
 import { sERC20 } from "ERC1155A/sERC20.sol";
@@ -95,16 +95,12 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         /// if msg.sender isn't superformRouter then it must be state registry for that superform
         if (msg.sender != router) {
             uint256 len = superformIds.length;
-            for (uint256 i; i < len;) {
+            for (uint256 i; i < len; ++i) {
                 (, uint32 formBeaconId,) = DataLib.getSuperform(superformIds[i]);
                 uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
                 if (uint32(registryId) != formBeaconId) {
                     revert Error.NOT_MINTER();
-                }
-
-                unchecked {
-                    ++i;
                 }
             }
         }
@@ -320,12 +316,8 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     /// @dev helps validate the state registry id for minting superform id
     function _validateStateSyncer(uint256[] memory superformIds_) internal view {
         uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
-        for (uint256 i; i < superformIds_.length;) {
+        for (uint256 i; i < superformIds_.length; ++i) {
             _isValidStateSyncer(registryId, superformIds_[i]);
-
-            unchecked {
-                ++i;
-            }
         }
     }
 

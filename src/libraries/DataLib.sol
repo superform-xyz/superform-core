@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import { Error } from "../utils/Error.sol";
 
@@ -64,11 +64,8 @@ library DataLib {
         uint256 len = superformIds_.length;
         superforms_ = new address[](len);
 
-        for (uint256 i = 0; i < len;) {
+        for (uint256 i = 0; i < len; ++i) {
             (superforms_[i],,) = getSuperform(superformIds_[i]);
-            unchecked {
-                ++i;
-            }
         }
     }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -294,7 +294,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         failedDeposits_.lastProposedTimestamp = 0;
         IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
 
-        for (uint256 i; i < failedDeposits_.amounts.length;) {
+        for (uint256 i; i < failedDeposits_.amounts.length; ++i) {
             /// @dev refunds the amount to user specified refund address
             if (failedDeposits_.settleFromDstSwapper[i]) {
                 dstSwapper.processFailedTx(
@@ -304,9 +304,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 IERC20(failedDeposits_.settlementToken[i]).safeTransfer(
                     failedDeposits_.refundAddress, failedDeposits_.amounts[i]
                 );
-            }
-            unchecked {
-                ++i;
             }
         }
 
@@ -399,7 +396,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         }
 
         uint256 validLen;
-        for (uint256 i; i < arrLen;) {
+        for (uint256 i; i < arrLen; ++i) {
             if (finalAmounts_[i] == 0) {
                 revert Error.ZERO_AMOUNT();
             }
@@ -417,10 +414,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 finalState_,
                 validLen
             );
-
-            unchecked {
-                ++i;
-            }
         }
 
         /// @dev validLen > 0 for the cases where there was at least one deposit update that had valid slippage
@@ -434,18 +427,13 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             bool[] memory hasDstSwaps = new bool[](validLen);
 
             uint256 currLen;
-            for (uint256 i; i < arrLen;) {
+            for (uint256 i; i < arrLen; ++i) {
                 if (multiVaultData.amounts[i] != 0) {
                     finalSuperformIds[currLen] = multiVaultData.superformIds[i];
                     finalAmounts[currLen] = multiVaultData.amounts[i];
                     maxSlippage[currLen] = multiVaultData.maxSlippages[i];
                     hasDstSwaps[currLen] = multiVaultData.hasDstSwaps[i];
-                    unchecked {
-                        ++currLen;
-                    }
-                }
-                unchecked {
-                    ++i;
+                    ++currLen;
                 }
             }
 
@@ -601,7 +589,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     {
         uint256 len = multiVaultData_.liqData.length;
 
-        for (uint256 i = 0; i < len;) {
+        for (uint256 i = 0; i < len; ++i) {
             if (txData_[i].length != 0 && multiVaultData_.liqData[i].txData.length == 0) {
                 (address superform,,) = multiVaultData_.superformIds[i].getSuperform();
 
@@ -639,10 +627,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     multiVaultData_.liqData[i].txData = txData_[i];
                 }
             }
-
-            unchecked {
-                ++i;
-            }
         }
 
         return multiVaultData_;
@@ -663,7 +647,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         uint256 len = multiVaultData.superformIds.length;
         address superformFactory = superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"));
 
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < len; ++i) {
             // @dev validates if superformId exists on factory
             if (!ISuperformFactory(superformFactory).isSuperform(multiVaultData.superformIds[i])) {
                 revert Error.SUPERFORM_ID_NONEXISTENT();
@@ -693,10 +677,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             } catch {
                 /// @dev detect if there is at least one failed withdraw
                 errors = true;
-            }
-
-            unchecked {
-                ++i;
             }
         }
 
@@ -733,7 +713,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         bool fulfilment;
         bool errors;
         address superformFactory = _getAddress(keccak256("SUPERFORM_FACTORY"));
-        for (uint256 i; i < numberOfVaults;) {
+        for (uint256 i; i < numberOfVaults; ++i) {
             if (!ISuperformFactory(superformFactory).isSuperform(multiVaultData.superformIds[i])) {
                 revert Error.SUPERFORM_ID_NONEXISTENT();
             }
@@ -789,9 +769,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 } else {
                     revert Error.BRIDGE_TOKENS_PENDING();
                 }
-            }
-            unchecked {
-                ++i;
             }
         }
 

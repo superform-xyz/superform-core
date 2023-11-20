@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import { VaultSharesHandler } from "./handlers/VaultSharesHandler.sol";
 import { VaultSharesStore } from "./stores/VaultSharesStore.sol";

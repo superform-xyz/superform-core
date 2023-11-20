@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import { Error } from "src/utils/Error.sol";
 import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
@@ -118,9 +118,7 @@ contract BroadcastRegistry is IBroadcastRegistry {
         override
         onlyBroadcasterAMBImplementation
     {
-        unchecked {
-            ++payloadsCount;
-        }
+        ++payloadsCount;
 
         payload[payloadsCount] = message_;
         srcChainId[payloadsCount] = srcChainId_;

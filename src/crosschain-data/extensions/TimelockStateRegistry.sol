@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import { ReentrancyGuard } from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 import { IBaseForm } from "../../interfaces/IBaseForm.sol";
@@ -116,9 +116,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         override
         onlyTimelockSuperform(data_.superformId)
     {
-        unchecked {
-            ++timelockPayloadCounter;
-        }
+        ++timelockPayloadCounter;
 
         timelockPayload[timelockPayloadCounter] =
             TimelockPayload(type_, srcSender_, srcChainId_, lockedTill_, data_, TimelockStatus.PENDING);

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.21;
+pragma solidity ^0.8.23;
 
 import { Error } from "../utils/Error.sol";
 import { IQuorumManager } from "../interfaces/IQuorumManager.sol";
@@ -169,7 +169,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             data.params = message_.computeProofBytes();
 
             /// @dev i starts from 1 since 0 is primary amb id which dispatches the message itself
-            for (uint8 i = 1; i < len;) {
+            for (uint8 i = 1; i < len; ++i) {
                 if (ambIds_[i] == ambIds_[0]) {
                     revert Error.INVALID_PROOF_BRIDGE_ID();
                 }
@@ -182,10 +182,6 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
                 _getAMBImpl(ambIds_[i]).dispatchPayload{ value: d.gasPerAMB[i] }(
                     srcSender_, dstChainId_, abi.encode(data), d.extraDataPerAMB[i]
                 );
-
-                unchecked {
-                    ++i;
-                }
             }
         }
     }
