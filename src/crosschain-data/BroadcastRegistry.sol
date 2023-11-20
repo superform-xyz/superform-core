@@ -118,7 +118,9 @@ contract BroadcastRegistry is IBroadcastRegistry {
         override
         onlyBroadcasterAMBImplementation
     {
-        ++payloadsCount;
+        unchecked {
+            ++payloadsCount;
+        }
 
         payload[payloadsCount] = message_;
         srcChainId[payloadsCount] = srcChainId_;

@@ -24,8 +24,8 @@ contract SuperformFactory is ISuperformFactory {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
-    uint256 private constant NON_PAUSED = 1;
-    uint256 private constant PAUSED = 2;
+    uint8 private constant NON_PAUSED = 1;
+    uint8 private constant PAUSED = 2;
 
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
