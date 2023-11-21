@@ -24,7 +24,7 @@ This repository includes all of our contracts but our protocol can be split into
 - `Core` contracts contain logic to move liquidity and data across chains along with maintaining roles in the protocol
 - `Periphery` contracts contain the main touch-points for protocols and users to interface with and include helper contracts to ease 3rd party integrations
   
-<img width="1920" alt="Superform__SuperformDatatypesAndFunctions--DARK" src="https://github.com/superform-xyz/superform-core/assets/33469661/fa5a6f9a-9fbb-4348-abd4-adabdbdb7771">
+<img width="1920" alt="Superform__SuperformProtocol--DARK" src="https://github.com/superform-xyz/superform-core/assets/33469661/480377ac-3d3b-4aa2-b3b2-cddc51024a53">
 
 ## Resources
 
