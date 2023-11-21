@@ -8,7 +8,7 @@ The following components are a key part of Superform's robust crosschain communi
 
 ## Architecture
 
-![SuperformStateRegistry_All](https://github.com/superform-xyz/superform-core/assets/33469661/20673ed0-1769-4787-830c-0f0bba3535cd)
+![Superform__SuperformStateRegistry--LIGHT](https://github.com/superform-xyz/superform-core/assets/33469661/50d6990f-782b-49d6-b9c1-0ad9060c68cf)
 
 ## State Registry: Functional Description
 
