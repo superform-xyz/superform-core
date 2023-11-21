@@ -339,7 +339,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         IERC4626 vaultContract = IERC4626(vault);
 
         if (vaultContract.balanceOf(address(this)) < amount_) {
-            revert Error.EMERGENCY_WITHDRAW_INSUFFICIENT_BALANCE();
+            revert Error.INSUFFICIENT_BALANCE();
         }
 
         vaultContract.transfer(refundAddress_, amount_);
