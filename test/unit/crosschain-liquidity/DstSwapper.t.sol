@@ -619,15 +619,20 @@ contract DstSwapperTest is ProtocolActions {
         address superform = getContract(ETH, string.concat("DAI", "VaultMock", "Superform", "1"));
         uint256 superformId = DataLib.packSuperform(superform, 1, ETH);
 
-        vm.prank(getContract(ETH, "LayerzeroImplementation"));
 
         uint256[] memory superformIds = new uint256[](2);
         superformIds[0] = superformId;
         superformIds[1] = superformId;
 
+        (, int256 USDPerSendingTokenDst,,,) = AggregatorV3Interface(tokenPriceFeeds[ETH][NATIVE]).latestRoundData();
+        (, int256 USDPerReceivingTokenDst,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[ETH][getContract(ETH, "DAI")]).latestRoundData();
+
+        uint256 amount = (1e18 * uint256(USDPerSendingTokenDst)) / uint256(USDPerReceivingTokenDst);
+
         uint256[] memory amounts = new uint256[](2);
-        amounts[0] = 1e18;
-        amounts[1] = 1e18;
+        amounts[0] = amount;
+        amounts[1] = amount;
 
         bool[] memory hasDstSwaps = new bool[](2);
         hasDstSwaps[0] = true;
@@ -637,7 +642,7 @@ contract DstSwapperTest is ProtocolActions {
 
         uint8[] memory ambIds_ = new uint8[](1);
         ambIds_[0] = 1;
-
+        vm.prank(getContract(ETH, "LayerzeroImplementation"));
         CoreStateRegistry(coreStateRegistry).receivePayload(
             POLY,
             abi.encode(
