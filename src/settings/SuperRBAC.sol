@@ -189,6 +189,9 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     /// @inheritdoc ISuperRBAC
     function stateSyncBroadcast(bytes memory data_) external override onlyBroadcastRegistry {
         BroadcastMessage memory rolesPayload = abi.decode(data_, (BroadcastMessage));
+        if (rolesPayload.messageType != SYNC_REVOKE) {
+            revert Error.INVALID_MESSAGE_TYPE();
+        }
         if (rolesPayload.messageType == SYNC_REVOKE) {
             (, bytes32 role, bytes32 superRegistryAddressId) =
                 abi.decode(rolesPayload.message, (uint256, bytes32, bytes32));

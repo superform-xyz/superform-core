@@ -302,6 +302,9 @@ library Error {
     /// @dev thrown if broadcast fee is invalid
     error INVALID_BROADCAST_FEE();
 
+    /// @dev thrown if broadcast message type is wrong
+    error INVALID_MESSAGE_TYPE();
+
     /// @dev thrown if payload hash is invalid during `retryMessage` on Layezero implementation
     error INVALID_PAYLOAD_HASH();
 

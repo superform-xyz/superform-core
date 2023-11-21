@@ -13,6 +13,7 @@ import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { IERC4626Form } from "../forms/interfaces/IERC4626Form.sol";
 import { Error } from "../utils/Error.sol";
 import { DataLib } from "../libraries/DataLib.sol";
+import { PayloadUpdaterLib } from "../libraries/PayloadUpdaterLib.sol";
 import "../types/DataTypes.sol";
 
 /// @title DstSwapper
@@ -276,9 +277,10 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         }
 
         v.balanceDiff = v.balanceAfter - v.balanceBefore;
+
         /// @dev if actual underlying is less than expAmount adjusted
         /// with maxSlippage, invariant breaks
-        if (v.balanceDiff < ((v.expAmount * (10_000 - v.maxSlippage)) / 10_000)) {
+        if (!PayloadUpdaterLib.validateSlippage(v.balanceDiff, v.expAmount, v.maxSlippage)) {
             revert Error.MAX_SLIPPAGE_INVARIANT_BROKEN();
         }
 

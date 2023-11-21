@@ -285,6 +285,9 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     function stateSyncBroadcast(bytes memory data_) external payable override onlyBroadcastRegistry {
         BroadcastMessage memory transmuterPayload = abi.decode(data_, (BroadcastMessage));
 
+        if (transmuterPayload.messageType != DEPLOY_NEW_SERC20) {
+            revert Error.INVALID_MESSAGE_TYPE();
+        }
         if (transmuterPayload.messageType == DEPLOY_NEW_SERC20) {
             _deployTransmuter(transmuterPayload.message);
         }
