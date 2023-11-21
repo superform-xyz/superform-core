@@ -31,31 +31,7 @@ library PayloadUpdaterLib {
 
         return true;
     }
-
-    function strictValidateSlippage(
-        uint256 newAmount_,
-        uint256 maxAmount_,
-        uint256 slippage_
-    )
-        internal
-        pure
-        returns (bool valid_)
-    {
-        /// @dev args validation
-        if (newAmount_ > maxAmount_) {
-            revert Error.NEGATIVE_SLIPPAGE();
-        }
-
-        uint256 minAmount = (maxAmount_ * (10_000 - slippage_)) / 10_000;
-
-        /// @dev amount must fall within the slippage bounds
-        if (newAmount_ < minAmount) {
-            revert Error.SLIPPAGE_OUT_OF_BOUNDS();
-        }
-
-        return true;
-    }
-
+ 
     function validateLiqReq(LiqRequest memory req_) internal pure {
         /// req token should be address(0)
         /// req tx data length should be 0

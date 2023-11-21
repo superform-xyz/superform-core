@@ -148,6 +148,10 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
 
     /// @inheritdoc ISuperRBAC
     function setSuperRegistry(address superRegistry_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
+        if (address(superRegistry) != address(0)) revert Error.DISABLED();
+
+        if (superRegistry_ == address(0)) revert Error.ZERO_ADDRESS();
+
         superRegistry = ISuperRegistry(superRegistry_);
     }
 

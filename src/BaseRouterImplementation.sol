@@ -533,13 +533,13 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         (uint256 fees, bytes memory extraData) = IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER")))
             .calculateAMBData(vars_.dstChainId, vars_.ambIds, abi.encode(ambMessage));
 
+        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).updateTxHistory(
+            vars_.currentPayloadId, ambMessage.txInfo
+        );
+
         /// @dev this call dispatches the message to the AMB bridge through dispatchPayload
         IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY"))).dispatchPayload{ value: fees }(
             vars_.srcSender, vars_.ambIds, vars_.dstChainId, abi.encode(ambMessage), extraData
-        );
-
-        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).updateTxHistory(
-            vars_.currentPayloadId, ambMessage.txInfo
         );
     }
 
