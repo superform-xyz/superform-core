@@ -23,9 +23,30 @@ contract SuperRBACTest is BaseSetup {
     }
 
     function test_setSuperRegistry() public {
-        vm.prank(deployer);
-        superRBAC.setSuperRegistry(address(0x1));
-        assertEq(address(superRBAC.superRegistry()), address(0x1));
+        vm.startPrank(deployer);
+        SuperRBAC newReg = new SuperRBAC(ISuperRBAC.InitialRoleSetup({
+                        admin: deployer,
+                        emergencyAdmin: deployer,
+                        paymentAdmin: deployer,
+                        csrProcessor: deployer,
+                        tlProcessor: deployer,
+                        brProcessor: deployer,
+                        csrUpdater: deployer,
+                        srcVaaRelayer: deployer,
+                        dstSwapper: deployer,
+                        csrRescuer: deployer,
+                        csrDisputer: deployer
+                    }));
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        newReg.setSuperRegistry(address(0));
+
+        newReg.setSuperRegistry(address(0x1));
+        assertEq(address(newReg.superRegistry()), address(0x1));
+
+        vm.expectRevert(Error.DISABLED.selector);
+        newReg.setSuperRegistry(address(0x1));
+
+        vm.stopPrank();
     }
 
     function test_grantProtocolAdminRole() public {

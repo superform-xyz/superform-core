@@ -148,6 +148,10 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
 
     /// @inheritdoc ISuperRBAC
     function setSuperRegistry(address superRegistry_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
+        if (address(superRegistry) != address(0)) revert Error.DISABLED();
+
+        if (superRegistry_ == address(0)) revert Error.ZERO_ADDRESS();
+
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
@@ -185,18 +189,18 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     /// @inheritdoc ISuperRBAC
     function stateSyncBroadcast(bytes memory data_) external override onlyBroadcastRegistry {
         BroadcastMessage memory rolesPayload = abi.decode(data_, (BroadcastMessage));
-        if (rolesPayload.messageType == SYNC_REVOKE) {
-            (, bytes32 role, bytes32 superRegistryAddressId) =
-                abi.decode(rolesPayload.message, (uint256, bytes32, bytes32));
-            /// @dev broadcasting cannot update the PROTOCOL_ADMIN_ROLE, EMERGENCY_ADMIN_ROLE, BROADCASTER_ROLE
-            /// and WORMHOLE_VAA_RELAYER_ROLE
-            if (
-                !(
-                    role == PROTOCOL_ADMIN_ROLE || role == EMERGENCY_ADMIN_ROLE || role == BROADCASTER_ROLE
-                        || role == WORMHOLE_VAA_RELAYER_ROLE
-                )
-            ) _revokeRole(role, superRegistry.getAddress(superRegistryAddressId));
+        if (rolesPayload.messageType != SYNC_REVOKE) {
+            revert Error.INVALID_MESSAGE_TYPE();
         }
+        (, bytes32 role, bytes32 superRegistryAddressId) = abi.decode(rolesPayload.message, (uint256, bytes32, bytes32));
+        /// @dev broadcasting cannot update the PROTOCOL_ADMIN_ROLE, EMERGENCY_ADMIN_ROLE, BROADCASTER_ROLE
+        /// and WORMHOLE_VAA_RELAYER_ROLE
+        if (
+            !(
+                role == PROTOCOL_ADMIN_ROLE || role == EMERGENCY_ADMIN_ROLE || role == BROADCASTER_ROLE
+                    || role == WORMHOLE_VAA_RELAYER_ROLE
+            )
+        ) _revokeRole(role, superRegistry.getAddress(superRegistryAddressId));
     }
 
     //////////////////////////////////////////////////////////////

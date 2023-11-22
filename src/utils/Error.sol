@@ -305,6 +305,9 @@ library Error {
     /// @dev thrown if broadcast fee is invalid
     error INVALID_BROADCAST_FEE();
 
+    /// @dev thrown if broadcast message type is wrong
+    error INVALID_MESSAGE_TYPE();
+
     /// @dev thrown if payload hash is invalid during `retryMessage` on Layezero implementation
     error INVALID_PAYLOAD_HASH();
 
@@ -354,9 +357,6 @@ library Error {
 
     /// @dev thrown if dst swap output is less than minimum expected
     error INVALID_SWAP_OUTPUT();
-
-    /// @dev thrown if actual amount recieved is less than the ideal amount adjusted with max slippage
-    error MAX_SLIPPAGE_INVARIANT_BROKEN();
 
     /// @dev thrown if failed swap token amount is 0 or balance is less than amount (non zero)
     error INVALID_DST_SWAPPER_FAILED_SWAP();
