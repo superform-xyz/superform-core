@@ -10,7 +10,7 @@ import { IBaseForm } from "./interfaces/IBaseForm.sol";
 import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
 import { ISuperRBAC } from "./interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
-import { Error } from "./utils/Error.sol";
+import { Error } from "./libraries/Error.sol";
 import { DataLib } from "./libraries/DataLib.sol";
 import { Clones } from "openzeppelin-contracts/contracts/proxy/Clones.sol";
 

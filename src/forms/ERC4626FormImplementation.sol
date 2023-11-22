@@ -9,7 +9,7 @@ import { LiquidityHandler } from "../crosschain-liquidity/LiquidityHandler.sol";
 import { InitSingleVaultData } from "../types/DataTypes.sol";
 import { BaseForm } from "../BaseForm.sol";
 import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
-import { Error } from "../utils/Error.sol";
+import { Error } from "../libraries/Error.sol";
 import { DataLib } from "../libraries/DataLib.sol";
 
 /// @title ERC4626FormImplementation

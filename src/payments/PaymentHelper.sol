@@ -7,7 +7,7 @@ import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
 import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
-import { Error } from "../utils/Error.sol";
+import { Error } from "../libraries/Error.sol";
 import { DataLib } from "../libraries/DataLib.sol";
 import { ProofLib } from "../libraries/ProofLib.sol";
 import { ArrayCastLib } from "../libraries/ArrayCastLib.sol";

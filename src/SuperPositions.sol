@@ -19,7 +19,7 @@ import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
 import { IPaymentHelper } from "./interfaces/IPaymentHelper.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
 /// @title SuperPositions

@@ -6,7 +6,7 @@ import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { AMBMessage } from "src/types/DataTypes.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { ILayerZeroReceiver } from "src/vendor/layerzero/ILayerZeroReceiver.sol";
 import { ILayerZeroUserApplicationConfig } from "src/vendor/layerzero/ILayerZeroUserApplicationConfig.sol";
 import { ILayerZeroEndpoint } from "src/vendor/layerzero/ILayerZeroEndpoint.sol";

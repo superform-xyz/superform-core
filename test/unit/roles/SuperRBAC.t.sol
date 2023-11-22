@@ -8,7 +8,7 @@ import { BroadcastRegistry } from "src/crosschain-data/BroadcastRegistry.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { SuperRBAC } from "src/settings/SuperRBAC.sol";
 
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 
 contract SuperRBACTest is BaseSetup {
     SuperRBAC public superRBAC;

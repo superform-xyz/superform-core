@@ -13,7 +13,7 @@ import { ITimelockStateRegistry } from "../../interfaces/ITimelockStateRegistry.
 import { IBaseStateRegistry } from "../../interfaces/IBaseStateRegistry.sol";
 import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
 import { IPaymentHelper } from "../../interfaces/IPaymentHelper.sol";
-import { Error } from "../../utils/Error.sol";
+import { Error } from "../../libraries/Error.sol";
 import { BaseStateRegistry } from "../BaseStateRegistry.sol";
 import { ProofLib } from "../../libraries/ProofLib.sol";
 import { DataLib } from "../../libraries/DataLib.sol";

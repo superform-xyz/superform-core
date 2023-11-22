@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import { DataLib } from "./DataLib.sol";
-import { Error } from "../utils/Error.sol";
+import { Error } from "../libraries/Error.sol";
 import { LiqRequest } from "../types/LiquidityTypes.sol";
 import { PayloadState, TransactionType, CallbackType } from "../types/DataTypes.sol";
 

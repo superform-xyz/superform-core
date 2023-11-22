@@ -12,7 +12,7 @@ import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
 import { ITimelockStateRegistry } from "../interfaces/ITimelockStateRegistry.sol";
 import { IEmergencyQueue } from "../interfaces/IEmergencyQueue.sol";
 import { DataLib } from "../libraries/DataLib.sol";
-import { Error } from "../utils/Error.sol";
+import { Error } from "../libraries/Error.sol";
 
 /// @title ERC4626TimelockForm
 /// @notice Form implementation to handle timelock extension for ERC4626 vaults

@@ -5,7 +5,7 @@ pragma solidity ^0.8.23;
 // import { TransactionType, CallbackType, AMBMessage } from "src/types/DataTypes.sol";
 // import { DataLib } from "src/libraries/DataLib.sol";
 // import { FactoryStateRegistry } from "src/crosschain-data/extensions/FactoryStateRegistry.sol";
-// import { Error } from "src/utils/Error.sol";
+// import { Error } from "src/libraries/Error.sol";
 
 // contract BroadcasterTest is BaseSetup {
 //     FactoryStateRegistry public factoryStateRegistry;

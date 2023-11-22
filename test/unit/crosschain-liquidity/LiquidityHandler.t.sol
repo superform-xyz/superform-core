@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import { LiquidityHandler } from "src/crosschain-liquidity/LiquidityHandler.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import "test/utils/ProtocolActions.sol";
 
 contract LiquidityHandlerUser is LiquidityHandler {

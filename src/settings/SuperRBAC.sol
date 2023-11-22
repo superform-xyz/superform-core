@@ -5,7 +5,7 @@ import { AccessControlEnumerable } from "openzeppelin-contracts/contracts/access
 import { IBroadcastRegistry } from "../interfaces/IBroadcastRegistry.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
-import { Error } from "../utils/Error.sol";
+import { Error } from "../libraries/Error.sol";
 import { BroadcastMessage } from "../types/DataTypes.sol";
 
 /// @title SuperRBAC

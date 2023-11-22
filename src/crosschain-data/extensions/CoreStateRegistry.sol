@@ -17,7 +17,7 @@ import { DataLib } from "../../libraries/DataLib.sol";
 import { ProofLib } from "../../libraries/ProofLib.sol";
 import { ArrayCastLib } from "../../libraries/ArrayCastLib.sol";
 import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
-import { Error } from "../../utils/Error.sol";
+import { Error } from "../../libraries/Error.sol";
 import {
     PayloadState,
     AMBMessage,

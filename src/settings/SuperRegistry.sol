@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { QuorumManager } from "../crosschain-data/utils/QuorumManager.sol";
-import { Error } from "../utils/Error.sol";
+import { Error } from "../libraries/Error.sol";
 
 /// @title SuperRegistry
 /// @author Zeropoint Labs.

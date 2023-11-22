@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.23;
 
-import { Error } from "../utils/Error.sol";
+import { Error } from "../libraries/Error.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { IPayMaster } from "../interfaces/IPayMaster.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";

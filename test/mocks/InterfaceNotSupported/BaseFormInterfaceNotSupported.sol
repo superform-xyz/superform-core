@@ -6,7 +6,7 @@ import { ERC165 } from "openzeppelin-contracts/contracts/utils/introspection/ERC
 import { InitSingleVaultData } from "src/types/DataTypes.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { IEmergencyQueue } from "src/interfaces/IEmergencyQueue.sol";

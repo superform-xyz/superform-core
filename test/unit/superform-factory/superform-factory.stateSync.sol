@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import "test/utils/ProtocolActions.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 
 contract SuperformFactoryStateSyncTest is BaseSetup {
     function setUp() public override {
