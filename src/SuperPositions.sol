@@ -288,9 +288,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         if (transmuterPayload.messageType != DEPLOY_NEW_SERC20) {
             revert Error.INVALID_MESSAGE_TYPE();
         }
-        if (transmuterPayload.messageType == DEPLOY_NEW_SERC20) {
-            _deployTransmuter(transmuterPayload.message);
-        }
+        _deployTransmuter(transmuterPayload.message);
     }
 
     /// @inheritdoc ISuperPositions

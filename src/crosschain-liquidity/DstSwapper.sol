@@ -281,7 +281,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         /// @dev if actual underlying is less than expAmount adjusted
         /// with maxSlippage, invariant breaks
         if (!PayloadUpdaterLib.validateSlippage(v.balanceDiff, v.expAmount, v.maxSlippage)) {
-            revert Error.MAX_SLIPPAGE_INVARIANT_BROKEN();
+            revert Error.SLIPPAGE_OUT_OF_BOUNDS();
         }
 
         /// @dev updates swapped amount

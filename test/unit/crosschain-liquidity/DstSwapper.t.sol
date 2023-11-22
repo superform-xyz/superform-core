@@ -476,7 +476,7 @@ contract DstSwapperTest is ProtocolActions {
             1, getContract(ETH, "WETH"), getContract(ETH, "DAI"), dstSwapper, ETH, 1e17, 1001
         );
         /// @dev txData with amount 0 should revert
-        vm.expectRevert(Error.MAX_SLIPPAGE_INVARIANT_BROKEN.selector);
+        vm.expectRevert(Error.SLIPPAGE_OUT_OF_BOUNDS.selector);
         DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
     }
 
@@ -618,7 +618,6 @@ contract DstSwapperTest is ProtocolActions {
         /// simulate an existing payload in csr
         address superform = getContract(ETH, string.concat("DAI", "VaultMock", "Superform", "1"));
         uint256 superformId = DataLib.packSuperform(superform, 1, ETH);
-
 
         uint256[] memory superformIds = new uint256[](2);
         superformIds[0] = superformId;

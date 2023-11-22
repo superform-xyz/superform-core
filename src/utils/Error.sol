@@ -355,9 +355,6 @@ library Error {
     /// @dev thrown if dst swap output is less than minimum expected
     error INVALID_SWAP_OUTPUT();
 
-    /// @dev thrown if actual amount recieved is less than the ideal amount adjusted with max slippage
-    error MAX_SLIPPAGE_INVARIANT_BROKEN();
-
     /// FORM EXECUTION ERRORS
     /// @dev thrown in KYCDAO form if no KYC token is present
     error NO_VALID_KYC_TOKEN();
