@@ -56,6 +56,13 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         _;
     }
 
+    modifier onlyEmergencyAdmin() {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasEmergencyAdminRole(msg.sender)) {
+            revert Error.NOT_EMERGENCY_ADMIN();
+        }
+        _;
+    }
+
     modifier onlyValidStateRegistry() {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.NOT_STATE_REGISTRY();
@@ -134,7 +141,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     }
 
     /// @dev allows protocol admin to unblock queue of messages if needed
-    function forceResumeReceive(uint16 srcChainId_, bytes calldata srcAddress_) external override onlyProtocolAdmin {
+    function forceResumeReceive(uint16 srcChainId_, bytes calldata srcAddress_) external override onlyEmergencyAdmin {
         lzEndpoint.forceResumeReceive(srcChainId_, srcAddress_);
     }
 
