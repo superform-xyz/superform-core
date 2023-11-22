@@ -258,7 +258,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     function nonblockingLzReceive(uint16 srcChainId_, bytes memory srcAddress_, bytes memory payload_) public {
         // only internal transaction
         if (msg.sender != address(this)) {
-            revert Error.CALLER_NOT_ENDPOINT();
+            revert Error.INVALID_INTERNAL_CALL();
         }
 
         _nonblockingLzReceive(srcChainId_, srcAddress_, payload_);

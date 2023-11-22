@@ -34,6 +34,9 @@ library Error {
     ///@notice errors thrown if functions cannot be called
 
     /// COMMON AUTHORIZATION ERRORS
+    /// @dev thrown if caller is not address(this), internal call
+    error INVALID_INTERNAL_CALL();
+
     /// @dev thrown if msg.sender is not a valid amb implementation
     error NOT_AMB_IMPLEMENTATION();
 
