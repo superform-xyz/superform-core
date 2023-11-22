@@ -103,6 +103,20 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
     {
         interimToken = failedSwap[payloadId_][index_].interimToken;
         amount = failedSwap[payloadId_][index_].amount;
+
+        if (amount == 0) {
+            revert Error.INVALID_DST_SWAPPER_FAILED_SWAP();
+        } else {
+            if (interimToken == NATIVE) {
+                if (address(this).balance < amount) {
+                    revert Error.INVALID_DST_SWAPPER_FAILED_SWAP();
+                }
+            } else {
+                if (IERC20(interimToken).balanceOf(address(this)) < amount) {
+                    revert Error.INVALID_DST_SWAPPER_FAILED_SWAP();
+                }
+            }
+        }
     }
 
     //////////////////////////////////////////////////////////////
@@ -308,6 +322,20 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
 
         if (failedSwap[payloadId_][index_].amount != 0) {
             revert Error.FAILED_DST_SWAP_ALREADY_UPDATED();
+        }
+
+        if (amount_ == 0) {
+            revert Error.ZERO_AMOUNT();
+        }
+
+        if (interimToken_ != NATIVE) {
+            if (IERC20(interimToken_).balanceOf(address(this)) < amount_) {
+                revert Error.INSUFFICIENT_BALANCE();
+            }
+        } else {
+            if (address(this).balance < amount_) {
+                revert Error.INSUFFICIENT_BALANCE();
+            }
         }
 
         /// @dev updates swapped amount

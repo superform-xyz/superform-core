@@ -68,6 +68,11 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
     }
 
     /// @inheritdoc BaseForm
+    function getTotalSupply() public view virtual override returns (uint256) {
+        return IERC4626(vault).totalSupply();
+    }
+
+    /// @inheritdoc BaseForm
     function getPreviewPricePerVaultShare() public view virtual override returns (uint256) {
         uint256 vaultDecimals = IERC4626(vault).decimals();
         return IERC4626(vault).previewRedeem(10 ** vaultDecimals);
@@ -339,7 +344,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         IERC4626 vaultContract = IERC4626(vault);
 
         if (vaultContract.balanceOf(address(this)) < amount_) {
-            revert Error.EMERGENCY_WITHDRAW_INSUFFICIENT_BALANCE();
+            revert Error.INSUFFICIENT_BALANCE();
         }
 
         vaultContract.transfer(refundAddress_, amount_);
