@@ -520,7 +520,12 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         /// @dev validate payload update
         /// @dev validLen may only be increased here in the case where slippage for the update is valid
         if (!failedSwapQueued) {
-            if (PayloadUpdaterLib.validateSlippage(finalAmount_, amount_, maxSlippage_)) {
+            address superformFactory = _getAddress(keccak256("SUPERFORM_FACTORY"));
+            /// if the slippage is within allowed amount && the superform id also exists
+            if (
+                PayloadUpdaterLib.validateSlippage(finalAmount_, amount_, maxSlippage_)
+                    && ISuperformFactory(superformFactory).isSuperform(superformId_)
+            ) {
                 /// @dev sets amount to finalAmount_ and will mark the payload as UPDATED
                 amount_ = finalAmount_;
                 finalState_ = PayloadState.UPDATED;
@@ -714,9 +719,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         bool errors;
         address superformFactory = _getAddress(keccak256("SUPERFORM_FACTORY"));
         for (uint256 i; i < numberOfVaults; ++i) {
-            if (!ISuperformFactory(superformFactory).isSuperform(multiVaultData.superformIds[i])) {
-                revert Error.SUPERFORM_ID_NONEXISTENT();
-            }
             /// @dev if updating the deposit payload fails because of slippage, multiVaultData.amounts[i] is set to 0
             /// @dev this means that this amount was already added to the failedDeposits state variable and should not
             /// be re-added (or processed here)
@@ -838,12 +840,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
 
-        if (!ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(singleVaultData.superformId)) {
-            revert Error.SUPERFORM_ID_NONEXISTENT();
-        }
-
         (address superform_,,) = singleVaultData.superformId.getSuperform();
-
         IERC20 underlying = IERC20(IBaseForm(superform_).getVaultAsset());
 
         if (underlying.balanceOf(address(this)) >= singleVaultData.amount) {
