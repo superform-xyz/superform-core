@@ -246,7 +246,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         if (
             !(
                 srcAddress_.length == trustedRemote.length && keccak256(srcAddress_) == keccak256(trustedRemote)
-                    && trustedRemote.length > 0
+                    && trustedRemote.length != 0
             )
         ) {
             revert Error.INVALID_SRC_SENDER();

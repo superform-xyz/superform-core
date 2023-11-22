@@ -239,7 +239,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         pure
         returns (bytes memory hookMetaData)
     {
-        if (extraData_.length > 0) {
+        if (extraData_.length != 0) {
             // extra data is encoded gas limit on dst chain
             uint256 gasLimit = abi.decode(extraData_, (uint256));
             hookMetaData = StandardHookMetadata.formatMetadata(gasLimit, srcSender_);

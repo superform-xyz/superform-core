@@ -882,7 +882,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     function _processAck(uint256 payloadId_, uint64 srcChainId_, bytes memory returnMessage_) internal {
         /// @dev if deposits succeeded or some withdrawal failed, dispatch a callback
-        if (returnMessage_.length > 0) {
+        if (returnMessage_.length != 0) {
             uint8[] memory ambIds = msgAMBs[payloadId_];
 
             (, bytes memory extraData) = IPaymentHelper(_getAddress(keccak256("PAYMENT_HELPER"))).calculateAMBData(

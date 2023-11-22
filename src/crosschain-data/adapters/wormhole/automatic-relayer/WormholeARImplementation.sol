@@ -109,7 +109,7 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         uint256 dstNativeAirdrop;
         uint256 dstGasLimit;
 
-        if (extraData_.length > 0) {
+        if (extraData_.length != 0) {
             (dstNativeAirdrop, dstGasLimit) = abi.decode(extraData_, (uint256, uint256));
         }
 

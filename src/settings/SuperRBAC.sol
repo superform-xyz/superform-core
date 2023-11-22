@@ -174,7 +174,7 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
                 || role_ == WORMHOLE_VAA_RELAYER_ROLE
         ) revert Error.CANNOT_REVOKE_NON_BROADCASTABLE_ROLES();
         _revokeRole(role_, superRegistry.getAddress(superRegistryAddressId_));
-        if (extraData_.length > 0) {
+        if (extraData_.length != 0) {
             BroadcastMessage memory rolesPayload = BroadcastMessage(
                 "SUPER_RBAC", SYNC_REVOKE, abi.encode(++xChainPayloadCounter, role_, superRegistryAddressId_)
             );

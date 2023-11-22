@@ -253,7 +253,7 @@ contract SuperformFactory is ISuperformFactory {
         formImplementationPaused[formImplementationId_] = status_;
 
         /// @dev broadcast the change in status to the other destination chains
-        if (extraData_.length > 0) {
+        if (extraData_.length != 0) {
             BroadcastMessage memory factoryPayload = BroadcastMessage(
                 "SUPERFORM_FACTORY",
                 SYNC_IMPLEMENTATION_STATUS,

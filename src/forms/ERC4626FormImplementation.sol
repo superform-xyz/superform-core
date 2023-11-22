@@ -171,7 +171,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         /// @dev non empty txData means there is a swap needed before depositing (input asset not the same as vault
         /// asset)
-        if (singleVaultData_.liqData.txData.length > 0) {
+        if (singleVaultData_.liqData.txData.length != 0) {
             vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
 
             vars.chainId = CHAIN_ID;

@@ -59,7 +59,7 @@ library PayloadUpdaterLib {
     function validateLiqReq(LiqRequest memory req_) internal pure {
         /// req token should be address(0)
         /// req tx data length should be 0
-        if (req_.token != address(0) && req_.txData.length > 0) {
+        if (req_.token != address(0) && req_.txData.length != 0) {
             revert Error.CANNOT_UPDATE_WITHDRAW_TX_DATA();
         }
     }
