@@ -4,7 +4,6 @@ pragma solidity ^0.8.23;
 import "forge-std/Test.sol";
 
 import { Error } from "src/utils/Error.sol";
-import { LiqRequest } from "src/types/LiquidityTypes.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { PayloadUpdaterLib } from "src/libraries/PayloadUpdaterLib.sol";
 import "src/types/DataTypes.sol";

@@ -12,7 +12,6 @@ import { DataLib } from "../libraries/DataLib.sol";
 import { ProofLib } from "../libraries/ProofLib.sol";
 import { ArrayCastLib } from "../libraries/ArrayCastLib.sol";
 import "../types/DataTypes.sol";
-import "../types/LiquidityTypes.sol";
 
 /// @dev interface to read public variable from state registry
 interface ReadOnlyBaseRegistry is IBaseStateRegistry {

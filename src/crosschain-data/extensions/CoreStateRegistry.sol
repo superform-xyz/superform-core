@@ -26,9 +26,9 @@ import {
     CallbackType,
     ReturnMultiData,
     ReturnSingleData,
-    InitSingleVaultData
+    InitSingleVaultData,
+    LiqRequest
 } from "../../types/DataTypes.sol";
-import { LiqRequest } from "../../types/LiquidityTypes.sol";
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
 /// @dev enables communication between Superform Core Contracts deployed on all supported networks

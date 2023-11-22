@@ -8,7 +8,7 @@ import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
 import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
 import { LiquidityHandler } from "../crosschain-liquidity/LiquidityHandler.sol";
-import "../types/LiquidityTypes.sol";
+import { LiqRequest } from "../types/DataTypes.sol";
 
 /// @title PayMaster
 /// @author ZeroPoint Labs

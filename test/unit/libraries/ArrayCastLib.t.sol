@@ -4,8 +4,7 @@ pragma solidity ^0.8.23;
 import "forge-std/Test.sol";
 
 import { ArrayCastLib } from "src/libraries/ArrayCastLib.sol";
-import { LiqRequest } from "src/types/LiquidityTypes.sol";
-import { InitSingleVaultData, InitMultiVaultData } from "src/types/DataTypes.sol";
+import { InitSingleVaultData, InitMultiVaultData, LiqRequest } from "src/types/DataTypes.sol";
 
 contract ArrayCastLibUser {
     function castLiqRequestToArray(LiqRequest memory a) external pure returns (LiqRequest[] memory) {

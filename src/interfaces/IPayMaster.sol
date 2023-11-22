@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.23;
 
-import "../types/LiquidityTypes.sol";
+import { LiqRequest } from "../types/DataTypes.sol";
 
 /// @title IPayMaster
 /// @author ZeroPoint Labs
