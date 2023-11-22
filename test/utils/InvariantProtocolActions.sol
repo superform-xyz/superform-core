@@ -1055,7 +1055,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         /// @dev the actual liq request struct inscription
         v.liqReq = LiqRequest(
-            args.liqBridge, v.txData, liqRequestToken, args.toChainId, liqRequestToken == NATIVE_TOKEN ? args.amount : 0
+            v.txData, liqRequestToken, args.liqBridge, args.toChainId, liqRequestToken == NATIVE_TOKEN ? args.amount : 0
         );
 
         if (liqRequestToken != NATIVE_TOKEN) {
@@ -1220,10 +1220,10 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         vars.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, args.toChainId == args.liqDstChainId);
 
         vars.liqReq = LiqRequest(
-            args.liqBridge,
             vars.txData,
             /// @dev for certain test cases, insert txData as null here
             args.underlyingTokenDst,
+            args.liqBridge,
             args.liqDstChainId,
             0
         );

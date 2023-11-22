@@ -1700,7 +1700,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         /// @dev the actual liq request struct inscription
         v.liqReq = LiqRequest(
-            args.liqBridge, v.txData, liqRequestToken, args.toChainId, liqRequestToken == NATIVE_TOKEN ? args.amount : 0
+            v.txData, liqRequestToken, args.liqBridge, args.toChainId, liqRequestToken == NATIVE_TOKEN ? args.amount : 0
         );
 
         if (liqRequestToken != NATIVE_TOKEN) {
@@ -1868,10 +1868,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
         }
 
         vars.liqReq = LiqRequest(
-            args.liqBridge,
             GENERATE_WITHDRAW_TX_DATA_ON_DST ? bytes("") : vars.txData,
             /// @dev for certain test cases, insert txData as null here
             args.underlyingTokenDst,
+            args.liqBridge,
             args.liqDstChainId,
             0
         );
@@ -3449,7 +3449,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
             2e18,
             1000,
             LiqRequest(
-                1,
                 _buildLiqBridgeTxData(
                     LiqBridgeTxDataArgs(
                         1,
@@ -3474,6 +3473,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     false
                 ),
                 getContract(ETH, "DAI"),
+                1,
                 ARBI,
                 0
             ),

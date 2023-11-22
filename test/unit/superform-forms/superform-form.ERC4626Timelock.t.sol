@@ -41,7 +41,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ARBI, 0),
+            LiqRequest(bytes(""), getContract(ETH, "DAI"), 1, ARBI, 0),
             false,
             false,
             refundAddress,
@@ -82,7 +82,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            LiqRequest(1, invalidNonEmptyTxData, address(0), ETH, 0),
+            LiqRequest(invalidNonEmptyTxData, address(0), 1, ETH, 0),
             false,
             false,
             refundAddress,
@@ -117,7 +117,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.stopPrank();
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1, superformId, 1e18, 100, LiqRequest(1, "", address(0), ETH, 0), false, false, refundAddress, ""
+            1, superformId, 1e18, 100, LiqRequest("", address(0), 1, ETH, 0), false, false, refundAddress, ""
         );
 
         vm.prank(getContract(ETH, "CoreStateRegistry"));
@@ -171,7 +171,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), ETH, 0),
+            LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), 1, ETH, 0),
             false,
             false,
             refundAddress,
@@ -207,7 +207,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ETH, 0),
+            LiqRequest(bytes(""), getContract(ETH, "DAI"), 1, ETH, 0),
             bytes(""),
             false,
             false,

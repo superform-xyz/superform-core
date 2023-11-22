@@ -372,7 +372,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
+            LiqRequest("", getContract(ETH, "DAI"), 1, ETH, 0),
             "",
             false,
             false,
@@ -410,7 +410,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             superformId,
             2e18,
             100,
-            LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
+            LiqRequest("", getContract(ETH, "DAI"), 1, ETH, 0),
             "",
             false,
             false,
@@ -466,7 +466,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             superformId,
             2e18,
             100,
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "DAI"), ETH, 0),
+            LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "DAI"), 1, ETH, 0),
             "",
             false,
             false,
@@ -505,7 +505,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             superformId,
             SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(deployer, superformId),
             100,
-            LiqRequest(1, _buildMaliciousTxData(1, DAI, superform, ETH, 2e18, deployer), DAI, ETH, 0),
+            LiqRequest(_buildMaliciousTxData(1, DAI, superform, ETH, 2e18, deployer), DAI, 1, ETH, 0),
             "",
             false,
             false,
@@ -549,7 +549,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ARBI, 0),
+            LiqRequest(bytes(""), getContract(ETH, "DAI"), 1, ARBI, 0),
             false,
             false,
             refundAddress,
@@ -580,7 +580,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         vm.startPrank(getContract(ETH, "CoreStateRegistry"));
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1, 1, 1e18, 100, LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ARBI, 0), false, false, refundAddress, ""
+            1, 1, 1e18, 100, LiqRequest(bytes(""), getContract(ETH, "DAI"), 1, ARBI, 0), false, false, refundAddress, ""
         );
 
         vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
@@ -614,9 +614,9 @@ contract SuperformERC4626FormTest is ProtocolActions {
             amount,
             100,
             LiqRequest(
-                1,
                 _buildMaliciousTxData(1, getContract(ETH, "DAI"), superform, ARBI, 2e18, deployer),
                 getContract(ETH, "DAI"),
+                1,
                 ARBI,
                 0
             ),
@@ -649,7 +649,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             superformId,
             SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(deployer, superformId),
             100,
-            LiqRequest(1, "0x2222", getContract(ETH, "WETH"), ETH, 0),
+            LiqRequest("0x2222", getContract(ETH, "WETH"), 1, ETH, 0),
             "",
             false,
             false,
@@ -691,7 +691,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             superformId,
             0.9e18,
             100,
-            LiqRequest(1, invalidTxData, getContract(ETH, "WETH"), ARBI, 0),
+            LiqRequest(invalidTxData, getContract(ETH, "WETH"), 1, ARBI, 0),
             false,
             false,
             refundAddress,
@@ -759,7 +759,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         LiqRequest[] memory liqReqs = new LiqRequest[](1);
 
-        liqReqs[0] = LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0);
+        liqReqs[0] = LiqRequest("", getContract(ETH, "DAI"), 1, ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds, amounts, maxSlippages, liqReqs, "", new bool[](1), new bool[](1), refundAddress, ""
@@ -799,13 +799,13 @@ contract SuperformERC4626FormTest is ProtocolActions {
         LiqRequest[] memory liqReqs = new LiqRequest[](1);
 
         liqReqs[0] = LiqRequest(
-            1,
             _buildDummyTxDataUnitTests(
                 BuildDummyTxDataUnitTestsVars(
                     1, getContract(ETH, "DAI"), getContract(ETH, "USDC"), superform2, ETH, ETH, 1e18, superform2, true
                 )
             ),
             getContract(ETH, "DAI"),
+            1,
             ETH,
             0
         );
@@ -839,7 +839,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
+            LiqRequest("", getContract(ETH, "DAI"), 1, ETH, 0),
             "",
             false,
             false,
@@ -866,7 +866,6 @@ contract SuperformERC4626FormTest is ProtocolActions {
             1e18,
             100,
             LiqRequest(
-                1,
                 _buildDummyTxDataUnitTests(
                     BuildDummyTxDataUnitTestsVars(
                         1,
@@ -881,6 +880,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
                     )
                 ),
                 getContract(ETH, "DAI"),
+                1,
                 ETH,
                 0
             ),
@@ -917,7 +917,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
+            LiqRequest("", getContract(ETH, "DAI"), 1, ETH, 0),
             "",
             false,
             retain4626,
