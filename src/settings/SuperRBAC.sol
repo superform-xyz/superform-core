@@ -5,7 +5,7 @@ import { AccessControlEnumerable } from "openzeppelin-contracts/contracts/access
 import { IBroadcastRegistry } from "../interfaces/IBroadcastRegistry.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
-import { Error } from "../utils/Error.sol";
+import { Error } from "../libraries/Error.sol";
 import { BroadcastMessage } from "../types/DataTypes.sol";
 
 /// @title SuperRBAC
@@ -19,25 +19,19 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     bytes32 public constant SYNC_REVOKE = keccak256("SYNC_REVOKE");
 
     /// @dev used in many areas of the codebase to perform config operations
-    /// @dev could be worth to have this changeable in case it gets compromised (but without ability to revoke itself)
-    /// @dev changeable by which role?
-    /// @dev single address
+    /// @notice at least one address must be assigned this role
     bytes32 public constant override PROTOCOL_ADMIN_ROLE = keccak256("PROTOCOL_ADMIN_ROLE");
 
     /// @dev used in a few areas of the code
-    /// @dev could be worth to have this changeable in case it gets compromised (but without ability to revoke itself)
-    /// @dev changeable by which role?
-    /// @dev single address
+    /// @notice at least one address must be assigned this role
     bytes32 public constant override EMERGENCY_ADMIN_ROLE = keccak256("EMERGENCY_ADMIN_ROLE");
 
     /// @dev used to extract funds from PayMaster
     /// @dev could be allowed to be changed
-    /// @dev single address
     bytes32 public constant override PAYMENT_ADMIN_ROLE = keccak256("PAYMENT_ADMIN_ROLE");
 
     /// @dev used so that certain contracts can broadcast state changes to all connected remote chains
     /// @dev currently SUPERFORM_FACTORY, SUPERTRANSMUTER and SUPER_RBAC have this role. SUPER_RBAC doesn't need it
-    /// @dev should NOT be allowed to be changed (maps to more than 1 address)
     /// @dev multi address (revoke broadcast should be restricted)
     bytes32 public constant override BROADCASTER_ROLE = keccak256("BROADCASTER_ROLE");
 
@@ -148,6 +142,10 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
 
     /// @inheritdoc ISuperRBAC
     function setSuperRegistry(address superRegistry_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
+        if (address(superRegistry) != address(0)) revert Error.DISABLED();
+
+        if (superRegistry_ == address(0)) revert Error.ZERO_ADDRESS();
+
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
@@ -174,7 +172,7 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
                 || role_ == WORMHOLE_VAA_RELAYER_ROLE
         ) revert Error.CANNOT_REVOKE_NON_BROADCASTABLE_ROLES();
         _revokeRole(role_, superRegistry.getAddress(superRegistryAddressId_));
-        if (extraData_.length > 0) {
+        if (extraData_.length != 0) {
             BroadcastMessage memory rolesPayload = BroadcastMessage(
                 "SUPER_RBAC", SYNC_REVOKE, abi.encode(++xChainPayloadCounter, role_, superRegistryAddressId_)
             );
@@ -185,18 +183,18 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     /// @inheritdoc ISuperRBAC
     function stateSyncBroadcast(bytes memory data_) external override onlyBroadcastRegistry {
         BroadcastMessage memory rolesPayload = abi.decode(data_, (BroadcastMessage));
-        if (rolesPayload.messageType == SYNC_REVOKE) {
-            (, bytes32 role, bytes32 superRegistryAddressId) =
-                abi.decode(rolesPayload.message, (uint256, bytes32, bytes32));
-            /// @dev broadcasting cannot update the PROTOCOL_ADMIN_ROLE, EMERGENCY_ADMIN_ROLE, BROADCASTER_ROLE
-            /// and WORMHOLE_VAA_RELAYER_ROLE
-            if (
-                !(
-                    role == PROTOCOL_ADMIN_ROLE || role == EMERGENCY_ADMIN_ROLE || role == BROADCASTER_ROLE
-                        || role == WORMHOLE_VAA_RELAYER_ROLE
-                )
-            ) _revokeRole(role, superRegistry.getAddress(superRegistryAddressId));
+        if (rolesPayload.messageType != SYNC_REVOKE) {
+            revert Error.INVALID_MESSAGE_TYPE();
         }
+        (, bytes32 role, bytes32 superRegistryAddressId) = abi.decode(rolesPayload.message, (uint256, bytes32, bytes32));
+        /// @dev broadcasting cannot update the PROTOCOL_ADMIN_ROLE, EMERGENCY_ADMIN_ROLE, BROADCASTER_ROLE
+        /// and WORMHOLE_VAA_RELAYER_ROLE
+        if (
+            !(
+                role == PROTOCOL_ADMIN_ROLE || role == EMERGENCY_ADMIN_ROLE || role == BROADCASTER_ROLE
+                    || role == WORMHOLE_VAA_RELAYER_ROLE
+            )
+        ) _revokeRole(role, superRegistry.getAddress(superRegistryAddressId));
     }
 
     //////////////////////////////////////////////////////////////

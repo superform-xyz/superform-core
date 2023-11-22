@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.23;
 
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
@@ -62,13 +62,6 @@ contract BroadcastRegistry is IBroadcastRegistry {
             )
         ) {
             revert Error.NOT_ALLOWED_BROADCASTER();
-        }
-        _;
-    }
-
-    modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
-            revert Error.NOT_PROTOCOL_ADMIN();
         }
         _;
     }

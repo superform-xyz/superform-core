@@ -4,15 +4,14 @@ pragma solidity ^0.8.23;
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC4626TimelockVault } from "super-vaults/interfaces/IERC4626TimelockVault.sol";
-import { InitSingleVaultData, TimelockPayload } from "../types/DataTypes.sol";
-import { LiqRequest } from "../types/LiquidityTypes.sol";
+import { InitSingleVaultData, TimelockPayload, LiqRequest } from "../types/DataTypes.sol";
 import { ERC4626FormImplementation } from "./ERC4626FormImplementation.sol";
 import { BaseForm } from "../BaseForm.sol";
 import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
 import { ITimelockStateRegistry } from "../interfaces/ITimelockStateRegistry.sol";
 import { IEmergencyQueue } from "../interfaces/IEmergencyQueue.sol";
 import { DataLib } from "../libraries/DataLib.sol";
-import { Error } from "../utils/Error.sol";
+import { Error } from "../libraries/Error.sol";
 
 /// @title ERC4626TimelockForm
 /// @notice Form implementation to handle timelock extension for ERC4626 vaults
@@ -61,12 +60,8 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     //////////////////////////////////////////////////////////////
 
     /// @dev this function is called when the timelock deposit is ready to be withdrawn after being unlocked
-    /// @param amount_ the amount of tokens to withdraw
     /// @param p_ the payload data
-    function withdrawAfterCoolDown(
-        uint256 amount_,
-        TimelockPayload memory p_
-    )
+    function withdrawAfterCoolDown(TimelockPayload memory p_)
         external
         onlyTimelockStateRegistry
         returns (uint256 dstAmount)
@@ -94,7 +89,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         /// @dev if the txData is empty, the tokens are sent directly to the sender, otherwise sent first to this form
         vars.receiver = vars.len1 == 0 ? p_.data.receiverAddress : address(this);
 
-        dstAmount = v.redeem(amount_, vars.receiver, address(this));
+        dstAmount = v.redeem(p_.data.amount, vars.receiver, address(this));
         /// @dev validate and dispatches the tokens
         if (vars.len1 != 0) {
             vars.bridgeValidator = superRegistry.getBridgeValidator(vars.liqData.bridgeId);
@@ -173,10 +168,9 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         override
         returns (uint256)
     {
-        uint256 lockedTill = _requestUnlock(singleVaultData_.amount);
         /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to timelock
         /// @dev state registry for re-processing at a later date
-        _storePayload(0, srcSender_, CHAIN_ID, lockedTill, singleVaultData_);
+        _storePayload(0, srcSender_, CHAIN_ID, _requestUnlock(singleVaultData_.amount), singleVaultData_);
 
         return 0;
     }
@@ -195,10 +189,9 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         override
         returns (uint256)
     {
-        uint256 lockedTill = _requestUnlock(singleVaultData_.amount);
         /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to timelock
         /// @dev state registry for re-processing at a later date
-        _storePayload(1, srcSender_, srcChainId_, lockedTill, singleVaultData_);
+        _storePayload(1, srcSender_, srcChainId_, _requestUnlock(singleVaultData_.amount), singleVaultData_);
 
         return 0;
     }
@@ -232,8 +225,8 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     )
         internal
     {
-        ITimelockStateRegistry registry =
-            ITimelockStateRegistry(superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY")));
-        registry.receivePayload(type_, srcSender_, srcChainId_, lockedTill_, data_);
+        ITimelockStateRegistry(superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY"))).receivePayload(
+            type_, srcSender_, srcChainId_, lockedTill_, data_
+        );
     }
 }

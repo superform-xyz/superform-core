@@ -69,7 +69,7 @@ interface IPaymentHelper {
     /// @dev returns the amb overrides & gas to be used
     /// @return totalFees the msg.value to be sent along the transaction
     /// @return extraData the amb specific override information
-    function calculateRegisterTransmuterAMBData() external view returns (uint256 totalFees, bytes memory extraData);
+    function getRegisterTransmuterAMBData() external view returns (uint256 totalFees, bytes memory extraData);
 
     /// @dev returns the gas fees estimation in native tokens if we send message through a combination of AMBs
     /// @param ambIds_ is the identifier of different AMBs

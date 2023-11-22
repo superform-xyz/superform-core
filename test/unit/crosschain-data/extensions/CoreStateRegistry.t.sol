@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.23;
 
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { ICoreStateRegistry } from "src/interfaces/ICoreStateRegistry.sol";
 import "test/utils/ProtocolActions.sol";
 
@@ -136,7 +136,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         );
 
         liqReqArr[0] =
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), AVAX, 0);
+            LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), 1, AVAX, 0);
         liqReqArr[1] = liqReqArr[0];
         liqReqArr[2] = liqReqArr[0];
         liqReqArr[3] = liqReqArr[0];
@@ -145,10 +145,10 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformIds,
             uint256MemArr,
             uint256MemArr,
-            new bool[](4),
-            new bool[](4),
             liqReqArr,
             bytes(""),
+            new bool[](4),
+            new bool[](4),
             receiverAddress,
             bytes("")
         );
@@ -615,10 +615,10 @@ contract CoreStateRegistryTest is ProtocolActions {
             /// @dev 1e18 after decimal corrections and bridge slippage would give the following value
             999_900_000_000_000_000,
             100,
-            false,
-            false,
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), AVAX, 0),
+            LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), 1, AVAX, 0),
             bytes(""),
+            false,
+            false,
             receiverAddress,
             bytes("")
         );
@@ -677,10 +677,10 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            false,
-            false,
-            LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ETH, 0),
+            LiqRequest(bytes(""), getContract(ETH, "DAI"), 1, ETH, 0),
             bytes(""),
+            false,
+            false,
             receiverAddress,
             bytes("")
         );
@@ -752,17 +752,17 @@ contract CoreStateRegistryTest is ProtocolActions {
         );
 
         liqReqArr[0] =
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), AVAX, 0);
+            LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), 1, AVAX, 0);
         liqReqArr[1] = liqReqArr[0];
 
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds,
             uint256MemArr,
             uint256MemArr,
-            new bool[](2),
-            new bool[](2),
             liqReqArr,
             bytes(""),
+            new bool[](2),
+            new bool[](2),
             receiverAddress,
             bytes("")
         );
@@ -807,7 +807,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         amountArr[1] = 1e18;
 
         LiqRequest[] memory liqReqArr = new LiqRequest[](2);
-        liqReqArr[0] = LiqRequest(1, bytes(""), getContract(AVAX, "DAI"), ETH, 0);
+        liqReqArr[0] = LiqRequest(bytes(""), getContract(AVAX, "DAI"), 1, ETH, 0);
         liqReqArr[1] = liqReqArr[0];
 
         uint256[] memory maxSlippages = new uint256[](2);
@@ -818,10 +818,10 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformIds,
             amountArr,
             maxSlippages,
-            new bool[](2),
-            new bool[](2),
             liqReqArr,
             bytes(""),
+            new bool[](2),
+            new bool[](2),
             receiverAddress,
             bytes("")
         );
@@ -892,17 +892,17 @@ contract CoreStateRegistryTest is ProtocolActions {
         );
 
         liqReqArr[0] =
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), AVAX, 0);
+            LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), 1, AVAX, 0);
         liqReqArr[1] = liqReqArr[0];
 
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds,
             uint256MemArr,
             uint256MemArr,
-            new bool[](2),
-            new bool[](2),
             liqReqArr,
             bytes(""),
+            new bool[](2),
+            new bool[](2),
             receiverAddress,
             bytes("")
         );

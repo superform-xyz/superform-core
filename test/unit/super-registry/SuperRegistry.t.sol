@@ -6,7 +6,7 @@ import "test/utils/Utilities.sol";
 
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { SuperRegistry } from "src/settings/SuperRegistry.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 
 contract SuperRegistryTest is BaseSetup {
     SuperRegistry public superRegistry;
@@ -406,6 +406,9 @@ contract SuperRegistryTest is BaseSetup {
 
         address moduleAddress = superRegistry.getAddress(id_);
         assertNotEq(moduleAddress, address(0));
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        superRegistry.getAddressByChainId(keccak256(abi.encode("")), ETH);
 
         if (!isLocked) {
             if (id_ != superRegistry.SUPER_RBAC()) {

@@ -7,12 +7,11 @@ import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
 import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
-import { Error } from "../utils/Error.sol";
+import { Error } from "../libraries/Error.sol";
 import { DataLib } from "../libraries/DataLib.sol";
 import { ProofLib } from "../libraries/ProofLib.sol";
 import { ArrayCastLib } from "../libraries/ArrayCastLib.sol";
 import "../types/DataTypes.sol";
-import "../types/LiquidityTypes.sol";
 
 /// @dev interface to read public variable from state registry
 interface ReadOnlyBaseRegistry is IBaseStateRegistry {
@@ -127,7 +126,7 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @inheritdoc IPaymentHelper
-    function calculateRegisterTransmuterAMBData()
+    function getRegisterTransmuterAMBData()
         external
         view
         override
@@ -168,7 +167,7 @@ contract PaymentHelper is IPaymentHelper {
 
                 /// @dev step 3: estimation processing cost of acknowledgement
                 /// @notice optimistically estimating. (Ideal case scenario: no failed deposits / withdrawals)
-                srcAmount += _estimateAckProcessingCost(len, superformIdsLen);
+                srcAmount += _estimateAckProcessingCost(superformIdsLen);
 
                 /// @dev step 4: estimate liq amount
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequests);
@@ -224,7 +223,7 @@ contract PaymentHelper is IPaymentHelper {
                 totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], 1);
 
                 /// @dev step 3: estimation execution cost of acknowledgement
-                srcAmount += _estimateAckProcessingCost(len, 1);
+                srcAmount += _estimateAckProcessingCost(1);
 
                 /// @dev step 4: estimate the liqAmount
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequest.castLiqRequestToArray());
@@ -278,7 +277,7 @@ contract PaymentHelper is IPaymentHelper {
         totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, superformIdsLen);
 
         /// @dev step 4: estimation execution cost of acknowledgement
-        if (isDeposit_) srcAmount += _estimateAckProcessingCost(1, superformIdsLen);
+        if (isDeposit_) srcAmount += _estimateAckProcessingCost(superformIdsLen);
 
         /// @dev step 5: estimate liq amount
         if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformsData.liqRequests);
@@ -328,7 +327,7 @@ contract PaymentHelper is IPaymentHelper {
         totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, 1);
 
         /// @dev step 4: estimation execution cost of acknowledgement
-        if (isDeposit_) srcAmount += _estimateAckProcessingCost(1, 1);
+        if (isDeposit_) srcAmount += _estimateAckProcessingCost(1);
 
         /// @dev step 5: estimate the liq amount
         if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
@@ -743,15 +742,8 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @dev helps estimate the src chain processing fee
-    function _estimateAckProcessingCost(
-        uint256 dstChainCount_,
-        uint256 vaultsCount_
-    )
-        internal
-        view
-        returns (uint256 nativeFee)
-    {
-        uint256 gasCost = dstChainCount_ * vaultsCount_ * ackGasCost[CHAIN_ID];
+    function _estimateAckProcessingCost(uint256 vaultsCount_) internal view returns (uint256 nativeFee) {
+        uint256 gasCost = vaultsCount_ * ackGasCost[CHAIN_ID];
 
         return gasCost * _getGasPrice(CHAIN_ID);
     }
@@ -768,9 +760,9 @@ contract PaymentHelper is IPaymentHelper {
                 sfData_.superformId,
                 sfData_.amount,
                 sfData_.maxSlippage,
+                sfData_.liqRequest,
                 sfData_.hasDstSwap,
                 sfData_.retain4626,
-                sfData_.liqRequest,
                 sfData_.receiverAddress,
                 sfData_.extraFormData
             )
@@ -790,9 +782,9 @@ contract PaymentHelper is IPaymentHelper {
                 sfData_.superformIds,
                 sfData_.amounts,
                 sfData_.maxSlippages,
+                sfData_.liqRequests,
                 sfData_.hasDstSwaps,
                 sfData_.retain4626s,
-                sfData_.liqRequests,
                 sfData_.receiverAddress,
                 sfData_.extraFormData
             )

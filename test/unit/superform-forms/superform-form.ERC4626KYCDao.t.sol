@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.23;
 
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
 
 import "test/utils/ProtocolActions.sol";
@@ -30,10 +30,10 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
             superformId,
             1e18,
             100,
-            false,
-            false,
-            LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
+            LiqRequest("", getContract(ETH, "DAI"), 1, ETH, 0),
             "",
+            false,
+            false,
             refundAddress,
             ""
         );

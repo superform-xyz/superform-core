@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
-import { Error } from "../../utils/Error.sol";
+import { Error } from "../../libraries/Error.sol";
 
 /// @title QuorumManager
 /// @author ZeroPoint Labs

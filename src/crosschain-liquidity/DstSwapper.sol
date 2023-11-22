@@ -11,8 +11,9 @@ import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
 import { LiquidityHandler } from "../crosschain-liquidity/LiquidityHandler.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { IERC4626Form } from "../forms/interfaces/IERC4626Form.sol";
-import { Error } from "../utils/Error.sol";
+import { Error } from "../libraries/Error.sol";
 import { DataLib } from "../libraries/DataLib.sol";
+import { PayloadUpdaterLib } from "../libraries/PayloadUpdaterLib.sol";
 import "../types/DataTypes.sol";
 
 /// @title DstSwapper
@@ -102,6 +103,20 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
     {
         interimToken = failedSwap[payloadId_][index_].interimToken;
         amount = failedSwap[payloadId_][index_].amount;
+
+        if (amount == 0) {
+            revert Error.INVALID_DST_SWAPPER_FAILED_SWAP();
+        } else {
+            if (interimToken == NATIVE) {
+                if (address(this).balance < amount) {
+                    revert Error.INVALID_DST_SWAPPER_FAILED_SWAP();
+                }
+            } else {
+                if (IERC20(interimToken).balanceOf(address(this)) < amount) {
+                    revert Error.INVALID_DST_SWAPPER_FAILED_SWAP();
+                }
+            }
+        }
     }
 
     //////////////////////////////////////////////////////////////
@@ -163,7 +178,6 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         external
         override
         onlySwapper
-        nonReentrant
     {
         IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
 
@@ -261,13 +275,17 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         );
 
         /// @dev get the address of the bridge to send the txData to.
-        v.to = superRegistry.getBridgeAddress(bridgeId_);
         (v.underlying, v.expAmount, v.maxSlippage) = _getFormUnderlyingFrom(coreStateRegistry_, payloadId_, index_);
 
         v.balanceBefore = IERC20(v.underlying).balanceOf(v.finalDst);
-        uint256 nativeAmount = (v.approvalToken == NATIVE) ? v.amount : 0;
 
-        _dispatchTokens(v.to, txData_, v.approvalToken, v.amount, nativeAmount);
+        _dispatchTokens(
+            superRegistry.getBridgeAddress(bridgeId_),
+            txData_,
+            v.approvalToken,
+            v.amount,
+            v.approvalToken == NATIVE ? v.amount : 0
+        );
 
         v.balanceAfter = IERC20(v.underlying).balanceOf(v.finalDst);
 
@@ -276,10 +294,11 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         }
 
         v.balanceDiff = v.balanceAfter - v.balanceBefore;
+
         /// @dev if actual underlying is less than expAmount adjusted
         /// with maxSlippage, invariant breaks
-        if (v.balanceDiff < ((v.expAmount * (10_000 - v.maxSlippage)) / 10_000)) {
-            revert Error.MAX_SLIPPAGE_INVARIANT_BROKEN();
+        if (!PayloadUpdaterLib.validateSlippage(v.balanceDiff, v.expAmount, v.maxSlippage)) {
+            revert Error.SLIPPAGE_OUT_OF_BOUNDS();
         }
 
         /// @dev updates swapped amount
@@ -306,6 +325,20 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
 
         if (failedSwap[payloadId_][index_].amount != 0) {
             revert Error.FAILED_DST_SWAP_ALREADY_UPDATED();
+        }
+
+        if (amount_ == 0) {
+            revert Error.ZERO_AMOUNT();
+        }
+
+        if (interimToken_ != NATIVE) {
+            if (IERC20(interimToken_).balanceOf(address(this)) < amount_) {
+                revert Error.INSUFFICIENT_BALANCE();
+            }
+        } else {
+            if (address(this).balance < amount_) {
+                revert Error.INSUFFICIENT_BALANCE();
+            }
         }
 
         /// @dev updates swapped amount

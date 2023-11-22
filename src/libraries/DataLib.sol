@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.23;
 
-import { Error } from "../utils/Error.sol";
+import { Error } from "../libraries/Error.sol";
 
 /// @dev rationale for "memory-safe" assembly: https://docs.soliditylang.org/en/v0.8.20/assembly.html#memory-safety
 library DataLib {
@@ -93,10 +93,8 @@ library DataLib {
         pure
         returns (uint256 superformId_)
     {
-        assembly ("memory-safe") {
-            superformId_ := superform_
-            superformId_ := or(superformId_, shl(160, formImplementationId_))
-            superformId_ := or(superformId_, shl(192, chainId_))
-        }
+        superformId_ = uint256(uint160(superform_));
+        superformId_ |= uint256(formImplementationId_) << 160;
+        superformId_ |= uint256(chainId_) << 192;
     }
 }

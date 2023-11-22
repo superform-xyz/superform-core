@@ -19,7 +19,7 @@ import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
 import { IPaymentHelper } from "./interfaces/IPaymentHelper.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
 /// @title SuperPositions
@@ -133,11 +133,6 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         return super.supportsInterface(interfaceId_);
     }
 
-    /// @notice Used to construct return url
-    function _baseURI() internal view override returns (string memory) {
-        return dynamicURI;
-    }
-
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
@@ -213,7 +208,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         (txType,,,, srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
         /// @dev verify this is a not single vault mint
-        if (multi == 0) revert Error.INVALID_PAYLOAD_TYPE();
+        if (multi != 1) revert Error.INVALID_PAYLOAD_TYPE();
         /// @dev compare final shares beneficiary to be the same (dst/src)
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
         /// @dev compare txType to be the same (dst/src)
@@ -261,7 +256,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         (txType,,,, srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
         /// @dev this is a not multi vault mint
-        if (multi == 1) revert Error.INVALID_PAYLOAD_TYPE();
+        if (multi != 0) revert Error.INVALID_PAYLOAD_TYPE();
 
         /// @dev compare final shares beneficiary to be the same (dst/src)
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
@@ -285,9 +280,10 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     function stateSyncBroadcast(bytes memory data_) external payable override onlyBroadcastRegistry {
         BroadcastMessage memory transmuterPayload = abi.decode(data_, (BroadcastMessage));
 
-        if (transmuterPayload.messageType == DEPLOY_NEW_SERC20) {
-            _deployTransmuter(transmuterPayload.message);
+        if (transmuterPayload.messageType != DEPLOY_NEW_SERC20) {
+            revert Error.INVALID_MESSAGE_TYPE();
         }
+        _deployTransmuter(transmuterPayload.message);
     }
 
     /// @inheritdoc ISuperPositions
@@ -306,6 +302,11 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     //////////////////////////////////////////////////////////////
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
+
+    /// @notice Used to construct return url
+    function _baseURI() internal view override returns (string memory) {
+        return dynamicURI;
+    }
 
     /// @dev helps validate the state registry id for minting superform id
     function _validateStateSyncer(uint256 superformId_) internal view {
@@ -375,7 +376,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     /// @param message_ is the crosschain message to be sent.
     function _broadcast(bytes memory message_) internal {
         (uint256 totalFees, bytes memory extraData) =
-            IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER"))).calculateRegisterTransmuterAMBData();
+            IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER"))).getRegisterTransmuterAMBData();
 
         (uint8 ambId, bytes memory broadcastParams) = abi.decode(extraData, (uint8, bytes));
 

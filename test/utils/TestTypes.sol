@@ -5,7 +5,6 @@ import "forge-std/Test.sol";
 import { SuperRegistry } from "src/settings/SuperRegistry.sol";
 import { SuperRBAC } from "src/settings/SuperRBAC.sol";
 
-import "src/types/LiquidityTypes.sol";
 import "src/types/DataTypes.sol";
 
 /*//////////////////////////////////////////////////////////////

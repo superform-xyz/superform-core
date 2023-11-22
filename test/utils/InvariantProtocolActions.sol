@@ -7,7 +7,7 @@ import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
 abstract contract InvariantProtocolActions is CommonProtocolActions {
@@ -953,10 +953,10 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             args.superformIds,
             finalAmounts,
             maxSlippageTemp,
-            hasDstSwap,
-            args.receive4626,
             liqRequests,
             v.permit2data,
+            hasDstSwap,
+            args.receive4626,
             users[args.user],
             abi.encode(false)
         );
@@ -1055,7 +1055,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         /// @dev the actual liq request struct inscription
         v.liqReq = LiqRequest(
-            args.liqBridge, v.txData, liqRequestToken, args.toChainId, liqRequestToken == NATIVE_TOKEN ? args.amount : 0
+            v.txData, liqRequestToken, args.liqBridge, args.toChainId, liqRequestToken == NATIVE_TOKEN ? args.amount : 0
         );
 
         if (liqRequestToken != NATIVE_TOKEN) {
@@ -1128,10 +1128,10 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             args.superformId,
             v.amount,
             args.maxSlippage,
-            args.dstSwap,
-            args.receive4626,
             v.liqReq,
             v.permit2Calldata,
+            args.dstSwap,
+            args.receive4626,
             users[args.user],
             abi.encode(false)
         );
@@ -1220,10 +1220,10 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         vars.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, args.toChainId == args.liqDstChainId);
 
         vars.liqReq = LiqRequest(
-            args.liqBridge,
             vars.txData,
             /// @dev for certain test cases, insert txData as null here
             args.underlyingTokenDst,
+            args.liqBridge,
             args.liqDstChainId,
             0
         );
@@ -1234,10 +1234,10 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             args.superformId,
             args.amount,
             args.maxSlippage,
-            args.dstSwap,
-            args.receive4626,
             vars.liqReq,
             "",
+            args.dstSwap,
+            args.receive4626,
             users[args.user],
             abi.encode(false)
         );

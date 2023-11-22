@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.23;
 
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { MockERC20 } from "test/mocks/MockERC20.sol";
 import { SuperformFactory } from "src/SuperformFactory.sol";
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
@@ -41,9 +41,9 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             superformId,
             1e18,
             100,
+            LiqRequest(bytes(""), getContract(ETH, "DAI"), 1, ARBI, 0),
             false,
             false,
-            LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ARBI, 0),
             refundAddress,
             ""
         );
@@ -55,7 +55,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.prank(getContract(ETH, "TimelockStateRegistry"));
         vm.expectRevert(Error.WITHDRAW_TX_DATA_NOT_UPDATED.selector);
         ERC4626TimelockForm(payable(superform)).withdrawAfterCoolDown(
-            420, TimelockPayload(1, deployer, ETH, block.timestamp, data, TimelockStatus.PENDING)
+            TimelockPayload(1, deployer, ETH, block.timestamp, data, TimelockStatus.PENDING)
         );
     }
 
@@ -82,9 +82,9 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             superformId,
             1e18,
             100,
+            LiqRequest(invalidNonEmptyTxData, address(0), 1, ETH, 0),
             false,
             false,
-            LiqRequest(1, invalidNonEmptyTxData, address(0), ETH, 0),
             refundAddress,
             ""
         );
@@ -96,7 +96,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.prank(getContract(ETH, "TimelockStateRegistry"));
         vm.expectRevert(Error.WITHDRAW_TOKEN_NOT_UPDATED.selector);
         ERC4626TimelockForm(payable(superform)).withdrawAfterCoolDown(
-            420, TimelockPayload(1, deployer, ETH, block.timestamp, data, TimelockStatus.PENDING)
+            TimelockPayload(1, deployer, ETH, block.timestamp, data, TimelockStatus.PENDING)
         );
     }
 
@@ -117,7 +117,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.stopPrank();
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1, superformId, 1e18, 100, false, false, LiqRequest(1, "", address(0), ETH, 0), refundAddress, ""
+            1, superformId, 1e18, 100, LiqRequest("", address(0), 1, ETH, 0), false, false, refundAddress, ""
         );
 
         vm.prank(getContract(ETH, "CoreStateRegistry"));
@@ -125,7 +125,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
 
         vm.prank(getContract(ETH, "TimelockStateRegistry"));
         ERC4626TimelockForm(payable(superform)).withdrawAfterCoolDown(
-            420, TimelockPayload(1, deployer, ETH, block.timestamp, data, TimelockStatus.PENDING)
+            TimelockPayload(1, deployer, ETH, block.timestamp, data, TimelockStatus.PENDING)
         );
     }
 
@@ -171,9 +171,9 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             superformId,
             1e18,
             100,
+            LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), 1, ETH, 0),
             false,
             false,
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), ETH, 0),
             refundAddress,
             ""
         );
@@ -184,7 +184,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.expectRevert(Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST.selector);
         vm.prank(getContract(ETH, "TimelockStateRegistry"));
         ERC4626TimelockForm(payable(superform)).withdrawAfterCoolDown(
-            420, TimelockPayload(1, deployer, ETH, block.timestamp, data, TimelockStatus.PENDING)
+            TimelockPayload(1, deployer, ETH, block.timestamp, data, TimelockStatus.PENDING)
         );
     }
 
@@ -207,10 +207,10 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            false,
-            false,
-            LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ETH, 0),
+            LiqRequest(bytes(""), getContract(ETH, "DAI"), 1, ETH, 0),
             bytes(""),
+            false,
+            false,
             refundAddress,
             bytes("")
         );

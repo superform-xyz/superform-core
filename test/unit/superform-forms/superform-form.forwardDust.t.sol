@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.23;
 
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { MockERC20 } from "test/mocks/MockERC20.sol";
 import { VaultMock } from "test/mocks/VaultMock.sol";
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
@@ -83,10 +83,10 @@ contract ForwardDustFormTest is ProtocolActions {
             superformId,
             amountToDeposit_,
             100,
-            false,
-            false,
-            LiqRequest(1, "", getContract(ARBI, "WETH"), ARBI, 0),
+            LiqRequest("", getContract(ARBI, "WETH"), 1, ARBI, 0),
             "",
+            false,
+            false,
             refundAddress,
             ""
         );
@@ -110,10 +110,7 @@ contract ForwardDustFormTest is ProtocolActions {
             superformId,
             spAmountToRedeem_ == 0 ? superPositionBalance : spAmountToRedeem_,
             100,
-            false,
-            false,
             LiqRequest(
-                1,
                 _buildDummyTxDataUnitTests(
                     BuildDummyTxDataUnitTestsVars(
                         1,
@@ -129,9 +126,12 @@ contract ForwardDustFormTest is ProtocolActions {
                     )
                 ),
                 getContract(ARBI, "WETH"),
+                1,
                 ETH,
                 0
             ),
+            false,
+            false,
             refundAddress,
             ""
         );
@@ -144,7 +144,6 @@ contract ForwardDustFormTest is ProtocolActions {
         } else {
             vm.prank(getContract(ARBI, "TimelockStateRegistry"));
             IERC4626TimelockForm(superform).withdrawAfterCoolDown(
-                spAmountToRedeem_ == 0 ? superPositionBalance : spAmountToRedeem_,
                 TimelockPayload(1, user, ETH, block.timestamp, data2, TimelockStatus.PENDING)
             );
         }
