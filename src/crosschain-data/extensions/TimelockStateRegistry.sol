@@ -88,13 +88,6 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
 
-    /// @dev returns the required quorum for the src chain id from super registry
-    /// @param chainId is the src chain id
-    /// @return the quorum configured for the chain id
-    function _getRequiredMessagingQuorum(uint64 chainId) internal view returns (uint256) {
-        return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId);
-    }
-
     /// @inheritdoc ITimelockStateRegistry
     function getTimelockPayload(uint256 payloadId_) external view returns (TimelockPayload memory timelockPayload_) {
         return timelockPayload[payloadId_];
@@ -131,7 +124,6 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         payable
         override
         onlyTimelockStateRegistryProcessor
-        nonReentrant
     {
         TimelockPayload storage p = timelockPayload[timeLockPayloadId_];
         if (p.status != TimelockStatus.PENDING) {
@@ -143,7 +135,6 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         }
 
         IBridgeValidator bridgeValidator = IBridgeValidator(superRegistry.getBridgeValidator(p.data.liqData.bridgeId));
-        uint256 finalAmount;
 
         /// @dev set status here to prevent re-entrancy
         p.status = TimelockStatus.PROCESSED;
@@ -154,6 +145,8 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
 
         /// @dev this step is used to re-feed txData to avoid using old txData that would have expired by now
         if (txData_.length != 0) {
+            uint256 finalAmount;
+
             PayloadUpdaterLib.validateLiqReq(p.data.liqData);
             /// @dev validate the incoming tx data
             bridgeValidator.validateTxData(
@@ -181,7 +174,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
             p.data.liqData.txData = txData_;
         }
 
-        try form.withdrawAfterCoolDown(p.data.amount, p) { }
+        try form.withdrawAfterCoolDown(p) { }
         catch {
             /// @dev dispatch acknowledgement to mint superPositions back because of failure
             if (p.isXChain == 1) {
@@ -241,6 +234,13 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     //////////////////////////////////////////////////////////////
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
+
+    /// @dev returns the required quorum for the src chain id from super registry
+    /// @param chainId is the src chain id
+    /// @return the quorum configured for the chain id
+    function _getRequiredMessagingQuorum(uint64 chainId) internal view returns (uint256) {
+        return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId);
+    }
 
     /// @dev allows users to read the ids of ambs that delivered a payload
     function _getDeliveryAMB(uint256 payloadId_) internal view returns (uint8[] memory ambIds_) {

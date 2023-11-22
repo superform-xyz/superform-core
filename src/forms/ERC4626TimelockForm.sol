@@ -60,12 +60,8 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     //////////////////////////////////////////////////////////////
 
     /// @dev this function is called when the timelock deposit is ready to be withdrawn after being unlocked
-    /// @param amount_ the amount of tokens to withdraw
     /// @param p_ the payload data
-    function withdrawAfterCoolDown(
-        uint256 amount_,
-        TimelockPayload memory p_
-    )
+    function withdrawAfterCoolDown(TimelockPayload memory p_)
         external
         onlyTimelockStateRegistry
         returns (uint256 dstAmount)
@@ -93,7 +89,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         /// @dev if the txData is empty, the tokens are sent directly to the sender, otherwise sent first to this form
         vars.receiver = vars.len1 == 0 ? p_.data.receiverAddress : address(this);
 
-        dstAmount = v.redeem(amount_, vars.receiver, address(this));
+        dstAmount = v.redeem(p_.data.amount, vars.receiver, address(this));
         /// @dev validate and dispatches the tokens
         if (vars.len1 != 0) {
             vars.bridgeValidator = superRegistry.getBridgeValidator(vars.liqData.bridgeId);
