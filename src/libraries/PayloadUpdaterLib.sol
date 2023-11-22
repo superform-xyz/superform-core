@@ -5,7 +5,6 @@ import { DataLib } from "./DataLib.sol";
 import { Error } from "../libraries/Error.sol";
 import { PayloadState, CallbackType, LiqRequest } from "../types/DataTypes.sol";
 
-
 /// @dev library to validate slippage updation
 library PayloadUpdaterLib {
     function validateSlippage(

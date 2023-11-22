@@ -83,10 +83,10 @@ contract ForwardDustFormTest is ProtocolActions {
             superformId,
             amountToDeposit_,
             100,
-            false,
-            false,
             LiqRequest(1, "", getContract(ARBI, "WETH"), ARBI, 0),
             "",
+            false,
+            false,
             refundAddress,
             ""
         );
@@ -110,8 +110,6 @@ contract ForwardDustFormTest is ProtocolActions {
             superformId,
             spAmountToRedeem_ == 0 ? superPositionBalance : spAmountToRedeem_,
             100,
-            false,
-            false,
             LiqRequest(
                 1,
                 _buildDummyTxDataUnitTests(
@@ -132,6 +130,8 @@ contract ForwardDustFormTest is ProtocolActions {
                 ETH,
                 0
             ),
+            false,
+            false,
             refundAddress,
             ""
         );

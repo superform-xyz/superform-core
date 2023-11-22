@@ -1599,10 +1599,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
             args.superformIds,
             finalAmounts,
             maxSlippageTemp,
-            hasDstSwap,
-            args.receive4626,
             liqRequests,
             v.permit2data,
+            hasDstSwap,
+            args.receive4626,
             users[args.user],
             abi.encode(args.partialWithdrawVaults)
         );
@@ -1773,10 +1773,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
             args.superformId,
             v.amount,
             args.maxSlippage,
-            args.dstSwap,
-            args.receive4626,
             v.liqReq,
             v.permit2Calldata,
+            args.dstSwap,
+            args.receive4626,
             users[args.user],
             abi.encode(false)
         );
@@ -1882,10 +1882,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
             args.superformId,
             args.amount,
             args.maxSlippage,
-            args.dstSwap,
-            args.receive4626,
             vars.liqReq,
             "",
+            args.dstSwap,
+            args.receive4626,
             users[args.user],
             abi.encode(args.partialWithdrawVault)
         );
@@ -3448,8 +3448,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
             superformId,
             2e18,
             1000,
-            false,
-            retain4626,
             LiqRequest(
                 1,
                 _buildLiqBridgeTxData(
@@ -3480,6 +3478,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 0
             ),
             "",
+            false,
+            retain4626,
             mrperfect,
             ""
         );

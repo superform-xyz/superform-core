@@ -318,10 +318,10 @@ contract PayMasterTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            false,
-            false,
             LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ETH, 0),
             bytes(""),
+            false,
+            false,
             receiverAddress,
             bytes("")
         );

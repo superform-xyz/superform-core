@@ -41,10 +41,10 @@ contract SuperformRouterTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            false,
-            false,
             LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
             "",
+            false,
+            false,
             receiverAddress,
             ""
         );
@@ -74,10 +74,10 @@ contract SuperformRouterTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            false,
-            false,
             LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
             "",
+            false,
+            false,
             receiverAddress,
             ""
         );
@@ -125,7 +125,7 @@ contract SuperformRouterTest is ProtocolActions {
         liqReq[0] = LiqRequest(1, "", getContract(ARBI, "DAI"), ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, hasDstSwaps, retain4626s, liqReq, "", receiverAddress, ""
+            superformIds, amounts, maxSlippages, liqReq, "", hasDstSwaps, retain4626s, receiverAddress, ""
         );
 
         SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
@@ -173,7 +173,7 @@ contract SuperformRouterTest is ProtocolActions {
         liqReq[0] = LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0);
 
         MultiVaultSFData memory data =
-            MultiVaultSFData(superformIds, amounts, maxSlippages, hasDstSwaps, retain4626s, liqReq, "", address(0), "");
+            MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "", hasDstSwaps, retain4626s, address(0), "");
 
         SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
 
@@ -223,7 +223,7 @@ contract SuperformRouterTest is ProtocolActions {
         liqReq[1] = LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, hasDstSwaps, retain4626s, liqReq, "", receiverAddress, ""
+            superformIds, amounts, maxSlippages, liqReq, "", hasDstSwaps, retain4626s, receiverAddress, ""
         );
 
         SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
@@ -274,7 +274,7 @@ contract SuperformRouterTest is ProtocolActions {
         liqReq[1] = LiqRequest(1, "", getContract(ARBI, "DAI"), ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, hasDstSwaps, retain4626s, liqReq, "", receiverAddress, ""
+            superformIds, amounts, maxSlippages, liqReq, "", hasDstSwaps, retain4626s, receiverAddress, ""
         );
 
         SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
@@ -303,10 +303,10 @@ contract SuperformRouterTest is ProtocolActions {
             superformId,
             1e18,
             10_001,
-            false,
-            false,
             LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
             "",
+            false,
+            false,
             receiverAddress,
             ""
         );
@@ -359,7 +359,7 @@ contract SuperformRouterTest is ProtocolActions {
         liqReq[1] = LiqRequest(1, "", getContract(ARBI, "DAI"), ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, hasDstSwaps, retain4626s, liqReq, "", receiverAddress, ""
+            superformIds, amounts, maxSlippages, liqReq, "", hasDstSwaps, retain4626s, receiverAddress, ""
         );
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
@@ -396,7 +396,7 @@ contract SuperformRouterTest is ProtocolActions {
         LiqRequest memory liqReq = LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0);
 
         SingleVaultSFData memory data =
-            SingleVaultSFData(superformId, amount, maxSlippage, false, false, liqReq, "", receiverAddress, "");
+            SingleVaultSFData(superformId, amount, maxSlippage, liqReq, "", false, false, receiverAddress, "");
 
         SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds, ETH, data);
 
@@ -432,7 +432,7 @@ contract SuperformRouterTest is ProtocolActions {
         LiqRequest memory liqReq = LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0);
 
         SingleVaultSFData memory data =
-            SingleVaultSFData(superformId, amount, maxSlippage, false, false, liqReq, "", receiverAddress, "");
+            SingleVaultSFData(superformId, amount, maxSlippage, liqReq, "", false, false, receiverAddress, "");
 
         SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds, ARBI, data);
 
@@ -476,7 +476,7 @@ contract SuperformRouterTest is ProtocolActions {
         liqReq[0] = LiqRequest(1, "", getContract(ARBI, "DAI"), ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, hasDstSwaps, retain4626s, liqReq, "", receiverAddress, ""
+            superformIds, amounts, maxSlippages, liqReq, "", hasDstSwaps, retain4626s, receiverAddress, ""
         );
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
@@ -516,7 +516,7 @@ contract SuperformRouterTest is ProtocolActions {
         liqReq[0] = LiqRequest(1, "", getContract(ARBI, "DAI"), ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, hasDstSwaps, retain4626s, liqReq, "", receiverAddress, ""
+            superformIds, amounts, maxSlippages, liqReq, "", hasDstSwaps, retain4626s, receiverAddress, ""
         );
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
@@ -559,7 +559,7 @@ contract SuperformRouterTest is ProtocolActions {
         liqReq[0] = LiqRequest(1, "", getContract(ARBI, "DAI"), ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, hasDstSwaps, retain4626s, liqReq, "", receiverAddress, ""
+            superformIds, amounts, maxSlippages, liqReq, "", hasDstSwaps, retain4626s, receiverAddress, ""
         );
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
@@ -601,7 +601,7 @@ contract SuperformRouterTest is ProtocolActions {
         liqReq[0] = LiqRequest(1, "", getContract(ARBI, "DAI"), ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, hasDstSwaps, retain4626s, liqReq, "", receiverAddress, ""
+            superformIds, amounts, maxSlippages, liqReq, "", hasDstSwaps, retain4626s, receiverAddress, ""
         );
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
@@ -645,7 +645,7 @@ contract SuperformRouterTest is ProtocolActions {
         liqReq[0] = LiqRequest(1, "", getContract(ARBI, "DAI"), ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, hasDstSwaps, retain4626s, liqReq, "", receiverAddress, ""
+            superformIds, amounts, maxSlippages, liqReq, "", hasDstSwaps, retain4626s, receiverAddress, ""
         );
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
@@ -688,7 +688,7 @@ contract SuperformRouterTest is ProtocolActions {
         liqReq[0] = LiqRequest(1, "", getContract(ARBI, "DAI"), ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, hasDstSwaps, retain4626s, liqReq, "", receiverAddress, ""
+            superformIds, amounts, maxSlippages, liqReq, "", hasDstSwaps, retain4626s, receiverAddress, ""
         );
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
@@ -741,7 +741,7 @@ contract SuperformRouterTest is ProtocolActions {
         liqReqs[1] = LiqRequest(1, "", getContract(ETH, "WETH"), ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, hasDstSwaps, retain4626s, liqReqs, "", receiverAddress, ""
+            superformIds, amounts, maxSlippages, liqReqs, "", hasDstSwaps, retain4626s, receiverAddress, ""
         );
         uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
@@ -796,7 +796,7 @@ contract SuperformRouterTest is ProtocolActions {
         liqReqs[1] = LiqRequest(1, "", getContract(ETH, "WETH"), ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, hasDstSwaps, retain4626s, liqReqs, "", receiverAddress, ""
+            superformIds, amounts, maxSlippages, liqReqs, "", hasDstSwaps, retain4626s, receiverAddress, ""
         );
         uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
@@ -853,7 +853,7 @@ contract SuperformRouterTest is ProtocolActions {
         liqReqs[1] = LiqRequest(1, "", getContract(ETH, "WETH"), ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, hasDstSwaps, retain4626s, liqReqs, "", receiverAddress, ""
+            superformIds, amounts, maxSlippages, liqReqs, "", hasDstSwaps, retain4626s, receiverAddress, ""
         );
         uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
@@ -884,10 +884,10 @@ contract SuperformRouterTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            false,
-            false,
             LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
             "",
+            false,
+            false,
             receiverAddress,
             ""
         );
@@ -920,10 +920,10 @@ contract SuperformRouterTest is ProtocolActions {
             0,
             /// @dev 0 amount here and in the LiqRequest
             100,
-            false,
-            false,
             LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
             "",
+            false,
+            false,
             receiverAddress,
             ""
         );
@@ -977,7 +977,7 @@ contract SuperformRouterTest is ProtocolActions {
         liqReq[0] = LiqRequest(1, "", getContract(ARBI, "DAI"), ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, hasDstSwaps, retain4626s, liqReq, "", receiverAddress, ""
+            superformIds, amounts, maxSlippages, liqReq, "", hasDstSwaps, retain4626s, receiverAddress, ""
         );
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ETH, data);
@@ -1030,7 +1030,7 @@ contract SuperformRouterTest is ProtocolActions {
         liqReq[0] = LiqRequest(1, "", getContract(ARBI, "DAI"), ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, hasDstSwaps, retain4626s, liqReq, "", receiverAddress, ""
+            superformIds, amounts, maxSlippages, liqReq, "", hasDstSwaps, retain4626s, receiverAddress, ""
         );
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
@@ -1095,7 +1095,7 @@ contract SuperformRouterTest is ProtocolActions {
         liqReq[0] = LiqRequest(1, "", getContract(ARBI, "DAI"), ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, hasDstSwaps, retain4626s, liqReq, "", receiverAddress, ""
+            superformIds, amounts, maxSlippages, liqReq, "", hasDstSwaps, retain4626s, receiverAddress, ""
         );
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
@@ -1126,8 +1126,6 @@ contract SuperformRouterTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            false,
-            false,
             LiqRequest(
                 1,
                 _buildDummyTxDataUnitTests(
@@ -1148,6 +1146,8 @@ contract SuperformRouterTest is ProtocolActions {
                 0
             ),
             "",
+            false,
+            false,
             receiverAddress,
             ""
         );
@@ -1251,7 +1251,7 @@ contract SuperformRouterTest is ProtocolActions {
             LiqRequest(1, _buildLiqBridgeTxData(v.liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), ARBI, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            v.superformIds, v.amounts, v.maxSlippages, v.hasDstSwaps, v.retain4626s, v.liqReqs, "", receiverAddress, ""
+            v.superformIds, v.amounts, v.maxSlippages, v.liqReqs, "", v.hasDstSwaps, v.retain4626s, receiverAddress, ""
         );
         v.ambIds = new uint8[](1);
         v.ambIds[0] = 1;
@@ -1282,8 +1282,6 @@ contract SuperformRouterTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            false,
-            false,
             LiqRequest(
                 1,
                 _buildDummyTxDataUnitTests(
@@ -1304,6 +1302,8 @@ contract SuperformRouterTest is ProtocolActions {
                 0
             ),
             "",
+            false,
+            false,
             receiverAddress,
             ""
         );
@@ -1336,8 +1336,6 @@ contract SuperformRouterTest is ProtocolActions {
             superformId,
             1e18,
             10_001,
-            false,
-            false,
             /// @dev invalid slippage
             LiqRequest(
                 1,
@@ -1359,6 +1357,8 @@ contract SuperformRouterTest is ProtocolActions {
                 0
             ),
             "",
+            false,
+            false,
             receiverAddress,
             ""
         );
@@ -1462,7 +1462,7 @@ contract SuperformRouterTest is ProtocolActions {
             LiqRequest(1, _buildLiqBridgeTxData(v.liqBridgeTxDataArgs, false), getContract(ETH, "WETH"), ARBI, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            v.superformIds, v.amounts, v.maxSlippages, v.hasDstSwaps, v.retain4626s, v.liqReqs, "", receiverAddress, ""
+            v.superformIds, v.amounts, v.maxSlippages, v.liqReqs, "", v.hasDstSwaps, v.retain4626s, receiverAddress, ""
         );
         v.ambIds = new uint8[](1);
         v.ambIds[0] = 1;
@@ -1582,12 +1582,12 @@ contract SuperformRouterTest is ProtocolActions {
                     v.superformIds,
                     v.amounts,
                     v.maxSlippages,
-                    v.hasDstSwaps,
-                    v.retain4626s,
                     v.liqReqs,
                     abi.encode(
                         v.permit.nonce, v.permit.deadline, _signPermit(v.permit, v.superformRouter, userKeys[1], ETH)
                     ),
+                    v.hasDstSwaps,
+                    v.retain4626s,
                     receiverAddress,
                     ""
                 )
@@ -1704,10 +1704,10 @@ contract SuperformRouterTest is ProtocolActions {
                     v.superformIds,
                     v.amounts,
                     v.maxSlippages,
-                    v.hasDstSwaps,
-                    v.retain4626s,
                     v.liqReqs,
                     abi.encode(v.permit.nonce, v.permit.deadline, permitSigned),
+                    v.hasDstSwaps,
+                    v.retain4626s,
                     receiverAddress,
                     ""
                 )
@@ -1818,10 +1818,10 @@ contract SuperformRouterTest is ProtocolActions {
                     v.superformIds,
                     v.amounts,
                     v.maxSlippages,
-                    v.hasDstSwaps,
-                    v.retain4626s,
                     v.liqReqs,
                     "",
+                    v.hasDstSwaps,
+                    v.retain4626s,
                     receiverAddress,
                     ""
                 )
@@ -1932,10 +1932,10 @@ contract SuperformRouterTest is ProtocolActions {
                     v.superformIds,
                     v.amounts,
                     v.maxSlippages,
-                    v.hasDstSwaps,
-                    v.retain4626s,
                     v.liqReqs,
                     "",
+                    v.hasDstSwaps,
+                    v.retain4626s,
                     receiverAddress,
                     ""
                 )
@@ -2006,10 +2006,10 @@ contract SuperformRouterTest is ProtocolActions {
                     v.superformIds,
                     v.amounts,
                     v.maxSlippages,
-                    v.hasDstSwaps,
-                    v.retain4626s,
                     v.liqReqs,
                     v.permit2Data,
+                    v.hasDstSwaps,
+                    v.retain4626s,
                     receiverAddress,
                     ""
                 )
@@ -2053,7 +2053,7 @@ contract SuperformRouterTest is ProtocolActions {
         liqReqs[1] = LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, new bool[](2), new bool[](2), liqReqs, "", receiverAddress, ""
+            superformIds, amounts, maxSlippages, liqReqs, "", new bool[](2), new bool[](2), receiverAddress, ""
         );
 
         SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
@@ -2103,7 +2103,7 @@ contract SuperformRouterTest is ProtocolActions {
         receive4626[1] = true;
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, new bool[](2), receive4626, liqReqs, "", receiverAddress, ""
+            superformIds, amounts, maxSlippages, liqReqs, "", new bool[](2), receive4626, receiverAddress, ""
         );
 
         SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
@@ -2220,7 +2220,7 @@ contract SuperformRouterTest is ProtocolActions {
         liqReqs[1] = LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), ARBI, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, hasDstSwaps, retain4626s, liqReqs, "", receiverAddress, ""
+            superformIds, amounts, maxSlippages, liqReqs, "", hasDstSwaps, retain4626s, receiverAddress, ""
         );
         uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;

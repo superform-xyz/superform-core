@@ -145,10 +145,10 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformIds,
             uint256MemArr,
             uint256MemArr,
-            new bool[](4),
-            new bool[](4),
             liqReqArr,
             bytes(""),
+            new bool[](4),
+            new bool[](4),
             receiverAddress,
             bytes("")
         );
@@ -615,10 +615,10 @@ contract CoreStateRegistryTest is ProtocolActions {
             /// @dev 1e18 after decimal corrections and bridge slippage would give the following value
             999_900_000_000_000_000,
             100,
-            false,
-            false,
             LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), AVAX, 0),
             bytes(""),
+            false,
+            false,
             receiverAddress,
             bytes("")
         );
@@ -677,10 +677,10 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            false,
-            false,
             LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ETH, 0),
             bytes(""),
+            false,
+            false,
             receiverAddress,
             bytes("")
         );
@@ -759,10 +759,10 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformIds,
             uint256MemArr,
             uint256MemArr,
-            new bool[](2),
-            new bool[](2),
             liqReqArr,
             bytes(""),
+            new bool[](2),
+            new bool[](2),
             receiverAddress,
             bytes("")
         );
@@ -818,10 +818,10 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformIds,
             amountArr,
             maxSlippages,
-            new bool[](2),
-            new bool[](2),
             liqReqArr,
             bytes(""),
+            new bool[](2),
+            new bool[](2),
             receiverAddress,
             bytes("")
         );
@@ -899,10 +899,10 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformIds,
             uint256MemArr,
             uint256MemArr,
-            new bool[](2),
-            new bool[](2),
             liqReqArr,
             bytes(""),
+            new bool[](2),
+            new bool[](2),
             receiverAddress,
             bytes("")
         );
