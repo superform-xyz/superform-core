@@ -134,8 +134,9 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         if (addr == address(0)) revert Error.ZERO_ADDRESS();
     }
 
-    function getAddressByChainId(bytes32 id_, uint64 chainId_) external view override returns (address) {
-        return registry[id_][chainId_];
+    function getAddressByChainId(bytes32 id_, uint64 chainId_) external view override returns (address addr) {
+        addr = registry[id_][chainId_];
+        if (addr == address(0)) revert Error.ZERO_ADDRESS();
     }
 
     /// @inheritdoc ISuperRegistry

@@ -339,7 +339,7 @@ contract EmergencyQueueTest is ProtocolActions {
         );
 
         vm.prank(emergencyQueue);
-        vm.expectRevert(Error.EMERGENCY_WITHDRAW_INSUFFICIENT_BALANCE.selector);
+        vm.expectRevert(Error.INSUFFICIENT_BALANCE.selector);
         IBaseForm(superform).emergencyWithdraw(address(0), address(0), 10e20);
     }
 

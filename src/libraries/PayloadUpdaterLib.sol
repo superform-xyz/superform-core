@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import { DataLib } from "./DataLib.sol";
 import { Error } from "../libraries/Error.sol";
 import { LiqRequest } from "../types/LiquidityTypes.sol";
-import { PayloadState, TransactionType, CallbackType } from "../types/DataTypes.sol";
+import { PayloadState, CallbackType } from "../types/DataTypes.sol";
 
 /// @dev library to validate slippage updation
 library PayloadUpdaterLib {
@@ -27,30 +27,6 @@ library PayloadUpdaterLib {
         /// @dev amount must fall within the slippage bounds
         if (newAmount_ < minAmount) {
             return false;
-        }
-
-        return true;
-    }
-
-    function strictValidateSlippage(
-        uint256 newAmount_,
-        uint256 maxAmount_,
-        uint256 slippage_
-    )
-        internal
-        pure
-        returns (bool valid_)
-    {
-        /// @dev args validation
-        if (newAmount_ > maxAmount_) {
-            revert Error.NEGATIVE_SLIPPAGE();
-        }
-
-        uint256 minAmount = (maxAmount_ * (10_000 - slippage_)) / 10_000;
-
-        /// @dev amount must fall within the slippage bounds
-        if (newAmount_ < minAmount) {
-            revert Error.SLIPPAGE_OUT_OF_BOUNDS();
         }
 
         return true;

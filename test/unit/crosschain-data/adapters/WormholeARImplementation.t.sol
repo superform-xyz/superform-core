@@ -45,6 +45,26 @@ contract WormholeARImplementationTest is BaseSetup {
         vm.clearMockedCalls();
     }
 
+    function test_retryPayloadWithZeroAddress() public {
+        VaaKey memory vaaKey = VaaKey(1, keccak256("test"), 1);
+
+        bytes memory data = abi.encode(vaaKey, 2, 3, 4, address(0));
+
+        vm.mockCall(
+            address(wormholeARImpl.relayer()),
+            abi.encodeWithSelector(
+                IWormholeRelayer(wormholeARImpl.relayer()).resendToEvm.selector, vaaKey, 2, 3, 4, address(0)
+            ),
+            abi.encode("")
+        );
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        vm.prank(deployer);
+        wormholeARImpl.retryPayload(data);
+
+        vm.clearMockedCalls();
+    }
+
     function test_receiveWormholeMessages_revertInvalidSrcSender() public {
         vm.selectFork(FORKS[ETH]);
 

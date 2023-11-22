@@ -168,7 +168,7 @@ contract PaymentHelper is IPaymentHelper {
 
                 /// @dev step 3: estimation processing cost of acknowledgement
                 /// @notice optimistically estimating. (Ideal case scenario: no failed deposits / withdrawals)
-                srcAmount += _estimateAckProcessingCost(len, superformIdsLen);
+                srcAmount += _estimateAckProcessingCost(superformIdsLen);
 
                 /// @dev step 4: estimate liq amount
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequests);
@@ -224,7 +224,7 @@ contract PaymentHelper is IPaymentHelper {
                 totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], 1);
 
                 /// @dev step 3: estimation execution cost of acknowledgement
-                srcAmount += _estimateAckProcessingCost(len, 1);
+                srcAmount += _estimateAckProcessingCost(1);
 
                 /// @dev step 4: estimate the liqAmount
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequest.castLiqRequestToArray());
@@ -278,7 +278,7 @@ contract PaymentHelper is IPaymentHelper {
         totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, superformIdsLen);
 
         /// @dev step 4: estimation execution cost of acknowledgement
-        if (isDeposit_) srcAmount += _estimateAckProcessingCost(1, superformIdsLen);
+        if (isDeposit_) srcAmount += _estimateAckProcessingCost(superformIdsLen);
 
         /// @dev step 5: estimate liq amount
         if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformsData.liqRequests);
@@ -328,7 +328,7 @@ contract PaymentHelper is IPaymentHelper {
         totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, 1);
 
         /// @dev step 4: estimation execution cost of acknowledgement
-        if (isDeposit_) srcAmount += _estimateAckProcessingCost(1, 1);
+        if (isDeposit_) srcAmount += _estimateAckProcessingCost(1);
 
         /// @dev step 5: estimate the liq amount
         if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
@@ -743,15 +743,8 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @dev helps estimate the src chain processing fee
-    function _estimateAckProcessingCost(
-        uint256 dstChainCount_,
-        uint256 vaultsCount_
-    )
-        internal
-        view
-        returns (uint256 nativeFee)
-    {
-        uint256 gasCost = dstChainCount_ * vaultsCount_ * ackGasCost[CHAIN_ID];
+    function _estimateAckProcessingCost(uint256 vaultsCount_) internal view returns (uint256 nativeFee) {
+        uint256 gasCost = vaultsCount_ * ackGasCost[CHAIN_ID];
 
         return gasCost * _getGasPrice(CHAIN_ID);
     }

@@ -28,6 +28,8 @@ interface IERC4626Form is IERC20 {
 
     function getTotalAssets() external view returns (uint256);
 
+    function getTotalSupply() external view returns (uint256);
+
     function getPreviewPricePerVaultShare() external view returns (uint256);
 
     function previewDepositTo(uint256 assets_) external view returns (uint256);

@@ -617,11 +617,15 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                         )
                     );
 
-                    PayloadUpdaterLib.strictValidateSlippage(
-                        bridgeValidator.decodeAmountIn(txData_[i], false),
-                        IBaseForm(superform).previewRedeemFrom(multiVaultData_.amounts[i]),
-                        multiVaultData_.maxSlippages[i]
-                    );
+                    if (
+                        !PayloadUpdaterLib.validateSlippage(
+                            bridgeValidator.decodeAmountIn(txData_[i], false),
+                            IBaseForm(superform).previewRedeemFrom(multiVaultData_.amounts[i]),
+                            multiVaultData_.maxSlippages[i]
+                        )
+                    ) {
+                        revert Error.SLIPPAGE_OUT_OF_BOUNDS();
+                    }
 
                     multiVaultData_.liqData[i].txData = txData_[i];
                 }

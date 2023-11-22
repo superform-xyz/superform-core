@@ -223,7 +223,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         assertEq(ILzEndpoint(LZ_ENDPOINT_OP).hasStoredPayload(101, srcAddressOP), true);
 
         /// @dev first testing revert on invalid caller
-        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        vm.expectRevert(Error.NOT_EMERGENCY_ADMIN.selector);
         vm.prank(malice_);
         lzImplOP.forceResumeReceive(101, srcAddressOP);
 

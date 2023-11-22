@@ -213,7 +213,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         (txType,,,, srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
         /// @dev verify this is a not single vault mint
-        if (multi == 0) revert Error.INVALID_PAYLOAD_TYPE();
+        if (multi != 1) revert Error.INVALID_PAYLOAD_TYPE();
         /// @dev compare final shares beneficiary to be the same (dst/src)
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
         /// @dev compare txType to be the same (dst/src)
@@ -261,7 +261,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         (txType,,,, srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
         /// @dev this is a not multi vault mint
-        if (multi == 1) revert Error.INVALID_PAYLOAD_TYPE();
+        if (multi != 0) revert Error.INVALID_PAYLOAD_TYPE();
 
         /// @dev compare final shares beneficiary to be the same (dst/src)
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
@@ -285,9 +285,10 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     function stateSyncBroadcast(bytes memory data_) external payable override onlyBroadcastRegistry {
         BroadcastMessage memory transmuterPayload = abi.decode(data_, (BroadcastMessage));
 
-        if (transmuterPayload.messageType == DEPLOY_NEW_SERC20) {
-            _deployTransmuter(transmuterPayload.message);
+        if (transmuterPayload.messageType != DEPLOY_NEW_SERC20) {
+            revert Error.INVALID_MESSAGE_TYPE();
         }
+        _deployTransmuter(transmuterPayload.message);
     }
 
     /// @inheritdoc ISuperPositions

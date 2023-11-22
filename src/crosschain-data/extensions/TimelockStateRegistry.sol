@@ -170,9 +170,13 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
             );
 
             finalAmount = bridgeValidator.decodeAmountIn(txData_, false);
-            PayloadUpdaterLib.strictValidateSlippage(
-                finalAmount, form.previewRedeemFrom(p.data.amount), p.data.maxSlippage
-            );
+            if (
+                !PayloadUpdaterLib.validateSlippage(
+                    finalAmount, form.previewRedeemFrom(p.data.amount), p.data.maxSlippage
+                )
+            ) {
+                revert Error.SLIPPAGE_OUT_OF_BOUNDS();
+            }
 
             p.data.liqData.txData = txData_;
         }

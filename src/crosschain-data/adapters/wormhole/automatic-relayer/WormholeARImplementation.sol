@@ -157,6 +157,11 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
             uint256 newGasLimit,
             address newDeliveryProviderAddress
         ) = abi.decode(data_, (VaaKey, uint16, uint256, uint256, address));
+
+        if (newDeliveryProviderAddress == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
+
         relayer.resendToEvm{ value: msg.value }(
             deliveryVaaKey, targetChain, newReceiverValue, newGasLimit, newDeliveryProviderAddress
         );
