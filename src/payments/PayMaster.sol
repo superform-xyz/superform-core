@@ -71,12 +71,8 @@ contract PayMaster is IPayMaster, LiquidityHandler {
         override
         onlyPaymentAdmin
     {
+        /// receiver cannot be address(0)
         address receiver = superRegistry.getAddressByChainId(superRegistryId_, dstChainId_);
-
-        if (receiver == address(0)) {
-            revert Error.ZERO_ADDRESS();
-        }
-
         _validateAndDispatchTokens(req_, receiver);
     }
 
