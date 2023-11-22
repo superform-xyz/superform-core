@@ -130,7 +130,9 @@ contract SuperformRouterAATest is ProtocolActions {
             1e18,
             10_000,
             /// @dev invalid slippage
-            LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), 1, ARBI, 0),
+            LiqRequest(
+                _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, ARBI, 0
+            ),
             "",
             false,
             receive4626_,
@@ -270,7 +272,7 @@ contract SuperformRouterAATest is ProtocolActions {
             superformId,
             1e18,
             1000,
-            LiqRequest(txData, getContract(ARBI, "DAI"), 1, liqDstChainId_, 0),
+            LiqRequest(txData, getContract(ARBI, "DAI"), address(0), 1, liqDstChainId_, 0),
             "",
             false,
             false,

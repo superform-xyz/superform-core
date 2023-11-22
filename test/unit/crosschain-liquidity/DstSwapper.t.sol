@@ -78,10 +78,11 @@ contract DstSwapperTest is ProtocolActions {
         address payable coreStateRegistry = payable(getContract(OP, "CoreStateRegistry"));
 
         vm.selectFork(FORKS[OP]);
-        _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry);
+        address weth = getContract(OP, "WETH");
+
+        _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry, weth);
 
         vm.startPrank(deployer);
-        address weth = getContract(OP, "WETH");
         deal(weth, dstSwapper, 1e18);
 
         vm.expectRevert(Error.ZERO_AMOUNT.selector);
@@ -148,10 +149,11 @@ contract DstSwapperTest is ProtocolActions {
         address payable coreStateRegistry = payable(getContract(OP, "CoreStateRegistry"));
 
         vm.selectFork(FORKS[OP]);
-        _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry);
+        address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+        _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry, native);
 
         vm.startPrank(deployer);
-        address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
         deal(dstSwapper, 1e18);
 
         DstSwapper(dstSwapper).updateFailedTx(1, 0, native, 1e18);
@@ -202,15 +204,17 @@ contract DstSwapperTest is ProtocolActions {
         address payable coreStateRegistry = payable(getContract(OP, "CoreStateRegistry"));
 
         vm.selectFork(FORKS[OP]);
-        _simulateMultiVaultExistingPayloadOnOP(coreStateRegistry);
+        address weth = getContract(OP, "WETH");
+
+        address interimToken = weth;
+        _simulateMultiVaultExistingPayloadOnOP(coreStateRegistry, interimToken);
 
         vm.startPrank(deployer);
-        address weth = getContract(OP, "WETH");
-        deal(weth, dstSwapper, 2e18);
+        deal(interimToken, dstSwapper, 2e18);
 
         address[] memory interimTokens = new address[](2);
-        interimTokens[0] = weth;
-        interimTokens[1] = weth;
+        interimTokens[0] = interimToken;
+        interimTokens[1] = interimToken;
 
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = 1e18;
@@ -265,16 +269,17 @@ contract DstSwapperTest is ProtocolActions {
         address payable coreStateRegistry = payable(getContract(OP, "CoreStateRegistry"));
 
         vm.selectFork(FORKS[OP]);
-
-        _simulateMultiVaultExistingPayloadOnOP(coreStateRegistry);
-        vm.startPrank(deployer);
         address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+        address interimToken = native;
+        _simulateMultiVaultExistingPayloadOnOP(coreStateRegistry, interimToken);
+        vm.startPrank(deployer);
         /// @dev simulating a failed swap in DstSwapper that leaves these tokens there
         deal(dstSwapper, 2e18);
 
         address[] memory interimTokens = new address[](2);
-        interimTokens[0] = native;
-        interimTokens[1] = native;
+        interimTokens[0] = interimToken;
+        interimTokens[1] = interimToken;
 
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = 1e18;
@@ -503,7 +508,7 @@ contract DstSwapperTest is ProtocolActions {
         address payable coreStateRegistry = payable(getContract(OP, "CoreStateRegistry"));
 
         vm.selectFork(FORKS[OP]);
-        _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry);
+        _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
 
         vm.startPrank(deployer);
 
@@ -549,7 +554,10 @@ contract DstSwapperTest is ProtocolActions {
         );
     }
 
-    function _simulateSingleVaultExistingPayloadOnOP(address payable coreStateRegistry)
+    function _simulateSingleVaultExistingPayloadOnOP(
+        address payable coreStateRegistry,
+        address interimToken_
+    )
         internal
         returns (uint256 superformId)
     {
@@ -557,7 +565,8 @@ contract DstSwapperTest is ProtocolActions {
         address superform = getContract(OP, string.concat("WETH", "VaultMock", "Superform", "1"));
         superformId = DataLib.packSuperform(superform, 1, OP);
 
-        LiqRequest memory liq;
+        LiqRequest memory liq = LiqRequest("", getContract(OP, "WETH"), interimToken_, 1, OP, 0);
+
         bytes memory message = abi.encode(
             AMBMessage(
                 DataLib.packTxInfo(
@@ -583,7 +592,10 @@ contract DstSwapperTest is ProtocolActions {
         CoreStateRegistry(coreStateRegistry).receivePayload(1, message);
     }
 
-    function _simulateMultiVaultExistingPayloadOnOP(address payable coreStateRegistry)
+    function _simulateMultiVaultExistingPayloadOnOP(
+        address payable coreStateRegistry,
+        address interimToken_
+    )
         internal
         returns (uint256[] memory superformIds)
     {
@@ -613,11 +625,15 @@ contract DstSwapperTest is ProtocolActions {
         amounts[1] = 1000;
 
         LiqRequest[] memory liq = new LiqRequest[](2);
+        liq[0] = LiqRequest("", getContract(OP, "DAI"), interimToken_, 1, OP, 0);
+        liq[1] = LiqRequest("", getContract(OP, "DAI"), interimToken_, 1, OP, 0);
         CoreStateRegistry(coreStateRegistry).receivePayload(
             ETH,
             abi.encode(
                 AMBMessage(
-                    DataLib.packTxInfo(uint8(TransactionType.DEPOSIT), uint8(CallbackType.INIT), 1, 1, users[0], ETH),
+                    DataLib.packTxInfo(
+                        uint8(TransactionType.DEPOSIT), uint8(CallbackType.INIT), uint8(1), 1, users[0], ETH
+                    ),
                     abi.encode(
                         new uint8[](1),
                         abi.encode(

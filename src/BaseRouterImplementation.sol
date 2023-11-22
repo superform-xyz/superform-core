@@ -495,7 +495,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 args_.deposit,
                 args_.superform,
                 args_.srcSender,
-                args_.liqRequest.token
+                args_.liqRequest.token,
+                args_.liqRequest.interimToken
             )
         );
 

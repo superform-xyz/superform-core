@@ -349,6 +349,9 @@ library Error {
     //////////////////////////////////////////////////////////////*/
 
     /// DST SWAPPER EXECUTION ERRORS
+    /// @dev forbid xChain deposits with destination swaps without interim token set (for user protection)
+    error INVALID_INTERIM_TOKEN();
+
     /// @dev thrown if process dst swap is tried for processed payload id
     error DST_SWAP_ALREADY_PROCESSED();
 

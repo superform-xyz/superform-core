@@ -57,7 +57,7 @@ contract EmergencyQueueTest is ProtocolActions {
                 _getTestSuperformId(),
                 1e18, // good hacker tries to take only 1e18
                 1000,
-                LiqRequest("", getContract(ETH, "DAI"), 1, ETH, 0),
+                LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
                 false,
                 false,
                 mrimperfect,
@@ -88,7 +88,7 @@ contract EmergencyQueueTest is ProtocolActions {
                 superformId,
                 1e18, // good hacker tries to take only 1e18
                 1000,
-                LiqRequest("", getContract(ETH, "DAI"), 1, ETH, 0),
+                LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
                 false,
                 false,
                 mrimperfect,
@@ -119,7 +119,7 @@ contract EmergencyQueueTest is ProtocolActions {
                 superformId,
                 1e18, // good hacker tries to take only 1e18
                 1000,
-                LiqRequest("", getContract(ETH, "DAI"), 1, ETH, 0),
+                LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
                 false,
                 false,
                 mrimperfect,
@@ -468,7 +468,7 @@ contract EmergencyQueueTest is ProtocolActions {
             _getTestSuperformId(),
             1e18,
             100,
-            LiqRequest("", getContract(ETH, "DAI"), 1, ETH, 0),
+            LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
             "",
             false,
             false,
@@ -505,7 +505,7 @@ contract EmergencyQueueTest is ProtocolActions {
         maxSlippages[1] = 100;
 
         LiqRequest[] memory liqRequests = new LiqRequest[](2);
-        liqRequests[0] = LiqRequest("", getContract(ETH, "DAI"), 1, ETH, 0);
+        liqRequests[0] = LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0);
         liqRequests[1] = liqRequests[0];
 
         MultiVaultSFData memory data = MultiVaultSFData(
@@ -536,7 +536,15 @@ contract EmergencyQueueTest is ProtocolActions {
         uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[formImplId], ARBI);
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, 1e18, 1000, LiqRequest("", address(0), 1, ETH, 0), "", false, false, mrimperfect, ""
+            superformId,
+            1e18,
+            1000,
+            LiqRequest("", address(0), address(0), 1, ETH, 0),
+            "",
+            false,
+            false,
+            mrimperfect,
+            ""
         );
 
         uint8[] memory ambIds = new uint8[](2);
@@ -610,7 +618,7 @@ contract EmergencyQueueTest is ProtocolActions {
         slippages[1] = 100;
 
         LiqRequest[] memory liqRequests = new LiqRequest[](2);
-        liqRequests[0] = LiqRequest("", address(0), 1, ETH, 0);
+        liqRequests[0] = LiqRequest("", address(0), address(0), 1, ETH, 0);
         liqRequests[1] = liqRequests[0];
 
         MultiVaultSFData memory data = MultiVaultSFData(
@@ -695,8 +703,9 @@ contract EmergencyQueueTest is ProtocolActions {
         address superformRouter = getContract(ETH, "SuperformRouter");
         uint256 superformId = _getTestSuperformId();
 
-        SingleVaultSFData memory data =
-            SingleVaultSFData(superformId, 2e18, 100, LiqRequest("", dai, 1, 1, 0), "", false, false, mrperfect, "");
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId, 2e18, 100, LiqRequest("", dai, address(0), 1, 1, 0), "", false, false, mrperfect, ""
+        );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
@@ -752,7 +761,9 @@ contract EmergencyQueueTest is ProtocolActions {
             superformId,
             2e18,
             1000,
-            LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), 1, ARBI, 0),
+            LiqRequest(
+                _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, ARBI, 0
+            ),
             "",
             false,
             false,

@@ -62,7 +62,9 @@ contract TimelockStateRegistryTest is ProtocolActions {
                 superformId,
                 420,
                 0,
-                LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "DAI"), 1, ETH, 0),
+                LiqRequest(
+                    _buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "DAI"), address(0), 1, ETH, 0
+                ),
                 false,
                 false,
                 receiverAddress,
@@ -96,7 +98,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
                 1000,
                 /// @dev note txData (2nd arg) is empty and token (3rd arg) is not address(0) to
                 /// indicate keeper to create and update txData using finalizePayload()
-                LiqRequest(bytes(""), getContract(ETH, "DAI"), 1, ETH, 0),
+                LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ETH, 0),
                 false,
                 false,
                 receiverAddress,

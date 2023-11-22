@@ -135,8 +135,9 @@ contract CoreStateRegistryTest is ProtocolActions {
             1
         );
 
-        liqReqArr[0] =
-            LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), 1, AVAX, 0);
+        liqReqArr[0] = LiqRequest(
+            _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, AVAX, 0
+        );
         liqReqArr[1] = liqReqArr[0];
         liqReqArr[2] = liqReqArr[0];
         liqReqArr[3] = liqReqArr[0];
@@ -508,7 +509,8 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.clearMockedCalls();
     }
 
-    function test_multiDeposit_inexistentSuperformId() public {
+    /// @dev this test highlights a payload that is failed and cannot be rescued
+    function test_multiDeposit_inexistentSuperformId_PAYLOAD_ALREADY_PROCESSED() public {
         uint8[] memory ambIds_ = new uint8[](2);
         ambIds_[0] = 1;
         ambIds_[1] = 2;
@@ -521,9 +523,6 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.prank(deployer);
         SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
-        vm.prank(deployer);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
-
         vm.mockCall(
             getContract(AVAX, "SuperformFactory"),
             abi.encodeWithSelector(
@@ -531,15 +530,20 @@ contract CoreStateRegistryTest is ProtocolActions {
             ),
             abi.encode(false)
         );
+        vm.prank(deployer);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
+
+
 
         vm.prank(deployer);
-        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
+        vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload(1);
 
         vm.clearMockedCalls();
     }
 
-    function test_singleDeposit_inexistentSuperformId() public {
+    /// @dev this test highlights a payload that is failed and cannot be rescued
+    function test_singleDeposit_inexistentSuperformId_PAYLOAD_ALREADY_PROCESSED() public {
         uint8[] memory ambIds_ = new uint8[](2);
         ambIds_[0] = 1;
         ambIds_[1] = 2;
@@ -552,9 +556,6 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.prank(deployer);
         SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
-        vm.prank(deployer);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
-
         vm.mockCall(
             getContract(AVAX, "SuperformFactory"),
             abi.encodeWithSelector(
@@ -564,7 +565,11 @@ contract CoreStateRegistryTest is ProtocolActions {
         );
 
         vm.prank(deployer);
-        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
+
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload(1);
 
         vm.clearMockedCalls();
@@ -615,7 +620,9 @@ contract CoreStateRegistryTest is ProtocolActions {
             /// @dev 1e18 after decimal corrections and bridge slippage would give the following value
             999_900_000_000_000_000,
             100,
-            LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), 1, AVAX, 0),
+            LiqRequest(
+                _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, AVAX, 0
+            ),
             bytes(""),
             false,
             false,
@@ -677,7 +684,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            LiqRequest(bytes(""), getContract(ETH, "DAI"), 1, ETH, 0),
+            LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ETH, 0),
             bytes(""),
             false,
             false,
@@ -751,8 +758,9 @@ contract CoreStateRegistryTest is ProtocolActions {
             1
         );
 
-        liqReqArr[0] =
-            LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), 1, AVAX, 0);
+        liqReqArr[0] = LiqRequest(
+            _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, AVAX, 0
+        );
         liqReqArr[1] = liqReqArr[0];
 
         MultiVaultSFData memory data = MultiVaultSFData(
@@ -807,7 +815,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         amountArr[1] = 1e18;
 
         LiqRequest[] memory liqReqArr = new LiqRequest[](2);
-        liqReqArr[0] = LiqRequest(bytes(""), getContract(AVAX, "DAI"), 1, ETH, 0);
+        liqReqArr[0] = LiqRequest(bytes(""), getContract(AVAX, "DAI"), address(0), 1, ETH, 0);
         liqReqArr[1] = liqReqArr[0];
 
         uint256[] memory maxSlippages = new uint256[](2);
@@ -891,8 +899,9 @@ contract CoreStateRegistryTest is ProtocolActions {
             1
         );
 
-        liqReqArr[0] =
-            LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), 1, AVAX, 0);
+        liqReqArr[0] = LiqRequest(
+            _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, AVAX, 0
+        );
         liqReqArr[1] = liqReqArr[0];
 
         MultiVaultSFData memory data = MultiVaultSFData(

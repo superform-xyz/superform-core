@@ -17,6 +17,7 @@ interface IBridgeValidator {
         address superform;
         address srcSender;
         address liqDataToken;
+        address liqDataInterimToken;
     }
 
     //////////////////////////////////////////////////////////////

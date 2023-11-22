@@ -315,6 +315,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
 
+    /// @dev returns a superformAddress
+    function _getSuperform(uint256 superformId_) internal pure returns (address superform) {
+        (superform,,) = superformId_.getSuperform();
+    }
+
     /// @dev returns if an address has a specific role
     function _hasRole(bytes32 id_, address addressToCheck_) internal view returns (bool) {
         return ISuperRBAC(_getAddress(keccak256("SUPER_RBAC"))).hasRole(id_, addressToCheck_);
@@ -520,20 +525,26 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         /// @dev validate payload update
         /// @dev validLen may only be increased here in the case where slippage for the update is valid
         if (!failedSwapQueued) {
-            address superformFactory = _getAddress(keccak256("SUPERFORM_FACTORY"));
             /// if the slippage is within allowed amount && the superform id also exists
             if (
                 PayloadUpdaterLib.validateSlippage(finalAmount_, amount_, maxSlippage_)
-                    && ISuperformFactory(superformFactory).isSuperform(superformId_)
+                    && ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId_)
             ) {
                 /// @dev sets amount to finalAmount_ and will mark the payload as UPDATED
                 amount_ = finalAmount_;
                 finalState_ = PayloadState.UPDATED;
                 ++validLen_;
             } else {
-                (address superform,,) = superformId_.getSuperform();
                 failedDeposits[payloadId_].superformIds.push(superformId_);
-                failedDeposits[payloadId_].settlementToken.push(IBaseForm(superform).getVaultAsset());
+
+                address asset;
+                try IBaseForm(_getSuperform(superformId_)).getVaultAsset() returns (address asset_) {
+                    asset = asset_;
+                } catch { }
+                /// @dev if superform is invalid, try catch will fail and asset pushed is address (0)
+                /// @notice this means that if a user tries to game the protocol with an invalid superformId, the funds
+                /// bridged over that failed will be stuck here
+                failedDeposits[payloadId_].settlementToken.push(asset);
                 failedDeposits[payloadId_].settleFromDstSwapper.push(false);
 
                 /// @dev sets amount to zero and will mark the payload as PROCESSED
@@ -618,7 +629,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                             false,
                             superform,
                             srcSender_,
-                            multiVaultData_.liqData[i].token
+                            multiVaultData_.liqData[i].token,
+                            address(0)
                         )
                     );
 
@@ -720,7 +732,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         uint256 numberOfVaults = multiVaultData.superformIds.length;
         bool fulfilment;
         bool errors;
-        address superformFactory = _getAddress(keccak256("SUPERFORM_FACTORY"));
         for (uint256 i; i < numberOfVaults; ++i) {
             /// @dev if updating the deposit payload fails because of slippage, multiVaultData.amounts[i] is set to 0
             /// @dev this means that this amount was already added to the failedDeposits state variable and should not

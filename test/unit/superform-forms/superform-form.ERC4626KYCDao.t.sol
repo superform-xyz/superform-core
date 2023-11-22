@@ -30,7 +30,7 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
             superformId,
             1e18,
             100,
-            LiqRequest("", getContract(ETH, "DAI"), 1, ETH, 0),
+            LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
             "",
             false,
             false,

@@ -61,15 +61,22 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
                 if (args_.srcChainId == args_.dstChainId) {
                     revert Error.INVALID_ACTION();
                 } else {
+                    address dstSwapper = superRegistry.getAddressByChainId(keccak256("DST_SWAPPER"), args_.dstChainId);
                     /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry (or) Dst Swapper
                     if (
                         !(
                             receiver
                                 == superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY"), args_.dstChainId)
-                                || receiver == superRegistry.getAddressByChainId(keccak256("DST_SWAPPER"), args_.dstChainId)
+                                || receiver == dstSwapper
                         )
                     ) {
                         revert Error.INVALID_TXDATA_RECEIVER();
+                    }
+
+                    /// @dev forbid xChain deposits with destination swaps without interim token set (for user
+                    /// protection)
+                    if (receiver == dstSwapper && args_.liqDataInterimToken == address(0)) {
+                        revert Error.INVALID_INTERIM_TOKEN();
                     }
                 }
             } else {

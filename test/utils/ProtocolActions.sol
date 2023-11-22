@@ -1699,8 +1699,15 @@ abstract contract ProtocolActions is CommonProtocolActions {
         }
 
         /// @dev the actual liq request struct inscription
+        /// @notice adding dummy liqRequestToken as interim token if there is dstSwap because we are not
+        /// @notice testing failed deposits here
         v.liqReq = LiqRequest(
-            v.txData, liqRequestToken, args.liqBridge, args.toChainId, liqRequestToken == NATIVE_TOKEN ? args.amount : 0
+            v.txData,
+            liqRequestToken,
+            args.dstSwap ? liqRequestToken : address(0),
+            args.liqBridge,
+            args.toChainId,
+            liqRequestToken == NATIVE_TOKEN ? args.amount : 0
         );
 
         if (liqRequestToken != NATIVE_TOKEN) {
@@ -1867,10 +1874,12 @@ abstract contract ProtocolActions is CommonProtocolActions {
             TX_DATA_TO_UPDATE_ON_DST[args.toChainId].push(vars.txData);
         }
 
+        /// @notice no interim token supplied as this is a withdraw
         vars.liqReq = LiqRequest(
             GENERATE_WITHDRAW_TX_DATA_ON_DST ? bytes("") : vars.txData,
             /// @dev for certain test cases, insert txData as null here
             args.underlyingTokenDst,
+            address(0),
             args.liqBridge,
             args.liqDstChainId,
             0
@@ -3473,6 +3482,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     false
                 ),
                 getContract(ETH, "DAI"),
+                address(0),
                 1,
                 ARBI,
                 0

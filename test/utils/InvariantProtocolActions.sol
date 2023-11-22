@@ -1054,8 +1054,15 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         }
 
         /// @dev the actual liq request struct inscription
+        /// @notice adding dummy liqRequestToken as interim token if there is dstSwap because we are not
+        /// @notice testing failed deposits here
         v.liqReq = LiqRequest(
-            v.txData, liqRequestToken, args.liqBridge, args.toChainId, liqRequestToken == NATIVE_TOKEN ? args.amount : 0
+            v.txData,
+            liqRequestToken,
+            args.dstSwap ? liqRequestToken : address(0),
+            args.liqBridge,
+            args.toChainId,
+            liqRequestToken == NATIVE_TOKEN ? args.amount : 0
         );
 
         if (liqRequestToken != NATIVE_TOKEN) {
@@ -1219,10 +1226,12 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         vars.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, args.toChainId == args.liqDstChainId);
 
+        /// @notice no interim token supplied as this is a withdraw
         vars.liqReq = LiqRequest(
             vars.txData,
             /// @dev for certain test cases, insert txData as null here
             args.underlyingTokenDst,
+            address(0),
             args.liqBridge,
             args.liqDstChainId,
             0

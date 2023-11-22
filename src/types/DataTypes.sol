@@ -29,6 +29,9 @@ struct LiqRequest {
     bytes txData;
     /// @dev input token. Relevant for withdraws especially to know when to update txData
     address token;
+    /// @dev intermediary token on destination. Relevant for xChain deposits where a destination swap is needed for
+    /// validation purposes
+    address interimToken;
     /// @dev what bridge to use to move tokens
     uint8 bridgeId;
     /// @dev dstChainId = liqDstchainId for deposits. For withdraws it is the target chain id for where the underlying
