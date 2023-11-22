@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import "test/utils/BaseSetup.sol";
 import { SuperRegistry } from "src/settings/SuperRegistry.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 
 contract QuorumManagerTest is BaseSetup {
     SuperRegistry public superRegistry;

@@ -2,8 +2,9 @@
 pragma solidity ^0.8.23;
 
 import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+
 import { AggregatorV3Interface } from "src/vendor/chainlink/AggregatorV3Interface.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import "test/utils/ProtocolActions.sol";
 
 contract FakeUser is ERC1155Holder {

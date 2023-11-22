@@ -6,7 +6,7 @@ import { IBaseForm } from "../interfaces/IBaseForm.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { IEmergencyQueue } from "../interfaces/IEmergencyQueue.sol";
-import { Error } from "../utils/Error.sol";
+import { Error } from "../libraries/Error.sol";
 import { ISuperformFactory } from "../interfaces/ISuperformFactory.sol";
 import "../types/DataTypes.sol";
 

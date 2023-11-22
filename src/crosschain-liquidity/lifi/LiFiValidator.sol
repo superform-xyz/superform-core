@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { LiFiTxDataExtractor } from "src/vendor/lifi/LiFiTxDataExtractor.sol";
 import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";

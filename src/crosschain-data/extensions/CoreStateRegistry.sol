@@ -17,7 +17,7 @@ import { DataLib } from "../../libraries/DataLib.sol";
 import { ProofLib } from "../../libraries/ProofLib.sol";
 import { ArrayCastLib } from "../../libraries/ArrayCastLib.sol";
 import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
-import { Error } from "../../utils/Error.sol";
+import { Error } from "../../libraries/Error.sol";
 import {
     PayloadState,
     AMBMessage,
@@ -617,10 +617,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                         )
                     );
 
-                    uint256 finalAmount = bridgeValidator.decodeAmountIn(txData_[i], false);
                     if (
                         !PayloadUpdaterLib.validateSlippage(
-                            finalAmount,
+                            bridgeValidator.decodeAmountIn(txData_[i], false),
                             IBaseForm(superform).previewRedeemFrom(multiVaultData_.amounts[i]),
                             multiVaultData_.maxSlippages[i]
                         )
@@ -887,7 +886,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     function _processAck(uint256 payloadId_, uint64 srcChainId_, bytes memory returnMessage_) internal {
         /// @dev if deposits succeeded or some withdrawal failed, dispatch a callback
-        if (returnMessage_.length > 0) {
+        if (returnMessage_.length != 0) {
             uint8[] memory ambIds = msgAMBs[payloadId_];
 
             (, bytes memory extraData) = IPaymentHelper(_getAddress(keccak256("PAYMENT_HELPER"))).calculateAMBData(

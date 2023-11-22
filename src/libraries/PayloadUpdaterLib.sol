@@ -2,8 +2,9 @@
 pragma solidity ^0.8.23;
 
 import { DataLib } from "./DataLib.sol";
-import { Error } from "../utils/Error.sol";
+import { Error } from "../libraries/Error.sol";
 import { PayloadState, CallbackType, LiqRequest } from "../types/DataTypes.sol";
+
 
 /// @dev library to validate slippage updation
 library PayloadUpdaterLib {
@@ -34,7 +35,7 @@ library PayloadUpdaterLib {
     function validateLiqReq(LiqRequest memory req_) internal pure {
         /// req token should be address(0)
         /// req tx data length should be 0
-        if (req_.token != address(0) && req_.txData.length > 0) {
+        if (req_.token != address(0) && req_.txData.length != 0) {
             revert Error.CANNOT_UPDATE_WITHDRAW_TX_DATA();
         }
     }

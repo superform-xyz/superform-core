@@ -39,7 +39,7 @@ import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
-import { EmergencyQueue } from "src/emergency/EmergencyQueue.sol";
+import { EmergencyQueue } from "src/forms/EmergencyQueue.sol";
 import { SuperRegistry } from "src/settings/SuperRegistry.sol";
 import { SuperRBAC } from "src/settings/SuperRBAC.sol";
 import { SuperPositions } from "src/SuperPositions.sol";

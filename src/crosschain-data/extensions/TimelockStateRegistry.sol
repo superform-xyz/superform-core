@@ -13,7 +13,7 @@ import { ITimelockStateRegistry } from "../../interfaces/ITimelockStateRegistry.
 import { IBaseStateRegistry } from "../../interfaces/IBaseStateRegistry.sol";
 import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
 import { IPaymentHelper } from "../../interfaces/IPaymentHelper.sol";
-import { Error } from "../../utils/Error.sol";
+import { Error } from "../../libraries/Error.sol";
 import { BaseStateRegistry } from "../BaseStateRegistry.sol";
 import { ProofLib } from "../../libraries/ProofLib.sol";
 import { DataLib } from "../../libraries/DataLib.sol";
@@ -153,7 +153,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         IERC4626TimelockForm form = IERC4626TimelockForm(superform);
 
         /// @dev this step is used to re-feed txData to avoid using old txData that would have expired by now
-        if (txData_.length > 0) {
+        if (txData_.length != 0) {
             PayloadUpdaterLib.validateLiqReq(p.data.liqData);
             /// @dev validate the incoming tx data
             bridgeValidator.validateTxData(

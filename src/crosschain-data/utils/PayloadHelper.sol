@@ -7,7 +7,7 @@ import { IBaseStateRegistry } from "../../interfaces/IBaseStateRegistry.sol";
 import { ITimelockStateRegistry } from "../../interfaces/ITimelockStateRegistry.sol";
 import { IPayloadHelper } from "../../interfaces/IPayloadHelper.sol";
 import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
-import { Error } from "../../utils/Error.sol";
+import { Error } from "../../libraries/Error.sol";
 import {
     CallbackType,
     ReturnMultiData,
@@ -370,7 +370,7 @@ contract PayloadHelper is IPayloadHelper {
             liqDstChainIds[i] = imvd.liqData[i].liqDstChainId;
 
             /// @dev decodes amount from txdata only if its present
-            if (imvd.liqData[i].txData.length > 0) {
+            if (imvd.liqData[i].txData.length != 0) {
                 amountsIn[i] =
                     IBridgeValidator(superRegistry.getBridgeValidator(bridgeIds[i])).decodeAmountIn(txDatas[i], false);
             }
@@ -414,7 +414,7 @@ contract PayloadHelper is IPayloadHelper {
         amountsIn = new uint256[](1);
 
         /// @dev decodes amount from txdata only if its present
-        if (isvd.liqData.txData.length > 0) {
+        if (isvd.liqData.txData.length != 0) {
             amountsIn[0] =
                 IBridgeValidator(superRegistry.getBridgeValidator(bridgeIds[0])).decodeAmountIn(txDatas[0], false);
         }

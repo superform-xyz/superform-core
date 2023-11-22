@@ -7,7 +7,7 @@ import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IE
 import { InitSingleVaultData } from "./types/DataTypes.sol";
 import { IBaseForm } from "./interfaces/IBaseForm.sol";
 import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
-import { Error } from "./utils/Error.sol";
+import { Error } from "./libraries/Error.sol";
 import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
 import { IEmergencyQueue } from "./interfaces/IEmergencyQueue.sol";
 import { DataLib } from "./libraries/DataLib.sol";

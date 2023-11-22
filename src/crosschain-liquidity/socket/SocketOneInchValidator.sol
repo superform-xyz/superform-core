@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.23;
 
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
 import { ISocketOneInchImpl } from "src/vendor/socket/ISocketOneInchImpl.sol";
 

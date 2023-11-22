@@ -11,7 +11,7 @@ import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
 import { ITimelockStateRegistry } from "../interfaces/ITimelockStateRegistry.sol";
 import { IEmergencyQueue } from "../interfaces/IEmergencyQueue.sol";
 import { DataLib } from "../libraries/DataLib.sol";
-import { Error } from "../utils/Error.sol";
+import { Error } from "../libraries/Error.sol";
 
 /// @title ERC4626TimelockForm
 /// @notice Form implementation to handle timelock extension for ERC4626 vaults
@@ -172,10 +172,9 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         override
         returns (uint256)
     {
-        uint256 lockedTill = _requestUnlock(singleVaultData_.amount);
         /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to timelock
         /// @dev state registry for re-processing at a later date
-        _storePayload(0, srcSender_, CHAIN_ID, lockedTill, singleVaultData_);
+        _storePayload(0, srcSender_, CHAIN_ID, _requestUnlock(singleVaultData_.amount), singleVaultData_);
 
         return 0;
     }
@@ -194,10 +193,9 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         override
         returns (uint256)
     {
-        uint256 lockedTill = _requestUnlock(singleVaultData_.amount);
         /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to timelock
         /// @dev state registry for re-processing at a later date
-        _storePayload(1, srcSender_, srcChainId_, lockedTill, singleVaultData_);
+        _storePayload(1, srcSender_, srcChainId_, _requestUnlock(singleVaultData_.amount), singleVaultData_);
 
         return 0;
     }
@@ -231,8 +229,8 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     )
         internal
     {
-        ITimelockStateRegistry registry =
-            ITimelockStateRegistry(superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY")));
-        registry.receivePayload(type_, srcSender_, srcChainId_, lockedTill_, data_);
+        ITimelockStateRegistry(superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY"))).receivePayload(
+            type_, srcSender_, srcChainId_, lockedTill_, data_
+        );
     }
 }

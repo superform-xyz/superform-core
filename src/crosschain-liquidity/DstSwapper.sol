@@ -11,7 +11,7 @@ import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
 import { LiquidityHandler } from "../crosschain-liquidity/LiquidityHandler.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { IERC4626Form } from "../forms/interfaces/IERC4626Form.sol";
-import { Error } from "../utils/Error.sol";
+import { Error } from "../libraries/Error.sol";
 import { DataLib } from "../libraries/DataLib.sol";
 import { PayloadUpdaterLib } from "../libraries/PayloadUpdaterLib.sol";
 import "../types/DataTypes.sol";

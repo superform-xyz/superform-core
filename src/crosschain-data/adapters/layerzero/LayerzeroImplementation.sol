@@ -6,7 +6,7 @@ import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { AMBMessage } from "src/types/DataTypes.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { ILayerZeroReceiver } from "src/vendor/layerzero/ILayerZeroReceiver.sol";
 import { ILayerZeroUserApplicationConfig } from "src/vendor/layerzero/ILayerZeroUserApplicationConfig.sol";
 import { ILayerZeroEndpoint } from "src/vendor/layerzero/ILayerZeroEndpoint.sol";
@@ -253,7 +253,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         if (
             !(
                 srcAddress_.length == trustedRemote.length && keccak256(srcAddress_) == keccak256(trustedRemote)
-                    && trustedRemote.length > 0
+                    && trustedRemote.length != 0
             )
         ) {
             revert Error.INVALID_SRC_SENDER();
@@ -265,7 +265,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     function nonblockingLzReceive(uint16 srcChainId_, bytes memory srcAddress_, bytes memory payload_) public {
         // only internal transaction
         if (msg.sender != address(this)) {
-            revert Error.CALLER_NOT_ENDPOINT();
+            revert Error.INVALID_INTERNAL_CALL();
         }
 
         _nonblockingLzReceive(srcChainId_, srcAddress_, payload_);
