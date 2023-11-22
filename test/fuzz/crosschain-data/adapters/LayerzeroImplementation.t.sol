@@ -373,7 +373,7 @@ contract LayerzeroImplementationTest is BaseSetup {
     }
 
     function test_revert_nonblockingLzReceive_invalidCaller(uint16 lzChainIdSeed_, address malice_) public {
-        vm.expectRevert(Error.CALLER_NOT_ENDPOINT.selector);
+        vm.expectRevert(Error.INVALID_INTERNAL_CALL.selector);
         uint16 lzChainId = lz_chainIds[lzChainIdSeed_ % lz_chainIds.length];
 
         vm.prank(malice_);

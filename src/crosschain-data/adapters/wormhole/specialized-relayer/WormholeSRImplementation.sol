@@ -8,6 +8,7 @@ import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { Error } from "src/libraries/Error.sol";
 import { IWormhole } from "src/vendor/wormhole/IWormhole.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
+import "src/vendor/wormhole/Utils.sol";
 
 /// @title WormholeImplementation
 /// @author Zeropoint Labs
@@ -193,7 +194,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
             revert Error.INVALID_SRC_CHAIN_ID();
         }
 
-        if (_bytes32ToAddress(wormholeMessage.emitterAddress) != authorizedImpl[wormholeMessage.emitterChainId]) {
+        if (fromWormholeFormat(wormholeMessage.emitterAddress) != authorizedImpl[wormholeMessage.emitterChainId]) {
             revert Error.INVALID_SRC_SENDER();
         }
 
@@ -251,16 +252,5 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
 
         authorizedImpl[chainId_] = authorizedImpl_;
         emit AuthorizedImplAdded(chainId_, authorizedImpl_);
-    }
-
-    //////////////////////////////////////////////////////////////
-    //                  INTERNAL FUNCTIONS                      //
-    //////////////////////////////////////////////////////////////
-
-    /// @dev casts a bytes32 string to address
-    /// @param buf_ is the bytes32 string to be casted
-    /// @return a address variable of the address passed in params
-    function _bytes32ToAddress(bytes32 buf_) internal pure returns (address) {
-        return address(uint160(uint256(buf_)));
     }
 }
