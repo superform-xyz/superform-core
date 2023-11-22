@@ -3,8 +3,7 @@ pragma solidity ^0.8.23;
 
 import { DataLib } from "./DataLib.sol";
 import { Error } from "../libraries/Error.sol";
-import { LiqRequest } from "../types/LiquidityTypes.sol";
-import { PayloadState, CallbackType } from "../types/DataTypes.sol";
+import { PayloadState, CallbackType, LiqRequest } from "../types/DataTypes.sol";
 
 /// @dev library to validate slippage updation
 library PayloadUpdaterLib {

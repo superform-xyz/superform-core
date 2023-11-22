@@ -133,11 +133,6 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         return super.supportsInterface(interfaceId_);
     }
 
-    /// @notice Used to construct return url
-    function _baseURI() internal view override returns (string memory) {
-        return dynamicURI;
-    }
-
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
@@ -308,6 +303,11 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
 
+    /// @notice Used to construct return url
+    function _baseURI() internal view override returns (string memory) {
+        return dynamicURI;
+    }
+
     /// @dev helps validate the state registry id for minting superform id
     function _validateStateSyncer(uint256 superformId_) internal view {
         uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
@@ -376,7 +376,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     /// @param message_ is the crosschain message to be sent.
     function _broadcast(bytes memory message_) internal {
         (uint256 totalFees, bytes memory extraData) =
-            IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER"))).calculateRegisterTransmuterAMBData();
+            IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER"))).getRegisterTransmuterAMBData();
 
         (uint8 ambId, bytes memory broadcastParams) = abi.decode(extraData, (uint8, bytes));
 

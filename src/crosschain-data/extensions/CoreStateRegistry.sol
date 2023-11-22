@@ -26,9 +26,9 @@ import {
     CallbackType,
     ReturnMultiData,
     ReturnSingleData,
-    InitSingleVaultData
+    InitSingleVaultData,
+    LiqRequest
 } from "../../types/DataTypes.sol";
-import { LiqRequest } from "../../types/LiquidityTypes.sol";
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
 /// @dev enables communication between Superform Core Contracts deployed on all supported networks
@@ -665,9 +665,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     superformId: multiVaultData.superformIds[i],
                     amount: multiVaultData.amounts[i],
                     maxSlippage: multiVaultData.maxSlippages[i],
+                    liqData: multiVaultData.liqData[i],
                     hasDstSwap: false,
                     retain4626: false,
-                    liqData: multiVaultData.liqData[i],
                     receiverAddress: multiVaultData.receiverAddress,
                     extraFormData: abi.encode(payloadId_, i)
                 }),
@@ -737,9 +737,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                             superformId: multiVaultData.superformIds[i],
                             amount: multiVaultData.amounts[i],
                             maxSlippage: multiVaultData.maxSlippages[i],
+                            liqData: emptyRequest,
                             hasDstSwap: false,
                             retain4626: multiVaultData.retain4626s[i],
-                            liqData: emptyRequest,
                             receiverAddress: multiVaultData.receiverAddress,
                             extraFormData: multiVaultData.extraFormData
                         }),

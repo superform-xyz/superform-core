@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.23;
 
-import { InitSingleVaultData, InitMultiVaultData } from "../types/DataTypes.sol";
-import { LiqRequest } from "../types/LiquidityTypes.sol";
+import { InitSingleVaultData, InitMultiVaultData, LiqRequest } from "../types/DataTypes.sol";
 
 /// @dev library to cast single values into array for streamlining helper functions
 /// @notice not gas optimized, suggested for usage only in view/pure functions
@@ -41,9 +40,9 @@ library ArrayCastLib {
             superformIds,
             amounts,
             maxSlippage,
-            new bool[](superformIds.length),
-            new bool[](superformIds.length),
             liqData,
+            new bool[](superformIds.length),
+            new bool[](superformIds.length),
             data_.receiverAddress,
             data_.extraFormData
         );

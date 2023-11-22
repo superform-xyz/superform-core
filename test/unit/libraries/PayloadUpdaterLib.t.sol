@@ -4,7 +4,6 @@ pragma solidity ^0.8.23;
 import "forge-std/Test.sol";
 
 import { Error } from "src/libraries/Error.sol";
-import { LiqRequest } from "src/types/LiquidityTypes.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { PayloadUpdaterLib } from "src/libraries/PayloadUpdaterLib.sol";
 import "src/types/DataTypes.sol";
@@ -105,7 +104,7 @@ contract PayloadUpdaterLibTest is Test {
         bytes memory bytesTxData = abi.encode(420);
         /// @dev checks for liquidity request validation
         vm.expectRevert(Error.CANNOT_UPDATE_WITHDRAW_TX_DATA.selector);
-        payloadUpdateLib.validateLiqReq(LiqRequest(1, bytesTxData, address(420), 1, 1e18));
+        payloadUpdateLib.validateLiqReq(LiqRequest(bytesTxData, address(420), 1, 1, 1e18));
     }
 
     /// WITHDRAW PAYLAOD UPDATER TESTS

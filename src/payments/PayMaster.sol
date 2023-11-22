@@ -8,7 +8,7 @@ import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
 import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
 import { LiquidityHandler } from "../crosschain-liquidity/LiquidityHandler.sol";
-import "../types/LiquidityTypes.sol";
+import { LiqRequest } from "../types/DataTypes.sol";
 
 /// @title PayMaster
 /// @author ZeroPoint Labs
@@ -52,6 +52,9 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
 
+    /// @dev to receive amb refunds
+    receive() external payable { }
+
     /// @inheritdoc IPayMaster
     function withdrawTo(bytes32 superRegistryId_, uint256 nativeAmount_) external override onlyPaymentAdmin {
         if (nativeAmount_ > address(this).balance) {
@@ -84,9 +87,6 @@ contract PayMaster is IPayMaster, LiquidityHandler {
 
         IAmbImplementation(superRegistry.getAmbAddress(ambId_)).retryPayload{ value: nativeValue_ }(data_);
     }
-
-    /// @dev to receive amb refunds
-    receive() external payable { }
 
     /// @inheritdoc IPayMaster
     function makePayment(address user_) external payable override {

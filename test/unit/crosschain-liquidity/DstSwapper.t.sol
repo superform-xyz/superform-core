@@ -464,9 +464,9 @@ contract DstSwapperTest is ProtocolActions {
                                 superformId,
                                 1_798_823_082_965_464_723_525,
                                 0,
+                                liq,
                                 true,
                                 false,
-                                liq,
                                 receiverAddress,
                                 bytes("")
                             )
@@ -541,7 +541,7 @@ contract DstSwapperTest is ProtocolActions {
                     abi.encode(
                         new uint8[](0),
                         abi.encode(
-                            InitSingleVaultData(1, superformId, amount, 0, true, false, liq, receiverAddress, bytes(""))
+                            InitSingleVaultData(1, superformId, amount, 0, liq, true, false, receiverAddress, bytes(""))
                         )
                     )
                 )
@@ -574,7 +574,7 @@ contract DstSwapperTest is ProtocolActions {
                 ),
                 abi.encode(
                     new uint8[](0),
-                    abi.encode(InitSingleVaultData(1, superformId, 1e18, 1000, true, false, liq, users[0], bytes("")))
+                    abi.encode(InitSingleVaultData(1, superformId, 1e18, 1000, liq, true, false, users[0], bytes("")))
                 )
             )
         );
@@ -626,9 +626,9 @@ contract DstSwapperTest is ProtocolActions {
                                 superformIds,
                                 amounts,
                                 maxSlippages,
+                                liq,
                                 hasDstSwaps,
                                 new bool[](2),
-                                liq,
                                 users[0],
                                 bytes("")
                             )
@@ -680,9 +680,9 @@ contract DstSwapperTest is ProtocolActions {
                                 superformIds,
                                 amounts,
                                 new uint256[](2),
+                                liq,
                                 hasDstSwaps,
                                 new bool[](2),
-                                liq,
                                 receiverAddress,
                                 bytes("")
                             )

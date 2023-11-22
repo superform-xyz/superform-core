@@ -178,7 +178,6 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         external
         override
         onlySwapper
-        nonReentrant
     {
         IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
 
@@ -276,13 +275,17 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         );
 
         /// @dev get the address of the bridge to send the txData to.
-        v.to = superRegistry.getBridgeAddress(bridgeId_);
         (v.underlying, v.expAmount, v.maxSlippage) = _getFormUnderlyingFrom(coreStateRegistry_, payloadId_, index_);
 
         v.balanceBefore = IERC20(v.underlying).balanceOf(v.finalDst);
-        uint256 nativeAmount = (v.approvalToken == NATIVE) ? v.amount : 0;
 
-        _dispatchTokens(v.to, txData_, v.approvalToken, v.amount, nativeAmount);
+        _dispatchTokens(
+            superRegistry.getBridgeAddress(bridgeId_),
+            txData_,
+            v.approvalToken,
+            v.amount,
+            v.approvalToken == NATIVE ? v.amount : 0
+        );
 
         v.balanceAfter = IERC20(v.underlying).balanceOf(v.finalDst);
 

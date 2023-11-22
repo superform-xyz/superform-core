@@ -4,8 +4,7 @@ pragma solidity ^0.8.23;
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC4626TimelockVault } from "super-vaults/interfaces/IERC4626TimelockVault.sol";
-import { InitSingleVaultData, TimelockPayload } from "../types/DataTypes.sol";
-import { LiqRequest } from "../types/LiquidityTypes.sol";
+import { InitSingleVaultData, TimelockPayload, LiqRequest } from "../types/DataTypes.sol";
 import { ERC4626FormImplementation } from "./ERC4626FormImplementation.sol";
 import { BaseForm } from "../BaseForm.sol";
 import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
@@ -61,12 +60,8 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     //////////////////////////////////////////////////////////////
 
     /// @dev this function is called when the timelock deposit is ready to be withdrawn after being unlocked
-    /// @param amount_ the amount of tokens to withdraw
     /// @param p_ the payload data
-    function withdrawAfterCoolDown(
-        uint256 amount_,
-        TimelockPayload memory p_
-    )
+    function withdrawAfterCoolDown(TimelockPayload memory p_)
         external
         onlyTimelockStateRegistry
         returns (uint256 dstAmount)
@@ -94,7 +89,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         /// @dev if the txData is empty, the tokens are sent directly to the sender, otherwise sent first to this form
         vars.receiver = vars.len1 == 0 ? p_.data.receiverAddress : address(this);
 
-        dstAmount = v.redeem(amount_, vars.receiver, address(this));
+        dstAmount = v.redeem(p_.data.amount, vars.receiver, address(this));
         /// @dev validate and dispatches the tokens
         if (vars.len1 != 0) {
             vars.bridgeValidator = superRegistry.getBridgeValidator(vars.liqData.bridgeId);
