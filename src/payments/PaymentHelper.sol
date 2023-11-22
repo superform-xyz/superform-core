@@ -127,7 +127,7 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @inheritdoc IPaymentHelper
-    function calculateRegisterTransmuterAMBData()
+    function getRegisterTransmuterAMBData()
         external
         view
         override

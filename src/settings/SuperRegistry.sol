@@ -19,14 +19,10 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     uint64 public immutable CHAIN_ID;
 
     /// @dev core protocol - identifiers
-    /// @notice SUPERFORM_FACTORY, CORE_STATE_REGISTRY, TIMELOCK_STATE_REGISTRY, BROADCAST_REGISTRY, SUPER_RBAC,
-    /// DST_SWAPPER
     /// @notice should not be allowed to be changed
-    /// @dev not accessed in protocol
-    /// @dev could be allowed to be changed
     bytes32 public constant override SUPERFORM_ROUTER = keccak256("SUPERFORM_ROUTER");
     /// @dev can be used to set a new factory that has form ids paused
-    /// @dev probably should NOT be allowed to be changed
+    /// @notice should not be allowed to be changed
     bytes32 public constant override SUPERFORM_FACTORY = keccak256("SUPERFORM_FACTORY");
     /// @dev not accessed in protocol
     /// @dev could be allowed to be changed
@@ -39,28 +35,28 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @dev could be allowed to be changed
     bytes32 public constant override PAYMENT_HELPER = keccak256("PAYMENT_HELPER");
     /// @dev accessed in many areas of the protocol. has direct access to superforms
-    /// @dev should NOT be allowed to be changed
+    /// @notice should not be allowed to be changed
     bytes32 public constant override CORE_STATE_REGISTRY = keccak256("CORE_STATE_REGISTRY");
     /// @dev accessed in many areas of the protocol. has direct access to timelock form
-    /// @dev should NOT be allowed to be changed
+    /// @notice should not be allowed to be changed
     bytes32 public constant override TIMELOCK_STATE_REGISTRY = keccak256("TIMELOCK_STATE_REGISTRY");
     /// @dev used to sync messages for pausing superforms or deploying transmuters
-    /// @dev probably should NOT be allowed to be changed
+    /// @notice should not be allowed to be changed
     bytes32 public constant override BROADCAST_REGISTRY = keccak256("BROADCAST_REGISTRY");
     /// @dev not accessed in protocol
-    /// @dev could be allowed to be changed
+    /// @notice should not be allowed to be changed
     bytes32 public constant override SUPER_POSITIONS = keccak256("SUPER_POSITIONS");
     /// @dev accessed in many areas of the protocol
-    /// @dev probably should NOT be allowed to be changed
+    /// @notice should not be allowed to be changed
     bytes32 public constant override SUPER_RBAC = keccak256("SUPER_RBAC");
     /// @dev not accessed in protocol
     /// @dev could be allowed to be changed
     bytes32 public constant override PAYLOAD_HELPER = keccak256("PAYLOAD_HELPER");
     /// @dev accessed in CSR and validators. can be used to alter behaviour of update deposit payloads
-    /// @dev probably should NOT be allowed to be changed
+    /// @notice should not be allowed to be changed
     bytes32 public constant override DST_SWAPPER = keccak256("DST_SWAPPER");
     /// @dev accessed in base form to send payloads to emergency queue
-    /// @dev probably should NOT be allowed to be changed
+    /// @notice should not be allowed to be changed
     bytes32 public constant override EMERGENCY_QUEUE = keccak256("EMERGENCY_QUEUE");
     /// @dev default keepers - identifiers
     /// @dev could be allowed to be changed
@@ -278,6 +274,8 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             uint8 bridgeId = bridgeId_[i];
             address bridgeAddress = bridgeAddress_[i];
             address bridgeValidatorT = bridgeValidator_[i];
+            if (bridgeAddress == address(0)) revert Error.ZERO_ADDRESS();
+            if (bridgeValidatorT == address(0)) revert Error.ZERO_ADDRESS();
 
             if (bridgeAddresses[bridgeId] != address(0)) revert Error.DISABLED();
 

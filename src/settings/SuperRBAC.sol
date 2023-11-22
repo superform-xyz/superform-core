@@ -19,25 +19,19 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     bytes32 public constant SYNC_REVOKE = keccak256("SYNC_REVOKE");
 
     /// @dev used in many areas of the codebase to perform config operations
-    /// @dev could be worth to have this changeable in case it gets compromised (but without ability to revoke itself)
-    /// @dev changeable by which role?
-    /// @dev single address
+    /// @notice at least one address must be assigned this role
     bytes32 public constant override PROTOCOL_ADMIN_ROLE = keccak256("PROTOCOL_ADMIN_ROLE");
 
     /// @dev used in a few areas of the code
-    /// @dev could be worth to have this changeable in case it gets compromised (but without ability to revoke itself)
-    /// @dev changeable by which role?
-    /// @dev single address
+    /// @notice at least one address must be assigned this role
     bytes32 public constant override EMERGENCY_ADMIN_ROLE = keccak256("EMERGENCY_ADMIN_ROLE");
 
     /// @dev used to extract funds from PayMaster
     /// @dev could be allowed to be changed
-    /// @dev single address
     bytes32 public constant override PAYMENT_ADMIN_ROLE = keccak256("PAYMENT_ADMIN_ROLE");
 
     /// @dev used so that certain contracts can broadcast state changes to all connected remote chains
     /// @dev currently SUPERFORM_FACTORY, SUPERTRANSMUTER and SUPER_RBAC have this role. SUPER_RBAC doesn't need it
-    /// @dev should NOT be allowed to be changed (maps to more than 1 address)
     /// @dev multi address (revoke broadcast should be restricted)
     bytes32 public constant override BROADCASTER_ROLE = keccak256("BROADCASTER_ROLE");
 

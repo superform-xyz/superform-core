@@ -66,13 +66,6 @@ contract BroadcastRegistry is IBroadcastRegistry {
         _;
     }
 
-    modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
-            revert Error.NOT_PROTOCOL_ADMIN();
-        }
-        _;
-    }
-
     modifier onlyProcessor() {
         bytes32 role = keccak256("BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE");
         if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(role, msg.sender)) {

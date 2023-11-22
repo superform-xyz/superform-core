@@ -68,6 +68,6 @@ interface IBaseRouterImplementation is IBaseRouter {
         uint256 indexed payloadId, uint64 indexed dstChainId, uint256 superformIds, uint8[] ambIds
     );
 
-    /// @dev is emitted when a cross-chain transaction is completed.
-    event Completed(uint256 indexed payloadId);
+    /// @dev is emitted when a direct chain action is complete
+    event Completed();
 }

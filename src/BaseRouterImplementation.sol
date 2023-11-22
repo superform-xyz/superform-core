@@ -56,10 +56,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         IERC20 token;
         uint256 txDataLength;
         uint256 totalAmount;
-        address permit2;
         uint256 approvalAmount;
         uint256 amountIn;
         uint8 bridgeId;
+        address permit2;
     }
 
     struct MultiTokenForwardLocalVars {
@@ -67,11 +67,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         uint256 len;
         uint256 totalAmount;
         uint256 permit2dataLen;
-        address permit2;
         uint256 targetLen;
         uint256[] approvalAmounts;
         uint256[] amountsIn;
         uint8[] bridgeIds;
+        address permit2;
     }
 
     //////////////////////////////////////////////////////////////
@@ -107,10 +107,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
-        uint256 currentPayloadId = ++payloadIds;
-
         InitSingleVaultData memory vaultData = InitSingleVaultData(
-            currentPayloadId,
+            0,
             req_.superformData.superformId,
             req_.superformData.amount,
             req_.superformData.maxSlippage,
@@ -123,7 +121,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev same chain action & forward residual payment to payment collector
         _directSingleDeposit(msg.sender, req_.superformData.permit2data, vaultData);
-        emit Completed(currentPayloadId);
+        emit Completed();
     }
 
     /// @dev handles cross-chain single vault deposit
@@ -208,10 +206,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
-        uint256 currentPayloadId = ++payloadIds;
-
         InitMultiVaultData memory vaultData = InitMultiVaultData(
-            currentPayloadId,
+            0,
             req_.superformData.superformIds,
             req_.superformData.amounts,
             req_.superformData.maxSlippages,
@@ -224,7 +220,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev same chain action & forward residual payment to payment collector
         _directMultiDeposit(msg.sender, req_.superformData.permit2data, vaultData);
-        emit Completed(currentPayloadId);
+        emit Completed();
     }
 
     /// @dev handles cross-chain multi vault deposit
@@ -320,10 +316,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             msg.sender, req_.superformData.superformId, req_.superformData.amount
         );
 
-        vars.currentPayloadId = ++payloadIds;
-
         InitSingleVaultData memory vaultData = InitSingleVaultData(
-            vars.currentPayloadId,
+            0,
             req_.superformData.superformId,
             req_.superformData.amount,
             req_.superformData.maxSlippage,
@@ -336,7 +330,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev same chain action
         _directSingleWithdraw(vaultData, msg.sender);
-        emit Completed(vars.currentPayloadId);
+        emit Completed();
     }
 
     /// @dev handles cross-chain single vault withdraw
@@ -420,10 +414,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             msg.sender, req_.superformData.superformIds, req_.superformData.amounts
         );
 
-        vars.currentPayloadId = ++payloadIds;
-
         InitMultiVaultData memory vaultData = InitMultiVaultData(
-            vars.currentPayloadId,
+            0,
             req_.superformData.superformIds,
             req_.superformData.amounts,
             req_.superformData.maxSlippages,
@@ -436,7 +428,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev same chain action & forward residual payment to payment collector
         _directMultiWithdraw(vaultData, msg.sender);
-        emit Completed(vars.currentPayloadId);
+        emit Completed();
     }
 
     /// @dev handles cross-chain multi vault withdraw
@@ -812,6 +804,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         returns (bool)
     {
         uint256 len = superformsData_.amounts.length;
+        uint256 lenSuperforms = superformsData_.superformIds.length;
         uint256 liqRequestsLen = superformsData_.liqRequests.length;
 
         /// @dev empty requests are not allowed, as well as requests with length mismatch
@@ -819,17 +812,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (len != liqRequestsLen) return false;
 
         /// @dev deposits beyond max vaults per tx is blocked only for xchain
-        if (superformsData_.superformIds.length > superRegistry.getVaultLimitPerTx(dstChainId_)) {
+        if (lenSuperforms > superRegistry.getVaultLimitPerTx(dstChainId_)) {
             return false;
         }
 
         /// @dev superformIds/amounts/slippages array sizes validation
-        if (
-            !(
-                superformsData_.superformIds.length == superformsData_.amounts.length
-                    && superformsData_.superformIds.length == superformsData_.maxSlippages.length
-            )
-        ) {
+        if (!(lenSuperforms == len && lenSuperforms == superformsData_.maxSlippages.length)) {
             return false;
         }
         ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
