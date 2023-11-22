@@ -6,7 +6,7 @@ import { AMBMessage } from "src/types/DataTypes.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
 import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 
 contract HyperlaneImplementationTest is CommonProtocolActions {
     address public constant MAILBOX = 0xc005dc82818d67AF737725bD4bf75435d065D239;

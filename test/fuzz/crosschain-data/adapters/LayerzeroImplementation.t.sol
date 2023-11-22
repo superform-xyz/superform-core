@@ -10,7 +10,7 @@ import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { ILayerZeroEndpoint } from "src/vendor/layerzero/ILayerZeroEndpoint.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 
 interface ILzEndpoint {
     function hasStoredPayload(uint16 _srcChainId, bytes calldata _srcAddress) external view returns (bool);
@@ -373,7 +373,7 @@ contract LayerzeroImplementationTest is BaseSetup {
     }
 
     function test_revert_nonblockingLzReceive_invalidCaller(uint16 lzChainIdSeed_, address malice_) public {
-        vm.expectRevert(Error.CALLER_NOT_ENDPOINT.selector);
+        vm.expectRevert(Error.INVALID_INTERNAL_CALL.selector);
         uint16 lzChainId = lz_chainIds[lzChainIdSeed_ % lz_chainIds.length];
 
         vm.prank(malice_);

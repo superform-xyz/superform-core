@@ -5,7 +5,7 @@ import { kycDAO4626 } from "super-vaults/kycdao-4626/kycdao4626.sol";
 import { InitSingleVaultData } from "../types/DataTypes.sol";
 import { ERC4626FormImplementation } from "./ERC4626FormImplementation.sol";
 import { BaseForm } from "../BaseForm.sol";
-import { Error } from "../utils/Error.sol";
+import { Error } from "../libraries/Error.sol";
 
 /// @title ERC4626KYCDaoForm
 /// @notice The Form implementation for IERC4626 vaults with kycDAO NFT checks

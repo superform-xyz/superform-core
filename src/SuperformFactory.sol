@@ -10,7 +10,7 @@ import { IBaseForm } from "./interfaces/IBaseForm.sol";
 import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
 import { ISuperRBAC } from "./interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
-import { Error } from "./utils/Error.sol";
+import { Error } from "./libraries/Error.sol";
 import { DataLib } from "./libraries/DataLib.sol";
 import { Clones } from "openzeppelin-contracts/contracts/proxy/Clones.sol";
 
@@ -253,7 +253,7 @@ contract SuperformFactory is ISuperformFactory {
         formImplementationPaused[formImplementationId_] = status_;
 
         /// @dev broadcast the change in status to the other destination chains
-        if (extraData_.length > 0) {
+        if (extraData_.length != 0) {
             BroadcastMessage memory factoryPayload = BroadcastMessage(
                 "SUPERFORM_FACTORY",
                 SYNC_IMPLEMENTATION_STATUS,

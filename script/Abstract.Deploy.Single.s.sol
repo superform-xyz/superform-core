@@ -32,7 +32,7 @@ import { PaymentHelper } from "src/payments/PaymentHelper.sol";
 import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
-import { EmergencyQueue } from "src/emergency/EmergencyQueue.sol";
+import { EmergencyQueue } from "src/forms/EmergencyQueue.sol";
 import { generateBroadcastParams } from "test/utils/AmbParams.sol";
 
 struct SetupVars {

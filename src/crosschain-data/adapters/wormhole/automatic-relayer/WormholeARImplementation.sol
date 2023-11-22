@@ -6,15 +6,16 @@ import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { AMBMessage } from "src/types/DataTypes.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { IWormholeRelayer, VaaKey } from "src/vendor/wormhole/IWormholeRelayer.sol";
 import { IWormholeReceiver } from "src/vendor/wormhole/IWormholeReceiver.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
+import "src/vendor/wormhole/Utils.sol";
+
 /// @title WormholeImplementation
 /// @author Zeropoint Labs
 /// @notice allows state registries to use wormhole for crosschain communication
 /// @dev uses automatic relayers of wormhole for 1:1 messaging
-
 contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     using DataLib for uint256;
 
@@ -108,7 +109,7 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         uint256 dstNativeAirdrop;
         uint256 dstGasLimit;
 
-        if (extraData_.length > 0) {
+        if (extraData_.length != 0) {
             (dstNativeAirdrop, dstGasLimit) = abi.decode(extraData_, (uint256, uint256));
         }
 
@@ -182,7 +183,7 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
-        if (_bytes32ToAddress(sourceAddress_) != authorizedImpl[sourceChain_]) {
+        if (fromWormholeFormat(sourceAddress_) != authorizedImpl[sourceChain_]) {
             revert Error.INVALID_SRC_SENDER();
         }
 
@@ -242,16 +243,5 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
 
         authorizedImpl[chainId_] = authorizedImpl_;
         emit AuthorizedImplAdded(chainId_, authorizedImpl_);
-    }
-
-    //////////////////////////////////////////////////////////////
-    //                  INTERNAL FUNCTIONS                      //
-    //////////////////////////////////////////////////////////////
-
-    /// @dev casts a bytes32 string to address
-    /// @param buf_ is the bytes32 string to be casted
-    /// @return a address variable of the address passed in params
-    function _bytes32ToAddress(bytes32 buf_) internal pure returns (address) {
-        return address(uint160(uint256(buf_)));
     }
 }

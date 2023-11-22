@@ -13,7 +13,7 @@ import { IBaseForm } from "./interfaces/IBaseForm.sol";
 import { IBridgeValidator } from "./interfaces/IBridgeValidator.sol";
 import { ISuperPositions } from "./interfaces/ISuperPositions.sol";
 import { DataLib } from "./libraries/DataLib.sol";
-import { Error } from "./utils/Error.sol";
+import { Error } from "./libraries/Error.sol";
 import { IPermit2 } from "./vendor/dragonfly-xyz/IPermit2.sol";
 import "./crosschain-liquidity/LiquidityHandler.sol";
 import "./types/DataTypes.sol";

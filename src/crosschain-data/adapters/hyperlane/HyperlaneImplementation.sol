@@ -10,7 +10,7 @@ import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
 import { AMBMessage } from "src/types/DataTypes.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
 /// @title HyperlaneImplementation
@@ -239,7 +239,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         pure
         returns (bytes memory hookMetaData)
     {
-        if (extraData_.length > 0) {
+        if (extraData_.length != 0) {
             // extra data is encoded gas limit on dst chain
             uint256 gasLimit = abi.decode(extraData_, (uint256));
             hookMetaData = StandardHookMetadata.formatMetadata(gasLimit, srcSender_);

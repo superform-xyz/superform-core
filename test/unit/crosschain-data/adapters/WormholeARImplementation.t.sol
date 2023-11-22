@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import "test/utils/BaseSetup.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { TransactionType, CallbackType, AMBMessage } from "src/types/DataTypes.sol";
 import { VaaKey, IWormholeRelayer } from "src/vendor/wormhole/IWormholeRelayer.sol";
 import { DataLib } from "src/libraries/DataLib.sol";

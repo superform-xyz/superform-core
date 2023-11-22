@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.23;
 
-import { Error } from "../utils/Error.sol";
+import { Error } from "../libraries/Error.sol";
 
 /// @dev rationale for "memory-safe" assembly: https://docs.soliditylang.org/en/v0.8.20/assembly.html#memory-safety
 library DataLib {

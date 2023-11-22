@@ -9,7 +9,7 @@ import { LiquidityHandler } from "../crosschain-liquidity/LiquidityHandler.sol";
 import { InitSingleVaultData } from "../types/DataTypes.sol";
 import { BaseForm } from "../BaseForm.sol";
 import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
-import { Error } from "../utils/Error.sol";
+import { Error } from "../libraries/Error.sol";
 import { DataLib } from "../libraries/DataLib.sol";
 
 /// @title ERC4626FormImplementation
@@ -176,7 +176,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         /// @dev non empty txData means there is a swap needed before depositing (input asset not the same as vault
         /// asset)
-        if (singleVaultData_.liqData.txData.length > 0) {
+        if (singleVaultData_.liqData.txData.length != 0) {
             vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
 
             vars.chainId = CHAIN_ID;

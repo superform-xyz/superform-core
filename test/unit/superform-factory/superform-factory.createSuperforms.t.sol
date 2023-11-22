@@ -5,7 +5,7 @@ import { SuperformFactory } from "src/SuperformFactory.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
 import { ERC4626FormInterfaceNotSupported } from "test/mocks/InterfaceNotSupported/ERC4626InterFaceNotSupported.sol";
 import "test/utils/BaseSetup.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 
 import { DataLib } from "src/libraries/DataLib.sol";
 

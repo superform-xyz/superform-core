@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.23;
 
-import { Error } from "../utils/Error.sol";
+import { Error } from "../libraries/Error.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { IPayMaster } from "../interfaces/IPayMaster.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
@@ -71,12 +71,8 @@ contract PayMaster is IPayMaster, LiquidityHandler {
         override
         onlyPaymentAdmin
     {
+        /// receiver cannot be address(0)
         address receiver = superRegistry.getAddressByChainId(superRegistryId_, dstChainId_);
-
-        if (receiver == address(0)) {
-            revert Error.ZERO_ADDRESS();
-        }
-
         _validateAndDispatchTokens(req_, receiver);
     }
 

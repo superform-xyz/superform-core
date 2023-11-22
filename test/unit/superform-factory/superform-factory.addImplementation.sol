@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import { SuperformFactory } from "src/SuperformFactory.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
 import "test/utils/BaseSetup.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 
 contract SuperformFactoryAddImplementationTest is BaseSetup {
     uint64 internal chainId = ETH;

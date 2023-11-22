@@ -10,7 +10,7 @@ import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.so
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
 abstract contract ProtocolActions is CommonProtocolActions {

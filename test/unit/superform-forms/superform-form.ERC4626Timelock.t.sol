@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.23;
 
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { MockERC20 } from "test/mocks/MockERC20.sol";
 import { SuperformFactory } from "src/SuperformFactory.sol";
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
