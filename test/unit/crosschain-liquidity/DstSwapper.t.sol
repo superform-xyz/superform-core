@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
-
+import { AggregatorV3Interface } from "src/vendor/chainlink/AggregatorV3Interface.sol";
 import { Error } from "src/utils/Error.sol";
 import "test/utils/ProtocolActions.sol";
 
@@ -39,23 +39,15 @@ contract DstSwapperTest is ProtocolActions {
             vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);
             DstSwapper(dstSwapper).processTx(1000, 0, 1, txData);
 
-            DstSwapper(dstSwapper).processTx(
-                1, 0, 1, _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0)
-            );
-
-            txData = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
+            DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
 
             /// @dev try with a non-existent index
             vm.expectRevert(Error.INVALID_INDEX.selector);
             DstSwapper(dstSwapper).processTx(1, 420, 1, txData);
 
-            txData = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
-
             /// @dev retry the same payload id and indices
             vm.expectRevert(Error.DST_SWAP_ALREADY_PROCESSED.selector);
             DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
-
-            txData = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
 
             /// @dev no funds in multi-tx processor at this point; should revert
             vm.expectRevert(abi.encodeWithSelector(Error.FAILED_TO_EXECUTE_TXDATA.selector, native));
@@ -490,7 +482,7 @@ contract DstSwapperTest is ProtocolActions {
             1, getContract(ETH, "WETH"), getContract(ETH, "DAI"), dstSwapper, ETH, 1e17, 1001
         );
         /// @dev txData with amount 0 should revert
-        vm.expectRevert(Error.MAX_SLIPPAGE_INVARIANT_BROKEN.selector);
+        vm.expectRevert(Error.SLIPPAGE_OUT_OF_BOUNDS.selector);
         DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
     }
 
@@ -533,6 +525,12 @@ contract DstSwapperTest is ProtocolActions {
         superformId = DataLib.packSuperform(superform, 1, ETH);
 
         LiqRequest memory liq;
+        (, int256 USDPerSendingTokenDst,,,) = AggregatorV3Interface(tokenPriceFeeds[ETH][NATIVE]).latestRoundData();
+        (, int256 USDPerReceivingTokenDst,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[ETH][getContract(ETH, "DAI")]).latestRoundData();
+
+        uint256 amount = (1e18 * uint256(USDPerSendingTokenDst)) / uint256(USDPerReceivingTokenDst);
+
         vm.prank(getContract(ETH, "LayerzeroImplementation"));
         CoreStateRegistry(coreStateRegistry).receivePayload(
             137,
@@ -542,7 +540,7 @@ contract DstSwapperTest is ProtocolActions {
                     abi.encode(
                         new uint8[](0),
                         abi.encode(
-                            InitSingleVaultData(1, superformId, 1e18, 0, true, false, liq, receiverAddress, bytes(""))
+                            InitSingleVaultData(1, superformId, amount, 0, true, false, liq, receiverAddress, bytes(""))
                         )
                     )
                 )
@@ -645,15 +643,19 @@ contract DstSwapperTest is ProtocolActions {
         address superform = getContract(ETH, string.concat("DAI", "VaultMock", "Superform", "1"));
         uint256 superformId = DataLib.packSuperform(superform, 1, ETH);
 
-        vm.prank(getContract(ETH, "LayerzeroImplementation"));
-
         uint256[] memory superformIds = new uint256[](2);
         superformIds[0] = superformId;
         superformIds[1] = superformId;
 
+        (, int256 USDPerSendingTokenDst,,,) = AggregatorV3Interface(tokenPriceFeeds[ETH][NATIVE]).latestRoundData();
+        (, int256 USDPerReceivingTokenDst,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[ETH][getContract(ETH, "DAI")]).latestRoundData();
+
+        uint256 amount = (1e18 * uint256(USDPerSendingTokenDst)) / uint256(USDPerReceivingTokenDst);
+
         uint256[] memory amounts = new uint256[](2);
-        amounts[0] = 1e18;
-        amounts[1] = 1e18;
+        amounts[0] = amount;
+        amounts[1] = amount;
 
         bool[] memory hasDstSwaps = new bool[](2);
         hasDstSwaps[0] = true;
@@ -663,7 +665,7 @@ contract DstSwapperTest is ProtocolActions {
 
         uint8[] memory ambIds_ = new uint8[](1);
         ambIds_[0] = 1;
-
+        vm.prank(getContract(ETH, "LayerzeroImplementation"));
         CoreStateRegistry(coreStateRegistry).receivePayload(
             POLY,
             abi.encode(
