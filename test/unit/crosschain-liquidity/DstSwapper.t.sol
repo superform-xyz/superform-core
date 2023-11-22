@@ -91,6 +91,12 @@ contract DstSwapperTest is ProtocolActions {
         address weth = getContract(OP, "WETH");
         deal(weth, dstSwapper, 1e18);
 
+        vm.expectRevert(Error.ZERO_AMOUNT.selector);
+        DstSwapper(dstSwapper).updateFailedTx(1, 0, weth, 0);
+
+        vm.expectRevert(Error.INSUFFICIENT_BALANCE.selector);
+        DstSwapper(dstSwapper).updateFailedTx(1, 0, getContract(OP, "DAI"), 1e18);
+
         DstSwapper(dstSwapper).updateFailedTx(1, 0, weth, 1e18);
 
         vm.expectRevert(Error.FAILED_DST_SWAP_ALREADY_UPDATED.selector);
@@ -498,6 +504,24 @@ contract DstSwapperTest is ProtocolActions {
         vm.prank(getContract(ETH, "CoreStateRegistry"));
         vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
         DstSwapper(payable(getContract(ETH, "DstSwapper"))).processFailedTx(fakeUser, NATIVE, 1);
+    }
+
+    function test_single_non_native_updateDepositPayload_noUpdateFailedTx() public {
+        address payable coreStateRegistry = payable(getContract(OP, "CoreStateRegistry"));
+
+        vm.selectFork(FORKS[OP]);
+        _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry);
+
+        vm.startPrank(deployer);
+
+        /// @dev set quorum to 0 for simplicity in testing setup
+        SuperRegistry(getContract(OP, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
+
+        uint256[] memory finalAmounts = new uint256[](1);
+
+        finalAmounts[0] = 2e18;
+        vm.expectRevert(Error.INVALID_DST_SWAPPER_FAILED_SWAP.selector);
+        CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, finalAmounts);
     }
 
     function _simulateSingleVaultExistingPayload(address payable coreStateRegistry)
