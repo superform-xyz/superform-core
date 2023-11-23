@@ -364,8 +364,14 @@ library Error {
     /// @dev thrown if dst swap output is less than minimum expected
     error INVALID_SWAP_OUTPUT();
 
-    /// @dev thrown if failed swap token amount is 0 or balance is less than amount (non zero)
+    /// @dev thrown if failed swap token amount is 0
     error INVALID_DST_SWAPPER_FAILED_SWAP();
+
+    /// @dev thrown if failed swap token amount is not 0 and if token balance is less than amount (non zero)
+    error INVALID_DST_SWAPPER_FAILED_SWAP_NO_TOKEN_BALANCE();
+
+    /// @dev thrown if failed swap token amount is not 0 and if native amount is less than amount (non zero)
+    error INVALID_DST_SWAPPER_FAILED_SWAP_NO_NATIVE_BALANCE();
 
     /// FORM EXECUTION ERRORS
     /// @dev thrown in KYCDAO form if no KYC token is present

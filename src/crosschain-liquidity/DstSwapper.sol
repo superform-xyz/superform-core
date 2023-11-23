@@ -110,11 +110,11 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         } else {
             if (interimToken == NATIVE) {
                 if (address(this).balance < amount) {
-                    revert Error.INVALID_DST_SWAPPER_FAILED_SWAP();
+                    revert Error.INVALID_DST_SWAPPER_FAILED_SWAP_NO_NATIVE_BALANCE();
                 }
             } else {
                 if (IERC20(interimToken).balanceOf(address(this)) < amount) {
-                    revert Error.INVALID_DST_SWAPPER_FAILED_SWAP();
+                    revert Error.INVALID_DST_SWAPPER_FAILED_SWAP_NO_TOKEN_BALANCE();
                 }
             }
         }

@@ -369,4 +369,38 @@ contract SuperPositionsTest is BaseSetup {
         vm.expectRevert(Error.NOT_BROADCAST_REGISTRY.selector);
         superPositions.stateSyncBroadcast("");
     }
+
+    function test_revert_stateSyncBroadcast_invalidType() public {
+        vm.expectRevert(Error.INVALID_MESSAGE_TYPE.selector);
+        vm.prank(getContract(ETH, "BroadcastRegistry"));
+
+        superPositions.stateSyncBroadcast(
+            abi.encode(
+                BroadcastMessage(
+                    "SUPER_POSITIONS", keccak256("OTHER_TYPE"), abi.encode(1, 1, 222, "TOKEN", "TOKEN", 18)
+                )
+            )
+        );
+    }
+
+    function test_stateSyncBroadcast_alreadyRegistered() public {
+        vm.startPrank(getContract(ETH, "BroadcastRegistry"));
+
+        superPositions.stateSyncBroadcast(
+            abi.encode(
+                BroadcastMessage(
+                    "SUPER_POSITIONS", keccak256("DEPLOY_NEW_SERC20"), abi.encode(1, 1, 222, "TOKEN", "TOKEN", 18)
+                )
+            )
+        );
+
+        vm.expectRevert(IERC1155A.SYNTHETIC_ERC20_ALREADY_REGISTERED.selector);
+        superPositions.stateSyncBroadcast(
+            abi.encode(
+                BroadcastMessage(
+                    "SUPER_POSITIONS", keccak256("DEPLOY_NEW_SERC20"), abi.encode(1, 1, 222, "NEWTOKEN", "TOKEN", 18)
+                )
+            )
+        );
+    }
 }

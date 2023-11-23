@@ -67,6 +67,8 @@ import { PaymentHelper } from "src/payments/PaymentHelper.sol";
 import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
+
+import { Error } from "src/libraries/Error.sol";
 import "src/types/DataTypes.sol";
 import "./TestTypes.sol";
 
@@ -419,6 +421,9 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.superRegistryC = SuperRegistry(vars.superRegistry);
 
             vars.superRBACC.setSuperRegistry(vars.superRegistry);
+
+            vm.expectRevert(Error.ZERO_ADDRESS.selector);
+            vars.superRegistryC.PERMIT2();
             vars.superRegistryC.setPermit2(vars.canonicalPermit2);
 
             assert(vars.superRBACC.hasProtocolAdminRole(deployer));
