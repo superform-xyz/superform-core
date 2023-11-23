@@ -41,7 +41,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            LiqRequest(bytes(""), getContract(ETH, "DAI"), 1, ARBI, 0),
+            LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ARBI, 0),
             false,
             false,
             refundAddress,
@@ -82,7 +82,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            LiqRequest(invalidNonEmptyTxData, address(0), 1, ETH, 0),
+            LiqRequest(invalidNonEmptyTxData, address(0), address(0), 1, ETH, 0),
             false,
             false,
             refundAddress,
@@ -117,7 +117,15 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.stopPrank();
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1, superformId, 1e18, 100, LiqRequest("", address(0), 1, ETH, 0), false, false, refundAddress, ""
+            1,
+            superformId,
+            1e18,
+            100,
+            LiqRequest("", address(0), address(0), 1, ETH, 0),
+            false,
+            false,
+            refundAddress,
+            ""
         );
 
         vm.prank(getContract(ETH, "CoreStateRegistry"));
@@ -171,7 +179,9 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), 1, ETH, 0),
+            LiqRequest(
+                _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, ETH, 0
+            ),
             false,
             false,
             refundAddress,
@@ -207,7 +217,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            LiqRequest(bytes(""), getContract(ETH, "DAI"), 1, ETH, 0),
+            LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ETH, 0),
             bytes(""),
             false,
             false,

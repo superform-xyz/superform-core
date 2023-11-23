@@ -67,7 +67,7 @@ contract MDSVTimelocked4626TokenInputSlippageAMB13 is ProtocolActions {
         AMOUNTS[BSC][0] = [amountTwo_];
         AMOUNTS[ETH][0] = [amountThree_];
 
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

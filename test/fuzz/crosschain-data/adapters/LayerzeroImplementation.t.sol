@@ -243,7 +243,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         Vm.Log[] memory logs = _depositFromETHtoOPNewStateRegistry(500_000);
 
         bytes memory payload;
-        for (uint256 i; i < logs.length; i++) {
+        for (uint256 i; i < logs.length; ++i) {
             Vm.Log memory log = logs[i];
 
             if (log.topics[0] == 0xe9bded5f24a4168e4f3bf44e00298c993b22376aad8c58c7dda9718a54cbea82) {
@@ -283,7 +283,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         LayerzeroImplementation lzImplARBI =
             LayerzeroImplementation(payable(getContract(ARBI, "LayerzeroImplementation")));
 
-        for (uint256 i; i < logs.length; i++) {
+        for (uint256 i; i < logs.length; ++i) {
             Vm.Log memory log = logs[i];
 
             if (log.topics[0] == 0xe9bded5f24a4168e4f3bf44e00298c993b22376aad8c58c7dda9718a54cbea82) {
@@ -344,7 +344,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         Vm.Log[] memory logs = _depositFromETHtoOP(500_000);
 
         bytes memory payload;
-        for (uint256 i; i < logs.length; i++) {
+        for (uint256 i; i < logs.length; ++i) {
             Vm.Log memory log = logs[i];
 
             if (log.topics[0] == 0xe9bded5f24a4168e4f3bf44e00298c993b22376aad8c58c7dda9718a54cbea82) {
@@ -509,7 +509,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         /// @dev gasFees for chainIds = [56, 43114, 137, 42161, 10];
         /// @dev excluding chainIds[0] = 1 i.e. ETH, as no point broadcasting to same chain
         uint256[] memory gasPerDst = new uint256[](5);
-        for (uint256 i = 0; i < gasPerDst.length; i++) {
+        for (uint256 i = 0; i < gasPerDst.length; ++i) {
             gasPerDst[i] = 0.1 ether;
         }
 

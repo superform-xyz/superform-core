@@ -27,7 +27,8 @@ contract SocketOneInchValidatorTest is ProtocolActions {
                 true,
                 deployer,
                 deployer,
-                address(0)
+                address(0),
+                NATIVE
             )
         );
     }
@@ -49,7 +50,7 @@ contract SocketOneInchValidatorTest is ProtocolActions {
 
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
         SocketOneInchValidator(getContract(BSC, "SocketOneInchValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, BSC, BSC, BSC, true, deployer, deployer, address(0))
+            IBridgeValidator.ValidateTxDataArgs(txData, BSC, BSC, BSC, true, deployer, deployer, address(0), NATIVE)
         );
     }
 
@@ -60,7 +61,7 @@ contract SocketOneInchValidatorTest is ProtocolActions {
 
         vm.expectRevert(Error.INVALID_DEPOSIT_LIQ_DST_CHAIN_ID.selector);
         SocketOneInchValidator(getContract(BSC, "SocketOneInchValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, BSC, BSC, ETH, true, deployer, deployer, address(0))
+            IBridgeValidator.ValidateTxDataArgs(txData, BSC, BSC, ETH, true, deployer, deployer, address(0), NATIVE)
         );
     }
 
@@ -81,7 +82,7 @@ contract SocketOneInchValidatorTest is ProtocolActions {
 
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
         SocketOneInchValidator(getContract(BSC, "SocketOneInchValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, BSC, BSC, BSC, false, deployer, deployer, address(0))
+            IBridgeValidator.ValidateTxDataArgs(txData, BSC, BSC, BSC, false, deployer, deployer, address(0), NATIVE)
         );
     }
 
@@ -143,7 +144,8 @@ contract SocketOneInchValidatorTest is ProtocolActions {
                 true,
                 deployer,
                 deployer,
-                address(0)
+                address(0),
+                NATIVE
             )
         );
 
@@ -161,7 +163,8 @@ contract SocketOneInchValidatorTest is ProtocolActions {
                 true,
                 deployer,
                 deployer,
-                address(0x777)
+                address(0x777),
+                NATIVE
             )
         );
     }

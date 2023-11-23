@@ -170,7 +170,7 @@ contract PayMasterTest is ProtocolActions {
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         PayMaster(payable(feeCollector)).rebalanceTo(
-            keccak256("CORE_REGISTRY_PROCESSOR"), LiqRequest(txData, NATIVE, 1, ARBI, 1 ether), 420
+            keccak256("CORE_REGISTRY_PROCESSOR"), LiqRequest(txData, NATIVE, address(0), 1, ARBI, 1 ether), 420
         );
 
         superRegistry.setAddress(keccak256("CORE_REGISTRY_PROCESSOR"), txProcessorETH, ETH);
@@ -180,7 +180,7 @@ contract PayMasterTest is ProtocolActions {
         /// @dev admin moves the payment from fee collector to different address on another chain
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
         PayMaster(payable(feeCollector)).rebalanceTo(
-            keccak256("CORE_REGISTRY_PROCESSOR"), LiqRequest(txData, NATIVE, 1, ARBI, 1 ether), ARBI
+            keccak256("CORE_REGISTRY_PROCESSOR"), LiqRequest(txData, NATIVE, address(0), 1, ARBI, 1 ether), ARBI
         );
         txData = _buildDummyTxDataUnitTests(
             BuildDummyTxDataUnitTestsVars(1, NATIVE, NATIVE, feeCollector, ETH, ARBI, 1 ether, txProcessorARBI, false)
@@ -196,6 +196,7 @@ contract PayMasterTest is ProtocolActions {
                     )
                 ),
                 NATIVE,
+                address(0),
                 1,
                 ARBI,
                 1 ether
@@ -232,7 +233,7 @@ contract PayMasterTest is ProtocolActions {
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         PayMaster(payable(feeCollector)).rebalanceTo(
-            keccak256("CORE_REGISTRY_UPDATER"), LiqRequest(txData, NATIVE, 1, ARBI, 1 ether), 420
+            keccak256("CORE_REGISTRY_UPDATER"), LiqRequest(txData, NATIVE, address(0), 1, ARBI, 1 ether), 420
         );
 
         superRegistry.setAddress(keccak256("CORE_REGISTRY_UPDATER"), txUpdaterARBI, ETH);
@@ -244,7 +245,7 @@ contract PayMasterTest is ProtocolActions {
         /// @dev admin moves the payment from fee collector to different address on another chain
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
         PayMaster(payable(feeCollector)).rebalanceTo(
-            keccak256("CORE_REGISTRY_UPDATER"), LiqRequest(txData, NATIVE, 1, ARBI, 1 ether), ARBI
+            keccak256("CORE_REGISTRY_UPDATER"), LiqRequest(txData, NATIVE, address(0), 1, ARBI, 1 ether), ARBI
         );
 
         /// @dev admin moves the payment from fee collector (ideal conditions)
@@ -257,6 +258,7 @@ contract PayMasterTest is ProtocolActions {
                     )
                 ),
                 NATIVE,
+                address(0),
                 1,
                 ARBI,
                 1 ether
@@ -318,7 +320,7 @@ contract PayMasterTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            LiqRequest(bytes(""), getContract(ETH, "DAI"), 1, ETH, 0),
+            LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ETH, 0),
             bytes(""),
             false,
             false,

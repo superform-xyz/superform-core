@@ -39,7 +39,7 @@ import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
-import { EmergencyQueue } from "src/forms/EmergencyQueue.sol";
+import { EmergencyQueue } from "src/EmergencyQueue.sol";
 import { SuperRegistry } from "src/settings/SuperRegistry.sol";
 import { SuperRBAC } from "src/settings/SuperRBAC.sol";
 import { SuperPositions } from "src/SuperPositions.sol";
@@ -348,7 +348,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
         vm.startPrank(deployer);
         /// @dev deployments
-        for (uint256 i = 0; i < chainIds.length; i++) {
+        for (uint256 i = 0; i < chainIds.length; ++i) {
             vars.chainId = chainIds[i];
             vars.fork = FORKS[vars.chainId];
             vars.ambAddresses = new address[](ambIds.length);
@@ -555,7 +555,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             bridgeValidators.push(vars.socketOneInchValidator);
 
             /// @dev 8.1 - Deploy UNDERLYING_TOKENS and VAULTS
-            for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
+            for (uint256 j = 0; j < UNDERLYING_TOKENS.length; ++j) {
                 vars.UNDERLYING_TOKEN = UNDERLYING_EXISTING_TOKENS[vars.chainId][UNDERLYING_TOKENS[j]];
 
                 if (vars.UNDERLYING_TOKEN == address(0)) {
@@ -571,12 +571,12 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
             /// NOTE: This loop deploys all vaults on all chainIds with all of the UNDERLYING TOKENS (id x form) x
             /// chainId
-            for (uint32 j = 0; j < FORM_IMPLEMENTATION_IDS.length; j++) {
+            for (uint32 j = 0; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
                 IERC4626[][] memory doubleVaults = new IERC4626[][](
                     UNDERLYING_TOKENS.length
                 );
 
-                for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
+                for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
                     uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
                     IERC4626[] memory vaultsT = new IERC4626[](lenBytecodes);
                     for (uint256 l = 0; l < lenBytecodes; l++) {
@@ -708,7 +708,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             delete bridgeValidators;
         }
 
-        for (uint256 i = 0; i < chainIds.length; i++) {
+        for (uint256 i = 0; i < chainIds.length; ++i) {
             vars.chainId = chainIds[i];
             vars.fork = FORKS[vars.chainId];
 
@@ -728,7 +728,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             /// @dev Set all trusted remotes for each chain, configure amb chains ids, setupQuorum for all chains as 1
             /// and setup PaymentHelper
             /// @dev has to be performed after all main contracts have been deployed on all chains
-            for (uint256 j = 0; j < chainIds.length; j++) {
+            for (uint256 j = 0; j < chainIds.length; ++j) {
                 if (vars.chainId != chainIds[j]) {
                     vars.dstChainId = chainIds[j];
 
@@ -914,13 +914,13 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             }
         }
 
-        for (uint256 i = 0; i < chainIds.length; i++) {
+        for (uint256 i = 0; i < chainIds.length; ++i) {
             vm.selectFork(FORKS[chainIds[i]]);
 
             /// @dev 18 - create test superforms when the whole state registry is configured
 
-            for (uint256 j = 0; j < FORM_IMPLEMENTATION_IDS.length; j++) {
-                for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
+            for (uint256 j = 0; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
+                for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
                     uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
 
                     for (uint256 l = 0; l < lenBytecodes; l++) {
@@ -1048,7 +1048,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
         mapping(uint64 => uint16) storage wormholeChainIdsStorage = WORMHOLE_CHAIN_IDS;
 
-        for (uint256 i = 0; i < chainIds.length; i++) {
+        for (uint256 i = 0; i < chainIds.length; ++i) {
             wormholeChainIdsStorage[chainIds[i]] = wormhole_chainIds[i];
         }
 
@@ -1148,8 +1148,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
         /// @dev populate VAULT_NAMES state arg with tokenNames + vaultKinds names
         string[] memory underlyingTokens = UNDERLYING_TOKENS;
-        for (uint256 i = 0; i < VAULT_KINDS.length; i++) {
-            for (uint256 j = 0; j < underlyingTokens.length; j++) {
+        for (uint256 i = 0; i < VAULT_KINDS.length; ++i) {
+            for (uint256 j = 0; j < underlyingTokens.length; ++j) {
                 VAULT_NAMES[i].push(string.concat(underlyingTokens[j], VAULT_KINDS[i]));
             }
         }
@@ -1215,7 +1215,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     }
 
     function _fundNativeTokens() internal {
-        for (uint256 i = 0; i < chainIds.length; i++) {
+        for (uint256 i = 0; i < chainIds.length; ++i) {
             vm.selectFork(FORKS[chainIds[i]]);
 
             uint256 amountDeployer = 1e24;
@@ -1230,12 +1230,12 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     }
 
     function _fundUnderlyingTokens(uint256 amount) internal {
-        for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
+        for (uint256 j = 0; j < UNDERLYING_TOKENS.length; ++j) {
             if (getContract(chainIds[0], UNDERLYING_TOKENS[j]) == address(0)) {
                 revert INVALID_UNDERLYING_TOKEN_NAME();
             }
 
-            for (uint256 i = 0; i < chainIds.length; i++) {
+            for (uint256 i = 0; i < chainIds.length; ++i) {
                 vm.selectFork(FORKS[chainIds[i]]);
                 address token = getContract(chainIds[i], UNDERLYING_TOKENS[j]);
                 deal(token, users[0], 1 ether * amount);
@@ -1257,14 +1257,14 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         uint16 currWormholeChainId;
 
         uint256 j;
-        for (uint256 i = 0; i < chainIds.length; i++) {
+        for (uint256 i = 0; i < chainIds.length; ++i) {
             if (chainIds[i] != currentChainId) {
                 dstWormhole[j] = wormholeCore[i];
                 dstTargets[j] = getContract(chainIds[i], "WormholeSRImplementation");
 
                 forkIds[j] = FORKS[chainIds[i]];
 
-                j++;
+                ++j;
             } else {
                 currWormholeChainId = wormhole_chainIds[i];
             }
@@ -1360,7 +1360,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     function _generateExtraData(uint8[] memory selectedAmbIds) internal pure returns (bytes[] memory) {
         bytes[] memory ambParams = new bytes[](selectedAmbIds.length);
 
-        for (uint256 i; i < selectedAmbIds.length; i++) {
+        for (uint256 i; i < selectedAmbIds.length; ++i) {
             /// @dev 1 = Lz
             if (selectedAmbIds[i] == 1) {
                 ambParams[i] = bytes("");

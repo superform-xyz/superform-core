@@ -32,7 +32,7 @@ contract ArrayCastLibTest is Test {
     }
 
     function test_castLiqRequestToArray() external {
-        LiqRequest memory req = LiqRequest("", address(0), 1, 1, 1 wei);
+        LiqRequest memory req = LiqRequest("", address(0), address(0), 1, 1, 1 wei);
 
         LiqRequest[] memory castedReq = arrayCastLib.castLiqRequestToArray(req);
         assertEq(castedReq.length, 1);
@@ -46,7 +46,7 @@ contract ArrayCastLibTest is Test {
 
     function test_castToMultiVaultData() external {
         InitSingleVaultData memory data = InitSingleVaultData(
-            1, 1, 1e18, 100, LiqRequest(bytes(""), address(0), 1, 1, 0), false, false, address(0), ""
+            1, 1, 1e18, 100, LiqRequest(bytes(""), address(0), address(0), 1, 1, 0), false, false, address(0), ""
         );
         InitMultiVaultData memory castedValue = arrayCastLib.castToMultiVaultData(data);
         assertEq(castedValue.superformIds.length, 1);

@@ -64,7 +64,7 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         /// @dev Testing Coss Chain Superform Deployments
         vars.transformedChainIds_ = new uint256[](vars.chainIds_.length);
 
-        for (uint256 j; j < vars.chainIds_.length; j++) {
+        for (uint256 j; j < vars.chainIds_.length; ++j) {
             vars.transformedChainIds_[j] = uint256(vars.chainIds_[j]);
         }
 

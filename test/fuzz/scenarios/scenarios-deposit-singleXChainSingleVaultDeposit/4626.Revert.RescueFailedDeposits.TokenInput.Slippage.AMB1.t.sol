@@ -76,7 +76,7 @@ contract SXSVDNormal4626RevertRescueFailedDepositsNoTokenInputSlippageAMB1 is Pr
         /// @dev specifying the amount that was deposited earlier, as the amount to be rescued
         AMOUNTS[POLY][1] = [amountOne_];
 
-        for (uint256 act; act < actions.length; act++) {
+        for (uint256 act; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

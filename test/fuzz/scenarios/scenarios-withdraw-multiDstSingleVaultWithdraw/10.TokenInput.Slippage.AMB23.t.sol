@@ -95,7 +95,7 @@ contract MDSVW10NativeSlippageAMB23 is ProtocolActions {
         AMOUNTS[OP][0] = [amountOne_];
         AMOUNTS[ARBI][0] = [amountTwo_];
 
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;
@@ -104,7 +104,7 @@ contract MDSVW10NativeSlippageAMB23 is ProtocolActions {
             bool success;
 
             if (act == 1) {
-                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                for (uint256 i = 0; i < DST_CHAINS.length; ++i) {
                     uint256[] memory superPositions = _getSuperpositionsForDstChain(
                         actions[1].user,
                         TARGET_UNDERLYINGS[DST_CHAINS[i]][1],

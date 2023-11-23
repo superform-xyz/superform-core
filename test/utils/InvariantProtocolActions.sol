@@ -152,7 +152,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         ) revert MISMATCH_RBAC_TEST();
 
         /// @dev detects the index of originating chain
-        for (uint256 i = 0; i < chainIds.length; i++) {
+        for (uint256 i = 0; i < chainIds.length; ++i) {
             if (vars.CHAIN_0 == chainIds[i]) {
                 vars.chain0Index = i;
                 break;
@@ -171,8 +171,8 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         SingleVaultSFData[] memory singleSuperformsData = new SingleVaultSFData[](vars.nDestinations);
 
         /// @dev in each destination we want to build our request data
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
-            for (uint256 j = 0; j < chainIds.length; j++) {
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
+            for (uint256 j = 0; j < chainIds.length; ++j) {
                 if (vars.DST_CHAINS[i] == chainIds[j]) {
                     vars.chainDstIndex = j;
                     break;
@@ -195,7 +195,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             /// this case, if action is cross chain withdraw, user can select to receive a different kind of underlying
             /// from source
             /// @dev if action is cross-chain deposit, destination for liquidity is coreStateRegistry
-            for (uint256 k = 0; k < vars.targetSuperformIds.length; k++) {
+            for (uint256 k = 0; k < vars.targetSuperformIds.length; ++k) {
                 if (
                     vars.CHAIN_0 == vars.DST_CHAINS[i]
                         || (action.action == Actions.Withdraw && vars.CHAIN_0 != vars.DST_CHAINS[i])
@@ -542,7 +542,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         Stage3InternalVars memory internalVars;
         UniqueDSTInfo[] memory usedDSTs = new UniqueDSTInfo[](vars.nDestinations);
         uint64[] memory uniqueDsts;
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
             if (usedDSTs[i].payloadNumber == 0) {
                 ++usedDSTs[i].payloadNumber;
                 if (vars.DST_CHAINS[i] != vars.CHAIN_0) {
@@ -555,7 +555,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         }
         uniqueDsts = new uint64[](vars.nUniqueDsts);
         uint256 countUnique;
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
             /// @dev if nRepetitions is = 0 still it means uniqueDst has not been found yet (1 repetition)
             if (usedDSTs[i].nRepetitions == 0) {
                 ++usedDSTs[i].nRepetitions;
@@ -582,8 +582,8 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         internalVars.forkIds = new uint256[](vars.nUniqueDsts);
 
         internalVars.k = 0;
-        for (uint256 i = 0; i < chainIds.length; i++) {
-            for (uint256 j = 0; j < vars.nUniqueDsts; j++) {
+        for (uint256 i = 0; i < chainIds.length; ++i) {
+            for (uint256 j = 0; j < vars.nUniqueDsts; ++j) {
                 if (uniqueDsts[j] == chainIds[i] && chainIds[i] != vars.CHAIN_0) {
                     internalVars.toMailboxes[internalVars.k] = hyperlaneMailboxes[i];
                     internalVars.expDstDomains[internalVars.k] = hyperlane_chainIds[i];
@@ -597,7 +597,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     internalVars.expDstChainAddresses[internalVars.k] =
                         getContract(chainIds[i], "WormholeARImplementation");
 
-                    internalVars.k++;
+                    ++internalVars.k;
                 }
             }
         }
@@ -642,7 +642,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         );
 
         /// @dev assert good delivery of message on destination by analyzing superformIds and mounts
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
             aV[i].toChainId = vars.DST_CHAINS[i];
             if (vars.CHAIN_0 != aV[i].toChainId && !sameChainDstHasRevertingVault) {
                 if (action.multiVaults) {
@@ -669,7 +669,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
     {
         success = true;
         if (!sameChainDstHasRevertingVault) {
-            for (uint256 i = 0; i < vars.nDestinations; i++) {
+            for (uint256 i = 0; i < vars.nDestinations; ++i) {
                 aV[i].toChainId = vars.DST_CHAINS[i];
                 if (vars.CHAIN_0 != aV[i].toChainId) {
                     vm.selectFork(FORKS[aV[i].toChainId]);
@@ -832,7 +832,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         vm.selectFork(FORKS[vars.CHAIN_0]);
 
         uint256 toChainId;
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
             toChainId = vars.DST_CHAINS[i];
 
             if (vars.CHAIN_0 != toChainId) {
@@ -876,7 +876,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         if (len == 0) revert LEN_MISMATCH();
         uint256[] memory finalAmounts = new uint256[](len);
         uint256[] memory maxSlippageTemp = new uint256[](len);
-        for (uint256 i = 0; i < len; i++) {
+        for (uint256 i = 0; i < len; ++i) {
             finalAmounts[i] = args.amounts[i];
 
             /// @dev FOR TESTING AND MAINNET:: in sameChain actions, slippage is encoded in the request with the amount
@@ -944,7 +944,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         bool[] memory hasDstSwap = new bool[](args.superformIds.length);
 
         if (args.dstSwap) {
-            for (uint256 i; i < hasDstSwap.length; i++) {
+            for (uint256 i; i < hasDstSwap.length; ++i) {
                 hasDstSwap[i] = true;
             }
         }
@@ -1054,8 +1054,15 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         }
 
         /// @dev the actual liq request struct inscription
+        /// @notice adding dummy liqRequestToken as interim token if there is dstSwap because we are not
+        /// @notice testing failed deposits here
         v.liqReq = LiqRequest(
-            v.txData, liqRequestToken, args.liqBridge, args.toChainId, liqRequestToken == NATIVE_TOKEN ? args.amount : 0
+            v.txData,
+            liqRequestToken,
+            args.dstSwap ? liqRequestToken : address(0),
+            args.liqBridge,
+            args.toChainId,
+            liqRequestToken == NATIVE_TOKEN ? args.amount : 0
         );
 
         if (liqRequestToken != NATIVE_TOKEN) {
@@ -1219,10 +1226,12 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         vars.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, args.toChainId == args.liqDstChainId);
 
+        /// @notice no interim token supplied as this is a withdraw
         vars.liqReq = LiqRequest(
             vars.txData,
             /// @dev for certain test cases, insert txData as null here
             args.underlyingTokenDst,
+            address(0),
             args.liqBridge,
             args.liqDstChainId,
             0
@@ -1288,7 +1297,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         vaultMocksMem = new address[](vars.len);
 
         /// @dev this loop assigns the information in the correct output arrays the best way possible
-        for (uint256 i = 0; i < vars.len; i++) {
+        for (uint256 i = 0; i < vars.len; ++i) {
             vars.underlyingToken = UNDERLYING_TOKENS[targetUnderlyingsPerDst[i]]; // 1
 
             targetSuperformsMem[i] = vars.superformIdsTemp[i];
@@ -1317,7 +1326,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         /// @dev obtains superform addresses through string concatenation, notice what is done in BaseSetup to save
         /// these in contracts mapping
-        for (uint256 i = 0; i < vaultIds_.length; i++) {
+        for (uint256 i = 0; i < vaultIds_.length; ++i) {
             address superform = getContract(
                 chainId_,
                 string.concat(
@@ -1344,7 +1353,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         int256 dstSwapSlippage;
 
         /// @dev slippage calculation
-        for (uint256 i = 0; i < len; i++) {
+        for (uint256 i = 0; i < len; ++i) {
             finalAmounts[i] = args.amounts[i];
             if (args.slippage > 0) {
                 /// @dev bridge slippage is already applied in _buildSingleVaultDepositCallData()
@@ -1584,7 +1593,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         bytes[] memory txDatas = new bytes[](underlyingTokensDst_.length);
 
         /// @dev liqData is rebuilt here to perform to send the tokens from dstSwapProcessor to CoreStateRegistry
-        for (uint256 i = 0; i < underlyingTokensDst_.length; i++) {
+        for (uint256 i = 0; i < underlyingTokensDst_.length; ++i) {
             txDatas[i] = _buildLiqBridgeTxDataDstSwap(
                 liqBridgeKinds_[i],
                 underlyingTokensDst_[i],
@@ -1600,7 +1609,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         uint256[] memory indices = new uint256[](amounts_.length);
 
-        for (uint256 i; i < amounts_.length; i++) {
+        for (uint256 i; i < amounts_.length; ++i) {
             indices[i] = i;
         }
 
@@ -1618,7 +1627,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
     )
         internal
     {
-        for (uint256 i; i < AMBs.length; i++) {
+        for (uint256 i; i < AMBs.length; ++i) {
             /// @notice ID: 1 Layerzero
             if (AMBs[i] == 1) {
                 LayerZeroHelper(getContract(TO_CHAIN, "LayerZeroHelper")).helpWithEstimates(

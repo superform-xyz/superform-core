@@ -35,6 +35,7 @@ contract LiFiValidatorTest is ProtocolActions {
                 true,
                 address(0),
                 deployer,
+                NATIVE,
                 NATIVE
             )
         );
@@ -49,7 +50,7 @@ contract LiFiValidatorTest is ProtocolActions {
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, BSC, BSC, true, address(0), deployer, NATIVE)
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, BSC, BSC, true, address(0), deployer, NATIVE, NATIVE)
         );
     }
 
@@ -70,7 +71,7 @@ contract LiFiValidatorTest is ProtocolActions {
         vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, ARBI, true, address(0), deployer, NATIVE)
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, ARBI, true, address(0), deployer, NATIVE, NATIVE)
         );
     }
 
@@ -83,7 +84,7 @@ contract LiFiValidatorTest is ProtocolActions {
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ETH, ETH, true, address(0), deployer, NATIVE)
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ETH, ETH, true, address(0), deployer, NATIVE, NATIVE)
         );
     }
 
@@ -97,7 +98,7 @@ contract LiFiValidatorTest is ProtocolActions {
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, OP, false, address(0), deployer, NATIVE)
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, OP, false, address(0), deployer, NATIVE, NATIVE)
         );
     }
 
@@ -111,7 +112,7 @@ contract LiFiValidatorTest is ProtocolActions {
         vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, ARBI, false, address(0), deployer, NATIVE)
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, ARBI, false, address(0), deployer, NATIVE, NATIVE)
         );
     }
 
@@ -133,7 +134,9 @@ contract LiFiValidatorTest is ProtocolActions {
         vm.expectRevert(Error.INVALID_TXDATA_TOKEN.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, ARBI, true, address(0), deployer, address(420))
+            IBridgeValidator.ValidateTxDataArgs(
+                txData, ETH, ARBI, ARBI, true, address(0), deployer, address(420), NATIVE
+            )
         );
     }
 

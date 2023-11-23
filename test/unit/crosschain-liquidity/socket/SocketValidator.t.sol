@@ -35,7 +35,8 @@ contract SocketValidatorTest is ProtocolActions {
                 true,
                 address(0),
                 deployer,
-                address(0)
+                address(0),
+                NATIVE
             )
         );
     }
@@ -63,7 +64,8 @@ contract SocketValidatorTest is ProtocolActions {
                 false,
                 address(0),
                 address(0x7777),
-                address(0)
+                address(0),
+                NATIVE
             )
         );
     }
@@ -77,7 +79,7 @@ contract SocketValidatorTest is ProtocolActions {
 
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
         SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, BSC, BSC, true, address(0), deployer, NATIVE)
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, BSC, BSC, true, address(0), deployer, NATIVE, NATIVE)
         );
     }
 
@@ -98,7 +100,7 @@ contract SocketValidatorTest is ProtocolActions {
 
         vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
         SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, ARBI, true, address(0), deployer, NATIVE)
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, ARBI, true, address(0), deployer, NATIVE, NATIVE)
         );
     }
 
@@ -111,7 +113,7 @@ contract SocketValidatorTest is ProtocolActions {
 
         vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
         SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, ARBI, true, address(0), deployer, NATIVE)
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, ARBI, true, address(0), deployer, NATIVE, NATIVE)
         );
     }
 
@@ -160,7 +162,8 @@ contract SocketValidatorTest is ProtocolActions {
                 true,
                 address(0),
                 deployer,
-                address(0)
+                address(0),
+                NATIVE
             )
         );
 
@@ -186,7 +189,8 @@ contract SocketValidatorTest is ProtocolActions {
                 true,
                 address(0),
                 deployer,
-                address(0x777)
+                address(0x777),
+                NATIVE
             )
         );
     }

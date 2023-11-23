@@ -81,7 +81,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_payloadHelperSingle() public {
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;
@@ -89,7 +89,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
             StagesLocalVars memory vars;
             bool success;
             if (act == 1) {
-                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                for (uint256 i = 0; i < DST_CHAINS.length; ++i) {
                     uint256[] memory superPositions = _getSuperpositionsForDstChain(
                         actions[1].user,
                         TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
@@ -111,7 +111,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
     }
 
     function test_payloadHelperLiqSingle() public {
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;
@@ -119,7 +119,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
             StagesLocalVars memory vars;
             bool success;
             if (act == 1) {
-                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                for (uint256 i = 0; i < DST_CHAINS.length; ++i) {
                     uint256[] memory superPositions = _getSuperpositionsForDstChain(
                         actions[1].user,
                         TARGET_UNDERLYINGS[DST_CHAINS[i]][1],

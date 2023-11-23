@@ -79,7 +79,7 @@ contract SXSVWNormal4626NativeSlippageAMB23 is ProtocolActions {
         amountOne_ = uint128(bound(amountOne_, 2e18, 10e18));
         AMOUNTS[OP][0] = [amountOne_];
 
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

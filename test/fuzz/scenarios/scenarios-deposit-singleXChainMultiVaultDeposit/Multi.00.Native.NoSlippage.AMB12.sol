@@ -53,7 +53,7 @@ contract SDMVDMulti00NoNativeNoSlippageAMB12 is ProtocolActions {
         amountTwo_ = uint128(bound(amountTwo_, 1 * 10 ** 18, TOTAL_SUPPLY_ETH / 2));
         AMOUNTS[POLY][0] = [amountOne_, amountTwo_];
 
-        for (uint256 act; act < actions.length; act++) {
+        for (uint256 act; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

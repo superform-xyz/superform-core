@@ -53,7 +53,7 @@ contract SXSVDNormal4626RevertTokenInputSlippageAMB1 is ProtocolActions {
         amount_ = uint128(bound(amount_, 11 * 10 ** 18, (TOTAL_SUPPLY_ETH * 9) / 10));
         AMOUNTS[AVAX][0] = [amount_];
 
-        for (uint256 act; act < actions.length; act++) {
+        for (uint256 act; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

@@ -83,7 +83,7 @@ contract ForwardDustFormTest is ProtocolActions {
             superformId,
             amountToDeposit_,
             100,
-            LiqRequest("", getContract(ARBI, "WETH"), 1, ARBI, 0),
+            LiqRequest("", getContract(ARBI, "WETH"), address(0), 1, ARBI, 0),
             "",
             false,
             false,
@@ -126,6 +126,7 @@ contract ForwardDustFormTest is ProtocolActions {
                     )
                 ),
                 getContract(ARBI, "WETH"),
+                address(0),
                 1,
                 ETH,
                 0
