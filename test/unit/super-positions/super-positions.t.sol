@@ -377,9 +377,28 @@ contract SuperPositionsTest is BaseSetup {
         superPositions.stateSyncBroadcast(
             abi.encode(
                 BroadcastMessage(
-                    "SUPER_RBAC",
-                    keccak256("OTHER_TYPE"),
-                    abi.encode(1, keccak256("PAYMENT_ADMIN_ROLE"), keccak256("NON_EXISTENT_ID"))
+                    "SUPER_POSITIONS", keccak256("OTHER_TYPE"), abi.encode(1, 1, 222, "TOKEN", "TOKEN", 18)
+                )
+            )
+        );
+    }
+
+    function test_stateSyncBroadcast_alreadyRegistered() public {
+        vm.startPrank(getContract(ETH, "BroadcastRegistry"));
+
+        superPositions.stateSyncBroadcast(
+            abi.encode(
+                BroadcastMessage(
+                    "SUPER_POSITIONS", keccak256("DEPLOY_NEW_SERC20"), abi.encode(1, 1, 222, "TOKEN", "TOKEN", 18)
+                )
+            )
+        );
+
+        vm.expectRevert(IERC1155A.SYNTHETIC_ERC20_ALREADY_REGISTERED.selector);
+        superPositions.stateSyncBroadcast(
+            abi.encode(
+                BroadcastMessage(
+                    "SUPER_POSITIONS", keccak256("DEPLOY_NEW_SERC20"), abi.encode(1, 1, 222, "NEWTOKEN", "TOKEN", 18)
                 )
             )
         );

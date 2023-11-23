@@ -271,6 +271,11 @@ contract SuperRegistryTest is BaseSetup {
         superRegistry.setAmbAddress(ambId, ambAddress, broadcastAMB);
     }
 
+    function test_getStateRegistry_ZeroAddress() public {
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        superRegistry.getStateRegistry(22);
+    }
+
     function test_setStateRegistryAddress_and_revert_zeroAddress_invalidCaller() public {
         uint8[] memory registryId = new uint8[](2);
         address[] memory registryAddress = new address[](2);

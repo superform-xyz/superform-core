@@ -46,6 +46,11 @@ contract DataLibTest is Test {
         dataLib.getSuperform(newSuperformId);
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         dataLib.getDestinationChain(newSuperformId);
+
+        uint256 superformId = _legacySuperformPackWithShift();
+        uint64 chainId = dataLib.getDestinationChain(superformId);
+
+        assertGt(chainId, 0);
     }
 
     function _legacySuperformPackWithShift() internal pure returns (uint256 superformId_) {
