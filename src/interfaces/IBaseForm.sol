@@ -34,9 +34,6 @@ interface IBaseForm is IERC165 {
     /// @return The ERC20 symbol
     function superformYieldTokenSymbol() external view returns (string memory);
 
-    /// @dev get which Form implementation the vault corresponds to
-    function formImplementationId() external view returns (uint32);
-
     /// @notice get the state registry id associated with the vault
     function getStateRegistryId() external view returns (uint8);
 
