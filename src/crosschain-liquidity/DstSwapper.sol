@@ -279,6 +279,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         IBridgeValidator validator = IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_));
         (v.approvalToken, v.amount) = validator.decodeDstSwap(txData_);
         v.finalDst = address(coreStateRegistry_);
+
         /// @dev validates the bridge data
         validator.validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
@@ -345,6 +346,10 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
 
+        if (userSuppliedInterimToken_ != interimToken_) {
+            revert Error.INVALID_INTERIM_TOKEN();
+        }
+
         if (failedSwap[payloadId_][index_].amount != 0) {
             revert Error.FAILED_DST_SWAP_ALREADY_UPDATED();
         }
@@ -361,10 +366,6 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
             if (address(this).balance < amount_) {
                 revert Error.INSUFFICIENT_BALANCE();
             }
-        }
-
-        if (userSuppliedInterimToken_ != interimToken_) {
-            revert Error.INVALID_INTERIM_TOKEN();
         }
 
         /// @dev updates swapped amount

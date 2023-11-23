@@ -160,19 +160,19 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformData.extraFormData
         );
 
-        vars.liqRequest = req_.superformData.liqRequest;
         (address superform,,) = req_.superformData.superformId.getSuperform();
 
         (uint256 amountIn, uint8 bridgeId) =
             _singleVaultTokenForward(msg.sender, address(0), req_.superformData.permit2data, ambData);
 
         LiqRequest memory emptyRequest;
+        emptyRequest.interimToken = req_.superformData.liqRequest.interimToken;
         ambData.liqData = emptyRequest;
 
         /// @dev dispatch liquidity data
         _validateAndDispatchTokens(
             ValidateAndDispatchTokensArgs(
-                vars.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
+                req_.superformData.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
             )
         );
 
@@ -271,6 +271,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
 
         ambData.liqData = new LiqRequest[](len);
+        for (uint256 i; i < len; i++) {
+            ambData.liqData[i].interimToken = req_.superformsData.liqRequests[i].interimToken;
+        }
 
         /// @dev dispatch message information, notice multiVaults is set to 1
         _dispatchAmbMessage(

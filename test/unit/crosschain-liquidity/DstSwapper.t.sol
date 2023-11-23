@@ -89,7 +89,7 @@ contract DstSwapperTest is ProtocolActions {
         DstSwapper(dstSwapper).updateFailedTx(1, 0, weth, 0);
 
         vm.expectRevert(Error.INSUFFICIENT_BALANCE.selector);
-        DstSwapper(dstSwapper).updateFailedTx(1, 0, getContract(OP, "DAI"), 1e18);
+        DstSwapper(dstSwapper).updateFailedTx(1, 0, weth, 3e18);
 
         DstSwapper(dstSwapper).updateFailedTx(1, 0, weth, 1e18);
 
