@@ -538,7 +538,7 @@ abstract contract CommonProtocolActions is BaseSetup {
         /// @dev gasFees for chainIds = [56, 43114, 137, 42161, 10];
         /// @dev excluding chainIds[0] = 1 i.e. ETH, as no point broadcasting to same chain
         uint256[] memory gasPerDst = new uint256[](5);
-        for (uint256 i = 0; i < gasPerDst.length; i++) {
+        for (uint256 i = 0; i < gasPerDst.length; ++i) {
             gasPerDst[i] = 0.1 ether;
         }
 

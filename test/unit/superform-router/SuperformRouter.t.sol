@@ -2314,7 +2314,7 @@ contract SuperformRouterTest is ProtocolActions {
 
         _broadcastPayloadHelper(ARBI, vm.getRecordedLogs());
 
-        for (uint256 i = 0; i < chainIds.length; i++) {
+        for (uint256 i = 0; i < chainIds.length; ++i) {
             if (chainIds[i] != ARBI) {
                 vm.selectFork(FORKS[chainIds[i]]);
 

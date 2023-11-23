@@ -28,7 +28,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
     }
 
     /// @inheritdoc BridgeValidator
-    function validateTxData(ValidateTxDataArgs calldata args_) external view override {
+    function validateTxData(ValidateTxDataArgs calldata args_) external view override returns (bool hasDstSwap) {
         /// @dev xchain actions can have bridgeData or bridgeData + swapData
         /// @dev direct actions with deposit, cannot have bridge data - goes into catch block
         /// @dev withdraw actions may have bridge data after withdrawing - goes into try block
@@ -61,13 +61,14 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
                 if (args_.srcChainId == args_.dstChainId) {
                     revert Error.INVALID_ACTION();
                 } else {
-                    address dstSwapper = superRegistry.getAddressByChainId(keccak256("DST_SWAPPER"), args_.dstChainId);
+                    hasDstSwap =
+                        receiver == superRegistry.getAddressByChainId(keccak256("DST_SWAPPER"), args_.dstChainId);
                     /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry (or) Dst Swapper
                     if (
                         !(
                             receiver
                                 == superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY"), args_.dstChainId)
-                                || receiver == dstSwapper
+                                || hasDstSwap
                         )
                     ) {
                         revert Error.INVALID_TXDATA_RECEIVER();
@@ -75,7 +76,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
 
                     /// @dev forbid xChain deposits with destination swaps without interim token set (for user
                     /// protection)
-                    if (receiver == dstSwapper && args_.liqDataInterimToken == address(0)) {
+                    if (hasDstSwap && args_.liqDataInterimToken == address(0)) {
                         revert Error.INVALID_INTERIM_TOKEN();
                     }
                 }

@@ -133,7 +133,7 @@ contract MDMVW0102408NativeInputSlipageAMB13 is ProtocolActions {
             bool success;
 
             if (act == 1) {
-                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                for (uint256 i = 0; i < DST_CHAINS.length; ++i) {
                     uint256[] memory superPositions = _getSuperpositionsForDstChain(
                         actions[1].user,
                         TARGET_UNDERLYINGS[DST_CHAINS[i]][1],

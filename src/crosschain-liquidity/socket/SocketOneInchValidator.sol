@@ -25,7 +25,7 @@ contract SocketOneInchValidator is BridgeValidator {
     }
 
     /// @inheritdoc BridgeValidator
-    function validateTxData(ValidateTxDataArgs calldata args_) external pure override {
+    function validateTxData(ValidateTxDataArgs calldata args_) external pure override returns (bool ) {
         ISocketOneInchImpl.SwapInput memory decodedReq = _decodeTxData(args_.txData);
 
         /// @dev 1. chain id validation (only allow samechain with this)
@@ -44,6 +44,8 @@ contract SocketOneInchValidator is BridgeValidator {
 
         /// @dev FIXME: add  3. token validations
         if (args_.liqDataToken != decodedReq.fromToken) revert Error.INVALID_TXDATA_TOKEN();
+
+        return false;
     }
 
     /// @inheritdoc BridgeValidator

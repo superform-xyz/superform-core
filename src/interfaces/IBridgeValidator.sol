@@ -32,7 +32,8 @@ interface IBridgeValidator {
 
     /// @dev validates the txData of a cross chain deposit
     /// @param args_ the txData arguments to validate in txData
-    function validateTxData(ValidateTxDataArgs calldata args_) external view;
+    /// @return hasDstSwap if the txData contains a destination swap
+    function validateTxData(ValidateTxDataArgs calldata args_) external view returns (bool hasDstSwap);
 
     /// @dev decodes the txData and returns the amount of input token on source
     /// @param txData_ is the txData of the cross chain deposit

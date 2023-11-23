@@ -86,7 +86,7 @@ contract SDiMVW0000TokenInputNoSlippage2AMB23 is ProtocolActions {
             bool success;
 
             if (act == 1) {
-                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                for (uint256 i = 0; i < DST_CHAINS.length; ++i) {
                     /// @dev original super position amounts
                     uint256[] memory superPositions = _getSuperpositionsForDstChain(
                         actions[1].user,

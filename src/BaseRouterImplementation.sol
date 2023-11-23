@@ -166,15 +166,20 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             _singleVaultTokenForward(msg.sender, address(0), req_.superformData.permit2data, ambData);
 
         LiqRequest memory emptyRequest;
-        emptyRequest.interimToken = req_.superformData.liqRequest.interimToken;
-        ambData.liqData = emptyRequest;
 
         /// @dev dispatch liquidity data
-        _validateAndDispatchTokens(
-            ValidateAndDispatchTokensArgs(
-                req_.superformData.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
+        if (
+            _validateAndDispatchTokens(
+                ValidateAndDispatchTokensArgs(
+                    req_.superformData.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
+                )
             )
-        );
+        ) emptyRequest.interimToken = req_.superformData.liqRequest.interimToken;
+
+        /// @dev overrides user set liqData to just contain interimToken in case there is a dstSwap
+        /// @dev this information is needed in case the dstSwap fails so that we can validate the interimToken in
+        /// DstSwapper.sol on destination
+        ambData.liqData = emptyRequest;
 
         uint256[] memory superformIds = new uint256[](1);
         superformIds[0] = req_.superformData.superformId;
@@ -255,6 +260,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         (uint256[] memory amountsIn, uint8[] memory bridgeIds) =
             _multiVaultTokenForward(msg.sender, new address[](0), req_.superformsData.permit2data, ambData, true);
 
+        /// @dev empties the liqData after multiVaultTokenForward
+        ambData.liqData = new LiqRequest[](len);
+
         /// @dev this loop is what allows to deposit to >1 different underlying on destination
         /// @dev if a loop fails in a validation the whole chain should be reverted
         for (uint256 j; j < len; ++j) {
@@ -263,16 +271,13 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             (superform,,) = req_.superformsData.superformIds[j].getSuperform();
 
             /// @dev dispatch liquidity data
-            _validateAndDispatchTokens(
-                ValidateAndDispatchTokensArgs(
-                    vars.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
+            if (
+                _validateAndDispatchTokens(
+                    ValidateAndDispatchTokensArgs(
+                        vars.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
+                    )
                 )
-            );
-        }
-
-        ambData.liqData = new LiqRequest[](len);
-        for (uint256 i; i < len; i++) {
-            ambData.liqData[i].interimToken = req_.superformsData.liqRequests[i].interimToken;
+            ) ambData.liqData[j].interimToken = vars.liqRequest.interimToken;
         }
 
         /// @dev dispatch message information, notice multiVaults is set to 1
@@ -486,10 +491,14 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
     }
 
-    function _validateAndDispatchTokens(ValidateAndDispatchTokensArgs memory args_) internal virtual {
+    function _validateAndDispatchTokens(ValidateAndDispatchTokensArgs memory args_)
+        internal
+        virtual
+        returns (bool hasDstSwap)
+    {
         address bridgeValidator = superRegistry.getBridgeValidator(args_.liqRequest.bridgeId);
         /// @dev validates remaining params of txData
-        IBridgeValidator(bridgeValidator).validateTxData(
+        hasDstSwap = IBridgeValidator(bridgeValidator).validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
                 args_.liqRequest.txData,
                 args_.srcChainId,

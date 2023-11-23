@@ -533,8 +533,6 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.prank(deployer);
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
 
-
-
         vm.prank(deployer);
         vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload(1);
@@ -566,7 +564,6 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         vm.prank(deployer);
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
-
 
         vm.prank(deployer);
         vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);

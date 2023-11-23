@@ -88,7 +88,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
             bool success;
 
             if (act == 1) {
-                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                for (uint256 i = 0; i < DST_CHAINS.length; ++i) {
                     uint256[] memory superPositions = _getSuperpositionsForDstChain(
                         actions[1].user,
                         TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
@@ -131,7 +131,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
             bool success;
 
             if (act == 1) {
-                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                for (uint256 i = 0; i < DST_CHAINS.length; ++i) {
                     uint256[] memory superPositions = _getSuperpositionsForDstChain(
                         actions[1].user,
                         TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
@@ -228,7 +228,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
         assertEq(v.receiverAddress, users[0]);
 
-        for (uint256 i; i < v.amounts.length; i++) {
+        for (uint256 i; i < v.amounts.length; ++i) {
             /// @dev ETH<>DAI swap on OP
             v.daiAfterFirstSwap = (AMOUNTS[ARBI][0][i] * args.USDPerETHonOP_) / args.USDPerDAIonOP_;
             /// @dev DAI on OP <> DAI on ARBI
