@@ -55,7 +55,7 @@ contract SDiMVDMulti111NoTokenInputSlippageAMB12 is ProtocolActions {
         amountThree_ = uint128(bound(amountThree_, 2 * 10 ** 18, TOTAL_SUPPLY_WETH / 3));
         AMOUNTS[AVAX][0] = [amountOne_, amountTwo_, amountThree_];
 
-        for (uint256 act; act < actions.length; act++) {
+        for (uint256 act; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

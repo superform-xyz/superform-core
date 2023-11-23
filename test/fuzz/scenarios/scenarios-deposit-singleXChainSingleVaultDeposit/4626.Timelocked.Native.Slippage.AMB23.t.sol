@@ -52,7 +52,7 @@ contract SXSVDTimelocked4626NoNativeSlippageAMB23 is ProtocolActions {
         amount_ = uint128(bound(amount_, 2 * 10 ** 18, TOTAL_SUPPLY_ETH));
         AMOUNTS[ARBI][0] = [amount_];
 
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

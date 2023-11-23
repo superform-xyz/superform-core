@@ -52,7 +52,7 @@ contract SDSVD4626NoSwapNativeSlippage is ProtocolActions {
         amount_ = uint128(bound(amount_, 2e18, 10e18));
         AMOUNTS[AVAX][0] = [amount_];
 
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

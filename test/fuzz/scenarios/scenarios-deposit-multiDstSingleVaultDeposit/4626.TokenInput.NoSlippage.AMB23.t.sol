@@ -69,7 +69,7 @@ contract MDSVDNormal4626MultiTokenInputNoSlippageAMB23 is ProtocolActions {
         AMOUNTS[OP][0] = [amountTwo_];
         AMOUNTS[POLY][0] = [amountThree_];
 
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

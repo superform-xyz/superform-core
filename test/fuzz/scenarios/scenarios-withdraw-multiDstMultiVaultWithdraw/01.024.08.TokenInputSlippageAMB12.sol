@@ -133,7 +133,7 @@ contract MDMVW0102408NativeInputSlippageAMB12 is ProtocolActions {
         /// @dev shuffled order of amounts to randomise
         AMOUNTS[AVAX][0] = [amountThree_, amountTwo_];
 
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

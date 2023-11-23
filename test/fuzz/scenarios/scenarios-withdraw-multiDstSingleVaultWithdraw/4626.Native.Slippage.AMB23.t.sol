@@ -105,7 +105,7 @@ contract MDSVWNormal4626NativeSlippageAMB23 is ProtocolActions {
         AMOUNTS[OP][0] = [amountOne_];
         AMOUNTS[AVAX][0] = [amountTwo_];
 
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

@@ -69,7 +69,7 @@ contract MDSVD4626RevertTimelockedNoTokenInputNoSlippageAMB23 is ProtocolActions
         AMOUNTS[ARBI][0] = [amountTwo_];
         AMOUNTS[POLY][0] = [amountThree_];
 
-        for (uint256 act; act < actions.length; act++) {
+        for (uint256 act; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

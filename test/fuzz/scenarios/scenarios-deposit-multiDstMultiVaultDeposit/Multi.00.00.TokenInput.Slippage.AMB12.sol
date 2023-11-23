@@ -62,7 +62,7 @@ contract MDMVDMulti0000NoTokenInputSlippageAMB12 is ProtocolActions {
         AMOUNTS[POLY][0] = [amountOne_, amountTwo_];
         AMOUNTS[ETH][0] = [amountTwo_, amountOne_];
 
-        for (uint256 act; act < actions.length; act++) {
+        for (uint256 act; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

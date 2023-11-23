@@ -78,7 +78,7 @@ contract SDiMVW02NativeInputNoSlippageAMB12 is ProtocolActions {
         amountTwo_ = uint128(bound(amountTwo_, 1e18, 20e18));
         AMOUNTS[OP][0] = [amountOne_, amountTwo_];
 
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

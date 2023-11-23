@@ -81,7 +81,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_payloadHelperSingle() public {
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;
@@ -111,7 +111,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
     }
 
     function test_payloadHelperLiqSingle() public {
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

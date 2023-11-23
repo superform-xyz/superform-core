@@ -157,7 +157,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
             externalToken: inputToken
         });
 
-        for (uint256 act = 0; act < v.actionsMem.length; act++) {
+        for (uint256 act = 0; act < v.actionsMem.length; ++act) {
             v.singleAction = v.actionsMem[act];
 
             /// @dev this is per destination (hardcoding 1 here)
@@ -270,7 +270,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
             externalToken: inputToken
         });
 
-        for (uint256 act = 0; act < v.actionsMem.length; act++) {
+        for (uint256 act = 0; act < v.actionsMem.length; ++act) {
             v.singleAction = v.actionsMem[act];
 
             /// @dev this is per destination (hardcoding 1 here)

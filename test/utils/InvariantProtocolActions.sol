@@ -597,7 +597,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     internalVars.expDstChainAddresses[internalVars.k] =
                         getContract(chainIds[i], "WormholeARImplementation");
 
-                    internalVars.++k;
+                    ++internalVars.k;
                 }
             }
         }

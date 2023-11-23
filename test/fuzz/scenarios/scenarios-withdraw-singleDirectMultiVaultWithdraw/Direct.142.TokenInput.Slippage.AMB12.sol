@@ -80,7 +80,7 @@ contract SDiMVW142TokenInputSlippageAMB12 is ProtocolActions {
         amountThree_ = uint128(bound(amountThree_, 1e6, 1e10));
         AMOUNTS[AVAX][0] = [amountOne_, amountTwo_, amountThree_];
 
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

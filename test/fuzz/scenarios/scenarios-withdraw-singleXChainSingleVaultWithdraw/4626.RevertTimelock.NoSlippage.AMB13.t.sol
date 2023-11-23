@@ -76,7 +76,7 @@ contract SXSVWRevertTimelockNativeNoSlippageAMB13 is ProtocolActions {
         AMOUNTS[AVAX][0] = [amountOne_];
         // AMOUNTS[AVAX][1] = [amountOne_];
 
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

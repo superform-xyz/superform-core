@@ -77,7 +77,7 @@ contract SXSVWNormal4626TokenInputSlippage is ProtocolActions {
         amountOne_ = uint128(bound(amountOne_, 2 * 10e18, TOTAL_SUPPLY_DAI));
         AMOUNTS[ETH][0] = [amountOne_];
 
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

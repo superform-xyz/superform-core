@@ -804,7 +804,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     internalVars.expDstChainAddresses[internalVars.k] =
                         getContract(chainIds[i], "WormholeARImplementation");
 
-                    internalVars.++k;
+                    ++internalVars.k;
                 }
             }
         }
@@ -2721,14 +2721,14 @@ abstract contract ProtocolActions is CommonProtocolActions {
         //int256 dstSwapSlippage;
 
         /// @dev create an array of amounts summing the amounts of the same superform ids
-        for (v.i = 0; v.i < v.lenSuperforms; v.++i) {
+        for (v.i = 0; v.i < v.lenSuperforms; ++v.i) {
             totalSpAmount += args.multiSuperformsData.amounts[v.i];
-            for (v.j = 0; v.j < v.lenSuperforms; v.++j) {
+            for (v.j = 0; v.j < v.lenSuperforms; ++v.j) {
                 v.foundRevertingDeposit = false;
 
                 /// @dev find if a superform is a reverting
                 if (args.lenRevertDeposit > 0) {
-                    for (v.k = 0; v.k < args.lenRevertDeposit; v.++k) {
+                    for (v.k = 0; v.k < args.lenRevertDeposit; ++v.k) {
                         v.foundRevertingDeposit =
                             revertingDepositSFs[args.dstIndex][v.k] == args.multiSuperformsData.superformIds[v.i];
                         if (v.foundRevertingDeposit) break;

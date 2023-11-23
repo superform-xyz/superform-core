@@ -80,7 +80,7 @@ contract SXSVWNormal4626NativeSlippage is ProtocolActions {
         /// and burning DAI with a 1:1 price ratio, with no mint-cap on WETH supply hence these work
         /// off the hook, but should consider the correct price ratio to make it more mainnet-like
 
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

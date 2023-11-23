@@ -111,7 +111,7 @@ contract MDMVW00001200TokenInputSlippageAMB12 is ProtocolActions {
 
         AMOUNTS[POLY][0] = [amountOne_, amountOne_, amountTwo_, amountThree_];
 
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;
