@@ -9,6 +9,12 @@ import { Error } from "src/libraries/Error.sol";
 
 import { DataLib } from "src/libraries/DataLib.sol";
 
+contract ZeroAssetVault {
+    function asset() external view returns (address) {
+        return address(0);
+    }
+}
+
 contract SuperformFactoryCreateSuperformTest is BaseSetup {
     uint64 internal chainId = ETH;
     address public vault;
@@ -202,5 +208,12 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
         SuperformFactory(getContract(chainId, "SuperformFactory")).getSuperform(superformId);
+    }
+
+    function test_initializeWithZeroAddressAsset() public {
+        vm.selectFork(FORKS[chainId]);
+        address zeroAssetVault = address(new ZeroAssetVault());
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(1, zeroAssetVault);
     }
 }

@@ -60,6 +60,41 @@ contract SuperformRouterTest is ProtocolActions {
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 
+    function test_withdrawFromInvalidFormImplId() public {
+        /// scenario: withdraw from a superform by modifying the form implementation id
+        vm.selectFork(FORKS[ETH]);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[1], ETH);
+
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            1e18,
+            100,
+            LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
+            "",
+            false,
+            false,
+            receiverAddress,
+            ""
+        );
+
+        SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
+
+        address router = getContract(ETH, "SuperformRouter");
+
+        vm.prank(router);
+        SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 2e18);
+        SuperPositions(getContract(ETH, "SuperPositions")).setApprovalForAll(router, true);
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
+        SuperformRouter(payable(router)).singleDirectSingleVaultWithdraw(req);
+    }
+
     function test_depositToCraftedSuperformId() public {
         /// scenario: deposit to an invalid super form id (which doesn't exist on the chain)
         vm.selectFork(FORKS[ETH]);
