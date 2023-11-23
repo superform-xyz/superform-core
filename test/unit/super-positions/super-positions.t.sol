@@ -369,4 +369,19 @@ contract SuperPositionsTest is BaseSetup {
         vm.expectRevert(Error.NOT_BROADCAST_REGISTRY.selector);
         superPositions.stateSyncBroadcast("");
     }
+
+    function test_revert_stateSyncBroadcast_invalidType() public {
+        vm.expectRevert(Error.INVALID_MESSAGE_TYPE.selector);
+        vm.prank(getContract(ETH, "BroadcastRegistry"));
+
+        superPositions.stateSyncBroadcast(
+            abi.encode(
+                BroadcastMessage(
+                    "SUPER_RBAC",
+                    keccak256("OTHER_TYPE"),
+                    abi.encode(1, keccak256("PAYMENT_ADMIN_ROLE"), keccak256("NON_EXISTENT_ID"))
+                )
+            )
+        );
+    }
 }

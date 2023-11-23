@@ -235,6 +235,21 @@ contract SuperRBACTest is BaseSetup {
         superRBAC.stateSyncBroadcast("");
     }
 
+    function test_stateSync_invalidType() public {
+        vm.expectRevert(Error.INVALID_MESSAGE_TYPE.selector);
+        vm.prank(getContract(ETH, "BroadcastRegistry"));
+
+        superRBAC.stateSyncBroadcast(
+            abi.encode(
+                BroadcastMessage(
+                    "SUPER_RBAC",
+                    keccak256("OTHER_TYPE"),
+                    abi.encode(1, keccak256("PAYMENT_ADMIN_ROLE"), keccak256("NON_EXISTENT_ID"))
+                )
+            )
+        );
+    }
+
     function test_stateSync_addressToRevokeIs0() public {
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         vm.prank(getContract(ETH, "BroadcastRegistry"));

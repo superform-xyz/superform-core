@@ -172,7 +172,6 @@ contract DstSwapperTest is ProtocolActions {
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         DstSwapper(dstSwapper).processFailedTx(address(0), weth, 1e18);
 
-
         vm.prank(coreStateRegistry);
         DstSwapper(dstSwapper).processFailedTx(users[0], weth, 1e18);
 

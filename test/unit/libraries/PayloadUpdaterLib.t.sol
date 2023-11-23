@@ -29,6 +29,11 @@ contract PayloadUpdaterLibTest is Test {
         payloadUpdateLib = new PayloadUpdaterLibUser();
     }
 
+    function test_validateSlippage_NegativeSlippage() public {
+        vm.expectRevert(Error.NEGATIVE_SLIPPAGE.selector);
+        payloadUpdateLib.validateSlippage(10, 8, 100);
+    }
+
     function test_validateDepositPayloadUpdate() public {
         /// @dev payload updater goes rogue and tries to update amounts for withdraw transaction
         uint256 txInfo =

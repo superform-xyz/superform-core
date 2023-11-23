@@ -41,6 +41,36 @@ contract LiFiValidatorTest is ProtocolActions {
         );
     }
 
+    function test_lifi_validator_invalidInterimToken() public {
+        vm.expectRevert(Error.INVALID_INTERIM_TOKEN.selector);
+
+        LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                _buildDummyTxDataUnitTests(
+                    BuildDummyTxDataUnitTestsVars(
+                        1,
+                        address(0),
+                        address(0),
+                        deployer,
+                        ETH,
+                        BSC,
+                        uint256(100),
+                        getContract(BSC, "DstSwapper"),
+                        false
+                    )
+                ),
+                ETH,
+                BSC,
+                BSC,
+                true,
+                address(0),
+                deployer,
+                NATIVE,
+                address(0)
+            )
+        );
+    }
+
     function test_lifi_invalid_receiver() public {
         bytes memory txData = _buildDummyTxDataUnitTests(
             BuildDummyTxDataUnitTestsVars(
