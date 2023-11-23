@@ -486,6 +486,15 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         newPayloadBody_ = abi.encode(singleVaultData);
     }
 
+    function validateSlippage(uint256 finalAmount_, uint256 amount_, uint256 maxSlippage_) public view returns (bool) {
+        // only internal transaction
+        if (msg.sender != address(this)) {
+            revert Error.INVALID_INTERNAL_CALL();
+        }
+
+        return PayloadUpdaterLib.validateSlippage(finalAmount_, amount_, maxSlippage_);
+    }
+
     function _updateAmount(
         IDstSwapper dstSwapper,
         bool hasDstSwap_,
@@ -524,17 +533,30 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         /// @dev validate payload update
         /// @dev validLen may only be increased here in the case where slippage for the update is valid
+        /// @notice we enter this if condition only if there is a valid dstSwap OR if there is just bridging to this
+        /// contract
         if (!failedSwapQueued) {
+            bool validSlippage;
             /// if the slippage is within allowed amount && the superform id also exists
-            if (
-                PayloadUpdaterLib.validateSlippage(finalAmount_, amount_, maxSlippage_)
-                    && ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId_)
-            ) {
-                /// @dev sets amount to finalAmount_ and will mark the payload as UPDATED
-                amount_ = finalAmount_;
-                finalState_ = PayloadState.UPDATED;
-                ++validLen_;
-            } else {
+            try this.validateSlippage(finalAmount_, amount_, maxSlippage_) returns (bool valid) {
+                /// @dev in case of a valid slippage check we update the amount to finalAmount_
+                if (valid) {
+                    amount_ = finalAmount_;
+                    validSlippage = valid;
+                }
+            } catch {
+                /// @dev in case of negative slippage and it is not a dstSwap, we don't update the amount provided
+                /// to this internal function (it remains as the original amount supplied by the user in the
+                /// original state request). If it was a dstSwap, then this flow is impossible and should revert here.
+                if (hasDstSwap_) revert Error.NEGATIVE_SLIPPAGE();
+                /// @notice in case of valid negative slippage (because bridge supplied more tokens than expected)
+                /// this dust will be collected in this contract and remain here
+            }
+
+            /// @dev Mark the payload as UPDATED
+            finalState_ = PayloadState.UPDATED;
+
+            if (!(ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId_) && validSlippage)) {
                 failedDeposits[payloadId_].superformIds.push(superformId_);
 
                 address asset;
@@ -547,9 +569,12 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 failedDeposits[payloadId_].settlementToken.push(asset);
                 failedDeposits[payloadId_].settleFromDstSwapper.push(false);
 
-                /// @dev sets amount to zero and will mark the payload as PROCESSED
+                /// @dev sets amount to zero and will mark the payload as PROCESSED (overriding the previous memory
+                /// settings)
                 amount_ = 0;
                 finalState_ = PayloadState.PROCESSED;
+            } else {
+                ++validLen_;
             }
         }
 
