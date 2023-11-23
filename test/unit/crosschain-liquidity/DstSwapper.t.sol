@@ -81,6 +81,8 @@ contract DstSwapperTest is ProtocolActions {
         address weth = getContract(OP, "WETH");
 
         _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry, weth);
+        _simulateMultiVaultExistingPayloadOnOP(coreStateRegistry, weth);
+        _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry, address(0x2222));
 
         vm.startPrank(deployer);
         deal(weth, dstSwapper, 1e18);
@@ -95,6 +97,12 @@ contract DstSwapperTest is ProtocolActions {
 
         vm.expectRevert(Error.FAILED_DST_SWAP_ALREADY_UPDATED.selector);
         DstSwapper(dstSwapper).updateFailedTx(1, 0, weth, 1e18);
+
+        vm.expectRevert(Error.INVALID_PAYLOAD_TYPE.selector);
+        DstSwapper(dstSwapper).updateFailedTx(2, 0, weth, 1e18);
+
+        vm.expectRevert(Error.INVALID_INTERIM_TOKEN.selector);
+        DstSwapper(dstSwapper).updateFailedTx(3, 0, weth, 1e18);
 
         /// @dev set quorum to 0 for simplicity in testing setup
         SuperRegistry(getContract(OP, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
@@ -144,6 +152,51 @@ contract DstSwapperTest is ProtocolActions {
         actions.pop();
     }
 
+    function test_single_non_native_updateFailedTx_postRescue_getPostDstSwapFailureUpdatedTokenAmount() public {
+        address payable dstSwapper = payable(getContract(OP, "DstSwapper"));
+        address payable coreStateRegistry = payable(getContract(OP, "CoreStateRegistry"));
+
+        vm.selectFork(FORKS[OP]);
+        address weth = getContract(OP, "WETH");
+
+        _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry, weth);
+
+        vm.startPrank(deployer);
+        deal(weth, dstSwapper, 1e18);
+
+        DstSwapper(dstSwapper).updateFailedTx(1, 0, weth, 1e18);
+
+        vm.stopPrank();
+
+        vm.prank(coreStateRegistry);
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        DstSwapper(dstSwapper).processFailedTx(address(0), weth, 1e18);
+
+
+        vm.prank(coreStateRegistry);
+        DstSwapper(dstSwapper).processFailedTx(users[0], weth, 1e18);
+
+        vm.expectRevert(Error.INVALID_DST_SWAPPER_FAILED_SWAP_NO_TOKEN_BALANCE.selector);
+        DstSwapper(dstSwapper).getPostDstSwapFailureUpdatedTokenAmount(1, 0);
+
+        address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+        _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry, native);
+
+        vm.startPrank(deployer);
+        deal(dstSwapper, 1e18);
+
+        DstSwapper(dstSwapper).updateFailedTx(2, 0, native, 1e18);
+
+        vm.stopPrank();
+
+        vm.prank(coreStateRegistry);
+        DstSwapper(dstSwapper).processFailedTx(users[0], native, 1e18);
+
+        vm.expectRevert(Error.INVALID_DST_SWAPPER_FAILED_SWAP_NO_NATIVE_BALANCE.selector);
+        DstSwapper(dstSwapper).getPostDstSwapFailureUpdatedTokenAmount(2, 0);
+    }
+
     function test_single_native_updateFailedTx() public {
         address payable dstSwapper = payable(getContract(OP, "DstSwapper"));
         address payable coreStateRegistry = payable(getContract(OP, "CoreStateRegistry"));
@@ -154,6 +207,9 @@ contract DstSwapperTest is ProtocolActions {
         _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry, native);
 
         vm.startPrank(deployer);
+        vm.expectRevert(Error.INSUFFICIENT_BALANCE.selector);
+        DstSwapper(dstSwapper).updateFailedTx(1, 0, native, 1e18);
+
         deal(dstSwapper, 1e18);
 
         DstSwapper(dstSwapper).updateFailedTx(1, 0, native, 1e18);
@@ -208,6 +264,7 @@ contract DstSwapperTest is ProtocolActions {
 
         address interimToken = weth;
         _simulateMultiVaultExistingPayloadOnOP(coreStateRegistry, interimToken);
+        _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry, interimToken);
 
         vm.startPrank(deployer);
         deal(interimToken, dstSwapper, 2e18);
@@ -225,6 +282,9 @@ contract DstSwapperTest is ProtocolActions {
         indices[1] = 1;
 
         DstSwapper(dstSwapper).batchUpdateFailedTx(1, indices, interimTokens, amounts);
+
+        vm.expectRevert(Error.INVALID_PAYLOAD_TYPE.selector);
+        DstSwapper(dstSwapper).batchUpdateFailedTx(2, indices, interimTokens, amounts);
 
         /// @dev set quorum to 0 for simplicity in testing setup
         SuperRegistry(getContract(OP, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);

@@ -39,7 +39,8 @@ contract SocketValidator is BridgeValidator {
             if (args_.srcChainId == args_.dstChainId) {
                 revert Error.INVALID_ACTION();
             } else {
-                hasDstSwap = decodedReq.receiverAddress == superRegistry.getAddressByChainId(keccak256("DST_SWAPPER"), args_.dstChainId);
+                hasDstSwap = decodedReq.receiverAddress
+                    == superRegistry.getAddressByChainId(keccak256("DST_SWAPPER"), args_.dstChainId);
 
                 /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry (or) Dst Swapper
                 if (
