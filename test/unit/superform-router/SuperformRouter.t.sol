@@ -25,6 +25,13 @@ contract SuperformRouterTest is ProtocolActions {
         super.setUp();
     }
 
+    function test_validateSlippage() public {
+        vm.selectFork(FORKS[ETH]);
+
+        vm.expectRevert(Error.INVALID_INTERNAL_CALL.selector);
+        CoreStateRegistry(getContract(ETH, "CoreStateRegistry")).validateSlippage(1, 2, 3);
+    }
+
     function test_depositToInvalidFormId() public {
         /// scenario: deposit to an invalid super form id (which doesn't exist on the chain)
         vm.selectFork(FORKS[ETH]);

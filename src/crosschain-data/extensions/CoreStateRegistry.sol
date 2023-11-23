@@ -536,27 +536,31 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         /// @notice we enter this if condition only if there is a valid dstSwap OR if there is just bridging to this
         /// contract
         if (!failedSwapQueued) {
-            bool validSlippage;
             /// if the slippage is within allowed amount && the superform id also exists
             try this.validateSlippage(finalAmount_, amount_, maxSlippage_) returns (bool valid) {
                 /// @dev in case of a valid slippage check we update the amount to finalAmount_
                 if (valid) {
                     amount_ = finalAmount_;
-                    validSlippage = valid;
+                    /// @dev Mark the payload as UPDATED
+                    finalState_ = PayloadState.UPDATED;
                 }
             } catch {
-                /// @dev in case of negative slippage and it is not a dstSwap, we don't update the amount provided
-                /// to this internal function (it remains as the original amount supplied by the user in the
-                /// original state request). If it was a dstSwap, then this flow is impossible and should revert here.
-                if (hasDstSwap_) revert Error.NEGATIVE_SLIPPAGE();
-                /// @notice in case of valid negative slippage (because bridge supplied more tokens than expected)
-                /// this dust will be collected in this contract and remain here
+                /// @dev in case of negative slippage we don't update the amount in the user request to the amount
+                /// provided by the keeper
+                /// @notice it remains as the original amount supplied by the user in the original state request
+                /// @notice This means than any difference from the amount provided by the keepeer to the user supplied
+                /// amount will be collected in this contract and remain here
+                /// @notice we consider this to also be validSlippage = true
+                /// @dev Mark the payload as UPDATED
+                finalState_ = PayloadState.UPDATED;
             }
 
-            /// @dev Mark the payload as UPDATED
-            finalState_ = PayloadState.UPDATED;
-
-            if (!(ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId_) && validSlippage)) {
+            if (
+                !(
+                    ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId_)
+                        && finalState_ == PayloadState.UPDATED
+                )
+            ) {
                 failedDeposits[payloadId_].superformIds.push(superformId_);
 
                 address asset;

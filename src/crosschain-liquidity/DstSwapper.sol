@@ -13,7 +13,6 @@ import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { IERC4626Form } from "../forms/interfaces/IERC4626Form.sol";
 import { Error } from "../libraries/Error.sol";
 import { DataLib } from "../libraries/DataLib.sol";
-import { PayloadUpdaterLib } from "../libraries/PayloadUpdaterLib.sol";
 import "../types/DataTypes.sol";
 
 /// @title DstSwapper
@@ -144,7 +143,18 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
 
         _isValidPayloadId(payloadId_, coreStateRegistry);
 
-        _processTx(payloadId_, index_, bridgeId_, txData_, coreStateRegistry);
+        (,, uint8 multi,,,) = DataLib.decodeTxInfo(coreStateRegistry.payloadHeader(payloadId_));
+
+        if (multi != 0) revert Error.INVALID_PAYLOAD_TYPE();
+
+        _processTx(
+            payloadId_,
+            index_,
+            bridgeId_,
+            txData_,
+            abi.decode(coreStateRegistry.payloadBody(payloadId_), (InitSingleVaultData)).liqData.interimToken,
+            coreStateRegistry
+        );
     }
 
     /// @inheritdoc IDstSwapper
@@ -163,9 +173,16 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
 
         _isValidPayloadId(payloadId_, coreStateRegistry);
 
+        (,, uint8 multi,,,) = DataLib.decodeTxInfo(coreStateRegistry.payloadHeader(payloadId_));
+        if (multi != 1) revert Error.INVALID_PAYLOAD_TYPE();
+
+        InitMultiVaultData memory data = abi.decode(coreStateRegistry.payloadBody(payloadId_), (InitMultiVaultData));
+
         uint256 len = txData_.length;
         for (uint256 i; i < len; ++i) {
-            _processTx(payloadId_, indices[i], bridgeIds_[i], txData_[i], coreStateRegistry);
+            _processTx(
+                payloadId_, indices[i], bridgeIds_[i], txData_[i], data.liqData[i].interimToken, coreStateRegistry
+            );
         }
     }
 
@@ -265,6 +282,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         uint256 index_,
         uint8 bridgeId_,
         bytes calldata txData_,
+        address userSuppliedInterimToken_,
         IBaseStateRegistry coreStateRegistry_
     )
         internal
@@ -278,6 +296,11 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
 
         IBridgeValidator validator = IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_));
         (v.approvalToken, v.amount) = validator.decodeDstSwap(txData_);
+
+        if (userSuppliedInterimToken_ != v.approvalToken) {
+            revert Error.INVALID_INTERIM_TOKEN();
+        }
+
         v.finalDst = address(coreStateRegistry_);
 
         /// @dev validates the bridge data
@@ -319,7 +342,15 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
 
         /// @dev if actual underlying is less than expAmount adjusted
         /// with maxSlippage, invariant breaks
-        if (!PayloadUpdaterLib.validateSlippage(v.balanceDiff, v.expAmount, v.maxSlippage)) {
+        /// @notice that unlike in CoreStateRegistry slippage check inside updateDeposit, in here we don't check for
+        /// negative slippage
+        /// @notice this essentially allows any amount to be swapped, (the invariant will still break if the amount is
+        /// too low)
+        /// @notice this doesn't mean that the keeper or the user can swap any amount, because of the 2nd slippage check
+        /// in CoreStateRegistry
+        /// @notice in this check, we check if there is negative slippage, for which case, the user is capped to receive
+        /// the v.expAmount of tokens (originally defined)
+        if (v.balanceDiff < ((v.expAmount * (10_000 - v.maxSlippage)) / 10_000)) {
             revert Error.SLIPPAGE_OUT_OF_BOUNDS();
         }
 

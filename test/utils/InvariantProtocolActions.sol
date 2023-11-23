@@ -1059,7 +1059,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         v.liqReq = LiqRequest(
             v.txData,
             liqRequestToken,
-            args.dstSwap ? liqRequestToken : address(0),
+            args.dstSwap ? args.underlyingTokenDst : address(0),
             args.liqBridge,
             args.toChainId,
             liqRequestToken == NATIVE_TOKEN ? args.amount : 0

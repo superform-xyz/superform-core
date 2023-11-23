@@ -21,16 +21,41 @@ contract DstSwapperTest is ProtocolActions {
         super.setUp();
     }
 
+    function test_failed_invalid_interim_token() public {
+        address payable dstSwapper = payable(getContract(ETH, "DstSwapper"));
+        address payable coreStateRegistry = payable(getContract(ETH, "CoreStateRegistry"));
+
+        vm.selectFork(FORKS[ETH]);
+        address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+        _simulateSingleVaultExistingPayload(coreStateRegistry, address(0));
+
+        vm.startPrank(deployer);
+
+        (bool success,) = payable(dstSwapper).call{ value: 1e18 }("");
+
+        if (success) {
+            bytes memory txData =
+                _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
+            vm.expectRevert(Error.INVALID_INTERIM_TOKEN.selector);
+
+            DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
+        } else {
+            revert();
+        }
+    }
+
     function test_failed_native_process_tx() public {
         address payable dstSwapper = payable(getContract(ETH, "DstSwapper"));
         address payable coreStateRegistry = payable(getContract(ETH, "CoreStateRegistry"));
 
         vm.selectFork(FORKS[ETH]);
-        _simulateSingleVaultExistingPayload(coreStateRegistry);
-        _simulateSingleVaultExistingPayload(coreStateRegistry);
+        address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+        _simulateSingleVaultExistingPayload(coreStateRegistry, native);
+        _simulateSingleVaultExistingPayload(coreStateRegistry, native);
 
         vm.startPrank(deployer);
-        address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
         (bool success,) = payable(dstSwapper).call{ value: 1e18 }("");
 
@@ -63,7 +88,7 @@ contract DstSwapperTest is ProtocolActions {
         address payable coreStateRegistry = payable(getContract(ETH, "CoreStateRegistry"));
 
         vm.selectFork(FORKS[ETH]);
-        _simulateSingleVaultExistingPayload(coreStateRegistry);
+        _simulateSingleVaultExistingPayload(coreStateRegistry, getContract(ETH, "WETH"));
 
         vm.startPrank(deployer);
         bytes memory txData =
@@ -492,7 +517,7 @@ contract DstSwapperTest is ProtocolActions {
         address payable coreStateRegistry = payable(getContract(ETH, "CoreStateRegistry"));
 
         vm.selectFork(FORKS[ETH]);
-        _simulateSingleVaultExistingPayload(coreStateRegistry);
+        _simulateSingleVaultExistingPayload(coreStateRegistry, getContract(ETH, "WETH"));
 
         vm.startPrank(deployer);
 
@@ -514,6 +539,9 @@ contract DstSwapperTest is ProtocolActions {
         uint256 superformId = DataLib.packSuperform(superform, 1, ETH);
 
         LiqRequest memory liq;
+
+        liq.interimToken = getContract(ETH, "WETH");
+
         vm.prank(getContract(ETH, "LayerzeroImplementation"));
         CoreStateRegistry(coreStateRegistry).receivePayload(
             137,
@@ -581,7 +609,10 @@ contract DstSwapperTest is ProtocolActions {
         CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, finalAmounts);
     }
 
-    function _simulateSingleVaultExistingPayload(address payable coreStateRegistry)
+    function _simulateSingleVaultExistingPayload(
+        address payable coreStateRegistry,
+        address interimToken_
+    )
         internal
         returns (uint256 superformId)
     {
@@ -590,6 +621,9 @@ contract DstSwapperTest is ProtocolActions {
         superformId = DataLib.packSuperform(superform, 1, ETH);
 
         LiqRequest memory liq;
+
+        liq.interimToken = interimToken_;
+
         (, int256 USDPerSendingTokenDst,,,) = AggregatorV3Interface(tokenPriceFeeds[ETH][NATIVE]).latestRoundData();
         (, int256 USDPerReceivingTokenDst,,,) =
             AggregatorV3Interface(tokenPriceFeeds[ETH][getContract(ETH, "DAI")]).latestRoundData();
@@ -738,6 +772,9 @@ contract DstSwapperTest is ProtocolActions {
         hasDstSwaps[1] = true;
 
         LiqRequest[] memory liq = new LiqRequest[](2);
+
+        liq[0].interimToken = NATIVE;
+        liq[1].interimToken = NATIVE;
 
         uint8[] memory ambIds_ = new uint8[](1);
         ambIds_[0] = 1;
