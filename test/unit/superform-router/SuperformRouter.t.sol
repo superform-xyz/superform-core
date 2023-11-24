@@ -2211,9 +2211,21 @@ contract SuperformRouterTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
         assertEq(SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(address(420), superformId), 2e18);
 
-        /// @dev residual tokens live on CSR
+        /// @dev residual tokens live on DstSwapper
         vm.selectFork(FORKS[ARBI]);
         assertEq(MockERC20(getContract(ARBI, "DAI")).balanceOf(getContract(ARBI, "DstSwapper")), 1e18);
+    }
+
+    function test_negativeDstSwapSlippageAndUpdateSuperformDataAmount() public {
+        uint256 superformId = _simulateXChainDepositWithNegativeSlippage(1, "VaultMock", address(420), true, true);
+
+        /// @dev assert that the minted amount is the amount sent in superformData.amount
+        vm.selectFork(FORKS[ETH]);
+        assertEq(SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(address(420), superformId), 2e18);
+
+        /// @dev swapped tokens live on CSR
+        vm.selectFork(FORKS[ARBI]);
+        assertEq(MockERC20(getContract(ARBI, "DAI")).balanceOf(getContract(ARBI, "CoreStateRegistry")), 1e18);
     }
 
     function _simulateXChainDepositWithNegativeSlippage(
@@ -2221,7 +2233,7 @@ contract SuperformRouterTest is ProtocolActions {
         string memory vaultKind,
         address mrperfect,
         bool hasDstSwap,
-        bool negativeSlippage
+        bool keeperUpdatePositiveSlippage
     )
         internal
         returns (uint256 superformId)
@@ -2321,7 +2333,7 @@ contract SuperformRouterTest is ProtocolActions {
         vm.startPrank(deployer);
 
         uint256[] memory amounts = new uint256[](1);
-        amounts[0] = negativeSlippage ? 3e18 : 2e18;
+        amounts[0] = keeperUpdatePositiveSlippage ? 3e18 : 2e18;
 
         if (hasDstSwap) {
             DstSwapper(payable(getContract(ARBI, "DstSwapper"))).processTx(
@@ -2334,7 +2346,7 @@ contract SuperformRouterTest is ProtocolActions {
                     getContract(ARBI, "DAI"),
                     getContract(ARBI, "DstSwapper"),
                     ARBI,
-                    2e18,
+                    amounts[0],
                     0
                 )
             );
