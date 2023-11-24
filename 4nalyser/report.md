@@ -8,12 +8,14 @@
 |-|:-|:-:|
 | [GAS-1](#GAS-1) | Using bools for storage incurs overhead | 7 |
 | [GAS-2](#GAS-2) | Cache array length outside of loop | 23 |
-| [GAS-3](#GAS-3) | For Operations that will not overflow, you could use unchecked | 938 |
-| [GAS-4](#GAS-4) | Don't initialize variables with default value | 2 |
-| [GAS-5](#GAS-5) | Functions guaranteed to revert when called by normal users can be marked `payable` | 37 |
-| [GAS-6](#GAS-6) | `++i` costs less gas than `i++`, especially when it's used in `for`-loops (`--i`/`i--` too) | 2 |
-| [GAS-7](#GAS-7) | Using `private` rather than `public` for constants, saves gas | 37 |
-| [GAS-8](#GAS-8) | Use != 0 instead of > 0 for unsigned integer comparison | 5 |
+| [GAS-3](#GAS-3) | Use calldata instead of memory for function arguments that do not get mutated | 36 |
+| [GAS-4](#GAS-4) | For Operations that will not overflow, you could use unchecked | 964 |
+| [GAS-5](#GAS-5) | Don't initialize variables with default value | 3 |
+| [GAS-6](#GAS-6) | Functions guaranteed to revert when called by normal users can be marked `payable` | 37 |
+| [GAS-7](#GAS-7) | `++i` costs less gas than `i++`, especially when it's used in `for`-loops (`--i`/`i--` too) | 1 |
+| [GAS-8](#GAS-8) | Using `private` rather than `public` for constants, saves gas | 38 |
+| [GAS-9](#GAS-9) | Use != 0 instead of > 0 for unsigned integer comparison | 14 |
+| [GAS-10](#GAS-10) | `internal` functions not called by the contract should be removed | 5 |
 ### <a name="GAS-1"></a>[GAS-1] Using bools for storage incurs overhead
 Use uint256(1) and uint256(2) for true/false to avoid a Gwarmaccess (100 gas), and to avoid Gsset (20000 gas) when changing from ‘false’ to ‘true’, after having been ‘true’ in the past. See [source](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/58f635312aa21f947cae5f8578638a85aa2519f5/contracts/security/ReentrancyGuard.sol#L23-L27).
 
@@ -74,29 +76,29 @@ If not cached, the solidity compiler will always read the length of the array du
 ```solidity
 File: BaseRouterImplementation.sol
 
-215:             new bool[](req_.superformData.amounts.length),
+220:             new bool[](req_.superformData.amounts.length),
 
-253:         uint256 len = req_.superformsData.superformIds.length;
+258:         uint256 len = req_.superformsData.superformIds.length;
 
-426:             new bool[](req_.superformData.superformIds.length),
+431:             new bool[](req_.superformData.superformIds.length),
 
-427:             new bool[](req_.superformData.superformIds.length),
+432:             new bool[](req_.superformData.superformIds.length),
 
-463:             new bool[](req_.superformsData.amounts.length),
+468:             new bool[](req_.superformsData.amounts.length),
 
-464:             new bool[](req_.superformsData.amounts.length),
+469:             new bool[](req_.superformsData.amounts.length),
 
-634:         v.len = vaultData_.superformIds.length;
+643:         v.len = vaultData_.superformIds.length;
 
-732:         uint256 len = superforms.length;
+741:         uint256 len = superforms.length;
 
-810:         uint256 len = superformsData_.amounts.length;
+819:         uint256 len = superformsData_.amounts.length;
 
-811:         uint256 lenSuperforms = superformsData_.superformIds.length;
+820:         uint256 lenSuperforms = superformsData_.superformIds.length;
 
-812:         uint256 liqRequestsLen = superformsData_.liqRequests.length;
+821:         uint256 liqRequestsLen = superformsData_.liqRequests.length;
 
-824:         if (!(lenSuperforms == len && lenSuperforms == superformsData_.maxSlippages.length)) {
+833:         if (!(lenSuperforms == len && lenSuperforms == superformsData_.maxSlippages.length)) {
 
 ```
 
@@ -152,9 +154,105 @@ File: libraries/DataLib.sol
 
 ```
 
-### <a name="GAS-3"></a>[GAS-3] For Operations that will not overflow, you could use unchecked
+### <a name="GAS-3"></a>[GAS-3] Use calldata instead of memory for function arguments that do not get mutated
+Mark data types as `calldata` instead of `memory` where possible. This makes it so that the data is not automatically loaded into memory. If the data passed into the function does not need to be changed (like updating values in an array), it can be passed in as `calldata`. The one exception to this is if the argument must later be passed into another function that takes an argument that specifies `memory` storage.
 
-*Instances (938)*:
+*Instances (36)*:
+```solidity
+File: vendor/socket/ISocketOneInchImpl.sol
+
+22:         bytes memory swapExtraData
+
+```
+
+```solidity
+File: vendor/wormhole/IWormhole.sol
+
+78:         bytes memory payload,
+
+92:     function verifyVM(VM memory vm) external view returns (bool valid, string memory reason);
+
+96:         Signature[] memory signatures,
+
+97:         GuardianSet memory guardianSet
+
+103:     function parseVM(bytes memory encodedVM) external pure returns (VM memory vm);
+
+131:     function parseContractUpgrade(bytes memory encodedUpgrade) external pure returns (ContractUpgrade memory cu);
+
+133:     function parseGuardianSetUpgrade(bytes memory encodedUpgrade)
+
+138:     function parseSetMessageFee(bytes memory encodedSetMessageFee) external pure returns (SetMessageFee memory smf);
+
+140:     function parseTransferFees(bytes memory encodedTransferFees) external pure returns (TransferFees memory tf);
+
+142:     function parseRecoverChainId(bytes memory encodedRecoverChainId)
+
+147:     function submitContractUpgrade(bytes memory _vm) external;
+
+149:     function submitSetMessageFee(bytes memory _vm) external;
+
+151:     function submitNewGuardianSet(bytes memory _vm) external;
+
+153:     function submitTransferFees(bytes memory _vm) external;
+
+155:     function submitRecoverChainId(bytes memory _vm) external;
+
+```
+
+```solidity
+File: vendor/wormhole/IWormholeReceiver.sol
+
+43:         bytes memory payload,
+
+44:         bytes[] memory additionalVaas,
+
+```
+
+```solidity
+File: vendor/wormhole/IWormholeRelayer.sol
+
+65:         bytes memory payload,
+
+99:         bytes memory payload,
+
+135:         bytes memory payload,
+
+138:         VaaKey[] memory vaaKeys
+
+171:         bytes memory payload,
+
+174:         VaaKey[] memory vaaKeys,
+
+217:         bytes memory payload,
+
+224:         VaaKey[] memory vaaKeys,
+
+266:         bytes memory payload,
+
+269:         bytes memory encodedExecutionParameters,
+
+273:         VaaKey[] memory vaaKeys,
+
+314:         VaaKey memory deliveryVaaKey,
+
+350:         VaaKey memory deliveryVaaKey,
+
+353:         bytes memory newEncodedExecutionParameters,
+
+427:         bytes memory encodedExecutionParameters,
+
+541:         bytes[] memory encodedVMs,
+
+542:         bytes memory encodedDeliveryVAA,
+
+544:         bytes memory deliveryOverrides
+
+```
+
+### <a name="GAS-4"></a>[GAS-4] For Operations that will not overflow, you could use unchecked
+
+*Instances (964)*:
 ```solidity
 File: BaseForm.sol
 
@@ -346,53 +444,49 @@ File: BaseRouterImplementation.sol
 
 149:         vars.currentPayloadId = ++payloadIds;
 
-238:         vars.currentPayloadId = ++payloadIds;
+243:         vars.currentPayloadId = ++payloadIds;
 
-238:         vars.currentPayloadId = ++payloadIds;
+243:         vars.currentPayloadId = ++payloadIds;
 
-260:         for (uint256 j; j < len; ++j) {
+268:         for (uint256 j; j < len; ++j) {
 
-260:         for (uint256 j; j < len; ++j) {
+268:         for (uint256 j; j < len; ++j) {
 
-274:         for (uint256 i; i < len; i++) {
+373:         vars.currentPayloadId = ++payloadIds;
 
-274:         for (uint256 i; i < len; i++) {
+373:         vars.currentPayloadId = ++payloadIds;
 
-368:         vars.currentPayloadId = ++payloadIds;
+460:         vars.currentPayloadId = ++payloadIds;
 
-368:         vars.currentPayloadId = ++payloadIds;
+460:         vars.currentPayloadId = ++payloadIds;
 
-455:         vars.currentPayloadId = ++payloadIds;
+653:         for (uint256 i; i < v.len; ++i) {
 
-455:         vars.currentPayloadId = ++payloadIds;
+653:         for (uint256 i; i < v.len; ++i) {
 
-644:         for (uint256 i; i < v.len; ++i) {
+743:         for (uint256 i; i < len; ++i) {
 
-644:         for (uint256 i; i < v.len; ++i) {
+743:         for (uint256 i; i < len; ++i) {
 
-734:         for (uint256 i; i < len; ++i) {
+839:         for (uint256 i; i < len; ++i) {
 
-734:         for (uint256 i; i < len; ++i) {
+839:         for (uint256 i; i < len; ++i) {
 
-830:         for (uint256 i; i < len; ++i) {
+865:         uint256 residualPayment = address(this).balance - _balanceBefore;
 
-830:         for (uint256 i; i < len; ++i) {
+972:         for (uint256 i; i < v.len; ++i) {
 
-856:         uint256 residualPayment = address(this).balance - _balanceBefore;
+972:         for (uint256 i; i < v.len; ++i) {
 
-963:         for (uint256 i; i < v.len; ++i) {
+989:             for (uint256 i; i < v.len; ++i) {
 
-963:         for (uint256 i; i < v.len; ++i) {
+989:             for (uint256 i; i < v.len; ++i) {
 
-980:             for (uint256 i; i < v.len; ++i) {
+1003:                 v.totalAmount += v.approvalAmounts[i];
 
-980:             for (uint256 i; i < v.len; ++i) {
+1044:             for (uint256 j; j < v.targetLen; ++j) {
 
-994:                 v.totalAmount += v.approvalAmounts[i];
-
-1035:             for (uint256 j; j < v.targetLen; ++j) {
-
-1035:             for (uint256 j; j < v.targetLen; ++j) {
+1044:             for (uint256 j; j < v.targetLen; ++j) {
 
 ```
 
@@ -587,9 +681,9 @@ File: SuperformFactory.sol
 
 219:         ++superformCounter;
 
-260:                 abi.encode(CHAIN_ID, ++xChainPayloadCounter, formImplementationId_, status_)
+258:                 abi.encode(CHAIN_ID, ++xChainPayloadCounter, formImplementationId_, status_)
 
-260:                 abi.encode(CHAIN_ID, ++xChainPayloadCounter, formImplementationId_, status_)
+258:                 abi.encode(CHAIN_ID, ++xChainPayloadCounter, formImplementationId_, status_)
 
 ```
 
@@ -1387,129 +1481,129 @@ File: crosschain-liquidity/lifi/LiFiValidator.sol
 
 44:             bool, /*hasSourceSwaps*/
 
-130:             string memory, /*bridge*/
+131:             string memory, /*bridge*/
 
-130:             string memory, /*bridge*/
+131:             string memory, /*bridge*/
 
-130:             string memory, /*bridge*/
+131:             string memory, /*bridge*/
 
-130:             string memory, /*bridge*/
+131:             string memory, /*bridge*/
 
-131:             address, /*sendingAssetId*/
+132:             address, /*sendingAssetId*/
 
-131:             address, /*sendingAssetId*/
+132:             address, /*sendingAssetId*/
 
-131:             address, /*sendingAssetId*/
+132:             address, /*sendingAssetId*/
 
-131:             address, /*sendingAssetId*/
+132:             address, /*sendingAssetId*/
 
-132:             address, /*receiver*/
+133:             address, /*receiver*/
 
-132:             address, /*receiver*/
+133:             address, /*receiver*/
 
-132:             address, /*receiver*/
+133:             address, /*receiver*/
 
-132:             address, /*receiver*/
+133:             address, /*receiver*/
 
-134:             uint256, /*minAmount*/
+135:             uint256, /*minAmount*/
 
-134:             uint256, /*minAmount*/
+135:             uint256, /*minAmount*/
 
-134:             uint256, /*minAmount*/
+135:             uint256, /*minAmount*/
 
-134:             uint256, /*minAmount*/
+135:             uint256, /*minAmount*/
 
-135:             uint256, /*destinationChainId*/
+136:             uint256, /*destinationChainId*/
 
-135:             uint256, /*destinationChainId*/
+136:             uint256, /*destinationChainId*/
 
-135:             uint256, /*destinationChainId*/
+136:             uint256, /*destinationChainId*/
 
-135:             uint256, /*destinationChainId*/
+136:             uint256, /*destinationChainId*/
 
-136:             bool, /*hasSourceSwaps*/
+137:             bool, /*hasSourceSwaps*/
 
-136:             bool, /*hasSourceSwaps*/
+137:             bool, /*hasSourceSwaps*/
 
-136:             bool, /*hasSourceSwaps*/
+137:             bool, /*hasSourceSwaps*/
 
-136:             bool, /*hasSourceSwaps*/
+137:             bool, /*hasSourceSwaps*/
 
-137:             bool /*hasDestinationCall*/
+138:             bool /*hasDestinationCall*/
 
-137:             bool /*hasDestinationCall*/
+138:             bool /*hasDestinationCall*/
 
-137:             bool /*hasDestinationCall*/
+138:             bool /*hasDestinationCall*/
 
-137:             bool /*hasDestinationCall*/
+138:             bool /*hasDestinationCall*/
 
-157:             string memory, /*bridge*/
+158:             string memory, /*bridge*/
 
-157:             string memory, /*bridge*/
+158:             string memory, /*bridge*/
 
-157:             string memory, /*bridge*/
+158:             string memory, /*bridge*/
 
-157:             string memory, /*bridge*/
+158:             string memory, /*bridge*/
 
-158:             address, /*sendingAssetId*/
+159:             address, /*sendingAssetId*/
 
-158:             address, /*sendingAssetId*/
+159:             address, /*sendingAssetId*/
 
-158:             address, /*sendingAssetId*/
+159:             address, /*sendingAssetId*/
 
-158:             address, /*sendingAssetId*/
+159:             address, /*sendingAssetId*/
 
-159:             address, /*receiver*/
+160:             address, /*receiver*/
 
-159:             address, /*receiver*/
+160:             address, /*receiver*/
 
-159:             address, /*receiver*/
+160:             address, /*receiver*/
 
-159:             address, /*receiver*/
+160:             address, /*receiver*/
 
-160:             uint256, /*amount*/
+161:             uint256, /*amount*/
 
-160:             uint256, /*amount*/
+161:             uint256, /*amount*/
 
-160:             uint256, /*amount*/
+161:             uint256, /*amount*/
 
-160:             uint256, /*amount*/
+161:             uint256, /*amount*/
 
-161:             uint256, /*minAmount*/
+162:             uint256, /*minAmount*/
 
-161:             uint256, /*minAmount*/
+162:             uint256, /*minAmount*/
 
-161:             uint256, /*minAmount*/
+162:             uint256, /*minAmount*/
 
-161:             uint256, /*minAmount*/
+162:             uint256, /*minAmount*/
 
-162:             uint256, /*destinationChainId*/
+163:             uint256, /*destinationChainId*/
 
-162:             uint256, /*destinationChainId*/
+163:             uint256, /*destinationChainId*/
 
-162:             uint256, /*destinationChainId*/
+163:             uint256, /*destinationChainId*/
 
-162:             uint256, /*destinationChainId*/
+163:             uint256, /*destinationChainId*/
 
-163:             bool, /*hasSourceSwaps*/
+164:             bool, /*hasSourceSwaps*/
 
-163:             bool, /*hasSourceSwaps*/
+164:             bool, /*hasSourceSwaps*/
 
-163:             bool, /*hasSourceSwaps*/
+164:             bool, /*hasSourceSwaps*/
 
-163:             bool, /*hasSourceSwaps*/
+164:             bool, /*hasSourceSwaps*/
 
-164:             bool /*hasDestinationCall*/
+165:             bool /*hasDestinationCall*/
 
-164:             bool /*hasDestinationCall*/
+165:             bool /*hasDestinationCall*/
 
-164:             bool /*hasDestinationCall*/
+165:             bool /*hasDestinationCall*/
 
-164:             bool /*hasDestinationCall*/
+165:             bool /*hasDestinationCall*/
 
-248:             _slice(callData, 4, callData.length - 4), (bytes32, string, string, address, uint256, LibSwap.SwapData[])
+249:             _slice(callData, 4, callData.length - 4), (bytes32, string, string, address, uint256, LibSwap.SwapData[])
 
-253:         receivingAssetId = swapData[swapData.length - 1].receivingAssetId;
+254:         receivingAssetId = swapData[swapData.length - 1].receivingAssetId;
 
 ```
 
@@ -1532,13 +1626,13 @@ File: crosschain-liquidity/socket/SocketOneInchValidator.sol
 
 6: import { ISocketOneInchImpl } from "src/vendor/socket/ISocketOneInchImpl.sol";
 
-52:         bool /*genericSwapDisallowed_*/
+54:         bool /*genericSwapDisallowed_*/
 
-52:         bool /*genericSwapDisallowed_*/
+54:         bool /*genericSwapDisallowed_*/
 
-52:         bool /*genericSwapDisallowed_*/
+54:         bool /*genericSwapDisallowed_*/
 
-52:         bool /*genericSwapDisallowed_*/
+54:         bool /*genericSwapDisallowed_*/
 
 ```
 
@@ -1561,53 +1655,53 @@ File: crosschain-liquidity/socket/SocketValidator.sol
 
 6: import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
 
-69:         bool /*genericSwapDisallowed_*/
+77:         bool /*genericSwapDisallowed_*/
 
-69:         bool /*genericSwapDisallowed_*/
+77:         bool /*genericSwapDisallowed_*/
 
-69:         bool /*genericSwapDisallowed_*/
+77:         bool /*genericSwapDisallowed_*/
 
-69:         bool /*genericSwapDisallowed_*/
+77:         bool /*genericSwapDisallowed_*/
 
-80:     function decodeDstSwap(bytes calldata /*txData_*/ )
+88:     function decodeDstSwap(bytes calldata /*txData_*/ )
 
-80:     function decodeDstSwap(bytes calldata /*txData_*/ )
+88:     function decodeDstSwap(bytes calldata /*txData_*/ )
 
-80:     function decodeDstSwap(bytes calldata /*txData_*/ )
+88:     function decodeDstSwap(bytes calldata /*txData_*/ )
 
-80:     function decodeDstSwap(bytes calldata /*txData_*/ )
+88:     function decodeDstSwap(bytes calldata /*txData_*/ )
 
-84:         returns (address, /*token_*/ uint256 /*amount_*/ )
+92:         returns (address, /*token_*/ uint256 /*amount_*/ )
 
-84:         returns (address, /*token_*/ uint256 /*amount_*/ )
+92:         returns (address, /*token_*/ uint256 /*amount_*/ )
 
-84:         returns (address, /*token_*/ uint256 /*amount_*/ )
+92:         returns (address, /*token_*/ uint256 /*amount_*/ )
 
-84:         returns (address, /*token_*/ uint256 /*amount_*/ )
+92:         returns (address, /*token_*/ uint256 /*amount_*/ )
 
-84:         returns (address, /*token_*/ uint256 /*amount_*/ )
+92:         returns (address, /*token_*/ uint256 /*amount_*/ )
 
-84:         returns (address, /*token_*/ uint256 /*amount_*/ )
+92:         returns (address, /*token_*/ uint256 /*amount_*/ )
 
-84:         returns (address, /*token_*/ uint256 /*amount_*/ )
+92:         returns (address, /*token_*/ uint256 /*amount_*/ )
 
-84:         returns (address, /*token_*/ uint256 /*amount_*/ )
+92:         returns (address, /*token_*/ uint256 /*amount_*/ )
 
-89:     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
+97:     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
 
-89:     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
+97:     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
 
-89:     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
+97:     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
 
-89:     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
+97:     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
 
-89:     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
+97:     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
 
-89:     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
+97:     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
 
-89:     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
+97:     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
 
-89:     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
+97:     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
 
 ```
 
@@ -2261,9 +2355,95 @@ File: types/DataTypes.sol
 
 ```
 
-### <a name="GAS-4"></a>[GAS-4] Don't initialize variables with default value
+```solidity
+File: vendor/dragonfly-xyz/IPermit2.sol
 
-*Instances (2)*:
+4: import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+
+4: import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+
+4: import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+
+4: import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+
+```
+
+```solidity
+File: vendor/hyperlane/IMailbox.sol
+
+57:         NULL, // used with relayer carrying no metadata
+
+57:         NULL, // used with relayer carrying no metadata
+
+```
+
+```solidity
+File: vendor/hyperlane/StandardHookMetadata.sol
+
+21:         if (_metadata.length < VARIANT_OFFSET + 2) return 0;
+
+22:         return uint16(bytes2(_metadata[VARIANT_OFFSET:VARIANT_OFFSET + 2]));
+
+32:         if (_metadata.length < MSG_VALUE_OFFSET + 32) return _default;
+
+33:         return uint256(bytes32(_metadata[MSG_VALUE_OFFSET:MSG_VALUE_OFFSET + 32]));
+
+43:         if (_metadata.length < GAS_LIMIT_OFFSET + 32) return _default;
+
+44:         return uint256(bytes32(_metadata[GAS_LIMIT_OFFSET:GAS_LIMIT_OFFSET + 32]));
+
+54:         if (_metadata.length < REFUND_ADDRESS_OFFSET + 20) return _default;
+
+55:         return address(bytes20(_metadata[REFUND_ADDRESS_OFFSET:REFUND_ADDRESS_OFFSET + 20]));
+
+```
+
+```solidity
+File: vendor/layerzero/ILayerZeroEndpoint.sol
+
+4: import "./ILayerZeroUserApplicationConfig.sol";
+
+```
+
+```solidity
+File: vendor/lifi/ILiFi.sol
+
+18:         bool hasDestinationCall; // is there a destination call? we should disable this
+
+18:         bool hasDestinationCall; // is there a destination call? we should disable this
+
+```
+
+```solidity
+File: vendor/lifi/LiFiTxDataExtractor.sol
+
+4: import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
+
+4: import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
+
+4: import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
+
+5: import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
+
+5: import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
+
+5: import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
+
+6: import { StandardizedCallFacet } from "./StandardizedCallFacet.sol";
+
+27:             bridgeData = abi.decode(_slice(unwrappedData, 4, unwrappedData.length - 4), (ILiFi.BridgeData));
+
+42:                 abi.decode(_slice(unwrappedData, 4, unwrappedData.length - 4), (ILiFi.BridgeData, LibSwap.SwapData[]));
+
+50:         if (_length + 31 < _length) revert SliceOverflow();
+
+51:         if (_bytes.length < _start + _length) revert SliceOutOfBounds();
+
+```
+
+### <a name="GAS-5"></a>[GAS-5] Don't initialize variables with default value
+
+*Instances (3)*:
 ```solidity
 File: crosschain-data/utils/PayloadHelper.sol
 
@@ -2278,7 +2458,14 @@ File: libraries/DataLib.sol
 
 ```
 
-### <a name="GAS-5"></a>[GAS-5] Functions guaranteed to revert when called by normal users can be marked `payable`
+```solidity
+File: vendor/hyperlane/StandardHookMetadata.sol
+
+7:     uint8 private constant VARIANT_OFFSET = 0;
+
+```
+
+### <a name="GAS-6"></a>[GAS-6] Functions guaranteed to revert when called by normal users can be marked `payable`
 If a function modifier such as `onlyOwner` is used, the function will revert if a normal user tries to pay the function. Marking the function as `payable` will lower the gas cost for legitimate callers because the compiler will not include checks for whether a payment was provided.
 
 *Instances (37)*:
@@ -2411,17 +2598,10 @@ File: settings/SuperRegistry.sol
 
 ```
 
-### <a name="GAS-6"></a>[GAS-6] `++i` costs less gas than `i++`, especially when it's used in `for`-loops (`--i`/`i--` too)
+### <a name="GAS-7"></a>[GAS-7] `++i` costs less gas than `i++`, especially when it's used in `for`-loops (`--i`/`i--` too)
 *Saves 5 gas per loop*
 
-*Instances (2)*:
-```solidity
-File: BaseRouterImplementation.sol
-
-274:         for (uint256 i; i < len; i++) {
-
-```
-
+*Instances (1)*:
 ```solidity
 File: settings/SuperRBAC.sol
 
@@ -2429,10 +2609,10 @@ File: settings/SuperRBAC.sol
 
 ```
 
-### <a name="GAS-7"></a>[GAS-7] Using `private` rather than `public` for constants, saves gas
+### <a name="GAS-8"></a>[GAS-8] Using `private` rather than `public` for constants, saves gas
 If needed, the values can be read from the verified contract source code, or if there are multiple values there can be a single getter function that [returns a tuple](https://github.com/code-423n4/2022-08-frax/blob/90f55a9ce4e25bceed3a74290b854341d8de6afa/src/contracts/FraxlendPair.sol#L156-L178) of the values of all currently-public constants. Saves **3406-3606 gas** in deployment gas due to the compiler not having to create non-payable getter functions for deployment calldata, not having to store the bytes of the value outside of where it's used, and not adding another entry to the method ID table
 
-*Instances (37)*:
+*Instances (38)*:
 ```solidity
 File: BaseRouter.sol
 
@@ -2522,17 +2702,24 @@ File: settings/SuperRegistry.sol
 
 ```
 
-### <a name="GAS-8"></a>[GAS-8] Use != 0 instead of > 0 for unsigned integer comparison
+```solidity
+File: vendor/hyperlane/StandardHookMetadata.sol
 
-*Instances (5)*:
+13:     uint16 public constant VARIANT = 1;
+
+```
+
+### <a name="GAS-9"></a>[GAS-9] Use != 0 instead of > 0 for unsigned integer comparison
+
+*Instances (14)*:
 ```solidity
 File: BaseRouterImplementation.sol
 
-661:             if (v.dstAmounts[i] > 0 && vaultData_.retain4626s[i]) {
+670:             if (v.dstAmounts[i] > 0 && vaultData_.retain4626s[i]) {
 
-858:         if (residualPayment > 0) {
+867:         if (residualPayment > 0) {
 
-1001:             if (v.permit2dataLen > 0) {
+1010:             if (v.permit2dataLen > 0) {
 
 ```
 
@@ -2550,6 +2737,131 @@ File: forms/ERC4626FormImplementation.sol
 
 ```
 
+```solidity
+File: vendor/hyperlane/IInterchainGasPaymaster.sol
+
+2: pragma solidity >=0.6.11;
+
+```
+
+```solidity
+File: vendor/hyperlane/IMailbox.sol
+
+2: pragma solidity >=0.8.0;
+
+```
+
+```solidity
+File: vendor/hyperlane/IMessageRecipient.sol
+
+2: pragma solidity >=0.6.11;
+
+```
+
+```solidity
+File: vendor/hyperlane/StandardHookMetadata.sol
+
+2: pragma solidity >=0.8.0;
+
+```
+
+```solidity
+File: vendor/layerzero/ILayerZeroEndpoint.sol
+
+2: pragma solidity >=0.5.0;
+
+```
+
+```solidity
+File: vendor/layerzero/ILayerZeroReceiver.sol
+
+2: pragma solidity >=0.5.0;
+
+```
+
+```solidity
+File: vendor/layerzero/ILayerZeroUserApplicationConfig.sol
+
+2: pragma solidity >=0.5.0;
+
+```
+
+```solidity
+File: vendor/socket/ISocketOneInchImpl.sol
+
+2: pragma solidity >=0.8.4;
+
+```
+
+```solidity
+File: vendor/socket/ISocketRegistry.sol
+
+2: pragma solidity >=0.8.4;
+
+```
+
+### <a name="GAS-10"></a>[GAS-10] `internal` functions not called by the contract should be removed
+If the functions are required by an interface, the contract should inherit from that interface and use the `override` keyword
+
+*Instances (5)*:
+```solidity
+File: vendor/hyperlane/StandardHookMetadata.sol
+
+20:     function variant(bytes calldata _metadata) internal pure returns (uint16) {
+
+31:     function msgValue(bytes calldata _metadata, uint256 _default) internal pure returns (uint256) {
+
+42:     function gasLimit(bytes calldata _metadata, uint256 _default) internal pure returns (uint256) {
+
+53:     function refundAddress(bytes calldata _metadata, address _default) internal pure returns (address) {
+
+63:     function getCustomMetadata(bytes calldata _metadata) internal pure returns (bytes calldata) {
+
+```
+
+
+## Non Critical Issues
+
+
+| |Issue|Instances|
+|-|:-|:-:|
+| [NC-1](#NC-1) | Event is missing `indexed` fields | 3 |
+| [NC-2](#NC-2) | Constants should be defined rather than using magic numbers | 1 |
+### <a name="NC-1"></a>[NC-1] Event is missing `indexed` fields
+Index event fields make the field more quickly accessible to off-chain tools that parse events. However, note that each index field costs extra gas during emission, so it's not necessarily best to index the maximum allowed per event (three fields). Each event should use three indexed fields if there are three or more fields, and gas usage is not particularly of concern for the events in question. If there are fewer than three fields, all of the fields should be indexed.
+
+*Instances (3)*:
+```solidity
+File: vendor/hyperlane/IInterchainGasPaymaster.sol
+
+11:     event GasPayment(bytes32 indexed messageId, uint256 gasAmount, uint256 payment);
+
+```
+
+```solidity
+File: vendor/wormhole/IWormhole.sol
+
+70:     event LogMessagePublished(
+
+```
+
+```solidity
+File: vendor/wormhole/IWormholeRelayer.sol
+
+30:     event SendEvent(uint64 indexed sequence, uint256 deliveryQuote, uint256 paymentForExtraReceiverValue);
+
+```
+
+### <a name="NC-2"></a>[NC-2] Constants should be defined rather than using magic numbers
+
+*Instances (1)*:
+```solidity
+File: vendor/lifi/LiFiTxDataExtractor.sol
+
+92:                 mstore(0x40, and(add(mc, 31), not(31)))
+
+```
+
 
 ## Low Issues
 
@@ -2557,8 +2869,9 @@ File: forms/ERC4626FormImplementation.sol
 | |Issue|Instances|
 |-|:-|:-:|
 | [L-1](#L-1) |  `abi.encodePacked()` should not be used with dynamic types when passing the result to a hash function such as `keccak256()` | 1 |
-| [L-2](#L-2) | Empty Function Body - Consider commenting why | 14 |
-| [L-3](#L-3) | Initializers could be front-run | 3 |
+| [L-2](#L-2) | Empty Function Body - Consider commenting why | 16 |
+| [L-3](#L-3) | Initializers could be front-run | 4 |
+| [L-4](#L-4) | Unspecific compiler version pragma | 9 |
 ### <a name="L-1"></a>[L-1]  `abi.encodePacked()` should not be used with dynamic types when passing the result to a hash function such as `keccak256()`
 Use `abi.encode()` instead which will pad items to 32 bytes, which will [prevent hash collisions](https://docs.soliditylang.org/en/v0.8.13/abi-spec.html#non-standard-packed-mode) (e.g. `abi.encodePacked(0x123,0x456)` => `0x123456` => `abi.encodePacked(0x1,0x23456)`, but `abi.encode(0x123,0x456)` => `0x0...1230...456`). "Unless there is a compelling reason, `abi.encode` should be preferred". If there is only one argument to `abi.encodePacked()` it can often be cast to `bytes()` or `bytes32()` [instead](https://ethereum.stackexchange.com/questions/30912/how-to-compare-strings-in-solidity#answer-82739).
 If all arguments are strings and or bytes, `bytes.concat()` should be used instead
@@ -2573,11 +2886,11 @@ File: SuperformFactory.sol
 
 ### <a name="L-2"></a>[L-2] Empty Function Body - Consider commenting why
 
-*Instances (14)*:
+*Instances (16)*:
 ```solidity
 File: BaseForm.sol
 
-163:     receive() external payable { }
+159:     receive() external payable { }
 
 ```
 
@@ -2667,23 +2980,110 @@ File: payments/PayMaster.sol
 
 ```
 
+```solidity
+File: vendor/lifi/StandardizedCallFacet.sol
+
+13:     function standardizedCall(bytes memory callData) external payable { }
+
+```
+
+```solidity
+File: vendor/wormhole/IWormholeRelayer.sol
+
+550: interface IWormholeRelayer is IWormholeRelayerDelivery, IWormholeRelayerSend { }
+
+```
+
 ### <a name="L-3"></a>[L-3] Initializers could be front-run
 Initializers could be front-run, allowing an attacker to either set their own values, take ownership of the contract, and in the best case forcing a re-deployment
 
-*Instances (3)*:
+*Instances (4)*:
 ```solidity
 File: BaseForm.sol
 
-168:     function initialize(
+164:     function initialize(address superRegistry_, address vault_, address asset_) external initializer {
 
-175:         initializer
+164:     function initialize(address superRegistry_, address vault_, address asset_) external initializer {
 
 ```
 
 ```solidity
 File: SuperformFactory.sol
 
-221:         BaseForm(payable(superform_)).initialize(
+221:         BaseForm(payable(superform_)).initialize(address(superRegistry), vault_, address(IERC4626(vault_).asset()));
+
+```
+
+```solidity
+File: vendor/wormhole/IWormhole.sol
+
+85:     function initialize() external;
+
+```
+
+### <a name="L-4"></a>[L-4] Unspecific compiler version pragma
+
+*Instances (9)*:
+```solidity
+File: vendor/hyperlane/IInterchainGasPaymaster.sol
+
+2: pragma solidity >=0.6.11;
+
+```
+
+```solidity
+File: vendor/hyperlane/IMailbox.sol
+
+2: pragma solidity >=0.8.0;
+
+```
+
+```solidity
+File: vendor/hyperlane/IMessageRecipient.sol
+
+2: pragma solidity >=0.6.11;
+
+```
+
+```solidity
+File: vendor/hyperlane/StandardHookMetadata.sol
+
+2: pragma solidity >=0.8.0;
+
+```
+
+```solidity
+File: vendor/layerzero/ILayerZeroEndpoint.sol
+
+2: pragma solidity >=0.5.0;
+
+```
+
+```solidity
+File: vendor/layerzero/ILayerZeroReceiver.sol
+
+2: pragma solidity >=0.5.0;
+
+```
+
+```solidity
+File: vendor/layerzero/ILayerZeroUserApplicationConfig.sol
+
+2: pragma solidity >=0.5.0;
+
+```
+
+```solidity
+File: vendor/socket/ISocketOneInchImpl.sol
+
+2: pragma solidity >=0.8.4;
+
+```
+
+```solidity
+File: vendor/socket/ISocketRegistry.sol
+
+2: pragma solidity >=0.8.4;
 
 ```
 
@@ -2723,4 +3123,3 @@ File: settings/SuperRBAC.sol
 166:         onlyRole(PROTOCOL_ADMIN_ROLE)
 
 ```
-

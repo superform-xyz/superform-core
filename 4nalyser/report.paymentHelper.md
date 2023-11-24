@@ -16,11 +16,11 @@ If not cached, the solidity compiler will always read the length of the array du
 ```solidity
 File: PaymentHelper.sol
 
-153:             superformIdsLen = req_.superformsData[i].superformIds.length;
+160:             superformIdsLen = req_.superformsData[i].superformIds.length;
 
-251:         uint256 superformIdsLen = req_.superformsData.superformIds.length;
+264:         uint256 superformIdsLen = req_.superformsData.superformIds.length;
 
-362:         uint256 len = req_.superformData.superformIds.length;
+384:         uint256 len = req_.superformData.superformIds.length;
 
 ```
 
@@ -30,233 +30,233 @@ File: PaymentHelper.sol
 ```solidity
 File: PaymentHelper.sol
 
-4: import {AggregatorV3Interface} from "../vendor/chainlink/AggregatorV3Interface.sol";
+4: import { AggregatorV3Interface } from "../vendor/chainlink/AggregatorV3Interface.sol";
 
-4: import {AggregatorV3Interface} from "../vendor/chainlink/AggregatorV3Interface.sol";
+4: import { AggregatorV3Interface } from "../vendor/chainlink/AggregatorV3Interface.sol";
 
-4: import {AggregatorV3Interface} from "../vendor/chainlink/AggregatorV3Interface.sol";
+4: import { AggregatorV3Interface } from "../vendor/chainlink/AggregatorV3Interface.sol";
 
-5: import {IPaymentHelper} from "../interfaces/IPaymentHelper.sol";
+5: import { IPaymentHelper } from "../interfaces/IPaymentHelper.sol";
 
-5: import {IPaymentHelper} from "../interfaces/IPaymentHelper.sol";
+5: import { IPaymentHelper } from "../interfaces/IPaymentHelper.sol";
 
-6: import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
+6: import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 
-6: import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
+6: import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 
-7: import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
+7: import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 
-7: import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
+7: import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 
-8: import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
+8: import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
 
-8: import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
+8: import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
 
-9: import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
+9: import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
 
-9: import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
+9: import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
 
-10: import {Error} from "../libraries/Error.sol";
+10: import { Error } from "../libraries/Error.sol";
 
-10: import {Error} from "../libraries/Error.sol";
+10: import { Error } from "../libraries/Error.sol";
 
-11: import {DataLib} from "../libraries/DataLib.sol";
+11: import { DataLib } from "../libraries/DataLib.sol";
 
-11: import {DataLib} from "../libraries/DataLib.sol";
+11: import { DataLib } from "../libraries/DataLib.sol";
 
-12: import {ProofLib} from "../libraries/ProofLib.sol";
+12: import { ProofLib } from "../libraries/ProofLib.sol";
 
-12: import {ProofLib} from "../libraries/ProofLib.sol";
+12: import { ProofLib } from "../libraries/ProofLib.sol";
 
-13: import {ArrayCastLib} from "../libraries/ArrayCastLib.sol";
+13: import { ArrayCastLib } from "../libraries/ArrayCastLib.sol";
 
-13: import {ArrayCastLib} from "../libraries/ArrayCastLib.sol";
-
-14: import "../types/DataTypes.sol";
+13: import { ArrayCastLib } from "../libraries/ArrayCastLib.sol";
 
 14: import "../types/DataTypes.sol";
 
-145:         for (uint256 i; i < len; ++i) {
+14: import "../types/DataTypes.sol";
 
-145:         for (uint256 i; i < len; ++i) {
+152:         for (uint256 i; i < len; ++i) {
 
-155:             srcAmount += ambFees;
+152:         for (uint256 i; i < len; ++i) {
 
-159:                 totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], superformIdsLen);
+162:             srcAmount += ambFees;
 
-163:                 srcAmount += _estimateAckProcessingCost(superformIdsLen);
+166:                 totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], superformIdsLen);
 
-166:                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequests);
+170:                 srcAmount += _estimateAckProcessingCost(superformIdsLen);
 
-169:                 totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwaps);
+173:                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequests);
 
-174:             totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], superformIdsLen);
+176:                 totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwaps);
 
-178:                 for (uint256 j; j < superformIdsLen; ++j) {
+181:             totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], superformIdsLen);
 
-178:                 for (uint256 j; j < superformIdsLen; ++j) {
+185:                 for (uint256 j; j < superformIdsLen; ++j) {
 
-181:                         totalDstGas += timelockCost[req_.dstChainIds[i]];
+185:                 for (uint256 j; j < superformIdsLen; ++j) {
 
-187:             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
+188:                         totalDstGas += timelockCost[req_.dstChainIds[i]];
 
-190:         totalAmount = srcAmount + dstAmount + liqAmount;
+194:             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
 
-190:         totalAmount = srcAmount + dstAmount + liqAmount;
+197:         totalAmount = srcAmount + dstAmount + liqAmount;
 
-201:         for (uint256 i; i < len; ++i) {
+197:         totalAmount = srcAmount + dstAmount + liqAmount;
 
-201:         for (uint256 i; i < len; ++i) {
+211:         for (uint256 i; i < len; ++i) {
 
-209:             srcAmount += ambFees;
+211:         for (uint256 i; i < len; ++i) {
 
-213:                 totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], 1);
+219:             srcAmount += ambFees;
 
-216:                 srcAmount += _estimateAckProcessingCost(1);
+223:                 totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], 1);
 
-219:                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequest.castLiqRequestToArray());
+226:                 srcAmount += _estimateAckProcessingCost(1);
 
-222:                 totalDstGas +=
+229:                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequest.castLiqRequestToArray());
 
-228:             totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], 1);
+232:                 totalDstGas +=
 
-233:                 totalDstGas += timelockCost[req_.dstChainIds[i]];
+238:             totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], 1);
 
-237:             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
+243:                 totalDstGas += timelockCost[req_.dstChainIds[i]];
 
-240:         totalAmount = srcAmount + dstAmount + liqAmount;
+247:             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
 
-240:         totalAmount = srcAmount + dstAmount + liqAmount;
+250:         totalAmount = srcAmount + dstAmount + liqAmount;
 
-257:         srcAmount += ambFees;
+250:         totalAmount = srcAmount + dstAmount + liqAmount;
 
-260:         if (isDeposit_) totalDstGas += _estimateUpdateCost(req_.dstChainId, superformIdsLen);
+270:         srcAmount += ambFees;
 
-264:         totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, superformIdsLen);
+273:         if (isDeposit_) totalDstGas += _estimateUpdateCost(req_.dstChainId, superformIdsLen);
 
-267:         if (isDeposit_) srcAmount += _estimateAckProcessingCost(superformIdsLen);
+277:         totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, superformIdsLen);
 
-270:         if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformsData.liqRequests);
+280:         if (isDeposit_) srcAmount += _estimateAckProcessingCost(superformIdsLen);
 
-273:         if (isDeposit_) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformsData.hasDstSwaps);
+283:         if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformsData.liqRequests);
 
-277:             for (uint256 i; i < superformIdsLen; ++i) {
+286:         if (isDeposit_) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformsData.hasDstSwaps);
 
-277:             for (uint256 i; i < superformIdsLen; ++i) {
+290:             for (uint256 i; i < superformIdsLen; ++i) {
 
-281:                     totalDstGas += timelockCost[CHAIN_ID];
+290:             for (uint256 i; i < superformIdsLen; ++i) {
 
-287:         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
+294:                     totalDstGas += timelockCost[CHAIN_ID];
 
-289:         totalAmount = srcAmount + dstAmount + liqAmount;
+300:         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
 
-289:         totalAmount = srcAmount + dstAmount + liqAmount;
+302:         totalAmount = srcAmount + dstAmount + liqAmount;
 
-304:         srcAmount += ambFees;
+302:         totalAmount = srcAmount + dstAmount + liqAmount;
 
-307:         if (isDeposit_) totalDstGas += _estimateUpdateCost(req_.dstChainId, 1);
+320:         srcAmount += ambFees;
 
-311:         totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, 1);
+323:         if (isDeposit_) totalDstGas += _estimateUpdateCost(req_.dstChainId, 1);
 
-314:         if (isDeposit_) srcAmount += _estimateAckProcessingCost(1);
+327:         totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, 1);
 
-317:         if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
+330:         if (isDeposit_) srcAmount += _estimateAckProcessingCost(1);
 
-321:             totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformData.hasDstSwap.castBoolToArray());
+333:         if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
 
-327:             totalDstGas += timelockCost[CHAIN_ID];
+337:             totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformData.hasDstSwap.castBoolToArray());
 
-331:         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
+343:             totalDstGas += timelockCost[CHAIN_ID];
 
-333:         totalAmount = srcAmount + dstAmount + liqAmount;
+347:         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
 
-333:         totalAmount = srcAmount + dstAmount + liqAmount;
+349:         totalAmount = srcAmount + dstAmount + liqAmount;
 
-346:             srcAmount += timelockCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
+349:         totalAmount = srcAmount + dstAmount + liqAmount;
 
-346:             srcAmount += timelockCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
+365:             srcAmount += timelockCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
 
-349:         if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
+365:             srcAmount += timelockCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
 
-352:         totalAmount = liqAmount + srcAmount;
+368:         if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
 
-363:         for (uint256 i; i < len; ++i) {
+371:         totalAmount = liqAmount + srcAmount;
 
-363:         for (uint256 i; i < len; ++i) {
+385:         for (uint256 i; i < len; ++i) {
 
-365:             uint256 timelockPrice = timelockCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
+385:         for (uint256 i; i < len; ++i) {
 
-368:                 srcAmount += timelockPrice;
+387:             uint256 timelockPrice = timelockCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
 
-372:         if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequests);
+390:                 srcAmount += timelockPrice;
 
-375:         totalAmount = liqAmount + srcAmount;
+394:         if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequests);
 
-389:         for (uint256 i; i < len; ++i) {
+397:         totalAmount = liqAmount + srcAmount;
 
-389:         for (uint256 i; i < len; ++i) {
+415:         for (uint256 i; i < len; ++i) {
 
-396:             totalFees += fees[i];
+415:         for (uint256 i; i < len; ++i) {
 
-519:         uint256 totalDstGasReqInWei = abi.encode(ambIdEncodedMessage).length * gasReqPerByte;
+422:             totalFees += fees[i];
 
-524:         uint256 totalDstGasReqInWeiForProof = abi.encode(decodedMessage).length * gasReqPerByte;
+559:         uint256 totalDstGasReqInWei = abi.encode(ambIdEncodedMessage).length * gasReqPerByte;
 
-528:         for (uint256 i; i < len; ++i) {
+564:         uint256 totalDstGasReqInWeiForProof = abi.encode(decodedMessage).length * gasReqPerByte;
 
-528:         for (uint256 i; i < len; ++i) {
+568:         for (uint256 i; i < len; ++i) {
 
-597:         for (uint256 i; i < len; ++i) {
-
-597:         for (uint256 i; i < len; ++i) {
-
-604:             totalFees += tempFee;
-
-626:         for (uint256 i; i < len; ++i) {
-
-626:         for (uint256 i; i < len; ++i) {
-
-633:             totalFees += tempFee;
+568:         for (uint256 i; i < len; ++i) {
 
 641:         for (uint256 i; i < len; ++i) {
 
 641:         for (uint256 i; i < len; ++i) {
 
-642:             liqAmount += req_[i].nativeAmount;
+648:             totalFees += tempFee;
 
-659:         for (uint256 i; i < len; ++i) {
+674:         for (uint256 i; i < len; ++i) {
 
-659:         for (uint256 i; i < len; ++i) {
+674:         for (uint256 i; i < len; ++i) {
 
-662:                 ++totalSwaps;
+681:             totalFees += tempFee;
 
-662:                 ++totalSwaps;
+689:         for (uint256 i; i < len; ++i) {
 
-670:         return totalSwaps * swapGasUsed[dstChainId_];
+689:         for (uint256 i; i < len; ++i) {
 
-675:         return vaultsCount_ * updateGasUsed[dstChainId_];
+690:             liqAmount += req_[i].nativeAmount;
 
-686:         return executionGasPerVault * vaultsCount_;
+710:         for (uint256 i; i < len; ++i) {
 
-691:         uint256 gasCost = vaultsCount_ * ackGasCost[CHAIN_ID];
+710:         for (uint256 i; i < len; ++i) {
 
-693:         return gasCost * _getGasPrice(CHAIN_ID);
+713:                 ++totalSwaps;
 
-747:         uint256 dstNativeFee = dstGas_ * _getGasPrice(dstChainId_);
+713:                 ++totalSwaps;
 
-755:         uint256 dstUsdValue = dstNativeFee * _getNativeTokenPrice(dstChainId_); // native token price - 8 decimal
+721:         return totalSwaps * swapGasUsed[dstChainId_];
 
-755:         uint256 dstUsdValue = dstNativeFee * _getNativeTokenPrice(dstChainId_); // native token price - 8 decimal
+726:         return vaultsCount_ * updateGasUsed[dstChainId_];
 
-755:         uint256 dstUsdValue = dstNativeFee * _getNativeTokenPrice(dstChainId_); // native token price - 8 decimal
+741:         return executionGasPerVault * vaultsCount_;
 
-755:         uint256 dstUsdValue = dstNativeFee * _getNativeTokenPrice(dstChainId_); // native token price - 8 decimal
+746:         uint256 gasCost = vaultsCount_ * ackGasCost[CHAIN_ID];
 
-763:         nativeFee = (dstUsdValue) / _getNativeTokenPrice(CHAIN_ID);
+748:         return gasCost * _getGasPrice(CHAIN_ID);
 
-770:         ++nextPayloadId;
+802:         uint256 dstNativeFee = dstGas_ * _getGasPrice(dstChainId_);
 
-770:         ++nextPayloadId;
+810:         uint256 dstUsdValue = dstNativeFee * _getNativeTokenPrice(dstChainId_); // native token price - 8 decimal
+
+810:         uint256 dstUsdValue = dstNativeFee * _getNativeTokenPrice(dstChainId_); // native token price - 8 decimal
+
+810:         uint256 dstUsdValue = dstNativeFee * _getNativeTokenPrice(dstChainId_); // native token price - 8 decimal
+
+810:         uint256 dstUsdValue = dstNativeFee * _getNativeTokenPrice(dstChainId_); // native token price - 8 decimal
+
+818:         nativeFee = (dstUsdValue) / _getNativeTokenPrice(CHAIN_ID);
+
+825:         ++nextPayloadId;
+
+825:         ++nextPayloadId;
 
 ```
 
