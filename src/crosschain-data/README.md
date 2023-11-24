@@ -57,9 +57,9 @@ Every AMB has their identifier for different chains/networks. In state registrie
 
 Each individual AMB is in the adapters folder and is named after the Arbitrary Message Bridge (AMB).
 
-- **[LayerzeroImplementation.sol](./adapters/layerzero/Implementation.sol)**: Adapter for Layerzero AMB
+- **[LayerzeroImplementation.sol](./adapters/layerzero/LayerzeroImplementation.sol)**: Adapter for Layerzero AMB
 
-- **[HyperlaneImplementation.sol](./adapters/hyperlane/Implementation.sol)**: Adapter for Hyperlane AMB
+- **[HyperlaneImplementation.sol](./adapters/hyperlane/HyperlaneImplementation.sol)**: Adapter for Hyperlane AMB
 
 - **[WormholeARImplementation.sol](./adapters/wormhole/automatic-relayer/WormholeARImplementation.sol)**: Adapter for Wormhole Automatic Relayer AMB
 
