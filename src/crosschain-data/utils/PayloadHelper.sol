@@ -363,7 +363,7 @@ contract PayloadHelper is IPayloadHelper {
 
         uint256 len = imvd.liqData.length;
 
-        for (uint256 i = 0; i < len; ++i) {
+        for (uint256 i; i < len; ++i) {
             bridgeIds[i] = imvd.liqData[i].bridgeId;
             txDatas[i] = imvd.liqData[i].txData;
             tokens[i] = imvd.liqData[i].token;

@@ -14,8 +14,8 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
 
-    uint256 public constant MIN_DELAY = 1 hours;
-    uint256 public constant MAX_DELAY = 24 hours;
+    uint256 private constant MIN_DELAY = 1 hours;
+    uint256 private constant MAX_DELAY = 24 hours;
     uint64 public immutable CHAIN_ID;
 
     /// @dev core protocol - identifiers

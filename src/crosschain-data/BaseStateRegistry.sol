@@ -174,7 +174,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
                     revert Error.INVALID_PROOF_BRIDGE_ID();
                 }
 
-                if (i - 1 > 0 && ambIds_[i] <= ambIds_[i - 1]) {
+                if (i - 1 != 0 && ambIds_[i] <= ambIds_[i - 1]) {
                     revert Error.DUPLICATE_PROOF_BRIDGE_ID();
                 }
 
