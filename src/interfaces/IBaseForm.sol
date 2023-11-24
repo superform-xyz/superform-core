@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
 import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
