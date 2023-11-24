@@ -2237,7 +2237,7 @@ contract SuperformRouterTest is ProtocolActions {
     function test_negativeDstSwapSlippageAndUpdateSuperformDataAmount() public {
         /// case: where bridge 3 DAI, dst swapper swapped 3 DAI, updater updates 2 DAI
         /// outcome: deposit should revert on update
-        uint256 superformId = _simulateXChainDepositWithNegativeSlippage(true, true, false);
+        _simulateXChainDepositWithNegativeSlippage(true, true, false);
 
         /// @dev swapped tokens live on CSR forever
         vm.selectFork(FORKS[ARBI]);
@@ -2377,7 +2377,7 @@ contract SuperformRouterTest is ProtocolActions {
             );
         }
 
-        if (hasDstSwap && !keeperUpdateExactAmount) {
+        if (hasDstSwap && !keeperUpdateExactAmount && swapperSwapExactBridgeAmount) {
             vm.expectRevert(Error.INVALID_DST_SWAPPER_FAILED_SWAP.selector);
             CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(1, v.amounts);
         } else {
