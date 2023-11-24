@@ -541,7 +541,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 address asset;
                 try IBaseForm(_getSuperform(superformId_)).getVaultAsset() returns (address asset_) {
                     asset = asset_;
-                } catch { }
+                } catch {
+                    /// @dev if its error, we just consider asset as zero address
+                }
                 /// @dev if superform is invalid, try catch will fail and asset pushed is address (0)
                 /// @notice this means that if a user tries to game the protocol with an invalid superformId, the funds
                 /// bridged over that failed will be stuck here
