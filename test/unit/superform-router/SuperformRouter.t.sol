@@ -2193,7 +2193,9 @@ contract SuperformRouterTest is ProtocolActions {
     }
 
     function test_negativeBridgeSlippage() public {
-        uint256 superformId = _simulateXChainDepositWithNegativeSlippage(1, "VaultMock", address(420), false, true);
+        /// case: where bridge 3 DAI updater updates 2 DAI
+        /// outcome: deposit goes through depositing 2 DAI and 1 DAI remains on DstSwapper
+        uint256 superformId = _simulateXChainDepositWithNegativeSlippage(false, false, true);
 
         /// @dev assert that the minted amount is the amount sent in superformData.amount
         vm.selectFork(FORKS[ETH]);
@@ -2205,7 +2207,9 @@ contract SuperformRouterTest is ProtocolActions {
     }
 
     function test_negativeDstSwapSlippage() public {
-        uint256 superformId = _simulateXChainDepositWithNegativeSlippage(1, "VaultMock", address(420), true, false);
+        /// case: where bridge 3 DAI, dst swapper swapped 2 DAI, but updater updates 2 DAI
+        /// outcome: deposit goes through depositing 2 DAI and 1 DAI remains on DstSwapper
+        uint256 superformId = _simulateXChainDepositWithNegativeSlippage(true, false, false);
 
         /// @dev assert that the minted amount is the amount sent in superformData.amount
         vm.selectFork(FORKS[ETH]);
@@ -2216,8 +2220,10 @@ contract SuperformRouterTest is ProtocolActions {
         assertEq(MockERC20(getContract(ARBI, "DAI")).balanceOf(getContract(ARBI, "DstSwapper")), 1e18);
     }
 
-    function test_negativeDstSwapSlippageAndUpdateSuperformDataAmount() public {
-        uint256 superformId = _simulateXChainDepositWithNegativeSlippage(1, "VaultMock", address(420), true, true);
+    function test_negativeDstSwapSlippageAndUpdateSwappedAmount() public {
+        /// case: where bridge 3 DAI, dst swapper swapped 3 DAI, updater updates 3 DAI
+        /// outcome: deposit goes through depositing 2 DAI and 1 DAI remains on CSR
+        uint256 superformId = _simulateXChainDepositWithNegativeSlippage(true, true, true);
 
         /// @dev assert that the minted amount is the amount sent in superformData.amount
         vm.selectFork(FORKS[ETH]);
@@ -2228,35 +2234,50 @@ contract SuperformRouterTest is ProtocolActions {
         assertEq(MockERC20(getContract(ARBI, "DAI")).balanceOf(getContract(ARBI, "CoreStateRegistry")), 1e18);
     }
 
+    function test_negativeDstSwapSlippageAndUpdateSuperformDataAmount() public {
+        /// case: where bridge 3 DAI, dst swapper swapped 3 DAI, updater updates 2 DAI
+        /// outcome: deposit should revert on update
+        uint256 superformId = _simulateXChainDepositWithNegativeSlippage(true, true, false);
+
+        /// @dev swapped tokens live on CSR forever
+        vm.selectFork(FORKS[ARBI]);
+        assertEq(MockERC20(getContract(ARBI, "DAI")).balanceOf(getContract(ARBI, "CoreStateRegistry")), 3e18);
+    }
+
+    struct SimulateUpdateTestLocalVars {
+        SingleVaultSFData data;
+        uint8[] ambIds;
+        uint256[] amounts;
+        uint256 nativeAmount;
+        uint256 swapAmount;
+    }
+
     function _simulateXChainDepositWithNegativeSlippage(
-        uint256 payloadId,
-        string memory vaultKind,
-        address mrperfect,
         bool hasDstSwap,
-        bool keeperUpdatePositiveSlippage
+        bool swapperSwapExactBridgeAmount,
+        bool keeperUpdateExactAmount
     )
         internal
         returns (uint256 superformId)
     {
+        SimulateUpdateTestLocalVars memory v;
+
         /// scenario: user deposits but bridge provided more than expected output
         vm.selectFork(FORKS[ETH]);
 
         vm.prank(deployer);
-        MockERC20(getContract(ETH, "DAI")).transfer(mrperfect, 3e18);
-
-        address superformRouter = getContract(ETH, "SuperformRouter");
+        MockERC20(getContract(ETH, "DAI")).transfer(address(420), 3e18);
 
         superformId = DataLib.packSuperform(
             getContract(
-                ARBI, string.concat("DAI", vaultKind, "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+                ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
             ),
             FORM_IMPLEMENTATION_IDS[0],
             ARBI
         );
 
         vm.selectFork(FORKS[ETH]);
-
-        SingleVaultSFData memory data = SingleVaultSFData(
+        v.data = SingleVaultSFData(
             superformId,
             2e18,
             1000,
@@ -2267,7 +2288,7 @@ contract SuperformRouterTest is ProtocolActions {
                         getContract(ETH, "DAI"),
                         getContract(ETH, "DAI"),
                         getContract(ARBI, "DAI"),
-                        superformRouter,
+                        getContract(ETH, "SuperformRouter"),
                         ETH,
                         ARBI,
                         ARBI,
@@ -2293,25 +2314,27 @@ contract SuperformRouterTest is ProtocolActions {
             "",
             hasDstSwap,
             false,
-            mrperfect,
+            address(420),
             ""
         );
 
-        uint8[] memory ambIds = new uint8[](2);
-        ambIds[0] = 1;
-        ambIds[1] = 2;
+        v.ambIds = new uint8[](2);
+        v.ambIds[0] = 1;
+        v.ambIds[1] = 2;
 
-        data.liqRequest.interimToken = getContract(ARBI, "DAI");
-        SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds, ARBI, data);
+        v.data.liqRequest.interimToken = getContract(ARBI, "DAI");
+        SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(v.ambIds, ARBI, v.data);
 
         /// @dev approves before call
-        vm.prank(mrperfect);
-        MockERC20(getContract(ETH, "DAI")).approve(superformRouter, 3e18);
+        vm.prank(address(420));
+        MockERC20(getContract(ETH, "DAI")).approve(getContract(ETH, "SuperformRouter"), 3e18);
         vm.recordLogs();
 
-        vm.prank(mrperfect);
-        vm.deal(mrperfect, 2 ether);
-        SuperformRouter(payable(superformRouter)).singleXChainSingleVaultDeposit{ value: 2 ether }(req);
+        vm.prank(address(420));
+        vm.deal(address(420), 2 ether);
+        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleXChainSingleVaultDeposit{ value: 2 ether }(
+            req
+        );
 
         Vm.Log[] memory logs = vm.getRecordedLogs();
 
@@ -2332,8 +2355,10 @@ contract SuperformRouterTest is ProtocolActions {
         vm.selectFork(FORKS[ARBI]);
         vm.startPrank(deployer);
 
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = keeperUpdatePositiveSlippage ? 3e18 : 2e18;
+        v.amounts = new uint256[](1);
+        v.amounts[0] = keeperUpdateExactAmount ? 3e18 : 2e18;
+
+        v.swapAmount = swapperSwapExactBridgeAmount ? 3e18 : 2e18;
 
         if (hasDstSwap) {
             DstSwapper(payable(getContract(ARBI, "DstSwapper"))).processTx(
@@ -2346,42 +2371,47 @@ contract SuperformRouterTest is ProtocolActions {
                     getContract(ARBI, "DAI"),
                     getContract(ARBI, "DstSwapper"),
                     ARBI,
-                    amounts[0],
+                    v.swapAmount,
                     0
                 )
             );
         }
 
-        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(payloadId, amounts);
-        uint256 nativeAmount = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(1);
+        if (hasDstSwap && !keeperUpdateExactAmount) {
+            vm.expectRevert(Error.INVALID_DST_SWAPPER_FAILED_SWAP.selector);
+            CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(1, v.amounts);
+        } else {
+            CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(1, v.amounts);
+            v.nativeAmount = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(1);
 
-        vm.recordLogs();
-        vm.stopPrank();
+            vm.recordLogs();
+            vm.stopPrank();
 
-        vm.prank(deployer);
-        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(
-            payloadId
-        );
+            vm.prank(deployer);
+            CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: v.nativeAmount }(
+                1
+            );
 
-        logs = vm.getRecordedLogs();
+            logs = vm.getRecordedLogs();
 
-        /// @dev simulate cross-chain payload delivery
-        LayerZeroHelper(getContract(ARBI, "LayerZeroHelper")).helpWithEstimates(
-            LZ_ENDPOINTS[ETH],
-            500_000,
-            /// note: using some max limit
-            FORKS[ETH],
-            logs
-        );
+            /// @dev simulate cross-chain payload delivery
+            LayerZeroHelper(getContract(ARBI, "LayerZeroHelper")).helpWithEstimates(
+                LZ_ENDPOINTS[ETH],
+                500_000,
+                /// note: using some max limit
+                FORKS[ETH],
+                logs
+            );
 
-        HyperlaneHelper(getContract(ARBI, "HyperlaneHelper")).help(
-            address(HYPERLANE_MAILBOXES[ARBI]), address(HYPERLANE_MAILBOXES[ETH]), FORKS[ETH], logs
-        );
+            HyperlaneHelper(getContract(ARBI, "HyperlaneHelper")).help(
+                address(HYPERLANE_MAILBOXES[ARBI]), address(HYPERLANE_MAILBOXES[ETH]), FORKS[ETH], logs
+            );
 
-        /// @dev mint super positions on source chain
-        vm.selectFork(FORKS[ETH]);
-        vm.prank(deployer);
-        CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload(payloadId);
+            /// @dev mint super positions on source chain
+            vm.selectFork(FORKS[ETH]);
+            vm.prank(deployer);
+            CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload(1);
+        }
     }
 
     function _successfulMultiVaultDeposit() internal {
