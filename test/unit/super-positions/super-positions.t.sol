@@ -264,22 +264,22 @@ contract SuperPositionsTest is BaseSetup {
         superPositions.stateMultiSync(maliciousMessage);
     }
 
-    function test_registerSERC20() public {
+    function test_registerAERC20() public {
         (uint256 superformId,) =
             SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
         vm.prank(getContract(ETH, "SuperformRouter"));
 
         superPositions.mintSingle(address(0x888), superformId, 1);
 
-        superPositions.registerSERC20{ value: 0.01 ether }(superformId);
+        superPositions.registerAERC20{ value: 0.01 ether }(superformId);
     }
 
-    function test_registerSERC20_notMintedYet() public {
+    function test_registerAERC20_notMintedYet() public {
         (uint256 superformId,) =
             SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
         vm.expectRevert(IERC1155A.ID_NOT_MINTED_YET.selector);
 
-        superPositions.registerSERC20{ value: 0.01 ether }(superformId);
+        superPositions.registerAERC20{ value: 0.01 ether }(superformId);
     }
 
     function test_withdrawFromInvalidChainId() public {
@@ -294,7 +294,7 @@ contract SuperPositionsTest is BaseSetup {
 
         vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
 
-        superPositions.registerSERC20{ value: 0.01 ether }(superformId);
+        superPositions.registerAERC20{ value: 0.01 ether }(superformId);
     }
 
     function test_InvalidSuperFormAddress() public {
@@ -302,7 +302,7 @@ contract SuperPositionsTest is BaseSetup {
         vm.prank(getContract(ETH, "SuperformRouter"));
         superPositions.mintSingle(address(0x888), invalidSuperFormId, 1);
         vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
-        superPositions.registerSERC20{ value: 0.01 ether }(invalidSuperFormId);
+        superPositions.registerAERC20{ value: 0.01 ether }(invalidSuperFormId);
     }
 
     function test_InvalidFormImplementation() public {
@@ -310,7 +310,7 @@ contract SuperPositionsTest is BaseSetup {
         vm.prank(getContract(ETH, "SuperformRouter"));
         superPositions.mintSingle(address(0x888), invalidSuperFormId, 1);
         vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
-        superPositions.registerSERC20{ value: 0.01 ether }(invalidSuperFormId);
+        superPositions.registerAERC20{ value: 0.01 ether }(invalidSuperFormId);
     }
 
     function test_alreadyRegistered() public {
@@ -319,10 +319,10 @@ contract SuperPositionsTest is BaseSetup {
         vm.prank(getContract(ETH, "SuperformRouter"));
         superPositions.mintSingle(address(0x888), superformId, 1);
 
-        superPositions.registerSERC20{ value: 0.01 ether }(superformId);
+        superPositions.registerAERC20{ value: 0.01 ether }(superformId);
 
-        vm.expectRevert(IERC1155A.SYNTHETIC_ERC20_ALREADY_REGISTERED.selector);
-        superPositions.registerSERC20{ value: 0.01 ether }(superformId);
+        vm.expectRevert(IERC1155A.AERC20_ALREADY_REGISTERED.selector);
+        superPositions.registerAERC20{ value: 0.01 ether }(superformId);
     }
 
     function test_invalidBroadcastFee() public {
@@ -332,7 +332,7 @@ contract SuperPositionsTest is BaseSetup {
         superPositions.mintSingle(address(0x888), superformId, 1);
 
         vm.expectRevert(Error.INVALID_BROADCAST_FEE.selector);
-        superPositions.registerSERC20{ value: 0.009 ether }(superformId);
+        superPositions.registerAERC20{ value: 0.009 ether }(superformId);
     }
 
     function test_broadcastAndDeploy() public {
@@ -342,7 +342,7 @@ contract SuperPositionsTest is BaseSetup {
         superPositions.mintSingle(address(0x888), superformId, 1);
 
         vm.recordLogs();
-        superPositions.registerSERC20{ value: 0.01 ether }(superformId);
+        superPositions.registerAERC20{ value: 0.01 ether }(superformId);
 
         vm.startPrank(deployer);
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
@@ -355,7 +355,7 @@ contract SuperPositionsTest is BaseSetup {
                 assertGt(
                     uint256(
                         uint160(
-                            SuperPositions(getContract(chainIds[i], "SuperPositions")).synthethicTokenId(superformId)
+                            SuperPositions(getContract(chainIds[i], "SuperPositions")).aErc20TokenId(superformId)
                         )
                     ),
                     uint256(0)
@@ -389,16 +389,16 @@ contract SuperPositionsTest is BaseSetup {
         superPositions.stateSyncBroadcast(
             abi.encode(
                 BroadcastMessage(
-                    "SUPER_POSITIONS", keccak256("DEPLOY_NEW_SERC20"), abi.encode(1, 1, 222, "TOKEN", "TOKEN", 18)
+                    "SUPER_POSITIONS", keccak256("DEPLOY_NEW_AERC20"), abi.encode(1, 1, 222, "TOKEN", "TOKEN", 18)
                 )
             )
         );
 
-        vm.expectRevert(IERC1155A.SYNTHETIC_ERC20_ALREADY_REGISTERED.selector);
+        vm.expectRevert(IERC1155A.AERC20_ALREADY_REGISTERED.selector);
         superPositions.stateSyncBroadcast(
             abi.encode(
                 BroadcastMessage(
-                    "SUPER_POSITIONS", keccak256("DEPLOY_NEW_SERC20"), abi.encode(1, 1, 222, "NEWTOKEN", "TOKEN", 18)
+                    "SUPER_POSITIONS", keccak256("DEPLOY_NEW_AERC20"), abi.encode(1, 1, 222, "NEWTOKEN", "TOKEN", 18)
                 )
             )
         );

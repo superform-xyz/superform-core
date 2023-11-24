@@ -193,5 +193,5 @@ interface IPaymentHelper {
     /// @dev admin updates config for register transmuter amb params
     /// @param totalTransmuterFees_ is the native value fees for registering transmuter on all supported chains
     /// @param extraDataForTransmuter_ is the broadcast extra data
-    function updateRegisterSERC20Params(uint256 totalTransmuterFees_, bytes memory extraDataForTransmuter_) external;
+    function updateRegisterAERC20Params(uint256 totalTransmuterFees_, bytes memory extraDataForTransmuter_) external;
 }

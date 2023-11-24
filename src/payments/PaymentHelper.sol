@@ -526,7 +526,7 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @inheritdoc IPaymentHelper
-    function updateRegisterSERC20Params(
+    function updateRegisterAERC20Params(
         uint256 totalTransmuterFees_,
         bytes memory extraDataForTransmuter_
     )
