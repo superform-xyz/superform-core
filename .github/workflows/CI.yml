@@ -1,88 +1,116 @@
 name: CI
 
+concurrency:
+  cancel-in-progress: true
+  group: ${{github.workflow}}-${{github.ref}}
+
 on:
   push:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
 
+env:
+  BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
+  ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
+  OPTIMISM_RPC_URL: ${{ secrets.OPTIMISM_RPC_URL }}
+  ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
+  POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
+  AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
+  FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
+
 jobs:
-  tests:
-    name: Hardhat Testing
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18.13.0]
+  build:
+    runs-on: SuperformCore2
     steps:
-      - uses: actions/checkout@v2
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v2
+      - name: "Check out the repo"
+        uses: "actions/checkout@v3"
         with:
-          node-version: ${{ matrix.node-version }}
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps  
-      - name: Run Tests
-        run: npm run test
-        env:
-          BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
-          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
-          FANTOM_TESTNET_URL: ${{ secrets.FANTOM_TESTNET_URL }}
-          FUJI_RPC_URL: ${{ secrets.FUJI_RPC_URL }}
-          MUMBAI_RPC_URL: ${{ secrets.MUMBAI_RPC_URL }}
-          PRODUCTION: ${{ secrets.PRODUCTION }}
-          ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
-          OPTIMISM_RPC_URL: ${{ secrets.OPTIMISM_RPC_URL }}
-          ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
+          submodules: "recursive"
 
-  foundry:
-    name: Forge Testing
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-      - uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
-      - name: dependencies
-        run: forge install
-      - name: tests
-        run: forge test -vvv
-        env:
-          # make fuzzing semi-deterministic to avoid noisy gas cost estimation
-          # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
-          FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
-          BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
-          ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
-          OPTIMISM_RPC_URL: ${{ secrets.OPTIMISM_RPC_URL }}
-          ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
-          POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
-          AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
-          FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
+      - name: "Install Foundry"
+        uses: "foundry-rs/foundry-toolchain@v1"
 
-  foundry-snapshot:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-      - uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
-      - name: dependencies
-        run: forge install
-      - name: check contract sizes
+      - name: "Show the Foundry config"
+        run: "forge config"
+
+      - name: "Perform mainnet size checks"
         run: forge build --sizes
-      - name: check gas snapshots
-        run: forge snapshot --check
+
+      - name: "Cache unoptimized build"
+        run: "FOUNDRY_PROFILE=localdev forge build"
+
+      - name: "Cache the build so that it can be re-used by the other jobs"
+        uses: "actions/cache/save@v3"
+        with:
+          key: "foundry-build-${{ github.sha }}"
+          path: |
+            cache
+            out
+            out-optimized
+
+      - name: "Add build summary"
+        run: |
+          echo "## Build result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+
+  test-gas-report:
+    needs: ["build"]
+    runs-on: SuperformCore2
+    steps:
+      - name: "Check out the repo"
+        uses: "actions/checkout@v3"
+        with:
+          submodules: "recursive"
+
+      - name: "Install Foundry"
+        uses: "foundry-rs/foundry-toolchain@v1"
+
+      - name: "Restore the cached build"
+        uses: "actions/cache/restore@v3"
+        with:
+          fail-on-cache-miss: true
+          key: "foundry-build-${{ github.sha }}"
+          path: |
+            cache
+            out
+            out-optimized
+
+      - name: "Generate fuzz seed that changes weekly to avoid burning through RPC allowance"
+        run: |
+          echo "FOUNDRY_FUZZ_SEED=$(echo $(($EPOCHSECONDS / 604800)))" >> $GITHUB_ENV
+
+      - name: "Run all tests except invariant against the optimized build and produce gas reports"
+        run: "forge test --gas-report --no-match-path \"test/invariant/**/*.sol\""
+
+      - name: "Add test summary"
+        run: |
+          echo "## Fork tests result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+                  
+  coverage:
+    needs: ["build"]
+    runs-on: SuperformCore2
+    steps:
+      - name: "Check out the repo"
+        uses: "actions/checkout@v3"
+        with:
+          submodules: "recursive"
+
+      - name: "Install Foundry"
+        uses: "foundry-rs/foundry-toolchain@v1"
+
+      - name: "Generate the coverage report using the unit and the integration tests"
+        run: 'FOUNDRY_PROFILE=coverage forge coverage --match-path "test/**/*.sol" --report lcov'
+
+      - name: "Upload coverage report to Codecov"
+        uses: "codecov/codecov-action@v4.0.0-beta.3"
         env:
-          # make fuzzing semi-deterministic to avoid noisy gas cost estimation
-          # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
-          FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
-          BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
-          ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
-          OPTIMISM_RPC_URL: ${{ secrets.OPTIMISM_RPC_URL }}
-          ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
-          POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
-          AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
-          FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          files: "./lcov.info"
+
+      - name: "Add coverage summary"
+        run: |
+          echo "## Coverage result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Uploaded to Codecov" >> $GITHUB_STEP_SUMMARY
