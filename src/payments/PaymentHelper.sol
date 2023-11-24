@@ -34,7 +34,7 @@ contract PaymentHelper is IPaymentHelper {
 
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
-    uint32 public constant TIMELOCK_FORM_ID = 2;
+    uint32 private constant TIMELOCK_FORM_ID = 2;
 
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
