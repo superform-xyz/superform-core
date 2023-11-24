@@ -19,7 +19,7 @@ For DeFi protocols, it acts as an instant out-of-the-box distribution platform f
 - Automatically compound your yield position
 - Make cross-chain transactions using multiple AMBs 
 
-This repository includes all of our contracts but our protocol can be split into two categories: Core and Periphery.
+This repository includes all Superform contracts and can be split into two categories: Core and Periphery.
 
 - `Core` contracts contain logic to move liquidity and data across chains along with maintaining roles in the protocol
 - `Periphery` contracts contain the main touch-points for protocols and users to interface with and include helper contracts to ease 3rd party integrations
@@ -40,14 +40,12 @@ This repository includes all of our contracts but our protocol can be split into
     ├── src
       ├── crosschain-data
       ├── crosschain-liquidity
-      ├── emergency
       ├── forms
       ├── interfaces
       ├── libraries
       ├── payments
       ├── settings
       ├── types
-      ├── utils
       ├── vendor
     ├── test
     ├── utils
@@ -59,25 +57,24 @@ This repository includes all of our contracts but our protocol can be split into
   - `crosschain-liquidity` implements the movement of tokens from chain to chain via bridge aggregators [`/src/crosschain-liquidity`](./src/crosschain-liquidity)
   - `forms` implements types of yield that can be supported on Superform and introduces a queue when they are paused [`/src/forms`](./src/forms)
   - `interfaces` define interactions with other contracts [`/src/interfaces`](./src/interfaces)
-  - `libraries` define functions used across other contracts [`/src/libraries`](./src/libraries)
+  - `libraries` define functions used across other contracts and error states in the protocol [`/src/libraries`](./src/libraries)
   - `payments` implements the handling and processing of payments for cross-chain actions [`/src/payments`](./src/payments)
   - `settings` define, set, and manage roles in the Superform ecosystem [`/src/settings`](./src/settings)
   - `types` define core data structures used in the protocol [`/src/types`](./src/types)
-  - `utils` define error states in the protocol [`/src/utils`](./src/utils)
   - `vendor` is where all externally written interfaces reside [`/src/vendor`](./src/vendor)
 
 ## Documentation
 
-We recommend visiting our technical documentation at https://docs.superform.xyz. 
+We recommend visiting technical documentation at https://docs.superform.xyz. 
 
 ## Contract Architecture
 
 1. All external actions, except Superform creation, start in `SuperformRouter.sol`. For each deposit or withdraw function the user has to provide the appropriate "StateRequest" found in `DataTypes.sol` 
 2. All deposit and withdrawal actions can be to single or multiple destinations, single or multi vaults, and same-chain or cross-chain. Any token can be deposited from any chain into a vault with swapping and bridging handled in a single call. Sometimes it is also needed to perform another action on the destination chain for tokens with low bridge liquidity, through the usage of `DstSwapper.sol`. Similarly for withdraw actions, users can choose to receive a different token than the one redeemed for from the vault, but funds must go back directly to the user (i.e. no use of `DstSwapper.sol`).
 3. Any individual tx must be of a specific kind, either all deposits or all withdraws, for all vaults and destinations
-4. Vaults themselves can be added permissionlessly to Forms in `SuperformFactory.sol` by calling `createSuperform()`. Forms are code implementations that adapt to the needs of a given vault. The only Form under scope of this audit is `ERC4626Form.sol`, which is a wrapper around the [ERC-4626 Standard](https://erc4626.info/). Any user can wrap a vault into a SuperForm using the SuperForm Factory but only the protocol may add new Form implementations.
+4. Vaults themselves can be added permissionlessly to Forms in `SuperformFactory.sol` by calling `createSuperform()`. Forms are code implementations that adapt to the needs of a given vault. The only Form under scope of this audit is `ERC4626Form.sol`, which is a wrapper around the [ERC-4626 Standard](https://erc4626.info/). Any user can wrap a vault into a Superform using the SuperformFactory but only the protocol may add new Form implementations.
 5. This wrapping action leads to the creation of Superforms which are assigned a unique id, made up of the superForm address, formId, and chainId.
-6. Users are minted SuperPositions on successful deposits, a type of ERC-1155 we modify called ERC-1155A. On withdrawals these are burned. Users may also within each "StateRequest" deposit choose whether to retain4626 which sends the vault share directly to the user instead of holding in the appropriate Superform, but only SuperPositions can be withdrawn through SuperformRouter.   
+6. Users are minted SuperPositions on successful deposits, a type of ERC1155 modified called [ERC1155A](https://github.com/superform-xyz/ERC1155A). On withdrawals these are burned. Users may also within each "StateRequest" deposit choose whether to retain4626 which sends the vault share directly to the user instead of holding in the appropriate Superform, but only SuperPositions can be withdrawn through SuperformRouter.   
 
 ## User Flow
 
@@ -173,7 +170,7 @@ foundryup
 forge install
 ```
 
-4. Run `forge test` to run some scenario tests against the contracts
+4. Run `forge test` to run tests against the contracts
 
 ```sh
 $ forge test
