@@ -2192,8 +2192,8 @@ contract SuperformRouterTest is ProtocolActions {
         assertGt(IERC4626(vault).balanceOf(mrperfect), 0);
     }
 
-    function test_positiveBridgeSlippage() public {
-        uint256 superformId = _simulateXChainDepositWithPositiveSlippage(1, "VaultMock", address(420), false, true);
+    function test_negativeBridgeSlippage() public {
+        uint256 superformId = _simulateXChainDepositWithNegativeSlippage(1, "VaultMock", address(420), false, true);
 
         /// @dev assert that the minted amount is the amount sent in superformData.amount
         vm.selectFork(FORKS[ETH]);
@@ -2204,8 +2204,8 @@ contract SuperformRouterTest is ProtocolActions {
         assertEq(MockERC20(getContract(ARBI, "DAI")).balanceOf(getContract(ARBI, "CoreStateRegistry")), 1e18);
     }
 
-    function test_positiveDstSwapSlippage() public {
-        uint256 superformId = _simulateXChainDepositWithPositiveSlippage(1, "VaultMock", address(420), true, false);
+    function test_negativeDstSwapSlippage() public {
+        uint256 superformId = _simulateXChainDepositWithNegativeSlippage(1, "VaultMock", address(420), true, false);
 
         /// @dev assert that the minted amount is the amount sent in superformData.amount
         vm.selectFork(FORKS[ETH]);
@@ -2216,12 +2216,12 @@ contract SuperformRouterTest is ProtocolActions {
         assertEq(MockERC20(getContract(ARBI, "DAI")).balanceOf(getContract(ARBI, "DstSwapper")), 1e18);
     }
 
-    function _simulateXChainDepositWithPositiveSlippage(
+    function _simulateXChainDepositWithNegativeSlippage(
         uint256 payloadId,
         string memory vaultKind,
         address mrperfect,
         bool hasDstSwap,
-        bool positiveSlippage
+        bool negativeSlippage
     )
         internal
         returns (uint256 superformId)
@@ -2321,7 +2321,7 @@ contract SuperformRouterTest is ProtocolActions {
         vm.startPrank(deployer);
 
         uint256[] memory amounts = new uint256[](1);
-        amounts[0] = positiveSlippage ? 3e18 : 2e18;
+        amounts[0] = negativeSlippage ? 3e18 : 2e18;
 
         if (hasDstSwap) {
             DstSwapper(payable(getContract(ARBI, "DstSwapper"))).processTx(
