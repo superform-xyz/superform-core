@@ -145,7 +145,7 @@ For the purpose of this audit, exploits concerning the inappropriate behavior of
 We leave these in the repository to see intended behavior, but the following contracts and behaviors are out of scope:
 
 - Anything in [`src/vendor`](./src/vendor)
-- Exploits concerning the inappropriate behavior of permissioned roles
+- Exploits concerning the inappropriate behavior of keeper roles mentioned previously
 - Prior findings in any audit report linked in this readme
 
 ## Tests
@@ -154,7 +154,17 @@ Step by step instructions on setting up the project and running it
 
 1. Make sure Foundry is installed
 
-2. Set the .env variables using archive nodes
+2. Set the `.env` variables in `.env.example` using your nodes
+
+```
+POLYGON_RPC_URL=
+AVALANCHE_RPC_URL=
+FANTOM_RPC_URL=
+BSC_RPC_URL=
+ARBITRUM_RPC_URL=
+OPTIMISM_RPC_URL=
+ETHEREUM_RPC_URL=
+```
 
 3. Install submodules and dependencies:
 
