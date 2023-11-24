@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import { ERC1155A } from "ERC1155A/ERC1155A.sol";
-import { sERC20 } from "ERC1155A/sERC20.sol";
+import { aERC20 } from "ERC1155A/aERC20.sol";
 import {
     TransactionType,
     ReturnMultiData,
@@ -32,7 +32,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     //////////////////////////////////////////////////////////////
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
-    bytes32 constant DEPLOY_NEW_SERC20 = keccak256("DEPLOY_NEW_SERC20");
+    bytes32 constant DEPLOY_NEW_AERC20 = keccak256("DEPLOY_NEW_AERC20");
 
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
@@ -47,7 +47,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     /// @dev is the base uri frozen status
     bool public dynamicURIFrozen;
 
-    /// @dev nonce for sERC20 broadcast
+    /// @dev nonce for aERC20 broadcast
     uint256 public xChainPayloadCounter;
 
     //////////////////////////////////////////////////////////////
@@ -280,7 +280,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     function stateSyncBroadcast(bytes memory data_) external payable override onlyBroadcastRegistry {
         BroadcastMessage memory transmuterPayload = abi.decode(data_, (BroadcastMessage));
 
-        if (transmuterPayload.messageType != DEPLOY_NEW_SERC20) {
+        if (transmuterPayload.messageType != DEPLOY_NEW_AERC20) {
             revert Error.INVALID_MESSAGE_TYPE();
         }
         _deployTransmuter(transmuterPayload.message);
@@ -341,18 +341,18 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         }
     }
 
-    function _registerSERC20(uint256 id) internal override returns (address syntheticToken) {
+    function _registerAERC20(uint256 id) internal override returns (address aErc20Token) {
         if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(id)) {
             revert Error.SUPERFORM_ID_NONEXISTENT();
         }
         (address superform,,) = id.getSuperform();
 
         string memory name =
-            string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
-        string memory symbol = string(abi.encodePacked("sERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
+            string(abi.encodePacked("SuperPositions AERC20 ", IBaseForm(superform).superformYieldTokenName()));
+        string memory symbol = string(abi.encodePacked("aERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
         uint8 decimal = uint8(IBaseForm(superform).getVaultDecimals());
-        syntheticToken = address(
-            new sERC20(
+        aErc20Token = address(
+            new aERC20(
                 name,
                 symbol,
                 decimal
@@ -361,15 +361,15 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         /// @dev broadcast and deploy to the other destination chains
         BroadcastMessage memory transmuterPayload = BroadcastMessage(
             "SUPER_POSITIONS",
-            DEPLOY_NEW_SERC20,
+            DEPLOY_NEW_AERC20,
             abi.encode(CHAIN_ID, ++xChainPayloadCounter, id, name, symbol, decimal)
         );
 
         _broadcast(abi.encode(transmuterPayload));
 
-        emit SyntheticTokenRegistered(id, syntheticToken);
+        emit AERC20TokenRegistered(id, aErc20Token);
 
-        return syntheticToken;
+        return aErc20Token;
     }
 
     /// @dev interacts with broadcast state registry to broadcasting state changes to all connected remote chains
@@ -395,18 +395,18 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     function _deployTransmuter(bytes memory message_) internal {
         (,, uint256 superformId, string memory name, string memory symbol, uint8 decimal) =
             abi.decode(message_, (uint64, uint256, uint256, string, string, uint8));
-        if (synthethicTokenId[superformId] != address(0)) revert SYNTHETIC_ERC20_ALREADY_REGISTERED();
+        if (aErc20TokenId[superformId] != address(0)) revert AERC20_ALREADY_REGISTERED();
 
-        address syntheticToken = address(
-            new sERC20(
+        address aErc20Token = address(
+            new aERC20(
                 name,
                 symbol,
                 decimal
             )
         );
 
-        synthethicTokenId[superformId] = syntheticToken;
+        aErc20TokenId[superformId] = aErc20Token;
 
-        emit SyntheticTokenRegistered(superformId, syntheticToken);
+        emit AERC20TokenRegistered(superformId, aErc20Token);
     }
 }

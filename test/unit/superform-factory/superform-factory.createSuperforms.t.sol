@@ -10,7 +10,7 @@ import { Error } from "src/libraries/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
 contract ZeroAssetVault {
-    function asset() external view returns (address) {
+    function asset() external pure returns (address) {
         return address(0);
     }
 }
