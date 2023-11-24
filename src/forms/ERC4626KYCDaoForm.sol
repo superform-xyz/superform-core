@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
 import { kycDAO4626 } from "super-vaults/kycdao-4626/kycdao4626.sol";

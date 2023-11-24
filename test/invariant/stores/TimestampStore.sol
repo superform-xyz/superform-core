@@ -1,4 +1,4 @@
-/// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
 /// @dev Because Foundry does not commit the state changes between invariant runs, we need to
