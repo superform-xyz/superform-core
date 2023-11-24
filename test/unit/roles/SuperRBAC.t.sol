@@ -8,7 +8,7 @@ import { BroadcastRegistry } from "src/crosschain-data/BroadcastRegistry.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { SuperRBAC } from "src/settings/SuperRBAC.sol";
 
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 
 contract SuperRBACTest is BaseSetup {
     SuperRBAC public superRBAC;
@@ -23,9 +23,30 @@ contract SuperRBACTest is BaseSetup {
     }
 
     function test_setSuperRegistry() public {
-        vm.prank(deployer);
-        superRBAC.setSuperRegistry(address(0x1));
-        assertEq(address(superRBAC.superRegistry()), address(0x1));
+        vm.startPrank(deployer);
+        SuperRBAC newReg = new SuperRBAC(ISuperRBAC.InitialRoleSetup({
+                        admin: deployer,
+                        emergencyAdmin: deployer,
+                        paymentAdmin: deployer,
+                        csrProcessor: deployer,
+                        tlProcessor: deployer,
+                        brProcessor: deployer,
+                        csrUpdater: deployer,
+                        srcVaaRelayer: deployer,
+                        dstSwapper: deployer,
+                        csrRescuer: deployer,
+                        csrDisputer: deployer
+                    }));
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        newReg.setSuperRegistry(address(0));
+
+        newReg.setSuperRegistry(address(0x1));
+        assertEq(address(newReg.superRegistry()), address(0x1));
+
+        vm.expectRevert(Error.DISABLED.selector);
+        newReg.setSuperRegistry(address(0x1));
+
+        vm.stopPrank();
     }
 
     function test_grantProtocolAdminRole() public {
@@ -214,6 +235,21 @@ contract SuperRBACTest is BaseSetup {
         superRBAC.stateSyncBroadcast("");
     }
 
+    function test_stateSync_invalidType() public {
+        vm.expectRevert(Error.INVALID_MESSAGE_TYPE.selector);
+        vm.prank(getContract(ETH, "BroadcastRegistry"));
+
+        superRBAC.stateSyncBroadcast(
+            abi.encode(
+                BroadcastMessage(
+                    "SUPER_RBAC",
+                    keccak256("OTHER_TYPE"),
+                    abi.encode(1, keccak256("PAYMENT_ADMIN_ROLE"), keccak256("NON_EXISTENT_ID"))
+                )
+            )
+        );
+    }
+
     function test_stateSync_addressToRevokeIs0() public {
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         vm.prank(getContract(ETH, "BroadcastRegistry"));
@@ -295,7 +331,7 @@ contract SuperRBACTest is BaseSetup {
         /// @dev broadcasting revokes to other chains on hold
         SuperRBAC superRBAC_;
         // /// @dev process the payload across all other chains
-        for (uint256 i = 0; i < chainIds.length; i++) {
+        for (uint256 i = 0; i < chainIds.length; ++i) {
             if (bytes(member_).length > 0) {
                 memberAddress = getContract(chainIds[i], member_);
             }
@@ -315,7 +351,7 @@ contract SuperRBACTest is BaseSetup {
         }
 
         /// try processing the same payload again
-        for (uint256 i = 0; i < chainIds.length; i++) {
+        for (uint256 i = 0; i < chainIds.length; ++i) {
             if (chainIds[i] != ETH) {
                 vm.selectFork(FORKS[chainIds[i]]);
                 /// @dev re-grant broadcast state registry role in case it was revoked to test remaining of cases
@@ -331,7 +367,7 @@ contract SuperRBACTest is BaseSetup {
         }
 
         /// try processing not available payload id
-        for (uint256 i = 0; i < chainIds.length; i++) {
+        for (uint256 i = 0; i < chainIds.length; ++i) {
             if (chainIds[i] != ETH) {
                 vm.selectFork(FORKS[chainIds[i]]);
 

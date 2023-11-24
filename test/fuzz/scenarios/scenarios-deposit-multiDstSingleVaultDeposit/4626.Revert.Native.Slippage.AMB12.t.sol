@@ -75,7 +75,7 @@ contract MDSVDNormal4626RevertTokenInputSlippageAMB1 is ProtocolActions {
         AMOUNTS[AVAX][0] = [amountTwo_];
         AMOUNTS[OP][0] = [amountThree_];
 
-        for (uint256 act; act < actions.length; act++) {
+        for (uint256 act; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

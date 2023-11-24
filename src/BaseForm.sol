@@ -7,7 +7,7 @@ import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IE
 import { InitSingleVaultData } from "./types/DataTypes.sol";
 import { IBaseForm } from "./interfaces/IBaseForm.sol";
 import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
-import { Error } from "./utils/Error.sol";
+import { Error } from "./libraries/Error.sol";
 import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
 import { IEmergencyQueue } from "./interfaces/IEmergencyQueue.sol";
 import { DataLib } from "./libraries/DataLib.sol";
@@ -35,9 +35,6 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     /// @dev underlying asset of vault this form pertains to
     address public asset;
 
-    /// @dev form which this vault was added to
-    uint32 public formImplementationId;
-
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
     //////////////////////////////////////////////////////////////
@@ -50,9 +47,8 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         ) {
             revert Error.SUPERFORM_ID_NONEXISTENT();
         }
-        (, uint32 formImplementationId_,) = singleVaultData_.superformId.getSuperform();
 
-        if (formImplementationId != formImplementationId_) revert Error.INVALID_SUPERFORMS_DATA();
+        (, uint32 formImplementationId_,) = singleVaultData_.superformId.getSuperform();
 
         if (
             ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
@@ -141,6 +137,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     /// @inheritdoc IBaseForm
     function getTotalAssets() public view virtual override returns (uint256);
 
+    /// @inheritdoc IBaseForm
+    function getTotalSupply() public view virtual override returns (uint256);
+
     // @inheritdoc IBaseForm
     function getPreviewPricePerVaultShare() public view virtual override returns (uint256);
 
@@ -162,18 +161,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     /// @param superRegistry_        ISuperRegistry address deployed
     /// @param vault_         The vault address this form pertains to
     /// @dev sets caller as the admin of the contract.
-    function initialize(
-        address superRegistry_,
-        address vault_,
-        uint32 formImplementationId_,
-        address asset_
-    )
-        external
-        initializer
-    {
+    function initialize(address superRegistry_, address vault_, address asset_) external initializer {
         if (ISuperRegistry(superRegistry_) != superRegistry) revert Error.NOT_SUPER_REGISTRY();
         if (vault_ == address(0) || asset_ == address(0)) revert Error.ZERO_ADDRESS();
-        formImplementationId = formImplementationId_;
         vault = vault_;
         asset = asset_;
     }
@@ -318,9 +308,8 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId)) {
             revert Error.SUPERFORM_ID_NONEXISTENT();
         }
-        (, uint32 formImplementationId_,) = superformId.getSuperform();
 
-        if (formImplementationId != formImplementationId_) revert Error.INVALID_SUPERFORMS_DATA();
+        (, uint32 formImplementationId_,) = superformId.getSuperform();
 
         return ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
             formImplementationId_

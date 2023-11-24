@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.23;
 
-import "./LiquidityTypes.sol";
-
 /// @dev contains all the common struct and enums used for data communication between chains.
 
 /// @dev There are two transaction types in Superform Protocol
@@ -25,16 +23,34 @@ enum PayloadState {
     PROCESSED
 }
 
+/// @dev contains all the common struct used for interchain token transfers.
+struct LiqRequest {
+    /// @dev generated data
+    bytes txData;
+    /// @dev input token. Relevant for withdraws especially to know when to update txData
+    address token;
+    /// @dev intermediary token on destination. Relevant for xChain deposits where a destination swap is needed for
+    /// validation purposes
+    address interimToken;
+    /// @dev what bridge to use to move tokens
+    uint8 bridgeId;
+    /// @dev dstChainId = liqDstchainId for deposits. For withdraws it is the target chain id for where the underlying
+    /// is to be delivered
+    uint64 liqDstChainId;
+    /// @dev currently this amount is used as msg.value in the txData call.
+    uint256 nativeAmount;
+}
+
 /// @dev main struct that holds required multi vault data for an action
 struct MultiVaultSFData {
     // superformids must have same destination. Can have different underlyings
     uint256[] superformIds;
     uint256[] amounts;
     uint256[] maxSlippages;
-    bool[] hasDstSwaps;
-    bool[] retain4626s; // if true, we don't mint SuperPositions, and send the 4626 back to the user instead
     LiqRequest[] liqRequests; // if length = 1; amount = sum(amounts) | else  amounts must match the amounts being sent
     bytes permit2data;
+    bool[] hasDstSwaps;
+    bool[] retain4626s; // if true, we don't mint SuperPositions, and send the 4626 back to the user instead
     address receiverAddress;
     bytes extraFormData; // extraFormData
 }
@@ -45,10 +61,10 @@ struct SingleVaultSFData {
     uint256 superformId;
     uint256 amount;
     uint256 maxSlippage;
-    bool hasDstSwap;
-    bool retain4626; // if true, we don't mint SuperPositions, and send the 4626 back to the user instead
     LiqRequest liqRequest; // if length = 1; amount = sum(amounts)| else  amounts must match the amounts being sent
     bytes permit2data;
+    bool hasDstSwap;
+    bool retain4626; // if true, we don't mint SuperPositions, and send the 4626 back to the user instead
     address receiverAddress;
     bytes extraFormData; // extraFormData
 }
@@ -97,9 +113,9 @@ struct InitMultiVaultData {
     uint256[] superformIds;
     uint256[] amounts;
     uint256[] maxSlippages;
+    LiqRequest[] liqData;
     bool[] hasDstSwaps;
     bool[] retain4626s;
-    LiqRequest[] liqData;
     address receiverAddress;
     bytes extraFormData;
 }
@@ -110,9 +126,9 @@ struct InitSingleVaultData {
     uint256 superformId;
     uint256 amount;
     uint256 maxSlippage;
+    LiqRequest liqData;
     bool hasDstSwap;
     bool retain4626;
-    LiqRequest liqData;
     address receiverAddress;
     bytes extraFormData;
 }

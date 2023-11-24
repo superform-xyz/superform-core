@@ -9,7 +9,7 @@ import { LiquidityHandler } from "src/crosschain-liquidity/LiquidityHandler.sol"
 import { InitSingleVaultData } from "src/types/DataTypes.sol";
 import { BaseForm } from "./BaseFormInterfaceNotSupported.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
 /// @title ERC4626FormImplementation
@@ -65,6 +65,11 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
     /// @inheritdoc BaseForm
     function getTotalAssets() public view virtual override returns (uint256) {
         return IERC4626(vault).totalAssets();
+    }
+
+    /// @inheritdoc BaseForm
+    function getTotalSupply() public view virtual override returns (uint256) {
+        return IERC4626(vault).totalSupply();
     }
 
     /// @inheritdoc BaseForm
@@ -141,7 +146,8 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
                     true,
                     address(this),
                     msg.sender,
-                    address(token)
+                    address(token),
+                    address(0)
                 )
             );
 
@@ -219,7 +225,8 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
                     false,
                     address(this),
                     srcSender,
-                    singleVaultData_.liqData.token
+                    singleVaultData_.liqData.token,
+                    address(0)
                 )
             );
 
@@ -319,7 +326,8 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
                     false,
                     address(this),
                     srcSender,
-                    singleVaultData_.liqData.token
+                    singleVaultData_.liqData.token,
+                    address(0)
                 )
             );
 
@@ -339,7 +347,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         IERC4626 vaultContract = IERC4626(vault);
 
         if (vaultContract.balanceOf(address(this)) < amount_) {
-            revert Error.EMERGENCY_WITHDRAW_INSUFFICIENT_BALANCE();
+            revert Error.INSUFFICIENT_BALANCE();
         }
 
         vaultContract.transfer(refundAddress_, amount_);

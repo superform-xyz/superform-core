@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import { ERC1155A } from "ERC1155A/ERC1155A.sol";
-import { sERC20 } from "ERC1155A/sERC20.sol";
+import { aERC20 } from "ERC1155A/aERC20.sol";
 import {
     TransactionType,
     ReturnMultiData,
@@ -19,7 +19,7 @@ import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
 import { IPaymentHelper } from "./interfaces/IPaymentHelper.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
 /// @title SuperPositions
@@ -32,7 +32,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     //////////////////////////////////////////////////////////////
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
-    bytes32 constant DEPLOY_NEW_SERC20 = keccak256("DEPLOY_NEW_SERC20");
+    bytes32 constant DEPLOY_NEW_AERC20 = keccak256("DEPLOY_NEW_AERC20");
 
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
@@ -47,7 +47,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     /// @dev is the base uri frozen status
     bool public dynamicURIFrozen;
 
-    /// @dev nonce for sERC20 broadcast
+    /// @dev nonce for aERC20 broadcast
     uint256 public xChainPayloadCounter;
 
     //////////////////////////////////////////////////////////////
@@ -133,11 +133,6 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         return super.supportsInterface(interfaceId_);
     }
 
-    /// @notice Used to construct return url
-    function _baseURI() internal view override returns (string memory) {
-        return dynamicURI;
-    }
-
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
@@ -213,7 +208,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         (txType,,,, srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
         /// @dev verify this is a not single vault mint
-        if (multi == 0) revert Error.INVALID_PAYLOAD_TYPE();
+        if (multi != 1) revert Error.INVALID_PAYLOAD_TYPE();
         /// @dev compare final shares beneficiary to be the same (dst/src)
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
         /// @dev compare txType to be the same (dst/src)
@@ -261,7 +256,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         (txType,,,, srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
         /// @dev this is a not multi vault mint
-        if (multi == 1) revert Error.INVALID_PAYLOAD_TYPE();
+        if (multi != 0) revert Error.INVALID_PAYLOAD_TYPE();
 
         /// @dev compare final shares beneficiary to be the same (dst/src)
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
@@ -285,9 +280,10 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     function stateSyncBroadcast(bytes memory data_) external payable override onlyBroadcastRegistry {
         BroadcastMessage memory transmuterPayload = abi.decode(data_, (BroadcastMessage));
 
-        if (transmuterPayload.messageType == DEPLOY_NEW_SERC20) {
-            _deployTransmuter(transmuterPayload.message);
+        if (transmuterPayload.messageType != DEPLOY_NEW_AERC20) {
+            revert Error.INVALID_MESSAGE_TYPE();
         }
+        _deployTransmuter(transmuterPayload.message);
     }
 
     /// @inheritdoc ISuperPositions
@@ -306,6 +302,11 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     //////////////////////////////////////////////////////////////
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
+
+    /// @notice Used to construct return url
+    function _baseURI() internal view override returns (string memory) {
+        return dynamicURI;
+    }
 
     /// @dev helps validate the state registry id for minting superform id
     function _validateStateSyncer(uint256 superformId_) internal view {
@@ -340,18 +341,18 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         }
     }
 
-    function _registerSERC20(uint256 id) internal override returns (address syntheticToken) {
+    function _registerAERC20(uint256 id) internal override returns (address aErc20Token) {
         if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(id)) {
             revert Error.SUPERFORM_ID_NONEXISTENT();
         }
         (address superform,,) = id.getSuperform();
 
         string memory name =
-            string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
-        string memory symbol = string(abi.encodePacked("sERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
+            string(abi.encodePacked("SuperPositions AERC20 ", IBaseForm(superform).superformYieldTokenName()));
+        string memory symbol = string(abi.encodePacked("aERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
         uint8 decimal = uint8(IBaseForm(superform).getVaultDecimals());
-        syntheticToken = address(
-            new sERC20(
+        aErc20Token = address(
+            new aERC20(
                 name,
                 symbol,
                 decimal
@@ -360,22 +361,22 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         /// @dev broadcast and deploy to the other destination chains
         BroadcastMessage memory transmuterPayload = BroadcastMessage(
             "SUPER_POSITIONS",
-            DEPLOY_NEW_SERC20,
+            DEPLOY_NEW_AERC20,
             abi.encode(CHAIN_ID, ++xChainPayloadCounter, id, name, symbol, decimal)
         );
 
         _broadcast(abi.encode(transmuterPayload));
 
-        emit SyntheticTokenRegistered(id, syntheticToken);
+        emit AERC20TokenRegistered(id, aErc20Token);
 
-        return syntheticToken;
+        return aErc20Token;
     }
 
     /// @dev interacts with broadcast state registry to broadcasting state changes to all connected remote chains
     /// @param message_ is the crosschain message to be sent.
     function _broadcast(bytes memory message_) internal {
         (uint256 totalFees, bytes memory extraData) =
-            IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER"))).calculateRegisterTransmuterAMBData();
+            IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER"))).getRegisterTransmuterAMBData();
 
         (uint8 ambId, bytes memory broadcastParams) = abi.decode(extraData, (uint8, bytes));
 
@@ -394,18 +395,18 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     function _deployTransmuter(bytes memory message_) internal {
         (,, uint256 superformId, string memory name, string memory symbol, uint8 decimal) =
             abi.decode(message_, (uint64, uint256, uint256, string, string, uint8));
-        if (synthethicTokenId[superformId] != address(0)) revert SYNTHETIC_ERC20_ALREADY_REGISTERED();
+        if (aErc20TokenId[superformId] != address(0)) revert AERC20_ALREADY_REGISTERED();
 
-        address syntheticToken = address(
-            new sERC20(
+        address aErc20Token = address(
+            new aERC20(
                 name,
                 symbol,
                 decimal
             )
         );
 
-        synthethicTokenId[superformId] = syntheticToken;
+        aErc20TokenId[superformId] = aErc20Token;
 
-        emit SyntheticTokenRegistered(superformId, syntheticToken);
+        emit AERC20TokenRegistered(superformId, aErc20Token);
     }
 }

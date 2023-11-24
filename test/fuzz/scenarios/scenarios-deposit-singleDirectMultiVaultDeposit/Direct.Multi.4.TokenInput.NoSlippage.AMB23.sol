@@ -52,7 +52,7 @@ contract SDiMVDMulti4TokenInputNoSlippageAMB23 is ProtocolActions {
         amountOne_ = uint128(bound(amountOne_, 1 * 10 ** 18, TOTAL_SUPPLY_WETH));
         AMOUNTS[ETH][0] = [amountOne_];
 
-        for (uint256 act; act < actions.length; act++) {
+        for (uint256 act; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

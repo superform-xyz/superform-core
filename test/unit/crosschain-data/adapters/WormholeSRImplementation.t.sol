@@ -5,7 +5,7 @@ import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC11
 
 import "test/utils/BaseSetup.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { IWormhole } from "src/vendor/wormhole/IWormhole.sol";
 import { BroadcastRegistry } from "src/crosschain-data/BroadcastRegistry.sol";
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.23;
 
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import "test/utils/ProtocolActions.sol";
 
 import { ERC1155Holder } from "openzeppelin-contracts/contracts/token/ERC1155/utils/ERC1155Holder.sol";
@@ -129,11 +129,13 @@ contract SuperformRouterAATest is ProtocolActions {
             superformId,
             1e18,
             10_000,
+            /// @dev invalid slippage
+            LiqRequest(
+                _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, ARBI, 0
+            ),
+            "",
             false,
             receive4626_,
-            /// @dev invalid slippage
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), ARBI, 0),
-            "",
             receiveAddress_ ? address(walletDestination) : address(0),
             ""
         );
@@ -270,10 +272,10 @@ contract SuperformRouterAATest is ProtocolActions {
             superformId,
             1e18,
             1000,
-            false,
-            false,
-            LiqRequest(1, txData, getContract(ARBI, "DAI"), liqDstChainId_, 0),
+            LiqRequest(txData, getContract(ARBI, "DAI"), address(0), 1, liqDstChainId_, 0),
             "",
+            false,
+            false,
             liqDstChainId_ != ETH ? scWalletAtLiqDst_ : address(walletDestination),
             ""
         );

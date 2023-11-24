@@ -69,7 +69,7 @@ contract MDMVDMulti102115000NativeSlippageAMB13 is ProtocolActions {
         AMOUNTS[ETH][0] = [amountThree_, amountOne_, amountTwo_];
         AMOUNTS[AVAX][0] = [amountTwo_, amountThree_, amountOne_];
 
-        for (uint256 act; act < actions.length; act++) {
+        for (uint256 act; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

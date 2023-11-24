@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import "test/utils/BaseSetup.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { TransactionType, CallbackType, AMBMessage } from "src/types/DataTypes.sol";
 import { VaaKey, IWormholeRelayer } from "src/vendor/wormhole/IWormholeRelayer.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
@@ -39,6 +39,26 @@ contract WormholeARImplementationTest is BaseSetup {
             abi.encode("")
         );
 
+        vm.prank(deployer);
+        wormholeARImpl.retryPayload(data);
+
+        vm.clearMockedCalls();
+    }
+
+    function test_retryPayloadWithZeroAddress() public {
+        VaaKey memory vaaKey = VaaKey(1, keccak256("test"), 1);
+
+        bytes memory data = abi.encode(vaaKey, 2, 3, 4, address(0));
+
+        vm.mockCall(
+            address(wormholeARImpl.relayer()),
+            abi.encodeWithSelector(
+                IWormholeRelayer(wormholeARImpl.relayer()).resendToEvm.selector, vaaKey, 2, 3, 4, address(0)
+            ),
+            abi.encode("")
+        );
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
         vm.prank(deployer);
         wormholeARImpl.retryPayload(data);
 

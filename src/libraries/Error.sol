@@ -34,6 +34,9 @@ library Error {
     ///@notice errors thrown if functions cannot be called
 
     /// COMMON AUTHORIZATION ERRORS
+    /// @dev thrown if caller is not address(this), internal call
+    error INVALID_INTERNAL_CALL();
+
     /// @dev thrown if msg.sender is not a valid amb implementation
     error NOT_AMB_IMPLEMENTATION();
 
@@ -273,6 +276,9 @@ library Error {
     /// @dev thrown if payload type is invalid
     error INVALID_PAYLOAD_TYPE();
 
+    /// @dev thrown if contract has insufficient balance for operations
+    error INSUFFICIENT_BALANCE();
+
     /// LIQUIDITY BRIDGE EXECUTION ERRORS
     /// @dev thrown if we try to decode the final swap output token in a xChain liquidity bridging action
     error CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
@@ -301,6 +307,9 @@ library Error {
 
     /// @dev thrown if broadcast fee is invalid
     error INVALID_BROADCAST_FEE();
+
+    /// @dev thrown if broadcast message type is wrong
+    error INVALID_MESSAGE_TYPE();
 
     /// @dev thrown if payload hash is invalid during `retryMessage` on Layezero implementation
     error INVALID_PAYLOAD_HASH();
@@ -340,6 +349,9 @@ library Error {
     //////////////////////////////////////////////////////////////*/
 
     /// DST SWAPPER EXECUTION ERRORS
+    /// @dev forbid xChain deposits with destination swaps without interim token set (for user protection)
+    error INVALID_INTERIM_TOKEN();
+
     /// @dev thrown if process dst swap is tried for processed payload id
     error DST_SWAP_ALREADY_PROCESSED();
 
@@ -352,8 +364,14 @@ library Error {
     /// @dev thrown if dst swap output is less than minimum expected
     error INVALID_SWAP_OUTPUT();
 
-    /// @dev thrown if actual amount recieved is less than the ideal amount adjusted with max slippage
-    error MAX_SLIPPAGE_INVARIANT_BROKEN();
+    /// @dev thrown if failed swap token amount is 0
+    error INVALID_DST_SWAPPER_FAILED_SWAP();
+
+    /// @dev thrown if failed swap token amount is not 0 and if token balance is less than amount (non zero)
+    error INVALID_DST_SWAPPER_FAILED_SWAP_NO_TOKEN_BALANCE();
+
+    /// @dev thrown if failed swap token amount is not 0 and if native amount is less than amount (non zero)
+    error INVALID_DST_SWAPPER_FAILED_SWAP_NO_NATIVE_BALANCE();
 
     /// FORM EXECUTION ERRORS
     /// @dev thrown in KYCDAO form if no KYC token is present
@@ -376,8 +394,6 @@ library Error {
     error CHAINLINK_INCOMPLETE_ROUND();
 
     /// EMERGENCY QUEUE EXECUTION ERRORS
-    /// @dev thrown if form has insufficient balance for emergency withdraw
-    error EMERGENCY_WITHDRAW_INSUFFICIENT_BALANCE();
 
     /// @dev thrown if emergency withdraw is not queued
     error EMERGENCY_WITHDRAW_NOT_QUEUED();

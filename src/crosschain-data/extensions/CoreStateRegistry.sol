@@ -17,7 +17,7 @@ import { DataLib } from "../../libraries/DataLib.sol";
 import { ProofLib } from "../../libraries/ProofLib.sol";
 import { ArrayCastLib } from "../../libraries/ArrayCastLib.sol";
 import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
-import { Error } from "../../utils/Error.sol";
+import { Error } from "../../libraries/Error.sol";
 import {
     PayloadState,
     AMBMessage,
@@ -26,9 +26,9 @@ import {
     CallbackType,
     ReturnMultiData,
     ReturnSingleData,
-    InitSingleVaultData
+    InitSingleVaultData,
+    LiqRequest
 } from "../../types/DataTypes.sol";
-import { LiqRequest } from "../../types/LiquidityTypes.sol";
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
 /// @dev enables communication between Superform Core Contracts deployed on all supported networks
@@ -315,6 +315,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
 
+    /// @dev returns a superformAddress
+    function _getSuperform(uint256 superformId_) internal pure returns (address superform) {
+        (superform,,) = superformId_.getSuperform();
+    }
+
     /// @dev returns if an address has a specific role
     function _hasRole(bytes32 id_, address addressToCheck_) internal view returns (bool) {
         return ISuperRBAC(_getAddress(keccak256("SUPER_RBAC"))).hasRole(id_, addressToCheck_);
@@ -481,6 +486,15 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         newPayloadBody_ = abi.encode(singleVaultData);
     }
 
+    function validateSlippage(uint256 finalAmount_, uint256 amount_, uint256 maxSlippage_) public view returns (bool) {
+        // only internal transaction
+        if (msg.sender != address(this)) {
+            revert Error.INVALID_INTERNAL_CALL();
+        }
+
+        return PayloadUpdaterLib.validateSlippage(finalAmount_, amount_, maxSlippage_);
+    }
+
     function _updateAmount(
         IDstSwapper dstSwapper,
         bool hasDstSwap_,
@@ -519,21 +533,52 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         /// @dev validate payload update
         /// @dev validLen may only be increased here in the case where slippage for the update is valid
+        /// @notice we enter this if condition only if there is a valid dstSwap OR if there is just bridging to this
+        /// contract
         if (!failedSwapQueued) {
-            if (PayloadUpdaterLib.validateSlippage(finalAmount_, amount_, maxSlippage_)) {
-                /// @dev sets amount to finalAmount_ and will mark the payload as UPDATED
-                amount_ = finalAmount_;
+            /// if the slippage is within allowed amount && the superform id also exists
+            try this.validateSlippage(finalAmount_, amount_, maxSlippage_) returns (bool valid) {
+                /// @dev in case of a valid slippage check we update the amount to finalAmount_
+                if (valid) {
+                    amount_ = finalAmount_;
+                    /// @dev Mark the payload as UPDATED
+                    finalState_ = PayloadState.UPDATED;
+                }
+            } catch {
+                /// @dev in case of negative slippage we don't update the amount in the user request to the amount
+                /// provided by the keeper
+                /// @notice it remains as the original amount supplied by the user in the original state request
+                /// @notice This means than any difference from the amount provided by the keepeer to the user supplied
+                /// amount will be collected in this contract and remain here
+                /// @notice we consider this to also be validSlippage = true
+                /// @dev Mark the payload as UPDATED
                 finalState_ = PayloadState.UPDATED;
-                ++validLen_;
-            } else {
-                (address superform,,) = superformId_.getSuperform();
+            }
+
+            if (
+                !(
+                    ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId_)
+                        && finalState_ == PayloadState.UPDATED
+                )
+            ) {
                 failedDeposits[payloadId_].superformIds.push(superformId_);
-                failedDeposits[payloadId_].settlementToken.push(IBaseForm(superform).getVaultAsset());
+
+                address asset;
+                try IBaseForm(_getSuperform(superformId_)).getVaultAsset() returns (address asset_) {
+                    asset = asset_;
+                } catch { }
+                /// @dev if superform is invalid, try catch will fail and asset pushed is address (0)
+                /// @notice this means that if a user tries to game the protocol with an invalid superformId, the funds
+                /// bridged over that failed will be stuck here
+                failedDeposits[payloadId_].settlementToken.push(asset);
                 failedDeposits[payloadId_].settleFromDstSwapper.push(false);
 
-                /// @dev sets amount to zero and will mark the payload as PROCESSED
+                /// @dev sets amount to zero and will mark the payload as PROCESSED (overriding the previous memory
+                /// settings)
                 amount_ = 0;
                 finalState_ = PayloadState.PROCESSED;
+            } else {
+                ++validLen_;
             }
         }
 
@@ -613,16 +658,20 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                             false,
                             superform,
                             srcSender_,
-                            multiVaultData_.liqData[i].token
+                            multiVaultData_.liqData[i].token,
+                            address(0)
                         )
                     );
 
-                    uint256 finalAmount = bridgeValidator.decodeAmountIn(txData_[i], false);
-                    PayloadUpdaterLib.strictValidateSlippage(
-                        finalAmount,
-                        IBaseForm(superform).previewRedeemFrom(multiVaultData_.amounts[i]),
-                        multiVaultData_.maxSlippages[i]
-                    );
+                    if (
+                        !PayloadUpdaterLib.validateSlippage(
+                            bridgeValidator.decodeAmountIn(txData_[i], false),
+                            IBaseForm(superform).previewRedeemFrom(multiVaultData_.amounts[i]),
+                            multiVaultData_.maxSlippages[i]
+                        )
+                    ) {
+                        revert Error.SLIPPAGE_OUT_OF_BOUNDS();
+                    }
 
                     multiVaultData_.liqData[i].txData = txData_[i];
                 }
@@ -662,9 +711,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     superformId: multiVaultData.superformIds[i],
                     amount: multiVaultData.amounts[i],
                     maxSlippage: multiVaultData.maxSlippages[i],
+                    liqData: multiVaultData.liqData[i],
                     hasDstSwap: false,
                     retain4626: false,
-                    liqData: multiVaultData.liqData[i],
                     receiverAddress: multiVaultData.receiverAddress,
                     extraFormData: abi.encode(payloadId_, i)
                 }),
@@ -712,11 +761,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         uint256 numberOfVaults = multiVaultData.superformIds.length;
         bool fulfilment;
         bool errors;
-        address superformFactory = _getAddress(keccak256("SUPERFORM_FACTORY"));
         for (uint256 i; i < numberOfVaults; ++i) {
-            if (!ISuperformFactory(superformFactory).isSuperform(multiVaultData.superformIds[i])) {
-                revert Error.SUPERFORM_ID_NONEXISTENT();
-            }
             /// @dev if updating the deposit payload fails because of slippage, multiVaultData.amounts[i] is set to 0
             /// @dev this means that this amount was already added to the failedDeposits state variable and should not
             /// be re-added (or processed here)
@@ -734,9 +779,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                             superformId: multiVaultData.superformIds[i],
                             amount: multiVaultData.amounts[i],
                             maxSlippage: multiVaultData.maxSlippages[i],
+                            liqData: emptyRequest,
                             hasDstSwap: false,
                             retain4626: multiVaultData.retain4626s[i],
-                            liqData: emptyRequest,
                             receiverAddress: multiVaultData.receiverAddress,
                             extraFormData: multiVaultData.extraFormData
                         }),
@@ -838,12 +883,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
 
-        if (!ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(singleVaultData.superformId)) {
-            revert Error.SUPERFORM_ID_NONEXISTENT();
-        }
-
         (address superform_,,) = singleVaultData.superformId.getSuperform();
-
         IERC20 underlying = IERC20(IBaseForm(superform_).getVaultAsset());
 
         if (underlying.balanceOf(address(this)) >= singleVaultData.amount) {
@@ -883,7 +923,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     function _processAck(uint256 payloadId_, uint64 srcChainId_, bytes memory returnMessage_) internal {
         /// @dev if deposits succeeded or some withdrawal failed, dispatch a callback
-        if (returnMessage_.length > 0) {
+        if (returnMessage_.length != 0) {
             uint8[] memory ambIds = msgAMBs[payloadId_];
 
             (, bytes memory extraData) = IPaymentHelper(_getAddress(keccak256("PAYMENT_HELPER"))).calculateAMBData(

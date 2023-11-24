@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.23;
 
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { ICoreStateRegistry } from "src/interfaces/ICoreStateRegistry.sol";
 import "test/utils/ProtocolActions.sol";
 
@@ -135,8 +135,9 @@ contract CoreStateRegistryTest is ProtocolActions {
             1
         );
 
-        liqReqArr[0] =
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), AVAX, 0);
+        liqReqArr[0] = LiqRequest(
+            _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, AVAX, 0
+        );
         liqReqArr[1] = liqReqArr[0];
         liqReqArr[2] = liqReqArr[0];
         liqReqArr[3] = liqReqArr[0];
@@ -145,10 +146,10 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformIds,
             uint256MemArr,
             uint256MemArr,
-            new bool[](4),
-            new bool[](4),
             liqReqArr,
             bytes(""),
+            new bool[](4),
+            new bool[](4),
             receiverAddress,
             bytes("")
         );
@@ -508,7 +509,8 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.clearMockedCalls();
     }
 
-    function test_multiDeposit_inexistentSuperformId() public {
+    /// @dev this test highlights a payload that is failed and cannot be rescued
+    function test_multiDeposit_inexistentSuperformId_PAYLOAD_ALREADY_PROCESSED() public {
         uint8[] memory ambIds_ = new uint8[](2);
         ambIds_[0] = 1;
         ambIds_[1] = 2;
@@ -521,9 +523,6 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.prank(deployer);
         SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
-        vm.prank(deployer);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
-
         vm.mockCall(
             getContract(AVAX, "SuperformFactory"),
             abi.encodeWithSelector(
@@ -531,15 +530,18 @@ contract CoreStateRegistryTest is ProtocolActions {
             ),
             abi.encode(false)
         );
+        vm.prank(deployer);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
 
         vm.prank(deployer);
-        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
+        vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload(1);
 
         vm.clearMockedCalls();
     }
 
-    function test_singleDeposit_inexistentSuperformId() public {
+    /// @dev this test highlights a payload that is failed and cannot be rescued
+    function test_singleDeposit_inexistentSuperformId_PAYLOAD_ALREADY_PROCESSED() public {
         uint8[] memory ambIds_ = new uint8[](2);
         ambIds_[0] = 1;
         ambIds_[1] = 2;
@@ -552,9 +554,6 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.prank(deployer);
         SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
-        vm.prank(deployer);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
-
         vm.mockCall(
             getContract(AVAX, "SuperformFactory"),
             abi.encodeWithSelector(
@@ -564,7 +563,10 @@ contract CoreStateRegistryTest is ProtocolActions {
         );
 
         vm.prank(deployer);
-        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload(1);
 
         vm.clearMockedCalls();
@@ -615,10 +617,12 @@ contract CoreStateRegistryTest is ProtocolActions {
             /// @dev 1e18 after decimal corrections and bridge slippage would give the following value
             999_900_000_000_000_000,
             100,
-            false,
-            false,
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), AVAX, 0),
+            LiqRequest(
+                _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, AVAX, 0
+            ),
             bytes(""),
+            false,
+            false,
             receiverAddress,
             bytes("")
         );
@@ -677,10 +681,10 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            false,
-            false,
-            LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ETH, 0),
+            LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ETH, 0),
             bytes(""),
+            false,
+            false,
             receiverAddress,
             bytes("")
         );
@@ -751,18 +755,19 @@ contract CoreStateRegistryTest is ProtocolActions {
             1
         );
 
-        liqReqArr[0] =
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), AVAX, 0);
+        liqReqArr[0] = LiqRequest(
+            _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, AVAX, 0
+        );
         liqReqArr[1] = liqReqArr[0];
 
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds,
             uint256MemArr,
             uint256MemArr,
-            new bool[](2),
-            new bool[](2),
             liqReqArr,
             bytes(""),
+            new bool[](2),
+            new bool[](2),
             receiverAddress,
             bytes("")
         );
@@ -807,7 +812,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         amountArr[1] = 1e18;
 
         LiqRequest[] memory liqReqArr = new LiqRequest[](2);
-        liqReqArr[0] = LiqRequest(1, bytes(""), getContract(AVAX, "DAI"), ETH, 0);
+        liqReqArr[0] = LiqRequest(bytes(""), getContract(AVAX, "DAI"), address(0), 1, ETH, 0);
         liqReqArr[1] = liqReqArr[0];
 
         uint256[] memory maxSlippages = new uint256[](2);
@@ -818,10 +823,10 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformIds,
             amountArr,
             maxSlippages,
-            new bool[](2),
-            new bool[](2),
             liqReqArr,
             bytes(""),
+            new bool[](2),
+            new bool[](2),
             receiverAddress,
             bytes("")
         );
@@ -891,18 +896,19 @@ contract CoreStateRegistryTest is ProtocolActions {
             1
         );
 
-        liqReqArr[0] =
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), AVAX, 0);
+        liqReqArr[0] = LiqRequest(
+            _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, AVAX, 0
+        );
         liqReqArr[1] = liqReqArr[0];
 
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds,
             uint256MemArr,
             uint256MemArr,
-            new bool[](2),
-            new bool[](2),
             liqReqArr,
             bytes(""),
+            new bool[](2),
+            new bool[](2),
             receiverAddress,
             bytes("")
         );

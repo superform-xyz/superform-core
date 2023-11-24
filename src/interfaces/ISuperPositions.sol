@@ -18,8 +18,8 @@ interface ISuperPositions is IERC1155A {
     /// @dev is emitted when a cross-chain transaction is completed.
     event Completed(uint256 txId);
 
-    /// @dev is emitted when a synthetic token is registered
-    event SyntheticTokenRegistered(uint256 indexed tokenId, address indexed tokenAddress);
+    /// @dev is emitted when a aErc20 token is registered
+    event AERC20TokenRegistered(uint256 indexed tokenId, address indexed tokenAddress);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //

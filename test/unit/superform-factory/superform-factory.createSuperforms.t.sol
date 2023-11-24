@@ -5,9 +5,15 @@ import { SuperformFactory } from "src/SuperformFactory.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
 import { ERC4626FormInterfaceNotSupported } from "test/mocks/InterfaceNotSupported/ERC4626InterFaceNotSupported.sol";
 import "test/utils/BaseSetup.sol";
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 
 import { DataLib } from "src/libraries/DataLib.sol";
+
+contract ZeroAssetVault {
+    function asset() external pure returns (address) {
+        return address(0);
+    }
+}
 
 contract SuperformFactoryCreateSuperformTest is BaseSetup {
     uint64 internal chainId = ETH;
@@ -64,7 +70,7 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         /// @dev Testing Coss Chain Superform Deployments
         vars.transformedChainIds_ = new uint256[](vars.chainIds_.length);
 
-        for (uint256 j; j < vars.chainIds_.length; j++) {
+        for (uint256 j; j < vars.chainIds_.length; ++j) {
             vars.transformedChainIds_[j] = uint256(vars.chainIds_[j]);
         }
 
@@ -202,5 +208,12 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
         SuperformFactory(getContract(chainId, "SuperformFactory")).getSuperform(superformId);
+    }
+
+    function test_initializeWithZeroAddressAsset() public {
+        vm.selectFork(FORKS[chainId]);
+        address zeroAssetVault = address(new ZeroAssetVault());
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(1, zeroAssetVault);
     }
 }

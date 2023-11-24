@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.23;
 
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
 import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
 
@@ -28,7 +28,7 @@ contract SocketValidator is BridgeValidator {
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc BridgeValidator
-    function validateTxData(ValidateTxDataArgs calldata args_) external view override {
+    function validateTxData(ValidateTxDataArgs calldata args_) external view override returns (bool hasDstSwap) {
         ISocketRegistry.UserRequest memory decodedReq = _decodeTxData(args_.txData);
 
         /// @dev 1. chain id validation (only allow xChain with this)
@@ -39,16 +39,24 @@ contract SocketValidator is BridgeValidator {
             if (args_.srcChainId == args_.dstChainId) {
                 revert Error.INVALID_ACTION();
             } else {
+                hasDstSwap = decodedReq.receiverAddress
+                    == superRegistry.getAddressByChainId(keccak256("DST_SWAPPER"), args_.dstChainId);
+
                 /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry (or) Dst Swapper
                 if (
                     !(
                         decodedReq.receiverAddress
                             == superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY"), args_.dstChainId)
-                            || decodedReq.receiverAddress
-                                == superRegistry.getAddressByChainId(keccak256("DST_SWAPPER"), args_.dstChainId)
+                            || hasDstSwap
                     )
                 ) {
                     revert Error.INVALID_TXDATA_RECEIVER();
+                }
+
+                /// @dev forbid xChain deposits with destination swaps without interim token set (for user
+                /// protection)
+                if (hasDstSwap && args_.liqDataInterimToken == address(0)) {
+                    revert Error.INVALID_INTERIM_TOKEN();
                 }
             }
         } else {

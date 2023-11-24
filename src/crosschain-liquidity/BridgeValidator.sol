@@ -38,7 +38,12 @@ abstract contract BridgeValidator is IBridgeValidator {
         returns (bool valid_);
 
     /// @inheritdoc IBridgeValidator
-    function validateTxData(ValidateTxDataArgs calldata args_) external view virtual override;
+    function validateTxData(ValidateTxDataArgs calldata args_)
+        external
+        view
+        virtual
+        override
+        returns (bool hasDstSwap);
 
     /// @inheritdoc IBridgeValidator
     function decodeAmountIn(

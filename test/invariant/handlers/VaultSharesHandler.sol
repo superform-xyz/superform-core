@@ -157,7 +157,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
             externalToken: inputToken
         });
 
-        for (uint256 act = 0; act < v.actionsMem.length; act++) {
+        for (uint256 act = 0; act < v.actionsMem.length; ++act) {
             v.singleAction = v.actionsMem[act];
 
             /// @dev this is per destination (hardcoding 1 here)
@@ -270,7 +270,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
             externalToken: inputToken
         });
 
-        for (uint256 act = 0; act < v.actionsMem.length; act++) {
+        for (uint256 act = 0; act < v.actionsMem.length; ++act) {
             v.singleAction = v.actionsMem[act];
 
             /// @dev this is per destination (hardcoding 1 here)
@@ -320,25 +320,25 @@ contract VaultSharesHandler is InvariantProtocolActions {
     function _initHandler(InitHandlerSetupVars memory vars) internal {
         mapping(uint64 => uint256) storage forks = FORKS;
 
-        for (uint256 i = 0; i < vars.chainIds.length; i++) {
+        for (uint256 i = 0; i < vars.chainIds.length; ++i) {
             forks[vars.chainIds[i]] = vars.forksArray[i];
         }
         _preDeploymentSetup();
 
-        for (uint256 i = 0; i < vars.chainIds.length; i++) {
-            for (uint256 j = 0; j < vars.contractNames.length; j++) {
+        for (uint256 i = 0; i < vars.chainIds.length; ++i) {
+            for (uint256 j = 0; j < vars.contractNames.length; ++j) {
                 contracts[vars.chainIds[i]][bytes32(bytes(vars.contractNames[j]))] = vars.coreContracts[i][j];
             }
 
-            for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
+            for (uint256 j = 0; j < UNDERLYING_TOKENS.length; ++j) {
                 contracts[vars.chainIds[i]][bytes32(bytes(UNDERLYING_TOKENS[j]))] = vars.underlyingAddresses[i][j];
             }
 
-            for (uint256 j = 0; j < FORM_IMPLEMENTATION_IDS.length; j++) {
+            for (uint256 j = 0; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
                 uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
                 uint256 counter;
 
-                for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
+                for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
                     for (uint256 l = 0; l < lenBytecodes; l++) {
                         contracts[vars.chainIds[i]][bytes32(bytes(VAULT_NAMES[l][k]))] =
                             vars.vaultAddresses[i][j][counter];
@@ -391,7 +391,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
 
         mapping(uint64 => uint16) storage wormholeChainIdsStorage = WORMHOLE_CHAIN_IDS;
 
-        for (uint256 i = 0; i < chainIds.length; i++) {
+        for (uint256 i = 0; i < chainIds.length; ++i) {
             wormholeChainIdsStorage[chainIds[i]] = wormhole_chainIds[i];
         }
 
@@ -487,8 +487,8 @@ contract VaultSharesHandler is InvariantProtocolActions {
 
         /// @dev populate VAULT_NAMES state arg with tokenNames + vaultKinds names
         string[] memory underlyingTokens = UNDERLYING_TOKENS;
-        for (uint256 i = 0; i < VAULT_KINDS.length; i++) {
-            for (uint256 j = 0; j < underlyingTokens.length; j++) {
+        for (uint256 i = 0; i < VAULT_KINDS.length; ++i) {
+            for (uint256 j = 0; j < underlyingTokens.length; ++j) {
                 VAULT_NAMES[i].push(string.concat(underlyingTokens[j], VAULT_KINDS[i]));
             }
         }
@@ -573,8 +573,8 @@ contract VaultSharesHandler is InvariantProtocolActions {
 
         IERC1155A superPositions = IERC1155A(superPositionsAddress);
 
-        for (uint256 i = 0; i < superformIds.length; i++) {
-            for (uint256 j = 0; j < users.length; j++) {
+        for (uint256 i = 0; i < superformIds.length; ++i) {
+            for (uint256 j = 0; j < users.length; ++j) {
                 superPositionBalances[i] += superPositions.balanceOf(users[j], superformIds[i]);
             }
         }
@@ -590,7 +590,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
         returns (uint256 superPositionsSum_)
     {
         /// @dev sum up superposition owned by all users on all chains
-        for (uint256 i = 0; i < chainIds.length; i++) {
+        for (uint256 i = 0; i < chainIds.length; ++i) {
             uint256[] memory superPositions = _getSuperpositionsForDstChainFromSrcChain(
                 underlyingTokens_, vaultIds_, formKinds_, chainIds[i], dstChain
             );

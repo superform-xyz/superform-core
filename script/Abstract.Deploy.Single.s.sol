@@ -32,7 +32,7 @@ import { PaymentHelper } from "src/payments/PaymentHelper.sol";
 import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
-import { EmergencyQueue } from "src/emergency/EmergencyQueue.sol";
+import { EmergencyQueue } from "src/EmergencyQueue.sol";
 import { generateBroadcastParams } from "test/utils/AmbParams.sol";
 
 struct SetupVars {
@@ -823,7 +823,7 @@ abstract contract AbstractDeploySingle is Script {
             )
         );
 
-        PaymentHelper(payable(vars.paymentHelper)).updateRegisterSERC20Params(0, generateBroadcastParams(5, 1));
+        PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(0, generateBroadcastParams(5, 1));
 
         vars.superRegistryC.setAddress(
             vars.superRegistryC.SUPERFORM_ROUTER(),

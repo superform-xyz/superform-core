@@ -62,7 +62,7 @@ contract MDSVDNormal4626RevertNoTokenInputSlippageAMB1RepeatingDstMultiAmb is Pr
         AMOUNTS[ARBI][0] = [amountOne_];
         AMOUNTS[ETH][0] = [amountTwo_];
 
-        for (uint256 act; act < actions.length; act++) {
+        for (uint256 act; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

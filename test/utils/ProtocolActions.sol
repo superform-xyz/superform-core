@@ -10,7 +10,6 @@ import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.so
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
-import { Error } from "src/utils/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
 abstract contract ProtocolActions is CommonProtocolActions {
@@ -340,7 +339,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         ) revert MISMATCH_RBAC_TEST();
 
         /// @dev detects the index of originating chain
-        for (uint256 i = 0; i < chainIds.length; i++) {
+        for (uint256 i = 0; i < chainIds.length; ++i) {
             if (CHAIN_0 == chainIds[i]) {
                 vars.chain0Index = i;
                 break;
@@ -363,8 +362,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
         }
 
         /// @dev in each destination we want to build our request data
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
-            for (uint256 j = 0; j < chainIds.length; j++) {
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
+            for (uint256 j = 0; j < chainIds.length; ++j) {
                 if (DST_CHAINS[i] == chainIds[j]) {
                     vars.chainDstIndex = j;
                     break;
@@ -387,7 +386,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             /// this case, if action is cross chain withdraw, user can select to receive a different kind of underlying
             /// from source
             /// @dev if action is cross-chain deposit, destination for liquidity is coreStateRegistry
-            for (uint256 k = 0; k < vars.targetSuperformIds.length; k++) {
+            for (uint256 k = 0; k < vars.targetSuperformIds.length; ++k) {
                 if (CHAIN_0 == DST_CHAINS[i] || (action.action == Actions.Withdraw && CHAIN_0 != DST_CHAINS[i])) {
                     (vars.superformT,,) = vars.targetSuperformIds[k].getSuperform();
                     vars.toDst[k] = payable(vars.superformT);
@@ -760,7 +759,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
     {
         Stage3InternalVars memory internalVars;
 
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
             /// @dev if payloadNumber is = 0 still it means uniqueDst has not been found yet (1 repetition)
             if (usedDSTs[DST_CHAINS[i]].payloadNumber == 0) {
                 /// @dev NOTE: re-set struct to null to reset repetitions for multi action
@@ -789,8 +788,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
         internalVars.forkIds = new uint256[](vars.nUniqueDsts);
 
         internalVars.k = 0;
-        for (uint256 i = 0; i < chainIds.length; i++) {
-            for (uint256 j = 0; j < vars.nUniqueDsts; j++) {
+        for (uint256 i = 0; i < chainIds.length; ++i) {
+            for (uint256 j = 0; j < vars.nUniqueDsts; ++j) {
                 if (uniqueDSTs[j] == chainIds[i] && chainIds[i] != CHAIN_0) {
                     internalVars.toMailboxes[internalVars.k] = hyperlaneMailboxes[i];
                     internalVars.expDstDomains[internalVars.k] = hyperlane_chainIds[i];
@@ -804,7 +803,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     internalVars.expDstChainAddresses[internalVars.k] =
                         getContract(chainIds[i], "WormholeARImplementation");
 
-                    internalVars.k++;
+                    ++internalVars.k;
                 }
             }
         }
@@ -851,7 +850,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         CoreStateRegistry stateRegistry;
         /// @dev assert good delivery of message on destination by analyzing superformIds and mounts
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
             aV[i].toChainId = DST_CHAINS[i];
             if (usedDSTs[aV[i].toChainId].nRepetitions == 0) {
                 usedDSTs[aV[i].toChainId].nRepetitions = usedDSTs[aV[i].toChainId].payloadNumber;
@@ -887,7 +886,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             }
         }
 
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
             usedDSTs[DST_CHAINS[i]].payloadNumber = usedDSTs[DST_CHAINS[i]].nRepetitions;
         }
 
@@ -907,7 +906,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
     {
         success = true;
         if (!sameChainDstHasRevertingVault) {
-            for (uint256 i = 0; i < vars.nDestinations; i++) {
+            for (uint256 i = 0; i < vars.nDestinations; ++i) {
                 aV[i].toChainId = DST_CHAINS[i];
                 if (CHAIN_0 != aV[i].toChainId) {
                     vm.selectFork(FORKS[aV[i].toChainId]);
@@ -956,7 +955,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                                     vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
 
                                     vars.underlyingWith0Slippages = new uint256[](vars.amounts.length);
-                                    for (uint256 j = 0; j < vars.amounts.length; j++) {
+                                    for (uint256 j = 0; j < vars.amounts.length; ++j) {
                                         vars.underlyingWith0Slippages[j] = _updateAmountWithPricedSwapsAndSlippage(
                                             AMOUNTS[DST_CHAINS[i]][actionIndex][j],
                                             0,
@@ -1098,7 +1097,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vm.selectFork(FORKS[CHAIN_0]);
 
         uint256 toChainId;
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
             toChainId = DST_CHAINS[i];
 
             if (CHAIN_0 != toChainId) {
@@ -1139,7 +1138,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         uint256 toChainId;
 
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
             toChainId = DST_CHAINS[i];
 
             if (CHAIN_0 != toChainId) {
@@ -1170,7 +1169,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint256 initialFork;
         uint256 currentUnlockId;
 
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
             if (countTimelocked[i] > 0) {
                 initialFork = vm.activeFork();
 
@@ -1250,7 +1249,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         success = true;
         vm.selectFork(FORKS[CHAIN_0]);
 
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
             if (CHAIN_0 != DST_CHAINS[i] && revertingWithdrawTimelockedSFs[i].length > 0) {
                 IBaseStateRegistry timelockStateRegistry =
                     IBaseStateRegistry(contracts[CHAIN_0][bytes32(bytes("TimelockStateRegistry"))]);
@@ -1521,7 +1520,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         if (len == 0) revert LEN_MISMATCH();
         uint256[] memory finalAmounts = new uint256[](len);
         uint256[] memory maxSlippageTemp = new uint256[](len);
-        for (uint256 i = 0; i < len; i++) {
+        for (uint256 i = 0; i < len; ++i) {
             finalAmounts[i] = args.amounts[i];
 
             /// @dev FOR TESTING AND MAINNET:: in sameChain actions, slippage is encoded in the request with the amount
@@ -1590,7 +1589,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         bool[] memory hasDstSwap = new bool[](args.superformIds.length);
 
         if (args.dstSwap) {
-            for (uint256 i; i < hasDstSwap.length; i++) {
+            for (uint256 i; i < hasDstSwap.length; ++i) {
                 hasDstSwap[i] = true;
             }
         }
@@ -1599,10 +1598,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
             args.superformIds,
             finalAmounts,
             maxSlippageTemp,
-            hasDstSwap,
-            args.receive4626,
             liqRequests,
             v.permit2data,
+            hasDstSwap,
+            args.receive4626,
             users[args.user],
             abi.encode(args.partialWithdrawVaults)
         );
@@ -1699,8 +1698,15 @@ abstract contract ProtocolActions is CommonProtocolActions {
         }
 
         /// @dev the actual liq request struct inscription
+        /// @notice adding dummy liqRequestToken as interim token if there is dstSwap because we are not
+        /// @notice testing failed deposits here
         v.liqReq = LiqRequest(
-            args.liqBridge, v.txData, liqRequestToken, args.toChainId, liqRequestToken == NATIVE_TOKEN ? args.amount : 0
+            v.txData,
+            liqRequestToken,
+            args.dstSwap ? args.underlyingTokenDst : address(0),
+            args.liqBridge,
+            args.toChainId,
+            liqRequestToken == NATIVE_TOKEN ? args.amount : 0
         );
 
         if (liqRequestToken != NATIVE_TOKEN) {
@@ -1773,10 +1779,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
             args.superformId,
             v.amount,
             args.maxSlippage,
-            args.dstSwap,
-            args.receive4626,
             v.liqReq,
             v.permit2Calldata,
+            args.dstSwap,
+            args.receive4626,
             users[args.user],
             abi.encode(false)
         );
@@ -1867,11 +1873,13 @@ abstract contract ProtocolActions is CommonProtocolActions {
             TX_DATA_TO_UPDATE_ON_DST[args.toChainId].push(vars.txData);
         }
 
+        /// @notice no interim token supplied as this is a withdraw
         vars.liqReq = LiqRequest(
-            args.liqBridge,
             GENERATE_WITHDRAW_TX_DATA_ON_DST ? bytes("") : vars.txData,
             /// @dev for certain test cases, insert txData as null here
             args.underlyingTokenDst,
+            address(0),
+            args.liqBridge,
             args.liqDstChainId,
             0
         );
@@ -1882,10 +1890,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
             args.superformId,
             args.amount,
             args.maxSlippage,
-            args.dstSwap,
-            args.receive4626,
             vars.liqReq,
             "",
+            args.dstSwap,
+            args.receive4626,
             users[args.user],
             abi.encode(args.partialWithdrawVault)
         );
@@ -1940,7 +1948,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vaultMocksMem = new address[](vars.len);
 
         /// @dev this loop assigns the information in the correct output arrays the best way possible
-        for (uint256 i = 0; i < vars.len; i++) {
+        for (uint256 i = 0; i < vars.len; ++i) {
             vars.underlyingToken = UNDERLYING_TOKENS[vars.underlyingTokens[i]]; // 1
 
             targetSuperformsMem[i] = vars.superformIdsTemp[i];
@@ -1970,7 +1978,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         delete revertingWithdrawTimelockedSFsPerDst;
 
         /// @dev detects timelocked forms in scenario and counts them
-        for (uint256 j; j < vars.formKinds.length; j++) {
+        for (uint256 j; j < vars.formKinds.length; ++j) {
             if (vars.formKinds[j] == 1) ++countTimelocked[dst];
             // 0 1 1
             // j = 1
@@ -1998,7 +2006,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         /// @dev obtains superform addresses through string concatenation, notice what is done in BaseSetup to save
         /// these in contracts mapping
-        for (uint256 i = 0; i < vaultIds_.length; i++) {
+        for (uint256 i = 0; i < vaultIds_.length; ++i) {
             address superform = getContract(
                 chainId_,
                 string.concat(
@@ -2035,7 +2043,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         IERC1155A superPositions = IERC1155A(superPositionsAddress);
 
-        for (uint256 i = 0; i < superformIds.length; i++) {
+        for (uint256 i = 0; i < superformIds.length; ++i) {
             superPositionBalances[i] = superPositions.balanceOf(users[user], superformIds[i]);
         }
     }
@@ -2058,11 +2066,11 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         IERC1155A superPositions = IERC1155A(superPositionsAddress);
 
-        for (uint256 i = 0; i < superformIds.length; i++) {
+        for (uint256 i = 0; i < superformIds.length; ++i) {
             vm.selectFork(FORKS[CHAIN_0]);
             uint256 nRepetitions;
 
-            for (uint256 j = 0; j < superformIds.length; j++) {
+            for (uint256 j = 0; j < superformIds.length; ++j) {
                 if (superformIds[i] == superformIds[j]) {
                     ++nRepetitions;
                 }
@@ -2084,7 +2092,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         int256 dstSwapSlippage;
 
-        for (uint256 i = 0; i < len; i++) {
+        for (uint256 i = 0; i < len; ++i) {
             finalAmounts[i] = args.amounts[i];
             if (args.slippage > 0) {
                 /// @dev bridge slippage is already applied in _buildSingleVaultDepositCallData()
@@ -2358,12 +2366,12 @@ abstract contract ProtocolActions is CommonProtocolActions {
         bytes[] memory txDatas = new bytes[](underlyingTokensDst_.length);
 
         /// @dev replace socket bridge with socket one inch impl for dst swap
-        for (uint256 i; i < liqBridgeKinds_.length; i++) {
+        for (uint256 i; i < liqBridgeKinds_.length; ++i) {
             if (liqBridgeKinds_[i] == 2) liqBridgeKinds_[i] = 3;
         }
 
         /// @dev liqData is rebuilt here to perform to send the tokens from dstSwapProcessor to CoreStateRegistry
-        for (uint256 i = 0; i < underlyingTokensDst_.length; i++) {
+        for (uint256 i = 0; i < underlyingTokensDst_.length; ++i) {
             txDatas[i] = _buildLiqBridgeTxDataDstSwap(
                 liqBridgeKinds_[i],
                 underlyingTokensDst_[i],
@@ -2379,7 +2387,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         uint256[] memory indices = new uint256[](amounts_.length);
 
-        for (uint256 i; i < amounts_.length; i++) {
+        for (uint256 i; i < amounts_.length; ++i) {
             indices[i] = i;
         }
 
@@ -2390,7 +2398,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
     }
 
     function _payloadDeliveryHelper(uint64 FROM_CHAIN, uint64 TO_CHAIN, Vm.Log[] memory logs) internal {
-        for (uint256 i; i < AMBs.length; i++) {
+        for (uint256 i; i < AMBs.length; ++i) {
             /// @notice ID: 1 Layerzero
             if (AMBs[i] == 1) {
                 LayerZeroHelper(getContract(TO_CHAIN, "LayerZeroHelper")).helpWithEstimates(
@@ -2434,22 +2442,22 @@ abstract contract ProtocolActions is CommonProtocolActions {
         amountsToRemintPerDst = new uint256[][](vars.nDestinations);
 
         uint256[] memory amountsToRemint;
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
             if (action.multiVaults) {
                 amountsToRemint = new uint256[](
                     multiSuperformsData[i].superformIds.length
                 );
 
-                for (uint256 j = 0; j < multiSuperformsData[i].superformIds.length; j++) {
+                for (uint256 j = 0; j < multiSuperformsData[i].superformIds.length; ++j) {
                     amountsToRemint[j] = multiSuperformsData[i].amounts[j];
                     bool found = false;
-                    for (uint256 k = 0; k < revertingWithdrawTimelockedSFs[i].length; k++) {
+                    for (uint256 k = 0; k < revertingWithdrawTimelockedSFs[i].length; ++k) {
                         if (revertingWithdrawTimelockedSFs[i][k] == multiSuperformsData[i].superformIds[j]) {
                             found = true;
                             break;
                         }
                     }
-                    for (uint256 k = 0; k < revertingWithdrawSFs[i].length; k++) {
+                    for (uint256 k = 0; k < revertingWithdrawSFs[i].length; ++k) {
                         if (revertingWithdrawSFs[i][k] == multiSuperformsData[i].superformIds[j]) {
                             found = true;
                             break;
@@ -2465,13 +2473,13 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 amountsToRemint[0] = singleSuperformsData[i].amount;
                 bool found;
 
-                for (uint256 k = 0; k < revertingWithdrawTimelockedSFs[i].length; k++) {
+                for (uint256 k = 0; k < revertingWithdrawTimelockedSFs[i].length; ++k) {
                     if (revertingWithdrawTimelockedSFs[i][k] == singleSuperformsData[i].superformId) {
                         found = true;
                         break;
                     }
                 }
-                for (uint256 k = 0; k < revertingWithdrawSFs[i].length; k++) {
+                for (uint256 k = 0; k < revertingWithdrawSFs[i].length; ++k) {
                     if (revertingWithdrawSFs[i][k] == singleSuperformsData[i].superformId) {
                         found = true;
                         break;
@@ -2498,17 +2506,17 @@ abstract contract ProtocolActions is CommonProtocolActions {
         amountsToRemintPerDst = new uint256[][](vars.nDestinations);
 
         uint256[] memory amountsToRemint;
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
             if (action.multiVaults) {
                 amountsToRemint = new uint256[](
                     multiSuperformsData[i].superformIds.length
                 );
 
-                for (uint256 j = 0; j < multiSuperformsData[i].superformIds.length; j++) {
+                for (uint256 j = 0; j < multiSuperformsData[i].superformIds.length; ++j) {
                     amountsToRemint[j] = multiSuperformsData[i].amounts[j];
                     bool found = false;
 
-                    for (uint256 k = 0; k < revertingWithdrawSFs[i].length; k++) {
+                    for (uint256 k = 0; k < revertingWithdrawSFs[i].length; ++k) {
                         if (revertingWithdrawSFs[i][k] == multiSuperformsData[i].superformIds[j]) {
                             found = true;
                             break;
@@ -2524,7 +2532,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 amountsToRemint[0] = singleSuperformsData[i].amount;
                 bool found;
 
-                for (uint256 k = 0; k < revertingWithdrawSFs[i].length; k++) {
+                for (uint256 k = 0; k < revertingWithdrawSFs[i].length; ++k) {
                     if (revertingWithdrawSFs[i][k] == singleSuperformsData[i].superformId) {
                         found = true;
                         break;
@@ -2571,7 +2579,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         mapping(uint256 => uint256) storage amounts = NON_DUPLICATE_ASSERT_AMOUNTS;
 
         // 1. Populate the amounts mapping (for managing duplicates)
-        for (uint256 i = 0; i < superformIds.length; i++) {
+        for (uint256 i = 0; i < superformIds.length; ++i) {
             (address superform,, uint64 chainId) = DataLib.getSuperform(superformIds[i]);
             vm.selectFork(FORKS[chainId]);
             v.decimal1 = ERC4626Form(payable(superform)).getVaultDecimals();
@@ -2595,7 +2603,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         vm.selectFork(FORKS[CHAIN_0]);
         // 2. Perform your assertion logic
-        for (uint256 i = 0; i < superformIds.length; i++) {
+        for (uint256 i = 0; i < superformIds.length; ++i) {
             v.currentAmount = amounts[superformIds[i]];
             v.currentBalanceOfSp = superPositions.balanceOf(users[user], superformIds[i]);
             v.partialWithdraw = (partialWithdrawVaults.length > i) && partialWithdrawVaults[i];
@@ -2614,7 +2622,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         }
 
         // 3. Clear the amounts mapping (for saving gas)
-        for (uint256 i = 0; i < superformIds.length; i++) {
+        for (uint256 i = 0; i < superformIds.length; ++i) {
             delete amounts[superformIds[i]];
         }
     }
@@ -2712,14 +2720,14 @@ abstract contract ProtocolActions is CommonProtocolActions {
         //int256 dstSwapSlippage;
 
         /// @dev create an array of amounts summing the amounts of the same superform ids
-        for (v.i = 0; v.i < v.lenSuperforms; v.i++) {
+        for (v.i = 0; v.i < v.lenSuperforms; ++v.i) {
             totalSpAmount += args.multiSuperformsData.amounts[v.i];
-            for (v.j = 0; v.j < v.lenSuperforms; v.j++) {
+            for (v.j = 0; v.j < v.lenSuperforms; ++v.j) {
                 v.foundRevertingDeposit = false;
 
                 /// @dev find if a superform is a reverting
                 if (args.lenRevertDeposit > 0) {
-                    for (v.k = 0; v.k < args.lenRevertDeposit; v.k++) {
+                    for (v.k = 0; v.k < args.lenRevertDeposit; ++v.k) {
                         v.foundRevertingDeposit =
                             revertingDepositSFs[args.dstIndex][v.k] == args.multiSuperformsData.superformIds[v.i];
                         if (v.foundRevertingDeposit) break;
@@ -2770,15 +2778,15 @@ abstract contract ProtocolActions is CommonProtocolActions {
             /// @dev create an array of amounts summing the amounts of the same superform ids
             bool foundRevertingWithdraw;
             bool foundRevertingWithdrawTimelocked;
-            for (uint256 i = 0; i < lenSuperforms; i++) {
+            for (uint256 i = 0; i < lenSuperforms; ++i) {
                 spAmountFinal[i] = currentSPBeforeWithdaw[i];
 
-                for (uint256 j = 0; j < lenSuperforms; j++) {
+                for (uint256 j = 0; j < lenSuperforms; ++j) {
                     foundRevertingWithdraw = false;
                     foundRevertingWithdrawTimelocked = false;
 
                     if (lenRevertWithdraw > 0) {
-                        for (uint256 k = 0; k < lenRevertWithdraw; k++) {
+                        for (uint256 k = 0; k < lenRevertWithdraw; ++k) {
                             foundRevertingWithdraw =
                                 revertingWithdrawSFs[dstIndex][k] == multiSuperformsData.superformIds[i];
                             if (foundRevertingWithdraw) break;
@@ -2786,7 +2794,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     }
 
                     if (lenRevertWithdrawTimelocked > 0) {
-                        for (uint256 k = 0; k < lenRevertWithdrawTimelocked; k++) {
+                        for (uint256 k = 0; k < lenRevertWithdrawTimelocked; ++k) {
                             foundRevertingWithdrawTimelocked =
                                 revertingWithdrawTimelockedSFs[dstIndex][k] == multiSuperformsData.superformIds[i];
                             if (foundRevertingWithdrawTimelocked) break;
@@ -2828,21 +2836,21 @@ abstract contract ProtocolActions is CommonProtocolActions {
         bool foundRevertingWithdraw;
         bool foundRevertingWithdrawTimelocked;
 
-        for (uint256 i = 0; i < lenSuperforms; i++) {
+        for (uint256 i = 0; i < lenSuperforms; ++i) {
             spAmountFinal[i] = currentSPBeforeWithdaw[i];
-            for (uint256 j = 0; j < lenSuperforms; j++) {
+            for (uint256 j = 0; j < lenSuperforms; ++j) {
                 foundRevertingWithdraw = false;
                 foundRevertingWithdrawTimelocked = false;
 
                 if (lenRevertWithdraw > 0) {
-                    for (uint256 k = 0; k < lenRevertWithdraw; k++) {
+                    for (uint256 k = 0; k < lenRevertWithdraw; ++k) {
                         foundRevertingWithdraw =
                             revertingWithdrawSFs[dstIndex][k] == multiSuperformsData.superformIds[i];
                         if (foundRevertingWithdraw) break;
                     }
                 }
                 if (lenRevertWithdrawTimelocked > 0) {
-                    for (uint256 k = 0; k < lenRevertWithdrawTimelocked; k++) {
+                    for (uint256 k = 0; k < lenRevertWithdrawTimelocked; ++k) {
                         foundRevertingWithdrawTimelocked =
                             revertingWithdrawTimelockedSFs[dstIndex][k] == multiSuperformsData.superformIds[i];
                         if (foundRevertingWithdrawTimelocked) break;
@@ -2884,10 +2892,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         /// @dev create an array of amounts summing the amounts of the same superform ids
 
-        for (uint256 i = 0; i < lenSuperforms; i++) {
+        for (uint256 i = 0; i < lenSuperforms; ++i) {
             spAmountFinal[i] = currentSPBeforeWithdaw[i];
 
-            for (uint256 j = 0; j < lenSuperforms; j++) {
+            for (uint256 j = 0; j < lenSuperforms; ++j) {
                 /// @dev if repeated and number of failed is 0, decrease
                 if (
                     multiSuperformsData.superformIds[i] == multiSuperformsData.superformIds[j]
@@ -2931,7 +2939,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             v.spAmountSummedPerDst;
             spAmountSummed = new uint256[][](vars.nDestinations);
 
-            for (uint256 i = 0; i < vars.nDestinations; i++) {
+            for (uint256 i = 0; i < vars.nDestinations; ++i) {
                 v.partialWithdrawVaults = abi.decode(multiSuperformsData[i].extraFormData, (bool[]));
                 /// @dev obtain amounts to assert
                 (emptyAmount, v.spAmountSummedPerDst,) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
@@ -2962,7 +2970,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             spAmountBeforeWithdrawPerDestination = new uint256[](
                 vars.nDestinations
             );
-            for (uint256 i = 0; i < vars.nDestinations; i++) {
+            for (uint256 i = 0; i < vars.nDestinations; ++i) {
                 (v.superform,,) = singleSuperformsData[i].superformId.getSuperform();
                 v.partialWithdrawVault = abi.decode(singleSuperformsData[i].extraFormData, (bool));
                 vm.selectFork(FORKS[DST_CHAINS[i]]);
@@ -3009,7 +3017,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         address token;
         bool foundRevertingDeposit;
 
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
             uint256 repetitions = usedDSTs[DST_CHAINS[i]].nRepetitions;
             lenRevertDeposit = 0;
             if (revertingDepositSFs.length > 0) {
@@ -3104,7 +3112,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         assertLe(getContract(CHAIN_0, "PayMaster").balance, msgValue - liqValue);
 
         uint256 bridgesNativeBal;
-        for (uint256 i; i < 3; i++) {
+        for (uint256 i; i < 3; ++i) {
             /// asserting balance of lifi mock || socket mock || socket oneinch mock
             address addressToCheck = i == 1
                 ? getContract(CHAIN_0, "LiFiMock")
@@ -3139,7 +3147,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         AssertAfterWithdrawVars memory v;
 
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
             v.sameDst = CHAIN_0 == DST_CHAINS[i];
             v.lenRevertWithdraw = 0;
             v.lenRevertWithdrawTimelocked = 0;
@@ -3221,7 +3229,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         AssertAfterWithdrawVars memory v;
 
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
             v.sameDst = CHAIN_0 == DST_CHAINS[i];
             v.lenRevertWithdraw = 0;
             v.lenRevertWithdrawTimelocked = 0;
@@ -3316,7 +3324,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         bool partialWithdrawVault;
         bool[] memory partialWithdrawVaults;
 
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
             if (action.multiVaults && amountsToRemintPerDst[i].length > 0) {
                 partialWithdrawVaults = abi.decode(multiSuperformsData[i].extraFormData, (bool[]));
                 /// @dev obtain amounts to assert
@@ -3371,7 +3379,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         AssertAfterTimelockFailedWithdraw memory v;
 
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
             if (!(CHAIN_0 == DST_CHAINS[i] && revertingWithdrawSFs[i].length > 0)) {
                 if (revertingWithdrawTimelockedSFs[i].length > 0) {
                     if (action.multiVaults) {
@@ -3448,10 +3456,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             superformId,
             2e18,
             1000,
-            false,
-            retain4626,
             LiqRequest(
-                1,
                 _buildLiqBridgeTxData(
                     LiqBridgeTxDataArgs(
                         1,
@@ -3476,10 +3481,14 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     false
                 ),
                 getContract(ETH, "DAI"),
+                address(0),
+                1,
                 ARBI,
                 0
             ),
             "",
+            false,
+            retain4626,
             mrperfect,
             ""
         );

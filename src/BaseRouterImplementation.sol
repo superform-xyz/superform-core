@@ -13,7 +13,7 @@ import { IBaseForm } from "./interfaces/IBaseForm.sol";
 import { IBridgeValidator } from "./interfaces/IBridgeValidator.sol";
 import { ISuperPositions } from "./interfaces/ISuperPositions.sol";
 import { DataLib } from "./libraries/DataLib.sol";
-import { Error } from "./utils/Error.sol";
+import { Error } from "./libraries/Error.sol";
 import { IPermit2 } from "./vendor/dragonfly-xyz/IPermit2.sol";
 import "./crosschain-liquidity/LiquidityHandler.sol";
 import "./types/DataTypes.sol";
@@ -56,10 +56,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         IERC20 token;
         uint256 txDataLength;
         uint256 totalAmount;
-        address permit2;
         uint256 approvalAmount;
         uint256 amountIn;
         uint8 bridgeId;
+        address permit2;
     }
 
     struct MultiTokenForwardLocalVars {
@@ -67,11 +67,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         uint256 len;
         uint256 totalAmount;
         uint256 permit2dataLen;
-        address permit2;
         uint256 targetLen;
         uint256[] approvalAmounts;
         uint256[] amountsIn;
         uint8[] bridgeIds;
+        address permit2;
     }
 
     //////////////////////////////////////////////////////////////
@@ -107,23 +107,21 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
-        uint256 currentPayloadId = ++payloadIds;
-
         InitSingleVaultData memory vaultData = InitSingleVaultData(
-            currentPayloadId,
+            0,
             req_.superformData.superformId,
             req_.superformData.amount,
             req_.superformData.maxSlippage,
+            req_.superformData.liqRequest,
             false,
             req_.superformData.retain4626,
-            req_.superformData.liqRequest,
             req_.superformData.receiverAddress,
             req_.superformData.extraFormData
         );
 
         /// @dev same chain action & forward residual payment to payment collector
         _directSingleDeposit(msg.sender, req_.superformData.permit2data, vaultData);
-        emit Completed(currentPayloadId);
+        emit Completed();
     }
 
     /// @dev handles cross-chain single vault deposit
@@ -155,28 +153,33 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformData.superformId,
             req_.superformData.amount,
             req_.superformData.maxSlippage,
+            req_.superformData.liqRequest,
             req_.superformData.hasDstSwap,
             req_.superformData.retain4626,
-            req_.superformData.liqRequest,
             req_.superformData.receiverAddress,
             req_.superformData.extraFormData
         );
 
-        vars.liqRequest = req_.superformData.liqRequest;
         (address superform,,) = req_.superformData.superformId.getSuperform();
 
         (uint256 amountIn, uint8 bridgeId) =
             _singleVaultTokenForward(msg.sender, address(0), req_.superformData.permit2data, ambData);
 
         LiqRequest memory emptyRequest;
-        ambData.liqData = emptyRequest;
 
         /// @dev dispatch liquidity data
-        _validateAndDispatchTokens(
-            ValidateAndDispatchTokensArgs(
-                vars.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
+        if (
+            _validateAndDispatchTokens(
+                ValidateAndDispatchTokensArgs(
+                    req_.superformData.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
+                )
             )
-        );
+        ) emptyRequest.interimToken = req_.superformData.liqRequest.interimToken;
+
+        /// @dev overrides user set liqData to just contain interimToken in case there is a dstSwap
+        /// @dev this information is needed in case the dstSwap fails so that we can validate the interimToken in
+        /// DstSwapper.sol on destination
+        ambData.liqData = emptyRequest;
 
         uint256[] memory superformIds = new uint256[](1);
         superformIds[0] = req_.superformData.superformId;
@@ -208,23 +211,21 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
-        uint256 currentPayloadId = ++payloadIds;
-
         InitMultiVaultData memory vaultData = InitMultiVaultData(
-            currentPayloadId,
+            0,
             req_.superformData.superformIds,
             req_.superformData.amounts,
             req_.superformData.maxSlippages,
+            req_.superformData.liqRequests,
             new bool[](req_.superformData.amounts.length),
             req_.superformData.retain4626s,
-            req_.superformData.liqRequests,
             req_.superformData.receiverAddress,
             req_.superformData.extraFormData
         );
 
         /// @dev same chain action & forward residual payment to payment collector
         _directMultiDeposit(msg.sender, req_.superformData.permit2data, vaultData);
-        emit Completed(currentPayloadId);
+        emit Completed();
     }
 
     /// @dev handles cross-chain multi vault deposit
@@ -246,9 +247,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformsData.superformIds,
             req_.superformsData.amounts,
             req_.superformsData.maxSlippages,
+            req_.superformsData.liqRequests,
             req_.superformsData.hasDstSwaps,
             req_.superformsData.retain4626s,
-            req_.superformsData.liqRequests,
             req_.superformsData.receiverAddress,
             req_.superformsData.extraFormData
         );
@@ -259,6 +260,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         (uint256[] memory amountsIn, uint8[] memory bridgeIds) =
             _multiVaultTokenForward(msg.sender, new address[](0), req_.superformsData.permit2data, ambData, true);
 
+        /// @dev empties the liqData after multiVaultTokenForward
+        ambData.liqData = new LiqRequest[](len);
+
         /// @dev this loop is what allows to deposit to >1 different underlying on destination
         /// @dev if a loop fails in a validation the whole chain should be reverted
         for (uint256 j; j < len; ++j) {
@@ -267,14 +271,14 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             (superform,,) = req_.superformsData.superformIds[j].getSuperform();
 
             /// @dev dispatch liquidity data
-            _validateAndDispatchTokens(
-                ValidateAndDispatchTokensArgs(
-                    vars.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
+            if (
+                _validateAndDispatchTokens(
+                    ValidateAndDispatchTokensArgs(
+                        vars.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
+                    )
                 )
-            );
+            ) ambData.liqData[j].interimToken = vars.liqRequest.interimToken;
         }
-
-        ambData.liqData = new LiqRequest[](len);
 
         /// @dev dispatch message information, notice multiVaults is set to 1
         _dispatchAmbMessage(
@@ -320,23 +324,21 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             msg.sender, req_.superformData.superformId, req_.superformData.amount
         );
 
-        vars.currentPayloadId = ++payloadIds;
-
         InitSingleVaultData memory vaultData = InitSingleVaultData(
-            vars.currentPayloadId,
+            0,
             req_.superformData.superformId,
             req_.superformData.amount,
             req_.superformData.maxSlippage,
-            false,
-            false,
             req_.superformData.liqRequest,
+            false,
+            false,
             req_.superformData.receiverAddress,
             req_.superformData.extraFormData
         );
 
         /// @dev same chain action
         _directSingleWithdraw(vaultData, msg.sender);
-        emit Completed(vars.currentPayloadId);
+        emit Completed();
     }
 
     /// @dev handles cross-chain single vault withdraw
@@ -375,9 +377,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformData.superformId,
             req_.superformData.amount,
             req_.superformData.maxSlippage,
-            false,
-            false,
             req_.superformData.liqRequest,
+            false,
+            false,
             req_.superformData.receiverAddress,
             req_.superformData.extraFormData
         );
@@ -420,23 +422,21 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             msg.sender, req_.superformData.superformIds, req_.superformData.amounts
         );
 
-        vars.currentPayloadId = ++payloadIds;
-
         InitMultiVaultData memory vaultData = InitMultiVaultData(
-            vars.currentPayloadId,
+            0,
             req_.superformData.superformIds,
             req_.superformData.amounts,
             req_.superformData.maxSlippages,
-            new bool[](req_.superformData.superformIds.length),
-            new bool[](req_.superformData.superformIds.length),
             req_.superformData.liqRequests,
+            new bool[](req_.superformData.superformIds.length),
+            new bool[](req_.superformData.superformIds.length),
             req_.superformData.receiverAddress,
             req_.superformData.extraFormData
         );
 
         /// @dev same chain action & forward residual payment to payment collector
         _directMultiWithdraw(vaultData, msg.sender);
-        emit Completed(vars.currentPayloadId);
+        emit Completed();
     }
 
     /// @dev handles cross-chain multi vault withdraw
@@ -464,9 +464,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformsData.superformIds,
             req_.superformsData.amounts,
             req_.superformsData.maxSlippages,
-            new bool[](req_.superformsData.amounts.length),
-            new bool[](req_.superformsData.amounts.length),
             req_.superformsData.liqRequests,
+            new bool[](req_.superformsData.amounts.length),
+            new bool[](req_.superformsData.amounts.length),
             req_.superformsData.receiverAddress,
             req_.superformsData.extraFormData
         );
@@ -491,10 +491,14 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
     }
 
-    function _validateAndDispatchTokens(ValidateAndDispatchTokensArgs memory args_) internal virtual {
+    function _validateAndDispatchTokens(ValidateAndDispatchTokensArgs memory args_)
+        internal
+        virtual
+        returns (bool hasDstSwap)
+    {
         address bridgeValidator = superRegistry.getBridgeValidator(args_.liqRequest.bridgeId);
         /// @dev validates remaining params of txData
-        IBridgeValidator(bridgeValidator).validateTxData(
+        hasDstSwap = IBridgeValidator(bridgeValidator).validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
                 args_.liqRequest.txData,
                 args_.srcChainId,
@@ -503,7 +507,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 args_.deposit,
                 args_.superform,
                 args_.srcSender,
-                args_.liqRequest.token
+                args_.liqRequest.token,
+                args_.liqRequest.interimToken
             )
         );
 
@@ -533,13 +538,13 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         (uint256 fees, bytes memory extraData) = IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER")))
             .calculateAMBData(vars_.dstChainId, vars_.ambIds, abi.encode(ambMessage));
 
+        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).updateTxHistory(
+            vars_.currentPayloadId, ambMessage.txInfo
+        );
+
         /// @dev this call dispatches the message to the AMB bridge through dispatchPayload
         IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY"))).dispatchPayload{ value: fees }(
             vars_.srcSender, vars_.ambIds, vars_.dstChainId, abi.encode(ambMessage), extraData
-        );
-
-        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).updateTxHistory(
-            vars_.currentPayloadId, ambMessage.txInfo
         );
     }
 
@@ -572,9 +577,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 superformId_,
                 amount_,
                 maxSlippage_,
+                liqData_,
                 false,
                 retain4626_,
-                liqData_,
                 receiverAddress_,
                 /// needed if user if keeping 4626
                 extraFormData_
@@ -699,9 +704,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 superformId_,
                 amount_,
                 maxSlippage_,
-                false,
-                false,
                 liqData_,
+                false,
+                false,
                 receiverAddress_,
                 extraFormData_
             ),
@@ -812,6 +817,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         returns (bool)
     {
         uint256 len = superformsData_.amounts.length;
+        uint256 lenSuperforms = superformsData_.superformIds.length;
         uint256 liqRequestsLen = superformsData_.liqRequests.length;
 
         /// @dev empty requests are not allowed, as well as requests with length mismatch
@@ -819,17 +825,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (len != liqRequestsLen) return false;
 
         /// @dev deposits beyond max vaults per tx is blocked only for xchain
-        if (superformsData_.superformIds.length > superRegistry.getVaultLimitPerTx(dstChainId_)) {
+        if (lenSuperforms > superRegistry.getVaultLimitPerTx(dstChainId_)) {
             return false;
         }
 
         /// @dev superformIds/amounts/slippages array sizes validation
-        if (
-            !(
-                superformsData_.superformIds.length == superformsData_.amounts.length
-                    && superformsData_.superformIds.length == superformsData_.maxSlippages.length
-            )
-        ) {
+        if (!(lenSuperforms == len && lenSuperforms == superformsData_.maxSlippages.length)) {
             return false;
         }
         ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));

@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import "test/utils/ProtocolActions.sol";
 
 contract KeeperMock is ERC1155Holder {
@@ -170,7 +170,7 @@ contract PayMasterTest is ProtocolActions {
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         PayMaster(payable(feeCollector)).rebalanceTo(
-            keccak256("CORE_REGISTRY_PROCESSOR"), LiqRequest(1, txData, NATIVE, ARBI, 1 ether), 420
+            keccak256("CORE_REGISTRY_PROCESSOR"), LiqRequest(txData, NATIVE, address(0), 1, ARBI, 1 ether), 420
         );
 
         superRegistry.setAddress(keccak256("CORE_REGISTRY_PROCESSOR"), txProcessorETH, ETH);
@@ -180,7 +180,7 @@ contract PayMasterTest is ProtocolActions {
         /// @dev admin moves the payment from fee collector to different address on another chain
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
         PayMaster(payable(feeCollector)).rebalanceTo(
-            keccak256("CORE_REGISTRY_PROCESSOR"), LiqRequest(1, txData, NATIVE, ARBI, 1 ether), ARBI
+            keccak256("CORE_REGISTRY_PROCESSOR"), LiqRequest(txData, NATIVE, address(0), 1, ARBI, 1 ether), ARBI
         );
         txData = _buildDummyTxDataUnitTests(
             BuildDummyTxDataUnitTestsVars(1, NATIVE, NATIVE, feeCollector, ETH, ARBI, 1 ether, txProcessorARBI, false)
@@ -190,13 +190,14 @@ contract PayMasterTest is ProtocolActions {
         PayMaster(payable(feeCollector)).rebalanceTo(
             keccak256("CORE_REGISTRY_PROCESSOR"),
             LiqRequest(
-                1,
                 _buildDummyTxDataUnitTests(
                     BuildDummyTxDataUnitTestsVars(
                         1, NATIVE, NATIVE, feeCollector, ETH, ARBI, 1 ether, txProcessorARBI, false
                     )
                 ),
                 NATIVE,
+                address(0),
+                1,
                 ARBI,
                 1 ether
             ),
@@ -232,7 +233,7 @@ contract PayMasterTest is ProtocolActions {
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         PayMaster(payable(feeCollector)).rebalanceTo(
-            keccak256("CORE_REGISTRY_UPDATER"), LiqRequest(1, txData, NATIVE, ARBI, 1 ether), 420
+            keccak256("CORE_REGISTRY_UPDATER"), LiqRequest(txData, NATIVE, address(0), 1, ARBI, 1 ether), 420
         );
 
         superRegistry.setAddress(keccak256("CORE_REGISTRY_UPDATER"), txUpdaterARBI, ETH);
@@ -244,20 +245,21 @@ contract PayMasterTest is ProtocolActions {
         /// @dev admin moves the payment from fee collector to different address on another chain
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
         PayMaster(payable(feeCollector)).rebalanceTo(
-            keccak256("CORE_REGISTRY_UPDATER"), LiqRequest(1, txData, NATIVE, ARBI, 1 ether), ARBI
+            keccak256("CORE_REGISTRY_UPDATER"), LiqRequest(txData, NATIVE, address(0), 1, ARBI, 1 ether), ARBI
         );
 
         /// @dev admin moves the payment from fee collector (ideal conditions)
         PayMaster(payable(feeCollector)).rebalanceTo(
             keccak256("CORE_REGISTRY_UPDATER"),
             LiqRequest(
-                1,
                 _buildDummyTxDataUnitTests(
                     BuildDummyTxDataUnitTestsVars(
                         1, NATIVE, NATIVE, feeCollector, ETH, ARBI, 1 ether, txUpdaterARBI, false
                     )
                 ),
                 NATIVE,
+                address(0),
+                1,
                 ARBI,
                 1 ether
             ),
@@ -318,10 +320,10 @@ contract PayMasterTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            false,
-            false,
-            LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ETH, 0),
+            LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ETH, 0),
             bytes(""),
+            false,
+            false,
             receiverAddress,
             bytes("")
         );

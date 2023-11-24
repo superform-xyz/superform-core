@@ -10,7 +10,7 @@ import { IBaseForm } from "./interfaces/IBaseForm.sol";
 import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
 import { ISuperRBAC } from "./interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
-import { Error } from "./utils/Error.sol";
+import { Error } from "./libraries/Error.sol";
 import { DataLib } from "./libraries/DataLib.sol";
 import { Clones } from "openzeppelin-contracts/contracts/proxy/Clones.sol";
 
@@ -218,9 +218,7 @@ contract SuperformFactory is ISuperformFactory {
             tFormImplementation.cloneDeterministic(keccak256(abi.encodePacked(uint256(CHAIN_ID), superformCounter)));
         ++superformCounter;
 
-        BaseForm(payable(superform_)).initialize(
-            address(superRegistry), vault_, formImplementationId_, address(IERC4626(vault_).asset())
-        );
+        BaseForm(payable(superform_)).initialize(address(superRegistry), vault_, address(IERC4626(vault_).asset()));
 
         /// @dev this will always be unique because all chainIds are unique
         superformId_ = DataLib.packSuperform(superform_, formImplementationId_, CHAIN_ID);
@@ -253,7 +251,7 @@ contract SuperformFactory is ISuperformFactory {
         formImplementationPaused[formImplementationId_] = status_;
 
         /// @dev broadcast the change in status to the other destination chains
-        if (extraData_.length > 0) {
+        if (extraData_.length != 0) {
             BroadcastMessage memory factoryPayload = BroadcastMessage(
                 "SUPERFORM_FACTORY",
                 SYNC_IMPLEMENTATION_STATUS,

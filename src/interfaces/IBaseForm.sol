@@ -34,9 +34,6 @@ interface IBaseForm is IERC165 {
     /// @return The ERC20 symbol
     function superformYieldTokenSymbol() external view returns (string memory);
 
-    /// @dev get which Form implementation the vault corresponds to
-    function formImplementationId() external view returns (uint32);
-
     /// @notice get the state registry id associated with the vault
     function getStateRegistryId() external view returns (uint8);
 
@@ -70,6 +67,9 @@ interface IBaseForm is IERC165 {
 
     /// @notice get the total amount of underlying managed in the ERC4626 vault
     function getTotalAssets() external view returns (uint256);
+
+    /// @notice get the total amount of unredeemed vault shares in circulation
+    function getTotalSupply() external view returns (uint256);
 
     /// @notice get the total amount of assets received if shares are actually redeemed
     /// @notice https://eips.ethereum.org/EIPS/eip-4626

@@ -50,7 +50,7 @@ contract SXSVDTimelockedRevert4626NoTokenInputSlippageAMB24 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario() public {
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

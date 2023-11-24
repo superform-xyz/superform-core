@@ -80,7 +80,7 @@ contract SDMVW0TokenInputNoSlippageAMB13 is ProtocolActions {
         amountTwo_ = uint128(bound(amountTwo_, 1, amountOne_ - 1));
         AMOUNTS[ARBI][1] = [amountTwo_];
 
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

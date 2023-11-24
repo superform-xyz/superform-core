@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.23;
 
-import { Error } from "src/utils/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 import "test/utils/ProtocolActions.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 
@@ -35,7 +35,38 @@ contract LiFiValidatorTest is ProtocolActions {
                 true,
                 address(0),
                 deployer,
+                NATIVE,
                 NATIVE
+            )
+        );
+    }
+
+    function test_lifi_validator_invalidInterimToken() public {
+        vm.expectRevert(Error.INVALID_INTERIM_TOKEN.selector);
+
+        LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                _buildDummyTxDataUnitTests(
+                    BuildDummyTxDataUnitTestsVars(
+                        1,
+                        address(0),
+                        address(0),
+                        deployer,
+                        ETH,
+                        BSC,
+                        uint256(100),
+                        getContract(BSC, "DstSwapper"),
+                        false
+                    )
+                ),
+                ETH,
+                BSC,
+                BSC,
+                true,
+                address(0),
+                deployer,
+                NATIVE,
+                address(0)
             )
         );
     }
@@ -49,7 +80,7 @@ contract LiFiValidatorTest is ProtocolActions {
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, BSC, BSC, true, address(0), deployer, NATIVE)
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, BSC, BSC, true, address(0), deployer, NATIVE, NATIVE)
         );
     }
 
@@ -70,7 +101,7 @@ contract LiFiValidatorTest is ProtocolActions {
         vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, ARBI, true, address(0), deployer, NATIVE)
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, ARBI, true, address(0), deployer, NATIVE, NATIVE)
         );
     }
 
@@ -83,7 +114,7 @@ contract LiFiValidatorTest is ProtocolActions {
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ETH, ETH, true, address(0), deployer, NATIVE)
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ETH, ETH, true, address(0), deployer, NATIVE, NATIVE)
         );
     }
 
@@ -97,7 +128,7 @@ contract LiFiValidatorTest is ProtocolActions {
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, OP, false, address(0), deployer, NATIVE)
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, OP, false, address(0), deployer, NATIVE, NATIVE)
         );
     }
 
@@ -111,7 +142,7 @@ contract LiFiValidatorTest is ProtocolActions {
         vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, ARBI, false, address(0), deployer, NATIVE)
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, ARBI, false, address(0), deployer, NATIVE, NATIVE)
         );
     }
 
@@ -133,7 +164,9 @@ contract LiFiValidatorTest is ProtocolActions {
         vm.expectRevert(Error.INVALID_TXDATA_TOKEN.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, ARBI, true, address(0), deployer, address(420))
+            IBridgeValidator.ValidateTxDataArgs(
+                txData, ETH, ARBI, ARBI, true, address(0), deployer, address(420), NATIVE
+            )
         );
     }
 
