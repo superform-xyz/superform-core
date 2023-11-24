@@ -24,7 +24,7 @@ This repository includes all of our contracts but our protocol can be split into
 - `Core` contracts contain logic to move liquidity and data across chains along with maintaining roles in the protocol
 - `Periphery` contracts contain the main touch-points for protocols and users to interface with and include helper contracts to ease 3rd party integrations
   
-<img width="1920" alt="Superform__SuperformProtocol--DARK (2)" src="https://github.com/superform-xyz/superform-core/assets/33469661/1eb6a6a4-2389-4e05-be6e-5236afb24b91">
+<img width="1920" alt="Superform__SuperformProtocol--DARK (2)" src="https://github.com/superform-xyz/superform-core/assets/33469661/c3ad93a0-226b-4e14-b7ca-c3a6ac3b156a">
 
 ## Resources
 
@@ -83,12 +83,11 @@ We recommend visiting our technical documentation at https://docs.superform.xyz.
 
 In this section we will run through examples where users deposit and withdraw into vault(s) using Superform. 
 
-<img width="943" alt="Screenshot 2023-11-08 at 2 20 43 PM" src="https://github.com/superform-xyz/superform-core/assets/33469661/5c4dee7a-a711-438f-a145-d97f9fd19b85">
+<img width="896" alt="Screenshot 2023-11-24 at 9 47 38 AM" src="https://github.com/superform-xyz/superform-core/assets/33469661/5ae1394a-a639-448b-a915-ee7d41a2fbac">
 
 ### Same-chain Deposit Flow
 
-<img width="1410" alt="Screenshot 2023-11-08 at 2 21 19 PM" src="https://github.com/superform-xyz/superform-core/assets/33469661/815b4e6d-8665-4aa6-89ff-96d07c26fe42">
-
+<img width="938" alt="Screenshot 2023-11-24 at 9 48 01 AM" src="https://github.com/superform-xyz/superform-core/assets/33469661/71c180fe-3b70-4546-ad6f-8ac302df6d16">
 
 - Validation of the input data in `SuperformRouter.sol`.
 - Process swap transaction data if provided to allow SuperformRouter to move tokens from the user to the Superform and call `directDepositIntoVault` to move tokens from the Superform into the vault.
@@ -96,8 +95,7 @@ In this section we will run through examples where users deposit and withdraw in
 
 ### Cross-chain Deposit Flow
 
-<img width="1450" alt="Screenshot 2023-11-08 at 2 22 12 PM" src="https://github.com/superform-xyz/superform-core/assets/33469661/f9643ebd-b267-4d9e-8eea-f9fcaabda5eb">
-
+<img width="954" alt="Screenshot 2023-11-24 at 9 48 37 AM" src="https://github.com/superform-xyz/superform-core/assets/33469661/423587b4-4cd0-401c-8bfa-2e099bc53def">
 
 - Validation of the input data in `SuperformRouter.sol`.
 - Dispatch the input token to the liquidity bridge using an implementation of a `BridgeValidator.sol` and `LiquidityHandler.sol`.
@@ -109,8 +107,7 @@ In this section we will run through examples where users deposit and withdraw in
 
 ### Same-chain Withdrawal Flow
 
-<img width="1442" alt="Screenshot 2023-11-08 at 2 21 50 PM" src="https://github.com/superform-xyz/superform-core/assets/33469661/3c688423-9ba7-4472-9e9f-b3cafefc45f5">
-
+<img width="954" alt="Screenshot 2023-11-24 at 9 48 55 AM" src="https://github.com/superform-xyz/superform-core/assets/33469661/d497cd3b-b43b-49e6-a1f2-70052a69a525">
 
 - Validation of the input data in `SuperformRouter.sol`.
 - Burn the corresponding SuperPositions owned by the user and call `directWithdrawFromVault` in the Superform, which redeems funds from the vault.
@@ -149,6 +146,7 @@ We leave these in the repository to see intended behavior, but the following con
 
 - Anything in [`src/vendor`](./src/vendor)
 - Exploits concerning the inappropriate behavior of permissioned roles
+- Prior findings in any audit report linked in this readme
 
 ## Tests
 
