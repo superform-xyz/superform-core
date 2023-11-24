@@ -21,7 +21,7 @@ abstract contract BaseRouter is IBaseRouter {
 
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
-    uint8 public constant STATE_REGISTRY_TYPE = 1;
+    uint8 internal constant STATE_REGISTRY_TYPE = 1;
 
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //

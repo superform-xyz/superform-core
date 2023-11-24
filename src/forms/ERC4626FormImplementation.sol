@@ -414,7 +414,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         IERC20 token = IERC20(getVaultAsset());
 
         uint256 dust = token.balanceOf(address(this));
-        if (dust > 0) {
+        if (dust != 0) {
             token.safeTransfer(paymaster, dust);
         }
     }

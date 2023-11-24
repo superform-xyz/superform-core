@@ -667,7 +667,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             );
 
             /// @dev if retain4626 is set to True, set the amount of SuperPositions to mint to 0
-            if (v.dstAmounts[i] > 0 && vaultData_.retain4626s[i]) {
+            if (v.dstAmounts[i] != 0 && vaultData_.retain4626s[i]) {
                 v.dstAmounts[i] = 0;
             }
         }
@@ -864,7 +864,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev deducts what's already available sends what's left in msg.value to payment collector
         uint256 residualPayment = address(this).balance - _balanceBefore;
 
-        if (residualPayment > 0) {
+        if (residualPayment != 0) {
             IPayMaster(superRegistry.getAddress(keccak256("PAYMASTER"))).makePayment{ value: residualPayment }(
                 msg.sender
             );
@@ -1007,7 +1007,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 revert Error.ZERO_AMOUNT();
             }
 
-            if (v.permit2dataLen > 0) {
+            if (v.permit2dataLen != 0) {
                 (uint256 nonce, uint256 deadline, bytes memory signature) =
                     abi.decode(permit2data_, (uint256, uint256, bytes));
 

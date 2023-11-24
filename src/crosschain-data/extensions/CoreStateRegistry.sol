@@ -294,7 +294,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         failedDeposits_.lastProposedTimestamp = 0;
         IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
 
-        for (uint256 i; i < failedDeposits_.amounts.length; ++i) {
+        uint256 len = failedDeposits_.amounts.length;
+        for (uint256 i; i < len; ++i) {
             /// @dev refunds the amount to user specified refund address
             if (failedDeposits_.settleFromDstSwapper[i]) {
                 dstSwapper.processFailedTx(
@@ -425,7 +426,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         /// @dev (v1: passedSlippage, v2: failedSlippage, v3: passedSlippage)
         /// @dev final vaults: (v1, v3) / PayloadState.UPDATED
         /// @dev if validLen is 0 then Payload is marked as processed and can be extracted via rescue
-        if (validLen > 0) {
+        if (validLen != 0) {
             uint256[] memory finalSuperformIds = new uint256[](validLen);
             uint256[] memory finalAmounts = new uint256[](validLen);
             uint256[] memory maxSlippage = new uint256[](validLen);
@@ -566,7 +567,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 address asset;
                 try IBaseForm(_getSuperform(superformId_)).getVaultAsset() returns (address asset_) {
                     asset = asset_;
-                } catch { }
+                } catch {
+                    /// @dev if its error, we just consider asset as zero address
+                }
                 /// @dev if superform is invalid, try catch will fail and asset pushed is address (0)
                 /// @notice this means that if a user tries to game the protocol with an invalid superformId, the funds
                 /// bridged over that failed will be stuck here
@@ -634,7 +637,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     {
         uint256 len = multiVaultData_.liqData.length;
 
-        for (uint256 i = 0; i < len; ++i) {
+        for (uint256 i; i < len; ++i) {
             if (txData_[i].length != 0 && multiVaultData_.liqData[i].txData.length == 0) {
                 (address superform,,) = multiVaultData_.superformIds[i].getSuperform();
 
@@ -765,7 +768,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             /// @dev if updating the deposit payload fails because of slippage, multiVaultData.amounts[i] is set to 0
             /// @dev this means that this amount was already added to the failedDeposits state variable and should not
             /// be re-added (or processed here)
-            if (multiVaultData.amounts[i] > 0) {
+            if (multiVaultData.amounts[i] != 0) {
                 underlying = IERC20(IBaseForm(superforms[i]).getVaultAsset());
 
                 if (underlying.balanceOf(address(this)) >= multiVaultData.amounts[i]) {
@@ -788,7 +791,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                         srcSender_,
                         srcChainId_
                     ) returns (uint256 dstAmount) {
-                        if (dstAmount > 0 && !multiVaultData.retain4626s[i]) {
+                        if (dstAmount != 0 && !multiVaultData.retain4626s[i]) {
                             fulfilment = true;
                             /// @dev marks the indexes that require a callback mint of shares (successful)
                             multiVaultData.amounts[i] = dstAmount;
@@ -893,7 +896,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             try IBaseForm(superform_).xChainDepositIntoVault(singleVaultData, srcSender_, srcChainId_) returns (
                 uint256 dstAmount
             ) {
-                if (dstAmount > 0 && !singleVaultData.retain4626) {
+                if (dstAmount != 0 && !singleVaultData.retain4626) {
                     return _singleReturnData(
                         srcSender_,
                         singleVaultData.payloadId,
