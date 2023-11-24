@@ -294,7 +294,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         failedDeposits_.lastProposedTimestamp = 0;
         IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
 
-        for (uint256 i; i < failedDeposits_.amounts.length; ++i) {
+        uint256 len = failedDeposits_.amounts.length;
+        for (uint256 i; i < len; ++i) {
             /// @dev refunds the amount to user specified refund address
             if (failedDeposits_.settleFromDstSwapper[i]) {
                 dstSwapper.processFailedTx(
@@ -425,7 +426,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         /// @dev (v1: passedSlippage, v2: failedSlippage, v3: passedSlippage)
         /// @dev final vaults: (v1, v3) / PayloadState.UPDATED
         /// @dev if validLen is 0 then Payload is marked as processed and can be extracted via rescue
-        if (validLen > 0) {
+        if (validLen != 0) {
             uint256[] memory finalSuperformIds = new uint256[](validLen);
             uint256[] memory finalAmounts = new uint256[](validLen);
             uint256[] memory maxSlippage = new uint256[](validLen);
