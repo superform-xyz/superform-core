@@ -146,6 +146,7 @@ We leave these in the repository to see intended behavior, but the following con
 
 - Anything in [`src/vendor`](./src/vendor)
 - Exploits concerning the inappropriate behavior of permissioned roles
+- Prior findings in any audit report linked in this readme
 
 ## Tests
 
