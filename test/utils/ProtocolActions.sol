@@ -844,9 +844,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             }
         }
 
-        MessagingAssertVars[] memory aV = new MessagingAssertVars[](
-            vars.nDestinations
-        );
+        MessagingAssertVars[] memory aV = new MessagingAssertVars[](vars.nDestinations);
 
         CoreStateRegistry stateRegistry;
         /// @dev assert good delivery of message on destination by analyzing superformIds and mounts
@@ -2057,8 +2055,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
         returns (uint256[] memory previewRedeemAmounts)
     {
         vm.selectFork(FORKS[CHAIN_0]);
-        uint256[] memory superPositionBalances = new uint256[] (superformIds.length);
-        previewRedeemAmounts = new uint256[] (superformIds.length);
+        uint256[] memory superPositionBalances = new uint256[](superformIds.length);
+        previewRedeemAmounts = new uint256[](superformIds.length);
         address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
 
         address superPositionsAddress =
@@ -2444,9 +2442,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint256[] memory amountsToRemint;
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
             if (action.multiVaults) {
-                amountsToRemint = new uint256[](
-                    multiSuperformsData[i].superformIds.length
-                );
+                amountsToRemint = new uint256[](multiSuperformsData[i].superformIds.length);
 
                 for (uint256 j = 0; j < multiSuperformsData[i].superformIds.length; ++j) {
                     amountsToRemint[j] = multiSuperformsData[i].amounts[j];
@@ -2508,9 +2504,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint256[] memory amountsToRemint;
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
             if (action.multiVaults) {
-                amountsToRemint = new uint256[](
-                    multiSuperformsData[i].superformIds.length
-                );
+                amountsToRemint = new uint256[](multiSuperformsData[i].superformIds.length);
 
                 for (uint256 j = 0; j < multiSuperformsData[i].superformIds.length; ++j) {
                     amountsToRemint[j] = multiSuperformsData[i].amounts[j];
@@ -2967,9 +2961,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 inputBalanceBefore =
                     v.token != NATIVE_TOKEN ? IERC20(v.token).balanceOf(users[action.user]) : users[action.user].balance;
             }
-            spAmountBeforeWithdrawPerDestination = new uint256[](
-                vars.nDestinations
-            );
+            spAmountBeforeWithdrawPerDestination = new uint256[](vars.nDestinations);
             for (uint256 i = 0; i < vars.nDestinations; ++i) {
                 (v.superform,,) = singleSuperformsData[i].superformId.getSuperform();
                 v.partialWithdrawVault = abi.decode(singleSuperformsData[i].extraFormData, (bool));
@@ -3048,9 +3040,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     _assertMultiVaultBalance(
                         action.user,
                         multiSuperformsData[i].superformIds,
-                        new uint256[](
-                            multiSuperformsData[i].superformIds.length
-                        ),
+                        new uint256[](multiSuperformsData[i].superformIds.length),
                         new bool[](multiSuperformsData[i].superformIds.length),
                         false
                     );
