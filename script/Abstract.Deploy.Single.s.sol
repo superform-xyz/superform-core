@@ -114,7 +114,7 @@ abstract contract AbstractDeploySingle is Script {
         "EmergencyQueue"
     ];
 
-    bytes32 constant salt = "CANTINA_DEPLOYMENT_2";
+    bytes32 constant salt = "CANTINA_DEPLOYMENT_4";
 
     enum Chains {
         Ethereum,
