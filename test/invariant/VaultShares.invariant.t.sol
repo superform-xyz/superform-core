@@ -23,9 +23,17 @@ contract VaultSharesInvariantTest is BaseInvariantTest {
         vm.selectFork(FORKS[0]);
         vaultSharesStore = new VaultSharesStore();
 
-        vaultSharesHandler =
-        new VaultSharesHandler(chainIds, contractNames, coreAddresses, underlyingAddresses, vaultAddresses,
-        superformAddresses, forksArray, vaultSharesStore, timestampStore);
+        vaultSharesHandler = new VaultSharesHandler(
+            chainIds,
+            contractNames,
+            coreAddresses,
+            underlyingAddresses,
+            vaultAddresses,
+            superformAddresses,
+            forksArray,
+            vaultSharesStore,
+            timestampStore
+        );
 
         vm.label({ account: address(vaultSharesStore), newLabel: "VaultSharesStore" });
         vm.label({ account: address(vaultSharesHandler), newLabel: "VaultSharesHandler" });

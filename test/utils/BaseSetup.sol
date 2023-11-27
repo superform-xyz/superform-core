@@ -366,38 +366,39 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vm.selectFork(vars.fork);
 
             /// @dev preference for a local deployment of Permit2 over mainnet version. Has same bytcode
-            vars.canonicalPermit2 = address(new Permit2Clone{salt: salt}());
+            vars.canonicalPermit2 = address(new Permit2Clone{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("CanonicalPermit2"))] = vars.canonicalPermit2;
 
             /// @dev 1 - Pigeon helpers allow us to fullfill cross-chain messages in a manner as close to mainnet as
             /// possible
             /// @dev 1.1- deploy LZ Helper from Pigeon
-            vars.lzHelper = address(new LayerZeroHelper{salt: salt}());
+            vars.lzHelper = address(new LayerZeroHelper{ salt: salt }());
             vm.allowCheatcodes(vars.lzHelper);
 
             contracts[vars.chainId][bytes32(bytes("LayerZeroHelper"))] = vars.lzHelper;
 
             /// @dev 1.2- deploy Hyperlane Helper from Pigeon
-            vars.hyperlaneHelper = address(new HyperlaneHelper{salt: salt}());
+            vars.hyperlaneHelper = address(new HyperlaneHelper{ salt: salt }());
             vm.allowCheatcodes(vars.hyperlaneHelper);
 
             contracts[vars.chainId][bytes32(bytes("HyperlaneHelper"))] = vars.hyperlaneHelper;
 
             /// @dev 1.3- deploy Wormhole Automatic Relayer Helper from Pigeon
-            vars.wormholeHelper = address(new WormholeHelper{salt: salt}());
+            vars.wormholeHelper = address(new WormholeHelper{ salt: salt }());
             vm.allowCheatcodes(vars.wormholeHelper);
 
             contracts[vars.chainId][bytes32(bytes("WormholeHelper"))] = vars.wormholeHelper;
 
             /// @dev 1.4- deploy Wormhole Specialized Relayer Helper from Pigeon
-            vars.wormholeBroadcastHelper = address(new WormholeBroadcastHelper.WormholeHelper{salt: salt}());
+            vars.wormholeBroadcastHelper = address(new WormholeBroadcastHelper.WormholeHelper{ salt: salt }());
             vm.allowCheatcodes(vars.wormholeBroadcastHelper);
 
             contracts[vars.chainId][bytes32(bytes("WormholeBroadcastHelper"))] = vars.wormholeBroadcastHelper;
 
             /// @dev 2 - Deploy SuperRBAC
             vars.superRBAC = address(
-                new SuperRBAC{salt: salt}(ISuperRBAC.InitialRoleSetup({
+                new SuperRBAC{ salt: salt }(
+                    ISuperRBAC.InitialRoleSetup({
                         admin: deployer,
                         emergencyAdmin: deployer,
                         paymentAdmin: deployer,
@@ -409,14 +410,15 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                         dstSwapper: deployer,
                         csrRescuer: deployer,
                         csrDisputer: deployer
-                    }))
+                    })
+                )
             );
             contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars.superRBAC;
 
             vars.superRBACC = SuperRBAC(vars.superRBAC);
 
             /// @dev 3 - Deploy SuperRegistry
-            vars.superRegistry = address(new SuperRegistry{salt: salt}(vars.superRBAC));
+            vars.superRegistry = address(new SuperRegistry{ salt: salt }(vars.superRBAC));
             contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars.superRegistry;
             vars.superRegistryC = SuperRegistry(vars.superRegistry);
 
@@ -429,11 +431,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             assert(vars.superRBACC.hasProtocolAdminRole(deployer));
 
             /// @dev 4.1 - deploy Core State Registry
-            vars.coreStateRegistry = address(
-                new CoreStateRegistry{salt: salt}(
-                    SuperRegistry(vars.superRegistry)
-                )
-            );
+            vars.coreStateRegistry = address(new CoreStateRegistry{ salt: salt }(SuperRegistry(vars.superRegistry)));
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars.coreStateRegistry;
 
             vars.superRegistryC.setAddress(
@@ -441,7 +439,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             );
 
             /// @dev 4.2 - deploy Form State Registry
-            vars.timelockStateRegistry = address(new TimelockStateRegistry{salt: salt}(vars.superRegistryC));
+            vars.timelockStateRegistry = address(new TimelockStateRegistry{ salt: salt }(vars.superRegistryC));
             contracts[vars.chainId][bytes32(bytes("TimelockStateRegistry"))] = vars.timelockStateRegistry;
 
             vars.superRegistryC.setAddress(
@@ -449,7 +447,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             );
 
             /// @dev 4.3 - deploy Broadcast State Registry
-            vars.broadcastRegistry = address(new BroadcastRegistry{salt: salt}(vars.superRegistryC));
+            vars.broadcastRegistry = address(new BroadcastRegistry{ salt: salt }(vars.superRegistryC));
             contracts[vars.chainId][bytes32(bytes("BroadcastRegistry"))] = vars.broadcastRegistry;
 
             vars.superRegistryC.setAddress(
@@ -469,44 +467,33 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
 
             /// @dev 5- deploy Payment Helper
-            vars.paymentHelper = address(new PaymentHelper{salt: salt}(vars.superRegistry));
+            vars.paymentHelper = address(new PaymentHelper{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("PaymentHelper"))] = vars.paymentHelper;
 
             vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_HELPER(), vars.paymentHelper, vars.chainId);
 
             /// @dev 6.1 - deploy Layerzero Implementation
-            vars.lzImplementation = address(new LayerzeroImplementation{salt: salt}(vars.superRegistryC));
+            vars.lzImplementation = address(new LayerzeroImplementation{ salt: salt }(vars.superRegistryC));
             contracts[vars.chainId][bytes32(bytes("LayerzeroImplementation"))] = vars.lzImplementation;
 
             LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[i]);
 
             /// @dev 6.2 - deploy Hyperlane Implementation
-            vars.hyperlaneImplementation = address(
-                new HyperlaneImplementation{salt: salt}(
-                    SuperRegistry(vars.superRegistry)
-                )
-            );
+            vars.hyperlaneImplementation =
+                address(new HyperlaneImplementation{ salt: salt }(SuperRegistry(vars.superRegistry)));
             HyperlaneImplementation(vars.hyperlaneImplementation).setHyperlaneConfig(
                 IMailbox(hyperlaneMailboxes[i]), IInterchainGasPaymaster(hyperlanePaymasters[i])
             );
             contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
 
             /// @dev 6.3- deploy Wormhole Automatic Relayer Implementation
-            vars.wormholeImplementation = address(
-                new WormholeARImplementation{salt: salt}(
-                    vars.superRegistryC
-                )
-            );
+            vars.wormholeImplementation = address(new WormholeARImplementation{ salt: salt }(vars.superRegistryC));
             contracts[vars.chainId][bytes32(bytes("WormholeARImplementation"))] = vars.wormholeImplementation;
 
             WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayer);
 
             /// @dev 6.5- deploy Wormhole Specialized Relayer Implementation
-            vars.wormholeSRImplementation = address(
-                new WormholeSRImplementation{salt: salt}(
-                    vars.superRegistryC
-                )
-            );
+            vars.wormholeSRImplementation = address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC));
             contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
 
             WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[i]);
@@ -519,36 +506,36 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
             /// @dev 7.1.1 deploy  LiFiRouterMock. This mock is a very minimal versions to allow
             /// liquidity bridge testing
-            vars.lifiRouter = address(new LiFiMock{salt: salt}());
+            vars.lifiRouter = address(new LiFiMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("LiFiMock"))] = vars.lifiRouter;
             vm.allowCheatcodes(vars.lifiRouter);
 
             /// @dev 7.1.2 deploy SocketMock. This mock is a very minimal versions to allow
             /// liquidity bridge testing
-            vars.socketRouter = address(new SocketMock{salt:salt}());
+            vars.socketRouter = address(new SocketMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("SocketMock"))] = vars.socketRouter;
             vm.allowCheatcodes(vars.socketRouter);
 
             /// @dev 7.1.3 deploy SocketOneInchMock. This mock is a very minimal versions to allow
             /// socket same chain swaps
-            vars.socketOneInch = address(new SocketOneInchMock{salt: salt}());
+            vars.socketOneInch = address(new SocketOneInchMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("SocketOneInchMock"))] = vars.socketOneInch;
             vm.allowCheatcodes(vars.socketOneInch);
 
             /// @dev 7.2.1- deploy  lifi validator
-            vars.lifiValidator = address(new LiFiValidator{salt: salt}(vars.superRegistry));
+            vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
 
             /// @dev 7.2.2- deploy socket validator
-            vars.socketValidator = address(new SocketValidator{salt: salt}(vars.superRegistry));
+            vars.socketValidator = address(new SocketValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars.socketValidator;
 
             /// @dev 7.2.3- deploy socket one inch validator
-            vars.socketOneInchValidator = address(new SocketOneInchValidator{salt: salt}(vars.superRegistry));
+            vars.socketOneInchValidator = address(new SocketOneInchValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("SocketOneInchValidator"))] = vars.socketOneInchValidator;
 
             /// @dev 7.3- kycDAO NFT used to test kycDAO vaults
-            vars.kycDAOMock = address(new KYCDaoNFTMock{salt: salt}());
+            vars.kycDAOMock = address(new KYCDaoNFTMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("KYCDAOMock"))] = vars.kycDAOMock;
 
             bridgeAddresses.push(vars.lifiRouter);
@@ -565,7 +552,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
                 if (vars.UNDERLYING_TOKEN == address(0)) {
                     vars.UNDERLYING_TOKEN = address(
-                        new MockERC20{salt: salt}(UNDERLYING_TOKENS[j], UNDERLYING_TOKENS[j], deployer, hundredBilly)
+                        new MockERC20{ salt: salt }(UNDERLYING_TOKENS[j], UNDERLYING_TOKENS[j], deployer, hundredBilly)
                     );
                 } else {
                     deal(vars.UNDERLYING_TOKEN, deployer, hundredBilly);
@@ -577,9 +564,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             /// NOTE: This loop deploys all vaults on all chainIds with all of the UNDERLYING TOKENS (id x form) x
             /// chainId
             for (uint32 j = 0; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
-                IERC4626[][] memory doubleVaults = new IERC4626[][](
-                    UNDERLYING_TOKENS.length
-                );
+                IERC4626[][] memory doubleVaults = new IERC4626[][](UNDERLYING_TOKENS.length);
 
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
                     uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
@@ -624,7 +609,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             }
 
             /// @dev 9 - Deploy SuperformFactory
-            vars.factory = address(new SuperformFactory{salt: salt}(vars.superRegistry));
+            vars.factory = address(new SuperformFactory{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("SuperformFactory"))] = vars.factory;
 
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_FACTORY(), vars.factory, vars.chainId);
@@ -632,15 +617,15 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
             /// @dev 10 - Deploy 4626Form implementations
             // Standard ERC4626 Form
-            vars.erc4626Form = address(new ERC4626Form{salt: salt}(vars.superRegistry));
+            vars.erc4626Form = address(new ERC4626Form{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars.erc4626Form;
 
             // Timelock + ERC4626 Form
-            vars.erc4626TimelockForm = address(new ERC4626TimelockForm{salt: salt}(vars.superRegistry));
+            vars.erc4626TimelockForm = address(new ERC4626TimelockForm{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("ERC4626TimelockForm"))] = vars.erc4626TimelockForm;
 
             // KYCDao ERC4626 Form
-            vars.kycDao4626Form = address(new ERC4626KYCDaoForm{salt: salt}(vars.superRegistry));
+            vars.kycDao4626Form = address(new ERC4626KYCDaoForm{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
 
             /// @dev 11 - Add newly deployed form implementations to Factory
@@ -651,14 +636,14 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             ISuperformFactory(vars.factory).addFormImplementation(vars.kycDao4626Form, FORM_IMPLEMENTATION_IDS[2]);
 
             /// @dev 12 - Deploy SuperformRouter
-            vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
+            vars.superformRouter = address(new SuperformRouter{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
 
             /// @dev 13 - Deploy SuperPositions
             vars.superPositions =
-                address(new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry));
+                address(new SuperPositions{ salt: salt }("https://apiv2-dev.superform.xyz/", vars.superRegistry));
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);
@@ -668,22 +653,18 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             );
 
             /// @dev 14- deploy Payload Helper
-            vars.PayloadHelper = address(
-                new PayloadHelper{salt: salt}(
-                    vars.superRegistry
-                )
-            );
+            vars.PayloadHelper = address(new PayloadHelper{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
             vars.superRegistryC.setAddress(vars.superRegistryC.PAYLOAD_HELPER(), vars.PayloadHelper, vars.chainId);
 
             /// @dev 15 - Deploy PayMaster
-            vars.payMaster = address(new PayMaster{salt: salt}(vars.superRegistry));
+            vars.payMaster = address(new PayMaster{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes32("PayMaster"))] = vars.payMaster;
 
             vars.superRegistryC.setAddress(vars.superRegistryC.PAYMASTER(), vars.payMaster, vars.chainId);
 
             /// @dev 16 - Deploy Dst Swapper
-            vars.dstSwapper = address(new DstSwapper{salt: salt}(vars.superRegistry));
+            vars.dstSwapper = address(new DstSwapper{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes32("DstSwapper"))] = vars.dstSwapper;
 
             vars.superRegistryC.setAddress(vars.superRegistryC.DST_SWAPPER(), vars.dstSwapper, vars.chainId);
@@ -705,7 +686,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.superRegistryC.setAddress(vars.superRegistryC.DST_SWAPPER_PROCESSOR(), deployer, vars.chainId);
             vars.superRegistryC.setDelay(86_400);
             /// @dev 17 deploy emergency queue
-            vars.emergencyQueue = address(new EmergencyQueue{salt: salt}(vars.superRegistry));
+            vars.emergencyQueue = address(new EmergencyQueue{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("EmergencyQueue"))] = vars.emergencyQueue;
             vars.superRegistryC.setAddress(vars.superRegistryC.EMERGENCY_QUEUE(), vars.emergencyQueue, vars.chainId);
 
@@ -803,7 +784,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                             12e8,
                             /// 12 usd
                             28 gwei,
-                            10 wei,
+                            750,
                             10_000,
                             10_000
                         )
@@ -1404,17 +1385,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     )
         internal
         view
-        returns (uint256 msgValue, bytes memory)
+        returns (uint256 msgValue)
     {
         LocalAckVars memory vars;
         (vars.srcChainId, vars.dstChainId) = abi.decode(chainIds_, (uint64, uint64));
-
-        vars.ambCount = selectedAmbIds.length;
-
-        bytes[] memory paramsPerAMB = new bytes[](vars.ambCount);
-        paramsPerAMB = _generateExtraData(selectedAmbIds);
-
-        uint256[] memory gasPerAMB = new uint256[](vars.ambCount);
 
         address _paymentHelper = contracts[vars.dstChainId][bytes32(bytes("PaymentHelper"))];
         vars.paymentHelper = PaymentHelper(_paymentHelper);
@@ -1428,12 +1402,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         vars.message =
             abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superformId, amount))));
 
-        (vars.totalFees, gasPerAMB) =
-            vars.paymentHelper.estimateAMBFees(selectedAmbIds, vars.srcChainId, abi.encode(vars.message), paramsPerAMB);
-
-        AMBExtraData memory extraData = AMBExtraData(gasPerAMB, paramsPerAMB);
-
-        return (vars.totalFees, abi.encode(AckAMBData(selectedAmbIds, abi.encode(extraData))));
+        (msgValue,) = vars.paymentHelper.calculateAMBData(vars.srcChainId, selectedAmbIds, vars.message);
     }
 
     function _payload(address registry, uint64 chainId, uint256 payloadId_) internal returns (bytes memory payload_) {

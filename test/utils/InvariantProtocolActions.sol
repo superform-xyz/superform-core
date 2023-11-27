@@ -637,9 +637,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             }
         }
 
-        MessagingAssertVars[] memory aV = new MessagingAssertVars[](
-            vars.nDestinations
-        );
+        MessagingAssertVars[] memory aV = new MessagingAssertVars[](vars.nDestinations);
 
         /// @dev assert good delivery of message on destination by analyzing superformIds and mounts
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
