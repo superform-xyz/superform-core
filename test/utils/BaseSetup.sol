@@ -1385,17 +1385,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     )
         internal
         view
-        returns (uint256 msgValue, bytes memory)
+        returns (uint256 msgValue)
     {
         LocalAckVars memory vars;
         (vars.srcChainId, vars.dstChainId) = abi.decode(chainIds_, (uint64, uint64));
-
-        vars.ambCount = selectedAmbIds.length;
-
-        bytes[] memory paramsPerAMB = new bytes[](vars.ambCount);
-        paramsPerAMB = _generateExtraData(selectedAmbIds);
-
-        uint256[] memory gasPerAMB = new uint256[](vars.ambCount);
 
         address _paymentHelper = contracts[vars.dstChainId][bytes32(bytes("PaymentHelper"))];
         vars.paymentHelper = PaymentHelper(_paymentHelper);
@@ -1409,12 +1402,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         vars.message =
             abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superformId, amount))));
 
-        (vars.totalFees, gasPerAMB) =
-            vars.paymentHelper.estimateAMBFees(selectedAmbIds, vars.srcChainId, abi.encode(vars.message), paramsPerAMB);
-
-        AMBExtraData memory extraData = AMBExtraData(gasPerAMB, paramsPerAMB);
-
-        return (vars.totalFees, abi.encode(AckAMBData(selectedAmbIds, abi.encode(extraData))));
+        (msgValue,) = vars.paymentHelper.calculateAMBData(vars.srcChainId, selectedAmbIds, vars.message);
     }
 
     function _payload(address registry, uint64 chainId, uint256 payloadId_) internal returns (bytes memory payload_) {

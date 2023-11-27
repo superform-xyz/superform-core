@@ -1182,7 +1182,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
                     /// @dev performs unlock before the time ends
                     for (uint256 j = countTimelocked[i]; j > 0; j--) {
-                        (uint256 nativeFee,) = _generateAckGasFeesAndParamsForTimeLock(
+                        uint256 nativeFee = _generateAckGasFeesAndParamsForTimeLock(
                             abi.encode(CHAIN_0, DST_CHAINS[i]), AMBs, currentUnlockId - j + 1
                         );
 
@@ -1200,8 +1200,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     uint256 timelockPerformed;
                     /// @dev perform the calls from beginning to last because of easiness in passing unlock id
                     for (uint256 j = countTimelocked[i]; j > 0; j--) {
-                        (uint256 nativeFee,) = _generateAckGasFeesAndParamsForTimeLock(
-                            abi.encode(CHAIN_0, DST_CHAINS[i]), AMBs, currentUnlockId - j + 1
+                        uint256 nativeFee = _generateAckGasFeesAndParamsForTimeLock(
+                            abi.encode(CHAIN_0, DST_CHAINS[i]), AMBs, currentUnlockId - timelockPerformed
                         );
 
                         /// @dev increase time by 5 days
