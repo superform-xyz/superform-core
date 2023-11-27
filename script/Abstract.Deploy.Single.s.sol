@@ -377,7 +377,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRegistryC.setPermit2(CANONICAL_PERMIT2);
 
         /// @dev sets max number of vaults per destination
-        vars.superRegistryC.setVaultLimitPerTx(vars.chainId, 5);
+        vars.superRegistryC.setVaultLimitPerDestination(vars.chainId, 5);
 
         /// @dev 3.1 - deploy Core State Registry
         vars.coreStateRegistry = address(new CoreStateRegistry{ salt: salt }(vars.superRegistryC));
@@ -806,7 +806,7 @@ abstract contract AbstractDeploySingle is Script {
         /// @dev FIXME missing attribution of WORMHOLE_VAA_RELAYER_ROLE
 
         SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
-        vars.superRegistryC.setVaultLimitPerTx(vars.dstChainId, 5);
+        vars.superRegistryC.setVaultLimitPerDestination(vars.dstChainId, 5);
 
         /// @dev these values are mocks and has to be replaced
         /// swap gas cost: 50000
