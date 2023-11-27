@@ -354,9 +354,7 @@ contract SuperPositionsTest is BaseSetup {
 
                 assertGt(
                     uint256(
-                        uint160(
-                            SuperPositions(getContract(chainIds[i], "SuperPositions")).aErc20TokenId(superformId)
-                        )
+                        uint160(SuperPositions(getContract(chainIds[i], "SuperPositions")).aErc20TokenId(superformId))
                     ),
                     uint256(0)
                 );

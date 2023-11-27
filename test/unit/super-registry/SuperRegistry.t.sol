@@ -20,19 +20,21 @@ contract SuperRegistryTest is BaseSetup {
 
         vm.selectFork(FORKS[ETH]);
         superRegistry = SuperRegistry(getContract(ETH, "SuperRegistry"));
-        fakeRBAC = new SuperRBAC(ISuperRBAC.InitialRoleSetup({
-                        admin: deployer,
-                        emergencyAdmin: deployer,
-                        paymentAdmin: deployer,
-                        csrProcessor: deployer,
-                        tlProcessor: deployer,
-                        brProcessor: deployer,
-                        csrUpdater: deployer,
-                        srcVaaRelayer: deployer,
-                        dstSwapper: deployer,
-                        csrRescuer: deployer,
-                        csrDisputer: deployer
-                    }));
+        fakeRBAC = new SuperRBAC(
+            ISuperRBAC.InitialRoleSetup({
+                admin: deployer,
+                emergencyAdmin: deployer,
+                paymentAdmin: deployer,
+                csrProcessor: deployer,
+                tlProcessor: deployer,
+                brProcessor: deployer,
+                csrUpdater: deployer,
+                srcVaaRelayer: deployer,
+                dstSwapper: deployer,
+                csrRescuer: deployer,
+                csrDisputer: deployer
+            })
+        );
         fakeRegistry = new SuperRegistry(address(fakeRBAC));
 
         /// @dev malicious caller

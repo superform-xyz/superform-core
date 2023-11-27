@@ -36,12 +36,14 @@ contract SuperformRouterAATest is ProtocolActions {
         super.setUp();
 
         vm.selectFork(FORKS[ETH]);
-        walletSource =
-        new SmartContractWallet(SuperformRouter(payable(getContract(ETH, "SuperformRouter"))), getContract(ETH, "DAI"));
+        walletSource = new SmartContractWallet(
+            SuperformRouter(payable(getContract(ETH, "SuperformRouter"))), getContract(ETH, "DAI")
+        );
 
         vm.selectFork(FORKS[ARBI]);
-        walletDestination =
-        new SmartContractWallet(SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))), getContract(ARBI, "DAI"));
+        walletDestination = new SmartContractWallet(
+            SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))), getContract(ARBI, "DAI")
+        );
     }
 
     function test_depositWithSmartContractWallet() public {
@@ -65,8 +67,9 @@ contract SuperformRouterAATest is ProtocolActions {
     function test_withdrawWithSmartContractWallet_3rdChainId() public {
         _xChainDeposit_SmartContractWallet(false, true, "VaultMock", 0);
         vm.selectFork(FORKS[AVAX]);
-        SmartContractWallet walletDestinationAVAX =
-        new SmartContractWallet(SuperformRouter(payable(getContract(AVAX, "SuperformRouter"))), getContract(AVAX, "DAI"));
+        SmartContractWallet walletDestinationAVAX = new SmartContractWallet(
+            SuperformRouter(payable(getContract(AVAX, "SuperformRouter"))), getContract(AVAX, "DAI")
+        );
 
         _xChainWithdraw_SmartContractWallet(AVAX, address(walletDestinationAVAX), false, "VaultMock", 0);
     }
@@ -80,8 +83,9 @@ contract SuperformRouterAATest is ProtocolActions {
     function test_withdrawWithSmartContractWallet_3rdChainId_timelock() public {
         _xChainDeposit_SmartContractWallet(false, true, "ERC4626TimelockMock", 1);
         vm.selectFork(FORKS[AVAX]);
-        SmartContractWallet walletDestinationAVAX =
-        new SmartContractWallet(SuperformRouter(payable(getContract(AVAX, "SuperformRouter"))), getContract(AVAX, "DAI"));
+        SmartContractWallet walletDestinationAVAX = new SmartContractWallet(
+            SuperformRouter(payable(getContract(AVAX, "SuperformRouter"))), getContract(AVAX, "DAI")
+        );
 
         _xChainWithdraw_SmartContractWallet(AVAX, address(walletDestinationAVAX), false, "ERC4626TimelockMock", 1);
     }

@@ -351,13 +351,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
             string(abi.encodePacked("SuperPositions AERC20 ", IBaseForm(superform).superformYieldTokenName()));
         string memory symbol = string(abi.encodePacked("aERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
         uint8 decimal = uint8(IBaseForm(superform).getVaultDecimals());
-        aErc20Token = address(
-            new aERC20(
-                name,
-                symbol,
-                decimal
-            )
-        );
+        aErc20Token = address(new aERC20(name, symbol, decimal));
         /// @dev broadcast and deploy to the other destination chains
         BroadcastMessage memory transmuterPayload = BroadcastMessage(
             "SUPER_POSITIONS",
@@ -397,13 +391,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
             abi.decode(message_, (uint64, uint256, uint256, string, string, uint8));
         if (aErc20TokenId[superformId] != address(0)) revert AERC20_ALREADY_REGISTERED();
 
-        address aErc20Token = address(
-            new aERC20(
-                name,
-                symbol,
-                decimal
-            )
-        );
+        address aErc20Token = address(new aERC20(name, symbol, decimal));
 
         aErc20TokenId[superformId] = aErc20Token;
 

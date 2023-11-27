@@ -24,19 +24,21 @@ contract SuperRBACTest is BaseSetup {
 
     function test_setSuperRegistry() public {
         vm.startPrank(deployer);
-        SuperRBAC newReg = new SuperRBAC(ISuperRBAC.InitialRoleSetup({
-                        admin: deployer,
-                        emergencyAdmin: deployer,
-                        paymentAdmin: deployer,
-                        csrProcessor: deployer,
-                        tlProcessor: deployer,
-                        brProcessor: deployer,
-                        csrUpdater: deployer,
-                        srcVaaRelayer: deployer,
-                        dstSwapper: deployer,
-                        csrRescuer: deployer,
-                        csrDisputer: deployer
-                    }));
+        SuperRBAC newReg = new SuperRBAC(
+            ISuperRBAC.InitialRoleSetup({
+                admin: deployer,
+                emergencyAdmin: deployer,
+                paymentAdmin: deployer,
+                csrProcessor: deployer,
+                tlProcessor: deployer,
+                brProcessor: deployer,
+                csrUpdater: deployer,
+                srcVaaRelayer: deployer,
+                dstSwapper: deployer,
+                csrRescuer: deployer,
+                csrDisputer: deployer
+            })
+        );
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         newReg.setSuperRegistry(address(0));
 
