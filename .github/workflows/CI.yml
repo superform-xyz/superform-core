@@ -115,7 +115,7 @@ jobs:
           echo "FOUNDRY_FUZZ_SEED=$(echo $(($EPOCHSECONDS / 604800)))" >> $GITHUB_ENV
 
       - name: "Run all tests except invariant against the optimized build and produce gas reports"
-        run: 'forge test -vvv --gas-report --match-path "test/invariant/**/*.sol"'
+        run: "forge test -vvv --gas-report --no-match-path \"test/invariant/**/*.sol\""
 
       - name: "Add test summary"
         run: |
