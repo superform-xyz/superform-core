@@ -8,7 +8,7 @@ contract MainnetDeploy is AbstractDeploySingle {
                         SELECT CHAIN IDS TO DEPLOY HERE
     //////////////////////////////////////////////////////////////*/
 
-    uint64[] TARGET_DEPLOYMENT_CHAINS = [BSC, POLY, AVAX];
+    uint64[] TARGET_DEPLOYMENT_CHAINS = [BSC, POLY, BASE];
     ///@dev ORIGINAL SALT bytes32 constant salt = "CANTINA_DEPLOYMENT_4";
 
     /// @notice The main stage 1 script entrypoint
