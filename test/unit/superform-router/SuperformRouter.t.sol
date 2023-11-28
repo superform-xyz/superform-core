@@ -274,7 +274,7 @@ contract SuperformRouterTest is ProtocolActions {
 
         /// @dev approves before call
         MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
-        SuperRegistry(getContract(ETH, "SuperRegistry")).setVaultLimitPerTx(ETH, 1);
+        SuperRegistry(getContract(ETH, "SuperRegistry")).setVaultLimitPerDestination(ETH, 1);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectMultiVaultDeposit(req);

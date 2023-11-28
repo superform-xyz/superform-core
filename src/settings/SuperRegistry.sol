@@ -170,7 +170,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
-    function getVaultLimitPerTx(uint64 chainId_) external view override returns (uint256 vaultLimitPerTx_) {
+    function getVaultLimitPerDestination(uint64 chainId_) external view override returns (uint256 vaultLimitPerTx_) {
         vaultLimitPerTx_ = vaultLimitPerTx[chainId_];
     }
 
@@ -229,13 +229,13 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
-    function setVaultLimitPerTx(uint64 chainId_, uint256 vaultLimit_) external override onlyProtocolAdmin {
+    function setVaultLimitPerDestination(uint64 chainId_, uint256 vaultLimit_) external override onlyProtocolAdmin {
         if (vaultLimit_ == 0) {
             revert Error.ZERO_INPUT_VALUE();
         }
 
         vaultLimitPerTx[chainId_] = vaultLimit_;
-        emit SetVaultLimitPerTx(chainId_, vaultLimit_);
+        emit SetVaultLimitPerDestination(chainId_, vaultLimit_);
     }
 
     /// @inheritdoc ISuperRegistry
