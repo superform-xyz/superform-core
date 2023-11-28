@@ -114,8 +114,6 @@ abstract contract AbstractDeploySingle is Script {
         "EmergencyQueue"
     ];
 
-    bytes32 constant salt = "CANTINA_DEPLOYMENT_4";
-
     enum Chains {
         Ethereum,
         Polygon,
@@ -144,6 +142,7 @@ abstract contract AbstractDeploySingle is Script {
 
     uint256 public deployerPrivateKey;
     address public ownerAddress;
+    address public burnerPrivateKey;
     address public multiSigAddress;
 
     /// @dev Mapping of chain enum to rpc url
@@ -288,9 +287,8 @@ abstract contract AbstractDeploySingle is Script {
     /// @param cycle deployment cycle (dev, prod)
     modifier setEnvDeploy(Cycle cycle) {
         if (cycle == Cycle.Dev) {
-            deployerPrivateKey = vm.envUint("LOCAL_PRIVATE_KEY");
-            ownerAddress = vm.envAddress("LOCAL_OWNER_ADDRESS");
-            multiSigAddress = vm.envAddress("MULTI_SIG_ADDRESS");
+            (ownerAddress, deployerPrivateKey) = makeAddrAndKey("tenderly");
+            //multiSigAddress = vm.envAddress("MULTI_SIG_ADDRESS");
         } else {
             deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
             ownerAddress = vm.envAddress("OWNER_ADDRESS");
@@ -332,7 +330,8 @@ abstract contract AbstractDeploySingle is Script {
         uint256 i,
         uint256 trueIndex,
         Cycle cycle,
-        uint64[] memory targetDeploymentChains
+        uint64[] memory targetDeploymentChains,
+        bytes32 salt
     )
         internal
         setEnvDeploy(cycle)
@@ -608,6 +607,7 @@ abstract contract AbstractDeploySingle is Script {
         // j = 0
         //
         vars.chainId = targetDeploymentChains[i];
+
         vm.startBroadcast(deployerPrivateKey);
 
         vars.lzImplementation = _readContract(chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
@@ -662,6 +662,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.chainId = s_superFormChainIds[i];
 
         vm.startBroadcast(deployerPrivateKey);
+
         SuperRBAC srbac = SuperRBAC(payable(_readContract(chainNames[trueIndex], vars.chainId, "SuperRBAC")));
         bytes32 protocolAdminRole = srbac.PROTOCOL_ADMIN_ROLE();
         bytes32 emergencyAdminRole = srbac.EMERGENCY_ADMIN_ROLE();
@@ -690,6 +691,7 @@ abstract contract AbstractDeploySingle is Script {
         SetupVars memory vars;
 
         vars.chainId = previousDeploymentChains[i];
+
         vm.startBroadcast(deployerPrivateKey);
 
         vars.lzImplementation = _readContract(chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
