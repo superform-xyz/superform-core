@@ -21,6 +21,7 @@ env:
   TENDERLY_ACCESS_KEY: ${{ secrets.TENDERLY_ACCESS_KEY }}
   TENDERLY_PROJECT_SLUG: 'superform-v1-d5' # your project slug
   TENDERLY_ACCOUNT_ID: 'superform' # your username or organization name
+  FOUNDRY_EXPORTS_OVERWRITE_LATEST: 'true'
 
 jobs:
   build:
