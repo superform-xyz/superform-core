@@ -9,9 +9,10 @@ contract MainnetDeploy is AbstractDeploySingle {
     //////////////////////////////////////////////////////////////*/
 
     uint64[] TARGET_DEPLOYMENT_CHAINS = [BSC, POLY, AVAX];
+    ///@dev ORIGINAL SALT bytes32 constant salt = "CANTINA_DEPLOYMENT_4";
 
     /// @notice The main stage 1 script entrypoint
-    function deployStage1(uint256 selectedChainIndex) external {
+    function deployStage1(uint256 selectedChainIndex, uint256 salt) external {
         _preDeploymentSetup();
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {
@@ -22,7 +23,7 @@ contract MainnetDeploy is AbstractDeploySingle {
             }
         }
 
-        _deployStage1(selectedChainIndex, trueIndex, Cycle.Prod, TARGET_DEPLOYMENT_CHAINS);
+        _deployStage1(selectedChainIndex, trueIndex, Cycle.Prod, TARGET_DEPLOYMENT_CHAINS, keccak256(abi.encode(salt)));
     }
 
     /// @dev stage 2 must be called only after stage 1 is complete for all chains!

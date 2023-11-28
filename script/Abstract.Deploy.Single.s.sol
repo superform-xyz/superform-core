@@ -114,7 +114,6 @@ abstract contract AbstractDeploySingle is Script {
         "EmergencyQueue"
     ];
 
-    bytes32 constant salt = "CANTINA_DEPLOYMENT_4";
 
     enum Chains {
         Ethereum,
@@ -332,7 +331,8 @@ abstract contract AbstractDeploySingle is Script {
         uint256 i,
         uint256 trueIndex,
         Cycle cycle,
-        uint64[] memory targetDeploymentChains
+        uint64[] memory targetDeploymentChains,
+        bytes32 salt
     )
         internal
         setEnvDeploy(cycle)
