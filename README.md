@@ -178,6 +178,6 @@ $ forge test
 
 ## Audits
 
-- [Gerard Pearson](https://twitter.com/gpersoon): [2023-09-superform.pdf](https://github.com/superform-xyz/superform-core/files/13300598/2023-09-superform.pdf)
+- [Gerard Persoon](https://twitter.com/gpersoon): [2023-09-superform.pdf](https://github.com/superform-xyz/superform-core/files/13300598/2023-09-superform.pdf)
 
 - [Hans Friese](https://twitter.com/hansfriese): [Superform_Core_Review_Final_Hans_20230921.pdf](https://github.com/superform-xyz/superform-core/files/13300591/Superform_Core_Review_Final_Hans_20230921.pdf)
