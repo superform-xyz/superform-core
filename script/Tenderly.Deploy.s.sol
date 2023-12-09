@@ -8,7 +8,7 @@ contract TenderlyDeploy is AbstractDeploySingle {
                         SELECT CHAIN IDS TO DEPLOY HERE
     //////////////////////////////////////////////////////////////*/
 
-    uint64[] TARGET_DEPLOYMENT_CHAINS = [OP, POLY, ARBI];
+    uint64[] TARGET_DEPLOYMENT_CHAINS = [BASE, ARBI, ETH, FTM];
 
     /// @notice The main stage 1 script entrypoint
     function deployStage1(uint256 selectedChainIndex, uint256 salt) external {
