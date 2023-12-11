@@ -160,7 +160,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
     /// @inheritdoc IDstSwapper
     function batchProcessTx(
         uint256 payloadId_,
-        uint256[] calldata indices,
+        uint256[] calldata indices_,
         uint8[] calldata bridgeIds_,
         bytes[] calldata txData_
     )
@@ -169,6 +169,10 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         onlySwapper
         nonReentrant
     {
+        if (indices_.length != bridgeIds_.length || bridgeIds_.length != txData_.length) {
+            revert Error.ARRAY_LENGTH_MISMATCH();
+        }
+
         IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
 
         _isValidPayloadId(payloadId_, coreStateRegistry);
@@ -178,10 +182,10 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
 
         InitMultiVaultData memory data = abi.decode(coreStateRegistry.payloadBody(payloadId_), (InitMultiVaultData));
 
-        uint256 len = txData_.length;
+        uint256 len = indices_.length;
         for (uint256 i; i < len; ++i) {
             _processTx(
-                payloadId_, indices[i], bridgeIds_[i], txData_[i], data.liqData[i].interimToken, coreStateRegistry
+                payloadId_, indices_[i], bridgeIds_[i], txData_[i], data.liqData[i].interimToken, coreStateRegistry
             );
         }
     }
@@ -226,7 +230,10 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         override
         onlySwapper
     {
-        uint256 len = indices_.length;
+
+        if (indices_.length != interimTokens_.length || interimTokens_.length != amounts_.length) {
+            revert Error.ARRAY_LENGTH_MISMATCH();
+        }
 
         IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
 
@@ -237,6 +244,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
 
         InitMultiVaultData memory data = abi.decode(coreStateRegistry.payloadBody(payloadId_), (InitMultiVaultData));
 
+        uint256 len = indices_.length;
         for (uint256 i; i < len; ++i) {
             _updateFailedTx(
                 payloadId_, indices_[i], interimTokens_[i], data.liqData[i].interimToken, amounts_[i], coreStateRegistry
@@ -348,13 +356,16 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         /// too low)
         /// @notice this doesn't mean that the keeper or the user can swap any amount, because of the 2nd slippage check
         /// in CoreStateRegistry
-        /// @notice in this check, we check if there is negative slippage, for which case, the user is capped to receive
-        /// the v.expAmount of tokens (originally defined)
         if (v.balanceDiff < ((v.expAmount * (10_000 - v.maxSlippage)) / 10_000)) {
             revert Error.SLIPPAGE_OUT_OF_BOUNDS();
         }
 
-        /// @dev updates swapped amount
+        /// @dev updates swapped amount adjusting for 
+        /// @notice in this check, we check if there is negative slippage, for which case, the user is capped to receive
+        /// the v.expAmount of tokens (originally defined)
+        if (v.balanceDiff > v.expAmount) {
+            v.balanceDiff = v.expAmount;
+        }
         swappedAmount[payloadId_][index_] = v.balanceDiff;
 
         /// @dev emits final event
