@@ -56,7 +56,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         IERC20 token;
         uint256 txDataLength;
         uint256 totalAmount;
-        uint256 approvalAmount;
         uint256 amountIn;
         uint8 bridgeId;
         address permit2;
@@ -68,7 +67,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         uint256 totalAmount;
         uint256 permit2dataLen;
         uint256 targetLen;
-        uint256[] approvalAmounts;
         uint256[] amountsIn;
         uint8[] bridgeIds;
         address permit2;
@@ -895,17 +893,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             v.amountIn = IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeId)).decodeAmountIn(
                 vaultData_.liqData.txData, false
             );
+        } else {
+            v.amountIn = vaultData_.amount;
         }
 
         if (vaultData_.liqData.token != NATIVE) {
             v.token = IERC20(vaultData_.liqData.token);
-
-            if (v.txDataLength == 0) {
-                v.approvalAmount = vaultData_.amount;
-            } else {
-                v.approvalAmount = v.amountIn;
-                /// e.g asset in is USDC (6 decimals), we use this amount to approve the transfer to superform
-            }
 
             if (permit2data_.length != 0) {
                 v.permit2 = _getPermit2();
@@ -918,12 +911,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 IPermit2(v.permit2).permitTransferFrom(
                     // The permit message.
                     IPermit2.PermitTransferFrom({
-                        permitted: IPermit2.TokenPermissions({ token: v.token, amount: v.approvalAmount }),
+                        permitted: IPermit2.TokenPermissions({ token: v.token, amount: v.amountIn}),
                         nonce: nonce,
                         deadline: deadline
                     }),
                     // The transfer recipient and amount.
-                    IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: v.approvalAmount }),
+                    IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: v.amountIn }),
                     // The owner of the tokens, which must also be
                     // the signer of the message, otherwise this call
                     // will fail.
@@ -933,17 +926,17 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                     signature
                 );
             } else {
-                if (v.token.allowance(srcSender_, address(this)) < v.approvalAmount) {
+                if (v.token.allowance(srcSender_, address(this)) < v.amountIn) {
                     revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
                 }
 
                 /// @dev moves the tokens from the user to the router
-                v.token.safeTransferFrom(srcSender_, address(this), v.approvalAmount);
+                v.token.safeTransferFrom(srcSender_, address(this), v.amountIn);
             }
 
             if (target_ != address(0)) {
                 /// @dev approves the input amount to the target
-                v.token.safeIncreaseAllowance(target_, v.approvalAmount);
+                v.token.safeIncreaseAllowance(target_, v.amountIn);
             }
         }
 
@@ -975,6 +968,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 v.amountsIn[i] = IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[i])).decodeAmountIn(
                     vaultData_.liqData[i].txData, false
                 );
+            } else { 
+                v.amountsIn[i] = vaultData_.amounts[i];
             }
         }
 
@@ -984,7 +979,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             v.totalAmount;
 
             v.permit2dataLen = permit2data_.length;
-            v.approvalAmounts = new uint256[](v.len);
 
             for (uint256 i; i < v.len; ++i) {
                 if (vaultData_.liqData[i].token != address(v.token)) {
@@ -992,15 +986,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 }
 
                 uint256 txDataLength = vaultData_.liqData[i].txData.length;
-                if (txDataLength == 0 && !xChain) {
-                    v.approvalAmounts[i] = vaultData_.amounts[i];
-                } else if (txDataLength == 0 && xChain) {
+                if (txDataLength == 0 && xChain) {
                     revert Error.NO_TXDATA_PRESENT();
-                } else {
-                    v.approvalAmounts[i] = v.amountsIn[i];
-                }
+                } 
 
-                v.totalAmount += v.approvalAmounts[i];
+                v.totalAmount += v.amountsIn[i];
             }
 
             if (v.totalAmount == 0) {
@@ -1043,7 +1033,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             v.targetLen = targets_.length;
             for (uint256 j; j < v.targetLen; ++j) {
                 /// @dev approves the superform
-                v.token.safeIncreaseAllowance(targets_[j], v.approvalAmounts[j]);
+                v.token.safeIncreaseAllowance(targets_[j], v.amountsIn[j]);
             }
         }
 
