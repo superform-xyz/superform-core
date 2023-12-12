@@ -43,7 +43,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     //////////////////////////////////////////////////////////////
 
     /// @dev just stores the superformIds that failed in a specific payload id
-    mapping(uint256 payloadId => FailedDeposit) internal failedDeposits;
+    mapping(uint256 payloadId => FailedDeposit) failedDeposits;
 
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
@@ -215,7 +215,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
 
         if (
-            failedDeposits_.superformIds.length == 0 || proposedAmounts_.length == 0
+            failedDeposits_.superformIds.length == 0 
                 || failedDeposits_.superformIds.length != proposedAmounts_.length
         ) {
             revert Error.INVALID_RESCUE_DATA();

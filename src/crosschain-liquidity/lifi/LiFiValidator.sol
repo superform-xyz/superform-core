@@ -133,16 +133,16 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
             address, /*receiver*/
             uint256 amount,
             uint256, /*minAmount*/
-            uint256, /*destinationChainId*/
+            uint256, /*destinationChainId*/0
             bool, /*hasSourceSwaps*/
             bool /*hasDestinationCall*/
         ) {
-            /// @dev if there isn't a source swap, amountIn is minAmountOut from bridge data?
+            /// @dev if there isn't a source swap, amount_ is minAmountOut from bridge data
 
             amount_ = amount;
         } catch {
             if (genericSwapDisallowed_) revert Error.INVALID_ACTION();
-            /// @dev in the case of a generic swap, amountIn is the from amount
+            /// @dev in the case of a generic swap, amount_ is the from amount
 
             (, amount_,,,) = extractGenericSwapParameters(txData_);
         }
@@ -153,6 +153,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         (token_, amount_,,,) = extractGenericSwapParameters(txData_);
     }
 
+    /// @inheritdoc IBridgeValidator
     function decodeSwapOutputToken(bytes calldata txData_) external view override returns (address token_) {
         try this.extractMainParameters(txData_) returns (
             string memory, /*bridge*/

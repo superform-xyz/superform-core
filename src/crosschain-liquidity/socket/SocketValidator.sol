@@ -91,10 +91,13 @@ contract SocketValidator is BridgeValidator {
         override
         returns (address, /*token_*/ uint256 /*amount_*/ )
     {
-        revert();
+        /// @dev SocketValidator cannot be used for just swaps, see SocketOneinchValidator
+        revert Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
     }
 
+    /// @inheritdoc IBridgeValidator
     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
+        /// @dev SocketValidator cannot be used for just swaps, see SocketOneinchValidator
         revert Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
     }
 
