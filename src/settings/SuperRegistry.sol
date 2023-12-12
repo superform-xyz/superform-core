@@ -230,10 +230,11 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     /// @inheritdoc ISuperRegistry
     function setVaultLimitPerTx(uint64 chainId_, uint256 vaultLimit_) external override onlyProtocolAdmin {
-        if (vaultLimit_ == 0) {
+
+        if (chainId_ == 0 || vaultLimit_ == 0) {
             revert Error.ZERO_INPUT_VALUE();
         }
-
+        
         vaultLimitPerTx[chainId_] = vaultLimit_;
         emit SetVaultLimitPerTx(chainId_, vaultLimit_);
     }
