@@ -85,6 +85,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /// @param mailbox_ is the address of hyperlane mailbox
     /// @param igp_ is the address of hyperlane gas paymaster
     function setHyperlaneConfig(IMailbox mailbox_, IInterchainGasPaymaster igp_) external onlyProtocolAdmin {
+        if (address(mailbox_) == address(0)) revert Error.ZERO_ADDRESS();
         mailbox = mailbox_;
         igp = igp_;
 
