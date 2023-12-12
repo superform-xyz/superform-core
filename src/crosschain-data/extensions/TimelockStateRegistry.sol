@@ -100,7 +100,6 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     /// @inheritdoc ITimelockStateRegistry
     function receivePayload(
         uint8 type_,
-        address srcSender_,
         uint64 srcChainId_,
         uint256 lockedTill_,
         InitSingleVaultData memory data_
@@ -112,7 +111,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         ++timelockPayloadCounter;
 
         timelockPayload[timelockPayloadCounter] =
-            TimelockPayload(type_, srcSender_, srcChainId_, lockedTill_, data_, TimelockStatus.PENDING);
+            TimelockPayload(type_, srcChainId_, lockedTill_, data_, TimelockStatus.PENDING);
     }
 
     /// @inheritdoc ITimelockStateRegistry
@@ -182,14 +181,14 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
                 (uint256 payloadId,) = abi.decode(p.data.extraFormData, (uint256, uint256));
 
                 _dispatchAcknowledgement(
-                    p.srcChainId, _getDeliveryAMB(payloadId), _constructSingleReturnData(p.srcSender, p.data)
+                    p.srcChainId, _getDeliveryAMB(payloadId), _constructSingleReturnData(p.data.receiverAddress, p.data)
                 );
             }
 
             /// @dev for direct chain, superPositions are minted directly
             if (p.isXChain == 0) {
                 ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintSingle(
-                    p.srcSender, p.data.superformId, p.data.amount
+                    p.data.receiverAddress, p.data.superformId, p.data.amount
                 );
             }
         }

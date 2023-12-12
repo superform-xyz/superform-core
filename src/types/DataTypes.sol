@@ -153,7 +153,6 @@ enum TimelockStatus {
 /// @dev holds information about the timelock payload
 struct TimelockPayload {
     uint8 isXChain;
-    address srcSender;
     uint64 srcChainId;
     uint256 lockedTill;
     InitSingleVaultData data;

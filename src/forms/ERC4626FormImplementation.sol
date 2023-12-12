@@ -272,19 +272,13 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         emit Processed(srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
     }
 
-    function _processDirectWithdraw(
-        InitSingleVaultData memory singleVaultData_,
-        address srcSender_
-    )
-        internal
-        returns (uint256 dstAmount)
-    {
+    function _processDirectWithdraw(InitSingleVaultData memory singleVaultData_) internal returns (uint256 dstAmount) {
         directWithdrawLocalVars memory v;
         v.len1 = singleVaultData_.liqData.txData.length;
 
-        /// @dev if there is no txData, on withdraws the receiver is the original beneficiary (srcSender_), otherwise it
+        /// @dev if there is no txData, on withdraws the receiver is receiverAddress, otherwise it
         /// is this contract (before swap)
-        v.receiver = v.len1 == 0 ? srcSender_ : address(this);
+        v.receiver = v.len1 == 0 ? singleVaultData_.receiverAddress : address(this);
 
         v.v = IERC4626(vault);
         v.asset = address(asset);
@@ -314,7 +308,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                     singleVaultData_.liqData.liqDstChainId,
                     false,
                     address(this),
-                    srcSender_,
+                    singleVaultData_.receiverAddress,
                     singleVaultData_.liqData.token,
                     address(0)
                 )
@@ -332,7 +326,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
     function _processXChainWithdraw(
         InitSingleVaultData memory singleVaultData_,
-        address, /*srcSender_*/
         uint64 srcChainId_
     )
         internal

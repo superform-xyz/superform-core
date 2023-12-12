@@ -76,7 +76,7 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
         onlyKYC(srcSender_)
         returns (uint256 dstAmount)
     {
-        dstAmount = _processDirectWithdraw(singleVaultData_, srcSender_);
+        dstAmount = _processDirectWithdraw(singleVaultData_);
     }
 
     /// @inheritdoc BaseForm
