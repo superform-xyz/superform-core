@@ -316,7 +316,7 @@ contract PaymentHelper is IPaymentHelper {
     {
         uint256 totalDstGas;
 
-        /// @dev step 1: Estimate AMB costs
+        /// @dev step 1: estimate AMB costs
         uint256 ambFees =
             _estimateAMBFees(req_.ambIds, req_.dstChainId, _generateSingleVaultMessage(req_.superformData));
         srcAmount += ambFees;
