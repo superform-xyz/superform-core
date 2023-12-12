@@ -191,7 +191,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         }
 
         if (wormholeMessage.emitterChainId == wormhole.chainId()) {
-            revert Error.INVALID_SRC_CHAIN_ID();
+            revert Error.INVALID_CHAIN_ID();
         }
 
         if (fromWormholeFormat(wormholeMessage.emitterAddress) != authorizedImpl[wormholeMessage.emitterChainId]) {

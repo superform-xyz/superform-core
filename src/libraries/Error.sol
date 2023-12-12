@@ -221,7 +221,7 @@ library Error {
     /// @dev thrown if amb id is not valid leading to an address 0 of the implementation
     error INVALID_BRIDGE_ID();
 
-    /// @dev thrown if chain id brought in the cross chain message is invalid
+    /// @dev thrown if chain id involved in xchain message is invalid
     error INVALID_CHAIN_ID();
 
     /// @dev thrown if payload update amount isn't equal to dst swapper amount
@@ -255,14 +255,14 @@ library Error {
     ///@notice errors thrown due to function execution logic
 
     /// COMMON EXECUTION ERRORS
-    /// @dev thrown if allowance in direct deposit is not correct
-    error DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
-
     /// @dev thrown if payload is not unique
     error DUPLICATE_PAYLOAD();
 
     /// @dev thrown if native tokens fail to be sent to superform contracts
     error FAILED_TO_SEND_NATIVE();
+
+    /// @dev thrown if allowance is not correct to deposit
+    error INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
 
     /// @dev thrown if native amount is not at least equal to the amount in the request
     error INSUFFICIENT_NATIVE_AMOUNT();
@@ -316,9 +316,6 @@ library Error {
 
     /// @dev thrown if update payload function was called on a wrong payload
     error INVALID_PAYLOAD_UPDATE_REQUEST();
-
-    /// @dev thrown if src chain is blocked from messaging
-    error INVALID_SRC_CHAIN_ID();
 
     /// @dev thrown if trying to finalize the payload but the withdraw is still locked
     error LOCKED();

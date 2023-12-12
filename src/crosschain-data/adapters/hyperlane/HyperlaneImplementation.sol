@@ -137,6 +137,10 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     {
         uint32 domain = ambChainId[dstChainId_];
 
+        if (domain == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
         mailbox.dispatch{ value: msg.value }(
             domain, _castAddr(authorizedImpl[domain]), message_, _generateHookMetadata(extraData_, srcSender_)
         );

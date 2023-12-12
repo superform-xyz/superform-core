@@ -934,7 +934,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 );
             } else {
                 if (v.token.allowance(srcSender_, address(this)) < v.approvalAmount) {
-                    revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+                    revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
                 }
 
                 /// @dev moves the tokens from the user to the router
@@ -1032,7 +1032,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 );
             } else {
                 if (v.token.allowance(srcSender_, address(this)) < v.totalAmount) {
-                    revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+                    revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
                 }
 
                 /// @dev moves the tokens from the user to the router

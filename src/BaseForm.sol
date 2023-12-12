@@ -82,6 +82,10 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     //////////////////////////////////////////////////////////////
 
     constructor(address superRegistry_) {
+        if (superRegistry_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
+
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }
@@ -158,9 +162,8 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
 
     receive() external payable { }
 
-    /// @param superRegistry_        ISuperRegistry address deployed
-    /// @param vault_         The vault address this form pertains to
-    /// @dev sets caller as the admin of the contract.
+    /// @param superRegistry_  ISuperRegistry address deployed
+    /// @param vault_ The vault address this form pertains to
     function initialize(address superRegistry_, address vault_, address asset_) external initializer {
         if (ISuperRegistry(superRegistry_) != superRegistry) revert Error.NOT_SUPER_REGISTRY();
         if (vault_ == address(0) || asset_ == address(0)) revert Error.ZERO_ADDRESS();

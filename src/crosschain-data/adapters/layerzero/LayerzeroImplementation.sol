@@ -195,7 +195,12 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         override
         onlyValidStateRegistry
     {
-        _lzSend(ambChainId[dstChainId_], message_, payable(srcSender_), address(0x0), extraData_, msg.value);
+        uint16 domain = ambChainId[dstChainId_];
+        if (domain == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
+        _lzSend(domain, message_, payable(srcSender_), address(0x0), extraData_, msg.value);
     }
 
     /// @inheritdoc IAmbImplementation
@@ -326,7 +331,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     {
         bytes memory trustedRemote = trustedRemoteLookup[dstChainId_];
         if (trustedRemote.length == 0) {
-            revert Error.INVALID_SRC_CHAIN_ID();
+            revert Error.INVALID_CHAIN_ID();
         }
 
         lzEndpoint.send{ value: msgValue_ }(
