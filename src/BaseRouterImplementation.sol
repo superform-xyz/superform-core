@@ -825,7 +825,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (len != liqRequestsLen) return false;
 
         /// @dev deposits beyond max vaults per tx is blocked only for xchain
-        if (lenSuperforms > superRegistry.getVaultLimitPerTx(dstChainId_)) {
+        if (lenSuperforms > superRegistry.getVaultLimitPerDestination(dstChainId_)) {
             return false;
         }
 
