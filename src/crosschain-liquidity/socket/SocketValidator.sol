@@ -95,7 +95,7 @@ contract SocketValidator is BridgeValidator {
         revert Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
     }
 
-    /// @inheritdoc IBridgeValidator
+    /// @inheritdoc BridgeValidator
     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
         /// @dev SocketValidator cannot be used for just swaps, see SocketOneinchValidator
         revert Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();

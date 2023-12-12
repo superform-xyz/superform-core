@@ -133,7 +133,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
             address, /*receiver*/
             uint256 amount,
             uint256, /*minAmount*/
-            uint256, /*destinationChainId*/0
+            uint256, /*destinationChainId*/
             bool, /*hasSourceSwaps*/
             bool /*hasDestinationCall*/
         ) {
@@ -153,7 +153,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         (token_, amount_,,,) = extractGenericSwapParameters(txData_);
     }
 
-    /// @inheritdoc IBridgeValidator
+    /// @inheritdoc BridgeValidator
     function decodeSwapOutputToken(bytes calldata txData_) external view override returns (address token_) {
         try this.extractMainParameters(txData_) returns (
             string memory, /*bridge*/
