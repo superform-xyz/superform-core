@@ -643,7 +643,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
             /// @dev 13 - Deploy SuperPositions
             vars.superPositions =
-                address(new SuperPositions{ salt: salt }("https://apiv2-dev.superform.xyz/", vars.superRegistry));
+                address(new SuperPositions{ salt: salt }("https://ipfs-gateway.superform.xyz/ipns/k51qzi5uqu5dj8wup5t6yyj55o8rj4dx98g931fczrzcagp26hstv7ba7shfmc/Animations/", vars.superRegistry));
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);
