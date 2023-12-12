@@ -249,6 +249,9 @@ library Error {
     /// @dev thrown if src tx types mismatch in state sync
     error SRC_TX_TYPE_MISMATCH();
 
+    /// @dev error thrown when msg value should be zero in certain payable functions
+    error MSG_VALUE_NOT_ZERO();
+
     //////////////////////////////////////////////////////////////
     //                  EXECUTION ERRORS                        //
     //////////////////////////////////////////////////////////////

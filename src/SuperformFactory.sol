@@ -258,6 +258,8 @@ contract SuperformFactory is ISuperformFactory {
             );
 
             _broadcast(abi.encode(factoryPayload), extraData_);
+        } else if (msg.value != 0) {
+            revert Error.MSG_VALUE_NOT_ZERO();
         }
 
         emit FormImplementationPaused(formImplementationId_, status_);
