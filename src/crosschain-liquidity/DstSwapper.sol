@@ -27,6 +27,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
 
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
+    uint256 private constant ENTIRE_SLIPPAGE = 10_000;
 
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
@@ -356,7 +357,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         /// too low)
         /// @notice this doesn't mean that the keeper or the user can swap any amount, because of the 2nd slippage check
         /// in CoreStateRegistry
-        if (v.balanceDiff < ((v.expAmount * (10_000 - v.maxSlippage)) / 10_000)) {
+        if (v.balanceDiff < ((v.expAmount * (ENTIRE_SLIPPAGE - v.maxSlippage)) / ENTIRE_SLIPPAGE)) {
             revert Error.SLIPPAGE_OUT_OF_BOUNDS();
         }
 
