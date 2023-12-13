@@ -343,6 +343,11 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     /// @inheritdoc QuorumManager
     function setRequiredMessagingQuorum(uint64 srcChainId_, uint256 quorum_) external override onlyProtocolAdmin {
+
+        if (srcChainId_ == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
         requiredQuorum[srcChainId_] = quorum_;
 
         emit QuorumSet(srcChainId_, quorum_);
