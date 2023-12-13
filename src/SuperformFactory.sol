@@ -177,6 +177,7 @@ contract SuperformFactory is ISuperformFactory {
         onlyProtocolAdmin
     {
         if (formImplementation_ == address(0)) revert Error.ZERO_ADDRESS();
+
         if (!ERC165Checker.supportsERC165(formImplementation_)) revert Error.ERC165_UNSUPPORTED();
         if (formImplementation[formImplementationId_] != address(0)) {
             revert Error.FORM_IMPLEMENTATION_ID_ALREADY_EXISTS();
@@ -279,14 +280,29 @@ contract SuperformFactory is ISuperformFactory {
     /// @dev interacts with broadcast state registry to broadcasting state changes to all connected remote chains
     /// @param message_ is the crosschain message to be sent.
     /// @param extraData_ is the amb override information.
-    function _broadcast(bytes memory message_, bytes memory extraData_) internal {
+    function _broadcast(bytes memory message_, bytes memory extraData_) internal returns (uint256) {
         (uint8 ambId, bytes memory broadcastParams) = abi.decode(extraData_, (uint8, bytes));
 
+        /// @dev if the broadcastParams are wrong this will revert
+        (uint256 gasFee, bytes memory extraData) = abi.decode(broadcastParams, (uint256, bytes));
+
+        if (msg.value < gasFee) {
+            revert Error.INVALID_BROADCAST_FEE();
+        }
+
         /// @dev ambIds are validated inside the broadcast state registry
-        /// @dev broadcastParams if wrong will revert in the amb implementation
-        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{
-            value: msg.value
-        }(msg.sender, ambId, message_, broadcastParams);
+        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{ value: gasFee }(
+            msg.sender, ambId, gasFee, message_, extraData
+        );
+
+        if (msg.value > gasFee) {
+            /// @dev forwards the rest to msg.sender
+            (bool success,) = payable(msg.sender).call{ value: msg.value - gasFee }("");
+
+            if (!success) {
+                revert Error.FAILED_TO_SEND_NATIVE();
+            }
+        }
     }
 
     /// @dev synchronize paused status update message from remote chain

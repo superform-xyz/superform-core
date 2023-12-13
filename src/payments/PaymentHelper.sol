@@ -54,7 +54,6 @@ contract PaymentHelper is IPaymentHelper {
     mapping(uint64 chainId => uint256 gasForOps) public timelockCost;
 
     /// @dev register transmuter params
-    uint256 public totalTransmuterFees;
     bytes public extraDataForTransmuter;
 
     //////////////////////////////////////////////////////////////
@@ -126,13 +125,8 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @inheritdoc IPaymentHelper
-    function getRegisterTransmuterAMBData()
-        external
-        view
-        override
-        returns (uint256 totalFees, bytes memory extraData)
-    {
-        return (totalTransmuterFees, extraDataForTransmuter);
+    function getRegisterTransmuterAMBData() external view override returns (bytes memory) {
+        return extraDataForTransmuter;
     }
 
     /// @inheritdoc IPaymentHelper
@@ -526,14 +520,7 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @inheritdoc IPaymentHelper
-    function updateRegisterAERC20Params(
-        uint256 totalTransmuterFees_,
-        bytes memory extraDataForTransmuter_
-    )
-        external
-        onlyEmergencyAdmin
-    {
-        totalTransmuterFees = totalTransmuterFees_;
+    function updateRegisterAERC20Params(bytes memory extraDataForTransmuter_) external onlyEmergencyAdmin {
         extraDataForTransmuter = extraDataForTransmuter_;
     }
 

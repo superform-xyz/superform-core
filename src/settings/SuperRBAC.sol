@@ -216,10 +216,26 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     /// @param extraData_ is the amb override information.
     function _broadcast(bytes memory message_, bytes memory extraData_) internal {
         (uint8 ambId, bytes memory broadcastParams) = abi.decode(extraData_, (uint8, bytes));
+
+        /// @dev if the broadcastParams are wrong this will revert
+        (uint256 gasFee, bytes memory extraData) = abi.decode(broadcastParams, (uint256, bytes));
+
+        if (msg.value < gasFee) {
+            revert Error.INVALID_BROADCAST_FEE();
+        }
+
         /// @dev ambIds are validated inside the factory state registry
-        /// @dev if the broadcastParams are wrong, this will revert in the amb implementation
-        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{
-            value: msg.value
-        }(msg.sender, ambId, message_, broadcastParams);
+        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{ value: gasFee }(
+            msg.sender, ambId, gasFee, message_, extraData
+        );
+
+        if (msg.value > gasFee) {
+            /// @dev forwards the rest to msg.sender
+            (bool success,) = payable(msg.sender).call{ value: msg.value - gasFee }("");
+
+            if (!success) {
+                revert Error.FAILED_TO_SEND_NATIVE();
+            }
+        }
     }
 }
