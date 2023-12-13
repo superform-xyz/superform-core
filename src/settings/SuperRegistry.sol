@@ -14,7 +14,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
 
-    uint256 private constant MIN_DELAY = 1 hours;
+    uint256 private constant MIN_DELAY = 15 minutes;
     uint256 private constant MAX_DELAY = 24 hours;
     uint64 public immutable CHAIN_ID;
 
@@ -87,7 +87,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     mapping(uint8 ambId => address ambAddresses) public ambAddresses;
     mapping(uint8 ambId => bool isBroadcastAMB) public isBroadcastAMB;
 
-    mapping(uint64 chainId => uint256 vaultLimitPerTx) public vaultLimitPerTx;
+    mapping(uint64 chainId => uint256 vaultLimitPerDestination) public vaultLimitPerDestination;
 
     mapping(uint8 registryId => address registryAddress) public registryAddresses;
     /// @dev is the reverse mapping of registryAddresses
@@ -98,6 +98,13 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
     //////////////////////////////////////////////////////////////
+
+    modifier onlyEmergencyAdmin() {
+        if (!ISuperRBAC(registry[SUPER_RBAC][CHAIN_ID]).hasEmergencyAdminRole(msg.sender)) {
+            revert Error.NOT_EMERGENCY_ADMIN();
+        }
+        _;
+    }
 
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(registry[SUPER_RBAC][CHAIN_ID]).hasProtocolAdminRole(msg.sender)) {
@@ -170,8 +177,8 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
-    function getVaultLimitPerDestination(uint64 chainId_) external view override returns (uint256 vaultLimitPerTx_) {
-        vaultLimitPerTx_ = vaultLimitPerTx[chainId_];
+    function getVaultLimitPerDestination(uint64 chainId_) external view override returns (uint256 vaultLimitPerDestination_) {
+        vaultLimitPerDestination_ = vaultLimitPerDestination[chainId_];
     }
 
     /// @inheritdoc ISuperRegistry
@@ -207,6 +214,16 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc ISuperRegistry
+    function setVaultLimitPerDestination(uint64 chainId_, uint256 vaultLimit_) external override onlyEmergencyAdmin {
+        if (vaultLimit_ == 0) {
+            revert Error.ZERO_INPUT_VALUE();
+        }
+
+        vaultLimitPerDestination[chainId_] = vaultLimit_;
+        emit SetVaultLimitPerDestination(chainId_, vaultLimit_);
+    }
+
+    /// @inheritdoc ISuperRegistry
     function setDelay(uint256 delay_) external override onlyProtocolAdmin {
         if (delay_ < MIN_DELAY || delay_ > MAX_DELAY) {
             revert Error.INVALID_TIMELOCK_DELAY();
@@ -226,16 +243,6 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         permit2Address = permit2_;
 
         emit SetPermit2(permit2_);
-    }
-
-    /// @inheritdoc ISuperRegistry
-    function setVaultLimitPerDestination(uint64 chainId_, uint256 vaultLimit_) external override onlyProtocolAdmin {
-        if (vaultLimit_ == 0) {
-            revert Error.ZERO_INPUT_VALUE();
-        }
-
-        vaultLimitPerTx[chainId_] = vaultLimit_;
-        emit SetVaultLimitPerDestination(chainId_, vaultLimit_);
     }
 
     /// @inheritdoc ISuperRegistry

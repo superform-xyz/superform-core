@@ -791,8 +791,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev amount can't be 0
         if (amount_ == 0) return false;
 
-        if (isDeposit_ && factory_.isFormImplementationPaused(formImplementationId)) return false;
-
         /// @dev ensure that receiver address is set always
         /// @dev in deposits, this is important for receive4626 (on destination). It is also important for refunds on
         /// destination
@@ -824,7 +822,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (len == 0 || liqRequestsLen == 0) return false;
         if (len != liqRequestsLen) return false;
 
-        /// @dev deposits beyond max vaults per tx is blocked only for xchain
+        /// @dev deposits beyond multi vault limit for a given destination chain blocked
         if (lenSuperforms > superRegistry.getVaultLimitPerDestination(dstChainId_)) {
             return false;
         }
