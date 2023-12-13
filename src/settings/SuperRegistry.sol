@@ -333,7 +333,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             address registryAddress = registryAddress_[i];
             uint8 registryId = registryId_[i];
             if (registryAddress == address(0)) revert Error.ZERO_ADDRESS();
-            if (registryId == 0) revert Error.ZERO_INPUT_VALUE();();
+            if (registryId == 0) revert Error.ZERO_INPUT_VALUE();
             if (registryAddresses[registryId] != address(0) || stateRegistryIds[registryAddress] != 0) {
                 revert Error.DISABLED();
             }
