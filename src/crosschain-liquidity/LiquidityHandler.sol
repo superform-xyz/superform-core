@@ -40,6 +40,10 @@ abstract contract LiquidityHandler {
         internal
         virtual
     {
+        if (amount_ == 0) {
+            revert Error.ZERO_AMOUNT();
+        }
+
         if (bridge_ == address(0)) {
             revert Error.ZERO_ADDRESS();
         }

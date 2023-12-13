@@ -512,7 +512,7 @@ contract DstSwapperTest is ProtocolActions {
         DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData);
     }
 
-    function test_failed_INVALID_SWAP_OUTPUT() public {
+    function test_failed_ZERO_AMOUNT() public {
         address payable dstSwapper = payable(getContract(ETH, "DstSwapper"));
         address payable coreStateRegistry = payable(getContract(ETH, "CoreStateRegistry"));
 
@@ -524,7 +524,7 @@ contract DstSwapperTest is ProtocolActions {
         bytes memory txData =
             _buildLiqBridgeTxDataDstSwap(1, getContract(ETH, "WETH"), getContract(ETH, "DAI"), dstSwapper, ETH, 0, 0);
         /// @dev txData with amount 0 should revert
-        vm.expectRevert(Error.INVALID_SWAP_OUTPUT.selector);
+        vm.expectRevert(Error.ZERO_AMOUNT.selector);
         DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
     }
 

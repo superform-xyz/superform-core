@@ -431,6 +431,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             uint256[] memory finalAmounts = new uint256[](validLen);
             uint256[] memory maxSlippage = new uint256[](validLen);
             bool[] memory hasDstSwaps = new bool[](validLen);
+            bool[] memory finalRetain4626s = new bool[](validLen);
 
             uint256 currLen;
             for (uint256 i; i < arrLen; ++i) {
@@ -439,6 +440,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     finalAmounts[currLen] = multiVaultData.amounts[i];
                     maxSlippage[currLen] = multiVaultData.maxSlippages[i];
                     hasDstSwaps[currLen] = multiVaultData.hasDstSwaps[i];
+                    finalRetain4626s[currLen] = multiVaultData.retain4626s[i];
+
                     ++currLen;
                 }
             }
@@ -447,6 +450,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             multiVaultData.superformIds = finalSuperformIds;
             multiVaultData.maxSlippages = maxSlippage;
             multiVaultData.hasDstSwaps = hasDstSwaps;
+            multiVaultData.retain4626s = finalRetain4626s;
             finalState_ = PayloadState.UPDATED;
         } else {
             finalState_ = PayloadState.PROCESSED;
