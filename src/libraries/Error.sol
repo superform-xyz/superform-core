@@ -148,7 +148,10 @@ library Error {
     /// @dev thrown if a form is not form interface compatible
     error FORM_INTERFACE_UNSUPPORTED();
 
-    /// @dev error thrown if beacon id already exists
+    /// @dev error thrown if form implementation address already exists
+    error FORM_IMPLEMENTATION_ALREADY_EXISTS();
+
+    /// @dev error thrown if form implementation id already exists
     error FORM_IMPLEMENTATION_ID_ALREADY_EXISTS();
 
     /// @dev thrown if a form does not exist
@@ -160,7 +163,7 @@ library Error {
     /// @dev thrown if superform not on factory
     error SUPERFORM_ID_NONEXISTENT();
 
-    /// @dev thrown if same vault and beacon is used to create new superform
+    /// @dev thrown if same vault and form implementation is used to create new superform
     error VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS();
 
     /// FORM INPUT VALIDATION ERRORS

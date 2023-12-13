@@ -58,7 +58,9 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
             formImplementation1, formImplementationId
         );
 
-        SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormImplementationPauseStatus(formImplementationId, ISuperformFactory.PauseStatus.PAUSED, "");
+        SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormImplementationPauseStatus(
+            formImplementationId, ISuperformFactory.PauseStatus.PAUSED, ""
+        );
 
         bool status = SuperformFactory(payable(getContract(chainId, "SuperformFactory"))).isFormImplementationPaused(
             formImplementationId

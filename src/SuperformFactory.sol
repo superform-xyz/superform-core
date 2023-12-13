@@ -46,7 +46,10 @@ contract SuperformFactory is ISuperformFactory {
     mapping(uint256 superformId => bool superformIdExists) public isSuperform;
 
     /// @notice If formImplementationId is 0, formImplementation is not part of the protocol
-    mapping(uint32 formImplementationId => address formBeaconAddress) public formImplementation;
+    mapping(uint32 formImplementationId => address formImplementationAddress) public formImplementation;
+
+    /// @dev each form implementation address can correspond only to a single formImplementationId
+    mapping(address formImplementationAddress => uint32 formImplementationId) public formImplementationIds;
 
     mapping(uint32 formImplementationId => PauseStatus) public formImplementationPaused;
 
@@ -179,6 +182,9 @@ contract SuperformFactory is ISuperformFactory {
         if (formImplementation_ == address(0)) revert Error.ZERO_ADDRESS();
         if (!ERC165Checker.supportsERC165(formImplementation_)) revert Error.ERC165_UNSUPPORTED();
         if (formImplementation[formImplementationId_] != address(0)) {
+            revert Error.FORM_IMPLEMENTATION_ALREADY_EXISTS();
+        }
+        if (formImplementationIds[formImplementation_] != 0) {
             revert Error.FORM_IMPLEMENTATION_ID_ALREADY_EXISTS();
         }
         if (!ERC165Checker.supportsInterface(formImplementation_, type(IBaseForm).interfaceId)) {
@@ -187,6 +193,7 @@ contract SuperformFactory is ISuperformFactory {
 
         /// @dev save the newly added address in the mapping and array registry
         formImplementation[formImplementationId_] = formImplementation_;
+        formImplementationIds[formImplementation_] = formImplementationId_;
 
         formImplementations.push(formImplementation_);
 
