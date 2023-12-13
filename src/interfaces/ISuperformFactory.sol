@@ -87,11 +87,6 @@ interface ISuperformFactory {
         view
         returns (uint256[] memory superformIds_, address[] memory superforms_);
 
-    /// @dev Returns all Superforms
-    /// @return superformIds_ is the id of the superform
-    /// @return vaults_ is the address of the vault
-    function getAllSuperforms() external view returns (uint256[] memory superformIds_, address[] memory vaults_);
-
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
