@@ -276,6 +276,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             address bridgeAddress = bridgeAddress_[i];
             address bridgeValidatorT = bridgeValidator_[i];
             if (bridgeAddress == address(0)) revert Error.ZERO_ADDRESS();
+            if (bridgeId == 0) revert Error.ZERO_INPUT_VALUE();
             if (bridgeValidatorT == address(0)) revert Error.ZERO_ADDRESS();
 
             if (bridgeAddresses[bridgeId] != address(0)) revert Error.DISABLED();
@@ -306,6 +307,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             bool broadcastAMB = isBroadcastAMB_[i];
 
             if (ambAddress == address(0)) revert Error.ZERO_ADDRESS();
+            if (ambId == 0) revert Error.ZERO_INPUT_VALUE();
             if (ambAddresses[ambId] != address(0) || ambIds[ambAddress] != 0) revert Error.DISABLED();
 
             ambAddresses[ambId] = ambAddress;
@@ -331,6 +333,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             address registryAddress = registryAddress_[i];
             uint8 registryId = registryId_[i];
             if (registryAddress == address(0)) revert Error.ZERO_ADDRESS();
+            if (registryId == 0) revert Error.ZERO_INPUT_VALUE();();
             if (registryAddresses[registryId] != address(0) || stateRegistryIds[registryAddress] != 0) {
                 revert Error.DISABLED();
             }
