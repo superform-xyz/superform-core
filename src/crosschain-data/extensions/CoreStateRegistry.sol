@@ -616,7 +616,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         multiVaultData = _updateTxData(txData_, multiVaultData, srcSender_, srcChainId_, CHAIN_ID);
 
         if (multi == 0) {
-            singleVaultData.liqData.txData = txData_[0];
+            singleVaultData.liqData.txData = multiVaultData.liqData[0].txData;
             return abi.encode(singleVaultData);
         }
 
