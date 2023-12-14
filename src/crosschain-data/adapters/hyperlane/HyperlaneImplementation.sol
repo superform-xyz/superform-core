@@ -192,7 +192,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     }
 
     /// @inheritdoc IMessageRecipient
-    function handle(uint32 origin_, bytes32 sender_, bytes calldata body_) external override onlyMailbox {
+    function handle(uint32 origin_, bytes32 sender_, bytes calldata body_) external payable override onlyMailbox {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
