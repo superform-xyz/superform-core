@@ -170,7 +170,9 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         onlySwapper
         nonReentrant
     {
-        if (indices_.length != bridgeIds_.length || bridgeIds_.length != txData_.length) {
+
+        uint256 len = indices_.length;
+        if (len != bridgeIds_.length || len != txData_.length) {
             revert Error.ARRAY_LENGTH_MISMATCH();
         }
 
@@ -183,7 +185,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
 
         InitMultiVaultData memory data = abi.decode(coreStateRegistry.payloadBody(payloadId_), (InitMultiVaultData));
 
-        uint256 len = indices_.length;
+
         for (uint256 i; i < len; ++i) {
             _processTx(
                 payloadId_, indices_[i], bridgeIds_[i], txData_[i], data.liqData[i].interimToken, coreStateRegistry
@@ -231,8 +233,9 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         override
         onlySwapper
     {
+        uint256 len = indices_.length;
 
-        if (indices_.length != interimTokens_.length || interimTokens_.length != amounts_.length) {
+        if (len != interimTokens_.length || len != amounts_.length) {
             revert Error.ARRAY_LENGTH_MISMATCH();
         }
 
@@ -245,7 +248,6 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
 
         InitMultiVaultData memory data = abi.decode(coreStateRegistry.payloadBody(payloadId_), (InitMultiVaultData));
 
-        uint256 len = indices_.length;
         for (uint256 i; i < len; ++i) {
             _updateFailedTx(
                 payloadId_, indices_[i], interimTokens_[i], data.liqData[i].interimToken, amounts_[i], coreStateRegistry
