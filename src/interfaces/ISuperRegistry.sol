@@ -150,9 +150,9 @@ interface ISuperRegistry {
 
     /// @dev gets the safe vault limit
     /// @param chainId_ is the id of the remote chain
-    /// @return vaultLimitPerTx_ is the safe number of vaults to deposit
+    /// @return vaultLimitPerDestination_ is the safe number of vaults to deposit
     /// without hitting out of gas error
-    function getVaultLimitPerDestination(uint64 chainId_) external view returns (uint256 vaultLimitPerTx_);
+    function getVaultLimitPerDestination(uint64 chainId_) external view returns (uint256 vaultLimitPerDestination_);
 
     /// @dev helps validate if an address is a valid state registry
     /// @param registryAddress_ is the address of the state registry

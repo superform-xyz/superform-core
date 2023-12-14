@@ -298,7 +298,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     mapping(
         uint64 chainId
             => mapping(
-                uint32 formBeaconId
+                uint32 formImplementationId
                     => mapping(string underlying => mapping(uint256 vaultKindIndex => address realVault))
             )
     ) public REAL_VAULT_ADDRESS;
@@ -1170,7 +1170,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         mapping(
             uint64 chainId
                 => mapping(
-                    uint32 formBeaconId
+                    uint32 formImplementationId
                         => mapping(string underlying => mapping(uint256 vaultKindIndex => address realVault))
                 )
             ) storage existingVaults = REAL_VAULT_ADDRESS;

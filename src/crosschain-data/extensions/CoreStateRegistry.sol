@@ -75,6 +75,15 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         amounts = failedDeposits[payloadId_].amounts;
     }
 
+    /// @dev used for try catching purposes
+    function validateSlippage(uint256 finalAmount_, uint256 amount_, uint256 maxSlippage_) public view returns (bool) {
+        // only internal transaction
+        if (msg.sender != address(this)) {
+            revert Error.INVALID_INTERNAL_CALL();
+        }
+
+        return PayloadUpdaterLib.validateSlippage(finalAmount_, amount_, maxSlippage_);
+    }
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
@@ -485,15 +494,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         );
 
         newPayloadBody_ = abi.encode(singleVaultData);
-    }
-
-    function validateSlippage(uint256 finalAmount_, uint256 amount_, uint256 maxSlippage_) public view returns (bool) {
-        // only internal transaction
-        if (msg.sender != address(this)) {
-            revert Error.INVALID_INTERNAL_CALL();
-        }
-
-        return PayloadUpdaterLib.validateSlippage(finalAmount_, amount_, maxSlippage_);
     }
 
     function _updateAmount(

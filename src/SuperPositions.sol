@@ -71,10 +71,10 @@ contract SuperPositions is ISuperPositions, ERC1155A {
 
         /// if msg.sender isn't superformRouter then it must be state registry for that superform
         if (msg.sender != router) {
-            (, uint32 formBeaconId,) = DataLib.getSuperform(superformId);
+            (, uint32 formImplementationId,) = DataLib.getSuperform(superformId);
             uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
-            if (uint32(registryId) != formBeaconId) {
+            if (uint32(registryId) != formImplementationId) {
                 revert Error.NOT_MINTER();
             }
         }
@@ -96,10 +96,10 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         if (msg.sender != router) {
             uint256 len = superformIds.length;
             for (uint256 i; i < len; ++i) {
-                (, uint32 formBeaconId,) = DataLib.getSuperform(superformIds[i]);
+                (, uint32 formImplementationId,) = DataLib.getSuperform(superformIds[i]);
                 uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
-                if (uint32(registryId) != formBeaconId) {
+                if (uint32(registryId) != formImplementationId) {
                     revert Error.NOT_MINTER();
                 }
             }
@@ -348,8 +348,8 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         (address superform,,) = id.getSuperform();
 
         string memory name =
-            string(abi.encodePacked("SuperPositions AERC20 ", IBaseForm(superform).superformYieldTokenName()));
-        string memory symbol = string(abi.encodePacked("aERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
+            string(abi.encode("SuperPositions AERC20 ", IBaseForm(superform).superformYieldTokenName()));
+        string memory symbol = string(abi.encode("aERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
         uint8 decimal = uint8(IBaseForm(superform).getVaultDecimals());
         aErc20Token = address(new aERC20(name, symbol, decimal));
         /// @dev broadcast and deploy to the other destination chains
