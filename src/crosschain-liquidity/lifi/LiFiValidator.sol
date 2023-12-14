@@ -16,7 +16,9 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address superRegistry_) BridgeValidator(superRegistry_) { }
+    constructor(address superRegistry_) BridgeValidator(superRegistry_) {
+        if (address(superRegistry_) == address(0)) revert Error.DISABLED();
+    }
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
