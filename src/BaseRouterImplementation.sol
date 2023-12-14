@@ -161,7 +161,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         (address superform,,) = req_.superformData.superformId.getSuperform();
 
         (uint256 amountIn, uint8 bridgeId) =
-            _singleVaultTokenForward(msg.sender, address(0), req_.superformData.permit2data, ambData);
+            _singleVaultTokenForward(msg.sender, address(0), req_.superformData.permit2data, ambData, true);
 
         LiqRequest memory emptyRequest;
 
@@ -602,7 +602,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev decode superforms
         (superform,,) = vaultData_.superformId.getSuperform();
 
-        _singleVaultTokenForward(srcSender_, superform, permit2data_, vaultData_);
+        _singleVaultTokenForward(srcSender_, superform, permit2data_, vaultData_, false);
 
         /// @dev deposits token to a given vault and mint vault positions.
         dstAmount = _directDeposit(
@@ -877,7 +877,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         address srcSender_,
         address target_,
         bytes memory permit2data_,
-        InitSingleVaultData memory vaultData_
+        InitSingleVaultData memory vaultData_,
+        bool xChain
     )
         internal
         virtual
@@ -888,6 +889,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         v.bridgeId = vaultData_.liqData.bridgeId;
 
         v.txDataLength = vaultData_.liqData.txData.length;
+
+        if (v.txDataLength == 0 && xChain) {
+            revert Error.NO_TXDATA_PRESENT();
+        }
 
         if (v.txDataLength != 0) {
             v.amountIn = IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeId)).decodeAmountIn(
@@ -975,8 +980,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         if (token != NATIVE) {
             v.token = IERC20(token);
-
-            v.totalAmount;
 
             v.permit2dataLen = permit2data_.length;
 
