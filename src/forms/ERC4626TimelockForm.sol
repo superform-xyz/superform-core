@@ -66,6 +66,8 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         onlyTimelockStateRegistry
         returns (uint256 dstAmount)
     {
+        if (p_.data.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
+
         if (_isPaused(p_.data.superformId)) {
             IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
                 p_.data, p_.data.receiverAddress

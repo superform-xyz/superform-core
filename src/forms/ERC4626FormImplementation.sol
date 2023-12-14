@@ -398,6 +398,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             revert Error.INSUFFICIENT_BALANCE();
         }
 
+        if (refundAddress_ == address(0)) revert Error.ZERO_ADDRESS();
+
         vaultContract.safeTransfer(refundAddress_, amount_);
         emit EmergencyWithdrawalProcessed(refundAddress_, amount_);
     }

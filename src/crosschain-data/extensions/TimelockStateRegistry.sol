@@ -108,6 +108,8 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         override
         onlyTimelockSuperform(data_.superformId)
     {
+        if (data_.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
+
         ++timelockPayloadCounter;
 
         timelockPayload[timelockPayloadCounter] =
@@ -254,7 +256,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     /// xChainWithdraw succeeds.
     /// @dev Constructs return message in case of a FAILURE to perform redemption of already unlocked assets
     function _constructSingleReturnData(
-        address srcSender_,
+        address receiverAddress_,
         InitSingleVaultData memory singleVaultData_
     )
         internal
@@ -269,7 +271,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
                     uint8(CallbackType.FAIL),
                     0,
                     superRegistry.getStateRegistryId(address(this)),
-                    srcSender_,
+                    receiverAddress_,
                     CHAIN_ID
                 ),
                 abi.encode(
