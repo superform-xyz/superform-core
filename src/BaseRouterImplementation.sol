@@ -791,6 +791,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev amount can't be 0
         if (amount_ == 0) return false;
 
+        /// @dev redudant check on same chain, but helpful on xchain actions to halt deposits earlier
+        if (isDeposit_ && factory_.isFormImplementationPaused(formImplementationId)) return false;
+
         /// @dev ensure that receiver address is set always
         /// @dev in deposits, this is important for receive4626 (on destination). It is also important for refunds on
         /// destination
