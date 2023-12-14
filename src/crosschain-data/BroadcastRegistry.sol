@@ -89,6 +89,7 @@ contract BroadcastRegistry is IBroadcastRegistry {
     function broadcastPayload(
         address srcSender_,
         uint8 ambId_,
+        uint256 gasFee_,
         bytes memory message_,
         bytes memory extraData_
     )
@@ -97,9 +98,7 @@ contract BroadcastRegistry is IBroadcastRegistry {
         override
         onlySender
     {
-        (uint256 gasFee, bytes memory extraData) = abi.decode(extraData_, (uint256, bytes));
-
-        _broadcastPayload(srcSender_, ambId_, gasFee, message_, extraData);
+        _broadcastPayload(srcSender_, ambId_, gasFee_, message_, extraData_);
     }
 
     /// @inheritdoc IBroadcastRegistry

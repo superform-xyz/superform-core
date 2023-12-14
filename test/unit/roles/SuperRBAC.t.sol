@@ -87,12 +87,7 @@ contract SuperRBACTest is BaseSetup {
 
     function test_revokePaymentAdminRole() public {
         _revokeAndCheck(
-            superRBAC.PAYMENT_ADMIN_ROLE(),
-            superRegistry.PAYMENT_ADMIN(),
-            deployer,
-            "",
-            generateBroadcastParams(5, 1),
-            0
+            superRBAC.PAYMENT_ADMIN_ROLE(), superRegistry.PAYMENT_ADMIN(), deployer, "", generateBroadcastParams(0), 0
         );
     }
 
@@ -137,7 +132,7 @@ contract SuperRBACTest is BaseSetup {
             superRegistry.CORE_REGISTRY_PROCESSOR(),
             deployer,
             "",
-            generateBroadcastParams(5, 1),
+            generateBroadcastParams(0),
             0
         );
     }
@@ -156,7 +151,7 @@ contract SuperRBACTest is BaseSetup {
             superRegistry.BROADCAST_REGISTRY_PROCESSOR(),
             deployer,
             "",
-            generateBroadcastParams(5, 1),
+            generateBroadcastParams(0),
             0
         );
     }
@@ -175,7 +170,7 @@ contract SuperRBACTest is BaseSetup {
             superRegistry.TIMELOCK_REGISTRY_PROCESSOR(),
             deployer,
             "",
-            generateBroadcastParams(5, 1),
+            generateBroadcastParams(0),
             0
         );
     }
@@ -194,7 +189,7 @@ contract SuperRBACTest is BaseSetup {
             superRegistry.CORE_REGISTRY_UPDATER(),
             deployer,
             "",
-            generateBroadcastParams(5, 1),
+            generateBroadcastParams(0),
             0
         );
     }
@@ -205,7 +200,7 @@ contract SuperRBACTest is BaseSetup {
             superRegistry.CORE_REGISTRY_RESCUER(),
             deployer,
             "",
-            generateBroadcastParams(5, 1),
+            generateBroadcastParams(0),
             0
         );
     }
@@ -216,7 +211,7 @@ contract SuperRBACTest is BaseSetup {
             superRegistry.CORE_REGISTRY_DISPUTER(),
             deployer,
             "",
-            generateBroadcastParams(5, 1),
+            generateBroadcastParams(0),
             0
         );
     }
@@ -227,7 +222,7 @@ contract SuperRBACTest is BaseSetup {
             superRegistry.DST_SWAPPER_PROCESSOR(),
             deployer,
             "",
-            generateBroadcastParams(5, 1),
+            generateBroadcastParams(0),
             0
         );
     }
@@ -278,22 +273,22 @@ contract SuperRBACTest is BaseSetup {
         vm.expectRevert(Error.CANNOT_REVOKE_NON_BROADCASTABLE_ROLES.selector);
         /// @dev setting the status as false in chain id = ETH
         superRBAC.revokeRoleSuperBroadcast{ value: 1 ether }(
-            keccak256("BROADCASTER_ROLE"), generateBroadcastParams(5, 1), id
+            keccak256("BROADCASTER_ROLE"), generateBroadcastParams(0), id
         );
         vm.expectRevert(Error.CANNOT_REVOKE_NON_BROADCASTABLE_ROLES.selector);
         /// @dev setting the status as false in chain id = ETH
         superRBAC.revokeRoleSuperBroadcast{ value: 1 ether }(
-            keccak256("PROTOCOL_ADMIN_ROLE"), generateBroadcastParams(5, 1), id
+            keccak256("PROTOCOL_ADMIN_ROLE"), generateBroadcastParams(0), id
         );
         vm.expectRevert(Error.CANNOT_REVOKE_NON_BROADCASTABLE_ROLES.selector);
         /// @dev setting the status as false in chain id = ETH
         superRBAC.revokeRoleSuperBroadcast{ value: 1 ether }(
-            keccak256("EMERGENCY_ADMIN_ROLE"), generateBroadcastParams(5, 1), id
+            keccak256("EMERGENCY_ADMIN_ROLE"), generateBroadcastParams(0), id
         );
         vm.expectRevert(Error.CANNOT_REVOKE_NON_BROADCASTABLE_ROLES.selector);
         /// @dev setting the status as false in chain id = ETH
         superRBAC.revokeRoleSuperBroadcast{ value: 1 ether }(
-            keccak256("WORMHOLE_VAA_RELAYER_ROLE"), generateBroadcastParams(5, 1), id
+            keccak256("WORMHOLE_VAA_RELAYER_ROLE"), generateBroadcastParams(0), id
         );
     }
 

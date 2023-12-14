@@ -835,7 +835,7 @@ abstract contract AbstractDeploySingle is Script {
             )
         );
 
-        PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(0, generateBroadcastParams(5, 1));
+        PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(abi.encode(4, abi.encode(0, "")));
 
         vars.superRegistryC.setAddress(
             vars.superRegistryC.SUPERFORM_ROUTER(),
