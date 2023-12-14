@@ -374,7 +374,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             ETH,
             ETH,
             false,
-            deployer,
+            receiverAddress,
             uint256(ETH),
             /// @dev amount is 1 less than (actualWithdrawAmount * 0.9) => slippage > 10% => should revert
             ((actualWithdrawAmount * 9) / 10) - 1,

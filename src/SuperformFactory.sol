@@ -38,7 +38,7 @@ contract SuperformFactory is ISuperformFactory {
     uint256 public xChainPayloadCounter;
     uint256 public superformCounter;
 
-    /// @dev all form beacon addresses
+    /// @dev all form implementation addresses
     address[] public formImplementations;
 
     /// @dev all superform ids
@@ -46,7 +46,10 @@ contract SuperformFactory is ISuperformFactory {
     mapping(uint256 superformId => bool superformIdExists) public isSuperform;
 
     /// @notice If formImplementationId is 0, formImplementation is not part of the protocol
-    mapping(uint32 formImplementationId => address formBeaconAddress) public formImplementation;
+    mapping(uint32 formImplementationId => address formImplementationAddress) public formImplementation;
+
+    /// @dev each form implementation address can correspond only to a single formImplementationId
+    mapping(address formImplementationAddress => uint32 formImplementationId) public formImplementationIds;
 
     mapping(uint32 formImplementationId => PauseStatus) public formImplementationPaused;
 
@@ -180,6 +183,9 @@ contract SuperformFactory is ISuperformFactory {
 
         if (!ERC165Checker.supportsERC165(formImplementation_)) revert Error.ERC165_UNSUPPORTED();
         if (formImplementation[formImplementationId_] != address(0)) {
+            revert Error.FORM_IMPLEMENTATION_ALREADY_EXISTS();
+        }
+        if (formImplementationIds[formImplementation_] != 0) {
             revert Error.FORM_IMPLEMENTATION_ID_ALREADY_EXISTS();
         }
         if (!ERC165Checker.supportsInterface(formImplementation_, type(IBaseForm).interfaceId)) {
@@ -188,6 +194,7 @@ contract SuperformFactory is ISuperformFactory {
 
         /// @dev save the newly added address in the mapping and array registry
         formImplementation[formImplementationId_] = formImplementation_;
+        formImplementationIds[formImplementation_] = formImplementationId_;
 
         formImplementations.push(formImplementation_);
 
@@ -208,7 +215,7 @@ contract SuperformFactory is ISuperformFactory {
         address tFormImplementation = formImplementation[formImplementationId_];
         if (tFormImplementation == address(0)) revert Error.FORM_DOES_NOT_EXIST();
 
-        /// @dev Same vault and beacon can be used only once to create superform
+        /// @dev Same vault and implementation can be used only once to create superform
         bytes32 vaultFormImplementationCombination = keccak256(abi.encode(tFormImplementation, vault_));
         if (vaultFormImplCombinationToSuperforms[vaultFormImplementationCombination] != 0) {
             revert Error.VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS();
@@ -259,6 +266,8 @@ contract SuperformFactory is ISuperformFactory {
             );
 
             _broadcast(abi.encode(factoryPayload), extraData_);
+        } else if (msg.value != 0) {
+            revert Error.MSG_VALUE_NOT_ZERO();
         }
 
         emit FormImplementationPaused(formImplementationId_, status_);

@@ -127,7 +127,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             ,
             uint8 isMulti,
             ,
-            address srcSender,
+            ,
             uint64 srcChainId
         ) = _getPayload(payloadId_);
 
@@ -135,7 +135,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         PayloadUpdaterLib.validatePayloadUpdate(
             prevPayloadHeader, uint8(TransactionType.WITHDRAW), payloadTracking[payloadId_], isMulti
         );
-        prevPayloadBody = _updateWithdrawPayload(prevPayloadBody, srcSender, srcChainId, txData_, isMulti);
+        prevPayloadBody = _updateWithdrawPayload(prevPayloadBody, srcChainId, txData_, isMulti);
 
         /// @dev updates the payload proof
         _updatePayload(payloadId_, prevPayloadProof, prevPayloadBody, prevPayloadHeader, PayloadState.UPDATED);
@@ -591,7 +591,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     /// @dev helper function to update multi vault withdraw payload
     function _updateWithdrawPayload(
         bytes memory prevPayloadBody_,
-        address srcSender_,
         uint64 srcChainId_,
         bytes[] calldata txData_,
         uint8 multi
@@ -613,10 +612,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             revert Error.DIFFERENT_PAYLOAD_UPDATE_TX_DATA_LENGTH();
         }
 
-        multiVaultData = _updateTxData(txData_, multiVaultData, srcSender_, srcChainId_, CHAIN_ID);
+        multiVaultData = _updateTxData(txData_, multiVaultData, srcChainId_, CHAIN_ID);
 
         if (multi == 0) {
-            singleVaultData.liqData.txData = txData_[0];
+            singleVaultData.liqData.txData = multiVaultData.liqData[0].txData;
             return abi.encode(singleVaultData);
         }
 
@@ -627,7 +626,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     function _updateTxData(
         bytes[] calldata txData_,
         InitMultiVaultData memory multiVaultData_,
-        address srcSender_,
         uint64 srcChainId_,
         uint64 dstChainId_
     )
@@ -660,7 +658,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                             multiVaultData_.liqData[i].liqDstChainId,
                             false,
                             superform,
-                            srcSender_,
+                            multiVaultData_.receiverAddress,
                             multiVaultData_.liqData[i].token,
                             address(0)
                         )

@@ -60,8 +60,8 @@ contract SocketValidator is BridgeValidator {
                 }
             }
         } else {
-            /// @dev if withdraws, then receiver address must be the srcSender
-            if (decodedReq.receiverAddress != args_.srcSender) revert Error.INVALID_TXDATA_RECEIVER();
+            /// @dev if withdraws, then receiver address must be the receiverAddress
+            if (decodedReq.receiverAddress != args_.receiverAddress) revert Error.INVALID_TXDATA_RECEIVER();
         }
 
         /// @dev FIXME: add  3. token validations

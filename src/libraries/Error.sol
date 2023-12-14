@@ -148,7 +148,10 @@ library Error {
     /// @dev thrown if a form is not form interface compatible
     error FORM_INTERFACE_UNSUPPORTED();
 
-    /// @dev error thrown if beacon id already exists
+    /// @dev error thrown if form implementation address already exists
+    error FORM_IMPLEMENTATION_ALREADY_EXISTS();
+
+    /// @dev error thrown if form implementation id already exists
     error FORM_IMPLEMENTATION_ID_ALREADY_EXISTS();
 
     /// @dev thrown if a form does not exist
@@ -160,7 +163,7 @@ library Error {
     /// @dev thrown if superform not on factory
     error SUPERFORM_ID_NONEXISTENT();
 
-    /// @dev thrown if same vault and beacon is used to create new superform
+    /// @dev thrown if same vault and form implementation is used to create new superform
     error VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS();
 
     /// FORM INPUT VALIDATION ERRORS
@@ -248,6 +251,9 @@ library Error {
 
     /// @dev thrown if src tx types mismatch in state sync
     error SRC_TX_TYPE_MISMATCH();
+
+    /// @dev error thrown when msg value should be zero in certain payable functions
+    error MSG_VALUE_NOT_ZERO();
 
     //////////////////////////////////////////////////////////////
     //                  EXECUTION ERRORS                        //
@@ -377,7 +383,7 @@ library Error {
     /// @dev thrown in KYCDAO form if no KYC token is present
     error NO_VALID_KYC_TOKEN();
 
-    /// @dev thrown if implementation formBeacon is PAUSED, users cannot perform any action
+    /// @dev thrown if form implementation is PAUSED, users cannot perform any action
     error PAUSED();
 
     /// @dev thrown if withdrawal tx data is not updated
