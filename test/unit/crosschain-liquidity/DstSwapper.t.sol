@@ -65,18 +65,18 @@ contract DstSwapperTest is ProtocolActions {
             vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);
             DstSwapper(dstSwapper).processTx(1000, 0, 1, txData);
 
-            DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
-
             /// @dev try with a non-existent index
             vm.expectRevert(Error.INVALID_INDEX.selector);
             DstSwapper(dstSwapper).processTx(1, 420, 1, txData);
+
+            DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
 
             /// @dev retry the same payload id and indices
             vm.expectRevert(Error.DST_SWAP_ALREADY_PROCESSED.selector);
             DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
 
             /// @dev no funds in multi-tx processor at this point; should revert
-            vm.expectRevert(abi.encodeWithSelector(Error.FAILED_TO_EXECUTE_TXDATA.selector, native));
+            vm.expectRevert(Error.INSUFFICIENT_BALANCE.selector);
             DstSwapper(dstSwapper).processTx(2, 0, 1, txData);
         } else {
             revert();
@@ -94,7 +94,7 @@ contract DstSwapperTest is ProtocolActions {
         bytes memory txData =
             _buildLiqBridgeTxDataDstSwap(1, getContract(ETH, "WETH"), getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
         /// @dev no funds in multi-tx processor at this point; should revert
-        vm.expectRevert(abi.encodeWithSelector(Error.FAILED_TO_EXECUTE_TXDATA.selector, getContract(ETH, "WETH")));
+        vm.expectRevert(Error.INSUFFICIENT_BALANCE.selector);
         DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
     }
 
@@ -466,7 +466,7 @@ contract DstSwapperTest is ProtocolActions {
         DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData);
 
         /// @dev no funds in multi-tx processor at this point; should revert
-        vm.expectRevert(abi.encodeWithSelector(Error.FAILED_TO_EXECUTE_TXDATA.selector, native));
+        vm.expectRevert(Error.INSUFFICIENT_BALANCE.selector);
         DstSwapper(dstSwapper).batchProcessTx(2, indices, bridgeId, txData);
     }
 
