@@ -316,7 +316,13 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
 
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(superRegistry.getStateRegistry(registryId));
 
-        targetRegistry.receivePayload(superChainId[_srcChainId], _payload);
+        uint64 srcChainId = superChainId[_srcChainId];
+
+        if (srcChainId == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
+        targetRegistry.receivePayload(srcChainId, _payload);
     }
 
     function _lzSend(
