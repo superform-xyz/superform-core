@@ -316,6 +316,16 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
 
+    /// @dev returns vault asset from superform
+    function _getVaultAsset(address superform_) internal view returns (address) {
+        return IBaseForm(superform_).getVaultAsset();
+    }
+
+    /// @dev returns if superform is valid
+    function _isSuperform(uint256 superformId_) internal view returns (bool) {
+        return ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId_);
+    }
+
     /// @dev returns a superformAddress
     function _getSuperform(uint256 superformId_) internal pure returns (address superform) {
         (superform,,) = superformId_.getSuperform();
@@ -560,12 +570,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 finalState_ = PayloadState.UPDATED;
             }
 
-            if (
-                !(
-                    ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId_)
-                        && finalState_ == PayloadState.UPDATED
-                )
-            ) {
+            if (!(_isSuperform(superformId_) && finalState_ == PayloadState.UPDATED)) {
                 failedDeposits[payloadId_].superformIds.push(superformId_);
 
                 address asset;
@@ -773,7 +778,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             /// @dev this means that this amount was already added to the failedDeposits state variable and should not
             /// be re-added (or processed here)
             if (multiVaultData.amounts[i] != 0) {
-                underlying = IERC20(IBaseForm(superforms[i]).getVaultAsset());
+                underlying = IERC20(_getVaultAsset(superforms[i]));
 
                 if (underlying.balanceOf(address(this)) >= multiVaultData.amounts[i]) {
                     underlying.safeIncreaseAllowance(superforms[i], multiVaultData.amounts[i]);
@@ -855,7 +860,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
         singleVaultData.extraFormData = abi.encode(payloadId_, 0);
 
-        if (!ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(singleVaultData.superformId)) {
+        if (!_isSuperform(singleVaultData.superformId)) {
             revert Error.SUPERFORM_ID_NONEXISTENT();
         }
 
@@ -890,8 +895,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
 
-        (address superform_,,) = singleVaultData.superformId.getSuperform();
-        IERC20 underlying = IERC20(IBaseForm(superform_).getVaultAsset());
+        address superform_ = _getSuperform(singleVaultData.superformId);
+        address vaultAsset = _getVaultAsset(superform_);
+        IERC20 underlying = IERC20(vaultAsset);
 
         if (underlying.balanceOf(address(this)) >= singleVaultData.amount) {
             underlying.safeIncreaseAllowance(superform_, singleVaultData.amount);
@@ -916,7 +922,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
                 /// @dev if any deposit fails, add it to failedDepositSuperformIds mapping for future rescuing
                 failedDeposits[payloadId_].superformIds.push(singleVaultData.superformId);
-                failedDeposits[payloadId_].settlementToken.push(IBaseForm(superform_).getVaultAsset());
+                failedDeposits[payloadId_].settlementToken.push(vaultAsset);
                 failedDeposits[payloadId_].settleFromDstSwapper.push(false);
 
                 emit FailedXChainDeposits(payloadId_);

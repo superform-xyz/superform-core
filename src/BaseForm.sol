@@ -156,8 +156,6 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
 
-    receive() external payable { }
-
     /// @param superRegistry_        ISuperRegistry address deployed
     /// @param vault_         The vault address this form pertains to
     /// @dev sets caller as the admin of the contract.
