@@ -498,8 +498,12 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
 
         /// @dev 11 - Deploy SuperPositions
-        vars.superPositions =
-            address(new SuperPositions{ salt: salt }("https://ipfs-gateway.superform.xyz/ipns/k51qzi5uqu5dj8wup5t6yyj55o8rj4dx98g931fczrzcagp26hstv7ba7shfmc/Animations/", vars.superRegistry));
+        vars.superPositions = address(
+            new SuperPositions{ salt: salt }(
+                "https://ipfs-gateway.superform.xyz/ipns/k51qzi5uqu5dg90fqdo9j63m556wlddeux4mlgyythp30zousgh3huhyzouyq8/JSON/",
+                vars.superRegistry
+            )
+        );
 
         contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);
