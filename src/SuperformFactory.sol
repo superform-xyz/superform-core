@@ -38,7 +38,7 @@ contract SuperformFactory is ISuperformFactory {
     uint256 public xChainPayloadCounter;
     uint256 public superformCounter;
 
-    /// @dev all form beacon addresses
+    /// @dev all form implementation addresses
     address[] public formImplementations;
 
     /// @dev all superform ids
@@ -214,7 +214,7 @@ contract SuperformFactory is ISuperformFactory {
         address tFormImplementation = formImplementation[formImplementationId_];
         if (tFormImplementation == address(0)) revert Error.FORM_DOES_NOT_EXIST();
 
-        /// @dev Same vault and beacon can be used only once to create superform
+        /// @dev Same vault and implementation can be used only once to create superform
         bytes32 vaultFormImplementationCombination = keccak256(abi.encode(tFormImplementation, vault_));
         if (vaultFormImplCombinationToSuperforms[vaultFormImplementationCombination] != 0) {
             revert Error.VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS();

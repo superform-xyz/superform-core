@@ -383,7 +383,7 @@ library Error {
     /// @dev thrown in KYCDAO form if no KYC token is present
     error NO_VALID_KYC_TOKEN();
 
-    /// @dev thrown if implementation formBeacon is PAUSED, users cannot perform any action
+    /// @dev thrown if form implementation is PAUSED, users cannot perform any action
     error PAUSED();
 
     /// @dev thrown if withdrawal tx data is not updated
