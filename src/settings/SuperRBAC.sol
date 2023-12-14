@@ -224,7 +224,7 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
             revert Error.INVALID_BROADCAST_FEE();
         }
 
-        /// @dev ambIds are validated inside the factory state registry
+        /// @dev ambIds are validated inside the broadcast state registry
         IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{ value: gasFee }(
             msg.sender, ambId, gasFee, message_, extraData
         );
