@@ -167,7 +167,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
             /// @dev handles the asset token transfers.
             if (token.allowance(msg.sender, address(this)) < singleVaultData_.amount) {
-                revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+                revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
             }
 
             /// @dev transfers input token, which is the same as vault asset, to the form
@@ -187,7 +187,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             if (address(token) != NATIVE) {
                 /// @dev checks the allowance before transfer from router
                 if (token.allowance(msg.sender, address(this)) < vars.inputAmount) {
-                    revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+                    revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
                 }
 
                 /// @dev transfers input token, which is different from the vault asset, to the form
@@ -254,6 +254,10 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         address vaultLoc = vault;
 
         IERC4626 v = IERC4626(vaultLoc);
+
+        if (IERC20(asset).allowance(msg.sender, address(this)) < singleVaultData_.amount) {
+            revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
+        }
 
         /// @dev pulling from sender, to auto-send tokens back in case of failed deposits / reverts
         IERC20(asset).safeTransferFrom(msg.sender, address(this), singleVaultData_.amount);

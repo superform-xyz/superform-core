@@ -330,7 +330,7 @@ contract LayerzeroImplementationTest is BaseSetup {
             users[userIndex], chainId, abi.encode(ambMessage), abi.encode(ambExtraData)
         );
 
-        vm.expectRevert(Error.INVALID_SRC_CHAIN_ID.selector);
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         vm.prank(coreStateRegistry);
         /// @dev notice the use of chainId, whose trustedRemote is not set
         layerzeroImplementation.dispatchPayload{ value: 0.1 ether }(

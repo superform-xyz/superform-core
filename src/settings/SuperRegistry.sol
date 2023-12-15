@@ -230,7 +230,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     /// @inheritdoc ISuperRegistry
     function setVaultLimitPerDestination(uint64 chainId_, uint256 vaultLimit_) external override onlyProtocolAdmin {
-        if (vaultLimit_ == 0) {
+        if (chainId_ == 0 || vaultLimit_ == 0) {
             revert Error.ZERO_INPUT_VALUE();
         }
 

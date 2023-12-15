@@ -383,7 +383,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
         /// @dev no approval before call
-        vm.expectRevert(Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE.selector);
+        vm.expectRevert(Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 
@@ -424,7 +424,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         MockERC20(getContract(ETH, "DAI")).transfer(superform, 3e18);
         MockERC20(getContract(ETH, "DAI")).approve(superform, 1e18);
 
-        vm.expectRevert(Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE.selector);
+        vm.expectRevert(Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 
@@ -868,7 +868,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         );
         /// @dev approves before call
         MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
-        vm.expectRevert(Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE.selector);
+        vm.expectRevert(Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
 
         data = SingleVaultSFData(
@@ -903,7 +903,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         );
         req = SingleDirectSingleVaultStateReq(data);
         MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
-        vm.expectRevert(Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE.selector);
+        vm.expectRevert(Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
 
         vm.clearMockedCalls();

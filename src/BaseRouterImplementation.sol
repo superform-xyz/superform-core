@@ -922,7 +922,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 IPermit2(v.permit2).permitTransferFrom(
                     // The permit message.
                     IPermit2.PermitTransferFrom({
-                        permitted: IPermit2.TokenPermissions({ token: v.token, amount: v.amountIn}),
+                        permitted: IPermit2.TokenPermissions({ token: v.token, amount: v.amountIn }),
                         nonce: nonce,
                         deadline: deadline
                     }),
@@ -938,7 +938,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 );
             } else {
                 if (v.token.allowance(srcSender_, address(this)) < v.amountIn) {
-                    revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+                    revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
                 }
 
                 /// @dev moves the tokens from the user to the router
@@ -979,7 +979,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 v.amountsIn[i] = IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[i])).decodeAmountIn(
                     vaultData_.liqData[i].txData, false
                 );
-            } else { 
+            } else {
                 v.amountsIn[i] = vaultData_.amounts[i];
             }
         }
@@ -997,7 +997,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 uint256 txDataLength = vaultData_.liqData[i].txData.length;
                 if (txDataLength == 0 && xChain) {
                     revert Error.NO_TXDATA_PRESENT();
-                } 
+                }
 
                 v.totalAmount += v.amountsIn[i];
             }
@@ -1031,7 +1031,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 );
             } else {
                 if (v.token.allowance(srcSender_, address(this)) < v.totalAmount) {
-                    revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+                    revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
                 }
 
                 /// @dev moves the tokens from the user to the router

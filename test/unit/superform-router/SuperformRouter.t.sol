@@ -1885,7 +1885,7 @@ contract SuperformRouterTest is ProtocolActions {
         vm.stopPrank();
     }
 
-    function test_multiVaultTokenForward_noTxData_withNormalApprove_DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE() public {
+    function test_multiVaultTokenForward_noTxData_withNormalApprove_INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT() public {
         MultiVaultDepositVars memory v;
         /// @dev in this test no tokens would be bridged (no txData)
         vm.selectFork(FORKS[ETH]);
@@ -1980,7 +1980,7 @@ contract SuperformRouterTest is ProtocolActions {
         v.ambIds = new uint8[](1);
         v.ambIds[0] = 1;
 
-        vm.expectRevert(Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE.selector);
+        vm.expectRevert(Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT.selector);
         SuperformRouter(payable(v.superformRouter)).singleXChainMultiVaultDeposit{ value: 2 ether }(
             SingleXChainMultiVaultStateReq(
                 v.ambIds,
