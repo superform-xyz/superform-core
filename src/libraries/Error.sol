@@ -347,6 +347,9 @@ library Error {
     /// @dev thrown in forms where a certain functionality is not allowed or implemented
     error NOT_IMPLEMENTED();
 
+    /// @dev thrown when redeeming from vault yields zero collateral
+    error WITHDRAW_ZERO_COLLATERAL();
+
     /*///////////////////////////////////////////////////////////////
                         PAYMASTER ERRORS
     //////////////////////////////////////////////////////////////*/
