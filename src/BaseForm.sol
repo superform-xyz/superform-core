@@ -160,8 +160,6 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
 
-    receive() external payable { }
-
     /// @param superRegistry_  ISuperRegistry address deployed
     /// @param vault_ The vault address this form pertains to
     /// @param asset_ The underlying asset address of the vault this form pertains to
@@ -316,8 +314,6 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
 
         (, uint32 formImplementationId_,) = superformId.getSuperform();
 
-        return ISuperformFactory(factory).isFormImplementationPaused(
-            formImplementationId_
-        );
+        return ISuperformFactory(factory).isFormImplementationPaused(formImplementationId_);
     }
 }
