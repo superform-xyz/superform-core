@@ -48,6 +48,7 @@ interface IPaymentHelper {
     //////////////////////////////////////////////////////////////
 
     event ChainConfigUpdated(uint64 indexed chainId_, uint256 indexed configType_, bytes indexed config_);
+    event ChainConfigAdded(uint64 chainId_, PaymentHelperConfig config_);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //

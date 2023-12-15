@@ -150,22 +150,6 @@ contract SuperformFactory is ISuperformFactory {
         }
     }
 
-    /// @inheritdoc ISuperformFactory
-    function getAllSuperforms()
-        external
-        view
-        override
-        returns (uint256[] memory superformIds_, address[] memory superforms_)
-    {
-        superformIds_ = superforms;
-        uint256 len = superformIds_.length;
-        superforms_ = new address[](len);
-
-        for (uint256 i; i < len; ++i) {
-            (superforms_[i],,) = superformIds_[i].getSuperform();
-        }
-    }
-
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////

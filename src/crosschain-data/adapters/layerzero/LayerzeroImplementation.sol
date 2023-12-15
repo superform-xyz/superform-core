@@ -156,6 +156,9 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     //////////////////////////////////////////////////////////////
 
     function isTrustedRemote(uint16 srcChainId_, bytes calldata srcAddress_) external view returns (bool) {
+        if (srcChainId_ == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
         return keccak256(trustedRemoteLookup[srcChainId_]) == keccak256(srcAddress_);
     }
 
