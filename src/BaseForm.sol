@@ -214,7 +214,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         notPaused(singleVaultData_)
         returns (uint256 dstAmount)
     {
-        if (srcChainId_ > 0 && srcChainId_ != CHAIN_ID) {
+        if (srcChainId_ != 0 && srcChainId_ != CHAIN_ID) {
             dstAmount = _xChainDepositIntoVault(singleVaultData_, srcSender_, srcChainId_);
         } else {
             revert Error.INVALID_CHAIN_ID();
@@ -232,7 +232,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         onlyCoreStateRegistry
         returns (uint256 dstAmount)
     {
-        if (srcChainId_ > 0 && srcChainId_ != CHAIN_ID) {
+        if (srcChainId_ != 0 && srcChainId_ != CHAIN_ID) {
             if (!_isPaused(singleVaultData_.superformId)) {
                 dstAmount = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
             } else {
