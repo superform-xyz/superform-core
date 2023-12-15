@@ -449,6 +449,7 @@ contract PaymentHelper is IPaymentHelper {
         gasPerByte[chainId_] = config_.dstGasPerByte;
         ackGasCost[chainId_] = config_.ackGasCost;
         timelockCost[chainId_] = config_.timelockCost;
+        emit ChainConfigAdded(chainId_, config_);
     }
 
     /// @inheritdoc IPaymentHelper
