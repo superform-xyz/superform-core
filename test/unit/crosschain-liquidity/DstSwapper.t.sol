@@ -98,6 +98,82 @@ contract DstSwapperTest is ProtocolActions {
         DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
     }
 
+    function test_partial_multi_vault_dstSwap() public {
+        address payable dstSwapper = payable(getContract(ETH, "DstSwapper"));
+        address payable coreStateRegistry = payable(getContract(ETH, "CoreStateRegistry"));
+
+        vm.selectFork(FORKS[ETH]);
+
+        /// simulate an existing payload in csr
+        address superform = getContract(ETH, string.concat("DAI", "VaultMock", "Superform", "1"));
+        uint256 superformId = DataLib.packSuperform(superform, 1, ETH);
+
+        uint256[] memory superformIds = new uint256[](2);
+        superformIds[0] = superformId;
+        superformIds[1] = superformId;
+
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 1e18;
+        amounts[1] = 1e18;
+
+        uint256[] memory slippages = new uint256[](2);
+        slippages[0] = 1000;
+        slippages[1] = 1000;
+
+        LiqRequest memory liq;
+        liq.interimToken = getContract(ETH, "WETH");
+
+        LiqRequest[] memory liqs = new LiqRequest[](2);
+        liqs[1] = liq;
+
+        bool[] memory hasDstSwaps = new bool[](2);
+        hasDstSwaps[1] = true;
+
+        vm.prank(getContract(ETH, "LayerzeroImplementation"));
+        CoreStateRegistry(coreStateRegistry).receivePayload(
+            137,
+            abi.encode(
+                AMBMessage(
+                    DataLib.packTxInfo(1, 1, 1, 1, address(0), 1),
+                    abi.encode(
+                        new uint8[](0),
+                        abi.encode(
+                            InitMultiVaultData(
+                                1,
+                                superformIds,
+                                amounts,
+                                new uint256[](2),
+                                liqs,
+                                hasDstSwaps,
+                                new bool[](2),
+                                receiverAddress,
+                                bytes("")
+                            )
+                        )
+                    )
+                )
+            )
+        );
+
+        vm.startPrank(deployer);
+        deal(getContract(ETH, "WETH"), dstSwapper, 1e18);
+
+        bytes memory txData = _buildLiqBridgeTxDataDstSwap(
+            1, getContract(ETH, "WETH"), getContract(ETH, "DAI"), dstSwapper, ETH, 1e17, 1001
+        );
+
+        uint256[] memory indices = new uint256[](1);
+        indices[0] = 1;
+
+        uint8[] memory bridgeIds = new uint8[](1);
+        bridgeIds[0] = 1;
+
+        bytes[] memory txDataArr = new bytes[](1);
+        txDataArr[0] = txData;
+
+        DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeIds, txDataArr);
+    }
+
     function test_single_non_native_updateFailedTx() public {
         address payable dstSwapper = payable(getContract(OP, "DstSwapper"));
         address payable coreStateRegistry = payable(getContract(OP, "CoreStateRegistry"));
@@ -449,7 +525,7 @@ contract DstSwapperTest is ProtocolActions {
         (bool success,) = payable(dstSwapper).call{ value: 2e18 }("");
         if (!success) revert();
 
-        vm.expectRevert(Error.INVALID_INDEX.selector);
+        vm.expectRevert(Error.INDEX_OUT_OF_BOUNDS.selector);
         DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData);
         indices[0] = 0;
         indices[1] = 1;
@@ -711,6 +787,69 @@ contract DstSwapperTest is ProtocolActions {
 
         bool[] memory hasDstSwaps = new bool[](2);
         hasDstSwaps[0] = true;
+        hasDstSwaps[1] = true;
+
+        uint256[] memory maxSlippages = new uint256[](2);
+        amounts[0] = 1000;
+        amounts[1] = 1000;
+
+        LiqRequest[] memory liq = new LiqRequest[](2);
+        liq[0] = LiqRequest("", getContract(OP, "DAI"), interimToken_, 1, OP, 0);
+        liq[1] = LiqRequest("", getContract(OP, "DAI"), interimToken_, 1, OP, 0);
+        CoreStateRegistry(coreStateRegistry).receivePayload(
+            ETH,
+            abi.encode(
+                AMBMessage(
+                    DataLib.packTxInfo(
+                        uint8(TransactionType.DEPOSIT), uint8(CallbackType.INIT), uint8(1), 1, users[0], ETH
+                    ),
+                    abi.encode(
+                        new uint8[](1),
+                        abi.encode(
+                            InitMultiVaultData(
+                                1,
+                                superformIds,
+                                amounts,
+                                maxSlippages,
+                                liq,
+                                hasDstSwaps,
+                                new bool[](2),
+                                users[0],
+                                bytes("")
+                            )
+                        )
+                    )
+                )
+            )
+        );
+    }
+
+    function _simulatePartialMultiVaultExistingPayloadOnOP(
+        address payable coreStateRegistry,
+        address interimToken_
+    )
+        internal
+        returns (uint256[] memory superformIds)
+    {
+        /// simulate an existing payload in csr
+        address superform = getContract(OP, string.concat("WETH", "VaultMock", "Superform", "1"));
+        uint256 superformId1 = DataLib.packSuperform(superform, 1, OP);
+        uint256 superformId2 = DataLib.packSuperform(
+            getContract(OP, string.concat("WETH", "VaultMockRevertDeposit", "Superform", "1")), 1, OP
+        );
+
+        vm.prank(getContract(OP, "LayerzeroImplementation"));
+
+        superformIds = new uint256[](2);
+        superformIds[0] = superformId1;
+        superformIds[1] = superformId2;
+
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 1e18;
+        amounts[1] = 1e18;
+
+        bool[] memory hasDstSwaps = new bool[](2);
+        hasDstSwaps[0] = false;
         hasDstSwaps[1] = true;
 
         uint256[] memory maxSlippages = new uint256[](2);

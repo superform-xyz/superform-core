@@ -160,7 +160,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
     /// @inheritdoc IDstSwapper
     function batchProcessTx(
         uint256 payloadId_,
-        uint256[] calldata indices,
+        uint256[] calldata indices_,
         uint8[] calldata bridgeIds_,
         bytes[] calldata txData_
     )
@@ -169,8 +169,10 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         onlySwapper
         nonReentrant
     {
-        IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
+        uint256 len = txData_.length;
+        if (len != bridgeIds_.length && len != txData_.length) revert Error.ARRAY_LENGTH_MISMATCH();
 
+        IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
         _isValidPayloadId(payloadId_, coreStateRegistry);
 
         (,, uint8 multi,,,) = DataLib.decodeTxInfo(coreStateRegistry.payloadHeader(payloadId_));
@@ -178,10 +180,15 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
 
         InitMultiVaultData memory data = abi.decode(coreStateRegistry.payloadBody(payloadId_), (InitMultiVaultData));
 
-        uint256 len = txData_.length;
+        uint256 maxIndex = data.liqData.length;
+        uint256 index;
+
         for (uint256 i; i < len; ++i) {
+            index = indices_[i];
+            if (index >= maxIndex) revert Error.INDEX_OUT_OF_BOUNDS();
+
             _processTx(
-                payloadId_, indices[i], bridgeIds_[i], txData_[i], data.liqData[i].interimToken, coreStateRegistry
+                payloadId_, index, bridgeIds_[i], txData_[i], data.liqData[index].interimToken, coreStateRegistry
             );
         }
     }
