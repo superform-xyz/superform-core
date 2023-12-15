@@ -175,7 +175,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
                 }
 
                 if (i - 1 != 0 && ambIds_[i] <= ambIds_[i - 1]) {
-                    revert Error.DUPLICATE_PROOF_BRIDGE_ID();
+                    revert Error.INVALID_PROOF_BRIDGE_IDS();
                 }
 
                 /// @dev proof is dispatched in the form of a payload
