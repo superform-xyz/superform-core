@@ -885,6 +885,9 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                         vars.superRegistryC.DST_SWAPPER_PROCESSOR(), deployer, vars.dstChainId
                     );
                 } else {
+                    /// set refund chain id to wormhole chain id
+                    WormholeARImplementation(vars.WormholeARImplementation).setRefundChainId(wormhole_chainIds[j]);
+
                     /// ack gas cost: 40000
                     /// timelock step form cost: 50000
                     /// default gas price: 50 Gwei

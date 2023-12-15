@@ -22,7 +22,6 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
-
     ISuperRegistry public immutable superRegistry;
 
     //////////////////////////////////////////////////////////////
@@ -30,6 +29,7 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     //////////////////////////////////////////////////////////////
 
     IWormholeRelayer public relayer;
+    uint16 public refundChainId;
 
     mapping(uint64 => uint16) public ambChainId;
     mapping(uint16 => uint64) public superChainId;
@@ -41,7 +41,10 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     //////////////////////////////////////////////////////////////
 
     /// @dev emitted when wormhole relayer is set
-    event WormholeRelayerSet(address wormholeRelayer);
+    event WormholeRelayerSet(address indexed wormholeRelayer);
+
+    /// @dev emitted when refund chain id is set
+    event WormholeRefundChainIdSet(uint16 indexed refundChainId);
 
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
@@ -128,7 +131,7 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
-        address, /*srcSender_*/
+        address srcSender_,
         uint64 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
@@ -140,11 +143,11 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         onlyValidStateRegistry
     {
         uint16 dstChainId = ambChainId[dstChainId_];
-
         (uint256 dstNativeAirdrop, uint256 dstGasLimit) = abi.decode(extraData_, (uint256, uint256));
 
+        /// @dev refunds any excess on this chain back to srcSender_
         relayer.sendPayloadToEvm{ value: msg.value }(
-            dstChainId, authorizedImpl[dstChainId], message_, dstNativeAirdrop, dstGasLimit
+            dstChainId, authorizedImpl[dstChainId], message_, dstNativeAirdrop, dstGasLimit, refundChainId, srcSender_
         );
     }
 
@@ -232,6 +235,15 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         superChainId[ambChainId_] = superChainId_;
 
         emit ChainAdded(superChainId_);
+    }
+
+    /// @dev allows protocol admin to set wormhole chain id for refunds
+    /// @param refundChainId_ is the wormhole chain id of current chain
+    function setRefundChainId(uint16 refundChainId_) external onlyProtocolAdmin {
+        if (refundChainId_ == 0) revert Error.INVALID_CHAIN_ID();
+        refundChainId = refundChainId_;
+
+        emit WormholeRefundChainIdSet(refundChainId_);
     }
 
     /// @dev allows protocol admin to set receiver implementation on a new chain id
