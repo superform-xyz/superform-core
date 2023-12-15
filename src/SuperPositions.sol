@@ -71,10 +71,10 @@ contract SuperPositions is ISuperPositions, ERC1155A {
 
         /// if msg.sender isn't superformRouter then it must be state registry for that superform
         if (msg.sender != router) {
-            (, uint32 formBeaconId,) = DataLib.getSuperform(superformId);
+            (, uint32 formImplementationId,) = DataLib.getSuperform(superformId);
             uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
-            if (uint32(registryId) != formBeaconId) {
+            if (uint32(registryId) != formImplementationId) {
                 revert Error.NOT_MINTER();
             }
         }
@@ -96,10 +96,10 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         if (msg.sender != router) {
             uint256 len = superformIds.length;
             for (uint256 i; i < len; ++i) {
-                (, uint32 formBeaconId,) = DataLib.getSuperform(superformIds[i]);
+                (, uint32 formImplementationId,) = DataLib.getSuperform(superformIds[i]);
                 uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
-                if (uint32(registryId) != formBeaconId) {
+                if (uint32(registryId) != formImplementationId) {
                     revert Error.NOT_MINTER();
                 }
             }
@@ -369,20 +369,31 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     /// @dev interacts with broadcast state registry to broadcasting state changes to all connected remote chains
     /// @param message_ is the crosschain message to be sent.
     function _broadcast(bytes memory message_) internal {
-        (uint256 totalFees, bytes memory extraData) =
+        bytes memory registerTransmuterAMBData =
             IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER"))).getRegisterTransmuterAMBData();
 
-        (uint8 ambId, bytes memory broadcastParams) = abi.decode(extraData, (uint8, bytes));
+        (uint8 ambId, bytes memory broadcastParams) = abi.decode(registerTransmuterAMBData, (uint8, bytes));
 
-        if (msg.value < totalFees) {
+        /// @dev if the broadcastParams are wrong this will revert
+        (uint256 gasFee, bytes memory extraData) = abi.decode(broadcastParams, (uint256, bytes));
+
+        if (msg.value < gasFee) {
             revert Error.INVALID_BROADCAST_FEE();
         }
 
         /// @dev ambIds are validated inside the broadcast state registry
-        /// @dev broadcastParams if wrong will revert in the amb implementation
-        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{
-            value: msg.value
-        }(msg.sender, ambId, message_, broadcastParams);
+        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{ value: gasFee }(
+            msg.sender, ambId, gasFee, message_, extraData
+        );
+
+        if (msg.value > gasFee) {
+            /// @dev forwards the rest to msg.sender
+            (bool success,) = payable(msg.sender).call{ value: msg.value - gasFee }("");
+
+            if (!success) {
+                revert Error.FAILED_TO_SEND_NATIVE();
+            }
+        }
     }
 
     /// @dev deploys new transmuter on broadcasting
