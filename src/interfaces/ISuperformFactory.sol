@@ -39,7 +39,7 @@ interface ISuperformFactory {
     /// @dev emitted when a form implementation is paused
     /// @param formImplementationId is the id of the form implementation
     /// @param paused is the new paused status
-    event FormImplementationPaused(uint256 indexed formImplementationId, PauseStatus paused);
+    event FormImplementationPaused(uint256 indexed formImplementationId, PauseStatus indexed paused);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //

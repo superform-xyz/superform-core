@@ -41,9 +41,9 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
 
-    event EndpointUpdated(address oldEndpoint_, address newEndpoint_);
-    event MessageFailed(uint16 srcChainId_, bytes srcAddress_, uint64 nonce_, bytes payload_);
-    event SetTrustedRemote(uint16 srcChainId_, bytes srcAddress_);
+    event EndpointUpdated(address indexed oldEndpoint_, address indexed newEndpoint_);
+    event MessageFailed(uint16 indexed srcChainId_, bytes indexed srcAddress_, uint64 indexed nonce_, bytes payload_);
+    event SetTrustedRemote(uint16 indexed srcChainId_, bytes indexed srcAddress_);
 
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
