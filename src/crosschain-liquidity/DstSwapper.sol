@@ -300,7 +300,15 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         if (userSuppliedInterimToken_ != v.approvalToken) {
             revert Error.INVALID_INTERIM_TOKEN();
         }
-
+        if (userSuppliedInterimToken_ == NATIVE) {
+            if (address(this).balance < v.amount) {
+                revert Error.INSUFFICIENT_BALANCE();
+            }
+        } else {
+            if (IERC20(userSuppliedInterimToken_).balanceOf(address(this)) < v.amount) {
+                revert Error.INSUFFICIENT_BALANCE();
+            }
+        }
         v.finalDst = address(coreStateRegistry_);
 
         /// @dev validates the bridge data
