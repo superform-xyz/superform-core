@@ -308,6 +308,9 @@ library Error {
     /// @dev thrown if broadcast fee is invalid
     error INVALID_BROADCAST_FEE();
 
+    /// @dev thrown if retry fees is less than required
+    error INVALID_RETRY_FEE();
+
     /// @dev thrown if broadcast message type is wrong
     error INVALID_MESSAGE_TYPE();
 

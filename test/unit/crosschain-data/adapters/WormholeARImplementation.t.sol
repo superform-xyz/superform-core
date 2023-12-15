@@ -29,18 +29,20 @@ contract WormholeARImplementationTest is BaseSetup {
     function test_retryPayload() public {
         VaaKey memory vaaKey = VaaKey(1, keccak256("test"), 1);
 
-        bytes memory data = abi.encode(vaaKey, 2, 3, 4, deployer);
+        bytes memory data = abi.encode(vaaKey, 5, 3, 4, deployer);
 
         vm.mockCall(
             address(wormholeARImpl.relayer()),
             abi.encodeWithSelector(
-                IWormholeRelayer(wormholeARImpl.relayer()).resendToEvm.selector, vaaKey, 2, 3, 4, deployer
+                IWormholeRelayer(wormholeARImpl.relayer()).resendToEvm.selector, vaaKey, 5, 3, 4, deployer
             ),
             abi.encode("")
         );
 
+        uint256 fee = wormholeARImpl.estimateFees(uint64(137), bytes(""), abi.encode(uint256(0), uint256(4)));
+
         vm.prank(deployer);
-        wormholeARImpl.retryPayload(data);
+        wormholeARImpl.retryPayload{ value: fee }(data);
 
         vm.clearMockedCalls();
     }
@@ -48,19 +50,21 @@ contract WormholeARImplementationTest is BaseSetup {
     function test_retryPayloadWithZeroAddress() public {
         VaaKey memory vaaKey = VaaKey(1, keccak256("test"), 1);
 
-        bytes memory data = abi.encode(vaaKey, 2, 3, 4, address(0));
+        bytes memory data = abi.encode(vaaKey, 5, 3, 4, address(0));
 
         vm.mockCall(
             address(wormholeARImpl.relayer()),
             abi.encodeWithSelector(
-                IWormholeRelayer(wormholeARImpl.relayer()).resendToEvm.selector, vaaKey, 2, 3, 4, address(0)
+                IWormholeRelayer(wormholeARImpl.relayer()).resendToEvm.selector, vaaKey, 5, 3, 4, address(0)
             ),
             abi.encode("")
         );
 
+        uint256 fee = wormholeARImpl.estimateFees(uint64(137), bytes(""), abi.encode(uint256(0), uint256(4)));
+
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         vm.prank(deployer);
-        wormholeARImpl.retryPayload(data);
+        wormholeARImpl.retryPayload{ value: fee }(data);
 
         vm.clearMockedCalls();
     }

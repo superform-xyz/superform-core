@@ -132,7 +132,8 @@ contract HyperlaneImplementationTest is CommonProtocolActions {
 
         vm.prank(deployer);
         /// @dev note these values don't make sense, should be estimated properly
-        hyperlaneImplementation.retryPayload{ value: 10 ether }(abi.encode(messageId, destination, 1_500_000));
+        uint256 fees = hyperlaneImplementation.igp().quoteGasPayment(destination, 1_500_000);
+        hyperlaneImplementation.retryPayload{ value: fees }(abi.encode(messageId, destination, 1_500_000));
     }
 
     function test_revert_handle_duplicatePayload_invalidSrcChainSender_invalidCaller(address malice_) public {
