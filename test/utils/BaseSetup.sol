@@ -491,6 +491,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             contracts[vars.chainId][bytes32(bytes("WormholeARImplementation"))] = vars.wormholeImplementation;
 
             WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayer);
+            /// set refund chain id to wormhole chain id
+            WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(wormhole_chainIds[i]);
 
             /// @dev 6.5- deploy Wormhole Specialized Relayer Implementation
             vars.wormholeSRImplementation = address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC));
@@ -885,9 +887,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                         vars.superRegistryC.DST_SWAPPER_PROCESSOR(), deployer, vars.dstChainId
                     );
                 } else {
-                    /// set refund chain id to wormhole chain id
-                    WormholeARImplementation(vars.WormholeARImplementation).setRefundChainId(wormhole_chainIds[j]);
-
                     /// ack gas cost: 40000
                     /// timelock step form cost: 50000
                     /// default gas price: 50 Gwei
