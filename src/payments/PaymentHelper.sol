@@ -152,7 +152,6 @@ contract PaymentHelper is IPaymentHelper {
             );
 
             superformIdsLen = req_.superformsData[i].superformIds.length;
-
             srcAmount += ambFees;
 
             if (isDeposit_) {
@@ -161,7 +160,13 @@ contract PaymentHelper is IPaymentHelper {
 
                 /// @dev step 3: estimation processing cost of acknowledgement
                 /// @notice optimistically estimating. (Ideal case scenario: no failed deposits / withdrawals)
-                srcAmount += _estimateAckProcessingCost(superformIdsLen);
+                uint256 arrLen = req_.superformsData[i].retain4626s.length;
+                uint256 ackLen;
+                for (uint256 j; j < arrLen; ++j) {
+                    if (!req_.superformsData[i].retain4626s[j]) ++ackLen;
+                }
+
+                srcAmount += _estimateAckProcessingCost(ackLen);
 
                 /// @dev step 4: estimate liq amount
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequests);
@@ -217,7 +222,9 @@ contract PaymentHelper is IPaymentHelper {
                 totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], 1);
 
                 /// @dev step 3: estimation execution cost of acknowledgement
-                srcAmount += _estimateAckProcessingCost(1);
+                if (!req_.superformsData[i].retain4626) {
+                    srcAmount += _estimateAckProcessingCost(1);
+                }
 
                 /// @dev step 4: estimate the liqAmount
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequest.castLiqRequestToArray());
@@ -271,7 +278,14 @@ contract PaymentHelper is IPaymentHelper {
         totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, superformIdsLen);
 
         /// @dev step 4: estimation execution cost of acknowledgement
-        if (isDeposit_) srcAmount += _estimateAckProcessingCost(superformIdsLen);
+        if (isDeposit_) {
+            uint256 arrLen = req_.superformsData.retain4626s.length;
+            uint256 ackLen;
+            for (uint256 j; j < arrLen; ++j) {
+                if (!req_.superformsData.retain4626s[j]) ++ackLen;
+            }
+            srcAmount += _estimateAckProcessingCost(ackLen);
+        }
 
         /// @dev step 5: estimate liq amount
         if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformsData.liqRequests);
@@ -321,7 +335,7 @@ contract PaymentHelper is IPaymentHelper {
         totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, 1);
 
         /// @dev step 4: estimation execution cost of acknowledgement
-        if (isDeposit_) srcAmount += _estimateAckProcessingCost(1);
+        if (isDeposit_ && req_.superformData.hasDstSwap) srcAmount += _estimateAckProcessingCost(1);
 
         /// @dev step 5: estimate the liq amount
         if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
