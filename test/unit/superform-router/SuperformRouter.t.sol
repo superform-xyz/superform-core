@@ -274,7 +274,7 @@ contract SuperformRouterTest is ProtocolActions {
 
         /// @dev approves before call
         MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
-        SuperRegistry(getContract(ETH, "SuperRegistry")).setVaultLimitPerTx(ETH, 1);
+        SuperRegistry(getContract(ETH, "SuperRegistry")).setVaultLimitPerDestination(ETH, 1);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectMultiVaultDeposit(req);
@@ -2573,7 +2573,7 @@ contract SuperformRouterTest is ProtocolActions {
 
         vm.recordLogs();
         SuperformFactory(getContract(ARBI, "SuperformFactory")).changeFormImplementationPauseStatus{ value: 800 ether }(
-            formImplementationId, ISuperformFactory.PauseStatus.PAUSED, generateBroadcastParams(5, 1)
+            formImplementationId, ISuperformFactory.PauseStatus.PAUSED, generateBroadcastParams(0)
         );
 
         _broadcastPayloadHelper(ARBI, vm.getRecordedLogs());

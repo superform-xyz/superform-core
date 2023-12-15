@@ -81,8 +81,8 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
                     }
                 }
             } else {
-                /// @dev if withdraws, then receiver address must be the srcSender
-                if (receiver != args_.srcSender) revert Error.INVALID_TXDATA_RECEIVER();
+                /// @dev if withdraws, then receiver address must be the receiverAddress
+                if (receiver != args_.receiverAddress) revert Error.INVALID_TXDATA_RECEIVER();
             }
 
             /// @dev remap of address 0 to NATIVE because of how LiFi produces txData
@@ -104,8 +104,8 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
                 /// @dev If same chain deposits then receiver address must be the superform
                 if (receiver != args_.superform) revert Error.INVALID_TXDATA_RECEIVER();
             } else {
-                /// @dev if withdraws, then receiver address must be the srcSender
-                if (receiver != args_.srcSender) revert Error.INVALID_TXDATA_RECEIVER();
+                /// @dev if withdraws, then receiver address must be the receiverAddress
+                if (receiver != args_.receiverAddress) revert Error.INVALID_TXDATA_RECEIVER();
             }
 
             /// @dev remap of address 0 to NATIVE because of how LiFi produces txData
