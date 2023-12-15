@@ -289,7 +289,7 @@ contract SuperformFactory is ISuperformFactory {
     /// @dev interacts with broadcast state registry to broadcasting state changes to all connected remote chains
     /// @param message_ is the crosschain message to be sent.
     /// @param extraData_ is the amb override information.
-    function _broadcast(bytes memory message_, bytes memory extraData_) internal returns (uint256) {
+    function _broadcast(bytes memory message_, bytes memory extraData_) internal {
         (uint8 ambId, bytes memory broadcastParams) = abi.decode(extraData_, (uint8, bytes));
 
         /// @dev if the broadcastParams are wrong this will revert
