@@ -170,7 +170,6 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         onlySwapper
         nonReentrant
     {
-
         uint256 len = indices_.length;
         if (len != bridgeIds_.length || len != txData_.length) {
             revert Error.ARRAY_LENGTH_MISMATCH();
@@ -184,7 +183,6 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         if (multi != 1) revert Error.INVALID_PAYLOAD_TYPE();
 
         InitMultiVaultData memory data = abi.decode(coreStateRegistry.payloadBody(payloadId_), (InitMultiVaultData));
-
 
         for (uint256 i; i < len; ++i) {
             _processTx(
@@ -351,19 +349,12 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
 
         v.balanceDiff = v.balanceAfter - v.balanceBefore;
 
-        /// @dev if actual underlying is less than expAmount adjusted
-        /// with maxSlippage, invariant breaks
-        /// @notice that unlike in CoreStateRegistry slippage check inside updateDeposit, in here we don't check for
-        /// negative slippage
-        /// @notice this essentially allows any amount to be swapped, (the invariant will still break if the amount is
-        /// too low)
-        /// @notice this doesn't mean that the keeper or the user can swap any amount, because of the 2nd slippage check
-        /// in CoreStateRegistry
+        /// @dev if actual underlying is less than expAmount adjusted with maxSlippage, invariant breaks
         if (v.balanceDiff < ((v.expAmount * (ENTIRE_SLIPPAGE - v.maxSlippage)) / ENTIRE_SLIPPAGE)) {
             revert Error.SLIPPAGE_OUT_OF_BOUNDS();
         }
 
-        /// @dev updates swapped amount adjusting for 
+        /// @dev updates swapped amount adjusting for
         /// @notice in this check, we check if there is negative slippage, for which case, the user is capped to receive
         /// the v.expAmount of tokens (originally defined)
         if (v.balanceDiff > v.expAmount) {
