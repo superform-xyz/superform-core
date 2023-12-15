@@ -13,7 +13,9 @@ contract SocketOneInchValidator is BridgeValidator {
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address superRegistry_) BridgeValidator(superRegistry_) { }
+    constructor(address superRegistry_) BridgeValidator(superRegistry_) {
+        if (address(superRegistry_) == address(0)) revert Error.DISABLED();
+    }
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
@@ -91,7 +93,7 @@ contract SocketOneInchValidator is BridgeValidator {
     }
 
     /// @dev helps parsing socket calldata and return the socket request
-    function _parseCallData(bytes calldata callData) internal pure returns (bytes memory) {
+    function _parseCallData(bytes calldata callData) internal pure returns (bytes calldata) {
         return callData[4:];
     }
 }
