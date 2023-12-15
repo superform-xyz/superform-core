@@ -292,7 +292,7 @@ library Error {
     /// @dev thrown if liquidity bridge fails for erc20 or native tokens
     error FAILED_TO_EXECUTE_TXDATA(address token);
 
-    /// @dev thrown if underlying asset mismatches
+    /// @dev thrown if asset being used for deposit mismatches in multivault deposits
     error INVALID_DEPOSIT_TOKEN();
 
     /// STATE REGISTRY EXECUTION ERRORS
