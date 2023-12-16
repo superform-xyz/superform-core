@@ -87,7 +87,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     mapping(uint8 ambId => address ambAddresses) public ambAddresses;
     mapping(uint8 ambId => bool isBroadcastAMB) public isBroadcastAMB;
 
-    mapping(uint64 chainId => uint256 vaultLimitPerTx) public vaultLimitPerTx;
+    mapping(uint64 chainId => uint256 vaultLimitPerDestination) public vaultLimitPerDestination;
 
     mapping(uint8 registryId => address registryAddress) public registryAddresses;
     /// @dev is the reverse mapping of registryAddresses
@@ -167,11 +167,17 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @inheritdoc ISuperRegistry
     function getStateRegistryId(address registryAddress_) external view override returns (uint8 registryId_) {
         registryId_ = stateRegistryIds[registryAddress_];
+        if (registryId_ == 0) revert Error.INVALID_REGISTRY_ID();
     }
 
     /// @inheritdoc ISuperRegistry
-    function getVaultLimitPerDestination(uint64 chainId_) external view override returns (uint256 vaultLimitPerTx_) {
-        vaultLimitPerTx_ = vaultLimitPerTx[chainId_];
+    function getVaultLimitPerDestination(uint64 chainId_)
+        external
+        view
+        override
+        returns (uint256 vaultLimitPerDestination_)
+    {
+        vaultLimitPerDestination_ = vaultLimitPerDestination[chainId_];
     }
 
     /// @inheritdoc ISuperRegistry
@@ -234,7 +240,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             revert Error.ZERO_INPUT_VALUE();
         }
 
-        vaultLimitPerTx[chainId_] = vaultLimit_;
+        vaultLimitPerDestination[chainId_] = vaultLimit_;
         emit SetVaultLimitPerDestination(chainId_, vaultLimit_);
     }
 
