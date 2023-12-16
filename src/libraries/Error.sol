@@ -7,9 +7,6 @@ library Error {
     //////////////////////////////////////////////////////////////
     ///@notice errors thrown in protocol setup
 
-    /// @dev thrown if there is an array length mismatch
-    error ARRAY_LENGTH_MISMATCH();
-
     /// @dev thrown if chain id exceeds max(uint64)
     error BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
 
@@ -119,6 +116,9 @@ library Error {
     ///@notice errors thrown if input variables are not valid
 
     /// COMMON INPUT VALIDATION ERRORS
+    /// @dev thrown if there is an array length mismatch
+    error ARRAY_LENGTH_MISMATCH();
+    
     /// @dev thrown if payload id does not exist
     error INVALID_PAYLOAD_ID();
 
@@ -349,6 +349,9 @@ library Error {
 
     /// @dev thrown when redeeming from vault yields zero collateral
     error WITHDRAW_ZERO_COLLATERAL();
+
+    /// @dev thrown if a state registry id is 0
+    error INVALID_REGISTRY_ID();
 
     /*///////////////////////////////////////////////////////////////
                         PAYMASTER ERRORS
