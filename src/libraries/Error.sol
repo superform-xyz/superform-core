@@ -25,6 +25,9 @@ library Error {
     /// @dev thrown if wormhole relayer is not set
     error RELAYER_NOT_SET();
 
+    /// @dev thrown if get native token price estimate in paymentHelper is 0
+    error INVALID_NATIVE_TOKEN_PRICE();
+
     //////////////////////////////////////////////////////////////
     //                  AUTHORIZATION ERRORS                    //
     //////////////////////////////////////////////////////////////
@@ -118,7 +121,7 @@ library Error {
     /// COMMON INPUT VALIDATION ERRORS
     /// @dev thrown if there is an array length mismatch
     error ARRAY_LENGTH_MISMATCH();
-    
+
     /// @dev thrown if payload id does not exist
     error INVALID_PAYLOAD_ID();
 
