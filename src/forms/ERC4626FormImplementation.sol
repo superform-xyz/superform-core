@@ -296,6 +296,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// @dev redeem the underlying
         dstAmount = v.v.redeem(singleVaultData_.amount, v.receiver, address(this));
 
+        if (dstAmount == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
+
         if (v.len1 != 0) {
             /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same
             /// as the vault asset
@@ -363,6 +365,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         /// @dev redeem vault positions (we operate only on positions, not assets)
         dstAmount = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
+
+        if (dstAmount == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
         if (len != 0) {
             /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same
