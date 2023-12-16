@@ -24,9 +24,9 @@ contract ERC4626FormExternal is ERC4626FormImplementation {
     )
         internal
         override
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
-        dstAmount = _processDirectDeposit(singleVaultData_);
+        shares = _processDirectDeposit(singleVaultData_);
     }
 
     /// @inheritdoc BaseForm
@@ -36,9 +36,9 @@ contract ERC4626FormExternal is ERC4626FormImplementation {
     )
         internal
         override
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
-        dstAmount = _processDirectWithdraw(singleVaultData_, srcSender_);
+        assets = _processDirectWithdraw(singleVaultData_, srcSender_);
     }
 
     /// @inheritdoc BaseForm
@@ -49,9 +49,9 @@ contract ERC4626FormExternal is ERC4626FormImplementation {
     )
         internal
         override
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
-        dstAmount = _processXChainDeposit(singleVaultData_, srcChainId_);
+        shares = _processXChainDeposit(singleVaultData_, srcChainId_);
     }
 
     /// @inheritdoc BaseForm
@@ -62,9 +62,9 @@ contract ERC4626FormExternal is ERC4626FormImplementation {
     )
         internal
         override
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
-        dstAmount = _processXChainWithdraw(singleVaultData_, srcSender_, srcChainId_);
+        assets = _processXChainWithdraw(singleVaultData_, srcSender_, srcChainId_);
     }
 
     /// @inheritdoc BaseForm

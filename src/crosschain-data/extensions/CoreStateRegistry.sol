@@ -797,11 +797,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                         }),
                         srcSender_,
                         srcChainId_
-                    ) returns (uint256 dstAmount) {
-                        if (dstAmount != 0 && !multiVaultData.retain4626s[i]) {
+                    ) returns (uint256 shares) {
+                        if (shares != 0 && !multiVaultData.retain4626s[i]) {
                             fulfilment = true;
                             /// @dev marks the indexes that require a callback mint of shares (successful)
-                            multiVaultData.amounts[i] = dstAmount;
+                            multiVaultData.amounts[i] = shares;
                         } else {
                             multiVaultData.amounts[i] = 0;
                         }
@@ -827,6 +827,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             }
         }
 
+        if (errors) {
+            emit FailedXChainDeposits(payloadId_);
+        }
+
         /// @dev issue superPositions if at least one vault deposit passed
         if (fulfilment) {
             return _multiReturnData(
@@ -837,10 +841,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 multiVaultData.superformIds,
                 multiVaultData.amounts
             );
-        }
-
-        if (errors) {
-            emit FailedXChainDeposits(payloadId_);
         }
 
         return "";
@@ -902,16 +902,16 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
             /// @dev deposit to superform
             try IBaseForm(superform_).xChainDepositIntoVault(singleVaultData, srcSender_, srcChainId_) returns (
-                uint256 dstAmount
+                uint256 shares
             ) {
-                if (dstAmount != 0 && !singleVaultData.retain4626) {
+                if (shares != 0 && !singleVaultData.retain4626) {
                     return _singleReturnData(
                         srcSender_,
                         singleVaultData.payloadId,
                         TransactionType.DEPOSIT,
                         CallbackType.RETURN,
                         singleVaultData.superformId,
-                        dstAmount
+                        shares
                     );
                 }
             } catch {

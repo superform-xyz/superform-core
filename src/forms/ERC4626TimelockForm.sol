@@ -64,7 +64,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     function withdrawAfterCoolDown(TimelockPayload memory p_)
         external
         onlyTimelockStateRegistry
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
         if (_isPaused(p_.data.superformId)) {
             IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
@@ -89,14 +89,15 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         /// @dev if the txData is empty, the tokens are sent directly to the sender, otherwise sent first to this form
         vars.receiver = vars.len1 == 0 ? p_.data.receiverAddress : address(this);
 
-        dstAmount = v.redeem(p_.data.amount, vars.receiver, address(this));
+        assets = v.redeem(p_.data.amount, vars.receiver, address(this));
+
         /// @dev validate and dispatches the tokens
         if (vars.len1 != 0) {
             vars.bridgeValidator = superRegistry.getBridgeValidator(vars.liqData.bridgeId);
             vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(vars.liqData.txData, false);
 
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
-            if (vars.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+            if (vars.amount > assets) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
             vars.chainId = CHAIN_ID;
 
@@ -137,9 +138,9 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         internal
         virtual
         override
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
-        dstAmount = _processDirectDeposit(singleVaultData_);
+        shares = _processDirectDeposit(singleVaultData_);
     }
 
     /// @inheritdoc BaseForm
@@ -151,15 +152,15 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         internal
         virtual
         override
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
-        dstAmount = _processXChainDeposit(singleVaultData_, srcChainId_);
+        shares = _processXChainDeposit(singleVaultData_, srcChainId_);
     }
 
     /// @inheritdoc BaseForm
     /// @dev this is the step-1 for timelock form withdrawal, direct case
     /// @dev will mandatorily process unlock
-    /// @return dstAmount is always 0
+    /// @return shares is always 0
     function _directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_
@@ -179,7 +180,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     /// @inheritdoc BaseForm
     /// @dev this is the step-1 for timelock form withdrawal, xchain case
     /// @dev will mandatorily process unlock
-    /// @return dstAmount is always 0
+    /// @return shares is always 0
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,

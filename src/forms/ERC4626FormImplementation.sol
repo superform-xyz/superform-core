@@ -33,7 +33,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         uint64 chainId;
         address asset;
         address bridgeValidator;
-        uint256 dstAmount;
+        uint256 shares;
         uint256 balanceBefore;
         uint256 assetDifference;
         uint256 nonce;
@@ -153,7 +153,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
 
-    function _processDirectDeposit(InitSingleVaultData memory singleVaultData_) internal returns (uint256 dstAmount) {
+    function _processDirectDeposit(InitSingleVaultData memory singleVaultData_) internal returns (uint256 shares) {
         directDepositLocalVars memory vars;
 
         IERC4626 v = IERC4626(vault);
@@ -237,9 +237,16 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         IERC20(vars.asset).safeIncreaseAllowance(vault, vars.assetDifference);
 
         if (singleVaultData_.retain4626) {
-            dstAmount = v.deposit(vars.assetDifference, singleVaultData_.receiverAddress);
+            shares = v.deposit(vars.assetDifference, singleVaultData_.receiverAddress);
         } else {
-            dstAmount = v.deposit(vars.assetDifference, address(this));
+            /// @dev This makes ERC4626Form (address(this)) owner of v.shares
+            /// @dev add extra validation check in minting SuperPositions to ensure accounting
+            uint256 sharesBalanceBefore = v.balanceOf(address(this));
+            shares = v.deposit(vars.assetDifference, address(this));
+            uint256 sharesBalanceAfter = v.balanceOf(address(this));
+            if (sharesBalanceAfter - sharesBalanceBefore != shares) {
+                revert Error.INVALID_OUTPUT_AMOUNT();
+            }
         }
     }
 
@@ -248,7 +255,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         uint64 srcChainId_
     )
         internal
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
         (,, uint64 dstChainId) = singleVaultData_.superformId.getSuperform();
         address vaultLoc = vault;
@@ -267,10 +274,16 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         /// @dev Deposit into vault
         if (singleVaultData_.retain4626) {
-            dstAmount = v.deposit(singleVaultData_.amount, singleVaultData_.receiverAddress);
+            shares = v.deposit(singleVaultData_.amount, singleVaultData_.receiverAddress);
         } else {
-            /// This makes ERC4626Form (address(this)) owner of v.shares
-            dstAmount = v.deposit(singleVaultData_.amount, address(this));
+            /// @dev This makes ERC4626Form (address(this)) owner of v.shares
+            /// @dev add extra validation check in minting SuperPositions to ensure accounting
+            uint256 sharesBalanceBefore = v.balanceOf(address(this));
+            shares = v.deposit(singleVaultData_.amount, address(this));
+            uint256 sharesBalanceAfter = v.balanceOf(address(this));
+            if (sharesBalanceAfter - sharesBalanceBefore != shares) {
+                revert Error.INVALID_OUTPUT_AMOUNT();
+            }
         }
 
         emit Processed(srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
@@ -281,7 +294,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         address srcSender_
     )
         internal
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
         directWithdrawLocalVars memory v;
         v.len1 = singleVaultData_.liqData.txData.length;
@@ -293,8 +306,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         v.v = IERC4626(vault);
         v.asset = address(asset);
 
-        /// @dev redeem the underlying
-        dstAmount = v.v.redeem(singleVaultData_.amount, v.receiver, address(this));
+        /// @dev redeem shares for assets
+        assets = v.v.redeem(singleVaultData_.amount, v.receiver, address(this));
 
         if (v.len1 != 0) {
             /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same
@@ -305,7 +318,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             v.amount = IBridgeValidator(v.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
-            if (v.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+            if (v.amount > assets) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
             v.chainId = CHAIN_ID;
 
@@ -340,7 +353,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         uint64 srcChainId_
     )
         internal
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
         uint256 len = singleVaultData_.liqData.txData.length;
 
@@ -361,8 +374,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         IERC4626 v = IERC4626(vault);
         vars.asset = asset;
 
-        /// @dev redeem vault positions (we operate only on positions, not assets)
-        dstAmount = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
+        /// @dev redeem shares for assets
+        assets = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
 
         if (len != 0) {
             /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same
@@ -373,7 +386,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
-            if (vars.amount > dstAmount) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
+            if (vars.amount > assets) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(vars.bridgeValidator).validateTxData(
