@@ -2220,28 +2220,27 @@ contract SuperformRouterTest is ProtocolActions {
         assertEq(MockERC20(getContract(ARBI, "DAI")).balanceOf(getContract(ARBI, "DstSwapper")), 1e18);
     }
 
-    function test_negativeDstSwapSlippageAndUpdateSwappedAmount() public {
-        /// case: where bridge 3 DAI, dst swapper swapped 3 DAI, updater updates 3 DAI
-        /// outcome: deposit goes through depositing 2 DAI and 1 DAI remains on CSR
-        uint256 superformId = _simulateXChainDepositWithNegativeSlippage(true, true, true);
+    function test_negativeDstSwapSlippageAndUpdateSwappedAmount_RevertsInvalidKeeperCall() public {
+        /// case: where bridge 3 DAI, dst swapper swapped 3 DAI (capped to 2) updater updates 3 DAI
+        /// outcome: deposit should revert on update
+        _simulateXChainDepositWithNegativeSlippage(true, true, true);
+
+        /// @dev swapped tokens remain on DstSwapper
+        vm.selectFork(FORKS[ARBI]);
+        assertEq(MockERC20(getContract(ARBI, "DAI")).balanceOf(getContract(ARBI, "CoreStateRegistry")), 3e18);
+    }
+
+    function test_negativeDstSwapSlippageAndUpdateSuperformDataAmount() public {
+        /// keeperUpdateExactAmount = false means keeper will update with the capped amount (2 DAI)
+        uint256 superformId = _simulateXChainDepositWithNegativeSlippage(true, true, false);
 
         /// @dev assert that the minted amount is the amount sent in superformData.amount
         vm.selectFork(FORKS[ETH]);
         assertEq(SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(address(420), superformId), 2e18);
 
-        /// @dev swapped tokens live on CSR
+        /// @dev swapped tokens (remainder of negative slippage) remain on dstSwapper
         vm.selectFork(FORKS[ARBI]);
         assertEq(MockERC20(getContract(ARBI, "DAI")).balanceOf(getContract(ARBI, "CoreStateRegistry")), 1e18);
-    }
-
-    function test_negativeDstSwapSlippageAndUpdateSuperformDataAmount() public {
-        /// case: where bridge 3 DAI, dst swapper swapped 3 DAI, updater updates 2 DAI
-        /// outcome: deposit should revert on update
-        _simulateXChainDepositWithNegativeSlippage(true, true, false);
-
-        /// @dev swapped tokens live on CSR forever
-        vm.selectFork(FORKS[ARBI]);
-        assertEq(MockERC20(getContract(ARBI, "DAI")).balanceOf(getContract(ARBI, "CoreStateRegistry")), 3e18);
     }
 
     struct SimulateUpdateTestLocalVars {
@@ -2356,9 +2355,9 @@ contract SuperformRouterTest is ProtocolActions {
         vm.startPrank(deployer);
 
         v.amounts = new uint256[](1);
-        v.amounts[0] = keeperUpdateExactAmount ? 3e18 : 2e18;
+        v.amounts[0] = keeperUpdateExactAmount ? 3e18 : 2e18; // false -± 2e18
 
-        v.swapAmount = swapperSwapExactBridgeAmount ? 3e18 : 2e18;
+        v.swapAmount = swapperSwapExactBridgeAmount ? 3e18 : 2e18; // true -± 3e18
 
         if (hasDstSwap) {
             DstSwapper(payable(getContract(ARBI, "DstSwapper"))).processTx(
@@ -2377,7 +2376,7 @@ contract SuperformRouterTest is ProtocolActions {
             );
         }
 
-        if (hasDstSwap && !keeperUpdateExactAmount && swapperSwapExactBridgeAmount) {
+        if (hasDstSwap && keeperUpdateExactAmount && swapperSwapExactBridgeAmount) {
             vm.expectRevert(Error.INVALID_DST_SWAPPER_FAILED_SWAP.selector);
             CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(1, v.amounts);
         } else {
