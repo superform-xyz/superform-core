@@ -170,7 +170,8 @@ contract PaymentHelper is IPaymentHelper {
 
                     /// @dev step 5: estimate dst swap cost if it exists
                     totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwaps);
-            } else {
+                } 
+            }   else {
                     /// @dev step 6: estimate if timelock form processing costs are involved
                     for (uint256 j; j < superformIdsLen; ++j) {
                         (, uint32 formId,) = req_.superformsData[i].superformIds[j].getSuperform();
@@ -227,7 +228,8 @@ contract PaymentHelper is IPaymentHelper {
                     /// @dev step 5: estimate if swap costs are involved
                     totalDstGas +=
                         _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwap.castBoolToArray());
-              } else {
+                } 
+            }   else {
                     /// @dev step 6: estimate if timelock form processing costs are involved
                     (, uint32 formId,) = req_.superformsData[i].superformId.getSuperform();
                     if (formId == TIMELOCK_FORM_ID) {
@@ -382,9 +384,9 @@ contract PaymentHelper is IPaymentHelper {
     {
         if (!isDeposit_) {
             uint256 len = req_.superformData.superformIds.length;
+            uint256 timelockPrice = timelockCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
             for (uint256 i; i < len; ++i) {
                 (, uint32 formId,) = req_.superformData.superformIds[i].getSuperform();
-                uint256 timelockPrice = timelockCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
                 /// @dev only if timelock form withdrawal is involved
                 if (formId == TIMELOCK_FORM_ID) {
                     srcAmount += timelockPrice;
