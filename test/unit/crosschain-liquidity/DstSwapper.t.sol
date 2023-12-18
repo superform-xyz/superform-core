@@ -67,14 +67,12 @@ contract DstSwapperTest is ProtocolActions {
 
             DstSwapper(dstSwapper).processTx(1, 1, txData);
 
-            DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
-
             /// @dev retry the same payload id and indices
             vm.expectRevert(Error.DST_SWAP_ALREADY_PROCESSED.selector);
             DstSwapper(dstSwapper).processTx(1, 1, txData);
 
             /// @dev no funds in multi-tx processor at this point; should revert
-            vm.expectRevert(abi.encodeWithSelector(Error.FAILED_TO_EXECUTE_TXDATA.selector, native));
+            vm.expectRevert(Error.INSUFFICIENT_BALANCE.selector);
             DstSwapper(dstSwapper).processTx(2, 1, txData);
         } else {
             revert();
@@ -92,7 +90,7 @@ contract DstSwapperTest is ProtocolActions {
         bytes memory txData =
             _buildLiqBridgeTxDataDstSwap(1, getContract(ETH, "WETH"), getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
         /// @dev no funds in multi-tx processor at this point; should revert
-        vm.expectRevert(abi.encodeWithSelector(Error.FAILED_TO_EXECUTE_TXDATA.selector, getContract(ETH, "WETH")));
+        vm.expectRevert(Error.INSUFFICIENT_BALANCE.selector);
         DstSwapper(dstSwapper).processTx(1, 1, txData);
     }
 
@@ -616,7 +614,7 @@ contract DstSwapperTest is ProtocolActions {
         bytes memory txData =
             _buildLiqBridgeTxDataDstSwap(1, getContract(ETH, "WETH"), getContract(ETH, "DAI"), dstSwapper, ETH, 0, 0);
         /// @dev txData with amount 0 should revert
-        vm.expectRevert(Error.INVALID_SWAP_OUTPUT.selector);
+        vm.expectRevert(Error.ZERO_AMOUNT.selector);
         DstSwapper(dstSwapper).processTx(1, 1, txData);
     }
 
