@@ -12,10 +12,10 @@ interface IPayMaster {
     //////////////////////////////////////////////////////////////
 
     /// @dev is emitted when a new payment is made
-    event Payment(address indexed user, uint256 amount);
+    event Payment(address indexed user, uint256 indexed amount);
 
     /// @dev is emitted when payments are moved out of collector
-    event PaymentWithdrawn(address indexed receiver, uint256 amount);
+    event PaymentWithdrawn(address indexed receiver, uint256 indexed amount);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //

@@ -23,10 +23,14 @@ interface IDstSwapper {
     event SuperRegistryUpdated(address indexed superRegistry);
 
     /// @dev is emitted when a dst swap transaction is processed
-    event SwapProcessed(uint256 payloadId, uint256 index, uint256 bridgeId, uint256 finalAmount);
+    event SwapProcessed(
+        uint256 indexed payloadId, uint256 indexed index, uint256 indexed bridgeId, uint256 finalAmount
+    );
 
     /// @dev is emitted when a dst swap fails and intermediary tokens are sent to CoreStateRegistry for rescue
-    event SwapFailed(uint256 payloadId, uint256 index, address intermediaryToken, uint256 amount);
+    event SwapFailed(
+        uint256 indexed payloadId, uint256 indexed index, address indexed intermediaryToken, uint256 amount
+    );
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //

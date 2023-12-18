@@ -163,7 +163,7 @@ contract WormholeSRImplementationTest is BaseSetup {
 
         vm.prank(getContract(ETH, "WormholeBroadcastHelper"));
 
-        vm.expectRevert(Error.INVALID_SRC_CHAIN_ID.selector);
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         wormholeSRImpl.receiveMessage("");
 
         vm.clearMockedCalls();

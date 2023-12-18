@@ -16,7 +16,9 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address superRegistry_) BridgeValidator(superRegistry_) { }
+    constructor(address superRegistry_) BridgeValidator(superRegistry_) {
+        if (address(superRegistry_) == address(0)) revert Error.DISABLED();
+    }
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
@@ -81,8 +83,8 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
                     }
                 }
             } else {
-                /// @dev if withdraws, then receiver address must be the srcSender
-                if (receiver != args_.srcSender) revert Error.INVALID_TXDATA_RECEIVER();
+                /// @dev if withdraws, then receiver address must be the receiverAddress
+                if (receiver != args_.receiverAddress) revert Error.INVALID_TXDATA_RECEIVER();
             }
 
             /// @dev remap of address 0 to NATIVE because of how LiFi produces txData
@@ -104,8 +106,8 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
                 /// @dev If same chain deposits then receiver address must be the superform
                 if (receiver != args_.superform) revert Error.INVALID_TXDATA_RECEIVER();
             } else {
-                /// @dev if withdraws, then receiver address must be the srcSender
-                if (receiver != args_.srcSender) revert Error.INVALID_TXDATA_RECEIVER();
+                /// @dev if withdraws, then receiver address must be the receiverAddress
+                if (receiver != args_.receiverAddress) revert Error.INVALID_TXDATA_RECEIVER();
             }
 
             /// @dev remap of address 0 to NATIVE because of how LiFi produces txData
@@ -137,12 +139,12 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
             bool, /*hasSourceSwaps*/
             bool /*hasDestinationCall*/
         ) {
-            /// @dev if there isn't a source swap, amountIn is minAmountOut from bridge data?
+            /// @dev if there isn't a source swap, amount_ is minAmountOut from bridge data
 
             amount_ = amount;
         } catch {
             if (genericSwapDisallowed_) revert Error.INVALID_ACTION();
-            /// @dev in the case of a generic swap, amountIn is the from amount
+            /// @dev in the case of a generic swap, amount_ is the from amount
 
             (, amount_,,,) = extractGenericSwapParameters(txData_);
         }
@@ -153,6 +155,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         (token_, amount_,,,) = extractGenericSwapParameters(txData_);
     }
 
+    /// @inheritdoc BridgeValidator
     function decodeSwapOutputToken(bytes calldata txData_) external view override returns (address token_) {
         try this.extractMainParameters(txData_) returns (
             string memory, /*bridge*/

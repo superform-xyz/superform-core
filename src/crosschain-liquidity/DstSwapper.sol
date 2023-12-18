@@ -27,6 +27,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
 
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
+    uint256 private constant ENTIRE_SLIPPAGE = 10_000;
 
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
@@ -231,6 +232,10 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
     {
         uint256 len = indices_.length;
 
+        if (len != interimTokens_.length || len != amounts_.length) {
+            revert Error.ARRAY_LENGTH_MISMATCH();
+        }
+
         IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
 
         _isValidPayloadId(payloadId_, coreStateRegistry);
@@ -317,7 +322,15 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         if (userSuppliedInterimToken_ != v.approvalToken) {
             revert Error.INVALID_INTERIM_TOKEN();
         }
-
+        if (userSuppliedInterimToken_ == NATIVE) {
+            if (address(this).balance < v.amount) {
+                revert Error.INSUFFICIENT_BALANCE();
+            }
+        } else {
+            if (IERC20(userSuppliedInterimToken_).balanceOf(address(this)) < v.amount) {
+                revert Error.INSUFFICIENT_BALANCE();
+            }
+        }
         v.finalDst = address(coreStateRegistry_);
 
         /// @dev validates the bridge data
@@ -357,21 +370,17 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
 
         v.balanceDiff = v.balanceAfter - v.balanceBefore;
 
-        /// @dev if actual underlying is less than expAmount adjusted
-        /// with maxSlippage, invariant breaks
-        /// @notice that unlike in CoreStateRegistry slippage check inside updateDeposit, in here we don't check for
-        /// negative slippage
-        /// @notice this essentially allows any amount to be swapped, (the invariant will still break if the amount is
-        /// too low)
-        /// @notice this doesn't mean that the keeper or the user can swap any amount, because of the 2nd slippage check
-        /// in CoreStateRegistry
-        /// @notice in this check, we check if there is negative slippage, for which case, the user is capped to receive
-        /// the v.expAmount of tokens (originally defined)
-        if (v.balanceDiff < ((v.expAmount * (10_000 - v.maxSlippage)) / 10_000)) {
+        /// @dev if actual underlying is less than expAmount adjusted with maxSlippage, invariant breaks
+        if (v.balanceDiff < ((v.expAmount * (ENTIRE_SLIPPAGE - v.maxSlippage)) / ENTIRE_SLIPPAGE)) {
             revert Error.SLIPPAGE_OUT_OF_BOUNDS();
         }
 
-        /// @dev updates swapped amount
+        /// @dev updates swapped amount adjusting for
+        /// @notice in this check, we check if there is negative slippage, for which case, the user is capped to receive
+        /// the v.expAmount of tokens (originally defined)
+        if (v.balanceDiff > v.expAmount) {
+            v.balanceDiff = v.expAmount;
+        }
         swappedAmount[payloadId_][index_] = v.balanceDiff;
 
         /// @dev emits final event

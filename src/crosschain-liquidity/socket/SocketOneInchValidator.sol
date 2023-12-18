@@ -13,7 +13,9 @@ contract SocketOneInchValidator is BridgeValidator {
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address superRegistry_) BridgeValidator(superRegistry_) { }
+    constructor(address superRegistry_) BridgeValidator(superRegistry_) {
+        if (address(superRegistry_) == address(0)) revert Error.DISABLED();
+    }
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
@@ -38,8 +40,8 @@ contract SocketOneInchValidator is BridgeValidator {
             /// @dev If same chain deposits then receiver address must be the superform
             if (decodedReq.receiver != args_.superform) revert Error.INVALID_TXDATA_RECEIVER();
         } else {
-            /// @dev if withdraws, then receiver address must be the srcSender
-            if (decodedReq.receiver != args_.srcSender) revert Error.INVALID_TXDATA_RECEIVER();
+            /// @dev if withdraws, then receiver address must be the receiverAddress
+            if (decodedReq.receiver != args_.receiverAddress) revert Error.INVALID_TXDATA_RECEIVER();
         }
 
         /// @dev FIXME: add  3. token validations
@@ -91,7 +93,7 @@ contract SocketOneInchValidator is BridgeValidator {
     }
 
     /// @dev helps parsing socket calldata and return the socket request
-    function _parseCallData(bytes calldata callData) internal pure returns (bytes memory) {
+    function _parseCallData(bytes calldata callData) internal pure returns (bytes calldata) {
         return callData[4:];
     }
 }

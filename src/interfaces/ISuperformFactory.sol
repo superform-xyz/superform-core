@@ -39,7 +39,7 @@ interface ISuperformFactory {
     /// @dev emitted when a form implementation is paused
     /// @param formImplementationId is the id of the form implementation
     /// @param paused is the new paused status
-    event FormImplementationPaused(uint256 indexed formImplementationId, PauseStatus paused);
+    event FormImplementationPaused(uint256 indexed formImplementationId, PauseStatus indexed paused);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
@@ -86,11 +86,6 @@ interface ISuperformFactory {
         external
         view
         returns (uint256[] memory superformIds_, address[] memory superforms_);
-
-    /// @dev Returns all Superforms
-    /// @return superformIds_ is the id of the superform
-    /// @return vaults_ is the address of the vault
-    function getAllSuperforms() external view returns (uint256[] memory superformIds_, address[] memory vaults_);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //

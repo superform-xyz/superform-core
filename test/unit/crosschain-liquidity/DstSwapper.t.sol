@@ -67,6 +67,8 @@ contract DstSwapperTest is ProtocolActions {
 
             DstSwapper(dstSwapper).processTx(1, 1, txData);
 
+            DstSwapper(dstSwapper).processTx(1, 0, 1, txData);
+
             /// @dev retry the same payload id and indices
             vm.expectRevert(Error.DST_SWAP_ALREADY_PROCESSED.selector);
             DstSwapper(dstSwapper).processTx(1, 1, txData);
@@ -556,7 +558,7 @@ contract DstSwapperTest is ProtocolActions {
         DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData);
 
         /// @dev no funds in multi-tx processor at this point; should revert
-        vm.expectRevert(abi.encodeWithSelector(Error.FAILED_TO_EXECUTE_TXDATA.selector, native));
+        vm.expectRevert(Error.INSUFFICIENT_BALANCE.selector);
         DstSwapper(dstSwapper).batchProcessTx(2, indices, bridgeId, txData);
     }
 
@@ -602,7 +604,7 @@ contract DstSwapperTest is ProtocolActions {
         DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData);
     }
 
-    function test_failed_INVALID_SWAP_OUTPUT() public {
+    function test_failed_ZERO_AMOUNT() public {
         address payable dstSwapper = payable(getContract(ETH, "DstSwapper"));
         address payable coreStateRegistry = payable(getContract(ETH, "CoreStateRegistry"));
 
