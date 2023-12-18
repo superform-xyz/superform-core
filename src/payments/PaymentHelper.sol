@@ -171,11 +171,12 @@ contract PaymentHelper is IPaymentHelper {
                     /// @dev step 5: estimate dst swap cost if it exists
                     totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwaps);
             } else {
-                /// @dev step 6: estimate if timelock form processing costs are involved
-                for (uint256 j; j < superformIdsLen; ++j) {
-                    (, uint32 formId,) = req_.superformsData[i].superformIds[j].getSuperform();
-                    if (formId == TIMELOCK_FORM_ID) {
-                        totalDstGas += timelockCost[req_.dstChainIds[i]];
+                    /// @dev step 6: estimate if timelock form processing costs are involved
+                    for (uint256 j; j < superformIdsLen; ++j) {
+                        (, uint32 formId,) = req_.superformsData[i].superformIds[j].getSuperform();
+                        if (formId == TIMELOCK_FORM_ID) {
+                            totalDstGas += timelockCost[req_.dstChainIds[i]];
+                        }
                     }
                 }
             }
@@ -223,15 +224,16 @@ contract PaymentHelper is IPaymentHelper {
                     /// @dev step 4: estimation execution cost of acknowledgement
                     srcAmount += _estimateAckProcessingCost(1);
 
-                  /// @dev step 5: estimate if swap costs are involved
-                  totalDstGas +=
-                      _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwap.castBoolToArray());
+                    /// @dev step 5: estimate if swap costs are involved
+                    totalDstGas +=
+                        _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwap.castBoolToArray());
               } else {
-                  /// @dev step 6: estimate if timelock form processing costs are involved
-                  (, uint32 formId,) = req_.superformsData[i].superformId.getSuperform();
-                  if (formId == TIMELOCK_FORM_ID) {
-                      totalDstGas += timelockCost[req_.dstChainIds[i]];
-                  }
+                    /// @dev step 6: estimate if timelock form processing costs are involved
+                    (, uint32 formId,) = req_.superformsData[i].superformId.getSuperform();
+                    if (formId == TIMELOCK_FORM_ID) {
+                        totalDstGas += timelockCost[req_.dstChainIds[i]];
+                    }
+                }
             }
 
             /// @dev step 7: estimate execution costs in dst
