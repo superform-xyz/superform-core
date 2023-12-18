@@ -67,9 +67,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         returns (uint256 dstAmount)
     {
         if (_isPaused(p_.data.superformId)) {
-            IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
-                p_.data, p_.srcSender
-            );
+            IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(p_.data);
             return 0;
         }
         withdrawAfterCoolDownLocalVars memory vars;
@@ -201,8 +199,8 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     }
 
     /// @inheritdoc BaseForm
-    function _emergencyWithdraw(address, /*srcSender_*/ address refundAddress_, uint256 amount_) internal override {
-        _processEmergencyWithdraw(refundAddress_, amount_);
+    function _emergencyWithdraw(address receiverAddress_, uint256 amount_) internal override {
+        _processEmergencyWithdraw(receiverAddress_, amount_);
     }
 
     /// @inheritdoc BaseForm

@@ -406,15 +406,19 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         emit Processed(srcChainId_, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
     }
 
-    function _processEmergencyWithdraw(address refundAddress_, uint256 amount_) internal {
+    function _processEmergencyWithdraw(address receiverAddress_, uint256 amount_) internal {
         IERC4626 vaultContract = IERC4626(vault);
+
+        if (receiverAddress_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
 
         if (vaultContract.balanceOf(address(this)) < amount_) {
             revert Error.INSUFFICIENT_BALANCE();
         }
 
-        vaultContract.safeTransfer(refundAddress_, amount_);
-        emit EmergencyWithdrawalProcessed(refundAddress_, amount_);
+        vaultContract.safeTransfer(receiverAddress_, amount_);
+        emit EmergencyWithdrawalProcessed(receiverAddress_, amount_);
     }
 
     function _processForwardDustToPaymaster() internal {

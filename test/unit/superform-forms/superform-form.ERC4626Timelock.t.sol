@@ -14,7 +14,7 @@ import "src/types/DataTypes.sol";
 
 contract SuperformERC4626TimelockFormTest is ProtocolActions {
     uint64 internal chainId = ETH;
-    address refundAddress = address(444);
+    address receiverAddress = address(444);
 
     function setUp() public override {
         super.setUp();
@@ -44,7 +44,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ARBI, 0),
             false,
             false,
-            refundAddress,
+            receiverAddress,
             ""
         );
 
@@ -85,7 +85,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             LiqRequest(invalidNonEmptyTxData, address(0), address(0), 1, ETH, 0),
             false,
             false,
-            refundAddress,
+            receiverAddress,
             ""
         );
 
@@ -124,7 +124,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             LiqRequest("", address(0), address(0), 1, ETH, 0),
             false,
             false,
-            refundAddress,
+            receiverAddress,
             ""
         );
 
@@ -184,7 +184,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             ),
             false,
             false,
-            refundAddress,
+            receiverAddress,
             ""
         );
 
@@ -221,7 +221,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             bytes(""),
             false,
             false,
-            refundAddress,
+            receiverAddress,
             bytes("")
         );
 

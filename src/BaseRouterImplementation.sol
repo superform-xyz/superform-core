@@ -18,6 +18,8 @@ import { IPermit2 } from "./vendor/dragonfly-xyz/IPermit2.sol";
 import "./crosschain-liquidity/LiquidityHandler.sol";
 import "./types/DataTypes.sol";
 
+import "forge-std/console.sol";
+
 /// @title BaseRouterImplementation
 /// @author Zeropoint Labs
 /// @dev Extends BaseRouter with standard internal execution functions
@@ -194,7 +196,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 vars.srcChainId,
                 req_.dstChainId,
                 vars.currentPayloadId
-            )
+            ),
+            req_.superformData.receiverAddress
         );
 
         emit CrossChainInitiatedDepositSingle(
@@ -290,7 +293,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 vars.srcChainId,
                 req_.dstChainId,
                 vars.currentPayloadId
-            )
+            ),
+            req_.superformsData.receiverAddress
         );
 
         emit CrossChainInitiatedDepositMulti(
@@ -397,7 +401,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 vars.srcChainId,
                 req_.dstChainId,
                 vars.currentPayloadId
-            )
+            ),
+            req_.superformData.receiverAddress
         );
 
         emit CrossChainInitiatedWithdrawSingle(
@@ -481,7 +486,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 vars.srcChainId,
                 req_.dstChainId,
                 vars.currentPayloadId
-            )
+            ),
+            req_.superformsData.receiverAddress
         );
 
         emit CrossChainInitiatedWithdrawMulti(
@@ -520,7 +526,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
     }
 
-    function _dispatchAmbMessage(DispatchAMBMessageVars memory vars_) internal virtual {
+    function _dispatchAmbMessage(DispatchAMBMessageVars memory vars_, address receiverAddress_) internal virtual {
         AMBMessage memory ambMessage = AMBMessage(
             DataLib.packTxInfo(
                 uint8(vars_.txType),
@@ -537,7 +543,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             .calculateAMBData(vars_.dstChainId, vars_.ambIds, abi.encode(ambMessage));
 
         ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).updateTxHistory(
-            vars_.currentPayloadId, ambMessage.txInfo
+            vars_.currentPayloadId, ambMessage.txInfo, receiverAddress_
         );
 
         /// @dev this call dispatches the message to the AMB bridge through dispatchPayload
@@ -622,7 +628,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (dstAmount != 0 && !vaultData_.retain4626) {
             /// @dev mint super positions at the end of the deposit action if user doesn't retain 4626
             ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintSingle(
-                srcSender_, vaultData_.superformId, dstAmount
+                vaultData_.receiverAddress, vaultData_.superformId, dstAmount
             );
         }
     }
@@ -672,7 +678,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev in direct deposits, SuperPositions are minted right after depositing to vaults
         ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintBatch(
-            srcSender_, vaultData_.superformIds, v.dstAmounts
+            vaultData_.receiverAddress, vaultData_.superformIds, v.dstAmounts
         );
     }
 
@@ -780,16 +786,21 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev the dstChainId_ (in the state request) must match the superforms' chainId (superform must exist on
         /// destination)
         (, uint32 formImplementationId, uint64 sfDstChainId) = superformId_.getSuperform();
+        console.log("a");
 
         if (dstChainId_ != sfDstChainId) return false;
+        console.log("b");
 
         /// @dev 10000 = 100% slippage
         if (maxSlippage_ > 10_000) return false;
+        console.log("c");
 
         /// @dev amount can't be 0
         if (amount_ == 0) return false;
+        console.log("d");
 
         if (isDeposit_ && factory_.isFormImplementationPaused(formImplementationId)) return false;
+        console.log("e");
 
         /// @dev ensure that receiver address is set always
         /// @dev in deposits, this is important for receive4626 (on destination). It is also important for refunds on
@@ -799,6 +810,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (receiverAddress_ == address(0)) {
             return false;
         }
+        console.log("f");
 
         /// if it reaches this point then is valid
         return true;

@@ -62,8 +62,7 @@ contract EmergencyQueueTest is ProtocolActions {
                 false,
                 mrimperfect,
                 ""
-            ),
-            mrperfect
+            )
         );
     }
 
@@ -93,8 +92,7 @@ contract EmergencyQueueTest is ProtocolActions {
                 false,
                 mrimperfect,
                 ""
-            ),
-            mrperfect
+            )
         );
     }
 
@@ -124,8 +122,7 @@ contract EmergencyQueueTest is ProtocolActions {
                 false,
                 mrimperfect,
                 ""
-            ),
-            mrperfect
+            )
         );
     }
 
@@ -324,7 +321,7 @@ contract EmergencyQueueTest is ProtocolActions {
         assertEq(balanceBefore + 1e18, balanceAfter);
     }
 
-    function test_emergencyWithdraw() public {
+    function test_emergencyWithdraw_INSUFFICIENT_BALANCE() public {
         /// user deposits successfully to a form
         _successfulDepositXChain(1, "VaultMock", 0, mrperfect, false);
 
@@ -340,7 +337,26 @@ contract EmergencyQueueTest is ProtocolActions {
 
         vm.prank(emergencyQueue);
         vm.expectRevert(Error.INSUFFICIENT_BALANCE.selector);
-        IBaseForm(superform).emergencyWithdraw(address(0), address(0), 10e20);
+        IBaseForm(superform).emergencyWithdraw(address(0x1), 10e20);
+    }
+
+    function test_emergencyWithdraw_ZEROADDRESS() public {
+        /// user deposits successfully to a form
+        _successfulDepositXChain(1, "VaultMock", 0, mrperfect, false);
+
+        /// processing the queued withdrawal and assert
+        vm.selectFork(FORKS[ARBI]);
+
+        /// @dev deployer has emergency admin role
+        address emergencyQueue = getContract(ARBI, "EmergencyQueue");
+
+        address superform = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        vm.prank(emergencyQueue);
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        IBaseForm(superform).emergencyWithdraw(address(0), 10e20);
     }
 
     function test_emergencyQueueProcessingXChainMultiVault() public {

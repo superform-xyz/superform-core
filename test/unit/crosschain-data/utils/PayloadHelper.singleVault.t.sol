@@ -185,7 +185,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
     function _checkSrcPayload() internal {
         vm.selectFork(FORKS[CHAIN_0]);
 
-        (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId) =
+        (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, address receiverAddress, uint64 srcChainId) =
             IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodePayloadHistory(1);
 
         /// @dev 0 for deposit
@@ -200,6 +200,8 @@ contract PayloadHelperSingleTest is ProtocolActions {
         /// @dev 0 for not multi vault
         assertEq(multi, 0);
         assertEq(srcSender, users[0]);
+
+        assertEq(receiverAddress, users[0]);
     }
 
     function _checkDstPayloadInit() internal {
