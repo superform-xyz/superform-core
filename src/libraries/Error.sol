@@ -258,9 +258,6 @@ library Error {
     ///@notice errors thrown due to function execution logic
 
     /// COMMON EXECUTION ERRORS
-    /// @dev thrown if allowance in direct deposit is not correct
-    error DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
-
     /// @dev thrown if the swap in a direct deposit resulted in insufficient tokens
     error DIRECT_DEPOSIT_SWAP_FAILED();
 

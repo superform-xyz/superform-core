@@ -827,6 +827,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (lenSuperforms > superRegistry.getVaultLimitPerDestination(dstChainId_)) {
             return false;
         }
+        
         /// @dev Additional length checks for hasDstSwaps and retain4626s
         if (lenSuperforms != superformsData_.hasDstSwaps.length || lenSuperforms != superformsData_.retain4626s.length)
         {
