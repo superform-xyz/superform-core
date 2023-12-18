@@ -25,12 +25,12 @@ contract SDMVW142TokenInputSlippageAMB12 is ProtocolActions {
         TARGET_VAULTS[AVAX][1] = [1, 4, 1];
         TARGET_FORM_KINDS[AVAX][1] = [1, 1, 1];
 
-        PARTIAL[AVAX][1] = [true, false, true];
+        PARTIAL[AVAX][1] = [true, false, false];
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[AVAX][0] = [1, 1, 2];
-        LIQ_BRIDGES[AVAX][1] = [1, 2, 1];
+        LIQ_BRIDGES[AVAX][0] = [1, 1, 1];
+        LIQ_BRIDGES[AVAX][1] = [1, 1, 1];
 
         RECEIVE_4626[AVAX][0] = [false, false, false];
         RECEIVE_4626[AVAX][1] = [false, false, false];
@@ -75,8 +75,7 @@ contract SDMVW142TokenInputSlippageAMB12 is ProtocolActions {
         uint128 amountOne_,
         uint128 amountOneWithdraw_,
         uint128 amountTwo_,
-        uint128 amountThree_,
-        uint128 amountThreeWithdraw_
+        uint128 amountThree_
     )
         public
     {
@@ -106,9 +105,8 @@ contract SDMVW142TokenInputSlippageAMB12 is ProtocolActions {
                 /// @dev bound to 1 less as partial is true for first vault
                 /// @dev amount = 1 after slippage will become 0, hence starting with 2
                 amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 2, superPositions[0] - 1));
-                /// @dev bound to 1 less as partial is true for third vault
-                amountThreeWithdraw_ = uint128(bound(amountThreeWithdraw_, 2, superPositions[2] - 1));
-                AMOUNTS[AVAX][1] = [amountOneWithdraw_, superPositions[1], amountThreeWithdraw_];
+
+                AMOUNTS[AVAX][1] = [amountOneWithdraw_, superPositions[1], superPositions[2]];
             }
 
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);

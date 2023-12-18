@@ -174,6 +174,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @inheritdoc ISuperRegistry
     function getStateRegistryId(address registryAddress_) external view override returns (uint8 registryId_) {
         registryId_ = stateRegistryIds[registryAddress_];
+        if (registryId_ == 0) revert Error.INVALID_REGISTRY_ID();
     }
 
     /// @inheritdoc ISuperRegistry
@@ -283,6 +284,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             address bridgeAddress = bridgeAddress_[i];
             address bridgeValidatorT = bridgeValidator_[i];
             if (bridgeAddress == address(0)) revert Error.ZERO_ADDRESS();
+            if (bridgeId == 0) revert Error.ZERO_INPUT_VALUE();
             if (bridgeValidatorT == address(0)) revert Error.ZERO_ADDRESS();
 
             if (bridgeAddresses[bridgeId] != address(0)) revert Error.DISABLED();
@@ -313,6 +315,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             bool broadcastAMB = isBroadcastAMB_[i];
 
             if (ambAddress == address(0)) revert Error.ZERO_ADDRESS();
+            if (ambId == 0) revert Error.ZERO_INPUT_VALUE();
             if (ambAddresses[ambId] != address(0) || ambIds[ambAddress] != 0) revert Error.DISABLED();
 
             ambAddresses[ambId] = ambAddress;
@@ -338,6 +341,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             address registryAddress = registryAddress_[i];
             uint8 registryId = registryId_[i];
             if (registryAddress == address(0)) revert Error.ZERO_ADDRESS();
+            if (registryId == 0) revert Error.ZERO_INPUT_VALUE();
             if (registryAddresses[registryId] != address(0) || stateRegistryIds[registryAddress] != 0) {
                 revert Error.DISABLED();
             }
@@ -350,6 +354,11 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     /// @inheritdoc QuorumManager
     function setRequiredMessagingQuorum(uint64 srcChainId_, uint256 quorum_) external override onlyProtocolAdmin {
+
+        if (srcChainId_ == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
         requiredQuorum[srcChainId_] = quorum_;
 
         emit QuorumSet(srcChainId_, quorum_);

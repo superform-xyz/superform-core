@@ -7,9 +7,6 @@ library Error {
     //////////////////////////////////////////////////////////////
     ///@notice errors thrown in protocol setup
 
-    /// @dev thrown if there is an array length mismatch
-    error ARRAY_LENGTH_MISMATCH();
-
     /// @dev thrown if chain id exceeds max(uint64)
     error BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
 
@@ -119,6 +116,9 @@ library Error {
     ///@notice errors thrown if input variables are not valid
 
     /// COMMON INPUT VALIDATION ERRORS
+    /// @dev thrown if there is an array length mismatch
+    error ARRAY_LENGTH_MISMATCH();
+    
     /// @dev thrown if payload id does not exist
     error INVALID_PAYLOAD_ID();
 
@@ -148,7 +148,10 @@ library Error {
     /// @dev thrown if a form is not form interface compatible
     error FORM_INTERFACE_UNSUPPORTED();
 
-    /// @dev error thrown if beacon id already exists
+    /// @dev error thrown if form implementation address already exists
+    error FORM_IMPLEMENTATION_ALREADY_EXISTS();
+
+    /// @dev error thrown if form implementation id already exists
     error FORM_IMPLEMENTATION_ID_ALREADY_EXISTS();
 
     /// @dev thrown if a form does not exist
@@ -160,7 +163,7 @@ library Error {
     /// @dev thrown if superform not on factory
     error SUPERFORM_ID_NONEXISTENT();
 
-    /// @dev thrown if same vault and beacon is used to create new superform
+    /// @dev thrown if same vault and form implementation is used to create new superform
     error VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS();
 
     /// FORM INPUT VALIDATION ERRORS
@@ -218,7 +221,7 @@ library Error {
     /// @dev thrown if amb id is not valid leading to an address 0 of the implementation
     error INVALID_BRIDGE_ID();
 
-    /// @dev thrown if chain id brought in the cross chain message is invalid
+    /// @dev thrown if chain id involved in xchain message is invalid
     error INVALID_CHAIN_ID();
 
     /// @dev thrown if payload update amount isn't equal to dst swapper amount
@@ -246,6 +249,9 @@ library Error {
     /// @dev thrown if src tx types mismatch in state sync
     error SRC_TX_TYPE_MISMATCH();
 
+    /// @dev error thrown when msg value should be zero in certain payable functions
+    error MSG_VALUE_NOT_ZERO();
+
     //////////////////////////////////////////////////////////////
     //                  EXECUTION ERRORS                        //
     //////////////////////////////////////////////////////////////
@@ -263,6 +269,9 @@ library Error {
 
     /// @dev thrown if native tokens fail to be sent to superform contracts
     error FAILED_TO_SEND_NATIVE();
+
+    /// @dev thrown if allowance is not correct to deposit
+    error INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
 
     /// @dev thrown if native amount is not at least equal to the amount in the request
     error INSUFFICIENT_NATIVE_AMOUNT();
@@ -286,7 +295,7 @@ library Error {
     /// @dev thrown if liquidity bridge fails for erc20 or native tokens
     error FAILED_TO_EXECUTE_TXDATA(address token);
 
-    /// @dev thrown if underlying asset mismatches
+    /// @dev thrown if asset being used for deposit mismatches in multivault deposits
     error INVALID_DEPOSIT_TOKEN();
 
     /// STATE REGISTRY EXECUTION ERRORS
@@ -317,9 +326,6 @@ library Error {
     /// @dev thrown if update payload function was called on a wrong payload
     error INVALID_PAYLOAD_UPDATE_REQUEST();
 
-    /// @dev thrown if src chain is blocked from messaging
-    error INVALID_SRC_CHAIN_ID();
-
     /// @dev thrown if trying to finalize the payload but the withdraw is still locked
     error LOCKED();
 
@@ -343,6 +349,12 @@ library Error {
 
     /// @dev thrown in forms where a certain functionality is not allowed or implemented
     error NOT_IMPLEMENTED();
+
+    /// @dev thrown when redeeming from vault yields zero collateral
+    error WITHDRAW_ZERO_COLLATERAL();
+
+    /// @dev thrown if a state registry id is 0
+    error INVALID_REGISTRY_ID();
 
     /*///////////////////////////////////////////////////////////////
                         PAYMASTER ERRORS
@@ -377,7 +389,7 @@ library Error {
     /// @dev thrown in KYCDAO form if no KYC token is present
     error NO_VALID_KYC_TOKEN();
 
-    /// @dev thrown if implementation formBeacon is PAUSED, users cannot perform any action
+    /// @dev thrown if form implementation is PAUSED, users cannot perform any action
     error PAUSED();
 
     /// @dev thrown if withdrawal tx data is not updated

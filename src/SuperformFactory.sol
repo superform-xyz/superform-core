@@ -38,7 +38,7 @@ contract SuperformFactory is ISuperformFactory {
     uint256 public xChainPayloadCounter;
     uint256 public superformCounter;
 
-    /// @dev all form beacon addresses
+    /// @dev all form implementation addresses
     address[] public formImplementations;
 
     /// @dev all superform ids
@@ -46,7 +46,10 @@ contract SuperformFactory is ISuperformFactory {
     mapping(uint256 superformId => bool superformIdExists) public isSuperform;
 
     /// @notice If formImplementationId is 0, formImplementation is not part of the protocol
-    mapping(uint32 formImplementationId => address formBeaconAddress) public formImplementation;
+    mapping(uint32 formImplementationId => address formImplementationAddress) public formImplementation;
+
+    /// @dev each form implementation address can correspond only to a single formImplementationId
+    mapping(address formImplementationAddress => uint32 formImplementationId) public formImplementationIds;
 
     mapping(uint32 formImplementationId => PauseStatus) public formImplementationPaused;
 
@@ -147,22 +150,6 @@ contract SuperformFactory is ISuperformFactory {
         }
     }
 
-    /// @inheritdoc ISuperformFactory
-    function getAllSuperforms()
-        external
-        view
-        override
-        returns (uint256[] memory superformIds_, address[] memory superforms_)
-    {
-        superformIds_ = superforms;
-        uint256 len = superformIds_.length;
-        superforms_ = new address[](len);
-
-        for (uint256 i; i < len; ++i) {
-            (superforms_[i],,) = superformIds_[i].getSuperform();
-        }
-    }
-
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
@@ -177,8 +164,12 @@ contract SuperformFactory is ISuperformFactory {
         onlyProtocolAdmin
     {
         if (formImplementation_ == address(0)) revert Error.ZERO_ADDRESS();
+
         if (!ERC165Checker.supportsERC165(formImplementation_)) revert Error.ERC165_UNSUPPORTED();
         if (formImplementation[formImplementationId_] != address(0)) {
+            revert Error.FORM_IMPLEMENTATION_ALREADY_EXISTS();
+        }
+        if (formImplementationIds[formImplementation_] != 0) {
             revert Error.FORM_IMPLEMENTATION_ID_ALREADY_EXISTS();
         }
         if (!ERC165Checker.supportsInterface(formImplementation_, type(IBaseForm).interfaceId)) {
@@ -187,6 +178,7 @@ contract SuperformFactory is ISuperformFactory {
 
         /// @dev save the newly added address in the mapping and array registry
         formImplementation[formImplementationId_] = formImplementation_;
+        formImplementationIds[formImplementation_] = formImplementationId_;
 
         formImplementations.push(formImplementation_);
 
@@ -207,7 +199,7 @@ contract SuperformFactory is ISuperformFactory {
         address tFormImplementation = formImplementation[formImplementationId_];
         if (tFormImplementation == address(0)) revert Error.FORM_DOES_NOT_EXIST();
 
-        /// @dev Same vault and beacon can be used only once to create superform
+        /// @dev Same vault and implementation can be used only once to create superform
         bytes32 vaultFormImplementationCombination = keccak256(abi.encode(tFormImplementation, vault_));
         if (vaultFormImplCombinationToSuperforms[vaultFormImplementationCombination] != 0) {
             revert Error.VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS();
@@ -258,6 +250,8 @@ contract SuperformFactory is ISuperformFactory {
             );
 
             _broadcast(abi.encode(factoryPayload), extraData_);
+        } else if (msg.value != 0) {
+            revert Error.MSG_VALUE_NOT_ZERO();
         }
 
         emit FormImplementationPaused(formImplementationId_, status_);
@@ -282,11 +276,26 @@ contract SuperformFactory is ISuperformFactory {
     function _broadcast(bytes memory message_, bytes memory extraData_) internal {
         (uint8 ambId, bytes memory broadcastParams) = abi.decode(extraData_, (uint8, bytes));
 
+        /// @dev if the broadcastParams are wrong this will revert
+        (uint256 gasFee, bytes memory extraData) = abi.decode(broadcastParams, (uint256, bytes));
+
+        if (msg.value < gasFee) {
+            revert Error.INVALID_BROADCAST_FEE();
+        }
+
         /// @dev ambIds are validated inside the broadcast state registry
-        /// @dev broadcastParams if wrong will revert in the amb implementation
-        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{
-            value: msg.value
-        }(msg.sender, ambId, message_, broadcastParams);
+        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{ value: gasFee }(
+            msg.sender, ambId, gasFee, message_, extraData
+        );
+
+        if (msg.value > gasFee) {
+            /// @dev forwards the rest to msg.sender
+            (bool success,) = payable(msg.sender).call{ value: msg.value - gasFee }("");
+
+            if (!success) {
+                revert Error.FAILED_TO_SEND_NATIVE();
+            }
+        }
     }
 
     /// @dev synchronize paused status update message from remote chain

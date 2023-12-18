@@ -121,7 +121,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         if (address(token) != NATIVE) {
             /// @dev handles the asset token transfers.
             if (token.allowance(msg.sender, address(this)) < singleVaultData_.amount) {
-                revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+                revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
             }
 
             /// @dev transfers input token, which is the same as vault asset, to the form
