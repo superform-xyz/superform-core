@@ -24,6 +24,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     //////////////////////////////////////////////////////////////
 
     uint8 internal immutable STATE_REGISTRY_ID;
+    uint256 private constant ENTIRE_SLIPPAGE = 10_000;
 
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
@@ -228,8 +229,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         /// @dev the difference in vault tokens, ready to be deposited, is compared with the amount inscribed in the
         /// superform data
-        if (vars.assetDifference < singleVaultData_.amount) {
-            revert Error.DIRECT_DEPOSIT_INVALID_DATA();
+        if (vars.assetDifference < ((singleVaultData_.amount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE)) {
+            revert Error.DIRECT_DEPOSIT_SWAP_FAILED();
         }
 
         /// @dev notice that vars.assetDifference is deposited regardless if txData exists or not

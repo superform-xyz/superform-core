@@ -171,9 +171,6 @@ library Error {
     /// in case of txData, if token output of swap != vault.asset()
     error DIFFERENT_TOKENS();
 
-    /// @dev thrown if the amount in direct deposit is not correct
-    error DIRECT_DEPOSIT_INVALID_DATA();
-
     /// @dev thrown if the token in direct withdraw is not correct
     error DIRECT_WITHDRAW_INVALID_TOKEN();
 
@@ -261,6 +258,9 @@ library Error {
     ///@notice errors thrown due to function execution logic
 
     /// COMMON EXECUTION ERRORS
+    /// @dev thrown if the swap in a direct deposit resulted in insufficient tokens
+    error DIRECT_DEPOSIT_SWAP_FAILED();
+
     /// @dev thrown if payload is not unique
     error DUPLICATE_PAYLOAD();
 
