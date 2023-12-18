@@ -300,9 +300,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     /// @dev handles same-chain single vault withdraw
     function _singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq memory req_) internal virtual {
-        ActionLocalVars memory vars;
-        vars.srcChainId = CHAIN_ID;
-
         /// @dev validate Superform data
         if (
             !_validateSuperformData(
@@ -310,7 +307,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 req_.superformData.maxSlippage,
                 req_.superformData.amount,
                 req_.superformData.receiverAddress,
-                vars.srcChainId,
+                CHAIN_ID,
                 false,
                 ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")))
             )

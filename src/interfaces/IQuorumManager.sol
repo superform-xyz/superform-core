@@ -9,7 +9,7 @@ interface IQuorumManager {
     /// @dev emitted when a new quorum is set for a specific chain
     /// @param srcChainId the chain id from which the message (payload) is sent
     /// @param quorum the minimum number of message bridges required for processing
-    event QuorumSet(uint64 indexed srcChainId, uint256 quorum);
+    event QuorumSet(uint64 indexed srcChainId, uint256 indexed quorum);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
