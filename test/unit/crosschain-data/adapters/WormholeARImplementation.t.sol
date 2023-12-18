@@ -26,6 +26,16 @@ contract WormholeARImplementationTest is BaseSetup {
         wormholeARImpl.setWormholeRelayer(address(0));
     }
 
+    function test_dispatchPayload_RefundChainIdNotSet() public {
+        vm.prank(deployer);
+        WormholeARImplementation newWormholeARImpl =
+            new WormholeARImplementation(ISuperRegistry(getContract(ETH, "SuperRegistry")));
+
+        vm.prank(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.REFUND_CHAIN_ID_NOT_SET.selector);
+        newWormholeARImpl.dispatchPayload(deployer, ARBI, bytes("testmessage"), abi.encode(0, 500_000));
+    }
+
     function test_retryPayload() public {
         VaaKey memory vaaKey = VaaKey(1, keccak256("test"), 1);
 

@@ -298,7 +298,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     mapping(
         uint64 chainId
             => mapping(
-                uint32 formBeaconId
+                uint32 formImplementationId
                     => mapping(string underlying => mapping(uint256 vaultKindIndex => address realVault))
             )
     ) public REAL_VAULT_ADDRESS;
@@ -644,8 +644,12 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
 
             /// @dev 13 - Deploy SuperPositions
-            vars.superPositions =
-                address(new SuperPositions{ salt: salt }("https://apiv2-dev.superform.xyz/", vars.superRegistry));
+            vars.superPositions = address(
+                new SuperPositions{ salt: salt }(
+                    "https://ipfs-gateway.superform.xyz/ipns/k51qzi5uqu5dg90fqdo9j63m556wlddeux4mlgyythp30zousgh3huhyzouyq8/JSON/",
+                    vars.superRegistry
+                )
+            );
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);
@@ -791,9 +795,9 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                             10_000
                         )
                     );
-                    /// @dev 0.01 ether is just a mock value. Wormhole fees are currently 0
+                    /// @dev 0.01 ether is just a mock value. Wormhole fees are currently 0 on mainnet
                     PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(
-                        0.01 ether, generateBroadcastParams(5, 1)
+                        generateBroadcastParams(0.01 ether)
                     );
 
                     vars.superRegistryC.setAddress(
@@ -1172,7 +1176,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         mapping(
             uint64 chainId
                 => mapping(
-                    uint32 formBeaconId
+                    uint32 formImplementationId
                         => mapping(string underlying => mapping(uint256 vaultKindIndex => address realVault))
                 )
             ) storage existingVaults = REAL_VAULT_ADDRESS;

@@ -332,7 +332,7 @@ contract SuperRegistryTest is BaseSetup {
         superRegistry.setVaultLimitPerDestination(1, 0);
 
         vm.prank(address(420));
-        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        vm.expectRevert(Error.NOT_EMERGENCY_ADMIN.selector);
         superRegistry.setVaultLimitPerDestination(1, 100);
     }
 
@@ -349,7 +349,7 @@ contract SuperRegistryTest is BaseSetup {
     function test_set_delay() public {
         vm.prank(deployer);
         vm.expectRevert(Error.INVALID_TIMELOCK_DELAY.selector);
-        superRegistry.setDelay(30 minutes);
+        superRegistry.setDelay(5 minutes);
 
         vm.prank(deployer);
         vm.expectRevert(Error.INVALID_TIMELOCK_DELAY.selector);

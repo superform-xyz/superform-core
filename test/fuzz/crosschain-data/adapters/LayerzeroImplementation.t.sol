@@ -21,7 +21,7 @@ contract LayerzeroImplementationTest is BaseSetup {
     event UaSendVersionSet(address ua, uint16 version);
     event UaReceiveVersionSet(address ua, uint16 version);
     event UaForceResumeReceive(uint16 chainId, bytes srcAddress);
-    event PayloadReceived(uint64 srcChainId, uint64 dstChainId, uint256 payloadId);
+    event PayloadReceived(uint64 indexed srcChainId, uint64 indexed dstChainId, uint256 indexed payloadId);
 
     address public constant LZ_ENDPOINT_ETH = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
     address public constant LZ_ENDPOINT_OP = 0x3c2269811836af69497E5F486A85D7316753cf62;
@@ -330,7 +330,7 @@ contract LayerzeroImplementationTest is BaseSetup {
             users[userIndex], chainId, abi.encode(ambMessage), abi.encode(ambExtraData)
         );
 
-        vm.expectRevert(Error.INVALID_SRC_CHAIN_ID.selector);
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         vm.prank(coreStateRegistry);
         /// @dev notice the use of chainId, whose trustedRemote is not set
         layerzeroImplementation.dispatchPayload{ value: 0.1 ether }(

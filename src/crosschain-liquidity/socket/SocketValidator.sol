@@ -12,7 +12,10 @@ contract SocketValidator is BridgeValidator {
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
-    constructor(address superRegistry_) BridgeValidator(superRegistry_) { }
+
+    constructor(address superRegistry_) BridgeValidator(superRegistry_) {
+        if (address(superRegistry_) == address(0)) revert Error.DISABLED();
+    }
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
@@ -60,8 +63,8 @@ contract SocketValidator is BridgeValidator {
                 }
             }
         } else {
-            /// @dev if withdraws, then receiver address must be the srcSender
-            if (decodedReq.receiverAddress != args_.srcSender) revert Error.INVALID_TXDATA_RECEIVER();
+            /// @dev if withdraws, then receiver address must be the receiverAddress
+            if (decodedReq.receiverAddress != args_.receiverAddress) revert Error.INVALID_TXDATA_RECEIVER();
         }
 
         /// @dev FIXME: add  3. token validations
@@ -91,10 +94,13 @@ contract SocketValidator is BridgeValidator {
         override
         returns (address, /*token_*/ uint256 /*amount_*/ )
     {
-        revert();
+        /// @dev SocketValidator cannot be used for just swaps, see SocketOneinchValidator
+        revert Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
     }
 
+    /// @inheritdoc BridgeValidator
     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
+        /// @dev SocketValidator cannot be used for just swaps, see SocketOneinchValidator
         revert Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
     }
 
@@ -113,7 +119,7 @@ contract SocketValidator is BridgeValidator {
     }
 
     /// @dev helps parsing socket calldata and return the socket request
-    function _parseCallData(bytes calldata callData) internal pure returns (bytes memory) {
+    function _parseCallData(bytes calldata callData) internal pure returns (bytes calldata) {
         return callData[4:];
     }
 }

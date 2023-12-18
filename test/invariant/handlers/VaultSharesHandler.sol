@@ -523,7 +523,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
         mapping(
             uint64 chainId
                 => mapping(
-                    uint32 formBeaconId
+                    uint32 formImplementationId
                         => mapping(string underlying => mapping(uint256 vaultKindIndex => address realVault))
                 )
             ) storage existingVaults = REAL_VAULT_ADDRESS;

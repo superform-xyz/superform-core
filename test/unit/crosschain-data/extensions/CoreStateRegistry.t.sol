@@ -374,7 +374,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             ETH,
             ETH,
             false,
-            deployer,
+            receiverAddress,
             uint256(ETH),
             /// @dev amount is 1 less than (actualWithdrawAmount * 0.9) => slippage > 10% => should revert
             ((actualWithdrawAmount * 9) / 10) - 1,
@@ -424,11 +424,11 @@ contract CoreStateRegistryTest is ProtocolActions {
         ambIds_[1] = 2;
         ambIds_[2] = 3;
         ambIds_[3] = 2;
-        _failingMultiDeposit(ambIds_, Error.DUPLICATE_PROOF_BRIDGE_ID.selector);
+        _failingMultiDeposit(ambIds_, Error.INVALID_PROOF_BRIDGE_IDS.selector);
 
         ambIds_[2] = 2;
         ambIds_[3] = 3;
-        _failingMultiDeposit(ambIds_, Error.DUPLICATE_PROOF_BRIDGE_ID.selector);
+        _failingMultiDeposit(ambIds_, Error.INVALID_PROOF_BRIDGE_IDS.selector);
     }
 
     function test_processPayload_reverts() public {

@@ -142,6 +142,10 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         override
         onlyValidStateRegistry
     {
+        if (refundChainId == 0) {
+            revert Error.REFUND_CHAIN_ID_NOT_SET();
+        }
+
         uint16 dstChainId = ambChainId[dstChainId_];
         (uint256 dstNativeAirdrop, uint256 dstGasLimit) = abi.decode(extraData_, (uint256, uint256));
 
@@ -207,7 +211,13 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         (,,, uint8 registryId,,) = decoded.txInfo.decodeTxInfo();
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(superRegistry.getStateRegistry(registryId));
 
-        targetRegistry.receivePayload(superChainId[sourceChain_], payload_);
+        uint64 sourceChain = superChainId[sourceChain_];
+
+        if (sourceChain == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
+        targetRegistry.receivePayload(sourceChain, payload_);
     }
 
     /// @dev allows protocol admin to add new chain ids in future

@@ -10,15 +10,24 @@ import { Error } from "src/libraries/Error.sol";
 
 contract HyperlaneImplementationTest is CommonProtocolActions {
     address public constant MAILBOX = 0xc005dc82818d67AF737725bD4bf75435d065D239;
+
     ISuperRegistry public superRegistry;
     HyperlaneImplementation hyperlaneImplementation;
+    HyperlaneImplementation hyperlaneImplementation_arbi;
 
     function setUp() public override {
         super.setUp();
 
         vm.selectFork(FORKS[ETH]);
         superRegistry = ISuperRegistry(getContract(ETH, "SuperRegistry"));
+
         hyperlaneImplementation = HyperlaneImplementation(payable(superRegistry.getAmbAddress(2)));
+        vm.selectFork(FORKS[ARBI]);
+
+        hyperlaneImplementation_arbi =
+            HyperlaneImplementation(payable(ISuperRegistry(getContract(ARBI, "SuperRegistry")).getAmbAddress(2)));
+
+        vm.selectFork(FORKS[ETH]);
     }
 
     function test_setReceiver(uint256 chainIdSeed_) public {
@@ -149,7 +158,7 @@ contract HyperlaneImplementationTest is CommonProtocolActions {
 
         vm.prank(MAILBOX);
         hyperlaneImplementation.handle(
-            uint32(ETH), bytes32(uint256(uint160(address(hyperlaneImplementation)))), abi.encode(ambMessage)
+            uint32(ARBI), bytes32(uint256(uint160(address(hyperlaneImplementation_arbi)))), abi.encode(ambMessage)
         );
 
         vm.expectRevert(Error.DUPLICATE_PAYLOAD.selector);

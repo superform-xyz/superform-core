@@ -47,7 +47,8 @@ interface IPaymentHelper {
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
 
-    event ChainConfigUpdated(uint64 chainId_, uint256 configType_, bytes config_);
+    event ChainConfigUpdated(uint64 indexed chainId_, uint256 indexed configType_, bytes indexed config_);
+    event ChainConfigAdded(uint64 chainId_, PaymentHelperConfig config_);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
@@ -67,9 +68,8 @@ interface IPaymentHelper {
         returns (uint256 totalFees, bytes memory extraData);
 
     /// @dev returns the amb overrides & gas to be used
-    /// @return totalFees the msg.value to be sent along the transaction
     /// @return extraData the amb specific override information
-    function getRegisterTransmuterAMBData() external view returns (uint256 totalFees, bytes memory extraData);
+    function getRegisterTransmuterAMBData() external view returns (bytes memory extraData);
 
     /// @dev returns the gas fees estimation in native tokens if we send message through a combination of AMBs
     /// @param ambIds_ is the identifier of different AMBs
@@ -191,7 +191,6 @@ interface IPaymentHelper {
     function updateRemoteChain(uint64 chainId_, uint256 configType_, bytes memory config_) external;
 
     /// @dev admin updates config for register transmuter amb params
-    /// @param totalTransmuterFees_ is the native value fees for registering transmuter on all supported chains
     /// @param extraDataForTransmuter_ is the broadcast extra data
-    function updateRegisterAERC20Params(uint256 totalTransmuterFees_, bytes memory extraDataForTransmuter_) external;
+    function updateRegisterAERC20Params(bytes memory extraDataForTransmuter_) external;
 }
