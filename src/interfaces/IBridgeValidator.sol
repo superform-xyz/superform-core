@@ -15,7 +15,7 @@ interface IBridgeValidator {
         uint64 liqDstChainId;
         bool deposit;
         address superform;
-        address srcSender;
+        address receiverAddress;
         address liqDataToken;
         address liqDataInterimToken;
     }

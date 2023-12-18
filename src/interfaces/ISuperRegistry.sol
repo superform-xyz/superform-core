@@ -33,7 +33,7 @@ interface ISuperRegistry {
     event SetDelay(uint256 oldDelay_, uint256 newDelay_);
 
     /// @dev is emitted when a new vault limit is configured
-    event SetVaultLimitPerTx(uint64 chainId_, uint256 vaultLimit_);
+    event SetVaultLimitPerDestination(uint64 chainId_, uint256 vaultLimit_);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
@@ -150,9 +150,9 @@ interface ISuperRegistry {
 
     /// @dev gets the safe vault limit
     /// @param chainId_ is the id of the remote chain
-    /// @return vaultLimitPerTx_ is the safe number of vaults to deposit
+    /// @return vaultLimitPerDestination_ is the safe number of vaults to deposit
     /// without hitting out of gas error
-    function getVaultLimitPerTx(uint64 chainId_) external view returns (uint256 vaultLimitPerTx_);
+    function getVaultLimitPerDestination(uint64 chainId_) external view returns (uint256 vaultLimitPerDestination_);
 
     /// @dev helps validate if an address is a valid state registry
     /// @param registryAddress_ is the address of the state registry
@@ -184,7 +184,7 @@ interface ISuperRegistry {
     /// @dev sets the safe vault limit
     /// @param chainId_ is the remote chain identifier
     /// @param vaultLimit_ is the max limit of vaults per transaction
-    function setVaultLimitPerTx(uint64 chainId_, uint256 vaultLimit_) external;
+    function setVaultLimitPerDestination(uint64 chainId_, uint256 vaultLimit_) external;
 
     /// @dev sets a new address on a specific chain.
     /// @param id_ the identifier of the address on that chain

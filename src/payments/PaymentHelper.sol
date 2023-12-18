@@ -54,7 +54,6 @@ contract PaymentHelper is IPaymentHelper {
     mapping(uint64 chainId => uint256 gasForOps) public timelockCost;
 
     /// @dev register transmuter params
-    uint256 public totalTransmuterFees;
     bytes public extraDataForTransmuter;
 
     //////////////////////////////////////////////////////////////
@@ -126,13 +125,8 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @inheritdoc IPaymentHelper
-    function getRegisterTransmuterAMBData()
-        external
-        view
-        override
-        returns (uint256 totalFees, bytes memory extraData)
-    {
-        return (totalTransmuterFees, extraDataForTransmuter);
+    function getRegisterTransmuterAMBData() external view override returns (bytes memory) {
+        return extraDataForTransmuter;
     }
 
     /// @inheritdoc IPaymentHelper
@@ -150,30 +144,32 @@ contract PaymentHelper is IPaymentHelper {
         uint256 totalDstGas;
 
         for (uint256 i; i < len; ++i) {
+            bool xChain = req_.dstChainIds[i] != CHAIN_ID;
+
             totalDstGas = 0;
 
             /// @dev step 1: estimate amb costs
-            uint256 ambFees = _estimateAMBFees(
-                req_.ambIds[i], req_.dstChainIds[i], _generateMultiVaultMessage(req_.superformsData[i])
-            );
+            uint256 ambFees = xChain
+                ? _estimateAMBFees(req_.ambIds[i], req_.dstChainIds[i], _generateMultiVaultMessage(req_.superformsData[i]))
+                : 0;
 
             superformIdsLen = req_.superformsData[i].superformIds.length;
 
             srcAmount += ambFees;
 
             if (isDeposit_) {
-                /// @dev step 2: estimate update cost (only for deposit)
-                totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], superformIdsLen);
-
-                /// @dev step 3: estimation processing cost of acknowledgement
-                /// @notice optimistically estimating. (Ideal case scenario: no failed deposits / withdrawals)
-                srcAmount += _estimateAckProcessingCost(superformIdsLen);
-
-                /// @dev step 4: estimate liq amount
+                /// @dev step 2: estimate liq amount
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequests);
+                if (xChain) {
+                    /// @dev step 3: estimate update cost (only for deposit)
+                    totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], superformIdsLen);
 
-                /// @dev step 5: estimate dst swap cost if it exists
-                totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwaps);
+                    /// @dev step 4: estimation processing cost of acknowledgement
+                    /// @notice optimistically estimating. (Ideal case scenario: no failed deposits / withdrawals)
+                    srcAmount += _estimateAckProcessingCost(superformIdsLen);
+
+                    /// @dev step 5: estimate dst swap cost if it exists
+                    totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwaps);
             } else {
                 /// @dev step 6: estimate if timelock form processing costs are involved
                 for (uint256 j; j < superformIdsLen; ++j) {
@@ -186,7 +182,7 @@ contract PaymentHelper is IPaymentHelper {
 
             /// @dev step 7: estimate execution costs in dst (withdraw / deposit)
             /// note: execution cost includes acknowledgement messaging cost
-            totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], superformIdsLen);
+            totalDstGas += xChain ? _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], superformIdsLen) : 0;
 
             /// @dev step 8: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
@@ -207,39 +203,40 @@ contract PaymentHelper is IPaymentHelper {
     {
         uint256 len = req_.dstChainIds.length;
         for (uint256 i; i < len; ++i) {
+            bool xChain = req_.dstChainIds[i] != CHAIN_ID;
             uint256 totalDstGas;
 
             /// @dev step 1: estimate amb costs
-            uint256 ambFees = _estimateAMBFees(
-                req_.ambIds[i], req_.dstChainIds[i], _generateSingleVaultMessage(req_.superformsData[i])
-            );
+            uint256 ambFees = xChain
+                ? _estimateAMBFees(req_.ambIds[i], req_.dstChainIds[i], _generateSingleVaultMessage(req_.superformsData[i]))
+                : 0;
 
             srcAmount += ambFees;
 
             if (isDeposit_) {
-                /// @dev step 2: estimate update cost (only for deposit)
-                totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], 1);
-
-                /// @dev step 3: estimation execution cost of acknowledgement
-                srcAmount += _estimateAckProcessingCost(1);
-
-                /// @dev step 4: estimate the liqAmount
+                /// @dev step 2: estimate the liqAmount
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequest.castLiqRequestToArray());
+                if (xChain) {
+                    /// @dev step 3: estimate update cost (only for deposit)
+                    totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], 1);
 
-                /// @dev step 5: estimate if swap costs are involved
-                totalDstGas +=
-                    _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwap.castBoolToArray());
-            } else {
-                /// @dev step 6: estimate if timelock form processing costs are involved
-                (, uint32 formId,) = req_.superformsData[i].superformId.getSuperform();
-                if (formId == TIMELOCK_FORM_ID) {
-                    totalDstGas += timelockCost[req_.dstChainIds[i]];
-                }
+                    /// @dev step 4: estimation execution cost of acknowledgement
+                    srcAmount += _estimateAckProcessingCost(1);
+
+                  /// @dev step 5: estimate if swap costs are involved
+                  totalDstGas +=
+                      _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwap.castBoolToArray());
+              } else {
+                  /// @dev step 6: estimate if timelock form processing costs are involved
+                  (, uint32 formId,) = req_.superformsData[i].superformId.getSuperform();
+                  if (formId == TIMELOCK_FORM_ID) {
+                      totalDstGas += timelockCost[req_.dstChainIds[i]];
+                  }
             }
 
             /// @dev step 7: estimate execution costs in dst
             /// note: execution cost includes acknowledgement messaging cost
-            totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], 1);
+            totalDstGas += xChain ? _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], 1) : 0;
 
             /// @dev step 8: convert all dst gas estimates to src chain estimate
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
@@ -489,6 +486,7 @@ contract PaymentHelper is IPaymentHelper {
         gasPerByte[chainId_] = config_.dstGasPerByte;
         ackGasCost[chainId_] = config_.ackGasCost;
         timelockCost[chainId_] = config_.timelockCost;
+        emit ChainConfigAdded(chainId_, config_);
     }
 
     /// @inheritdoc IPaymentHelper
@@ -560,14 +558,7 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @inheritdoc IPaymentHelper
-    function updateRegisterAERC20Params(
-        uint256 totalTransmuterFees_,
-        bytes memory extraDataForTransmuter_
-    )
-        external
-        onlyEmergencyAdmin
-    {
-        totalTransmuterFees = totalTransmuterFees_;
+    function updateRegisterAERC20Params(bytes memory extraDataForTransmuter_) external onlyEmergencyAdmin {
         extraDataForTransmuter = extraDataForTransmuter_;
     }
 

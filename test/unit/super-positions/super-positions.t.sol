@@ -87,14 +87,14 @@ contract SuperPositionsTest is BaseSetup {
         superPositions.stateSync(maliciousMessage);
     }
 
-    function test_revert_stateSync_NotMinterStateRegistry() public {
+    function test_revert_stateSync_INVALID_REGISTRY_ID() public {
         uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
 
         ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, 1, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         vm.broadcast(getContract(ETH, "SuperformRouter"));
-        vm.expectRevert(Error.NOT_MINTER_STATE_REGISTRY_ROLE.selector);
+        vm.expectRevert(Error.INVALID_REGISTRY_ID.selector);
         superPositions.stateSync(maliciousMessage);
     }
 

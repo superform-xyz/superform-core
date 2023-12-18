@@ -85,6 +85,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /// @param mailbox_ is the address of hyperlane mailbox
     /// @param igp_ is the address of hyperlane gas paymaster
     function setHyperlaneConfig(IMailbox mailbox_, IInterchainGasPaymaster igp_) external onlyProtocolAdmin {
+        if (address(mailbox_) == address(0) || address(igp_) == address(0)) revert Error.ZERO_ADDRESS();
         mailbox = mailbox_;
         igp = igp_;
 
@@ -136,6 +137,10 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         onlyValidStateRegistry
     {
         uint32 domain = ambChainId[dstChainId_];
+
+        if (domain == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
 
         mailbox.dispatch{ value: msg.value }(
             domain, _castAddr(authorizedImpl[domain]), message_, _generateHookMetadata(extraData_, srcSender_)
@@ -216,7 +221,13 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         (,,, uint8 registryId,,) = decoded.txInfo.decodeTxInfo();
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(superRegistry.getStateRegistry(registryId));
 
-        targetRegistry.receivePayload(superChainId[origin_], body_);
+        uint64 origin = superChainId[origin_];
+
+        if (origin == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
+        targetRegistry.receivePayload(origin, body_);
     }
 
     //////////////////////////////////////////////////////////////

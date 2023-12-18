@@ -114,8 +114,6 @@ abstract contract AbstractDeploySingle is Script {
         "EmergencyQueue"
     ];
 
-    bytes32 constant salt = "CANTINA_DEPLOYMENT_4";
-
     enum Chains {
         Ethereum,
         Polygon,
@@ -144,6 +142,7 @@ abstract contract AbstractDeploySingle is Script {
 
     uint256 public deployerPrivateKey;
     address public ownerAddress;
+    address public burnerPrivateKey;
     address public multiSigAddress;
 
     /// @dev Mapping of chain enum to rpc url
@@ -288,9 +287,8 @@ abstract contract AbstractDeploySingle is Script {
     /// @param cycle deployment cycle (dev, prod)
     modifier setEnvDeploy(Cycle cycle) {
         if (cycle == Cycle.Dev) {
-            deployerPrivateKey = vm.envUint("LOCAL_PRIVATE_KEY");
-            ownerAddress = vm.envAddress("LOCAL_OWNER_ADDRESS");
-            multiSigAddress = vm.envAddress("MULTI_SIG_ADDRESS");
+            (ownerAddress, deployerPrivateKey) = makeAddrAndKey("tenderly");
+            //multiSigAddress = vm.envAddress("MULTI_SIG_ADDRESS");
         } else {
             deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
             ownerAddress = vm.envAddress("OWNER_ADDRESS");
@@ -332,7 +330,8 @@ abstract contract AbstractDeploySingle is Script {
         uint256 i,
         uint256 trueIndex,
         Cycle cycle,
-        uint64[] memory targetDeploymentChains
+        uint64[] memory targetDeploymentChains,
+        bytes32 salt
     )
         internal
         setEnvDeploy(cycle)
@@ -377,7 +376,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRegistryC.setPermit2(CANONICAL_PERMIT2);
 
         /// @dev sets max number of vaults per destination
-        vars.superRegistryC.setVaultLimitPerTx(vars.chainId, 5);
+        vars.superRegistryC.setVaultLimitPerDestination(vars.chainId, 5);
 
         /// @dev 3.1 - deploy Core State Registry
         vars.coreStateRegistry = address(new CoreStateRegistry{ salt: salt }(vars.superRegistryC));
@@ -485,7 +484,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.kycDao4626Form = address(new ERC4626KYCDaoForm{ salt: salt }(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
 
-        /// @dev 9 - Add newly deployed form implementations to Factory, formBeaconId 1
+        /// @dev 9 - Add newly deployed form implementations to Factory, formImplementationId 1
         ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0]);
 
         ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626TimelockForm, FORM_IMPLEMENTATION_IDS[1]);
@@ -499,8 +498,12 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
 
         /// @dev 11 - Deploy SuperPositions
-        vars.superPositions =
-            address(new SuperPositions{ salt: salt }("https://apiv2-dev.superform.xyz/", vars.superRegistry));
+        vars.superPositions = address(
+            new SuperPositions{ salt: salt }(
+                "https://ipfs-gateway.superform.xyz/ipns/k51qzi5uqu5dg90fqdo9j63m556wlddeux4mlgyythp30zousgh3huhyzouyq8/JSON/",
+                vars.superRegistry
+            )
+        );
 
         contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);
@@ -608,6 +611,7 @@ abstract contract AbstractDeploySingle is Script {
         // j = 0
         //
         vars.chainId = targetDeploymentChains[i];
+
         vm.startBroadcast(deployerPrivateKey);
 
         vars.lzImplementation = _readContract(chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
@@ -662,6 +666,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.chainId = s_superFormChainIds[i];
 
         vm.startBroadcast(deployerPrivateKey);
+
         SuperRBAC srbac = SuperRBAC(payable(_readContract(chainNames[trueIndex], vars.chainId, "SuperRBAC")));
         bytes32 protocolAdminRole = srbac.PROTOCOL_ADMIN_ROLE();
         bytes32 emergencyAdminRole = srbac.EMERGENCY_ADMIN_ROLE();
@@ -690,6 +695,7 @@ abstract contract AbstractDeploySingle is Script {
         SetupVars memory vars;
 
         vars.chainId = previousDeploymentChains[i];
+
         vm.startBroadcast(deployerPrivateKey);
 
         vars.lzImplementation = _readContract(chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
@@ -806,7 +812,8 @@ abstract contract AbstractDeploySingle is Script {
         /// @dev FIXME missing attribution of WORMHOLE_VAA_RELAYER_ROLE
 
         SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
-        vars.superRegistryC.setVaultLimitPerTx(vars.dstChainId, 5);
+
+        vars.superRegistryC.setVaultLimitPerDestination(vars.dstChainId, 5);
 
         /// @dev these values are mocks and has to be replaced
         /// swap gas cost: 50000
@@ -832,7 +839,7 @@ abstract contract AbstractDeploySingle is Script {
             )
         );
 
-        PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(0, generateBroadcastParams(5, 1));
+        PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(abi.encode(4, abi.encode(0, "")));
 
         vars.superRegistryC.setAddress(
             vars.superRegistryC.SUPERFORM_ROUTER(),
