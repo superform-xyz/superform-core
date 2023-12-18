@@ -212,9 +212,6 @@ library Error {
     /// @dev thrown if payload is being updated with tx data length different than liq data length
     error DIFFERENT_PAYLOAD_UPDATE_TX_DATA_LENGTH();
 
-    /// @dev thrown if a duplicate proof amb is found
-    error DUPLICATE_PROOF_BRIDGE_ID();
-
     /// @dev thrown if broadcast finality for wormhole is invalid
     error INVALID_BROADCAST_FINALITY();
 
@@ -229,6 +226,9 @@ library Error {
 
     /// @dev thrown if message amb and proof amb are the same
     error INVALID_PROOF_BRIDGE_ID();
+
+    /// @dev thrown if order of proof AMBs is incorrect, either duplicated or not incrementing
+    error INVALID_PROOF_BRIDGE_IDS();
 
     /// @dev thrown if rescue data lengths are invalid
     error INVALID_RESCUE_DATA();

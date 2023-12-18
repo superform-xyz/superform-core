@@ -294,7 +294,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         /// @dev the timelock is elapsed
         if (
             failedDeposits_.lastProposedTimestamp == 0
-                || block.timestamp < failedDeposits_.lastProposedTimestamp + _getDelay()
+                || block.timestamp <= failedDeposits_.lastProposedTimestamp + _getDelay()
         ) {
             revert Error.RESCUE_LOCKED();
         }

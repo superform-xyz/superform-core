@@ -35,6 +35,7 @@ contract PaymentHelper is IPaymentHelper {
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
     uint32 private constant TIMELOCK_FORM_ID = 2;
+    uint256 private constant MAX_UINT256 = type(uint256).max;
 
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
@@ -629,7 +630,7 @@ contract PaymentHelper is IPaymentHelper {
         AMBMessage memory ambIdEncodedMessage = abi.decode(message_, (AMBMessage));
         ambIdEncodedMessage.params = abi.encode(ambIds_, ambIdEncodedMessage.params);
 
-        bytes memory proof_ = abi.encode(AMBMessage(type(uint256).max, abi.encode(keccak256(message_))));
+        bytes memory proof_ = abi.encode(AMBMessage(MAX_UINT256, abi.encode(keccak256(message_))));
 
         /// @dev just checks the estimate for sending message from src -> dst
         /// @dev only ambIds_[0] = primary amb (rest of the ambs send only the proof)
@@ -663,7 +664,7 @@ contract PaymentHelper is IPaymentHelper {
 
         feeSplitUp = new uint256[](len);
 
-        bytes memory proof_ = abi.encode(AMBMessage(type(uint256).max, abi.encode(keccak256(message_))));
+        bytes memory proof_ = abi.encode(AMBMessage(MAX_UINT256, abi.encode(keccak256(message_))));
 
         /// @dev just checks the estimate for sending message from src -> dst
         if (CHAIN_ID != dstChainId_) {
@@ -762,7 +763,7 @@ contract PaymentHelper is IPaymentHelper {
                 sfData_.extraFormData
             )
         );
-        message_ = abi.encode(AMBMessage(type(uint256).max, ambData));
+        message_ = abi.encode(AMBMessage(MAX_UINT256, ambData));
     }
 
     /// @dev generates the amb message for multi vault data
@@ -784,7 +785,7 @@ contract PaymentHelper is IPaymentHelper {
                 sfData_.extraFormData
             )
         );
-        message_ = abi.encode(AMBMessage(type(uint256).max, ambData));
+        message_ = abi.encode(AMBMessage(MAX_UINT256, ambData));
     }
 
     /// @dev helps convert the dst gas fee into src chain native fee

@@ -46,9 +46,12 @@ contract ArrayCastLibTest is Test {
 
     function test_castToMultiVaultData() external {
         InitSingleVaultData memory data = InitSingleVaultData(
-            1, 1, 1e18, 100, LiqRequest(bytes(""), address(0), address(0), 1, 1, 0), false, false, address(0), ""
+            1, 1, 1e18, 100, LiqRequest(bytes(""), address(0), address(0), 1, 1, 0), true, true, address(0), ""
         );
         InitMultiVaultData memory castedValue = arrayCastLib.castToMultiVaultData(data);
         assertEq(castedValue.superformIds.length, 1);
+
+        assertEq(castedValue.hasDstSwaps[0], data.hasDstSwap);
+        assertEq(castedValue.retain4626s[0], data.retain4626);
     }
 }
