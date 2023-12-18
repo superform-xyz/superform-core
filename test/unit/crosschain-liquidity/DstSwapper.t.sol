@@ -374,6 +374,18 @@ contract DstSwapperTest is ProtocolActions {
         amounts[1] = 1e18;
 
         uint256[] memory indices = new uint256[](2);
+        indices[0] = 2;
+        indices[1] = 1;
+
+        vm.expectRevert(Error.INDEX_OUT_OF_BOUNDS.selector);
+        DstSwapper(dstSwapper).batchUpdateFailedTx(1, indices, interimTokens, amounts);
+
+        indices[0] = 1;
+        indices[1] = 1;
+
+        vm.expectRevert(Error.DUPLICATE_INDEX.selector);
+        DstSwapper(dstSwapper).batchUpdateFailedTx(1, indices, interimTokens, amounts);
+
         indices[0] = 0;
         indices[1] = 1;
 

@@ -246,6 +246,9 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         for (uint256 i; i < len; ++i) {
             index = indices_[i];
             if (index >= maxIndex) revert Error.INDEX_OUT_OF_BOUNDS();
+            if (i > 0 && index <= indices_[i - 1]) {
+                revert Error.DUPLICATE_INDEX();
+            }
 
             _updateFailedTx(
                 payloadId_,
