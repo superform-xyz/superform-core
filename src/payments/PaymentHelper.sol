@@ -172,13 +172,13 @@ contract PaymentHelper is IPaymentHelper {
                     totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwaps);
                 } 
             } else {
-                    /// @dev step 6: estimate if timelock form processing costs are involved
-                    for (uint256 j; j < superformIdsLen; ++j) {
-                        (, uint32 formId,) = req_.superformsData[i].superformIds[j].getSuperform();
-                        if (formId == TIMELOCK_FORM_ID) {
-                            totalDstGas += timelockCost[req_.dstChainIds[i]];
-                        }
+                /// @dev step 6: estimate if timelock form processing costs are involved
+                for (uint256 j; j < superformIdsLen; ++j) {
+                    (, uint32 formId,) = req_.superformsData[i].superformIds[j].getSuperform();
+                    if (formId == TIMELOCK_FORM_ID) {
+                        totalDstGas += timelockCost[req_.dstChainIds[i]];
                     }
+                }
             }
 
             /// @dev step 7: estimate execution costs in dst (withdraw / deposit)
@@ -229,11 +229,11 @@ contract PaymentHelper is IPaymentHelper {
                         _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwap.castBoolToArray());
                 } 
             } else {
-                    /// @dev step 6: estimate if timelock form processing costs are involved
-                    (, uint32 formId,) = req_.superformsData[i].superformId.getSuperform();
-                    if (formId == TIMELOCK_FORM_ID) {
-                        totalDstGas += timelockCost[req_.dstChainIds[i]];
-                    }
+                /// @dev step 6: estimate if timelock form processing costs are involved
+                (, uint32 formId,) = req_.superformsData[i].superformId.getSuperform();
+                if (formId == TIMELOCK_FORM_ID) {
+                    totalDstGas += timelockCost[req_.dstChainIds[i]];
+                }
             }
 
             /// @dev step 7: estimate execution costs in dst
