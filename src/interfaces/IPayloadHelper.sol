@@ -44,6 +44,7 @@ interface IPayloadHelper {
     /// @return bridgeIds are the ids of the bridges to be used
     /// @return txDatas are the array of txData to be sent to the bridges
     /// @return tokens are the tokens to be used in the liqData
+    /// @return interimTokens are the interim tokens to be used in the liqData
     /// @return liqDstChainIds are the final destination chain id for the underlying token (can be arbitrary on
     /// withdraws)
     /// @return amountsIn are the from amounts to the liquidity bridge
@@ -55,6 +56,7 @@ interface IPayloadHelper {
             uint8[] memory bridgeIds,
             bytes[] memory txDatas,
             address[] memory tokens,
+            address[] memory interimTokens,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
             uint256[] memory nativeAmounts

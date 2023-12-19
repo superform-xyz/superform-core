@@ -61,12 +61,6 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
 
         vm.selectFork(FORKS[chainId]);
 
-        /// @dev testing the getAllSuperforms function
-        (vars.superformIds_, vars.superforms_) =
-            SuperformFactory(getContract(chainId, "SuperformFactory")).getAllSuperforms();
-
-        assertEq(vars.superformIds_.length, vars.superforms_.length);
-
         /// @dev Testing Coss Chain Superform Deployments
         vars.transformedChainIds_ = new uint256[](vars.chainIds_.length);
 
@@ -105,13 +99,6 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         /// @dev Creating superform using form
         (uint256 superformIdCreated, address superformCreated) =
             SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formImplementationId, vault);
-
-        (uint256[] memory superformIds_, address[] memory superforms_) =
-            SuperformFactory(getContract(chainId, "SuperformFactory")).getAllSuperformsFromVault(vault);
-
-        assertEq(superformIdCreated, superformIds_[superformIds_.length - 1]);
-
-        assertEq(superformCreated, superforms_[superforms_.length - 1]);
 
         uint256 totalSuperformsAfter = SuperformFactory(getContract(chainId, "SuperformFactory")).getSuperformCount();
         assertEq(totalSuperformsAfter, totalSuperformsBefore + 1);

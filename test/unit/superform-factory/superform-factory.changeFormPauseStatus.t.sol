@@ -32,7 +32,7 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
         );
 
         SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormImplementationPauseStatus(
-            formImplementationId, ISuperformFactory.PauseStatus.PAUSED, generateBroadcastParams(5, 1)
+            formImplementationId, ISuperformFactory.PauseStatus.PAUSED, generateBroadcastParams(0)
         );
 
         bool status = SuperformFactory(payable(getContract(chainId, "SuperformFactory"))).isFormImplementationPaused(
@@ -58,9 +58,9 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
             formImplementation1, formImplementationId
         );
 
-        SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormImplementationPauseStatus{
-            value: 800 * 10 ** 18
-        }(formImplementationId, ISuperformFactory.PauseStatus.PAUSED, "");
+        SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormImplementationPauseStatus(
+            formImplementationId, ISuperformFactory.PauseStatus.PAUSED, ""
+        );
 
         bool status = SuperformFactory(payable(getContract(chainId, "SuperformFactory"))).isFormImplementationPaused(
             formImplementationId
@@ -90,6 +90,28 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
         vm.expectRevert(Error.INVALID_FORM_ID.selector);
         SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormImplementationPauseStatus{
             value: 800 * 10 ** 18
-        }(formImplementationId_invalid, ISuperformFactory.PauseStatus.PAUSED, generateBroadcastParams(5, 2));
+        }(formImplementationId_invalid, ISuperformFactory.PauseStatus.PAUSED, generateBroadcastParams(0));
+    }
+
+    function test_changeFormImplementationPauseZeroMsgValueNotSent() public {
+        vm.startPrank(deployer);
+
+        vm.selectFork(FORKS[chainId]);
+
+        address superRegistry = getContract(chainId, "SuperRegistry");
+
+        /// @dev Deploying Forms
+        address formImplementation1 = address(new ERC4626Form(superRegistry));
+        uint32 formImplementationId = 0;
+
+        // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
+            formImplementation1, formImplementationId
+        );
+
+        vm.expectRevert(Error.MSG_VALUE_NOT_ZERO.selector);
+        SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormImplementationPauseStatus{
+            value: 800 * 10 ** 18
+        }(formImplementationId, ISuperformFactory.PauseStatus.PAUSED, "");
     }
 }

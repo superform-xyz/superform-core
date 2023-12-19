@@ -3,7 +3,6 @@ pragma solidity ^0.8.23;
 
 import { Error } from "../libraries/Error.sol";
 
-/// @dev rationale for "memory-safe" assembly: https://docs.soliditylang.org/en/v0.8.20/assembly.html#memory-safety
 library DataLib {
     function packTxInfo(
         uint8 txType_,

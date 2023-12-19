@@ -142,6 +142,7 @@ contract PayloadHelper is IPayloadHelper {
             uint8[] memory bridgeIds,
             bytes[] memory txDatas,
             address[] memory tokens,
+            address[] memory interimTokens,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
             uint256[] memory nativeAmounts
@@ -351,6 +352,7 @@ contract PayloadHelper is IPayloadHelper {
             uint8[] memory bridgeIds,
             bytes[] memory txDatas,
             address[] memory tokens,
+            address[] memory interimTokens,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
             uint256[] memory nativeAmounts
@@ -361,6 +363,7 @@ contract PayloadHelper is IPayloadHelper {
         bridgeIds = new uint8[](imvd.liqData.length);
         txDatas = new bytes[](imvd.liqData.length);
         tokens = new address[](imvd.liqData.length);
+        interimTokens = new address[](imvd.liqData.length);
         liqDstChainIds = new uint64[](imvd.liqData.length);
         amountsIn = new uint256[](imvd.liqData.length);
         nativeAmounts = new uint256[](imvd.liqData.length);
@@ -371,6 +374,7 @@ contract PayloadHelper is IPayloadHelper {
             bridgeIds[i] = imvd.liqData[i].bridgeId;
             txDatas[i] = imvd.liqData[i].txData;
             tokens[i] = imvd.liqData[i].token;
+            interimTokens[i] = imvd.liqData[i].interimToken;
             liqDstChainIds[i] = imvd.liqData[i].liqDstChainId;
 
             /// @dev decodes amount from txdata only if its present
@@ -382,7 +386,7 @@ contract PayloadHelper is IPayloadHelper {
             nativeAmounts[i] = imvd.liqData[i].nativeAmount;
         }
 
-        return (bridgeIds, txDatas, tokens, liqDstChainIds, amountsIn, nativeAmounts);
+        return (bridgeIds, txDatas, tokens, interimTokens, liqDstChainIds, amountsIn, nativeAmounts);
     }
 
     function _decodeSingleLiqData(
@@ -395,6 +399,7 @@ contract PayloadHelper is IPayloadHelper {
             uint8[] memory bridgeIds,
             bytes[] memory txDatas,
             address[] memory tokens,
+            address[] memory interimTokens,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
             uint256[] memory nativeAmounts
@@ -412,6 +417,9 @@ contract PayloadHelper is IPayloadHelper {
         tokens = new address[](1);
         tokens[0] = isvd.liqData.token;
 
+        interimTokens = new address[](1);
+        interimTokens[0] = isvd.liqData.interimToken;
+
         liqDstChainIds = new uint64[](1);
         liqDstChainIds[0] = isvd.liqData.liqDstChainId;
 
@@ -426,6 +434,6 @@ contract PayloadHelper is IPayloadHelper {
         nativeAmounts = new uint256[](1);
         nativeAmounts[0] = isvd.liqData.nativeAmount;
 
-        return (bridgeIds, txDatas, tokens, liqDstChainIds, amountsIn, nativeAmounts);
+        return (bridgeIds, txDatas, tokens, interimTokens, liqDstChainIds, amountsIn, nativeAmounts);
     }
 }

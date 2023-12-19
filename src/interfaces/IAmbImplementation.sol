@@ -9,8 +9,8 @@ interface IAmbImplementation {
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
 
-    event ChainAdded(uint64 superChainId);
-    event AuthorizedImplAdded(uint64 superChainId, address authImpl);
+    event ChainAdded(uint64 indexed superChainId);
+    event AuthorizedImplAdded(uint64 indexed superChainId, address indexed authImpl);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //

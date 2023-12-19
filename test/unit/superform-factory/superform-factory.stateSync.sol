@@ -18,7 +18,7 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
 
         vm.recordLogs();
         SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
-            formImplementationId, ISuperformFactory.PauseStatus.PAUSED, generateBroadcastParams(5, 1)
+            formImplementationId, ISuperformFactory.PauseStatus.PAUSED, generateBroadcastParams(0)
         );
 
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
@@ -70,7 +70,7 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
         /// @dev checks if proof for this next one is diff
         vm.recordLogs();
         SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
-            formImplementationId, ISuperformFactory.PauseStatus.PAUSED, generateBroadcastParams(5, 1)
+            formImplementationId, ISuperformFactory.PauseStatus.PAUSED, generateBroadcastParams(0)
         );
 
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());

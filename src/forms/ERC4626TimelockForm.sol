@@ -95,6 +95,9 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         vars.asset = address(asset);
 
         dstAmount = v.redeem(p_.data.amount, vars.receiver, address(this));
+
+        if (dstAmount == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
+
         /// @dev validate and dispatches the tokens
         if (vars.len1 != 0) {
             vars.bridgeValidator = superRegistry.getBridgeValidator(vars.liqData.bridgeId);
