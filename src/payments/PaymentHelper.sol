@@ -333,7 +333,9 @@ contract PaymentHelper is IPaymentHelper {
             totalDstGas += _estimateUpdateCost(req_.dstChainId, 1);
 
             /// @dev step 3: estimation execution cost of acknowledgement
-            srcAmount += _estimateAckProcessingCost(1);
+            if (!req_.superformData.retain4626) {
+                srcAmount += _estimateAckProcessingCost(1);
+            }
 
             /// @dev step 4: estimate the liqAmount
             liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
