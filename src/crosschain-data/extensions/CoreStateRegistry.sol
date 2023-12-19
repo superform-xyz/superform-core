@@ -223,10 +223,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
 
-        if (
-            failedDeposits_.superformIds.length == 0 
-                || failedDeposits_.superformIds.length != proposedAmounts_.length
-        ) {
+        if (failedDeposits_.superformIds.length == 0 || failedDeposits_.superformIds.length != proposedAmounts_.length)
+        {
             revert Error.INVALID_RESCUE_DATA();
         }
 
