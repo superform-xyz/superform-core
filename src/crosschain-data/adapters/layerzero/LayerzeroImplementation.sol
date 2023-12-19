@@ -41,9 +41,9 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
 
-    event EndpointUpdated(address oldEndpoint_, address newEndpoint_);
-    event MessageFailed(uint16 srcChainId_, bytes srcAddress_, uint64 nonce_, bytes payload_);
-    event SetTrustedRemote(uint16 srcChainId_, bytes srcAddress_);
+    event EndpointUpdated(address indexed oldEndpoint_, address indexed newEndpoint_);
+    event MessageFailed(uint16 indexed srcChainId_, bytes indexed srcAddress_, uint64 indexed nonce_, bytes payload_);
+    event SetTrustedRemote(uint16 indexed srcChainId_, bytes indexed srcAddress_);
 
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
@@ -156,6 +156,9 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     //////////////////////////////////////////////////////////////
 
     function isTrustedRemote(uint16 srcChainId_, bytes calldata srcAddress_) external view returns (bool) {
+        if (srcChainId_ == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
         return keccak256(trustedRemoteLookup[srcChainId_]) == keccak256(srcAddress_);
     }
 
@@ -195,7 +198,12 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         override
         onlyValidStateRegistry
     {
-        _lzSend(ambChainId[dstChainId_], message_, payable(srcSender_), address(0x0), extraData_, msg.value);
+        uint16 domain = ambChainId[dstChainId_];
+        if (domain == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
+        _lzSend(domain, message_, payable(srcSender_), address(0x0), extraData_, msg.value);
     }
 
     /// @inheritdoc IAmbImplementation
@@ -311,7 +319,13 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
 
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(superRegistry.getStateRegistry(registryId));
 
-        targetRegistry.receivePayload(superChainId[_srcChainId], _payload);
+        uint64 srcChainId = superChainId[_srcChainId];
+
+        if (srcChainId == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
+        targetRegistry.receivePayload(srcChainId, _payload);
     }
 
     function _lzSend(
@@ -326,7 +340,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     {
         bytes memory trustedRemote = trustedRemoteLookup[dstChainId_];
         if (trustedRemote.length == 0) {
-            revert Error.INVALID_SRC_CHAIN_ID();
+            revert Error.INVALID_CHAIN_ID();
         }
 
         lzEndpoint.send{ value: msgValue_ }(

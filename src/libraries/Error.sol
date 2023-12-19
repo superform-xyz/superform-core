@@ -7,9 +7,6 @@ library Error {
     //////////////////////////////////////////////////////////////
     ///@notice errors thrown in protocol setup
 
-    /// @dev thrown if there is an array length mismatch
-    error ARRAY_LENGTH_MISMATCH();
-
     /// @dev thrown if chain id exceeds max(uint64)
     error BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
 
@@ -119,6 +116,9 @@ library Error {
     ///@notice errors thrown if input variables are not valid
 
     /// COMMON INPUT VALIDATION ERRORS
+    /// @dev thrown if there is an array length mismatch
+    error ARRAY_LENGTH_MISMATCH();
+
     /// @dev thrown if payload id does not exist
     error INVALID_PAYLOAD_ID();
 
@@ -171,9 +171,6 @@ library Error {
     /// in case of txData, if token output of swap != vault.asset()
     error DIFFERENT_TOKENS();
 
-    /// @dev thrown if the amount in direct deposit is not correct
-    error DIRECT_DEPOSIT_INVALID_DATA();
-
     /// @dev thrown if the token in direct withdraw is not correct
     error DIRECT_WITHDRAW_INVALID_TOKEN();
 
@@ -215,16 +212,13 @@ library Error {
     /// @dev thrown if payload is being updated with tx data length different than liq data length
     error DIFFERENT_PAYLOAD_UPDATE_TX_DATA_LENGTH();
 
-    /// @dev thrown if a duplicate proof amb is found
-    error DUPLICATE_PROOF_BRIDGE_ID();
-
     /// @dev thrown if broadcast finality for wormhole is invalid
     error INVALID_BROADCAST_FINALITY();
 
     /// @dev thrown if amb id is not valid leading to an address 0 of the implementation
     error INVALID_BRIDGE_ID();
 
-    /// @dev thrown if chain id brought in the cross chain message is invalid
+    /// @dev thrown if chain id involved in xchain message is invalid
     error INVALID_CHAIN_ID();
 
     /// @dev thrown if payload update amount isn't equal to dst swapper amount
@@ -232,6 +226,9 @@ library Error {
 
     /// @dev thrown if message amb and proof amb are the same
     error INVALID_PROOF_BRIDGE_ID();
+
+    /// @dev thrown if order of proof AMBs is incorrect, either duplicated or not incrementing
+    error INVALID_PROOF_BRIDGE_IDS();
 
     /// @dev thrown if rescue data lengths are invalid
     error INVALID_RESCUE_DATA();
@@ -261,14 +258,17 @@ library Error {
     ///@notice errors thrown due to function execution logic
 
     /// COMMON EXECUTION ERRORS
-    /// @dev thrown if allowance in direct deposit is not correct
-    error DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+    /// @dev thrown if the swap in a direct deposit resulted in insufficient tokens
+    error DIRECT_DEPOSIT_SWAP_FAILED();
 
     /// @dev thrown if payload is not unique
     error DUPLICATE_PAYLOAD();
 
     /// @dev thrown if native tokens fail to be sent to superform contracts
     error FAILED_TO_SEND_NATIVE();
+
+    /// @dev thrown if allowance is not correct to deposit
+    error INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
 
     /// @dev thrown if native amount is not at least equal to the amount in the request
     error INSUFFICIENT_NATIVE_AMOUNT();
@@ -323,9 +323,6 @@ library Error {
     /// @dev thrown if update payload function was called on a wrong payload
     error INVALID_PAYLOAD_UPDATE_REQUEST();
 
-    /// @dev thrown if src chain is blocked from messaging
-    error INVALID_SRC_CHAIN_ID();
-
     /// @dev thrown if trying to finalize the payload but the withdraw is still locked
     error LOCKED();
 
@@ -349,6 +346,12 @@ library Error {
 
     /// @dev thrown in forms where a certain functionality is not allowed or implemented
     error NOT_IMPLEMENTED();
+
+    /// @dev thrown when redeeming from vault yields zero collateral
+    error WITHDRAW_ZERO_COLLATERAL();
+
+    /// @dev thrown if a state registry id is 0
+    error INVALID_REGISTRY_ID();
 
     /*///////////////////////////////////////////////////////////////
                         PAYMASTER ERRORS

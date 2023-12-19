@@ -24,8 +24,6 @@ contract SuperformFactory is ISuperformFactory {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
-    uint8 private constant NON_PAUSED = 1;
-    uint8 private constant PAUSED = 2;
 
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
@@ -142,22 +140,6 @@ contract SuperformFactory is ISuperformFactory {
         returns (uint256[] memory superformIds_, address[] memory superforms_)
     {
         superformIds_ = vaultToSuperforms[vault_];
-        uint256 len = superformIds_.length;
-        superforms_ = new address[](len);
-
-        for (uint256 i; i < len; ++i) {
-            (superforms_[i],,) = superformIds_[i].getSuperform();
-        }
-    }
-
-    /// @inheritdoc ISuperformFactory
-    function getAllSuperforms()
-        external
-        view
-        override
-        returns (uint256[] memory superformIds_, address[] memory superforms_)
-    {
-        superformIds_ = superforms;
         uint256 len = superformIds_.length;
         superforms_ = new address[](len);
 
@@ -289,7 +271,7 @@ contract SuperformFactory is ISuperformFactory {
     /// @dev interacts with broadcast state registry to broadcasting state changes to all connected remote chains
     /// @param message_ is the crosschain message to be sent.
     /// @param extraData_ is the amb override information.
-    function _broadcast(bytes memory message_, bytes memory extraData_) internal returns (uint256) {
+    function _broadcast(bytes memory message_, bytes memory extraData_) internal {
         (uint8 ambId, bytes memory broadcastParams) = abi.decode(extraData_, (uint8, bytes));
 
         /// @dev if the broadcastParams are wrong this will revert

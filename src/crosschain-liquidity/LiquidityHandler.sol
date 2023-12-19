@@ -40,6 +40,10 @@ abstract contract LiquidityHandler {
         internal
         virtual
     {
+        if (amount_ == 0) {
+            revert Error.ZERO_AMOUNT();
+        }
+
         if (bridge_ == address(0)) {
             revert Error.ZERO_ADDRESS();
         }
@@ -49,6 +53,7 @@ abstract contract LiquidityHandler {
             token.safeIncreaseAllowance(bridge_, amount_);
         } else {
             if (nativeAmount_ < amount_) revert Error.INSUFFICIENT_NATIVE_AMOUNT();
+            if (nativeAmount_ > address(this).balance) revert Error.INSUFFICIENT_BALANCE();
         }
 
         (bool success,) = payable(bridge_).call{ value: nativeAmount_ }(txData_);

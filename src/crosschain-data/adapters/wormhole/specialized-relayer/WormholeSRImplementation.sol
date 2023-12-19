@@ -43,11 +43,11 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
     //////////////////////////////////////////////////////////////
 
     /// @dev emitted when wormhole core is set
-    event WormholeCoreSet(address wormholeCore);
+    event WormholeCoreSet(address indexed wormholeCore);
     /// @dev emitted when wormhole relyaer is set
-    event WormholeRelayerSet(address wormholeRelayer);
+    event WormholeRelayerSet(address indexed wormholeRelayer);
     /// @dev emitted when broadcast finality is set
-    event BroadcastFinalitySet(uint8 finality);
+    event BroadcastFinalitySet(uint8 indexed finality);
 
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
@@ -191,7 +191,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         }
 
         if (wormholeMessage.emitterChainId == wormhole.chainId()) {
-            revert Error.INVALID_SRC_CHAIN_ID();
+            revert Error.INVALID_CHAIN_ID();
         }
 
         if (fromWormholeFormat(wormholeMessage.emitterAddress) != authorizedImpl[wormholeMessage.emitterChainId]) {
@@ -205,8 +205,14 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         processedMessages[wormholeMessage.hash] = true;
 
         /// @dev decoding payload
+        uint64 emitterChainId = superChainId[wormholeMessage.emitterChainId];
+
+        if (emitterChainId == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
         IBroadcastRegistry(superRegistry.getStateRegistry(BROADCAST_REGISTRY_ID)).receiveBroadcastPayload(
-            superChainId[wormholeMessage.emitterChainId], wormholeMessage.payload
+            emitterChainId, wormholeMessage.payload
         );
     }
 

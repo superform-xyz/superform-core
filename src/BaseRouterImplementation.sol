@@ -300,9 +300,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     /// @dev handles same-chain single vault withdraw
     function _singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq memory req_) internal virtual {
-        ActionLocalVars memory vars;
-        vars.srcChainId = CHAIN_ID;
-
         /// @dev validate Superform data
         if (
             !_validateSuperformData(
@@ -310,7 +307,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 req_.superformData.maxSlippage,
                 req_.superformData.amount,
                 req_.superformData.receiverAddress,
-                vars.srcChainId,
+                CHAIN_ID,
                 false,
                 ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")))
             )
@@ -789,6 +786,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev amount can't be 0
         if (amount_ == 0) return false;
 
+        /// @dev redundant check on same chain, but helpful on xchain actions to halt deposits earlier
         if (isDeposit_ && factory_.isFormImplementationPaused(formImplementationId)) return false;
 
         /// @dev ensure that receiver address is set always
@@ -822,14 +820,14 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (len == 0 || liqRequestsLen == 0) return false;
         if (len != liqRequestsLen) return false;
 
-        /// @dev Additional length checks for hasDstSwaps and retain4626s
-        if (lenSuperforms != superformsData_.hasDstSwaps.length || lenSuperforms != superformsData_.retain4626s.length)
-        {
+        /// @dev deposits beyond multi vault limit for a given destination chain blocked
+        if (lenSuperforms > superRegistry.getVaultLimitPerDestination(dstChainId_)) {
             return false;
         }
 
-        /// @dev deposits beyond max vaults per tx is blocked only for xchain
-        if (lenSuperforms > superRegistry.getVaultLimitPerDestination(dstChainId_)) {
+        /// @dev Additional length checks for hasDstSwaps and retain4626s
+        if (lenSuperforms != superformsData_.hasDstSwaps.length || lenSuperforms != superformsData_.retain4626s.length)
+        {
             return false;
         }
 
@@ -922,7 +920,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 IPermit2(v.permit2).permitTransferFrom(
                     // The permit message.
                     IPermit2.PermitTransferFrom({
-                        permitted: IPermit2.TokenPermissions({ token: v.token, amount: v.amountIn}),
+                        permitted: IPermit2.TokenPermissions({ token: v.token, amount: v.amountIn }),
                         nonce: nonce,
                         deadline: deadline
                     }),
@@ -938,7 +936,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 );
             } else {
                 if (v.token.allowance(srcSender_, address(this)) < v.amountIn) {
-                    revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+                    revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
                 }
 
                 /// @dev moves the tokens from the user to the router
@@ -979,7 +977,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 v.amountsIn[i] = IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[i])).decodeAmountIn(
                     vaultData_.liqData[i].txData, false
                 );
-            } else { 
+            } else {
                 v.amountsIn[i] = vaultData_.amounts[i];
             }
         }
@@ -997,7 +995,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 uint256 txDataLength = vaultData_.liqData[i].txData.length;
                 if (txDataLength == 0 && xChain) {
                     revert Error.NO_TXDATA_PRESENT();
-                } 
+                }
 
                 v.totalAmount += v.amountsIn[i];
             }
@@ -1031,7 +1029,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 );
             } else {
                 if (v.token.allowance(srcSender_, address(this)) < v.totalAmount) {
-                    revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+                    revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
                 }
 
                 /// @dev moves the tokens from the user to the router
