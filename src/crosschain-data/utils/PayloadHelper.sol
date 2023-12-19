@@ -183,7 +183,7 @@ contract PayloadHelper is IPayloadHelper {
         external
         view
         override
-        returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
+        returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
     {
         ITimelockStateRegistry timelockStateRegistry =
             ITimelockStateRegistry(superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY")));
@@ -195,7 +195,11 @@ contract PayloadHelper is IPayloadHelper {
         TimelockPayload memory payload = timelockStateRegistry.getTimelockPayload(timelockPayloadId_);
 
         return (
-            payload.srcSender, payload.srcChainId, payload.data.payloadId, payload.data.superformId, payload.data.amount
+            payload.data.receiverAddress,
+            payload.srcChainId,
+            payload.data.payloadId,
+            payload.data.superformId,
+            payload.data.amount
         );
     }
 

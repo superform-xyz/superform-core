@@ -180,9 +180,6 @@ library Error {
     /// in case of txData, if token output of swap != vault.asset()
     error DIFFERENT_TOKENS();
 
-    /// @dev thrown if the token in direct withdraw is not correct
-    error DIRECT_WITHDRAW_INVALID_TOKEN();
-
     /// @dev thrown if the amount in direct withdraw is not correct
     error DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
