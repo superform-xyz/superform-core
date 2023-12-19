@@ -283,7 +283,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         emit Processed(srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
     }
 
-    function _processDirectWithdraw(InitSingleVaultData memory singleVaultData_) internal returns (uint256 dstAmount) {
+    function _processDirectWithdraw(InitSingleVaultData memory singleVaultData_) internal returns (uint256 assets) {
         directWithdrawLocalVars memory vars;
         vars.len1 = singleVaultData_.liqData.txData.length;
 
