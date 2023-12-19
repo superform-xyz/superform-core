@@ -377,14 +377,14 @@ library Error {
 
     /// FORM EXECUTION ERRORS
 
-    /// @dev thrown if shares != deposit output or assets != redeem output when minting SuperPositions
-    error INVALID_OUTPUT_AMOUNT();
-
     /// @dev thrown in KYCDAO form if no KYC token is present
     error NO_VALID_KYC_TOKEN();
 
     /// @dev thrown if form implementation is PAUSED, users cannot perform any action
     error PAUSED();
+
+    /// @dev thrown if shares != deposit output or assets != redeem output when minting SuperPositions
+    error VAULT_IMPLEMENTATION_FAILED();
 
     /// @dev thrown if withdrawal tx data is not updated
     error WITHDRAW_TOKEN_NOT_UPDATED();

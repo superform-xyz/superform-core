@@ -50,7 +50,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         address bridgeValidator;
         uint256 len1;
         uint256 amount;
-        IERC4626 v;
     }
 
     struct xChainWithdrawLocalVars {
@@ -236,18 +235,14 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// @dev notice that vars.assetDifference is deposited regardless if txData exists or not
         /// @dev this presumes no dust is left in the superform
         IERC20(vars.asset).safeIncreaseAllowance(vault, vars.assetDifference);
-
-        if (singleVaultData_.retain4626) {
-            shares = v.deposit(vars.assetDifference, singleVaultData_.receiverAddress);
-        } else {
-            /// @dev This makes ERC4626Form (address(this)) owner of v.shares
-            /// @dev add extra validation check in minting SuperPositions to ensure accounting
-            uint256 sharesBalanceBefore = v.balanceOf(address(this));
-            shares = v.deposit(vars.assetDifference, address(this));
-            uint256 sharesBalanceAfter = v.balanceOf(address(this));
-            if (sharesBalanceAfter - sharesBalanceBefore != shares) {
-                revert Error.INVALID_OUTPUT_AMOUNT();
-            }
+    
+        /// @dev deposit assets for shares and add extra validation check to ensure intended ERC4626 behavior
+        address sharesReceiver = singleVaultData_.retain4626 ? singleVaultData_.receiverAddress : address(this);
+        uint256 sharesBalanceBefore = v.balanceOf(sharesReceiver);
+        shares = v.deposit(vars.assetDifference, sharesReceiver);
+        uint256 sharesBalanceAfter = v.balanceOf(sharesReceiver);
+        if (sharesBalanceAfter - sharesBalanceBefore != shares) {
+            revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
     }
 
@@ -273,18 +268,13 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// @dev allowance is modified inside of the IERC20.transferFrom() call
         IERC20(asset).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
 
-        /// @dev Deposit into vault
-        if (singleVaultData_.retain4626) {
-            shares = v.deposit(singleVaultData_.amount, singleVaultData_.receiverAddress);
-        } else {
-            /// @dev This makes ERC4626Form (address(this)) owner of v.shares
-            /// @dev add extra validation check in minting SuperPositions to ensure accounting
-            uint256 sharesBalanceBefore = v.balanceOf(address(this));
-            shares = v.deposit(singleVaultData_.amount, address(this));
-            uint256 sharesBalanceAfter = v.balanceOf(address(this));
-            if (sharesBalanceAfter - sharesBalanceBefore != shares) {
-                revert Error.INVALID_OUTPUT_AMOUNT();
-            }
+        /// @dev deposit assets for shares and add extra validation check to ensure intended ERC4626 behavior
+        address sharesReceiver = singleVaultData_.retain4626 ? singleVaultData_.receiverAddress : address(this);
+        uint256 sharesBalanceBefore = v.balanceOf(sharesReceiver);
+        shares = v.deposit(singleVaultData_.amount, sharesReceiver);
+        uint256 sharesBalanceAfter = v.balanceOf(sharesReceiver);
+        if (sharesBalanceAfter - sharesBalanceBefore != shares) {
+            revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
 
         emit Processed(srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
@@ -297,40 +287,45 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         internal
         returns (uint256 assets)
     {
-        directWithdrawLocalVars memory v;
-        v.len1 = singleVaultData_.liqData.txData.length;
+        directWithdrawLocalVars memory vars;
+        vars.len1 = singleVaultData_.liqData.txData.length;
 
         /// @dev if there is no txData, on withdraws the receiver is the original beneficiary (srcSender_), otherwise it
         /// is this contract (before swap)
-        v.receiver = v.len1 == 0 ? srcSender_ : address(this);
+        vars.receiver = vars.len1 == 0 ? srcSender_ : address(this);
 
-        v.v = IERC4626(vault);
-        v.asset = address(asset);
+        IERC4626 v = IERC4626(vault);
+        vars.asset = address(asset);
 
-        /// @dev redeem shares for assets
-        assets = v.v.redeem(singleVaultData_.amount, v.receiver, address(this));
+        /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
+        uint256 assetsBalanceBefore = v.balanceOf(vars.receiver);
+        assets = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
+        uint256 assetsBalanceAfter = v.balanceOf(vars.receiver);
+        if (assetsBalanceAfter - assetsBalanceBefore != assets) {
+            revert Error.VAULT_IMPLEMENTATION_FAILED();
+        }
 
         if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
-        if (v.len1 != 0) {
+        if (vars.len1 != 0) {
             /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same
             /// as the vault asset
-            if (singleVaultData_.liqData.token != v.asset) revert Error.DIRECT_WITHDRAW_INVALID_TOKEN();
+            if (singleVaultData_.liqData.token != vars.asset) revert Error.DIRECT_WITHDRAW_INVALID_TOKEN();
 
-            v.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
-            v.amount = IBridgeValidator(v.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
+            vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
+            vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
-            if (v.amount > assets) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+            if (vars.amount > assets) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
-            v.chainId = CHAIN_ID;
+            vars.chainId = CHAIN_ID;
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
-            IBridgeValidator(v.bridgeValidator).validateTxData(
+            IBridgeValidator(vars.bridgeValidator).validateTxData(
                 IBridgeValidator.ValidateTxDataArgs(
                     singleVaultData_.liqData.txData,
-                    v.chainId,
-                    v.chainId,
+                    vars.chainId,
+                    vars.chainId,
                     singleVaultData_.liqData.liqDstChainId,
                     false,
                     address(this),
@@ -344,7 +339,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
-                v.amount,
+                vars.amount,
                 singleVaultData_.liqData.nativeAmount
             );
         }
@@ -358,14 +353,14 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         internal
         returns (uint256 assets)
     {
-        uint256 len = singleVaultData_.liqData.txData.length;
+        xChainWithdrawLocalVars memory vars;
 
+        uint256 len = singleVaultData_.liqData.txData.length;
         /// @dev a case where the withdraw req liqData has a valid token and tx data is not updated by the keeper
         if (singleVaultData_.liqData.token != address(0) && len == 0) {
             revert Error.WITHDRAW_TX_DATA_NOT_UPDATED();
         }
 
-        xChainWithdrawLocalVars memory vars;
         (,, vars.dstChainId) = singleVaultData_.superformId.getSuperform();
 
         /// @dev receiverAddress is checked for existence on source
@@ -377,8 +372,13 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         IERC4626 v = IERC4626(vault);
         vars.asset = asset;
 
-        /// @dev redeem shares for assets
+        /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
+        uint256 assetsBalanceBefore = v.balanceOf(vars.receiver);
         assets = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
+        uint256 assetsBalanceAfter = v.balanceOf(vars.receiver);
+        if (assetsBalanceAfter - assetsBalanceBefore != assets) {
+            revert Error.VAULT_IMPLEMENTATION_FAILED();
+        }
 
         if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
