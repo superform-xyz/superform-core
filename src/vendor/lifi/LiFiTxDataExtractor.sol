@@ -4,6 +4,9 @@ pragma solidity ^0.8.23;
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 import { StandardizedCallFacet } from "./StandardizedCallFacet.sol";
+import { AmarokFacet } from "./AmarokFacet.sol";
+import { CelerIMFacetBase, CelerIM } from "./CelerIMFacetBase.sol";
+import { StargateFacet } from "./StargateFacet.sol";
 
 /// @title LiFiTxDataExtractor
 /// @author LI.FI (https://li.fi)
@@ -11,24 +14,93 @@ import { StandardizedCallFacet } from "./StandardizedCallFacet.sol";
 /// @notice upgraded to solidity 0.8.23 and adapted from CalldataVerificationFacet and LibBytes without any changes to
 /// used functions (just stripped down functionality and renamed contract name)
 /// @notice taken from LiFi contracts https://github.com/lifinance/contracts
-/// @custom:version 1.1.0
-
+/// @custom:version 2.2.0
 contract LiFiTxDataExtractor {
     error SliceOverflow();
     error SliceOutOfBounds();
 
-    /// @notice Extracts the bridge data from the calldata
+    /// @notice Extracts the bridge data from the calldata. Extracts receiver correctly pending certain facet feauresa
     /// @param data The calldata to extract the bridge data from
     /// @return bridgeData The bridge data extracted from the calldata
-    function _extractBridgeData(bytes calldata data) internal pure returns (ILiFi.BridgeData memory bridgeData) {
+    function _extractBridgeData(bytes calldata data)
+        internal
+        pure
+        returns (ILiFi.BridgeData memory bridgeData, address receiver)
+    {
+        bytes memory callData = data;
+
         if (bytes4(data[:4]) == StandardizedCallFacet.standardizedCall.selector) {
             // StandardizedCall
-            bytes memory unwrappedData = abi.decode(data[4:], (bytes));
-            bridgeData = abi.decode(_slice(unwrappedData, 4, unwrappedData.length - 4), (ILiFi.BridgeData));
-            return bridgeData;
+            callData = abi.decode(data[4:], (bytes));
         }
+
+        bytes4 selector = abi.decode(callData, (bytes4));
+
+        // Case: Amarok
+        if (selector == AmarokFacet.startBridgeTokensViaAmarok.selector) {
+            AmarokFacet.AmarokData memory amarokData;
+            (bridgeData, amarokData) =
+                abi.decode(_slice(callData, 4, callData.length - 4), (ILiFi.BridgeData, AmarokFacet.AmarokData));
+            receiver = amarokData.callTo;
+
+            return (bridgeData, receiver);
+        }
+        if (selector == AmarokFacet.swapAndStartBridgeTokensViaAmarok.selector) {
+            AmarokFacet.AmarokData memory amarokData;
+
+            (bridgeData,, amarokData) = abi.decode(
+                _slice(callData, 4, callData.length - 4), (ILiFi.BridgeData, LibSwap.SwapData[], AmarokFacet.AmarokData)
+            );
+            receiver = amarokData.callTo;
+
+            return (bridgeData, receiver);
+        }
+
+        // Case: Stargate
+        if (selector == StargateFacet.startBridgeTokensViaStargate.selector) {
+            StargateFacet.StargateData memory stargateData;
+            (bridgeData, stargateData) =
+                abi.decode(_slice(callData, 4, callData.length - 4), (ILiFi.BridgeData, StargateFacet.StargateData));
+
+            receiver = abi.decode(stargateData.callTo, (address));
+
+            return (bridgeData, receiver);
+        }
+        if (selector == StargateFacet.swapAndStartBridgeTokensViaStargate.selector) {
+            StargateFacet.StargateData memory stargateData;
+            (bridgeData,, stargateData) = abi.decode(
+                _slice(callData, 4, callData.length - 4),
+                (ILiFi.BridgeData, LibSwap.SwapData[], StargateFacet.StargateData)
+            );
+            receiver = abi.decode(stargateData.callTo, (address));
+
+            return (bridgeData, receiver);
+        }
+
+        // Case: Celer
+        if (selector == CelerIMFacetBase.startBridgeTokensViaCelerIM.selector) {
+            CelerIM.CelerIMData memory celerIMData;
+            (bridgeData, celerIMData) =
+                abi.decode(_slice(callData, 4, callData.length - 4), (ILiFi.BridgeData, CelerIM.CelerIMData));
+
+            receiver = abi.decode(celerIMData.callTo, (address));
+
+            return (bridgeData, receiver);
+        }
+        if (selector == CelerIMFacetBase.swapAndStartBridgeTokensViaCelerIM.selector) {
+            CelerIM.CelerIMData memory celerIMData;
+
+            (bridgeData,, celerIMData) = abi.decode(
+                _slice(callData, 4, callData.length - 4), (ILiFi.BridgeData, LibSwap.SwapData[], CelerIM.CelerIMData)
+            );
+            receiver = abi.decode(celerIMData.callTo, (address));
+
+            return (bridgeData, receiver);
+        }
+
         // normal call
         bridgeData = abi.decode(data[4:], (ILiFi.BridgeData));
+        receiver = bridgeData.receiver;
     }
 
     /// @notice Extracts the swap data from the calldata
