@@ -126,7 +126,7 @@ contract ForwardDustFormTest is ProtocolActions {
                         false
                     )
                 ),
-                getContract(ARBI, "WETH"),
+                getContract(ETH, "WETH"),
                 address(0),
                 1,
                 ETH,
@@ -146,7 +146,7 @@ contract ForwardDustFormTest is ProtocolActions {
         } else {
             vm.prank(getContract(ARBI, "TimelockStateRegistry"));
             IERC4626TimelockForm(superform).withdrawAfterCoolDown(
-                TimelockPayload(1, user, ETH, block.timestamp, data2, TimelockStatus.PENDING)
+                TimelockPayload(1, ETH, block.timestamp, data2, TimelockStatus.PENDING)
             );
         }
     }

@@ -178,7 +178,12 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
-    function getVaultLimitPerDestination(uint64 chainId_) external view override returns (uint256 vaultLimitPerDestination_) {
+    function getVaultLimitPerDestination(uint64 chainId_)
+        external
+        view
+        override
+        returns (uint256 vaultLimitPerDestination_)
+    {
         vaultLimitPerDestination_ = vaultLimitPerDestination[chainId_];
     }
 
@@ -354,7 +359,6 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     /// @inheritdoc QuorumManager
     function setRequiredMessagingQuorum(uint64 srcChainId_, uint256 quorum_) external override onlyProtocolAdmin {
-
         if (srcChainId_ == 0) {
             revert Error.INVALID_CHAIN_ID();
         }

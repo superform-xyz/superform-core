@@ -28,6 +28,12 @@ library Error {
     /// @dev thrown if get native token price estimate in paymentHelper is 0
     error INVALID_NATIVE_TOKEN_PRICE();
 
+    /// @dev thrown if indices are out of bounds
+    error INDEX_OUT_OF_BOUNDS();
+
+    /// @dev thrown if indices have duplicates
+    error DUPLICATE_INDEX();
+
     //////////////////////////////////////////////////////////////
     //                  AUTHORIZATION ERRORS                    //
     //////////////////////////////////////////////////////////////
@@ -63,6 +69,9 @@ library Error {
 
     /// @dev thrown if msg.sender is not minter state registry
     error NOT_MINTER_STATE_REGISTRY_ROLE();
+
+    /// @dev thrown if refund chain id is not set
+    error REFUND_CHAIN_ID_NOT_SET();
 
     /// @dev thrown if msg.sender is not paymaster
     error NOT_PAYMASTER();
@@ -173,9 +182,6 @@ library Error {
     /// @dev thrown if in case of no txData, if liqData.token != vault.asset()
     /// in case of txData, if token output of swap != vault.asset()
     error DIFFERENT_TOKENS();
-
-    /// @dev thrown if the token in direct withdraw is not correct
-    error DIRECT_WITHDRAW_INVALID_TOKEN();
 
     /// @dev thrown if the amount in direct withdraw is not correct
     error DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
@@ -316,6 +322,9 @@ library Error {
 
     /// @dev thrown if broadcast fee is invalid
     error INVALID_BROADCAST_FEE();
+
+    /// @dev thrown if retry fees is less than required
+    error INVALID_RETRY_FEE();
 
     /// @dev thrown if broadcast message type is wrong
     error INVALID_MESSAGE_TYPE();

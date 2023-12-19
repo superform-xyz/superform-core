@@ -87,7 +87,7 @@ interface IPayloadHelper {
     function decodeTimeLockPayload(uint256 timelockPayloadId_)
         external
         view
-        returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
+        returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
 
     /// @dev returns decoded failed timelock form payloads
     /// @param timelockPayloadId_ is the unique identifier of payload in timelock state registry

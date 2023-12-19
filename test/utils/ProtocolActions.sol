@@ -1875,7 +1875,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vars.liqReq = LiqRequest(
             GENERATE_WITHDRAW_TX_DATA_ON_DST ? bytes("") : vars.txData,
             /// @dev for certain test cases, insert txData as null here
-            args.underlyingTokenDst,
+            args.externalToken,
             address(0),
             args.liqBridge,
             args.liqDstChainId,
@@ -2344,7 +2344,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         );
 
         vm.prank(deployer);
-        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).processTx(1, 0, liqBridgeKind_, txData);
+        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).processTx(1, liqBridgeKind_, txData);
         vm.selectFork(initialFork);
     }
 
