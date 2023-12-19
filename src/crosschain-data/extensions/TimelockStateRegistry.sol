@@ -140,9 +140,9 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         /// @dev set status here to prevent re-entrancy
         p.status = TimelockStatus.PROCESSED;
 
-        (address superform,,) = p.data.superformId.getSuperform();
+        (address superformAddress,,) = p.data.superformId.getSuperform();
 
-        IERC4626TimelockForm form = IERC4626TimelockForm(superform);
+        IERC4626TimelockForm superform = IERC4626TimelockForm(superformAddress);
 
         /// @dev this step is used to re-feed txData to avoid using old txData that would have expired by now
         if (txData_.length != 0) {
@@ -157,9 +157,9 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
                     p.srcChainId,
                     p.data.liqData.liqDstChainId,
                     false,
-                    superform,
+                    superformAddress,
                     p.data.receiverAddress,
-                    p.data.liqData.token,
+                    superform.getVaultAsset(),
                     address(0)
                 )
             );
@@ -167,7 +167,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
             finalAmount = bridgeValidator.decodeAmountIn(txData_, false);
             if (
                 !PayloadUpdaterLib.validateSlippage(
-                    finalAmount, form.previewRedeemFrom(p.data.amount), p.data.maxSlippage
+                    finalAmount, superform.previewRedeemFrom(p.data.amount), p.data.maxSlippage
                 )
             ) {
                 revert Error.SLIPPAGE_OUT_OF_BOUNDS();
@@ -176,7 +176,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
             p.data.liqData.txData = txData_;
         }
 
-        try form.withdrawAfterCoolDown(p) { }
+        try superform.withdrawAfterCoolDown(p) { }
         catch {
             /// @dev dispatch acknowledgement to mint superPositions back because of failure
             if (p.isXChain == 1) {

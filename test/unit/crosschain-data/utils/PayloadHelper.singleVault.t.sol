@@ -134,7 +134,9 @@ contract PayloadHelperSingleTest is ProtocolActions {
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }
 
-        _checkDstPayloadLiqData();
+        _checkDstPayloadLiqData(
+            getContract(FINAL_LIQ_DST_WITHDRAW[POLY][0], UNDERLYING_TOKENS[actions[1].externalToken])
+        );
     }
 
     function test_decodePayloadHistory_InvalidPayloadId() public {
@@ -289,7 +291,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
         uint256[] nativeAmounts;
     }
 
-    function _checkDstPayloadLiqData() internal {
+    function _checkDstPayloadLiqData(address externalToken_) internal {
         vm.selectFork(FORKS[DST_CHAINS[0]]);
         CheckDstPayloadLiqDataInternalVars memory v;
 
@@ -301,7 +303,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
 
         assertGt(v.txDatas[0].length, 0);
 
-        assertEq(v.tokens[0], getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[POLY][0][0]]));
+        assertEq(v.tokens[0], externalToken_);
 
         assertEq(v.liqDstChainIds[0], FINAL_LIQ_DST_WITHDRAW[POLY][0]);
 

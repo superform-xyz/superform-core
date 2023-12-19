@@ -171,9 +171,6 @@ library Error {
     /// @dev thrown if the amount in direct deposit is not correct
     error DIRECT_DEPOSIT_INVALID_DATA();
 
-    /// @dev thrown if the token in direct withdraw is not correct
-    error DIRECT_WITHDRAW_INVALID_TOKEN();
-
     /// @dev thrown if the amount in direct withdraw is not correct
     error DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 

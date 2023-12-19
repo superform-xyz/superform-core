@@ -125,7 +125,7 @@ contract ForwardDustFormTest is ProtocolActions {
                         false
                     )
                 ),
-                getContract(ARBI, "WETH"),
+                getContract(ETH, "WETH"),
                 address(0),
                 1,
                 ETH,

@@ -27,7 +27,8 @@ enum PayloadState {
 struct LiqRequest {
     /// @dev generated data
     bytes txData;
-    /// @dev input token. Relevant for withdraws especially to know when to update txData
+    /// @dev input token for deposits, desired output token on target liqDstChainId for withdraws. Must be set for
+    /// txData to be updated on destination for withdraws
     address token;
     /// @dev intermediary token on destination. Relevant for xChain deposits where a destination swap is needed for
     /// validation purposes

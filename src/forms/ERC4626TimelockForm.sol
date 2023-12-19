@@ -34,6 +34,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         address bridgeValidator;
         uint64 chainId;
         address receiver;
+        address asset;
         uint256 amount;
         LiqRequest liqData;
     }
@@ -91,6 +92,8 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         /// @dev if the txData is empty, the tokens are sent directly to the sender, otherwise sent first to this form
         vars.receiver = vars.len1 == 0 ? p_.data.receiverAddress : address(this);
 
+        vars.asset = address(asset);
+
         dstAmount = v.redeem(p_.data.amount, vars.receiver, address(this));
         /// @dev validate and dispatches the tokens
         if (vars.len1 != 0) {
@@ -112,7 +115,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
                     false,
                     address(this),
                     p_.data.receiverAddress,
-                    vars.liqData.token,
+                    vars.asset,
                     address(0)
                 )
             );
@@ -120,7 +123,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
             _dispatchTokens(
                 superRegistry.getBridgeAddress(vars.liqData.bridgeId),
                 vars.liqData.txData,
-                vars.liqData.token,
+                vars.asset,
                 vars.amount,
                 vars.liqData.nativeAmount
             );

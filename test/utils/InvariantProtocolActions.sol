@@ -1228,7 +1228,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         vars.liqReq = LiqRequest(
             vars.txData,
             /// @dev for certain test cases, insert txData as null here
-            args.underlyingTokenDst,
+            args.externalToken,
             address(0),
             args.liqBridge,
             args.liqDstChainId,

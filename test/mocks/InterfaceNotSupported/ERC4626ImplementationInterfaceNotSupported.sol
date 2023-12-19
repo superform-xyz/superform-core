@@ -199,10 +199,6 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         v.v = IERC4626(vault);
         v.asset = address(v.v.asset());
 
-        /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same as
-        /// the vault asset
-        if (singleVaultData_.liqData.token != v.asset) revert Error.DIRECT_WITHDRAW_INVALID_TOKEN();
-
         /// @dev redeem the underlying
         dstAmount = v.v.redeem(singleVaultData_.amount, v.receiver, address(this));
 
@@ -301,10 +297,6 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
 
         IERC4626 v = IERC4626(vault);
         vars.asset = v.asset();
-
-        /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same as
-        /// the vault asset
-        if (vars.asset != singleVaultData_.liqData.token) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
 
         /// @dev redeem vault positions (we operate only on positions, not assets)
         dstAmount = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
