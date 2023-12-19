@@ -67,6 +67,9 @@ library Error {
     /// @dev thrown if msg.sender is not minter state registry
     error NOT_MINTER_STATE_REGISTRY_ROLE();
 
+    /// @dev thrown if refund chain id is not set
+    error REFUND_CHAIN_ID_NOT_SET();
+
     /// @dev thrown if msg.sender is not paymaster
     error NOT_PAYMASTER();
 
@@ -124,7 +127,7 @@ library Error {
     /// COMMON INPUT VALIDATION ERRORS
     /// @dev thrown if there is an array length mismatch
     error ARRAY_LENGTH_MISMATCH();
-    
+
     /// @dev thrown if payload id does not exist
     error INVALID_PAYLOAD_ID();
 
@@ -319,6 +322,9 @@ library Error {
 
     /// @dev thrown if broadcast fee is invalid
     error INVALID_BROADCAST_FEE();
+
+    /// @dev thrown if retry fees is less than required
+    error INVALID_RETRY_FEE();
 
     /// @dev thrown if broadcast message type is wrong
     error INVALID_MESSAGE_TYPE();

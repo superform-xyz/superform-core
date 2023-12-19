@@ -171,7 +171,7 @@ contract PaymentHelper is IPaymentHelper {
 
                     /// @dev step 5: estimate dst swap cost if it exists
                     totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwaps);
-                } 
+                }
             } else {
                 /// @dev step 6: estimate if timelock form processing costs are involved
                 for (uint256 j; j < superformIdsLen; ++j) {
@@ -228,7 +228,7 @@ contract PaymentHelper is IPaymentHelper {
                     /// @dev step 5: estimate if swap costs are involved
                     totalDstGas +=
                         _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwap.castBoolToArray());
-                } 
+                }
             } else {
                 /// @dev step 6: estimate if timelock form processing costs are involved
                 (, uint32 formId,) = req_.superformsData[i].superformId.getSuperform();
@@ -267,7 +267,6 @@ contract PaymentHelper is IPaymentHelper {
         srcAmount += ambFees;
 
         if (isDeposit_) {
-
             /// @dev step 2: estimate update cost (only for deposit)
             totalDstGas += _estimateUpdateCost(req_.dstChainId, superformIdsLen);
 
@@ -298,7 +297,6 @@ contract PaymentHelper is IPaymentHelper {
         totalAmount = srcAmount + dstAmount + liqAmount;
     }
 
-
     /// @inheritdoc IPaymentHelper
     function estimateSingleXChainSingleVault(
         SingleXChainSingleVaultStateReq calldata req_,
@@ -317,7 +315,6 @@ contract PaymentHelper is IPaymentHelper {
         srcAmount += ambFees;
 
         if (isDeposit_) {
-
             /// @dev step 2: estimate update cost (only for deposit)
             totalDstGas += _estimateUpdateCost(req_.dstChainId, 1);
 
@@ -346,7 +343,6 @@ contract PaymentHelper is IPaymentHelper {
         totalAmount = srcAmount + dstAmount + liqAmount;
     }
 
-
     /// @inheritdoc IPaymentHelper
     function estimateSingleDirectSingleVault(
         SingleDirectSingleVaultStateReq calldata req_,
@@ -366,7 +362,7 @@ contract PaymentHelper is IPaymentHelper {
         } else {
             liqAmount = _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
         }
-        
+
         /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
     }
