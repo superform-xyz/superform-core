@@ -91,7 +91,8 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
 
         /// @dev redeem from vault
         assets = v.redeem(p_.data.amount, vars.receiver, address(this));
-        if (dstAmount == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
+        
+        if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
         /// @dev validate and dispatches the tokens
         if (vars.len1 != 0) {
