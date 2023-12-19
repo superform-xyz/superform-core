@@ -312,8 +312,8 @@ contract SuperformRouterTest is ProtocolActions {
         bool[] memory retain4626s = new bool[](1);
 
         LiqRequest[] memory liqReq = new LiqRequest[](2);
-        liqReq[0] = LiqRequest("", getContract(ARBI, "DAI"), address(0), 1, ETH, 0);
-        liqReq[1] = LiqRequest("", getContract(ARBI, "DAI"), address(0), 1, ETH, 0);
+        liqReq[0] = LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0);
+        liqReq[1] = LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds, amounts, maxSlippages, liqReq, "", hasDstSwaps, retain4626s, receiverAddress, ""
@@ -2362,7 +2362,6 @@ contract SuperformRouterTest is ProtocolActions {
         if (hasDstSwap) {
             DstSwapper(payable(getContract(ARBI, "DstSwapper"))).processTx(
                 1,
-                0,
                 1,
                 _buildLiqBridgeTxDataDstSwap(
                     1,

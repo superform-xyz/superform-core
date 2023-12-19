@@ -39,7 +39,7 @@ contract ERC4626Form is ERC4626FormImplementation {
     /// @inheritdoc BaseForm
     function _xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
-        address,
+        address, /*srcSender_*/
         uint64 srcChainId_
     )
         internal
@@ -52,31 +52,31 @@ contract ERC4626Form is ERC4626FormImplementation {
     /// @inheritdoc BaseForm
     function _directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
-        address srcSender_
+        address /*srcSender_*/
     )
         internal
         override
         returns (uint256 assets)
     {
-        assets = _processDirectWithdraw(singleVaultData_, srcSender_);
+        assets = _processDirectWithdraw(singleVaultData_);
     }
 
     /// @inheritdoc BaseForm
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
-        address srcSender_,
+        address, /*srcSender_*/
         uint64 srcChainId_
     )
         internal
         override
         returns (uint256 assets)
     {
-        assets = _processXChainWithdraw(singleVaultData_, srcSender_, srcChainId_);
+        assets = _processXChainWithdraw(singleVaultData_, srcChainId_);
     }
 
     /// @inheritdoc BaseForm
-    function _emergencyWithdraw(address, /*srcSender_*/ address refundAddress_, uint256 amount_) internal override {
-        _processEmergencyWithdraw(refundAddress_, amount_);
+    function _emergencyWithdraw(address, /*srcSender_*/ address receiverAddress_, uint256 amount_) internal override {
+        _processEmergencyWithdraw(receiverAddress_, amount_);
     }
 
     /// @inheritdoc BaseForm

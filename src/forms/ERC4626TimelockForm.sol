@@ -34,6 +34,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         address bridgeValidator;
         uint64 chainId;
         address receiver;
+        address asset;
         uint256 amount;
         LiqRequest liqData;
     }
@@ -66,9 +67,11 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         onlyTimelockStateRegistry
         returns (uint256 assets)
     {
+        if (p_.data.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
+
         if (_isPaused(p_.data.superformId)) {
             IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
-                p_.data, p_.srcSender
+                p_.data, p_.data.receiverAddress
             );
             return 0;
         }
@@ -90,8 +93,8 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         vars.receiver = vars.len1 == 0 ? p_.data.receiverAddress : address(this);
 
         /// @dev redeem from vault
+        ars.asset = address(asset);
         assets = v.redeem(p_.data.amount, vars.receiver, address(this));
-        
         if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
         /// @dev validate and dispatches the tokens
@@ -114,7 +117,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
                     false,
                     address(this),
                     p_.data.receiverAddress,
-                    vars.liqData.token,
+                    vars.asset,
                     address(0)
                 )
             );
@@ -122,7 +125,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
             _dispatchTokens(
                 superRegistry.getBridgeAddress(vars.liqData.bridgeId),
                 vars.liqData.txData,
-                vars.liqData.token,
+                vars.asset,
                 vars.amount,
                 vars.liqData.nativeAmount
             );
@@ -149,7 +152,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     /// @inheritdoc BaseForm
     function _xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
-        address,
+        address, /*srcSender_*/
         uint64 srcChainId_
     )
         internal
@@ -166,7 +169,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     /// @return shares is always 0
     function _directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
-        address srcSender_
+        address /*srcSender_*/
     )
         internal
         virtual
@@ -175,7 +178,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     {
         /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to timelock
         /// @dev state registry for re-processing at a later date
-        _storePayload(0, srcSender_, CHAIN_ID, _requestUnlock(singleVaultData_.amount), singleVaultData_);
+        _storePayload(0, CHAIN_ID, _requestUnlock(singleVaultData_.amount), singleVaultData_);
 
         return 0;
     }
@@ -186,7 +189,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     /// @return shares is always 0
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
-        address srcSender_,
+        address, /*srcSender_*/
         uint64 srcChainId_
     )
         internal
@@ -196,14 +199,14 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     {
         /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to timelock
         /// @dev state registry for re-processing at a later date
-        _storePayload(1, srcSender_, srcChainId_, _requestUnlock(singleVaultData_.amount), singleVaultData_);
+        _storePayload(1, srcChainId_, _requestUnlock(singleVaultData_.amount), singleVaultData_);
 
         return 0;
     }
 
     /// @inheritdoc BaseForm
-    function _emergencyWithdraw(address, /*srcSender_*/ address refundAddress_, uint256 amount_) internal override {
-        _processEmergencyWithdraw(refundAddress_, amount_);
+    function _emergencyWithdraw(address, /*srcSender_*/ address receiverAddress_, uint256 amount_) internal override {
+        _processEmergencyWithdraw(receiverAddress_, amount_);
     }
 
     /// @inheritdoc BaseForm
@@ -223,7 +226,6 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     /// @dev stores the withdrawal payload
     function _storePayload(
         uint8 type_,
-        address srcSender_,
         uint64 srcChainId_,
         uint256 lockedTill_,
         InitSingleVaultData memory data_
@@ -231,7 +233,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         internal
     {
         ITimelockStateRegistry(superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY"))).receivePayload(
-            type_, srcSender_, srcChainId_, lockedTill_, data_
+            type_, srcChainId_, lockedTill_, data_
         );
     }
 }

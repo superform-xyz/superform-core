@@ -150,6 +150,13 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /// @inheritdoc IAmbImplementation
     function retryPayload(bytes memory data_) external payable override {
         (bytes32 messageId, uint32 destinationDomain, uint256 gasAmount) = abi.decode(data_, (bytes32, uint32, uint256));
+        uint256 fees = igp.quoteGasPayment(destinationDomain, gasAmount);
+
+        if (msg.value < fees) {
+            revert Error.INVALID_RETRY_FEE();
+        }
+
+        /// refunds any excess msg.value to msg.sender
         igp.payForGas{ value: msg.value }(messageId, destinationDomain, gasAmount, msg.sender);
     }
 
@@ -197,7 +204,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     }
 
     /// @inheritdoc IMessageRecipient
-    function handle(uint32 origin_, bytes32 sender_, bytes calldata body_) external override onlyMailbox {
+    function handle(uint32 origin_, bytes32 sender_, bytes calldata body_) external payable override onlyMailbox {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness

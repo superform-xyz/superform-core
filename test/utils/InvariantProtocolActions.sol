@@ -1228,7 +1228,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         vars.liqReq = LiqRequest(
             vars.txData,
             /// @dev for certain test cases, insert txData as null here
-            args.underlyingTokenDst,
+            args.externalToken,
             address(0),
             args.liqBridge,
             args.liqDstChainId,
@@ -1572,7 +1572,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         vm.prank(deployer);
 
-        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).processTx(1, 0, liqBridgeKind_, txData);
+        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).processTx(1, liqBridgeKind_, txData);
         vm.selectFork(initialFork);
     }
 

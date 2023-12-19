@@ -223,10 +223,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
 
-        if (
-            failedDeposits_.superformIds.length == 0 
-                || failedDeposits_.superformIds.length != proposedAmounts_.length
-        ) {
+        if (failedDeposits_.superformIds.length == 0 || failedDeposits_.superformIds.length != proposedAmounts_.length)
+        {
             revert Error.INVALID_RESCUE_DATA();
         }
 
@@ -643,17 +641,19 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         returns (InitMultiVaultData memory)
     {
         uint256 len = multiVaultData_.liqData.length;
+        IBaseForm superform;
 
         for (uint256 i; i < len; ++i) {
             if (txData_[i].length != 0 && multiVaultData_.liqData[i].txData.length == 0) {
-                (address superform,,) = multiVaultData_.superformIds[i].getSuperform();
+                (address superformAddress,,) = multiVaultData_.superformIds[i].getSuperform();
+                superform = IBaseForm(superformAddress);
 
                 /// @dev for withdrawals the payload update can happen on core state registry (for normal forms)
                 /// and also can happen in timelock state registry (for timelock form)
 
                 /// @notice this check validates if the state registry is eligible to update tx data for the
                 /// corresponding superform
-                if (IBaseForm(superform).getStateRegistryId() == _getStateRegistryId(address(this))) {
+                if (superform.getStateRegistryId() == _getStateRegistryId(address(this))) {
                     PayloadUpdaterLib.validateLiqReq(multiVaultData_.liqData[i]);
 
                     IBridgeValidator bridgeValidator =
@@ -666,9 +666,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                             srcChainId_,
                             multiVaultData_.liqData[i].liqDstChainId,
                             false,
-                            superform,
+                            superformAddress,
                             multiVaultData_.receiverAddress,
-                            multiVaultData_.liqData[i].token,
+                            superform.getVaultAsset(),
                             address(0)
                         )
                     );
@@ -676,7 +676,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     if (
                         !PayloadUpdaterLib.validateSlippage(
                             bridgeValidator.decodeAmountIn(txData_[i], false),
-                            IBaseForm(superform).previewRedeemFrom(multiVaultData_.amounts[i]),
+                            superform.previewRedeemFrom(multiVaultData_.amounts[i]),
                             multiVaultData_.maxSlippages[i]
                         )
                     ) {

@@ -228,7 +228,10 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         /// @dev the difference in vault tokens, ready to be deposited, is compared with the amount inscribed in the
         /// superform data
-        if (vars.assetDifference < ((singleVaultData_.amount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE)) {
+        if (
+            vars.assetDifference
+                < ((singleVaultData_.amount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE)
+        ) {
             revert Error.DIRECT_DEPOSIT_SWAP_FAILED();
         }
 
@@ -280,19 +283,13 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         emit Processed(srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
     }
 
-    function _processDirectWithdraw(
-        InitSingleVaultData memory singleVaultData_,
-        address srcSender_
-    )
-        internal
-        returns (uint256 assets)
-    {
+    function _processDirectWithdraw(InitSingleVaultData memory singleVaultData_) internal returns (uint256 dstAmount) {
         directWithdrawLocalVars memory vars;
         vars.len1 = singleVaultData_.liqData.txData.length;
 
-        /// @dev if there is no txData, on withdraws the receiver is the original beneficiary (srcSender_), otherwise it
+        /// @dev if there is no txData, on withdraws the receiver is receiverAddress, otherwise it
         /// is this contract (before swap)
-        vars.receiver = vars.len1 == 0 ? srcSender_ : address(this);
+        vars.receiver = vars.len1 == 0 ? singleVaultData_.receiverAddress : address(this);
 
         IERC4626 v = IERC4626(vault);
         vars.asset = address(asset);
@@ -308,10 +305,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
         if (vars.len1 != 0) {
-            /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same
-            /// as the vault asset
-            if (singleVaultData_.liqData.token != vars.asset) revert Error.DIRECT_WITHDRAW_INVALID_TOKEN();
-
             vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
             vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
@@ -329,8 +322,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                     singleVaultData_.liqData.liqDstChainId,
                     false,
                     address(this),
-                    srcSender_,
-                    singleVaultData_.liqData.token,
+                    singleVaultData_.receiverAddress,
+                    vars.asset,
                     address(0)
                 )
             );
@@ -338,7 +331,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             _dispatchTokens(
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
-                singleVaultData_.liqData.token,
+                vars.asset,
                 vars.amount,
                 singleVaultData_.liqData.nativeAmount
             );
@@ -347,7 +340,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
     function _processXChainWithdraw(
         InitSingleVaultData memory singleVaultData_,
-        address, /*srcSender_*/
         uint64 srcChainId_
     )
         internal
@@ -359,6 +351,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// @dev a case where the withdraw req liqData has a valid token and tx data is not updated by the keeper
         if (singleVaultData_.liqData.token != address(0) && len == 0) {
             revert Error.WITHDRAW_TX_DATA_NOT_UPDATED();
+        } else if (singleVaultData_.liqData.token == address(0) && len != 0) {
+            revert Error.WITHDRAW_TOKEN_NOT_UPDATED();
         }
 
         (,, vars.dstChainId) = singleVaultData_.superformId.getSuperform();
@@ -370,7 +364,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         vars.receiver = len == 0 ? singleVaultData_.receiverAddress : address(this);
 
         IERC4626 v = IERC4626(vault);
-        vars.asset = asset;
+        vars.asset = address(asset);
 
         /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
         uint256 assetsBalanceBefore = v.balanceOf(vars.receiver);
@@ -383,10 +377,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
         if (len != 0) {
-            /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same
-            /// as the vault asset
-            if (vars.asset != singleVaultData_.liqData.token) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
-
             vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
             vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
@@ -403,7 +393,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                     false,
                     address(this),
                     singleVaultData_.receiverAddress,
-                    singleVaultData_.liqData.token,
+                    vars.asset,
                     address(0)
                 )
             );
@@ -411,7 +401,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             _dispatchTokens(
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
-                singleVaultData_.liqData.token,
+                vars.asset,
                 vars.amount,
                 singleVaultData_.liqData.nativeAmount
             );
@@ -420,15 +410,17 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         emit Processed(srcChainId_, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
     }
 
-    function _processEmergencyWithdraw(address refundAddress_, uint256 amount_) internal {
+    function _processEmergencyWithdraw(address receiverAddress_, uint256 amount_) internal {
         IERC4626 vaultContract = IERC4626(vault);
 
         if (vaultContract.balanceOf(address(this)) < amount_) {
             revert Error.INSUFFICIENT_BALANCE();
         }
 
-        vaultContract.safeTransfer(refundAddress_, amount_);
-        emit EmergencyWithdrawalProcessed(refundAddress_, amount_);
+        if (receiverAddress_ == address(0)) revert Error.ZERO_ADDRESS();
+
+        vaultContract.safeTransfer(receiverAddress_, amount_);
+        emit EmergencyWithdrawalProcessed(receiverAddress_, amount_);
     }
 
     function _processForwardDustToPaymaster() internal {
