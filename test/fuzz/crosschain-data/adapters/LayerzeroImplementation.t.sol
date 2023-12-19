@@ -155,6 +155,7 @@ contract LayerzeroImplementationTest is BaseSetup {
 
     function test_setSendVersion_and_revert_invalidCaller(uint16 versionSeed_, address malice_) public {
         uint16 version = uint16(bound(versionSeed_, 0, 3));
+        vm.assume(malice_ != deployer);
 
         vm.expectEmit(false, false, false, true, LZ_ENDPOINT_ETH);
         emit UaSendVersionSet(address(layerzeroImplementation), version);
@@ -168,7 +169,7 @@ contract LayerzeroImplementationTest is BaseSetup {
 
     function test_setReceiveVersion_and_revert_invalidCaller(uint16 versionSeed_, address malice_) public {
         uint16 version = uint16(bound(versionSeed_, 0, 3));
-
+        vm.assume(malice_ != deployer);
         vm.expectEmit(false, false, false, true, LZ_ENDPOINT_ETH);
         emit UaReceiveVersionSet(address(layerzeroImplementation), version);
         vm.prank(deployer);

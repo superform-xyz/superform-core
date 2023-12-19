@@ -30,16 +30,16 @@ contract SocketOneInchValidator is BridgeValidator {
     function validateTxData(ValidateTxDataArgs calldata args_) external pure override returns (bool) {
         ISocketOneInchImpl.SwapInput memory decodedReq = _decodeTxData(args_.txData);
 
-        /// @dev 1. chain id validation (only allow samechain with this)
-        if (args_.dstChainId != args_.srcChainId) revert Error.INVALID_ACTION();
-
-        /// @dev 2. receiver address validation
         if (args_.deposit) {
+            /// @dev 1. chain id validation (only allow samechain with this)
+            if (args_.dstChainId != args_.srcChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
             if (args_.dstChainId != args_.liqDstChainId) revert Error.INVALID_DEPOSIT_LIQ_DST_CHAIN_ID();
 
+            /// @dev 2. receiver address validation
             /// @dev If same chain deposits then receiver address must be the superform
             if (decodedReq.receiver != args_.superform) revert Error.INVALID_TXDATA_RECEIVER();
         } else {
+            /// @dev 2. receiver address validation
             /// @dev if withdraws, then receiver address must be the receiverAddress
             if (decodedReq.receiver != args_.receiverAddress) revert Error.INVALID_TXDATA_RECEIVER();
         }

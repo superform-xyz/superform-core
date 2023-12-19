@@ -659,6 +659,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     IBridgeValidator bridgeValidator =
                         IBridgeValidator(superRegistry.getBridgeValidator(multiVaultData_.liqData[i].bridgeId));
 
+                    // The txdata provided here can be bridgeData or sameChain Data
+                    // if bridgeData liqDstChainId (the final destination chain) is the same as dstChainId of txData
+                    // if sameChainData: liqDstChainId should be qual to dstChainId on withdraws
+                    // srcChainId being equal to dstChainId is only valid for deposits
                     bridgeValidator.validateTxData(
                         IBridgeValidator.ValidateTxDataArgs(
                             txData_[i],
