@@ -167,7 +167,7 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
 
         (uint256 fees,) = relayer.quoteEVMDeliveryPrice(targetChain, 0, newGasLimit);
 
-        if (fees != msg.value) {
+        if (msg.value < fees) {
             revert Error.INVALID_RETRY_FEE();
         }
 
@@ -175,9 +175,15 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
             revert Error.ZERO_ADDRESS();
         }
 
-        relayer.resendToEvm{ value: msg.value }(
+        relayer.resendToEvm{ value: fees }(
             deliveryVaaKey, targetChain, newReceiverValue, newGasLimit, newDeliveryProviderAddress
         );
+
+        /// refunds excess msg.value to msg.sender
+        uint256 excessPaid = msg.value - fees;
+        if (excessPaid > 0) {
+            payable(msg.sender).call{ value: excessPaid }("");
+        }
     }
 
     /// @inheritdoc IWormholeReceiver

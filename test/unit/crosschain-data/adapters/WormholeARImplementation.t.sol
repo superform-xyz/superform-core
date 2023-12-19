@@ -52,7 +52,9 @@ contract WormholeARImplementationTest is BaseSetup {
         uint256 fee = wormholeARImpl.estimateFees(uint64(137), bytes(""), abi.encode(uint256(0), uint256(4)));
 
         vm.prank(deployer);
-        wormholeARImpl.retryPayload{ value: fee }(data);
+        uint256 balanceBefore = deployer.balance;
+        wormholeARImpl.retryPayload{ value: fee + 1 ether }(data);
+        assertEq(deployer.balance, balanceBefore - fee);
 
         vm.clearMockedCalls();
     }
