@@ -14,7 +14,7 @@ interface ISuperPositions is IERC1155A {
 
     struct TxHistory {
         uint256 txInfo;
-        address receiverAddress;
+        address receiverAddressSP;
     }
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
@@ -39,8 +39,8 @@ interface ISuperPositions is IERC1155A {
     /// @dev returns the payload header and the receiver address for a tx id on the source chain
     /// @param txId_ is the identifier of the transaction issued by superform router
     /// @return txInfo is the header of the payload
-    /// @return receiverAddress is the address of the receiver
-    function txHistory(uint256 txId_) external view returns (uint256 txInfo, address receiverAddress);
+    /// @return receiverAddressSP is the address of the receiver of superPositions
+    function txHistory(uint256 txId_) external view returns (uint256 txInfo, address receiverAddressSP);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
@@ -49,8 +49,8 @@ interface ISuperPositions is IERC1155A {
     /// @dev saves the message being sent together with the associated id formulated in a router
     /// @param payloadId_ is the id of the message being saved
     /// @param txInfo_ is the header of the AMBMessage of the transaction being saved
-    /// @param receiverAddress_ is the address of the receiver
-    function updateTxHistory(uint256 payloadId_, uint256 txInfo_, address receiverAddress_) external;
+    /// @param receiverAddressSP_ is the address of the receiver of superPositions
+    function updateTxHistory(uint256 payloadId_, uint256 txInfo_, address receiverAddressSP_) external;
 
     /// @dev allows minter to mint shares on source
     /// @param receiverAddress_ is the beneficiary of shares

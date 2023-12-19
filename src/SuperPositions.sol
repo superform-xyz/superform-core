@@ -141,25 +141,25 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     function updateTxHistory(
         uint256 payloadId_,
         uint256 txInfo_,
-        address receiverAddress_
+        address receiverAddressSP_
     )
         external
         override
         onlyRouter
     {
-        txHistory[payloadId_] = TxHistory({ txInfo: txInfo_, receiverAddress: receiverAddress_ });
+        txHistory[payloadId_] = TxHistory({ txInfo: txInfo_, receiverAddressSP: receiverAddressSP_ });
 
-        emit TxHistorySet(payloadId_, txInfo_, receiverAddress_);
+        emit TxHistorySet(payloadId_, txInfo_, receiverAddressSP_);
     }
 
     /// @inheritdoc ISuperPositions
-    function mintSingle(address receiverAddress_, uint256 id_, uint256 amount_) external override onlyMinter(id_) {
-        _mint(receiverAddress_, msg.sender, id_, amount_, "");
+    function mintSingle(address receiverAddressSP_, uint256 id_, uint256 amount_) external override onlyMinter(id_) {
+        _mint(receiverAddressSP_, msg.sender, id_, amount_, "");
     }
 
     /// @inheritdoc ISuperPositions
     function mintBatch(
-        address receiverAddress_,
+        address receiverAddressSP_,
         uint256[] memory ids_,
         uint256[] memory amounts_
     )
@@ -167,7 +167,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         override
         onlyBatchMinter(ids_)
     {
-        _batchMint(receiverAddress_, msg.sender, ids_, amounts_, "");
+        _batchMint(receiverAddressSP_, msg.sender, ids_, amounts_, "");
     }
 
     /// @inheritdoc ISuperPositions
@@ -226,7 +226,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
                 || (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL))
         ) {
             _batchMint(
-                txHistory[returnData.payloadId].receiverAddress,
+                txHistory[returnData.payloadId].receiverAddressSP,
                 msg.sender,
                 returnData.superformIds,
                 returnData.amounts,
@@ -276,7 +276,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
                 || (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL))
         ) {
             _mint(
-                txHistory[returnData.payloadId].receiverAddress,
+                txHistory[returnData.payloadId].receiverAddressSP,
                 msg.sender,
                 returnData.superformId,
                 returnData.amount,

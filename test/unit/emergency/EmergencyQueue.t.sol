@@ -489,6 +489,7 @@ contract EmergencyQueueTest is ProtocolActions {
             false,
             false,
             mrimperfect,
+            mrimperfect,
             ""
         );
 
@@ -525,7 +526,16 @@ contract EmergencyQueueTest is ProtocolActions {
         liqRequests[1] = liqRequests[0];
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, liqRequests, "", new bool[](2), new bool[](2), mrimperfect, ""
+            superformIds,
+            amounts,
+            maxSlippages,
+            liqRequests,
+            "",
+            new bool[](2),
+            new bool[](2),
+            mrimperfect,
+            mrimperfect,
+            ""
         );
 
         SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
@@ -559,6 +569,7 @@ contract EmergencyQueueTest is ProtocolActions {
             "",
             false,
             false,
+            mrimperfect,
             mrimperfect,
             ""
         );
@@ -638,7 +649,16 @@ contract EmergencyQueueTest is ProtocolActions {
         liqRequests[1] = liqRequests[0];
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, slippages, liqRequests, "", new bool[](2), new bool[](2), mrimperfect, ""
+            superformIds,
+            amounts,
+            slippages,
+            liqRequests,
+            "",
+            new bool[](2),
+            new bool[](2),
+            mrimperfect,
+            mrimperfect,
+            ""
         );
 
         uint8[] memory ambIds = new uint8[](2);
@@ -720,7 +740,7 @@ contract EmergencyQueueTest is ProtocolActions {
         uint256 superformId = _getTestSuperformId();
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, 2e18, 100, LiqRequest("", dai, address(0), 1, 1, 0), "", false, false, mrperfect, ""
+            superformId, 2e18, 100, LiqRequest("", dai, address(0), 1, 1, 0), "", false, false, mrperfect, mrperfect, ""
         );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
@@ -783,6 +803,7 @@ contract EmergencyQueueTest is ProtocolActions {
             "",
             false,
             false,
+            mrimperfect,
             mrimperfect,
             ""
         );

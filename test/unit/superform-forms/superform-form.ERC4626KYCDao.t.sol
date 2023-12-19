@@ -34,6 +34,7 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
             false,
             false,
             receiverAddress,
+            receiverAddress,
             ""
         );
 

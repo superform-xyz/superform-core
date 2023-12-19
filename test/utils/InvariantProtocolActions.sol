@@ -956,6 +956,8 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             hasDstSwap,
             args.receive4626,
             users[args.user],
+            users[args.user],
+            /// @dev repeat user for receiverAddressSP - not testing AA here
             abi.encode(false)
         );
     }
@@ -1138,6 +1140,8 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             args.dstSwap,
             args.receive4626,
             users[args.user],
+            users[args.user],
+            /// @dev repeat user for receiverAddressSP - not testing AA here
             abi.encode(false)
         );
     }
@@ -1245,6 +1249,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             "",
             args.dstSwap,
             args.receive4626,
+            users[args.user],
             users[args.user],
             abi.encode(false)
         );

@@ -88,6 +88,7 @@ contract ForwardDustFormTest is ProtocolActions {
             false,
             false,
             receiverAddress,
+            receiverAddress,
             ""
         );
 

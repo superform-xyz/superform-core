@@ -377,6 +377,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             false,
             false,
             receiverAddress,
+            receiverAddress,
             ""
         );
 
@@ -414,6 +415,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             "",
             false,
             false,
+            receiverAddress,
             receiverAddress,
             ""
         );
@@ -471,6 +473,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             false,
             false,
             receiverAddress,
+            receiverAddress,
             ""
         );
 
@@ -509,6 +512,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             "",
             false,
             false,
+            receiverAddress,
             receiverAddress,
             ""
         );
@@ -694,7 +698,16 @@ contract SuperformERC4626FormTest is ProtocolActions {
         liqReqs[0] = LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, liqReqs, "", new bool[](1), new bool[](1), receiverAddress, ""
+            superformIds,
+            amounts,
+            maxSlippages,
+            liqReqs,
+            "",
+            new bool[](1),
+            new bool[](1),
+            receiverAddress,
+            receiverAddress,
+            ""
         );
 
         SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
@@ -744,7 +757,16 @@ contract SuperformERC4626FormTest is ProtocolActions {
         );
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, liqReqs, "", new bool[](1), new bool[](1), receiverAddress, ""
+            superformIds,
+            amounts,
+            maxSlippages,
+            liqReqs,
+            "",
+            new bool[](1),
+            new bool[](1),
+            receiverAddress,
+            receiverAddress,
+            ""
         );
 
         SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
@@ -776,6 +798,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             "",
             false,
             false,
+            receiverAddress,
             receiverAddress,
             ""
         );
@@ -822,6 +845,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             false,
             false,
             receiverAddress,
+            receiverAddress,
             ""
         );
         req = SingleDirectSingleVaultStateReq(data);
@@ -855,6 +879,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             "",
             false,
             retain4626,
+            receiverAddress,
             receiverAddress,
             ""
         );

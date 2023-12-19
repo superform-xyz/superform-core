@@ -53,6 +53,9 @@ struct MultiVaultSFData {
     bool[] hasDstSwaps;
     bool[] retain4626s; // if true, we don't mint SuperPositions, and send the 4626 back to the user instead
     address receiverAddress;
+    /// this address must always be an EOA otherwise funds may be lost
+    address receiverAddressSP;
+    /// this address can be a EOA or a contract that implements onERC1155Receiver. must always be set for deposits
     bytes extraFormData; // extraFormData
 }
 
@@ -67,6 +70,9 @@ struct SingleVaultSFData {
     bool hasDstSwap;
     bool retain4626; // if true, we don't mint SuperPositions, and send the 4626 back to the user instead
     address receiverAddress;
+    /// this address must always be an EOA otherwise funds may be lost
+    address receiverAddressSP;
+    /// this address can be a EOA or a contract that implements onERC1155Receiver. must always be set for deposits
     bytes extraFormData; // extraFormData
 }
 
