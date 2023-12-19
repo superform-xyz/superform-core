@@ -19,7 +19,7 @@ contract LiFiTxDataExtractor {
     error SliceOverflow();
     error SliceOutOfBounds();
 
-    /// @notice Extracts the bridge data from the calldata. Extracts receiver correctly pending certain facet feauresa
+    /// @notice Extracts the bridge data from the calldata. Extracts receiver correctly pending certain facet features
     /// @param data The calldata to extract the bridge data from
     /// @return bridgeData The bridge data extracted from the calldata
     function _extractBridgeData(bytes calldata data)
