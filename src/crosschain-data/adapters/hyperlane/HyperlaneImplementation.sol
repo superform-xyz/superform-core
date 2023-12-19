@@ -41,8 +41,8 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
 
-    event MailboxAdded(address _newMailbox);
-    event GasPayMasterAdded(address _igp);
+    event MailboxAdded(address indexed _newMailbox);
+    event GasPayMasterAdded(address indexed _igp);
 
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //

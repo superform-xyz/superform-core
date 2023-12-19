@@ -41,8 +41,8 @@ library ArrayCastLib {
             amounts,
             maxSlippage,
             liqData,
-            new bool[](superformIds.length),
-            new bool[](superformIds.length),
+            castBoolToArray(data_.hasDstSwap),
+            castBoolToArray(data_.retain4626),
             data_.receiverAddress,
             data_.extraFormData
         );

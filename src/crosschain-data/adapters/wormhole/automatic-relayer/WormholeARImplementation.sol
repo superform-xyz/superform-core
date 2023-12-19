@@ -41,7 +41,7 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     //////////////////////////////////////////////////////////////
 
     /// @dev emitted when wormhole relayer is set
-    event WormholeRelayerSet(address wormholeRelayer);
+    event WormholeRelayerSet(address indexed wormholeRelayer);
 
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //

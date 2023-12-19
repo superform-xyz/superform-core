@@ -21,10 +21,10 @@ interface ISuperPositions is IERC1155A {
     //////////////////////////////////////////////////////////////
 
     /// @dev is emitted when a dynamic uri is updated
-    event DynamicURIUpdated(string oldURI, string newURI, bool frozen);
+    event DynamicURIUpdated(string indexed oldURI, string indexed newURI, bool indexed frozen);
 
     /// @dev is emitted when a cross-chain transaction is completed.
-    event Completed(uint256 txId);
+    event Completed(uint256 indexed txId);
 
     /// @dev is emitted when a aErc20 token is registered
     event AERC20TokenRegistered(uint256 indexed tokenId, address indexed tokenAddress);

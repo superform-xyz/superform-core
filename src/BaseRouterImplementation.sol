@@ -304,9 +304,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     /// @dev handles same-chain single vault withdraw
     function _singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq memory req_) internal virtual {
-        ActionLocalVars memory vars;
-        vars.srcChainId = CHAIN_ID;
-
         /// @dev validate Superform data
         if (
             !_validateSuperformData(
@@ -314,7 +311,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 req_.superformData.maxSlippage,
                 req_.superformData.amount,
                 req_.superformData.receiverAddress,
-                vars.srcChainId,
+                CHAIN_ID,
                 false,
                 ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")))
             )
@@ -794,6 +791,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev amount can't be 0
         if (amount_ == 0) return false;
 
+        /// @dev redundant check on same chain, but helpful on xchain actions to halt deposits earlier
         if (isDeposit_ && factory_.isFormImplementationPaused(formImplementationId)) return false;
 
         /// @dev ensure that receiver address is set always
@@ -832,14 +830,14 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (len == 0 || liqRequestsLen == 0) return false;
         if (len != liqRequestsLen) return false;
 
+        /// @dev deposits beyond multi vault limit for a given destination chain blocked
+        if (lenSuperforms > superRegistry.getVaultLimitPerDestination(dstChainId_)) {
+            return false;
+        }
+        
         /// @dev Additional length checks for hasDstSwaps and retain4626s
         if (lenSuperforms != superformsData_.hasDstSwaps.length || lenSuperforms != superformsData_.retain4626s.length)
         {
-            return false;
-        }
-
-        /// @dev deposits beyond max vaults per tx is blocked only for xchain
-        if (lenSuperforms > superRegistry.getVaultLimitPerDestination(dstChainId_)) {
             return false;
         }
 

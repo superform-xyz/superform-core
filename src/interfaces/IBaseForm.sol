@@ -14,13 +14,19 @@ interface IBaseForm is IERC165 {
     //////////////////////////////////////////////////////////////
 
     /// @dev is emitted when a new vault is added by the admin.
-    event VaultAdded(uint256 id, IERC4626 vault);
+    event VaultAdded(uint256 indexed id, IERC4626 indexed vault);
 
     /// @dev is emitted when a payload is processed by the destination contract.
-    event Processed(uint64 srcChainID, uint64 dstChainId, uint256 srcPayloadId, uint256 amount, address vault);
+    event Processed(
+        uint64 indexed srcChainID,
+        uint64 indexed dstChainId,
+        uint256 indexed srcPayloadId,
+        uint256 amount,
+        address vault
+    );
 
     /// @dev is emitted when an emergency withdrawal is processed
-    event EmergencyWithdrawalProcessed(address receiverAddress, uint256 amount);
+    event EmergencyWithdrawalProcessed(address indexed refundAddress, uint256 indexed amount);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
