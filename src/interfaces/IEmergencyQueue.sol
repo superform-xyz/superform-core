@@ -17,7 +17,9 @@ interface IEmergencyQueue {
         uint256 srcPayloadId
     );
 
-    event WithdrawalProcessed(address indexed refundAddress, uint256 indexed id, uint256 superformId, uint256 amount);
+    event WithdrawalProcessed(
+        address indexed refundAddress, uint256 indexed id, uint256 indexed superformId, uint256 amount
+    );
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //

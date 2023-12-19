@@ -89,7 +89,9 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         /// @dev if the txData is empty, the tokens are sent directly to the sender, otherwise sent first to this form
         vars.receiver = vars.len1 == 0 ? p_.data.receiverAddress : address(this);
 
+        /// @dev redeem from vault
         assets = v.redeem(p_.data.amount, vars.receiver, address(this));
+        if (dstAmount == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
         /// @dev validate and dispatches the tokens
         if (vars.len1 != 0) {

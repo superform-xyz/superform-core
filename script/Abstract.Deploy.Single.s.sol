@@ -484,7 +484,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.kycDao4626Form = address(new ERC4626KYCDaoForm{ salt: salt }(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
 
-        /// @dev 9 - Add newly deployed form implementations to Factory, formBeaconId 1
+        /// @dev 9 - Add newly deployed form implementations to Factory, formImplementationId 1
         ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0]);
 
         ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626TimelockForm, FORM_IMPLEMENTATION_IDS[1]);

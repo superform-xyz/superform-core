@@ -24,6 +24,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     //////////////////////////////////////////////////////////////
 
     uint8 internal immutable STATE_REGISTRY_ID;
+    uint256 private constant ENTIRE_SLIPPAGE = 10_000;
 
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
@@ -228,8 +229,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         /// @dev the difference in vault tokens, ready to be deposited, is compared with the amount inscribed in the
         /// superform data
-        if (vars.assetDifference < singleVaultData_.amount) {
-            revert Error.DIRECT_DEPOSIT_INVALID_DATA();
+        if (vars.assetDifference < ((singleVaultData_.amount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE)) {
+            revert Error.DIRECT_DEPOSIT_SWAP_FAILED();
         }
 
         /// @dev notice that vars.assetDifference is deposited regardless if txData exists or not
@@ -309,6 +310,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// @dev redeem shares for assets
         assets = v.v.redeem(singleVaultData_.amount, v.receiver, address(this));
 
+        if (dstAmount == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
+
         if (v.len1 != 0) {
             /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same
             /// as the vault asset
@@ -376,6 +379,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         /// @dev redeem shares for assets
         assets = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
+
+        if (dstAmount == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
         if (len != 0) {
             /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same
