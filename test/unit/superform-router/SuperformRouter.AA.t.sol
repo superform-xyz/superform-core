@@ -80,12 +80,12 @@ contract SuperformRouterAATest is ProtocolActions {
         _xChainDeposit_SmartContractWallet(false, false, 0, "VaultMock", 0);
     }
 
-    function test_depositWithSmartContractWallet_revertsReceive4626_noReceiveAddressSP() public {
-        _xChainDeposit_SmartContractWallet(false, false, 2, "VaultMock", 0);
-    }
-
     function test_depositWithSmartContractWallet_InvalidHolder() public {
         _xChainDeposit_SmartContractWallet(true, true, 1, "VaultMock", 0);
+    }
+
+    function test_depositWithSmartContractWallet_revertsReceive4626_noReceiveAddressSP() public {
+        _xChainDeposit_SmartContractWallet(false, false, 2, "VaultMock", 0);
     }
 
     function test_withdrawWithSmartContractWallet_deposit_Withdraw() public {
@@ -160,14 +160,14 @@ contract SuperformRouterAATest is ProtocolActions {
             1
         );
 
-        address source;
+        address sourceReceiverOfSP;
 
         if (receiveAddressSP_ == 0) {
-            source = address(walletSource);
+            sourceReceiverOfSP = address(walletSource);
         } else if (receiveAddressSP_ == 1) {
-            source = address(walletSourceInvalid);
+            sourceReceiverOfSP = address(walletSourceInvalid);
         } else if (receiveAddressSP_ == 2) {
-            source = address(0);
+            sourceReceiverOfSP = address(0);
         }
 
         SingleVaultSFData memory data = SingleVaultSFData(
@@ -182,7 +182,7 @@ contract SuperformRouterAATest is ProtocolActions {
             false,
             receive4626_,
             receiveAddress_ ? address(walletDestination) : address(0),
-            source,
+            sourceReceiverOfSP,
             ""
         );
 
@@ -194,7 +194,8 @@ contract SuperformRouterAATest is ProtocolActions {
 
         vm.deal(address(walletSource), 2 ether);
         deal(getContract(ETH, "DAI"), address(walletSource), 1e18);
-
+        vm.deal(address(walletSourceInvalid), 2 ether);
+        deal(getContract(ETH, "DAI"), address(walletSourceInvalid), 1e18);
         /// @dev approves before call
         MockERC20(getContract(ETH, "DAI")).approve(address(walletSource), 1e18);
         vm.stopPrank();
@@ -208,12 +209,12 @@ contract SuperformRouterAATest is ProtocolActions {
             /// @dev msg sender is wallet, tx origin is deployer
             walletSource.singleXChainSingleVaultDeposit{ value: 2 ether }(req);
             return;
-        } else if (source == address(0)) {
+        } else if (sourceReceiverOfSP == address(0)) {
             vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
             /// @dev msg sender is wallet, tx origin is deployer
             walletSource.singleXChainSingleVaultDeposit{ value: 2 ether }(req);
             return;
-        } else if (source == address(walletSourceInvalid)) {
+        } else if (sourceReceiverOfSP == address(walletSourceInvalid)) {
             vm.expectRevert(abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidReceiver.selector, source));
             /// @dev msg sender is wallet, tx origin is deployer
             walletSourceInvalid.singleXChainSingleVaultDeposit{ value: 2 ether }(req);

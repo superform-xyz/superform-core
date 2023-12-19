@@ -833,7 +833,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                     return false;
                 } else {
                     /// @dev if receiverAddressSP_ is set and is a contract, it must implement onERC1155Received
-                    _doSafeTransferAcceptanceCheck(receiverAddress_);
+                    _doSafeTransferAcceptanceCheck(receiverAddressSP_);
                 }
             }
         }
