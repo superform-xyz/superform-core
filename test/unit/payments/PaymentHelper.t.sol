@@ -619,7 +619,9 @@ contract PaymentHelperTest is ProtocolActions {
         vm.prank(deployer);
         paymentHelper.addRemoteChain(
             420,
-            IPaymentHelper.PaymentHelperConfig(address(420), address(421), 422, 423, 424, 425, 426, 427, 428, 429, 430)
+            IPaymentHelper.PaymentHelperConfig(
+                address(420), address(421), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431
+            )
         );
     }
 
@@ -702,6 +704,13 @@ contract PaymentHelperTest is ProtocolActions {
 
         uint256 result11 = paymentHelper.timelockCost(1);
         assertEq(result11, 430);
+
+        /// set config type: 12
+        vm.prank(deployer);
+        paymentHelper.updateRemoteChain(1, 12, abi.encode(431));
+
+        uint256 result12 = paymentHelper.emergencyCost(1);
+        assertEq(result12, 431);
     }
 
     function _generateTimelockSuperformPackWithShift() internal pure returns (uint256 superformId_) {

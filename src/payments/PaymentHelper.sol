@@ -5,6 +5,7 @@ import { AggregatorV3Interface } from "../vendor/chainlink/AggregatorV3Interface
 import { IPaymentHelper } from "../interfaces/IPaymentHelper.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
+import { ISuperformFactory } from "../interfaces/ISuperformFactory.sol";
 import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
 import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
 import { Error } from "../libraries/Error.sol";
@@ -53,6 +54,7 @@ contract PaymentHelper is IPaymentHelper {
     mapping(uint64 chainId => uint256 gasPerByte) public gasPerByte;
     mapping(uint64 chainId => uint256 gasForOps) public ackGasCost;
     mapping(uint64 chainId => uint256 gasForOps) public timelockCost;
+    mapping(uint64 chainId => uint256 gasForOps) public emergencyCost;
 
     /// @dev register transmuter params
     bytes public extraDataForTransmuter;
@@ -130,6 +132,14 @@ contract PaymentHelper is IPaymentHelper {
         return extraDataForTransmuter;
     }
 
+    struct LocalEstimateVars {
+        uint256 len;
+        uint256 superformIdsLen;
+        uint256 totalDstGas;
+        uint256 ambFees;
+        bool paused;
+    }
+
     /// @inheritdoc IPaymentHelper
     function estimateMultiDstMultiVault(
         MultiDstMultiVaultStateReq calldata req_,
@@ -140,54 +150,58 @@ contract PaymentHelper is IPaymentHelper {
         override
         returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
     {
-        uint256 len = req_.dstChainIds.length;
-        uint256 superformIdsLen;
-        uint256 totalDstGas;
+        LocalEstimateVars memory v;
+        v.len = req_.dstChainIds.length;
 
-        for (uint256 i; i < len; ++i) {
+        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+        for (uint256 i; i < v.len; ++i) {
             bool xChain = req_.dstChainIds[i] != CHAIN_ID;
 
-            totalDstGas = 0;
+            v.totalDstGas = 0;
 
             /// @dev step 1: estimate amb costs
-            uint256 ambFees = xChain
+            v.ambFees = xChain
                 ? _estimateAMBFees(req_.ambIds[i], req_.dstChainIds[i], _generateMultiVaultMessage(req_.superformsData[i]))
                 : 0;
 
-            superformIdsLen = req_.superformsData[i].superformIds.length;
+            v.superformIdsLen = req_.superformsData[i].superformIds.length;
 
-            srcAmount += ambFees;
+            srcAmount += v.ambFees;
 
             if (isDeposit_) {
                 /// @dev step 2: estimate liq amount
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequests);
                 if (xChain) {
                     /// @dev step 3: estimate update cost (only for deposit)
-                    totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], superformIdsLen);
+                    v.totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], v.superformIdsLen);
 
                     /// @dev step 4: estimation processing cost of acknowledgement
                     /// @notice optimistically estimating. (Ideal case scenario: no failed deposits / withdrawals)
-                    srcAmount += _estimateAckProcessingCost(superformIdsLen);
+                    srcAmount += _estimateAckProcessingCost(v.superformIdsLen);
 
                     /// @dev step 5: estimate dst swap cost if it exists
-                    totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwaps);
-                } 
+                    v.totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwaps);
+                }
             } else {
                 /// @dev step 6: estimate if timelock form processing costs are involved
-                for (uint256 j; j < superformIdsLen; ++j) {
+                for (uint256 j; j < v.superformIdsLen; ++j) {
                     (, uint32 formId,) = req_.superformsData[i].superformIds[j].getSuperform();
-                    if (formId == TIMELOCK_FORM_ID) {
-                        totalDstGas += timelockCost[req_.dstChainIds[i]];
+                    v.paused = factory.isFormImplementationPaused(formId);
+
+                    if (!v.paused && formId == TIMELOCK_FORM_ID) {
+                        v.totalDstGas += timelockCost[req_.dstChainIds[i]];
+                    } else if (v.paused) {
+                        v.totalDstGas += emergencyCost[req_.dstChainIds[i]];
                     }
                 }
             }
 
             /// @dev step 7: estimate execution costs in dst (withdraw / deposit)
             /// note: execution cost includes acknowledgement messaging cost
-            totalDstGas += xChain ? _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], superformIdsLen) : 0;
+            v.totalDstGas += xChain ? _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], v.superformIdsLen) : 0;
 
             /// @dev step 8: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
-            dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
+            dstAmount += _convertToNativeFee(req_.dstChainIds[i], v.totalDstGas);
         }
 
         totalAmount = srcAmount + dstAmount + liqAmount;
@@ -204,6 +218,8 @@ contract PaymentHelper is IPaymentHelper {
         returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
     {
         uint256 len = req_.dstChainIds.length;
+        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+
         for (uint256 i; i < len; ++i) {
             bool xChain = req_.dstChainIds[i] != CHAIN_ID;
             uint256 totalDstGas;
@@ -228,12 +244,17 @@ contract PaymentHelper is IPaymentHelper {
                     /// @dev step 5: estimate if swap costs are involved
                     totalDstGas +=
                         _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwap.castBoolToArray());
-                } 
+                }
             } else {
                 /// @dev step 6: estimate if timelock form processing costs are involved
                 (, uint32 formId,) = req_.superformsData[i].superformId.getSuperform();
-                if (formId == TIMELOCK_FORM_ID) {
+
+                bool paused = factory.isFormImplementationPaused(formId);
+
+                if (!paused && formId == TIMELOCK_FORM_ID) {
                     totalDstGas += timelockCost[req_.dstChainIds[i]];
+                } else if (paused) {
+                    totalDstGas += emergencyCost[req_.dstChainIds[i]];
                 }
             }
 
@@ -261,13 +282,14 @@ contract PaymentHelper is IPaymentHelper {
         uint256 totalDstGas;
         uint256 superformIdsLen = req_.superformsData.superformIds.length;
 
+        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+
         /// @dev step 1: estimate AMB costs
         uint256 ambFees =
             _estimateAMBFees(req_.ambIds, req_.dstChainId, _generateMultiVaultMessage(req_.superformsData));
         srcAmount += ambFees;
 
         if (isDeposit_) {
-
             /// @dev step 2: estimate update cost (only for deposit)
             totalDstGas += _estimateUpdateCost(req_.dstChainId, superformIdsLen);
 
@@ -283,8 +305,13 @@ contract PaymentHelper is IPaymentHelper {
             /// @dev step 6: process non-deposit logic for timelock form processing costs
             for (uint256 i; i < superformIdsLen; ++i) {
                 (, uint32 formId,) = req_.superformsData.superformIds[i].getSuperform();
-                if (formId == TIMELOCK_FORM_ID) {
+
+                bool paused = factory.isFormImplementationPaused(formId);
+
+                if (!paused && formId == TIMELOCK_FORM_ID) {
                     totalDstGas += timelockCost[req_.dstChainId];
+                } else if (paused) {
+                    totalDstGas += emergencyCost[req_.dstChainId];
                 }
             }
         }
@@ -298,7 +325,6 @@ contract PaymentHelper is IPaymentHelper {
         totalAmount = srcAmount + dstAmount + liqAmount;
     }
 
-
     /// @inheritdoc IPaymentHelper
     function estimateSingleXChainSingleVault(
         SingleXChainSingleVaultStateReq calldata req_,
@@ -310,6 +336,7 @@ contract PaymentHelper is IPaymentHelper {
         returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
     {
         uint256 totalDstGas;
+        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
 
         /// @dev step 1: estimate AMB costs
         uint256 ambFees =
@@ -317,7 +344,6 @@ contract PaymentHelper is IPaymentHelper {
         srcAmount += ambFees;
 
         if (isDeposit_) {
-
             /// @dev step 2: estimate update cost (only for deposit)
             totalDstGas += _estimateUpdateCost(req_.dstChainId, 1);
 
@@ -332,8 +358,13 @@ contract PaymentHelper is IPaymentHelper {
         } else {
             /// @dev step 6: process non-deposit logic for timelock form processing costs
             (, uint32 formId,) = req_.superformData.superformId.getSuperform();
-            if (formId == TIMELOCK_FORM_ID) {
+
+            bool paused = factory.isFormImplementationPaused(formId);
+
+            if (!paused && formId == TIMELOCK_FORM_ID) {
                 totalDstGas += timelockCost[req_.dstChainId];
+            } else if (paused) {
+                totalDstGas += emergencyCost[req_.dstChainId];
             }
         }
 
@@ -346,7 +377,6 @@ contract PaymentHelper is IPaymentHelper {
         totalAmount = srcAmount + dstAmount + liqAmount;
     }
 
-
     /// @inheritdoc IPaymentHelper
     function estimateSingleDirectSingleVault(
         SingleDirectSingleVaultStateReq calldata req_,
@@ -357,16 +387,23 @@ contract PaymentHelper is IPaymentHelper {
         override
         returns (uint256 liqAmount, uint256 srcAmount, uint256 totalAmount)
     {
+        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+
         if (!isDeposit_) {
             /// @dev only if timelock form withdrawal is involved
             (, uint32 formId,) = req_.superformData.superformId.getSuperform();
-            if (formId == TIMELOCK_FORM_ID) {
-                srcAmount = timelockCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
+
+            bool paused = factory.isFormImplementationPaused(formId);
+
+            if (!paused && formId == TIMELOCK_FORM_ID) {
+                srcAmount += timelockCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
+            } else if (paused) {
+                srcAmount += emergencyCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
             }
         } else {
             liqAmount = _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
         }
-        
+
         /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
     }
@@ -381,14 +418,20 @@ contract PaymentHelper is IPaymentHelper {
         override
         returns (uint256 liqAmount, uint256 srcAmount, uint256 totalAmount)
     {
+        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+
         if (!isDeposit_) {
             uint256 len = req_.superformData.superformIds.length;
             uint256 timelockPrice = timelockCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
+            uint256 emergencyPrice = emergencyCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
             for (uint256 i; i < len; ++i) {
                 (, uint32 formId,) = req_.superformData.superformIds[i].getSuperform();
-                /// @dev only if timelock form withdrawal is involved
-                if (formId == TIMELOCK_FORM_ID) {
+                bool paused = factory.isFormImplementationPaused(formId);
+
+                if (!paused && formId == TIMELOCK_FORM_ID) {
                     srcAmount += timelockPrice;
+                } else if (paused) {
+                    srcAmount += emergencyPrice;
                 }
             }
         } else {
@@ -489,6 +532,8 @@ contract PaymentHelper is IPaymentHelper {
         gasPerByte[chainId_] = config_.dstGasPerByte;
         ackGasCost[chainId_] = config_.ackGasCost;
         timelockCost[chainId_] = config_.timelockCost;
+        emergencyCost[chainId_] = config_.emergencyCost;
+
         emit ChainConfigAdded(chainId_, config_);
     }
 
@@ -555,6 +600,11 @@ contract PaymentHelper is IPaymentHelper {
         /// @dev Type 11: TIMELOCK PROCESSING COST
         if (configType_ == 11) {
             timelockCost[chainId_] = abi.decode(config_, (uint256));
+        }
+
+        /// @dev Type 12: EMERGENCY PROCESSING COST
+        if (configType_ == 12) {
+            emergencyCost[chainId_] = abi.decode(config_, (uint256));
         }
 
         emit ChainConfigUpdated(chainId_, configType_, config_);

@@ -585,6 +585,8 @@ abstract contract AbstractDeploySingle is Script {
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 9, abi.encode(750));
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 10, abi.encode(40_000));
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 11, abi.encode(50_000));
+        /// @dev FIXME emergencyCost value
+        PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 12, abi.encode(10_000));
 
         vm.stopBroadcast();
 
@@ -834,6 +836,7 @@ abstract contract AbstractDeploySingle is Script {
                 /// 12 usd
                 28 gwei,
                 750,
+                10_000,
                 10_000,
                 10_000
             )
