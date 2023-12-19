@@ -4,6 +4,8 @@ pragma solidity ^0.8.23;
 import { BaseRouter } from "./BaseRouter.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC1155Receiver } from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol";
+import { IERC1155Errors } from "openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
 import { IBaseStateRegistry } from "./interfaces/IBaseStateRegistry.sol";
 import { IBaseRouterImplementation } from "./interfaces/IBaseRouterImplementation.sol";
 import { IPayMaster } from "./interfaces/IPayMaster.sol";
@@ -17,8 +19,6 @@ import { Error } from "./libraries/Error.sol";
 import { IPermit2 } from "./vendor/dragonfly-xyz/IPermit2.sol";
 import "./crosschain-liquidity/LiquidityHandler.sol";
 import "./types/DataTypes.sol";
-
-import "forge-std/console.sol";
 
 /// @title BaseRouterImplementation
 /// @author Zeropoint Labs
@@ -774,7 +774,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         ISuperformFactory factory_
     )
         internal
-        view
         virtual
         returns (bool)
     {
@@ -786,21 +785,16 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev the dstChainId_ (in the state request) must match the superforms' chainId (superform must exist on
         /// destination)
         (, uint32 formImplementationId, uint64 sfDstChainId) = superformId_.getSuperform();
-        console.log("a");
 
         if (dstChainId_ != sfDstChainId) return false;
-        console.log("b");
 
         /// @dev 10000 = 100% slippage
         if (maxSlippage_ > 10_000) return false;
-        console.log("c");
 
         /// @dev amount can't be 0
         if (amount_ == 0) return false;
-        console.log("d");
 
         if (isDeposit_ && factory_.isFormImplementationPaused(formImplementationId)) return false;
-        console.log("e");
 
         /// @dev ensure that receiver address is set always
         /// @dev in deposits, this is important for receive4626 (on destination). It is also important for refunds on
@@ -810,7 +804,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (receiverAddress_ == address(0)) {
             return false;
         }
-        console.log("f");
+
+        /// @dev FIXME both this and the check above should probably be done in a secondary internal function (since
+        /// this would be receiverAddressOnSrc)
+        _doSafeTransferAcceptanceCheck(receiverAddress_);
+
+        /// @dev NOTE add receiverAddressOnDst checks here
 
         /// if it reaches this point then is valid
         return true;
@@ -822,7 +821,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         bool deposit_
     )
         internal
-        view
         virtual
         returns (bool)
     {
@@ -1059,5 +1057,27 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
 
         return (v.amountsIn, v.bridgeIds);
+    }
+
+    /// @dev implementation copied from OpenZeppelin 5.0 and stripped down
+    function _doSafeTransferAcceptanceCheck(address to) private {
+        if (to.code.length > 0) {
+            try IERC1155Receiver(to).onERC1155Received(address(0), address(0), 0, 0, "") returns (bytes4 response) {
+                if (response != IERC1155Receiver.onERC1155Received.selector) {
+                    // Tokens rejected
+                    revert IERC1155Errors.ERC1155InvalidReceiver(to);
+                }
+            } catch (bytes memory reason) {
+                if (reason.length == 0) {
+                    // non-IERC1155Receiver implementer
+                    revert IERC1155Errors.ERC1155InvalidReceiver(to);
+                } else {
+                    /// @solidity memory-safe-assembly
+                    assembly {
+                        revert(add(32, reason), mload(reason))
+                    }
+                }
+            }
+        }
     }
 }
