@@ -2362,7 +2362,6 @@ contract SuperformRouterTest is ProtocolActions {
         if (hasDstSwap) {
             DstSwapper(payable(getContract(ARBI, "DstSwapper"))).processTx(
                 1,
-                0,
                 1,
                 _buildLiqBridgeTxDataDstSwap(
                     1,

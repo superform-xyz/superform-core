@@ -25,6 +25,12 @@ library Error {
     /// @dev thrown if wormhole relayer is not set
     error RELAYER_NOT_SET();
 
+    /// @dev thrown if indices are out of bounds
+    error INDEX_OUT_OF_BOUNDS();
+
+    /// @dev thrown if indices have duplicates
+    error DUPLICATE_INDEX();
+
     //////////////////////////////////////////////////////////////
     //                  AUTHORIZATION ERRORS                    //
     //////////////////////////////////////////////////////////////
