@@ -792,6 +792,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                             28 gwei,
                             750,
                             10_000,
+                            10_000,
                             10_000
                         )
                     );
@@ -899,6 +900,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                     );
                     PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 10, abi.encode(40_000));
                     PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 11, abi.encode(50_000));
+                    PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 12, abi.encode(10_000));
                     PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
                         vars.chainId, 8, abi.encode(50 * 10 ** 9 wei)
                     );
