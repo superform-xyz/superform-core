@@ -32,14 +32,15 @@ contract SXSVWTimelockedNativeSlippageAMB12 is ProtocolActions {
         MAX_SLIPPAGE = 1000;
 
         LIQ_BRIDGES[ARBI][0] = [1];
-        LIQ_BRIDGES[ARBI][1] = [2];
+        LIQ_BRIDGES[ARBI][1] = [3];
+        /// extract with 1inch impl
 
         RECEIVE_4626[ARBI][0] = [false];
         RECEIVE_4626[ARBI][1] = [false];
 
         GENERATE_WITHDRAW_TX_DATA_ON_DST = true;
 
-        FINAL_LIQ_DST_WITHDRAW[ARBI] = [ETH];
+        FINAL_LIQ_DST_WITHDRAW[ARBI] = [ARBI];
 
         actions.push(
             TestAction({
