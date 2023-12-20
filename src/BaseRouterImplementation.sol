@@ -837,6 +837,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
         ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
         bool valid;
+        
         /// @dev slippage, amount, paused status validation
         for (uint256 i; i < len; ++i) {
             valid = _validateSuperformData(
@@ -851,6 +852,16 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
             if (!valid) {
                 return valid;
+            }
+
+            /// @dev ensure interimTokens aren't repeated on destination chains
+            address interimToken = superformsData_.liqRequests[i].interimToken;
+            if (interimToken != address(0)) {
+                for (uint256 j = 0; j < i; ++j) {
+                    if (interimToken == superformsData_.liqRequests[j].interimToken) {
+                        return false;
+                    }
+                }
             }
         }
 
