@@ -215,8 +215,8 @@ contract SuperformRouterAATest is ProtocolActions {
             walletSource.singleXChainSingleVaultDeposit{ value: 2 ether }(req);
             return;
         } else if (sourceReceiverOfSP == address(walletSourceInvalid)) {
-            vm.expectRevert(abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidReceiver.selector, source));
-            /// @dev msg sender is wallet, tx origin is deployer
+            vm.expectRevert(abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidReceiver.selector, sourceReceiverOfSP));
+            /// @dev msg sender is an invalid contract
             walletSourceInvalid.singleXChainSingleVaultDeposit{ value: 2 ether }(req);
             return;
         }
