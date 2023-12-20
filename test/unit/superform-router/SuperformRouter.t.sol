@@ -2243,6 +2243,22 @@ contract SuperformRouterTest is ProtocolActions {
         assertEq(MockERC20(getContract(ARBI, "DAI")).balanceOf(getContract(ARBI, "CoreStateRegistry")), 1e18);
     }
 
+    function test_forwardDustToPaymaster_router() public {
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address payable router = payable(getContract(ETH, "SuperformRouter"));
+
+        address token = getContract(ETH, "DAI");
+        /// @dev transfer 10 dai to router
+        deal(token, router, 10e18);
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        SuperformRouter(router).forwardDustToPaymaster(address(0));
+
+        SuperformRouter(router).forwardDustToPaymaster(token);
+    }
+
     struct SimulateUpdateTestLocalVars {
         SingleVaultSFData data;
         uint8[] ambIds;

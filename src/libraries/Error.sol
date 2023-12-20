@@ -365,6 +365,8 @@ library Error {
     /*///////////////////////////////////////////////////////////////
                         PAYMASTER ERRORS
     //////////////////////////////////////////////////////////////*/
+    /// @dev cannot forward 4626 shares from any form
+    error CANNOT_FORWARD_4646_TOKEN();
 
     /// DST SWAPPER EXECUTION ERRORS
     /// @dev forbid xChain deposits with destination swaps without interim token set (for user protection)

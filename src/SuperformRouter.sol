@@ -206,4 +206,9 @@ contract SuperformRouter is BaseRouterImplementation {
 
         _forwardPayment(balanceBefore);
     }
+
+    /// @inheritdoc IBaseRouter
+    function forwardDustToPaymaster(address token_) external override(BaseRouter, IBaseRouter) {
+        _forwardDustToPaymaster(token_);
+    }
 }

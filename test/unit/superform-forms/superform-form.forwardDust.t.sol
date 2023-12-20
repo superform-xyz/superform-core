@@ -26,7 +26,7 @@ contract ForwardDustFormTest is ProtocolActions {
 
         uint256 balanceBefore = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
         assertGt(balanceBefore, 0);
-        IBaseForm(superform).forwardDustToPaymaster();
+        IBaseForm(superform).forwardDustToPaymaster(getContract(ARBI, "WETH"));
         uint256 balanceAfter = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
 
         assertEq(balanceAfter, 0);
@@ -37,7 +37,7 @@ contract ForwardDustFormTest is ProtocolActions {
 
         uint256 balanceBefore = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
         assertEq(balanceBefore, 0);
-        IBaseForm(superform).forwardDustToPaymaster();
+        IBaseForm(superform).forwardDustToPaymaster(getContract(ARBI, "WETH"));
         uint256 balanceAfter = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
 
         assertEq(balanceAfter, 0);
@@ -48,10 +48,22 @@ contract ForwardDustFormTest is ProtocolActions {
 
         uint256 balanceBefore = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
         assertGt(balanceBefore, 0);
-        IBaseForm(superform).forwardDustToPaymaster();
+        IBaseForm(superform).forwardDustToPaymaster(getContract(ARBI, "WETH"));
         uint256 balanceAfter = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
 
         assertEq(balanceAfter, 0);
+    }
+
+    function test_forwardDustToPaymaster_arbitraryToken_4626revert() public {
+        address superform = _successfulDepositWithdraw("VaultMock", 0, 1e18, 0, false, deployer);
+
+        address arbitraryToken = getContract(ARBI, "DAI");
+        deal(arbitraryToken, superform, 10e18);
+
+        IBaseForm(superform).forwardDustToPaymaster(arbitraryToken);
+
+        vm.expectRevert(Error.CANNOT_FORWARD_4646_TOKEN.selector);
+        IBaseForm(superform).forwardDustToPaymaster(superform);
     }
 
     function _successfulDepositWithdraw(

@@ -410,13 +410,15 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         emit EmergencyWithdrawalProcessed(receiverAddress_, amount_);
     }
 
-    function _processForwardDustToPaymaster() internal {
+    function _processForwardDustToPaymaster(address token_) internal returns (uint256) {
         address paymaster = superRegistry.getAddress(keccak256("PAYMASTER"));
-        IERC20 token = IERC20(getVaultAsset());
+        IERC20 token = IERC20(token_);
 
         uint256 dust = token.balanceOf(address(this));
         if (dust != 0) {
             token.safeTransfer(paymaster, dust);
         }
+
+        return dust;
     }
 }

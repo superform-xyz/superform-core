@@ -73,7 +73,7 @@ contract ERC4626FormInterfaceNotSupported is ERC4626FormImplementationInterfaceN
     }
 
     /// @inheritdoc BaseForm
-    function _forwardDustToPaymaster() internal override {
-        _processForwardDustToPaymaster();
+    function _forwardDustToPaymaster(address token_) internal override returns (uint256) {
+        return _processForwardDustToPaymaster(token_);
     }
 }
