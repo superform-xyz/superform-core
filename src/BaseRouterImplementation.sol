@@ -857,7 +857,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             /// @dev ensure interimTokens aren't repeated on destination chains
             address interimToken = superformsData_.liqRequests[i].interimToken;
             if (interimToken != address(0)) {
-                for (uint256 j = 0; j < i; ++j) {
+                for (uint256 j; j < i; ++j) {
                     if (interimToken == superformsData_.liqRequests[j].interimToken) {
                         return false;
                     }
