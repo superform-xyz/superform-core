@@ -1574,7 +1574,7 @@ contract SuperformRouterTest is ProtocolActions {
             ARBI,
             ARBI,
             true,
-            hasDstSwap ? getContract(ARBI, "DstSwapper") : getContract(ARBI, "CoreStateRegistry"),
+            getContract(ARBI, "DstSwapper"),
             uint256(ARBI),
             1e18,
             //1e18,
