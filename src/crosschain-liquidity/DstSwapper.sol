@@ -136,8 +136,8 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
     )
         external
         override
-        onlySwapper
         nonReentrant
+        onlySwapper
     {
         IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
 
@@ -167,10 +167,11 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
     )
         external
         override
-        onlySwapper
         nonReentrant
+        onlySwapper
     {
         uint256 len = txData_.length;
+        if (len == 0 || indices_.length == 0 || bridgeIds_.length == 0 ) revert Error.ZERO_INPUT_VALUE();
         if (len != bridgeIds_.length && len != txData_.length) revert Error.ARRAY_LENGTH_MISMATCH();
 
         IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
@@ -371,7 +372,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         v.balanceDiff = v.balanceAfter - v.balanceBefore;
 
         /// @dev if actual underlying is less than expAmount adjusted with maxSlippage, invariant breaks
-        if (v.balanceDiff < ((v.expAmount * (ENTIRE_SLIPPAGE - v.maxSlippage)) / ENTIRE_SLIPPAGE)) {
+        if (v.balanceDiff * ENTIRE_SLIPPAGE < v.expAmount * (ENTIRE_SLIPPAGE - v.maxSlippage))  {
             revert Error.SLIPPAGE_OUT_OF_BOUNDS();
         }
 
