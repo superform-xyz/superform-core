@@ -100,7 +100,6 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     /// @inheritdoc ITimelockStateRegistry
     function receivePayload(
         uint8 type_,
-        address srcSender_,
         uint64 srcChainId_,
         uint256 lockedTill_,
         InitSingleVaultData memory data_
@@ -109,10 +108,12 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         override
         onlyTimelockSuperform(data_.superformId)
     {
+        if (data_.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
+
         ++timelockPayloadCounter;
 
         timelockPayload[timelockPayloadCounter] =
-            TimelockPayload(type_, srcSender_, srcChainId_, lockedTill_, data_, TimelockStatus.PENDING);
+            TimelockPayload(type_, srcChainId_, lockedTill_, data_, TimelockStatus.PENDING);
     }
 
     /// @inheritdoc ITimelockStateRegistry
@@ -139,9 +140,9 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         /// @dev set status here to prevent re-entrancy
         p.status = TimelockStatus.PROCESSED;
 
-        (address superform,,) = p.data.superformId.getSuperform();
+        (address superformAddress,,) = p.data.superformId.getSuperform();
 
-        IERC4626TimelockForm form = IERC4626TimelockForm(superform);
+        IERC4626TimelockForm superform = IERC4626TimelockForm(superformAddress);
 
         /// @dev this step is used to re-feed txData to avoid using old txData that would have expired by now
         if (txData_.length != 0) {
@@ -156,9 +157,9 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
                     p.srcChainId,
                     p.data.liqData.liqDstChainId,
                     false,
-                    superform,
+                    superformAddress,
                     p.data.receiverAddress,
-                    p.data.liqData.token,
+                    superform.getVaultAsset(),
                     address(0)
                 )
             );
@@ -166,7 +167,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
             finalAmount = bridgeValidator.decodeAmountIn(txData_, false);
             if (
                 !PayloadUpdaterLib.validateSlippage(
-                    finalAmount, form.previewRedeemFrom(p.data.amount), p.data.maxSlippage
+                    finalAmount, superform.previewRedeemFrom(p.data.amount), p.data.maxSlippage
                 )
             ) {
                 revert Error.SLIPPAGE_OUT_OF_BOUNDS();
@@ -175,21 +176,21 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
             p.data.liqData.txData = txData_;
         }
 
-        try form.withdrawAfterCoolDown(p) { }
+        try superform.withdrawAfterCoolDown(p) { }
         catch {
             /// @dev dispatch acknowledgement to mint superPositions back because of failure
             if (p.isXChain == 1) {
                 (uint256 payloadId,) = abi.decode(p.data.extraFormData, (uint256, uint256));
 
                 _dispatchAcknowledgement(
-                    p.srcChainId, _getDeliveryAMB(payloadId), _constructSingleReturnData(p.srcSender, p.data)
+                    p.srcChainId, _getDeliveryAMB(payloadId), _constructSingleReturnData(p.data.receiverAddress, p.data)
                 );
             }
 
             /// @dev for direct chain, superPositions are minted directly
             if (p.isXChain == 0) {
                 ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintSingle(
-                    p.srcSender, p.data.superformId, p.data.amount
+                    p.data.receiverAddress, p.data.superformId, p.data.amount
                 );
             }
         }
@@ -255,7 +256,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     /// xChainWithdraw succeeds.
     /// @dev Constructs return message in case of a FAILURE to perform redemption of already unlocked assets
     function _constructSingleReturnData(
-        address srcSender_,
+        address receiverAddress_,
         InitSingleVaultData memory singleVaultData_
     )
         internal
@@ -270,7 +271,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
                     uint8(CallbackType.FAIL),
                     0,
                     superRegistry.getStateRegistryId(address(this)),
-                    srcSender_,
+                    receiverAddress_,
                     CHAIN_ID
                 ),
                 abi.encode(

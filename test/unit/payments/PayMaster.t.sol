@@ -300,9 +300,11 @@ contract PayMasterTest is ProtocolActions {
 
         bytes memory data = abi.encode(messageId, destination, 1_500_000);
 
+        uint256 fees = HyperlaneImplementation(hyperlane).igp().quoteGasPayment(destination, 1_500_000);
+
         vm.prank(deployer);
         vm.deal(feeCollector, 10 ether);
-        PayMaster(payable(feeCollector)).treatAMB(2, 10 ether, data);
+        PayMaster(payable(feeCollector)).treatAMB(2, fees, data);
     }
 
     function _successfulDeposit() internal {

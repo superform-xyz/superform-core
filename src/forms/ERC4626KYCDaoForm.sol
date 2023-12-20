@@ -76,7 +76,7 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
         onlyKYC(srcSender_)
         returns (uint256 dstAmount)
     {
-        dstAmount = _processDirectWithdraw(singleVaultData_, srcSender_);
+        dstAmount = _processDirectWithdraw(singleVaultData_);
     }
 
     /// @inheritdoc BaseForm
@@ -96,14 +96,14 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
     /// @inheritdoc BaseForm
     function _emergencyWithdraw(
         address srcSender_,
-        address refundAddress_,
+        address receiverAddress_,
         uint256 amount_
     )
         internal
         override
         onlyKYC(srcSender_)
     {
-        _processEmergencyWithdraw(refundAddress_, amount_);
+        _processEmergencyWithdraw(receiverAddress_, amount_);
     }
 
     /// @inheritdoc BaseForm

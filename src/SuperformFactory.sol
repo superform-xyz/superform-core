@@ -24,7 +24,7 @@ contract SuperformFactory is ISuperformFactory {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
-    
+
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
     bytes32 constant SYNC_IMPLEMENTATION_STATUS = keccak256("SYNC_IMPLEMENTATION_STATUS");

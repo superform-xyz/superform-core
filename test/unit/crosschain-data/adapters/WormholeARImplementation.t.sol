@@ -8,9 +8,17 @@ import { TransactionType, CallbackType, AMBMessage } from "src/types/DataTypes.s
 import { VaaKey, IWormholeRelayer } from "src/vendor/wormhole/IWormholeRelayer.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
+contract InvalidReceiver {
+    receive() external payable {
+        revert();
+    }
+}
+
 contract WormholeARImplementationTest is BaseSetup {
     ISuperRegistry public superRegistry;
     WormholeARImplementation wormholeARImpl;
+
+    address invalidReceiver;
 
     function setUp() public override {
         super.setUp();
@@ -18,6 +26,7 @@ contract WormholeARImplementationTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
         superRegistry = ISuperRegistry(getContract(ETH, "SuperRegistry"));
         wormholeARImpl = WormholeARImplementation(payable(superRegistry.getAmbAddress(3)));
+        invalidReceiver = address(new InvalidReceiver());
     }
 
     function test_setWormholeRelayer_addressZero() public {
@@ -26,21 +35,56 @@ contract WormholeARImplementationTest is BaseSetup {
         wormholeARImpl.setWormholeRelayer(address(0));
     }
 
+    function test_dispatchPayload_RefundChainIdNotSet() public {
+        vm.prank(deployer);
+        WormholeARImplementation newWormholeARImpl =
+            new WormholeARImplementation(ISuperRegistry(getContract(ETH, "SuperRegistry")));
+
+        vm.prank(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.REFUND_CHAIN_ID_NOT_SET.selector);
+        newWormholeARImpl.dispatchPayload(deployer, ARBI, bytes("testmessage"), abi.encode(0, 500_000));
+    }
+
     function test_retryPayload() public {
         VaaKey memory vaaKey = VaaKey(1, keccak256("test"), 1);
 
-        bytes memory data = abi.encode(vaaKey, 2, 3, 4, deployer);
+        bytes memory data = abi.encode(vaaKey, 5, 3, 4, deployer);
 
         vm.mockCall(
             address(wormholeARImpl.relayer()),
             abi.encodeWithSelector(
-                IWormholeRelayer(wormholeARImpl.relayer()).resendToEvm.selector, vaaKey, 2, 3, 4, deployer
+                IWormholeRelayer(wormholeARImpl.relayer()).resendToEvm.selector, vaaKey, 5, 3, 4, deployer
             ),
             abi.encode("")
         );
 
+        uint256 fee = wormholeARImpl.estimateFees(uint64(137), bytes(""), abi.encode(uint256(0), uint256(4)));
+
         vm.prank(deployer);
-        wormholeARImpl.retryPayload(data);
+        uint256 balanceBefore = deployer.balance;
+        wormholeARImpl.retryPayload{ value: fee + 1 ether }(data);
+        assertEq(deployer.balance, balanceBefore - fee);
+
+        vm.clearMockedCalls();
+    }
+
+    function test_retryPayloadFailedToRefundExcessMsgValue() public {
+        deal(invalidReceiver, 100 ether);
+
+        VaaKey memory vaaKey = VaaKey(1, keccak256("testInvalidRefund"), 1);
+        bytes memory data = abi.encode(vaaKey, 5, 3, 4, invalidReceiver);
+
+        vm.mockCall(
+            address(wormholeARImpl.relayer()),
+            abi.encodeWithSelector(
+                IWormholeRelayer(wormholeARImpl.relayer()).resendToEvm.selector, vaaKey, 5, 3, 4, invalidReceiver
+            ),
+            abi.encode("")
+        );
+
+        vm.prank(invalidReceiver);
+        vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
+        wormholeARImpl.retryPayload{ value: 100 ether }(data);
 
         vm.clearMockedCalls();
     }
@@ -48,19 +92,21 @@ contract WormholeARImplementationTest is BaseSetup {
     function test_retryPayloadWithZeroAddress() public {
         VaaKey memory vaaKey = VaaKey(1, keccak256("test"), 1);
 
-        bytes memory data = abi.encode(vaaKey, 2, 3, 4, address(0));
+        bytes memory data = abi.encode(vaaKey, 5, 3, 4, address(0));
 
         vm.mockCall(
             address(wormholeARImpl.relayer()),
             abi.encodeWithSelector(
-                IWormholeRelayer(wormholeARImpl.relayer()).resendToEvm.selector, vaaKey, 2, 3, 4, address(0)
+                IWormholeRelayer(wormholeARImpl.relayer()).resendToEvm.selector, vaaKey, 5, 3, 4, address(0)
             ),
             abi.encode("")
         );
 
+        uint256 fee = wormholeARImpl.estimateFees(uint64(137), bytes(""), abi.encode(uint256(0), uint256(4)));
+
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         vm.prank(deployer);
-        wormholeARImpl.retryPayload(data);
+        wormholeARImpl.retryPayload{ value: fee }(data);
 
         vm.clearMockedCalls();
     }

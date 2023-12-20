@@ -54,7 +54,6 @@ contract TimelockStateRegistryTest is ProtocolActions {
         vm.prank(superform);
         timelockStateRegistry.receivePayload(
             0,
-            deployer,
             ETH,
             block.timestamp - 5 seconds,
             InitSingleVaultData(
@@ -88,7 +87,6 @@ contract TimelockStateRegistryTest is ProtocolActions {
         vm.prank(superform);
         timelockStateRegistry.receivePayload(
             0,
-            deployer,
             ETH,
             block.timestamp - 5 seconds,
             InitSingleVaultData(
