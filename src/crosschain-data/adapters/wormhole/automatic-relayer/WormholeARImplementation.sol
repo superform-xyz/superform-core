@@ -182,7 +182,11 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         /// refunds excess msg.value to msg.sender
         uint256 excessPaid = msg.value - fees;
         if (excessPaid > 0) {
-            payable(msg.sender).call{ value: excessPaid }("");
+            (bool success,) = payable(msg.sender).call{ value: excessPaid }("");
+
+            if (!success) {
+                revert Error.FAILED_TO_SEND_NATIVE();
+            }
         }
     }
 
