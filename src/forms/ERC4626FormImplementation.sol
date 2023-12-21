@@ -292,14 +292,13 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         vars.receiver = vars.len1 == 0 ? singleVaultData_.receiverAddress : address(this);
 
         IERC4626 v = IERC4626(vault);
-        vars.asset = asset;
-
-        IERC20 assetERC = IERC20(vars.asset);
+        IERC20 a = IERC20(asset);
+        vars.asset = address(asset);
 
         /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
-        uint256 assetsBalanceBefore = assetERC.balanceOf(vars.receiver); // 1840510681728394401
-        assets = v.redeem(singleVaultData_.amount, vars.receiver, address(this)); // 9843788488587
-        uint256 assetsBalanceAfter = assetERC.balanceOf(vars.receiver); // 0
+        uint256 assetsBalanceBefore = a.balanceOf(vars.receiver); 
+        assets = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
+        uint256 assetsBalanceAfter = a.balanceOf(vars.receiver);
         if (assetsBalanceAfter - assetsBalanceBefore != assets) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
@@ -366,13 +365,13 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         vars.receiver = len == 0 ? singleVaultData_.receiverAddress : address(this);
 
         IERC4626 v = IERC4626(vault);
-        vars.asset = asset;
-        IERC20 assetERC = IERC20(vars.asset);
+        IERC20 a = IERC20(asset);
+        vars.asset = address(asset);
 
         /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
-        uint256 assetsBalanceBefore = assetERC.balanceOf(vars.receiver);
+        uint256 assetsBalanceBefore = a.balanceOf(vars.receiver);
         assets = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
-        uint256 assetsBalanceAfter = assetERC.balanceOf(vars.receiver);
+        uint256 assetsBalanceAfter = a.balanceOf(vars.receiver);
         if (assetsBalanceAfter - assetsBalanceBefore != assets) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
