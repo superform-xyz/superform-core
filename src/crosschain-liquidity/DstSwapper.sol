@@ -14,6 +14,7 @@ import { IERC4626Form } from "../forms/interfaces/IERC4626Form.sol";
 import { Error } from "../libraries/Error.sol";
 import { DataLib } from "../libraries/DataLib.sol";
 import "../types/DataTypes.sol";
+import "forge-std/console.sol";
 
 /// @title DstSwapper
 /// @author Zeropoint Labs.
@@ -327,6 +328,8 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
                 revert Error.INSUFFICIENT_BALANCE();
             }
         } else {
+            console.log("Balance of DST Swapper:", IERC20(userSuppliedInterimToken_).balanceOf(address(this)));
+            console.log("Amount to swap:", v.amount);
             if (IERC20(userSuppliedInterimToken_).balanceOf(address(this)) < v.amount) {
                 revert Error.INSUFFICIENT_BALANCE();
             }
@@ -353,7 +356,9 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         (v.underlying, v.expAmount, v.maxSlippage) = _getFormUnderlyingFrom(coreStateRegistry_, payloadId_, index_);
 
         v.balanceBefore = IERC20(v.underlying).balanceOf(v.finalDst);
-
+        console.log("----");
+        console.log("balanceBefore: %s", v.balanceBefore);
+        console.log("amount to swap", v.amount);
         _dispatchTokens(
             superRegistry.getBridgeAddress(bridgeId_),
             txData_,
@@ -369,6 +374,13 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         }
 
         v.balanceDiff = v.balanceAfter - v.balanceBefore;
+        console.log("Post Swap");
+
+        console.log("balanceAfter: %s", v.balanceAfter);
+        console.log("balanceDiff: %s", v.balanceDiff);
+        console.log("--2nd side eq", (v.expAmount * (ENTIRE_SLIPPAGE - v.maxSlippage)) / ENTIRE_SLIPPAGE);
+        console.log("expAmount (inscribed by user): %s", v.expAmount);
+        console.log("maxSlippage: %s", v.maxSlippage);
 
         /// @dev if actual underlying is less than expAmount adjusted with maxSlippage, invariant breaks
         if (v.balanceDiff < ((v.expAmount * (ENTIRE_SLIPPAGE - v.maxSlippage)) / ENTIRE_SLIPPAGE)) {

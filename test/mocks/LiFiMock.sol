@@ -141,6 +141,12 @@ contract LiFiMock is Test {
         console.log("amount post-bridge", finalAmount);
 
         if (outputToken != NATIVE) {
+            console.log("AFTER BRIDGE ON DST: ---------");
+            console.log("FORK: ", toForkId_);
+            console.log("outputToken : ", outputToken);
+            console.log("receiver_ : ", receiver_);
+            console.log("amount_ : ", MockERC20(outputToken).balanceOf(receiver_) + finalAmount);
+
             deal(outputToken, receiver_, MockERC20(outputToken).balanceOf(receiver_) + finalAmount);
         } else {
             if (prevForkId_ != toForkId_) vm.deal(address(this), finalAmount);
@@ -176,6 +182,11 @@ contract LiFiMock is Test {
 
         uint256 decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
         uint256 decimal2 = outputToken_ == NATIVE ? 18 : MockERC20(outputToken_).decimals();
+
+        console.log("inputToken", inputToken_);
+        console.log("outputToken", outputToken_);
+        console.log("decimal1", decimal1);
+        console.log("decimal2", decimal2);
 
         console.log("amount pre-swap", amount_);
         /// @dev the results of this amount if there is a bridge are effectively ignored
