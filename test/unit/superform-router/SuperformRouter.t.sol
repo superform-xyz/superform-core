@@ -1588,7 +1588,12 @@ contract SuperformRouterTest is ProtocolActions {
 
         v.liqReqs = new LiqRequest[](2);
         v.liqReqs[0] = LiqRequest(
-            _buildLiqBridgeTxData(v.liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, ARBI, 0
+            _buildLiqBridgeTxData(v.liqBridgeTxDataArgs, false),
+            getContract(ETH, "DAI"),
+            getContract(ARBI, "DAI"),
+            1,
+            ARBI,
+            0
         );
 
         v.liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
@@ -1614,7 +1619,12 @@ contract SuperformRouterTest is ProtocolActions {
         );
 
         v.liqReqs[1] = LiqRequest(
-            _buildLiqBridgeTxData(v.liqBridgeTxDataArgs, false), getContract(ETH, "WETH"), address(0), 1, ARBI, 0
+            _buildLiqBridgeTxData(v.liqBridgeTxDataArgs, false),
+            getContract(ETH, "WETH"),
+            getContract(ARBI, "DAI"),
+            1,
+            ARBI,
+            0
         );
 
         MultiVaultSFData memory data = MultiVaultSFData(

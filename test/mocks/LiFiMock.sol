@@ -141,12 +141,6 @@ contract LiFiMock is Test {
         console.log("amount post-bridge", finalAmount);
 
         if (outputToken != NATIVE) {
-            console.log("AFTER BRIDGE ON DST: ---------");
-            console.log("FORK: ", toForkId_);
-            console.log("outputToken : ", outputToken);
-            console.log("receiver_ : ", receiver_);
-            console.log("amount_ : ", MockERC20(outputToken).balanceOf(receiver_) + finalAmount);
-
             deal(outputToken, receiver_, MockERC20(outputToken).balanceOf(receiver_) + finalAmount);
         } else {
             if (prevForkId_ != toForkId_) vm.deal(address(this), finalAmount);

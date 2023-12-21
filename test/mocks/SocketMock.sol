@@ -118,12 +118,6 @@ contract SocketMock is ISocketRegistry, Test {
         vm.selectFork(vars.toForkId);
 
         if (vars.outputToken != NATIVE) {
-            console.log("AFTER BRIDGE ON DST: ---------");
-            console.log("FORK: ", vars.toForkId);
-            console.log("outputToken : ", vars.outputToken);
-            console.log("receiver_ : ", receiver_); // 0xf51d8717cf4fA841498495dba9Fe866c3b5C8818
-            console.log("amount_ : ", MockERC20(vars.outputToken).balanceOf(receiver_) + vars.finalAmount);
-
             deal(vars.outputToken, receiver_, MockERC20(vars.outputToken).balanceOf(receiver_) + vars.finalAmount);
         } else {
             vm.deal(receiver_, vars.finalAmount);
