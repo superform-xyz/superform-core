@@ -59,7 +59,8 @@ abstract contract LiquidityHandler {
         if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA(token_);
 
         if (token_ != NATIVE) {
-            IERC20(token_).forceApprove(bridge_, 0);
+            IERC20(token_) token;
+            if (token.allowance(bridge_) > 0) token.forceApprove(bridge_, 0);
         }
     }
 }
