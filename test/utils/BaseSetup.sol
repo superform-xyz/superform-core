@@ -927,7 +927,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
                         if (FORM_IMPLEMENTATION_IDS[j] == 3) {
                             /// mint a kycDAO Nft to the newly kycDAO superform
-                            KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(vars.superform);
+                            ERC4626KYCDaoForm(vars.superform).mintKYC(1);
                         }
 
                         contracts[chainIds[i]][bytes32(
