@@ -204,7 +204,8 @@ contract SuperformFactory is ISuperformFactory {
         }
 
         /// @dev instantiate the superform
-        superform_ = tFormImplementation.cloneDeterministic(keccak256(abi.encode(uint256(CHAIN_ID), superformCounter)));
+        superform_ = tFormImplementation.cloneDeterministic(
+            keccak256(abi.encode(uint256(CHAIN_ID), msg.sender, formImplementationId_, vault_, superformCounter)));
         ++superformCounter;
 
         BaseForm(payable(superform_)).initialize(address(superRegistry), vault_, address(IERC4626(vault_).asset()));
