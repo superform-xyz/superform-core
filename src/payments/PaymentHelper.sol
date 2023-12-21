@@ -97,6 +97,10 @@ contract PaymentHelper is IPaymentHelper {
     //////////////////////////////////////////////////////////////
 
     constructor(address superRegistry_) {
+        if (superRegistry_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
+        
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }

@@ -80,6 +80,10 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
 
     /// @param superRegistry_ superform registry contract
     constructor(address superRegistry_) {
+        if (superRegistry_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
+        
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }

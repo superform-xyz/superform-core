@@ -45,6 +45,9 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     //////////////////////////////////////////////////////////////
 
     constructor(address superRegistry_) {
+        if (superRegistry_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
         superRegistry = ISuperRegistry(superRegistry_);
     }
 

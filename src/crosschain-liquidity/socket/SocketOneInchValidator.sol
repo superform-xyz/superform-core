@@ -13,9 +13,7 @@ contract SocketOneInchValidator is BridgeValidator {
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address superRegistry_) BridgeValidator(superRegistry_) {
-        if (address(superRegistry_) == address(0)) revert Error.DISABLED();
-    }
+    constructor(address superRegistry_) BridgeValidator(superRegistry_) { }
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
