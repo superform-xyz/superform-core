@@ -238,7 +238,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// @dev notice that vars.assetDifference is deposited regardless if txData exists or not
         /// @dev this presumes no dust is left in the superform
         IERC20(vars.asset).safeIncreaseAllowance(vault, vars.assetDifference);
-    
+
         /// @dev deposit assets for shares and add extra validation check to ensure intended ERC4626 behavior
         address sharesReceiver = singleVaultData_.retain4626 ? singleVaultData_.receiverAddress : address(this);
         uint256 sharesBalanceBefore = v.balanceOf(sharesReceiver);
@@ -292,12 +292,14 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         vars.receiver = vars.len1 == 0 ? singleVaultData_.receiverAddress : address(this);
 
         IERC4626 v = IERC4626(vault);
-        vars.asset = address(asset);
+        vars.asset = asset;
+
+        IERC20 assetERC = IERC20(vars.asset);
 
         /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
-        uint256 assetsBalanceBefore = v.balanceOf(vars.receiver);
-        assets = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
-        uint256 assetsBalanceAfter = v.balanceOf(vars.receiver);
+        uint256 assetsBalanceBefore = assetERC.balanceOf(vars.receiver); // 1840510681728394401
+        assets = v.redeem(singleVaultData_.amount, vars.receiver, address(this)); // 9843788488587
+        uint256 assetsBalanceAfter = assetERC.balanceOf(vars.receiver); // 0
         if (assetsBalanceAfter - assetsBalanceBefore != assets) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
@@ -364,12 +366,13 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         vars.receiver = len == 0 ? singleVaultData_.receiverAddress : address(this);
 
         IERC4626 v = IERC4626(vault);
-        vars.asset = address(asset);
+        vars.asset = asset;
+        IERC20 assetERC = IERC20(vars.asset);
 
         /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
-        uint256 assetsBalanceBefore = v.balanceOf(vars.receiver);
+        uint256 assetsBalanceBefore = assetERC.balanceOf(vars.receiver);
         assets = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
-        uint256 assetsBalanceAfter = v.balanceOf(vars.receiver);
+        uint256 assetsBalanceAfter = assetERC.balanceOf(vars.receiver);
         if (assetsBalanceAfter - assetsBalanceBefore != assets) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }

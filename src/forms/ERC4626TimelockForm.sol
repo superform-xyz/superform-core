@@ -93,8 +93,15 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         vars.receiver = vars.len1 == 0 ? p_.data.receiverAddress : address(this);
 
         /// @dev redeem from vault
-        vars.asset = address(asset);
+        vars.asset = asset;
+        IERC20 assetERC = IERC20(vars.asset);
+
+        uint256 assetsBalanceBefore = assetERC.balanceOf(vars.receiver);
         assets = v.redeem(p_.data.amount, vars.receiver, address(this));
+        uint256 assetsBalanceAfter = assetERC.balanceOf(vars.receiver);
+        if (assetsBalanceAfter - assetsBalanceBefore != assets) {
+            revert Error.VAULT_IMPLEMENTATION_FAILED();
+        }
         if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
         /// @dev validate and dispatches the tokens
