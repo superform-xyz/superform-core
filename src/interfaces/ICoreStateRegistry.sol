@@ -51,11 +51,13 @@ interface ICoreStateRegistry {
 
     /// @dev allows users to read the superformIds that failed in a specific payloadId_
     /// @param payloadId_ is the identifier of the cross-chain payload.
-    /// @return superformIds_ is the identifiers of superforms in the payloadId that got failed.
+    /// @return superformIds is the identifiers of superforms in the payloadId that got failed.
+    /// @return amounts is the amounts of refund tokens issues
+    /// @return lastProposedTime is the refund proposed time
     function getFailedDeposits(uint256 payloadId_)
         external
         view
-        returns (uint256[] memory superformIds_, uint256[] memory amounts);
+        returns (uint256[] memory superformIds, uint256[] memory amounts, uint256 lastProposedTime);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //

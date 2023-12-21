@@ -69,10 +69,12 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         external
         view
         override
-        returns (uint256[] memory superformIds, uint256[] memory amounts)
+        returns (uint256[] memory superformIds, uint256[] memory amounts, uint256 lastProposedTime)
     {
-        superformIds = failedDeposits[payloadId_].superformIds;
-        amounts = failedDeposits[payloadId_].amounts;
+        FailedDeposit storage failedDeposit = failedDeposits[payloadId_];
+        superformIds = failedDeposit.superformIds;
+        amounts = failedDeposit.amounts;
+        lastProposedTime = failedDeposit.lastProposedTimestamp;
     }
 
     /// @dev used for try catching purposes
