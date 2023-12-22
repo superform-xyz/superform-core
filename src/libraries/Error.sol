@@ -400,7 +400,7 @@ library Error {
 
     /// @dev thrown if withdrawal tx data is not updated
     error WITHDRAW_TX_DATA_NOT_UPDATED();
-    
+
     /// @dev thrown when redeeming from vault yields zero collateral
     error WITHDRAW_ZERO_COLLATERAL();
 
@@ -410,6 +410,9 @@ library Error {
 
     /// @dev thrown if chainlink is reporting an incomplete round
     error CHAINLINK_INCOMPLETE_ROUND();
+
+    /// @dev thrown if feed decimals is not 8
+    error CHAINLINK_UNSUPPORTED_DECIMAL();
 
     /// EMERGENCY QUEUE EXECUTION ERRORS
 
