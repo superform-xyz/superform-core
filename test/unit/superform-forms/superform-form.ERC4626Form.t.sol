@@ -833,6 +833,65 @@ contract SuperformERC4626FormTest is ProtocolActions {
         vm.clearMockedCalls();
     }
 
+    function test_maliciousBridge_protectionAgainstTokenDrain() public {
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        uint256 daiAmount = 10 * 1e18; // 10 DAI
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
+
+        /// @dev uses id 4 for bridge "LifiMockRugpull"
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            4,
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
+            superform,
+            ETH,
+            ETH,
+            ETH,
+            false,
+            superform,
+            uint256(ETH),
+            daiAmount,
+            false,
+            0,
+            1,
+            1,
+            1
+        );
+
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            daiAmount,
+            100,
+            LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "DAI"), address(0), 1, ETH, 0),
+            "",
+            false,
+            false,
+            refundAddress,
+            ""
+        );
+
+        SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
+
+        address router = getContract(ETH, "SuperformRouter");
+
+        /// Make Superform's initial balance to 10 DAI
+        MockERC20(getContract(ETH, "DAI")).transfer(superform, daiAmount);
+
+        /// Single deposit 10 DAI to the Superform
+        MockERC20(getContract(ETH, "DAI")).approve(router, daiAmount);
+        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
+
+        /// Bridge tries to drain Superform's tokens and it fails
+        vm.expectRevert();
+        LiFiMockRugpull(payable(getContract(ETH, "LiFiMockRugpull"))).pullTokens(getContract(ETH, "DAI"), superform);
+    }
+
     /*///////////////////////////////////////////////////////////////
                         INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/

@@ -18,6 +18,7 @@ import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import { LiFiMock } from "../mocks/LiFiMock.sol";
 import { SocketMock } from "../mocks/SocketMock.sol";
 import { SocketOneInchMock } from "../mocks/SocketOneInchMock.sol";
+import { LiFiMockRugpull } from "../mocks/LiFiMockRugpull.sol";
 
 import { MockERC20 } from "../mocks/MockERC20.sol";
 import { VaultMock } from "../mocks/VaultMock.sol";
@@ -524,6 +525,12 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             contracts[vars.chainId][bytes32(bytes("SocketOneInchMock"))] = vars.socketOneInch;
             vm.allowCheatcodes(vars.socketOneInch);
 
+            /// @dev 7.1.4 deploy LiFiMockRugpull. This mock tests a behaviour where the bridge is malicious and tries
+            /// to steal tokens
+            vars.liFiMockRugpull = address(new LiFiMockRugpull{ salt: salt }());
+            contracts[vars.chainId][bytes32(bytes("LiFiMockRugpull"))] = vars.liFiMockRugpull;
+            vm.allowCheatcodes(vars.liFiMockRugpull);
+
             /// @dev 7.2.1- deploy  lifi validator
             vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
@@ -543,10 +550,12 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             bridgeAddresses.push(vars.lifiRouter);
             bridgeAddresses.push(vars.socketRouter);
             bridgeAddresses.push(vars.socketOneInch);
+            bridgeAddresses.push(vars.liFiMockRugpull);
 
             bridgeValidators.push(vars.lifiValidator);
             bridgeValidators.push(vars.socketValidator);
             bridgeValidators.push(vars.socketOneInchValidator);
+            bridgeValidators.push(vars.lifiValidator);
 
             /// @dev 8.1 - Deploy UNDERLYING_TOKENS and VAULTS
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; ++j) {
@@ -1100,9 +1109,11 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// 1 is lifi
         /// 2 is socket
         /// 3 is socket one inch impl
+        /// 4 is lifi rugpull
         bridgeIds.push(1);
         bridgeIds.push(2);
         bridgeIds.push(3);
+        bridgeIds.push(4);
 
         /// @dev setup users
         userKeys.push(1);
