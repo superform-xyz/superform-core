@@ -69,12 +69,14 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     modifier onlyMinter(uint256 superformId) {
         address router = superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"));
 
-        /// if msg.sender isn't superformRouter then it must be state registry for that superform
+        /// if msg.sender isn't superformRouter then it must be state registry of that form
         if (msg.sender != router) {
-            (, uint32 formImplementationId,) = DataLib.getSuperform(superformId);
             uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
-            if (uint32(registryId) != formImplementationId) {
+            (address superform,,) = DataLib.getSuperform(superformId);
+            uint8 formRegistryId = IBaseForm(superform).getStateRegistryId();
+
+            if (registryId != formRegistryId) {
                 revert Error.NOT_MINTER();
             }
         }
@@ -322,7 +324,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         }
     }
 
-    function _isValidStateSyncer(uint8 registryId_, uint256 superformId_) internal pure {
+    function _isValidStateSyncer(uint8 registryId_, uint256 superformId_) internal view {
         /// @dev Directly check if the registryId is 0 or doesn't match the allowed cases.
         if (registryId_ == 0) {
             revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
@@ -335,8 +337,10 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         }
 
         (, uint32 formImplementationId,) = DataLib.getSuperform(superformId_);
+        uint8 formRegistryId = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")))
+            .getFormStateRegistryId(formImplementationId);
 
-        if (uint32(registryId_) != formImplementationId) {
+        if (registryId_ != formRegistryId) {
             revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
         }
     }

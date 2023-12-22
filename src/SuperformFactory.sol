@@ -48,6 +48,8 @@ contract SuperformFactory is ISuperformFactory {
 
     /// @dev each form implementation address can correspond only to a single formImplementationId
     mapping(address formImplementationAddress => uint32 formImplementationId) public formImplementationIds;
+    /// @dev this mapping is used only for crosschain cases and should be same across all the chains
+    mapping(uint32 formImplementationId => uint8 formRegistryId) public formStateRegistryId;
 
     mapping(uint32 formImplementationId => PauseStatus) public formImplementationPaused;
 
@@ -118,6 +120,11 @@ contract SuperformFactory is ISuperformFactory {
     }
 
     /// @inheritdoc ISuperformFactory
+    function getFormStateRegistryId(uint32 formImplementationId_) external view override returns (uint8) {
+        return formStateRegistryId[formImplementationId_];
+    }
+
+    /// @inheritdoc ISuperformFactory
     function isFormImplementationPaused(uint32 formImplementationId_) external view override returns (bool) {
         return formImplementationPaused[formImplementationId_] == PauseStatus.PAUSED;
     }
@@ -155,7 +162,8 @@ contract SuperformFactory is ISuperformFactory {
     /// @inheritdoc ISuperformFactory
     function addFormImplementation(
         address formImplementation_,
-        uint32 formImplementationId_
+        uint32 formImplementationId_,
+        uint8 formStateRegistryId_
     )
         public
         override
@@ -178,9 +186,14 @@ contract SuperformFactory is ISuperformFactory {
         formImplementation[formImplementationId_] = formImplementation_;
         formImplementationIds[formImplementation_] = formImplementationId_;
 
+        /// @dev formStateRegistryId can also be zero if the form requires no additional state registry
+        if (formStateRegistryId_ != 0) {
+            formStateRegistryId[formImplementationId_] = formStateRegistryId_;
+        }
+
         formImplementations.push(formImplementation_);
 
-        emit FormImplementationAdded(formImplementation_, formImplementationId_);
+        emit FormImplementationAdded(formImplementation_, formImplementationId_, formStateRegistryId_);
     }
 
     /// @inheritdoc ISuperformFactory

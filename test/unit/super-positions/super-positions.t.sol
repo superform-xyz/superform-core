@@ -30,7 +30,7 @@ contract SuperPositionsTest is BaseSetup {
         vault = getContract(ETH, VAULT_NAMES[0][0]);
         vm.prank(deployer);
         SuperformFactory(getContract(ETH, "SuperformFactory")).addFormImplementation(
-            formImplementation, formImplementationId
+            formImplementation, formImplementationId, 0
         );
     }
 
@@ -101,10 +101,10 @@ contract SuperPositionsTest is BaseSetup {
     function test_revert_stateSync_NotMinterStateRegistry_InvalidRegistryId() public {
         uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
         address superform = getContract(
-            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
         );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
 
         ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, superformId, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
