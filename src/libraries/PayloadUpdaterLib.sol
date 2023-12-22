@@ -34,7 +34,7 @@ library PayloadUpdaterLib {
     function validateLiqReq(LiqRequest memory req_) internal pure {
         /// revert if token is address(0) -> user wants settlement without any liq data
         /// revert if token is not address(0) and txData is already present
-        if (req_.token == address(0) || (req_.token != address(0) && req_.txData.length != 0)) {
+        if (req_.token == address(0) || req_.txData.length != 0) {
             revert Error.CANNOT_UPDATE_WITHDRAW_TX_DATA();
         }
     }
