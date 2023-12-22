@@ -65,9 +65,9 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation, ERC721Holder {
         internal
         override
         onlyKYC(srcSender_)
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
-        dstAmount = _processDirectDeposit(singleVaultData_);
+        shares = _processDirectDeposit(singleVaultData_);
     }
 
     function _xChainDepositIntoVault(
@@ -78,7 +78,7 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation, ERC721Holder {
         internal
         pure
         override
-        returns (uint256 /*dstAmount*/ )
+        returns (uint256 /*shares*/ )
     {
         revert Error.NOT_IMPLEMENTED();
     }
@@ -91,9 +91,9 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation, ERC721Holder {
         internal
         override
         onlyKYC(srcSender_)
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
-        dstAmount = _processDirectWithdraw(singleVaultData_);
+        assets = _processDirectWithdraw(singleVaultData_);
     }
 
     /// @inheritdoc BaseForm
@@ -105,7 +105,7 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation, ERC721Holder {
         internal
         pure
         override
-        returns (uint256 /*dstAmount*/ )
+        returns (uint256 /*assets*/ )
     {
         revert Error.NOT_IMPLEMENTED();
     }

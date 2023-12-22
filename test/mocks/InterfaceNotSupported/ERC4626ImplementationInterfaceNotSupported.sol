@@ -101,7 +101,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         uint64 chainId;
         address asset;
         address bridgeValidator;
-        uint256 dstAmount;
+        uint256 shares;
         uint256 balanceBefore;
         uint256 balanceAfter;
         uint256 nonce;
@@ -109,7 +109,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         bytes signature;
     }
 
-    function _processDirectDeposit(InitSingleVaultData memory singleVaultData_) internal returns (uint256 dstAmount) {
+    function _processDirectDeposit(InitSingleVaultData memory singleVaultData_) internal returns (uint256 shares) {
         directDepositLocalVars memory vars;
 
         IERC4626 v = IERC4626(vault);
@@ -170,7 +170,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         /// @dev the vault asset is approved and deposited to the vault
         IERC20(vars.asset).safeIncreaseAllowance(vault, singleVaultData_.amount);
 
-        dstAmount = v.deposit(singleVaultData_.amount, address(this));
+        shares = v.deposit(singleVaultData_.amount, address(this));
     }
 
     struct ProcessDirectWithdrawLocalVars {
@@ -188,7 +188,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         address srcSender
     )
         internal
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
         ProcessDirectWithdrawLocalVars memory v;
         v.len1 = singleVaultData_.liqData.txData.length;
@@ -200,14 +200,14 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         v.asset = address(v.v.asset());
 
         /// @dev redeem the underlying
-        dstAmount = v.v.redeem(singleVaultData_.amount, v.receiver, address(this));
+        assets = v.v.redeem(singleVaultData_.amount, v.receiver, address(this));
 
         if (v.len1 != 0) {
             v.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
             v.amount = IBridgeValidator(v.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
             /// @dev this check here might be too much already, but can't hurt
-            if (v.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+            if (v.amount > assets) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
             v.chainId = uint64(block.chainid);
 
@@ -244,7 +244,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         uint64 srcChainId
     )
         internal
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
         (,, uint64 dstChainId) = singleVaultData_.superformId.getSuperform();
         address vaultLoc = vault;
@@ -258,7 +258,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         IERC20(v.asset()).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
 
         /// @dev This makes ERC4626Form (address(this)) owner of v.shares
-        dstAmount = v.deposit(singleVaultData_.amount, address(this));
+        shares = v.deposit(singleVaultData_.amount, address(this));
 
         emit Processed(srcChainId, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
     }
@@ -279,7 +279,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         uint64 srcChainId
     )
         internal
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
         uint256 len = singleVaultData_.liqData.txData.length;
 
@@ -299,14 +299,14 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         vars.asset = v.asset();
 
         /// @dev redeem vault positions (we operate only on positions, not assets)
-        dstAmount = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
+        assets = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
 
         if (len != 0) {
             vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
             vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
-            if (vars.amount > dstAmount) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
+            if (vars.amount > assets) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(vars.bridgeValidator).validateTxData(
@@ -327,7 +327,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
-                dstAmount,
+                assets,
                 singleVaultData_.liqData.nativeAmount
             );
         }
