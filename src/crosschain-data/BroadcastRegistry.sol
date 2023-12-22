@@ -99,6 +99,16 @@ contract BroadcastRegistry is IBroadcastRegistry {
         onlySender
     {
         _broadcastPayload(srcSender_, ambId_, gasFee_, message_, extraData_);
+
+        /// @dev refunds any overpaid msg.value
+        uint256 refundAmt = msg.value - gasFee_;
+        if (refundAmt > 0) {
+            (bool success,) = payable(srcSender_).call{ value: refundAmt }("");
+
+            if (!success) {
+                revert Error.FAILED_TO_SEND_NATIVE();
+            }
+        }
     }
 
     /// @inheritdoc IBroadcastRegistry
@@ -143,13 +153,13 @@ contract BroadcastRegistry is IBroadcastRegistry {
     function _broadcastPayload(
         address srcSender_,
         uint8 ambId_,
-        uint256 gasToPay_,
+        uint256 gasFee_,
         bytes memory message_,
         bytes memory extraData_
     )
         internal
     {
-        IBroadcastAmbImplementation(superRegistry.getAmbAddress(ambId_)).broadcastPayload{ value: gasToPay_ }(
+        IBroadcastAmbImplementation(superRegistry.getAmbAddress(ambId_)).broadcastPayload{ value: gasFee_ }(
             srcSender_, message_, extraData_
         );
     }
