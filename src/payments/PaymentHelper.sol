@@ -32,6 +32,7 @@ contract PaymentHelper is IPaymentHelper {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
+    uint256 private constant PROOF_LENGTH = 96;
 
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
@@ -653,16 +654,13 @@ contract PaymentHelper is IPaymentHelper {
         uint256 gasReqPerByte = gasPerByte[dstChainId_];
         uint256 totalDstGasReqInWei = abi.encode(ambIdEncodedMessage).length * gasReqPerByte;
 
-        AMBMessage memory decodedMessage = abi.decode(message_, (AMBMessage));
-        decodedMessage.params = message_.computeProofBytes();
-
-        uint256 totalDstGasReqInWeiForProof = abi.encode(decodedMessage).length * gasReqPerByte;
+        /// @dev proof length is always 96
+        uint256 totalDstGasReqInWeiForProof = PROOF_LENGTH * gasReqPerByte;
 
         extraDataPerAMB = new bytes[](len);
 
         for (uint256 i; i < len; ++i) {
             uint256 gasReq = i != 0 ? totalDstGasReqInWeiForProof : totalDstGasReqInWei;
-
             /// @dev amb id 1: layerzero
             /// @dev amb id 2: hyperlane
             /// @dev amb id 3: wormhole
