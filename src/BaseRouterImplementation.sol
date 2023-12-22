@@ -117,7 +117,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformData.extraFormData
         );
 
-        /// @dev same chain action & forward residual payment to payment cctor
+        /// @dev same chain action & forward residual payment to Paymaster
         _directSingleDeposit(msg.sender, req_.superformData.permit2data, vaultData);
         emit Completed();
     }
