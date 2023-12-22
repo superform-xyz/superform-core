@@ -362,9 +362,6 @@ library Error {
     /// @dev thrown when redeeming from vault yields zero collateral
     error WITHDRAW_ZERO_COLLATERAL();
 
-    /// @dev thrown if a state registry id is 0
-    error INVALID_REGISTRY_ID();
-
     /*///////////////////////////////////////////////////////////////
                         PAYMASTER ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -412,9 +409,6 @@ library Error {
 
     /// @dev thrown if withdrawal tx data is not updated
     error WITHDRAW_TX_DATA_NOT_UPDATED();
-
-    /// @dev thrown when redeeming from vault yields zero collateral
-    error WITHDRAW_ZERO_COLLATERAL();
 
     /// PAYMENT HELPER EXECUTION ERRORS
     /// @dev thrown if chainlink is reporting an improper price
