@@ -73,10 +73,6 @@ contract PayMaster is IPayMaster, LiquidityHandler {
 
     /// @inheritdoc IPayMaster
     function withdrawNativeTo(bytes32 superRegistryId_, uint256 nativeAmount_) external override onlyPaymentAdmin {
-        if (nativeAmount_ > address(this).balance) {
-            revert Error.FAILED_TO_SEND_NATIVE();
-        }
-
         _withdrawNative(superRegistry.getAddress(superRegistryId_), nativeAmount_);
     }
 
@@ -138,6 +134,10 @@ contract PayMaster is IPayMaster, LiquidityHandler {
 
     /// @dev helper to move native tokens same chain
     function _withdrawNative(address receiver_, uint256 amount_) internal {
+        if (address(this).balance < amount_) {
+            revert Error.FAILED_TO_SEND_NATIVE();
+        }
+
         (bool success,) = payable(receiver_).call{ value: amount_ }("");
 
         if (!success) {

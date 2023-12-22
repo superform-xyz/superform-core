@@ -61,9 +61,12 @@ contract ForwardDustFormTest is ProtocolActions {
         deal(arbitraryToken, superform, 10e18);
 
         IBaseForm(superform).forwardDustToPaymaster(arbitraryToken);
-
+        address vaultAddress = IBaseForm(superform).getVaultAddress();
         vm.expectRevert(Error.CANNOT_FORWARD_4646_TOKEN.selector);
-        IBaseForm(superform).forwardDustToPaymaster(superform);
+        IBaseForm(superform).forwardDustToPaymaster(vaultAddress);
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        IBaseForm(superform).forwardDustToPaymaster(address(0));
     }
 
     function _successfulDepositWithdraw(

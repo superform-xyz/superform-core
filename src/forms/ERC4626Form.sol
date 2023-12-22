@@ -80,7 +80,7 @@ contract ERC4626Form is ERC4626FormImplementation {
     }
 
     /// @inheritdoc BaseForm
-    function _forwardDustToPaymaster(address token_) internal override returns (uint256) {
-        return _processForwardDustToPaymaster(token_);
+    function _forwardDustToPaymaster(address token_) internal override {
+        _processForwardDustToPaymaster(token_);
     }
 }

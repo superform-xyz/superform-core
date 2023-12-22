@@ -262,10 +262,8 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
 
     /// @inheritdoc IBaseForm
     function forwardDustToPaymaster(address token_) external override {
-        if (token_ == address(this)) revert Error.CANNOT_FORWARD_4646_TOKEN();
-        uint256 amountForwarded = _forwardDustToPaymaster(token_);
-
-        if (amountForwarded > 0) emit FormDustForwardedToPaymaster(token_, amountForwarded);
+        if (token_ == vault) revert Error.CANNOT_FORWARD_4646_TOKEN();
+        _forwardDustToPaymaster(token_);
     }
 
     //////////////////////////////////////////////////////////////
@@ -314,7 +312,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     function _emergencyWithdraw(address srcSender_, address receiverAddress_, uint256 amount_) internal virtual;
 
     /// @dev forwards dust to paymaster
-    function _forwardDustToPaymaster(address token_) internal virtual returns (uint256);
+    function _forwardDustToPaymaster(address token_) internal virtual;
 
     /// @dev returns if a form id is paused
     function _isPaused(uint256 superformId) internal view returns (bool) {
