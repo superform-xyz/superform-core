@@ -68,7 +68,7 @@ interface IPayloadHelper {
     /// @return callbackType is the type of payload. check {CallbackType} enum in DataTypes.sol
     /// @return isMulti indicates if the transaction involves operations to multiple vaults
     /// @return srcSender is the user who initiated the transaction on the srcChain
-    /// @return receiverAddress is the address to be used for receiving assets
+    /// @return receiverAddressSP is the address to be used for receiving Super Positions
     /// @return srcChainId is the unique identifier of the srcChain
     function decodePayloadHistory(uint256 srcPayloadId_)
         external
@@ -78,7 +78,7 @@ interface IPayloadHelper {
             uint8 callbackType,
             uint8 isMulti,
             address srcSender,
-            address receiverAddress,
+            address receiverAddressSP,
             uint64 srcChainId
         );
 

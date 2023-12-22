@@ -171,12 +171,12 @@ contract PayloadHelper is IPayloadHelper {
             uint8 callbackType,
             uint8 multi,
             address srcSender,
-            address receiverAddress,
+            address receiverAddressSP,
             uint64 srcChainId
         )
     {
         uint256 txInfo;
-        (txInfo, receiverAddress) =
+        (txInfo, receiverAddressSP) =
             ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).txHistory(srcPayloadId_);
 
         if (txInfo == 0) {

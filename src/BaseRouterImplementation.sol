@@ -5,6 +5,7 @@ import { BaseRouter } from "./BaseRouter.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC1155Receiver } from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol";
+import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 import { IERC1155Errors } from "openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
 import { IBaseStateRegistry } from "./interfaces/IBaseStateRegistry.sol";
 import { IBaseRouterImplementation } from "./interfaces/IBaseRouterImplementation.sol";
@@ -1105,23 +1106,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     }
 
     /// @dev implementation copied from OpenZeppelin 5.0 and stripped down
-    function _doSafeTransferAcceptanceCheck(address to) private {
+    function _doSafeTransferAcceptanceCheck(address to) private view {
         if (to.code.length > 0) {
-            try IERC1155Receiver(to).onERC1155Received(address(0), address(0), 0, 0, "") returns (bytes4 response) {
-                if (response != IERC1155Receiver.onERC1155Received.selector) {
-                    // Tokens rejected
-                    revert IERC1155Errors.ERC1155InvalidReceiver(to);
-                }
-            } catch (bytes memory reason) {
-                if (reason.length == 0) {
-                    // non-IERC1155Receiver implementer
-                    revert IERC1155Errors.ERC1155InvalidReceiver(to);
-                } else {
-                    /// @solidity memory-safe-assembly
-                    assembly {
-                        revert(add(32, reason), mload(reason))
-                    }
-                }
+            try IERC165(to).supportsInterface(type(IERC1155Receiver).interfaceId) returns (bool supported) {
+                if (!supported) revert IERC1155Errors.ERC1155InvalidReceiver(to);
+            } catch {
+                revert IERC1155Errors.ERC1155InvalidReceiver(to);
             }
         }
     }
