@@ -50,7 +50,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     struct SingleDepositLocalVars {
         address superform;
-        uint256 dstAmount;
+        uint256 shares;
     }
 
     struct MultiDepositArgs {
@@ -63,7 +63,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     struct MultiDepositLocalVars {
         uint256 len;
         address[] superforms;
-        uint256[] dstAmounts;
+        uint256[] shares;
         bool[] mints;
     }
 
@@ -596,10 +596,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     )
         internal
         virtual
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
         /// @dev deposits token to a given vault and mint vault positions directly through the form
-        dstAmount = IBaseForm(superform_).directDepositIntoVault{ value: msgValue_ }(
+        shares = IBaseForm(superform_).directDepositIntoVault{ value: msgValue_ }(
             InitSingleVaultData(
                 payloadId_,
                 superformId_,
@@ -635,7 +635,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         _singleVaultTokenForward(srcSender_, v.superform, permit2data_, vaultData_, false);
 
         /// @dev deposits token to a given vault and mint vault positions.
-        v.dstAmount = _directDeposit(
+        v.shares = _directDeposit(
             v.superform,
             vaultData_.payloadId,
             vaultData_.superformId,
@@ -649,10 +649,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             srcSender_
         );
 
-        if (v.dstAmount != 0 && !vaultData_.retain4626) {
+        if (v.shares != 0 && !vaultData_.retain4626) {
             /// @dev mint super positions at the end of the deposit action if user doesn't retain 4626
             ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintSingle(
-                receiverAddressSP_, vaultData_.superformId, v.dstAmount
+                receiverAddressSP_, vaultData_.superformId, v.shares
             );
         }
     }
@@ -664,7 +664,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         v.len = args_.vaultData.superformIds.length;
 
         v.superforms = new address[](v.len);
-        v.dstAmounts = new uint256[](v.len);
+        v.shares = new uint256[](v.len);
 
         /// @dev decode superforms
         v.superforms = DataLib.getSuperforms(args_.vaultData.superformIds);
@@ -673,7 +673,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         for (uint256 i; i < v.len; ++i) {
             /// @dev deposits token to a given vault and mint vault positions.
-            v.dstAmounts[i] = _directDeposit(
+            v.shares[i] = _directDeposit(
                 v.superforms[i],
                 args_.vaultData.payloadId,
                 args_.vaultData.superformIds[i],
@@ -688,14 +688,15 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             );
 
             /// @dev if retain4626 is set to True, set the amount of SuperPositions to mint to 0
-            if (v.dstAmounts[i] != 0 && args_.vaultData.retain4626s[i]) {
-                v.dstAmounts[i] = 0;
+
+            if (v.shares[i] != 0 && args_.vaultData.retain4626s[i]) {
+                v.shares[i] = 0;
             }
         }
 
         /// @dev in direct deposits, SuperPositions are minted right after depositing to vaults
         ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintBatch(
-            args_.receiverAddressSP, args_.vaultData.superformIds, v.dstAmounts
+            args_.receiverAddressSP, args_.vaultData.superformIds, v.shares
         );
     }
 

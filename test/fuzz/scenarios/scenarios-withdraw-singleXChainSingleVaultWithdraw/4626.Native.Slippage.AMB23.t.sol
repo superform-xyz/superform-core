@@ -39,7 +39,7 @@ contract SXSVWNormal4626NativeSlippageAMB23 is ProtocolActions {
 
         GENERATE_WITHDRAW_TX_DATA_ON_DST = true;
 
-        FINAL_LIQ_DST_WITHDRAW[OP] = [POLY];
+        FINAL_LIQ_DST_WITHDRAW[OP] = [OP];
 
         actions.push(
             TestAction({

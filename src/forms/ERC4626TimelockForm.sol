@@ -65,7 +65,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     function withdrawAfterCoolDown(TimelockPayload memory p_)
         external
         onlyTimelockStateRegistry
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
         if (p_.data.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
 
@@ -91,11 +91,17 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         /// @dev if the txData is empty, the tokens are sent directly to the sender, otherwise sent first to this form
         vars.receiver = vars.len1 == 0 ? p_.data.receiverAddress : address(this);
 
-        vars.asset = address(asset);
+        /// @dev redeem from vault
+        vars.asset = asset;
+        IERC20 assetERC = IERC20(vars.asset);
 
-        dstAmount = v.redeem(p_.data.amount, vars.receiver, address(this));
-
-        if (dstAmount == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
+        uint256 assetsBalanceBefore = assetERC.balanceOf(vars.receiver);
+        assets = v.redeem(p_.data.amount, vars.receiver, address(this));
+        uint256 assetsBalanceAfter = assetERC.balanceOf(vars.receiver);
+        if (assetsBalanceAfter - assetsBalanceBefore != assets) {
+            revert Error.VAULT_IMPLEMENTATION_FAILED();
+        }
+        if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
         /// @dev validate and dispatches the tokens
         if (vars.len1 != 0) {
@@ -103,7 +109,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
             vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(vars.liqData.txData, false);
 
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
-            if (vars.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+            if (vars.amount > assets) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
             vars.chainId = CHAIN_ID;
 
@@ -144,9 +150,9 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         internal
         virtual
         override
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
-        dstAmount = _processDirectDeposit(singleVaultData_);
+        shares = _processDirectDeposit(singleVaultData_);
     }
 
     /// @inheritdoc BaseForm
@@ -158,15 +164,15 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         internal
         virtual
         override
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
-        dstAmount = _processXChainDeposit(singleVaultData_, srcChainId_);
+        shares = _processXChainDeposit(singleVaultData_, srcChainId_);
     }
 
     /// @inheritdoc BaseForm
     /// @dev this is the step-1 for timelock form withdrawal, direct case
     /// @dev will mandatorily process unlock
-    /// @return dstAmount is always 0
+    /// @return shares is always 0
     function _directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address /*srcSender_*/
@@ -186,7 +192,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     /// @inheritdoc BaseForm
     /// @dev this is the step-1 for timelock form withdrawal, xchain case
     /// @dev will mandatorily process unlock
-    /// @return dstAmount is always 0
+    /// @return shares is always 0
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address, /*srcSender_*/

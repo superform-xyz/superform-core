@@ -29,6 +29,7 @@ interface IPaymentHelper {
     /// @param dstGasPerByte is the gas per size of data on the specified chain
     /// @param ackGasCost is the gas cost for processing acknowledgements on src chain
     /// @param timelockCost is the extra cost for processing timelocked payloads
+    /// @param emergencyCost is the extra cost for processing emergency payloads
     struct PaymentHelperConfig {
         address nativeFeedOracle;
         address gasPriceOracle;
@@ -41,6 +42,7 @@ interface IPaymentHelper {
         uint256 dstGasPerByte;
         uint256 ackGasCost;
         uint256 timelockCost;
+        uint256 emergencyCost;
     }
 
     //////////////////////////////////////////////////////////////

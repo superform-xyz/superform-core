@@ -49,8 +49,7 @@ abstract contract LiquidityHandler {
         }
 
         if (token_ != NATIVE) {
-            IERC20 token = IERC20(token_);
-            token.safeIncreaseAllowance(bridge_, amount_);
+            IERC20(token_).safeIncreaseAllowance(bridge_, amount_);
         } else {
             if (nativeAmount_ < amount_) revert Error.INSUFFICIENT_NATIVE_AMOUNT();
             if (nativeAmount_ > address(this).balance) revert Error.INSUFFICIENT_BALANCE();
@@ -58,5 +57,10 @@ abstract contract LiquidityHandler {
 
         (bool success,) = payable(bridge_).call{ value: nativeAmount_ }(txData_);
         if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA(token_);
+
+        if (token_ != NATIVE) {
+            IERC20 token = IERC20(token_);
+            if (token.allowance(address(this), bridge_) > 0) token.forceApprove(bridge_, 0);
+        }
     }
 }

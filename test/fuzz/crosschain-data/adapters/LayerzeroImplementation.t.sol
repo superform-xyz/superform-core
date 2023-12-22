@@ -155,6 +155,7 @@ contract LayerzeroImplementationTest is BaseSetup {
 
     function test_setSendVersion_and_revert_invalidCaller(uint16 versionSeed_, address malice_) public {
         uint16 version = uint16(bound(versionSeed_, 0, 3));
+        vm.assume(malice_ != deployer);
 
         vm.expectEmit(false, false, false, true, LZ_ENDPOINT_ETH);
         emit UaSendVersionSet(address(layerzeroImplementation), version);
@@ -168,7 +169,7 @@ contract LayerzeroImplementationTest is BaseSetup {
 
     function test_setReceiveVersion_and_revert_invalidCaller(uint16 versionSeed_, address malice_) public {
         uint16 version = uint16(bound(versionSeed_, 0, 3));
-
+        vm.assume(malice_ != deployer);
         vm.expectEmit(false, false, false, true, LZ_ENDPOINT_ETH);
         emit UaReceiveVersionSet(address(layerzeroImplementation), version);
         vm.prank(deployer);
@@ -360,10 +361,6 @@ contract LayerzeroImplementationTest is BaseSetup {
 
         vm.expectRevert(Error.CALLER_NOT_ENDPOINT.selector);
         vm.prank(bond);
-        lzImplOP.lzReceive(101, srcAddressOP, 2, payload);
-
-        vm.expectRevert(Error.DUPLICATE_PAYLOAD.selector);
-        vm.prank(LZ_ENDPOINT_OP);
         lzImplOP.lzReceive(101, srcAddressOP, 2, payload);
 
         vm.expectRevert(Error.INVALID_SRC_SENDER.selector);

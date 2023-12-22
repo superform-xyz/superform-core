@@ -8,9 +8,17 @@ import { TransactionType, CallbackType, AMBMessage } from "src/types/DataTypes.s
 import { VaaKey, IWormholeRelayer } from "src/vendor/wormhole/IWormholeRelayer.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
+contract InvalidReceiver {
+    receive() external payable {
+        revert();
+    }
+}
+
 contract WormholeARImplementationTest is BaseSetup {
     ISuperRegistry public superRegistry;
     WormholeARImplementation wormholeARImpl;
+
+    address invalidReceiver;
 
     function setUp() public override {
         super.setUp();
@@ -18,6 +26,7 @@ contract WormholeARImplementationTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
         superRegistry = ISuperRegistry(getContract(ETH, "SuperRegistry"));
         wormholeARImpl = WormholeARImplementation(payable(superRegistry.getAmbAddress(3)));
+        invalidReceiver = address(new InvalidReceiver());
     }
 
     function test_setWormholeRelayer_addressZero() public {
@@ -55,6 +64,27 @@ contract WormholeARImplementationTest is BaseSetup {
         uint256 balanceBefore = deployer.balance;
         wormholeARImpl.retryPayload{ value: fee + 1 ether }(data);
         assertEq(deployer.balance, balanceBefore - fee);
+
+        vm.clearMockedCalls();
+    }
+
+    function test_retryPayloadFailedToRefundExcessMsgValue() public {
+        deal(invalidReceiver, 100 ether);
+
+        VaaKey memory vaaKey = VaaKey(1, keccak256("testInvalidRefund"), 1);
+        bytes memory data = abi.encode(vaaKey, 5, 3, 4, invalidReceiver);
+
+        vm.mockCall(
+            address(wormholeARImpl.relayer()),
+            abi.encodeWithSelector(
+                IWormholeRelayer(wormholeARImpl.relayer()).resendToEvm.selector, vaaKey, 5, 3, 4, invalidReceiver
+            ),
+            abi.encode("")
+        );
+
+        vm.prank(invalidReceiver);
+        vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
+        wormholeARImpl.retryPayload{ value: 100 ether }(data);
 
         vm.clearMockedCalls();
     }

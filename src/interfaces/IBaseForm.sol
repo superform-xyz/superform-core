@@ -98,52 +98,52 @@ interface IBaseForm is IERC165 {
     /// @dev process same chain id deposits
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
     /// @param srcSender_ The address of the sender of the transaction
-    /// @return dstAmount  The amount of tokens deposited in same chain action
+    /// @return shares  The amount of vault shares received
     function directDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_
     )
         external
         payable
-        returns (uint256 dstAmount);
+        returns (uint256 shares);
 
     /// @dev process same chain id deposits
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
     /// @param srcSender_ The address of the sender of the transaction
     /// @param srcChainId_ The chain id of the source chain
-    /// @return dstAmount  The amount of tokens deposited in same chain action
-    /// @dev is dstAmoutn is `0` then no further action/acknowledgement needs to be sent
+    /// @return shares  The amount of vault shares received
+    /// @dev is shares is `0` then no further action/acknowledgement needs to be sent
     function xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
         uint64 srcChainId_
     )
         external
-        returns (uint256 dstAmount);
+        returns (uint256 shares);
 
     /// @dev process withdrawal of asset from a vault
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
     /// @param srcSender_ The address of the sender of the transaction
-    /// @return dstAmount  The amount of tokens withdrawn in same chain action
+    /// @return assets  The amount of assets received
     function directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_
     )
         external
-        returns (uint256 dstAmount);
+        returns (uint256 assets);
 
     /// @dev process withdrawal of asset from a vault
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
     /// @param srcSender_ The address of the sender of the transaction
     /// @param srcChainId_ The chain id of the source chain
-    /// @return dstAmount The amount of tokens withdrawn
+    /// @return assets The amount of assets received
     function xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
         uint64 srcChainId_
     )
         external
-        returns (uint256 dstAmount);
+        returns (uint256 assets);
 
     /// @dev process withdrawal of shares if form is paused
     /// @param receiverAddress_ The address to refund the shares to

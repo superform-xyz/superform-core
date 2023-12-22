@@ -26,7 +26,8 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
 
     /// @inheritdoc BridgeValidator
     function validateReceiver(bytes calldata txData_, address receiver_) external pure override returns (bool valid_) {
-        return _extractBridgeData(txData_).receiver == receiver_;
+        (, address receiver) = _extractBridgeData(txData_);
+        return receiver == receiver_;
     }
 
     /// @inheritdoc BridgeValidator
@@ -52,8 +53,8 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
             /// @dev 1. chainId validation
             /// @dev for deposits, liqDstChainId/toChainId will be the normal destination (where the target superform
             /// is)
-            /// @dev for withdraws, liqDstChainId/toChainId will be the desired chain to where the underlying must be
-            /// sent
+            /// @dev for withdraws, liqDstChainId will be the desired chain to where the underlying must be
+            /// sent (post any bridge/swap). To ChainId is where the target superform is
             /// @dev to after vault redemption
 
             if (uint256(args_.liqDstChainId) != destinationChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
@@ -96,16 +97,16 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         } catch {
             (address sendingAssetId,, address receiver,,) = extractGenericSwapParameters(args_.txData);
 
-            /// @dev 1. chainId validation
-
-            if (args_.srcChainId != args_.dstChainId) revert Error.INVALID_ACTION();
-
-            /// @dev 2. receiver address validation
             if (args_.deposit) {
+                /// @dev 1. chainId validation
+                if (args_.srcChainId != args_.dstChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
                 if (args_.dstChainId != args_.liqDstChainId) revert Error.INVALID_DEPOSIT_LIQ_DST_CHAIN_ID();
+
+                /// @dev 2. receiver address validation
                 /// @dev If same chain deposits then receiver address must be the superform
                 if (receiver != args_.superform) revert Error.INVALID_TXDATA_RECEIVER();
             } else {
+                /// @dev 2. receiver address validation
                 /// @dev if withdraws, then receiver address must be the receiverAddress
                 if (receiver != args_.receiverAddress) revert Error.INVALID_TXDATA_RECEIVER();
             }
@@ -200,7 +201,8 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
             bool hasDestinationCall
         )
     {
-        ILiFi.BridgeData memory bridgeData = _extractBridgeData(data_);
+        ILiFi.BridgeData memory bridgeData;
+        (bridgeData, receiver) = _extractBridgeData(data_);
 
         if (bridgeData.hasSourceSwaps) {
             LibSwap.SwapData[] memory swapData = _extractSwapData(data_);
@@ -214,7 +216,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         return (
             bridgeData.bridge,
             sendingAssetId,
-            bridgeData.receiver,
+            receiver,
             amount,
             minAmount,
             bridgeData.destinationChainId,
