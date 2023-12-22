@@ -17,6 +17,7 @@ import { Error } from "../libraries/Error.sol";
 /// @notice Form implementation to handle timelock extension for ERC4626 vaults
 contract ERC4626TimelockForm is ERC4626FormImplementation {
     using SafeERC20 for IERC20;
+    using SafeERC20 for IERC4626TimelockVault;
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
@@ -96,46 +97,53 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         vars.asset = asset;
         IERC20 assetERC = IERC20(vars.asset);
 
-        uint256 assetsBalanceBefore = assetERC.balanceOf(vars.receiver);
-        assets = v.redeem(p_.data.amount, vars.receiver, address(this));
-        uint256 assetsBalanceAfter = assetERC.balanceOf(vars.receiver);
-        if (assetsBalanceAfter - assetsBalanceBefore != assets) {
-            revert Error.VAULT_IMPLEMENTATION_FAILED();
-        }
-        if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
+        if (!p_.data.retain4626) {
+            uint256 assetsBalanceBefore = assetERC.balanceOf(vars.receiver);
+            assets = v.redeem(p_.data.amount, vars.receiver, address(this));
+            uint256 assetsBalanceAfter = assetERC.balanceOf(vars.receiver);
+            if (assetsBalanceAfter - assetsBalanceBefore != assets) {
+                revert Error.VAULT_IMPLEMENTATION_FAILED();
+            }
+            if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
-        /// @dev validate and dispatches the tokens
-        if (vars.len1 != 0) {
-            vars.bridgeValidator = superRegistry.getBridgeValidator(vars.liqData.bridgeId);
-            vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(vars.liqData.txData, false);
+            /// @dev validate and dispatches the tokens
+            if (vars.len1 != 0) {
+                vars.bridgeValidator = superRegistry.getBridgeValidator(vars.liqData.bridgeId);
+                vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(vars.liqData.txData, false);
 
-            /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
-            if (vars.amount > assets) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+                /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
+                if (vars.amount > assets) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
-            vars.chainId = CHAIN_ID;
+                vars.chainId = CHAIN_ID;
 
-            /// @dev validate and perform the swap to desired output token and send to beneficiary
-            IBridgeValidator(superRegistry.getBridgeValidator(vars.liqData.bridgeId)).validateTxData(
-                IBridgeValidator.ValidateTxDataArgs(
+                /// @dev validate and perform the swap to desired output token and send to beneficiary
+                IBridgeValidator(superRegistry.getBridgeValidator(vars.liqData.bridgeId)).validateTxData(
+                    IBridgeValidator.ValidateTxDataArgs(
+                        vars.liqData.txData,
+                        vars.chainId,
+                        p_.isXChain == 1 ? p_.srcChainId : vars.chainId,
+                        vars.liqData.liqDstChainId,
+                        false,
+                        address(this),
+                        p_.data.receiverAddress,
+                        vars.asset,
+                        address(0)
+                    )
+                );
+
+                _dispatchTokens(
+                    superRegistry.getBridgeAddress(vars.liqData.bridgeId),
                     vars.liqData.txData,
-                    vars.chainId,
-                    p_.isXChain == 1 ? p_.srcChainId : vars.chainId,
-                    vars.liqData.liqDstChainId,
-                    false,
-                    address(this),
-                    p_.data.receiverAddress,
                     vars.asset,
-                    address(0)
-                )
-            );
+                    vars.amount,
+                    vars.liqData.nativeAmount
+                );
+            }
+        } else {
+            /// @dev if the 4626 is to be retained, the 4626 is sent directly to the receiver
+            v.safeTransfer(p_.data.receiverAddress, p_.data.amount);
 
-            _dispatchTokens(
-                superRegistry.getBridgeAddress(vars.liqData.bridgeId),
-                vars.liqData.txData,
-                vars.asset,
-                vars.amount,
-                vars.liqData.nativeAmount
-            );
+            return 0;
         }
     }
 

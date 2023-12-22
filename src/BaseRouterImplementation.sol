@@ -326,7 +326,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformData.maxSlippage,
             req_.superformData.liqRequest,
             false,
-            false,
+            req_.superformData.retain4626,
             req_.superformData.receiverAddress,
             req_.superformData.extraFormData
         );
@@ -374,7 +374,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformData.maxSlippage,
             req_.superformData.liqRequest,
             false,
-            false,
+            req_.superformData.retain4626,
             req_.superformData.receiverAddress,
             req_.superformData.extraFormData
         );
@@ -424,7 +424,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformData.maxSlippages,
             req_.superformData.liqRequests,
             new bool[](req_.superformData.superformIds.length),
-            new bool[](req_.superformData.superformIds.length),
+            req_.superformData.retain4626s,
             req_.superformData.receiverAddress,
             req_.superformData.extraFormData
         );
@@ -461,7 +461,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformsData.maxSlippages,
             req_.superformsData.liqRequests,
             new bool[](req_.superformsData.amounts.length),
-            new bool[](req_.superformsData.amounts.length),
+            req_.superformsData.retain4626s,
             req_.superformsData.receiverAddress,
             req_.superformsData.extraFormData
         );
