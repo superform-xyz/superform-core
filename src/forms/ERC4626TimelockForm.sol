@@ -140,9 +140,8 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
                 );
             }
         } else {
-            /// @dev if the 4626 is to be retained, the 4626 is sent directly to the receiver
+            /// @dev transfer shares to user and do not redeem shares for assets
             v.safeTransfer(p_.data.receiverAddress, p_.data.amount);
-
             return 0;
         }
     }

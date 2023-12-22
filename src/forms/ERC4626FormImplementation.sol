@@ -341,7 +341,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 );
             }
         } else {
-            /// @dev transfer shares to user and do not withdraw
+            /// @dev transfer shares to user and do not redeem shares for assets
             v.safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
             return 0;
         }
@@ -419,7 +419,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 );
             }
         } else {
-            /// @dev transfer shares to user and do not withdraw
+            /// @dev transfer shares to user and do not redeem shares for assets
             v.safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
             return 0;
         }
