@@ -341,7 +341,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 );
             }
         } else {
-            /// transfer shares to user and do not withdraw
+            /// @dev transfer shares to user and do not withdraw
             v.safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
             return 0;
         }
@@ -419,7 +419,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 );
             }
         } else {
-            /// transfer shares to user and do not withdraw
+            /// @dev transfer shares to user and do not withdraw
             v.safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
             return 0;
         }
@@ -428,15 +428,15 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     }
 
     function _processEmergencyWithdraw(address receiverAddress_, uint256 amount_) internal {
-        IERC4626 vaultContract = IERC4626(vault);
+        IERC4626 v = IERC4626(vault);
 
-        if (vaultContract.balanceOf(address(this)) < amount_) {
+        if (v.balanceOf(address(this)) < amount_) {
             revert Error.INSUFFICIENT_BALANCE();
         }
 
         if (receiverAddress_ == address(0)) revert Error.ZERO_ADDRESS();
 
-        vaultContract.safeTransfer(receiverAddress_, amount_);
+        v.safeTransfer(receiverAddress_, amount_);
         emit EmergencyWithdrawalProcessed(receiverAddress_, amount_);
     }
 
