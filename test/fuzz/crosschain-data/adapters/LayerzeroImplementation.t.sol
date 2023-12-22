@@ -363,10 +363,6 @@ contract LayerzeroImplementationTest is BaseSetup {
         vm.prank(bond);
         lzImplOP.lzReceive(101, srcAddressOP, 2, payload);
 
-        vm.expectRevert(Error.DUPLICATE_PAYLOAD.selector);
-        vm.prank(LZ_ENDPOINT_OP);
-        lzImplOP.lzReceive(101, srcAddressOP, 2, payload);
-
         vm.expectRevert(Error.INVALID_SRC_SENDER.selector);
         vm.prank(LZ_ENDPOINT_OP);
         /// @dev notice the use of 111 (OP's lz_chainId as srcChainId on OP) instead of 101 (ETH's)

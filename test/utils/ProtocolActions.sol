@@ -1414,7 +1414,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             if (payloadId == 0) {
                 payloadId = PAYLOAD_ID[DST_CHAINS[0]];
             }
-            (v.rescueSuperformIds,) = CoreStateRegistry(v.coreStateRegistryDst).getFailedDeposits(payloadId);
+            (v.rescueSuperformIds,,) = CoreStateRegistry(v.coreStateRegistryDst).getFailedDeposits(payloadId);
             v.amounts = new uint256[](v.rescueSuperformIds.length);
 
             for (uint256 i = 0; i < v.rescueSuperformIds.length; ++i) {

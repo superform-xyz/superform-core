@@ -2,6 +2,9 @@
 pragma solidity ^0.8.23;
 
 import { kycDAO4626 } from "super-vaults/kycdao-4626/kycdao4626.sol";
+import { ERC721Holder } from "openzeppelin-contracts/contracts/token/ERC721/utils/ERC721Holder.sol";
+import { IKycdaoNTNFT } from "../vendor/kycDAO/IKycDAONTNFT.sol";
+import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { InitSingleVaultData } from "../types/DataTypes.sol";
 import { ERC4626FormImplementation } from "./ERC4626FormImplementation.sol";
 import { BaseForm } from "../BaseForm.sol";
@@ -10,7 +13,7 @@ import { Error } from "../libraries/Error.sol";
 /// @title ERC4626KYCDaoForm
 /// @notice The Form implementation for IERC4626 vaults with kycDAO NFT checks
 /// @notice This form must hold a kycDAO NFT to operate
-contract ERC4626KYCDaoForm is ERC4626FormImplementation {
+contract ERC4626KYCDaoForm is ERC4626FormImplementation, ERC721Holder {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
@@ -36,6 +39,20 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
         _;
     }
 
+    modifier onlyProtocolAdmin() {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
+            revert Error.NOT_PROTOCOL_ADMIN();
+        }
+        _;
+    }
+    //////////////////////////////////////////////////////////////
+    //                  EXTERNAL ADMIN FUNCTIONS                //
+    //////////////////////////////////////////////////////////////
+
+    function mintKYC(uint32 authCode_) external onlyProtocolAdmin {
+        IKycdaoNTNFT(address(kycDAO4626(vault).kycValidity())).mintWithCode(authCode_);
+    }
+
     //////////////////////////////////////////////////////////////
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
@@ -48,9 +65,9 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
         internal
         override
         onlyKYC(srcSender_)
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
-        dstAmount = _processDirectDeposit(singleVaultData_);
+        shares = _processDirectDeposit(singleVaultData_);
     }
 
     function _xChainDepositIntoVault(
@@ -61,7 +78,7 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
         internal
         pure
         override
-        returns (uint256 /*dstAmount*/ )
+        returns (uint256 /*shares*/ )
     {
         revert Error.NOT_IMPLEMENTED();
     }
@@ -74,9 +91,9 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
         internal
         override
         onlyKYC(srcSender_)
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
-        dstAmount = _processDirectWithdraw(singleVaultData_);
+        assets = _processDirectWithdraw(singleVaultData_);
     }
 
     /// @inheritdoc BaseForm
@@ -88,7 +105,7 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
         internal
         pure
         override
-        returns (uint256 /*dstAmount*/ )
+        returns (uint256 /*assets*/ )
     {
         revert Error.NOT_IMPLEMENTED();
     }

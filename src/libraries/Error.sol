@@ -332,6 +332,9 @@ library Error {
     /// @dev thrown if update payload function was called on a wrong payload
     error INVALID_PAYLOAD_UPDATE_REQUEST();
 
+    /// @dev thrown if a state registry id is 0
+    error INVALID_REGISTRY_ID();
+
     /// @dev thrown if trying to finalize the payload but the withdraw is still locked
     error LOCKED();
 
@@ -394,17 +397,24 @@ library Error {
     error INVALID_DST_SWAPPER_FAILED_SWAP_NO_NATIVE_BALANCE();
 
     /// FORM EXECUTION ERRORS
+
     /// @dev thrown in KYCDAO form if no KYC token is present
     error NO_VALID_KYC_TOKEN();
 
     /// @dev thrown if form implementation is PAUSED, users cannot perform any action
     error PAUSED();
 
+    /// @dev thrown if shares != deposit output or assets != redeem output when minting SuperPositions
+    error VAULT_IMPLEMENTATION_FAILED();
+
     /// @dev thrown if withdrawal tx data is not updated
     error WITHDRAW_TOKEN_NOT_UPDATED();
 
     /// @dev thrown if withdrawal tx data is not updated
     error WITHDRAW_TX_DATA_NOT_UPDATED();
+
+    /// @dev thrown when redeeming from vault yields zero collateral
+    error WITHDRAW_ZERO_COLLATERAL();
 
     /// PAYMENT HELPER EXECUTION ERRORS
     /// @dev thrown if chainlink is reporting an improper price

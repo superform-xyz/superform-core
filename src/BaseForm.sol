@@ -180,9 +180,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         override
         onlySuperRouter
         notPaused(singleVaultData_)
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
-        dstAmount = _directDepositIntoVault(singleVaultData_, srcSender_);
+        shares = _directDepositIntoVault(singleVaultData_, srcSender_);
     }
 
     /// @inheritdoc IBaseForm
@@ -193,10 +193,10 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         external
         override
         onlySuperRouter
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
         if (!_isPaused(singleVaultData_.superformId)) {
-            dstAmount = _directWithdrawFromVault(singleVaultData_, srcSender_);
+            assets = _directWithdrawFromVault(singleVaultData_, srcSender_);
         } else {
             IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
                 singleVaultData_, srcSender_
@@ -214,10 +214,10 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         override
         onlyCoreStateRegistry
         notPaused(singleVaultData_)
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
         if (srcChainId_ != 0 && srcChainId_ != CHAIN_ID) {
-            dstAmount = _xChainDepositIntoVault(singleVaultData_, srcSender_, srcChainId_);
+            shares = _xChainDepositIntoVault(singleVaultData_, srcSender_, srcChainId_);
         } else {
             revert Error.INVALID_CHAIN_ID();
         }
@@ -232,11 +232,11 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         external
         override
         onlyCoreStateRegistry
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
         if (srcChainId_ != 0 && srcChainId_ != CHAIN_ID) {
             if (!_isPaused(singleVaultData_.superformId)) {
-                dstAmount = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
+                assets = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
             } else {
                 IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
                     singleVaultData_, srcSender_
@@ -277,7 +277,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     )
         internal
         virtual
-        returns (uint256 dstAmount);
+        returns (uint256 shares);
 
     /// @dev Deposits underlying tokens into a vault
     function _xChainDepositIntoVault(
@@ -287,7 +287,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     )
         internal
         virtual
-        returns (uint256 dstAmount);
+        returns (uint256 shares);
 
     /// @dev Withdraws underlying tokens from a vault
     function _directWithdrawFromVault(
@@ -296,7 +296,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     )
         internal
         virtual
-        returns (uint256 dstAmount_);
+        returns (uint256 assets);
 
     /// @dev Withdraws underlying tokens from a vault
     function _xChainWithdrawFromVault(
@@ -306,7 +306,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     )
         internal
         virtual
-        returns (uint256 dstAmount);
+        returns (uint256 assets);
 
     /// @dev withdraws vault shares from form during emergency
     function _emergencyWithdraw(address srcSender_, address receiverAddress_, uint256 amount_) internal virtual;

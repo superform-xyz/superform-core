@@ -45,7 +45,9 @@ abstract contract CommonProtocolActions is BaseSetup {
         view
         returns (bytes memory txData)
     {
-        if (args.liqBridgeKind == 1) {
+        /// @dev note: 4 is added here to test a bridge acting maliciously (check
+        /// test_maliciousBridge_protectionAgainstTokenDrain)
+        if (args.liqBridgeKind == 1 || args.liqBridgeKind == 4) {
             if (!sameChain) {
                 ILiFi.BridgeData memory bridgeData;
                 LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
