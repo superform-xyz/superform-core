@@ -171,12 +171,15 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
             role_ == PROTOCOL_ADMIN_ROLE || role_ == EMERGENCY_ADMIN_ROLE || role_ == BROADCASTER_ROLE
                 || role_ == WORMHOLE_VAA_RELAYER_ROLE
         ) revert Error.CANNOT_REVOKE_NON_BROADCASTABLE_ROLES();
-        _revokeRole(role_, superRegistry.getAddress(superRegistryAddressId_));
-        if (extraData_.length != 0) {
-            BroadcastMessage memory rolesPayload = BroadcastMessage(
-                "SUPER_RBAC", SYNC_REVOKE, abi.encode(++xChainPayloadCounter, role_, superRegistryAddressId_)
-            );
-            _broadcast(abi.encode(rolesPayload), extraData_);
+        if (_revokeRole(role_, superRegistry.getAddress(superRegistryAddressId_))) {
+            if (extraData_.length != 0) {
+                BroadcastMessage memory rolesPayload = BroadcastMessage(
+                    "SUPER_RBAC", SYNC_REVOKE, abi.encode(++xChainPayloadCounter, role_, superRegistryAddressId_)
+                );
+                _broadcast(abi.encode(rolesPayload), extraData_);
+            }
+        } else {
+            revert Error.ROLE_NOT_ASSIGNED();
         }
     }
 
@@ -194,7 +197,11 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
                 role == PROTOCOL_ADMIN_ROLE || role == EMERGENCY_ADMIN_ROLE || role == BROADCASTER_ROLE
                     || role == WORMHOLE_VAA_RELAYER_ROLE
             )
-        ) _revokeRole(role, superRegistry.getAddress(superRegistryAddressId));
+        ) {
+            if (!_revokeRole(role, superRegistry.getAddress(superRegistryAddressId))) {
+                revert Error.ROLE_NOT_ASSIGNED();
+            }
+        }
     }
 
     //////////////////////////////////////////////////////////////

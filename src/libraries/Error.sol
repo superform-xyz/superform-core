@@ -34,6 +34,9 @@ library Error {
     /// @dev thrown if indices have duplicates
     error DUPLICATE_INDEX();
 
+    /// @dev thrown if a role to be revoked is not assigned
+    error ROLE_NOT_ASSIGNED();
+
     //////////////////////////////////////////////////////////////
     //                  AUTHORIZATION ERRORS                    //
     //////////////////////////////////////////////////////////////
