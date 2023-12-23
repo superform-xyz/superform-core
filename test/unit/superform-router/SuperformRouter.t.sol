@@ -1802,7 +1802,16 @@ contract SuperformRouterTest is ProtocolActions {
         );
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            v.superformIds, v.amounts, v.maxSlippages, v.liqReqs, "", v.hasDstSwaps, v.retain4626s, receiverAddress, ""
+            v.superformIds,
+            v.amounts,
+            v.maxSlippages,
+            v.liqReqs,
+            "",
+            v.hasDstSwaps,
+            v.retain4626s,
+            receiverAddress,
+            receiverAddress,
+            ""
         );
         v.ambIds = new uint8[](1);
         v.ambIds[0] = 1;
