@@ -116,7 +116,7 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation, ERC721Holder {
     }
 
     /// @inheritdoc BaseForm
-    function _forwardDustToPaymaster() internal override {
-        _processForwardDustToPaymaster();
+    function _forwardDustToPaymaster(address token_) internal override {
+        _processForwardDustToPaymaster(token_);
     }
 }

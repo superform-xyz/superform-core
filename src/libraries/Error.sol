@@ -362,6 +362,15 @@ library Error {
     /// @dev thrown in forms where a certain functionality is not allowed or implemented
     error NOT_IMPLEMENTED();
 
+    /// @dev thrown when redeeming from vault yields zero collateral
+    error WITHDRAW_ZERO_COLLATERAL();
+
+    /*///////////////////////////////////////////////////////////////
+                        PAYMASTER ERRORS
+    //////////////////////////////////////////////////////////////*/
+    /// @dev cannot forward 4626 shares from any form
+    error CANNOT_FORWARD_4646_TOKEN();
+
     /// DST SWAPPER EXECUTION ERRORS
     /// @dev forbid xChain deposits with destination swaps without interim token set (for user protection)
     error INVALID_INTERIM_TOKEN();
@@ -403,9 +412,6 @@ library Error {
 
     /// @dev thrown if withdrawal tx data is not updated
     error WITHDRAW_TX_DATA_NOT_UPDATED();
-    
-    /// @dev thrown when redeeming from vault yields zero collateral
-    error WITHDRAW_ZERO_COLLATERAL();
 
     /// PAYMENT HELPER EXECUTION ERRORS
     /// @dev thrown if chainlink is reporting an improper price

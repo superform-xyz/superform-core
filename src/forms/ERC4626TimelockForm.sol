@@ -216,8 +216,8 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     }
 
     /// @inheritdoc BaseForm
-    function _forwardDustToPaymaster() internal override {
-        _processForwardDustToPaymaster();
+    function _forwardDustToPaymaster(address token_) internal override {
+        _processForwardDustToPaymaster(token_);
     }
 
     /// @dev calls the vault to request unlock

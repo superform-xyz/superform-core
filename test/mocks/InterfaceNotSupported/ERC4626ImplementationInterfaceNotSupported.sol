@@ -347,17 +347,16 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         emit EmergencyWithdrawalProcessed(receiverAddress_, amount_);
     }
 
-    function _processForwardDustToPaymaster() internal {
-        address paymaster = superRegistry.getAddress(keccak256("PAYMASTER"));
-        if (paymaster != address(0)) {
-            IERC20 token = IERC20(getVaultAsset());
+    function _processForwardDustToPaymaster(address token_) internal {
+        if (token_ == address(0)) revert Error.ZERO_ADDRESS();
 
-            uint256 dust = token.balanceOf(address(this));
-            if (dust > 0) {
-                token.safeTransferFrom(address(this), paymaster, dust);
-            }
-        } else {
-            revert Error.ZERO_ADDRESS();
+        address paymaster = superRegistry.getAddress(keccak256("PAYMASTER"));
+        IERC20 token = IERC20(token_);
+
+        uint256 dust = token.balanceOf(address(this));
+        if (dust != 0) {
+            token.safeTransfer(paymaster, dust);
+            emit FormDustForwardedToPaymaster(token_, dust);
         }
     }
 

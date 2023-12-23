@@ -96,7 +96,7 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
             ETH, string.concat("DAI", "kycDAO4626", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[2]))
         );
 
-        IBaseForm(superform).forwardDustToPaymaster();
+        IBaseForm(superform).forwardDustToPaymaster(getContract(ETH, "DAI"));
     }
 
     function test_emergencyWithdraw() public {

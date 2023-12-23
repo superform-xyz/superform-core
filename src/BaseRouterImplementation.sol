@@ -134,7 +134,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformData.extraFormData
         );
 
-        /// @dev same chain action & forward residual payment to payment collector
+        /// @dev same chain action & forward residual payment to Paymaster
         _directSingleDeposit(
             msg.sender, req_.superformData.permit2data, req_.superformData.receiverAddressSP, vaultData
         );
@@ -243,7 +243,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformData.extraFormData
         );
 
-        /// @dev same chain action & forward residual payment to payment collector
+        /// @dev same chain action & forward residual payment to Paymaster
         _directMultiDeposit(
             MultiDepositArgs(
                 msg.sender, req_.superformData.permit2data, req_.superformData.receiverAddressSP, vaultData
@@ -461,7 +461,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformData.extraFormData
         );
 
-        /// @dev same chain action & forward residual payment to payment collector
+        /// @dev same chain action & forward residual payment to Paymaster
         _directMultiWithdraw(vaultData, msg.sender);
         emit Completed();
     }
@@ -778,6 +778,19 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
     }
 
+    function _forwardDustToPaymaster(address token_) internal {
+        if (token_ == address(0)) revert Error.ZERO_ADDRESS();
+
+        address paymaster = superRegistry.getAddress(keccak256("PAYMASTER"));
+        IERC20 token = IERC20(token_);
+
+        uint256 dust = token.balanceOf(address(this));
+        if (dust != 0) {
+            token.safeTransfer(paymaster, dust);
+            emit RouterDustForwardedToPaymaster(token_, dust);
+        }
+    }
+
     //////////////////////////////////////////////////////////////
     //               INTERNAL VALIDATION HELPERS                //
     //////////////////////////////////////////////////////////////
@@ -933,9 +946,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     //             INTERNAL FEE FORWARDING HELPERS              //
     //////////////////////////////////////////////////////////////
 
-    /// @dev forwards the residual payment to payment collector
+    /// @dev forwards the residual payment to Paymaster
     function _forwardPayment(uint256 _balanceBefore) internal virtual {
-        /// @dev deducts what's already available sends what's left in msg.value to payment collector
+        /// @dev deducts what's already available sends what's left in msg.value to Paymaster
         uint256 residualPayment = address(this).balance - _balanceBefore;
 
         if (residualPayment != 0) {

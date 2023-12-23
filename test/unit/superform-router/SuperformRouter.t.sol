@@ -1802,7 +1802,16 @@ contract SuperformRouterTest is ProtocolActions {
         );
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            v.superformIds, v.amounts, v.maxSlippages, v.liqReqs, "", v.hasDstSwaps, v.retain4626s, receiverAddress, ""
+            v.superformIds,
+            v.amounts,
+            v.maxSlippages,
+            v.liqReqs,
+            "",
+            v.hasDstSwaps,
+            v.retain4626s,
+            receiverAddress,
+            receiverAddress,
+            ""
         );
         v.ambIds = new uint8[](1);
         v.ambIds[0] = 1;
@@ -2556,6 +2565,22 @@ contract SuperformRouterTest is ProtocolActions {
         /// @dev swapped tokens (remainder of negative slippage) remain on dstSwapper
         vm.selectFork(FORKS[ARBI]);
         assertEq(MockERC20(getContract(ARBI, "DAI")).balanceOf(getContract(ARBI, "CoreStateRegistry")), 1e18);
+    }
+
+    function test_forwardDustToPaymaster_router() public {
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address payable router = payable(getContract(ETH, "SuperformRouter"));
+
+        address token = getContract(ETH, "DAI");
+        /// @dev transfer 10 dai to router
+        deal(token, router, 10e18);
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        SuperformRouter(router).forwardDustToPaymaster(address(0));
+
+        SuperformRouter(router).forwardDustToPaymaster(token);
     }
 
     struct SimulateUpdateTestLocalVars {
