@@ -15,7 +15,7 @@ import "src/types/DataTypes.sol";
 
 contract ForwardDustFormTest is ProtocolActions {
     uint64 internal chainId = ETH;
-    address refundAddress = address(444);
+    address receiverAddress = address(444);
 
     function setUp() public override {
         super.setUp();
@@ -102,7 +102,8 @@ contract ForwardDustFormTest is ProtocolActions {
             "",
             false,
             false,
-            refundAddress,
+            receiverAddress,
+            receiverAddress,
             ""
         );
 
@@ -118,7 +119,8 @@ contract ForwardDustFormTest is ProtocolActions {
 
         vm.stopPrank();
 
-        uint256 superPositionBalance = SuperPositions(getContract(ARBI, "SuperPositions")).balanceOf(user, superformId);
+        uint256 superPositionBalance =
+            SuperPositions(getContract(ARBI, "SuperPositions")).balanceOf(receiverAddress, superformId);
 
         InitSingleVaultData memory data2 = InitSingleVaultData(
             1,
@@ -136,7 +138,7 @@ contract ForwardDustFormTest is ProtocolActions {
                         ETH,
                         nasty_ ? 0.2e18 : IBaseForm(superform).previewRedeemFrom(superPositionBalance), // nastiness
                             // here
-                        refundAddress,
+                        receiverAddress,
                         false
                     )
                 ),
@@ -148,7 +150,7 @@ contract ForwardDustFormTest is ProtocolActions {
             ),
             false,
             false,
-            refundAddress,
+            receiverAddress,
             ""
         );
         vm.selectFork(FORKS[ARBI]);

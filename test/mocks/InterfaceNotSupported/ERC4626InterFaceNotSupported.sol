@@ -68,8 +68,8 @@ contract ERC4626FormInterfaceNotSupported is ERC4626FormImplementationInterfaceN
     }
 
     /// @inheritdoc BaseForm
-    function _emergencyWithdraw(address, /* srcSender*/ address refundAddress_, uint256 amount_) internal override {
-        _processEmergencyWithdraw(refundAddress_, amount_);
+    function _emergencyWithdraw(address receiverAddress_, uint256 amount_) internal override {
+        _processEmergencyWithdraw(receiverAddress_, amount_);
     }
 
     /// @inheritdoc BaseForm

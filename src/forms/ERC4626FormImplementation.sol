@@ -415,11 +415,13 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     function _processEmergencyWithdraw(address receiverAddress_, uint256 amount_) internal {
         IERC4626 vaultContract = IERC4626(vault);
 
+        if (receiverAddress_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
+
         if (vaultContract.balanceOf(address(this)) < amount_) {
             revert Error.INSUFFICIENT_BALANCE();
         }
-
-        if (receiverAddress_ == address(0)) revert Error.ZERO_ADDRESS();
 
         vaultContract.safeTransfer(receiverAddress_, amount_);
         emit EmergencyWithdrawalProcessed(receiverAddress_, amount_);

@@ -111,15 +111,7 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation, ERC721Holder {
     }
 
     /// @inheritdoc BaseForm
-    function _emergencyWithdraw(
-        address srcSender_,
-        address receiverAddress_,
-        uint256 amount_
-    )
-        internal
-        override
-        onlyKYC(srcSender_)
-    {
+    function _emergencyWithdraw(address receiverAddress_, uint256 amount_) internal override {
         _processEmergencyWithdraw(receiverAddress_, amount_);
     }
 
