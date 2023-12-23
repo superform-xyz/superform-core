@@ -272,6 +272,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     vars.toDst[0],
                     vars.underlyingSrcToken[0],
                     vars.underlyingDstToken[0],
+                    address(0),
                     vars.targetSuperformIds[0],
                     finalAmount,
                     vars.liqBridges[0],
@@ -718,7 +719,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
                                 /// @dev dst swap is performed to ensure tokens reach CoreStateRegistry on deposits
                                 if (action.multiVaults) {
-                                    vars.amounts = vars.targetAmounts[i];
                                     _batchProcessDstSwap(
                                         vars.liqBridges,
                                         vars.CHAIN_0,
@@ -899,6 +899,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                 args.toDst[i],
                 args.underlyingTokens[i],
                 args.underlyingTokensDst[i],
+                address(0),
                 args.superformIds[i],
                 finalAmounts[i],
                 args.liqBridges[i],
