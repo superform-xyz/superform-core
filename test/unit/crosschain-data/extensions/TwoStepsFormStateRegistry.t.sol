@@ -43,12 +43,12 @@ contract TimelockStateRegistryTest is ProtocolActions {
 
         vm.prank(getContract(AVAX, "SuperformRouter"));
         SuperPositions(getContract(AVAX, "SuperPositions")).updateTxHistory(
-            1, DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH)
+            1, DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH), receiverAddress
         );
 
         vm.prank(getContract(AVAX, "SuperformRouter"));
         SuperPositions(getContract(AVAX, "SuperPositions")).updateTxHistory(
-            1, DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH)
+            1, DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH), receiverAddress
         );
 
         vm.prank(superform);
@@ -148,7 +148,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
 
         vm.prank(getContract(AVAX, "SuperformRouter"));
         SuperPositions(getContract(AVAX, "SuperPositions")).updateTxHistory(
-            1, DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH)
+            1, DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH), receiverAddress
         );
 
         vm.prank(getContract(AVAX, "HyperlaneImplementation"));

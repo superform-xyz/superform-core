@@ -240,14 +240,14 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         (,, uint8 multi,,,) = DataLib.decodeTxInfo(payloadHeader[payloadId_]);
 
-        address refundAddress;
+        address receiverAddress;
         if (multi == 1) {
-            refundAddress = abi.decode(payloadBody[payloadId_], (InitMultiVaultData)).receiverAddress;
+            receiverAddress = abi.decode(payloadBody[payloadId_], (InitMultiVaultData)).receiverAddress;
         } else {
-            refundAddress = abi.decode(payloadBody[payloadId_], (InitSingleVaultData)).receiverAddress;
+            receiverAddress = abi.decode(payloadBody[payloadId_], (InitSingleVaultData)).receiverAddress;
         }
 
-        failedDeposits[payloadId_].refundAddress = refundAddress;
+        failedDeposits[payloadId_].receiverAddress = receiverAddress;
         emit RescueProposed(payloadId_, failedDeposits_.superformIds, proposedAmounts_, block.timestamp);
     }
 
@@ -261,7 +261,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         /// @dev the msg sender should be the refund address (or) the disputer
         if (
             !(
-                msg.sender == failedDeposits_.refundAddress
+                msg.sender == failedDeposits_.receiverAddress
                     || _hasRole(keccak256("CORE_STATE_REGISTRY_DISPUTER_ROLE"), msg.sender)
             )
         ) {
@@ -308,11 +308,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             /// @dev refunds the amount to user specified refund address
             if (failedDeposits_.settleFromDstSwapper[i]) {
                 dstSwapper.processFailedTx(
-                    failedDeposits_.refundAddress, failedDeposits_.settlementToken[i], failedDeposits_.amounts[i]
+                    failedDeposits_.receiverAddress, failedDeposits_.settlementToken[i], failedDeposits_.amounts[i]
                 );
             } else {
                 IERC20(failedDeposits_.settlementToken[i]).safeTransfer(
-                    failedDeposits_.refundAddress, failedDeposits_.amounts[i]
+                    failedDeposits_.receiverAddress, failedDeposits_.amounts[i]
                 );
             }
         }
