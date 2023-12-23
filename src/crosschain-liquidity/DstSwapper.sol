@@ -176,7 +176,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
     {
         uint256 len = txData_.length;
         if (len == 0) revert Error.ZERO_INPUT_VALUE();
-        if (len != bridgeIds_.length && len != txData_.length) revert Error.ARRAY_LENGTH_MISMATCH();
+        if (len != indices_.length && len != bridgeIds_.length) revert Error.ARRAY_LENGTH_MISMATCH();
 
         IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
         _isValidPayloadId(payloadId_, coreStateRegistry);
