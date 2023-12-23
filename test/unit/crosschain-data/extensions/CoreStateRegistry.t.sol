@@ -151,6 +151,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             new bool[](4),
             new bool[](4),
             receiverAddress,
+                        receiverAddress,
+
             bytes("")
         );
         /// @dev approves before call
@@ -624,6 +626,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             false,
             false,
             receiverAddress,
+                        receiverAddress,
+
             bytes("")
         );
         /// @dev approves before call
@@ -686,6 +690,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             false,
             false,
             receiverAddress,
+                        receiverAddress,
+
             bytes("")
         );
 
@@ -769,6 +775,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             new bool[](2),
             new bool[](2),
             receiverAddress,
+                        receiverAddress,
+
             bytes("")
         );
         /// @dev approves before call
@@ -828,6 +836,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             new bool[](2),
             new bool[](2),
             receiverAddress,
+                        receiverAddress,
+
             bytes("")
         );
 
@@ -910,6 +920,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             new bool[](2),
             new bool[](2),
             receiverAddress,
+                        receiverAddress,
+
             bytes("")
         );
         /// @dev approves before call

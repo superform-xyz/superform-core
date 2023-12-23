@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import { Error } from "src/libraries/Error.sol";
 import "test/utils/ProtocolActions.sol";
+import { IERC1155Errors } from "openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
 
 import { ERC1155Holder } from "openzeppelin-contracts/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
@@ -27,16 +28,41 @@ contract SmartContractWallet is ERC1155Holder {
     }
 }
 
+contract SmartContractWalletNotHolder {
+    SuperformRouter immutable router;
+    address immutable dai;
+
+    constructor(SuperformRouter router_, address dai_) {
+        router = router_;
+        dai = dai_;
+    }
+
+    receive() external payable { }
+
+    function singleXChainSingleVaultDeposit(SingleXChainSingleVaultStateReq memory req) external payable {
+        MockERC20(dai).approve(address(router), req.superformData.amount);
+        router.singleXChainSingleVaultDeposit{ value: msg.value }(req);
+    }
+
+    function singleXChainSingleVaultWithdraw(SingleXChainSingleVaultStateReq memory req) external payable {
+        router.singleXChainSingleVaultWithdraw{ value: msg.value }(req);
+    }
+}
+
 contract SuperformRouterAATest is ProtocolActions {
     address receiverAddress = address(444);
     SmartContractWallet walletSource;
     SmartContractWallet walletDestination;
+    SmartContractWalletNotHolder walletSourceInvalid;
 
     function setUp() public override {
         super.setUp();
 
         vm.selectFork(FORKS[ETH]);
         walletSource = new SmartContractWallet(
+            SuperformRouter(payable(getContract(ETH, "SuperformRouter"))), getContract(ETH, "DAI")
+        );
+        walletSourceInvalid = new SmartContractWalletNotHolder(
             SuperformRouter(payable(getContract(ETH, "SuperformRouter"))), getContract(ETH, "DAI")
         );
 
@@ -47,25 +73,29 @@ contract SuperformRouterAATest is ProtocolActions {
     }
 
     function test_depositWithSmartContractWallet() public {
-        _xChainDeposit_SmartContractWallet(false, true, "VaultMock", 0);
+        _xChainDeposit_SmartContractWallet(false, true, 0, "VaultMock", 0);
     }
 
     function test_depositWithSmartContractWallet_revertsReceive4626_noReceiveAddress() public {
-        _xChainDeposit_SmartContractWallet(false, false, "VaultMock", 0);
+        _xChainDeposit_SmartContractWallet(false, false, 0, "VaultMock", 0);
     }
 
-    function test_depositWithSmartContractWallet_receive4626_HasReceiveAddress() public {
-        _xChainDeposit_SmartContractWallet(true, true, "VaultMock", 0);
+    function test_depositWithSmartContractWallet_InvalidHolder() public {
+        _xChainDeposit_SmartContractWallet(true, true, 1, "VaultMock", 0);
     }
 
-    function test_withdrawWithSmartContractWallet() public {
-        _xChainDeposit_SmartContractWallet(false, true, "VaultMock", 0);
+    function test_depositWithSmartContractWallet_revertsReceive4626_noReceiveAddressSP() public {
+        _xChainDeposit_SmartContractWallet(false, false, 2, "VaultMock", 0);
+    }
+
+    function test_withdrawWithSmartContractWallet_deposit_Withdraw() public {
+        _xChainDeposit_SmartContractWallet(false, true, 0, "VaultMock", 0);
 
         _xChainWithdraw_SmartContractWallet(ETH, address(walletDestination), false, "VaultMock", 0);
     }
 
     function test_withdrawWithSmartContractWallet_3rdChainId() public {
-        _xChainDeposit_SmartContractWallet(false, true, "VaultMock", 0);
+        _xChainDeposit_SmartContractWallet(false, true, 0, "VaultMock", 0);
         vm.selectFork(FORKS[AVAX]);
         SmartContractWallet walletDestinationAVAX = new SmartContractWallet(
             SuperformRouter(payable(getContract(AVAX, "SuperformRouter"))), getContract(AVAX, "DAI")
@@ -75,13 +105,13 @@ contract SuperformRouterAATest is ProtocolActions {
     }
 
     function test_withdrawWithSmartContractWallet_timelock() public {
-        _xChainDeposit_SmartContractWallet(false, true, "ERC4626TimelockMock", 1);
+        _xChainDeposit_SmartContractWallet(false, true, 0, "ERC4626TimelockMock", 1);
 
         _xChainWithdraw_SmartContractWallet(ETH, address(walletDestination), false, "ERC4626TimelockMock", 1);
     }
 
     function test_withdrawWithSmartContractWallet_3rdChainId_timelock() public {
-        _xChainDeposit_SmartContractWallet(false, true, "ERC4626TimelockMock", 1);
+        _xChainDeposit_SmartContractWallet(false, true, 0, "ERC4626TimelockMock", 1);
         vm.selectFork(FORKS[AVAX]);
         SmartContractWallet walletDestinationAVAX = new SmartContractWallet(
             SuperformRouter(payable(getContract(AVAX, "SuperformRouter"))), getContract(AVAX, "DAI")
@@ -93,6 +123,7 @@ contract SuperformRouterAATest is ProtocolActions {
     function _xChainDeposit_SmartContractWallet(
         bool receive4626_,
         bool receiveAddress_,
+        uint256 receiveAddressSP_,
         string memory vaultKind,
         uint256 formImplId
     )
@@ -129,6 +160,16 @@ contract SuperformRouterAATest is ProtocolActions {
             1
         );
 
+        address sourceReceiverOfSP;
+
+        if (receiveAddressSP_ == 0) {
+            sourceReceiverOfSP = address(walletSource);
+        } else if (receiveAddressSP_ == 1) {
+            sourceReceiverOfSP = address(walletSourceInvalid);
+        } else if (receiveAddressSP_ == 2) {
+            sourceReceiverOfSP = address(0);
+        }
+
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             1e18,
@@ -141,6 +182,7 @@ contract SuperformRouterAATest is ProtocolActions {
             false,
             receive4626_,
             receiveAddress_ ? address(walletDestination) : address(0),
+            sourceReceiverOfSP,
             ""
         );
 
@@ -152,7 +194,8 @@ contract SuperformRouterAATest is ProtocolActions {
 
         vm.deal(address(walletSource), 2 ether);
         deal(getContract(ETH, "DAI"), address(walletSource), 1e18);
-
+        vm.deal(address(walletSourceInvalid), 2 ether);
+        deal(getContract(ETH, "DAI"), address(walletSourceInvalid), 1e18);
         /// @dev approves before call
         MockERC20(getContract(ETH, "DAI")).approve(address(walletSource), 1e18);
         vm.stopPrank();
@@ -165,6 +208,16 @@ contract SuperformRouterAATest is ProtocolActions {
             vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
             /// @dev msg sender is wallet, tx origin is deployer
             walletSource.singleXChainSingleVaultDeposit{ value: 2 ether }(req);
+            return;
+        } else if (sourceReceiverOfSP == address(0)) {
+            vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
+            /// @dev msg sender is wallet, tx origin is deployer
+            walletSource.singleXChainSingleVaultDeposit{ value: 2 ether }(req);
+            return;
+        } else if (sourceReceiverOfSP == address(walletSourceInvalid)) {
+            vm.expectRevert(abi.encodeWithSelector(IERC1155Errors.ERC1155InvalidReceiver.selector, sourceReceiverOfSP));
+            /// @dev msg sender is an invalid contract
+            walletSourceInvalid.singleXChainSingleVaultDeposit{ value: 2 ether }(req);
             return;
         }
         /// @dev msg sender is wallet, tx origin is deployer
@@ -281,6 +334,8 @@ contract SuperformRouterAATest is ProtocolActions {
             false,
             false,
             liqDstChainId_ != ETH ? scWalletAtLiqDst_ : address(walletDestination),
+            address(0),
+            /// this is a withdraw so it doesn't matter
             ""
         );
 

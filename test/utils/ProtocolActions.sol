@@ -1601,6 +1601,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
             hasDstSwap,
             args.receive4626,
             users[args.user],
+            users[args.user],
+            /// @dev repeat user for receiverAddressSP - not testing AA here
             abi.encode(args.partialWithdrawVaults)
         );
     }
@@ -1782,6 +1784,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
             args.dstSwap,
             args.receive4626,
             users[args.user],
+            users[args.user],
+            /// @dev repeat user for receiverAddressSP - not testing AA here
             abi.encode(false)
         );
     }
@@ -1893,6 +1897,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
             args.dstSwap,
             args.receive4626,
             users[args.user],
+            users[args.user],
+            /// @dev repeat user for receiverAddressSP - not testing AA here
             abi.encode(args.partialWithdrawVault)
         );
     }
@@ -3479,6 +3485,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             "",
             false,
             retain4626,
+            mrperfect,
             mrperfect,
             ""
         );

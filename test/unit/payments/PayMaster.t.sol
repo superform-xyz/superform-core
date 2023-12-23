@@ -327,6 +327,7 @@ contract PayMasterTest is ProtocolActions {
             false,
             false,
             receiverAddress,
+            receiverAddress,
             bytes("")
         );
 

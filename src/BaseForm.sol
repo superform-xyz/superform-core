@@ -198,9 +198,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         if (!_isPaused(singleVaultData_.superformId)) {
             assets = _directWithdrawFromVault(singleVaultData_, srcSender_);
         } else {
-            IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
-                singleVaultData_, srcSender_
-            );
+            IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(singleVaultData_);
         }
     }
 
@@ -239,7 +237,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
                 assets = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
             } else {
                 IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
-                    singleVaultData_, srcSender_
+                    singleVaultData_
                 );
             }
         } else {
@@ -248,16 +246,8 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     }
 
     /// @inheritdoc IBaseForm
-    function emergencyWithdraw(
-        address srcSender_,
-        address receiverAddress_,
-        uint256 amount_
-    )
-        external
-        override
-        onlyEmergencyQueue
-    {
-        _emergencyWithdraw(srcSender_, receiverAddress_, amount_);
+    function emergencyWithdraw(address receiverAddress_, uint256 amount_) external override onlyEmergencyQueue {
+        _emergencyWithdraw(receiverAddress_, amount_);
     }
 
     /// @inheritdoc IBaseForm
@@ -308,7 +298,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         returns (uint256 assets);
 
     /// @dev withdraws vault shares from form during emergency
-    function _emergencyWithdraw(address srcSender_, address receiverAddress_, uint256 amount_) internal virtual;
+    function _emergencyWithdraw(address receiverAddress_, uint256 amount_) internal virtual;
 
     /// @dev forwards dust to paymaster
     function _forwardDustToPaymaster() internal virtual;

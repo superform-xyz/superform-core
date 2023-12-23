@@ -25,6 +25,9 @@ library Error {
     /// @dev thrown if wormhole relayer is not set
     error RELAYER_NOT_SET();
 
+    /// @dev thrown if get native token price estimate in paymentHelper is 0
+    error INVALID_NATIVE_TOKEN_PRICE();
+
     /// @dev thrown if indices are out of bounds
     error INDEX_OUT_OF_BOUNDS();
 
