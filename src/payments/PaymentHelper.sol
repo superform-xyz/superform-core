@@ -882,6 +882,8 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev converts the usd value to source chain's native token
         /// @dev native token price is 8 decimal which cancels the 8 decimal multiplied in previous step
+        uint256 nativeTokenPrice = _getNativeTokenPrice(CHAIN_ID); // native token price - 8 decimal
+        if (nativeTokenPrice == 0) revert Error.INVALID_NATIVE_TOKEN_PRICE();
         nativeFee = (dstUsdValue) / _getNativeTokenPrice(CHAIN_ID);
     }
 

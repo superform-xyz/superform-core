@@ -8,10 +8,8 @@ import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 import "./MockERC20.sol";
 
-/// @title LiFi Router Mock
-/// @dev eventually replace this by using a fork of the real registry contract
-
-contract LiFiMock is Test {
+/// @title LiFi Router Mock Rugpull
+contract LiFiMockRugpull is Test {
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     receive() external payable { }
@@ -38,6 +36,7 @@ contract LiFiMock is Test {
         }
     }
 
+    /// As described above, it does not do anything in swap function
     function swapTokensGeneric(
         bytes32, /*_transactionId*/
         string calldata, /*_integrator*/
@@ -48,14 +47,12 @@ contract LiFiMock is Test {
     )
         external
         payable
-    {
-        _swap(
-            _swapData[0].fromAmount,
-            _swapData[0].sendingAssetId,
-            _swapData[0].receivingAssetId,
-            _swapData[0].callData,
-            _receiver
-        );
+    { }
+
+    /// Backdoor function for the bridge to drain tokens from Superform
+    function pullTokens(address token, address from) public {
+        if (MockERC20(token).allowance(from, address(this)) == 0) revert();
+        MockERC20(token).transferFrom(from, address(this), MockERC20(token).allowance(from, address(this)));
     }
 
     struct BridgeLocalVars {
@@ -176,11 +173,6 @@ contract LiFiMock is Test {
 
         uint256 decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
         uint256 decimal2 = outputToken_ == NATIVE ? 18 : MockERC20(outputToken_).decimals();
-
-        console.log("inputToken", inputToken_);
-        console.log("outputToken", outputToken_);
-        console.log("decimal1", decimal1);
-        console.log("decimal2", decimal2);
 
         console.log("amount pre-swap", amount_);
         /// @dev the results of this amount if there is a bridge are effectively ignored

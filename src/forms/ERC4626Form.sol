@@ -31,9 +31,9 @@ contract ERC4626Form is ERC4626FormImplementation {
     )
         internal
         override
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
-        dstAmount = _processDirectDeposit(singleVaultData_);
+        shares = _processDirectDeposit(singleVaultData_);
     }
 
     /// @inheritdoc BaseForm
@@ -44,9 +44,9 @@ contract ERC4626Form is ERC4626FormImplementation {
     )
         internal
         override
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
-        dstAmount = _processXChainDeposit(singleVaultData_, srcChainId_);
+        shares = _processXChainDeposit(singleVaultData_, srcChainId_);
     }
 
     /// @inheritdoc BaseForm
@@ -56,9 +56,9 @@ contract ERC4626Form is ERC4626FormImplementation {
     )
         internal
         override
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
-        dstAmount = _processDirectWithdraw(singleVaultData_);
+        assets = _processDirectWithdraw(singleVaultData_);
     }
 
     /// @inheritdoc BaseForm
@@ -69,18 +69,18 @@ contract ERC4626Form is ERC4626FormImplementation {
     )
         internal
         override
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
-        dstAmount = _processXChainWithdraw(singleVaultData_, srcChainId_);
+        assets = _processXChainWithdraw(singleVaultData_, srcChainId_);
     }
 
     /// @inheritdoc BaseForm
-    function _emergencyWithdraw(address, /*srcSender_*/ address receiverAddress_, uint256 amount_) internal override {
+    function _emergencyWithdraw(address receiverAddress_, uint256 amount_) internal override {
         _processEmergencyWithdraw(receiverAddress_, amount_);
     }
 
     /// @inheritdoc BaseForm
-    function _forwardDustToPaymaster() internal override {
-        _processForwardDustToPaymaster();
+    function _forwardDustToPaymaster(address token_) internal override {
+        _processForwardDustToPaymaster(token_);
     }
 }

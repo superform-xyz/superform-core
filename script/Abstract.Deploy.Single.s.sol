@@ -571,6 +571,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRegistryC.setAddress(
             vars.superRegistryC.DST_SWAPPER_PROCESSOR(), 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C, vars.chainId
         );
+        vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_RECEIVER(), ownerAddress, vars.chainId);
         vars.superRegistryC.setDelay(86_400);
 
         /// @dev 17 deploy emergency queue
@@ -940,6 +941,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRegistryC.setAddress(
             vars.superRegistryC.DST_SWAPPER_PROCESSOR(), 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C, vars.dstChainId
         );
+        vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_RECEIVER(), ownerAddress, vars.dstChainId);
     }
 
     function _preDeploymentSetup() internal {

@@ -324,7 +324,10 @@ contract LayerzeroImplementationTest is BaseSetup {
         (ambMessage, ambExtraData, coreStateRegistry) = _setupBroadcastPayloadAMBData(users[userIndex]);
 
         vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
-
+        vm.assume(
+            malice_ != getContract(ETH, "CoreStateRegistry") && malice_ != getContract(ETH, "TimelockStateRegistry")
+                && malice_ != getContract(ETH, "BroadcastRegistry")
+        );
         vm.deal(malice_, 100 ether);
         vm.prank(malice_);
         layerzeroImplementation.dispatchPayload{ value: 0.1 ether }(
@@ -361,10 +364,6 @@ contract LayerzeroImplementationTest is BaseSetup {
 
         vm.expectRevert(Error.CALLER_NOT_ENDPOINT.selector);
         vm.prank(bond);
-        lzImplOP.lzReceive(101, srcAddressOP, 2, payload);
-
-        vm.expectRevert(Error.DUPLICATE_PAYLOAD.selector);
-        vm.prank(LZ_ENDPOINT_OP);
         lzImplOP.lzReceive(101, srcAddressOP, 2, payload);
 
         vm.expectRevert(Error.INVALID_SRC_SENDER.selector);

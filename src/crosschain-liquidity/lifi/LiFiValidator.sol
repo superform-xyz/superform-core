@@ -24,7 +24,8 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
 
     /// @inheritdoc BridgeValidator
     function validateReceiver(bytes calldata txData_, address receiver_) external pure override returns (bool valid_) {
-        return _extractBridgeData(txData_).receiver == receiver_;
+        (, address receiver) = _extractBridgeData(txData_);
+        return receiver == receiver_;
     }
 
     /// @inheritdoc BridgeValidator
@@ -198,7 +199,8 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
             bool hasDestinationCall
         )
     {
-        ILiFi.BridgeData memory bridgeData = _extractBridgeData(data_);
+        ILiFi.BridgeData memory bridgeData;
+        (bridgeData, receiver) = _extractBridgeData(data_);
 
         if (bridgeData.hasSourceSwaps) {
             LibSwap.SwapData[] memory swapData = _extractSwapData(data_);
@@ -212,7 +214,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         return (
             bridgeData.bridge,
             sendingAssetId,
-            bridgeData.receiver,
+            receiver,
             amount,
             minAmount,
             bridgeData.destinationChainId,

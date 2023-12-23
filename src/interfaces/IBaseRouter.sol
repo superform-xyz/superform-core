@@ -58,4 +58,8 @@ interface IBaseRouter {
     /// @dev Performs multi destination x multi vault withdraws
     /// @param req_ is the request object containing all the necessary data for the action
     function multiDstMultiVaultWithdraw(MultiDstMultiVaultStateReq calldata req_) external payable;
+
+    /// @dev Forwards dust to Paymaster
+    /// @param token_ the token to forward
+    function forwardDustToPaymaster(address token_) external;
 }

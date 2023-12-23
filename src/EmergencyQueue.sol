@@ -86,22 +86,13 @@ contract EmergencyQueue is IEmergencyQueue {
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IEmergencyQueue
-    function queueWithdrawal(
-        InitSingleVaultData memory data_,
-        address srcSender_
-    )
-        external
-        override
-        onlySuperform(data_.superformId)
-    {
+    function queueWithdrawal(InitSingleVaultData memory data_) external override onlySuperform(data_.superformId) {
         ++queueCounter;
 
         queuedWithdrawal[queueCounter] =
-            QueuedWithdrawal(srcSender_, data_.receiverAddress, data_.superformId, data_.amount, data_.payloadId, false);
+            QueuedWithdrawal(data_.receiverAddress, data_.superformId, data_.amount, data_.payloadId, false);
 
-        emit WithdrawalQueued(
-            srcSender_, data_.receiverAddress, queueCounter, data_.superformId, data_.amount, data_.payloadId
-        );
+        emit WithdrawalQueued(data_.receiverAddress, queueCounter, data_.superformId, data_.amount, data_.payloadId);
     }
 
     /// @inheritdoc IEmergencyQueue
@@ -130,8 +121,8 @@ contract EmergencyQueue is IEmergencyQueue {
         data.isProcessed = true;
 
         (address superform,,) = data.superformId.getSuperform();
-        IBaseForm(superform).emergencyWithdraw(data.srcSender, data.refundAddress, data.amount);
+        IBaseForm(superform).emergencyWithdraw(data.receiverAddress, data.amount);
 
-        emit WithdrawalProcessed(data.refundAddress, id_, data.superformId, data.amount);
+        emit WithdrawalProcessed(data.receiverAddress, id_, data.superformId, data.amount);
     }
 }

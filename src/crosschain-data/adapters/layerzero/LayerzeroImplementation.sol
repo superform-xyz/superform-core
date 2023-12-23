@@ -30,8 +30,6 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
 
     ILayerZeroEndpoint public lzEndpoint;
 
-    /// @dev prevents layerzero relayer from replaying payload
-    mapping(uint16 => mapping(uint64 => bool)) public isValid;
     mapping(uint64 => uint16) public ambChainId;
     mapping(uint16 => uint64) public superChainId;
     mapping(uint16 => bytes) public trustedRemoteLookup;
@@ -250,12 +248,6 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         override
         onlyLzEndpoint
     {
-        if (isValid[srcChainId_][nonce_]) {
-            revert Error.DUPLICATE_PAYLOAD();
-        }
-
-        isValid[srcChainId_][nonce_] = true;
-
         bytes memory trustedRemote = trustedRemoteLookup[srcChainId_];
 
         if (
@@ -331,7 +323,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     function _lzSend(
         uint16 dstChainId_,
         bytes memory payload_,
-        address payable refundAddress_,
+        address payable receiverAddress_,
         address zroPaymentAddress_,
         bytes memory adapterParams_,
         uint256 msgValue_
@@ -344,7 +336,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         }
 
         lzEndpoint.send{ value: msgValue_ }(
-            dstChainId_, trustedRemote, payload_, refundAddress_, zroPaymentAddress_, adapterParams_
+            dstChainId_, trustedRemote, payload_, receiverAddress_, zroPaymentAddress_, adapterParams_
         );
     }
 

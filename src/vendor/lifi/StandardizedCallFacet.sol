@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 /// @title StandardizedCallFacet
 /// @author LI.FI (https://li.fi)
 /// @notice taken from LiFi contracts https://github.com/lifinance/contracts
-/// @custom:version 1.1.0
+/// @custom:version 2.2.0
 contract StandardizedCallFacet {
     /// External Methods ///
 

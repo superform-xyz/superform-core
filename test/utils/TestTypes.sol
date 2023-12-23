@@ -70,8 +70,10 @@ struct StagesLocalVars {
     uint8[] AMBs;
     uint64 CHAIN_0;
     uint64[] DST_CHAINS;
-    uint256 underlyingWith0Slippage;
-    uint256[] underlyingWith0Slippages;
+    uint256 underlyingWithBridgeSlippage;
+    uint256[] underlyingWithBridgeSlippages;
+    uint256[] amountsBeforeCSR;
+    uint256[] finalAmountsThatReachedCSR;
 }
 
 struct MessagingAssertVars {
@@ -137,6 +139,7 @@ struct SetupVars {
     address lifiRouter;
     address socketRouter;
     address socketOneInch;
+    address liFiMockRugpull;
     address erc4626Form;
     address erc4626TimelockForm;
     address kycDao4626Form;
@@ -187,6 +190,7 @@ struct SingleVaultCallDataArgs {
     address toDst;
     address underlyingToken;
     address underlyingTokenDst;
+    address uniqueInterimToken;
     uint256 superformId;
     uint256 amount;
     uint8 liqBridge;

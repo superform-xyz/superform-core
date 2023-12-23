@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract MDMVDMulti102110TokenInputSlippageAMB13 is ProtocolActions {
+contract MDMVDMulti102110NativeTokenInputSlippageAMB13 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////

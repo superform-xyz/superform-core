@@ -97,7 +97,7 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         uint256 totalSuperformsBefore = SuperformFactory(getContract(chainId, "SuperformFactory")).getSuperformCount();
 
         /// @dev Creating superform using form
-        (uint256 superformIdCreated, address superformCreated) =
+        (uint256 superformIdCreated,) =
             SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formImplementationId, vault);
 
         uint256 totalSuperformsAfter = SuperformFactory(getContract(chainId, "SuperformFactory")).getSuperformCount();

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Error } from "../libraries/Error.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { IPayMaster } from "../interfaces/IPayMaster.sol";
@@ -13,6 +15,8 @@ import { LiqRequest } from "../types/DataTypes.sol";
 /// @title PayMaster
 /// @author ZeroPoint Labs
 contract PayMaster is IPayMaster, LiquidityHandler {
+    using SafeERC20 for IERC20;
+
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
@@ -59,11 +63,19 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     receive() external payable { }
 
     /// @inheritdoc IPayMaster
-    function withdrawTo(bytes32 superRegistryId_, uint256 nativeAmount_) external override onlyPaymentAdmin {
-        if (nativeAmount_ > address(this).balance) {
-            revert Error.FAILED_TO_SEND_NATIVE();
+    function withdrawTo(bytes32 superRegistryId_, address token_, uint256 amount_) external override onlyPaymentAdmin {
+        if (amount_ == 0) {
+            revert Error.ZERO_INPUT_VALUE();
+        }
+        if (token_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
         }
 
+        _withdraw(superRegistry.getAddress(superRegistryId_), token_, amount_);
+    }
+
+    /// @inheritdoc IPayMaster
+    function withdrawNativeTo(bytes32 superRegistryId_, uint256 nativeAmount_) external override onlyPaymentAdmin {
         _withdrawNative(superRegistry.getAddress(superRegistryId_), nativeAmount_);
     }
 
@@ -110,18 +122,35 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
 
+    /// @dev helper to move tokens same chain
+    function _withdraw(address receiver_, address token_, uint256 amount_) internal {
+        IERC20 token = IERC20(token_);
+
+        uint256 balance = token.balanceOf(address(this));
+        if (balance < amount_) {
+            revert Error.INSUFFICIENT_BALANCE();
+        }
+        token.safeTransfer(receiver_, amount_);
+
+        emit TokenWithdrawn(receiver_, token_, amount_);
+    }
+
     /// @dev helper to move native tokens same chain
     function _withdrawNative(address receiver_, uint256 amount_) internal {
+        if (address(this).balance < amount_) {
+            revert Error.FAILED_TO_SEND_NATIVE();
+        }
+
         (bool success,) = payable(receiver_).call{ value: amount_ }("");
 
         if (!success) {
             revert Error.FAILED_TO_SEND_NATIVE();
         }
 
-        emit PaymentWithdrawn(receiver_, amount_);
+        emit NativeWithdrawn(receiver_, amount_);
     }
 
-    /// @dev helper to move native tokens cross-chain
+    /// @dev helper to move tokens cross-chain (native or not)
     function _validateAndDispatchTokens(LiqRequest memory liqRequest_, address receiver_) internal {
         address bridgeValidator = superRegistry.getBridgeValidator(liqRequest_.bridgeId);
 

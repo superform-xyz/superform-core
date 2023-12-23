@@ -116,4 +116,7 @@ abstract contract BaseRouter is IBaseRouter {
 
     /// @inheritdoc IBaseRouter
     function multiDstMultiVaultWithdraw(MultiDstMultiVaultStateReq calldata req_) external payable virtual override;
+
+    /// @inheritdoc IBaseRouter
+    function forwardDustToPaymaster(address token_) external virtual override;
 }

@@ -69,10 +69,12 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         external
         view
         override
-        returns (uint256[] memory superformIds, uint256[] memory amounts)
+        returns (uint256[] memory superformIds, uint256[] memory amounts, uint256 lastProposedTime)
     {
-        superformIds = failedDeposits[payloadId_].superformIds;
-        amounts = failedDeposits[payloadId_].amounts;
+        FailedDeposit storage failedDeposit = failedDeposits[payloadId_];
+        superformIds = failedDeposit.superformIds;
+        amounts = failedDeposit.amounts;
+        lastProposedTime = failedDeposit.lastProposedTimestamp;
     }
 
     /// @dev used for try catching purposes
@@ -238,14 +240,14 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         (,, uint8 multi,,,) = DataLib.decodeTxInfo(payloadHeader[payloadId_]);
 
-        address refundAddress;
+        address receiverAddress;
         if (multi == 1) {
-            refundAddress = abi.decode(payloadBody[payloadId_], (InitMultiVaultData)).receiverAddress;
+            receiverAddress = abi.decode(payloadBody[payloadId_], (InitMultiVaultData)).receiverAddress;
         } else {
-            refundAddress = abi.decode(payloadBody[payloadId_], (InitSingleVaultData)).receiverAddress;
+            receiverAddress = abi.decode(payloadBody[payloadId_], (InitSingleVaultData)).receiverAddress;
         }
 
-        failedDeposits[payloadId_].refundAddress = refundAddress;
+        failedDeposits[payloadId_].receiverAddress = receiverAddress;
         emit RescueProposed(payloadId_, failedDeposits_.superformIds, proposedAmounts_, block.timestamp);
     }
 
@@ -259,7 +261,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         /// @dev the msg sender should be the refund address (or) the disputer
         if (
             !(
-                msg.sender == failedDeposits_.refundAddress
+                msg.sender == failedDeposits_.receiverAddress
                     || _hasRole(keccak256("CORE_STATE_REGISTRY_DISPUTER_ROLE"), msg.sender)
             )
         ) {
@@ -306,11 +308,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             /// @dev refunds the amount to user specified refund address
             if (failedDeposits_.settleFromDstSwapper[i]) {
                 dstSwapper.processFailedTx(
-                    failedDeposits_.refundAddress, failedDeposits_.settlementToken[i], failedDeposits_.amounts[i]
+                    failedDeposits_.receiverAddress, failedDeposits_.settlementToken[i], failedDeposits_.amounts[i]
                 );
             } else {
                 IERC20(failedDeposits_.settlementToken[i]).safeTransfer(
-                    failedDeposits_.refundAddress, failedDeposits_.amounts[i]
+                    failedDeposits_.receiverAddress, failedDeposits_.amounts[i]
                 );
             }
         }
@@ -797,11 +799,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                         }),
                         srcSender_,
                         srcChainId_
-                    ) returns (uint256 dstAmount) {
-                        if (dstAmount != 0 && !multiVaultData.retain4626s[i]) {
+                    ) returns (uint256 shares) {
+                        if (shares != 0 && !multiVaultData.retain4626s[i]) {
                             fulfilment = true;
                             /// @dev marks the indexes that require a callback mint of shares (successful)
-                            multiVaultData.amounts[i] = dstAmount;
+                            multiVaultData.amounts[i] = shares;
                         } else {
                             multiVaultData.amounts[i] = 0;
                         }
@@ -827,6 +829,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             }
         }
 
+        if (errors) {
+            emit FailedXChainDeposits(payloadId_);
+        }
+
         /// @dev issue superPositions if at least one vault deposit passed
         if (fulfilment) {
             return _multiReturnData(
@@ -837,10 +843,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 multiVaultData.superformIds,
                 multiVaultData.amounts
             );
-        }
-
-        if (errors) {
-            emit FailedXChainDeposits(payloadId_);
         }
 
         return "";
@@ -902,16 +904,16 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
             /// @dev deposit to superform
             try IBaseForm(superform_).xChainDepositIntoVault(singleVaultData, srcSender_, srcChainId_) returns (
-                uint256 dstAmount
+                uint256 shares
             ) {
-                if (dstAmount != 0 && !singleVaultData.retain4626) {
+                if (shares != 0 && !singleVaultData.retain4626) {
                     return _singleReturnData(
                         srcSender_,
                         singleVaultData.payloadId,
                         TransactionType.DEPOSIT,
                         CallbackType.RETURN,
                         singleVaultData.superformId,
-                        dstAmount
+                        shares
                     );
                 }
             } catch {
