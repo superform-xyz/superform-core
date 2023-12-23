@@ -62,6 +62,9 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     //////////////////////////////////////////////////////////////
 
     /// @dev this function is called when the timelock deposit is ready to be withdrawn after being unlocked
+    /// @dev retain4626 flag is not added in this implementation unlike in ERC4626Implementation.sol because
+    /// @dev if a vault fails to redeem at this stage, superPositions are minted back to the user and he can
+    /// @dev try again with retain4626 flag set and take their shares directly
     /// @param p_ the payload data
     function withdrawAfterCoolDown(TimelockPayload memory p_)
         external
@@ -97,52 +100,46 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         vars.asset = asset;
         IERC20 assetERC = IERC20(vars.asset);
 
-        if (!p_.data.retain4626) {
-            uint256 assetsBalanceBefore = assetERC.balanceOf(vars.receiver);
-            assets = v.redeem(p_.data.amount, vars.receiver, address(this));
-            uint256 assetsBalanceAfter = assetERC.balanceOf(vars.receiver);
-            if (assetsBalanceAfter - assetsBalanceBefore != assets) {
-                revert Error.VAULT_IMPLEMENTATION_FAILED();
-            }
-            if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
+        uint256 assetsBalanceBefore = assetERC.balanceOf(vars.receiver);
+        assets = v.redeem(p_.data.amount, vars.receiver, address(this));
+        uint256 assetsBalanceAfter = assetERC.balanceOf(vars.receiver);
+        if (assetsBalanceAfter - assetsBalanceBefore != assets) {
+            revert Error.VAULT_IMPLEMENTATION_FAILED();
+        }
+        if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
-            /// @dev validate and dispatches the tokens
-            if (vars.len1 != 0) {
-                vars.bridgeValidator = superRegistry.getBridgeValidator(vars.liqData.bridgeId);
-                vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(vars.liqData.txData, false);
+        /// @dev validate and dispatches the tokens
+        if (vars.len1 != 0) {
+            vars.bridgeValidator = superRegistry.getBridgeValidator(vars.liqData.bridgeId);
+            vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(vars.liqData.txData, false);
 
-                /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
-                if (vars.amount > assets) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+            /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
+            if (vars.amount > assets) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
-                vars.chainId = CHAIN_ID;
+            vars.chainId = CHAIN_ID;
 
-                /// @dev validate and perform the swap to desired output token and send to beneficiary
-                IBridgeValidator(superRegistry.getBridgeValidator(vars.liqData.bridgeId)).validateTxData(
-                    IBridgeValidator.ValidateTxDataArgs(
-                        vars.liqData.txData,
-                        vars.chainId,
-                        p_.isXChain == 1 ? p_.srcChainId : vars.chainId,
-                        vars.liqData.liqDstChainId,
-                        false,
-                        address(this),
-                        p_.data.receiverAddress,
-                        vars.asset,
-                        address(0)
-                    )
-                );
-
-                _dispatchTokens(
-                    superRegistry.getBridgeAddress(vars.liqData.bridgeId),
+            /// @dev validate and perform the swap to desired output token and send to beneficiary
+            IBridgeValidator(superRegistry.getBridgeValidator(vars.liqData.bridgeId)).validateTxData(
+                IBridgeValidator.ValidateTxDataArgs(
                     vars.liqData.txData,
+                    vars.chainId,
+                    p_.isXChain == 1 ? p_.srcChainId : vars.chainId,
+                    vars.liqData.liqDstChainId,
+                    false,
+                    address(this),
+                    p_.data.receiverAddress,
                     vars.asset,
-                    vars.amount,
-                    vars.liqData.nativeAmount
-                );
-            }
-        } else {
-            /// @dev transfer shares to user and do not redeem shares for assets
-            v.safeTransfer(p_.data.receiverAddress, p_.data.amount);
-            return 0;
+                    address(0)
+                )
+            );
+
+            _dispatchTokens(
+                superRegistry.getBridgeAddress(vars.liqData.bridgeId),
+                vars.liqData.txData,
+                vars.asset,
+                vars.amount,
+                vars.liqData.nativeAmount
+            );
         }
     }
 
@@ -179,7 +176,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
 
     /// @inheritdoc BaseForm
     /// @dev this is the step-1 for timelock form withdrawal, direct case
-    /// @dev will mandatorily process unlock
+    /// @dev will mandatorily process unlock unless the retain4626 flag is set
     /// @return shares is always 0
     function _directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
@@ -190,16 +187,21 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         override
         returns (uint256)
     {
-        /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to timelock
-        /// @dev state registry for re-processing at a later date
-        _storePayload(0, CHAIN_ID, _requestUnlock(singleVaultData_.amount), singleVaultData_);
-
+        if (!singleVaultData_.retain4626) {
+            /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to
+            /// timelock
+            /// @dev state registry for re-processing at a later date
+            _storePayload(0, CHAIN_ID, _requestUnlock(singleVaultData_.amount), singleVaultData_);
+        } else {
+            /// @dev transfer shares to user and do not redeem shares for assets
+            IERC4626TimelockVault(vault).safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
+        }
         return 0;
     }
 
     /// @inheritdoc BaseForm
     /// @dev this is the step-1 for timelock form withdrawal, xchain case
-    /// @dev will mandatorily process unlock
+    /// @dev will mandatorily process unlock unless the retain4626 flag is set
     /// @return shares is always 0
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
@@ -211,9 +213,15 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         override
         returns (uint256)
     {
-        /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to timelock
-        /// @dev state registry for re-processing at a later date
-        _storePayload(1, srcChainId_, _requestUnlock(singleVaultData_.amount), singleVaultData_);
+        if (!singleVaultData_.retain4626) {
+            /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to
+            /// timelock
+            /// @dev state registry for re-processing at a later date
+            _storePayload(1, srcChainId_, _requestUnlock(singleVaultData_.amount), singleVaultData_);
+        } else {
+            /// @dev transfer shares to user and do not redeem shares for assets
+            IERC4626TimelockVault(vault).safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
+        }
 
         return 0;
     }

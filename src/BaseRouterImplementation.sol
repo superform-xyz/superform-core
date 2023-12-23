@@ -685,6 +685,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         uint256 amount_,
         uint256 maxSlippage_,
         LiqRequest memory liqData_,
+        bool retain4626_,
         address receiverAddress_,
         bytes memory extraFormData_,
         address srcSender_
@@ -701,7 +702,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 maxSlippage_,
                 liqData_,
                 false,
-                false,
+                retain4626_,
                 receiverAddress_,
                 extraFormData_
             ),
@@ -722,6 +723,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             vaultData_.amount,
             vaultData_.maxSlippage,
             vaultData_.liqData,
+            vaultData_.retain4626,
             vaultData_.receiverAddress,
             vaultData_.extraFormData,
             srcSender_
@@ -744,6 +746,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 vaultData_.amounts[i],
                 vaultData_.maxSlippages[i],
                 vaultData_.liqData[i],
+                vaultData_.retain4626s[i],
                 vaultData_.receiverAddress,
                 vaultData_.extraFormData,
                 srcSender_
