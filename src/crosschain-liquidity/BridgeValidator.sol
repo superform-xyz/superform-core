@@ -12,7 +12,7 @@ abstract contract BridgeValidator is IBridgeValidator {
     //                         CONSTANTS                         //
     //////////////////////////////////////////////////////////////
     ISuperRegistry public immutable superRegistry;
-    address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address immutable NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //

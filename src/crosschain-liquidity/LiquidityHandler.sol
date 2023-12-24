@@ -15,10 +15,10 @@ abstract contract LiquidityHandler {
     using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////////////
-    //                         CONSTANTS                         //
+    //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
 
-    address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address immutable NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     //////////////////////////////////////////////////////////////
     //                  INTERNAL FUNCTIONS                      //
