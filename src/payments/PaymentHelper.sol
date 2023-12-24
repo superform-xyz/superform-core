@@ -32,7 +32,7 @@ contract PaymentHelper is IPaymentHelper {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
-    uint256 private constant PROOF_LENGTH = 96;
+    uint256 private constant PROOF_LENGTH = 160;
 
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
