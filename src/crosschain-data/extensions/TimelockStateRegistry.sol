@@ -21,7 +21,7 @@ import "src/types/DataTypes.sol";
 import { ReentrancyGuard } from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 
 /// @title TimelockStateRegistry
-/// @dev handles communication in timelocked forms
+/// @dev Handles communication in timelocked forms
 /// @author Zeropoint Labs
 contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, ReentrancyGuard {
 

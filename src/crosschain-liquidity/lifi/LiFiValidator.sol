@@ -9,8 +9,8 @@ import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import { StandardizedCallFacet } from "src/vendor/lifi/StandardizedCallFacet.sol";
 
 /// @title LiFiValidator
+/// @dev Asserts LiFi input txData is valid
 /// @author Zeropoint Labs
-/// @dev To assert LiFi input txData is valid
 contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
     
     //////////////////////////////////////////////////////////////

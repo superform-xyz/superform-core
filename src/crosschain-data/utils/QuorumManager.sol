@@ -5,9 +5,8 @@ import { IQuorumManager } from "src/interfaces/IQuorumManager.sol";
 import { Error } from "src/libraries/Error.sol";
 
 /// @title QuorumManager
+/// @dev Quorum management to send messages from chain to chain
 /// @author ZeroPoint Labs
-/// @dev separates quorum management concerns into an abstract contract. Can be re-used (currently used by
-/// superRegistry) to set different quorums per amb in different areas of the protocol
 abstract contract QuorumManager is IQuorumManager {
     
     //////////////////////////////////////////////////////////////

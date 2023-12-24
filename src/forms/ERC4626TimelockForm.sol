@@ -14,7 +14,7 @@ import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/Sa
 import { IERC4626TimelockVault } from "super-vaults/interfaces/IERC4626TimelockVault.sol";
 
 /// @title ERC4626TimelockForm
-/// @notice Form implementation to handle timelock extension for ERC4626 vaults
+/// @dev Form implementation to handle timelock extension for ERC4626 vaults
 /// @author Zeropoint Labs
 contract ERC4626TimelockForm is ERC4626FormImplementation {
 

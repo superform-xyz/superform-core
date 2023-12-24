@@ -20,7 +20,7 @@ interface ReadOnlyBaseRegistry is IBaseStateRegistry {
 }
 
 /// @title PaymentHelper
-/// @dev helps estimating the cost for the entire transaction lifecycle
+/// @dev Helps estimate the cost for the entire transaction lifecycle
 /// @author ZeroPoint Labs
 contract PaymentHelper is IPaymentHelper {
 

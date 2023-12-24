@@ -21,7 +21,7 @@ import {
 } from "src/types/DataTypes.sol";
 
 /// @title PayloadHelper
-/// @dev helps decode payload data for off-chain purposes
+/// @dev Helps decode payload data for off-chain purposes
 /// @author ZeroPoint Labs
 contract PayloadHelper is IPayloadHelper {
 

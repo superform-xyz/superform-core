@@ -11,7 +11,7 @@ import { IWormhole } from "src/vendor/wormhole/IWormhole.sol";
 import "src/vendor/wormhole/Utils.sol";
 
 /// @title WormholeImplementation
-/// @dev uses multicast of wormhole for broadcasting to multiple chains
+/// @dev Allows state registries to use Wormhole SR's for broadcasting
 /// @author Zeropoint Labs
 contract WormholeSRImplementation is IBroadcastAmbImplementation {
     

@@ -31,7 +31,7 @@ import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol"
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title CoreStateRegistry
-/// @dev enables communication between Superform Core Contracts deployed on all supported networks
+/// @dev Enables communication between Superform core contracts deployed on all supported networks
 /// @author Zeropoint Labs
 contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     

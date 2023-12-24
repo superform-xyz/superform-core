@@ -6,7 +6,7 @@ import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 import { Error } from "src/libraries/Error.sol";
 
 /// @title BridgeValidator
-/// @dev To be inherited by specific bridge handlers to verify the calldata being sent
+/// @dev Inherited by specific bridge handlers to verify the calldata being sent
 /// @author Zeropoint Labs
 abstract contract BridgeValidator is IBridgeValidator {
 

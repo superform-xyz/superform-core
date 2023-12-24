@@ -9,7 +9,7 @@ import { BroadcastMessage } from "src/types/DataTypes.sol";
 import { AccessControlEnumerable } from "openzeppelin-contracts/contracts/access/extensions/AccessControlEnumerable.sol";
 
 /// @title SuperRBAC
-/// @dev contract to manage roles in the entire superform protocol
+/// @dev Contract to manage roles in the entire superform protocol
 /// @author Zeropoint Labs
 contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
 

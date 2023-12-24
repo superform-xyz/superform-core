@@ -16,8 +16,8 @@ import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/Sa
 import { ReentrancyGuard } from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 
 /// @title DstSwapper
-/// @author Zeropoint Labs.
-/// @dev handles all destination chain swaps.
+/// @dev Handles all destination chain swaps
+/// @author Zeropoint Labs
 contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
     using SafeERC20 for IERC20;
 

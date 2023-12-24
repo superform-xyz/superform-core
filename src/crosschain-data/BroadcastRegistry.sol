@@ -14,8 +14,8 @@ interface Target {
 }
 
 /// @title BroadcastRegistry
+/// @dev Helps core contracts communicate with multiple dst chains through supported AMBs
 /// @author ZeroPoint Labs
-/// @notice helps core contract communicate with multiple dst chains through supported AMBs
 contract BroadcastRegistry is IBroadcastRegistry {
 
     using ProofLib for bytes;

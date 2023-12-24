@@ -10,11 +10,11 @@ import { ProofLib } from "src/libraries/ProofLib.sol";
 import { PayloadState, AMBMessage, AMBExtraData } from "src/types/DataTypes.sol";
 
 /// @title BaseStateRegistry
-/// @author Zeropoint Labs
-/// @dev contract module that allows inheriting contracts to implement crosschain messaging & processing mechanisms.
-/// @dev This is a lightweight version that allows only dispatching and receiving crosschain
+/// @dev Contract module that allows inheriting contracts to implement crosschain messaging & processing mechanisms.
+/// @dev this is a lightweight version that allows only dispatching and receiving crosschain
 /// @dev payloads (messages). Inheriting children contracts have the flexibility to define their own processing
 /// mechanisms.
+/// @author Zeropoint Labs
 abstract contract BaseStateRegistry is IBaseStateRegistry {
     
     using ProofLib for AMBMessage;
