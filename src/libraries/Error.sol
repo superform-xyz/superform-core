@@ -25,11 +25,17 @@ library Error {
     /// @dev thrown if wormhole relayer is not set
     error RELAYER_NOT_SET();
 
+    /// @dev thrown if get native token price estimate in paymentHelper is 0
+    error INVALID_NATIVE_TOKEN_PRICE();
+
     /// @dev thrown if indices are out of bounds
     error INDEX_OUT_OF_BOUNDS();
 
     /// @dev thrown if indices have duplicates
     error DUPLICATE_INDEX();
+
+    /// @dev thrown if a role to be revoked is not assigned
+    error ROLE_NOT_ASSIGNED();
 
     //////////////////////////////////////////////////////////////
     //                  AUTHORIZATION ERRORS                    //
@@ -358,6 +364,15 @@ library Error {
 
     /// @dev thrown in forms where a certain functionality is not allowed or implemented
     error NOT_IMPLEMENTED();
+
+    /// @dev thrown when redeeming from vault yields zero collateral
+    error WITHDRAW_ZERO_COLLATERAL();
+
+    /*///////////////////////////////////////////////////////////////
+                        PAYMASTER ERRORS
+    //////////////////////////////////////////////////////////////*/
+    /// @dev cannot forward 4626 shares from any form
+    error CANNOT_FORWARD_4646_TOKEN();
 
     /// DST SWAPPER EXECUTION ERRORS
     /// @dev forbid xChain deposits with destination swaps without interim token set (for user protection)

@@ -298,9 +298,7 @@ abstract contract CommonProtocolActions is BaseSetup {
                 address(0),
                 ///  @dev  callTo (approveTo)
                 sendingTokenDst_,
-                /// @dev in dst swap, assumes a swap between same token - FIXME
                 receivingTokenDst_,
-                /// @dev in dst swap, assumes a swap between same token - FIXME
                 amount_,
                 /// @dev _buildLiqBridgeTxDataDstSwap() will only be called when DstSwap is true
                 /// @dev and dstswap means cross-chain (last arg)

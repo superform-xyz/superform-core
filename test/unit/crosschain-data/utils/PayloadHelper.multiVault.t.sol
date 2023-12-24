@@ -158,7 +158,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
         address _PayloadHelper = contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))];
         IPayloadHelper helper = IPayloadHelper(_PayloadHelper);
 
-        (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId) =
+        (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, address receiverAddress, uint64 srcChainId) =
             helper.decodePayloadHistory(1);
 
         assertEq(txType, 0);
@@ -171,6 +171,8 @@ contract PayloadHelperMultiTest is ProtocolActions {
         assertEq(multi, 1);
         /// 0 for not multi vault
         assertEq(srcSender, users[0]);
+
+        assertEq(receiverAddress, users[0]);
     }
 
     struct CheckDstPayloadInternalVars {

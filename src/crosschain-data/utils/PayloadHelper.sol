@@ -166,9 +166,17 @@ contract PayloadHelper is IPayloadHelper {
         external
         view
         override
-        returns (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId)
+        returns (
+            uint8 txType,
+            uint8 callbackType,
+            uint8 multi,
+            address srcSender,
+            address receiverAddressSP,
+            uint64 srcChainId
+        )
     {
-        uint256 txInfo =
+        uint256 txInfo;
+        (txInfo, receiverAddressSP) =
             ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).txHistory(srcPayloadId_);
 
         if (txInfo == 0) {

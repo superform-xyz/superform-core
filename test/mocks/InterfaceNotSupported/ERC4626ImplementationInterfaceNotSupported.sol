@@ -335,29 +335,28 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         emit Processed(srcChainId, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
     }
 
-    function _processEmergencyWithdraw(address refundAddress_, uint256 amount_) internal {
+    function _processEmergencyWithdraw(address receiverAddress_, uint256 amount_) internal {
         IERC4626 vaultContract = IERC4626(vault);
 
         if (vaultContract.balanceOf(address(this)) < amount_) {
             revert Error.INSUFFICIENT_BALANCE();
         }
 
-        vaultContract.transfer(refundAddress_, amount_);
+        vaultContract.transfer(receiverAddress_, amount_);
 
-        emit EmergencyWithdrawalProcessed(refundAddress_, amount_);
+        emit EmergencyWithdrawalProcessed(receiverAddress_, amount_);
     }
 
-    function _processForwardDustToPaymaster() internal {
-        address paymaster = superRegistry.getAddress(keccak256("PAYMASTER"));
-        if (paymaster != address(0)) {
-            IERC20 token = IERC20(getVaultAsset());
+    function _processForwardDustToPaymaster(address token_) internal {
+        if (token_ == address(0)) revert Error.ZERO_ADDRESS();
 
-            uint256 dust = token.balanceOf(address(this));
-            if (dust > 0) {
-                token.safeTransferFrom(address(this), paymaster, dust);
-            }
-        } else {
-            revert Error.ZERO_ADDRESS();
+        address paymaster = superRegistry.getAddress(keccak256("PAYMASTER"));
+        IERC20 token = IERC20(token_);
+
+        uint256 dust = token.balanceOf(address(this));
+        if (dust != 0) {
+            token.safeTransfer(paymaster, dust);
+            emit FormDustForwardedToPaymaster(token_, dust);
         }
     }
 

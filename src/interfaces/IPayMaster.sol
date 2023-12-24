@@ -14,17 +14,26 @@ interface IPayMaster {
     /// @dev is emitted when a new payment is made
     event Payment(address indexed user, uint256 indexed amount);
 
-    /// @dev is emitted when payments are moved out of collector
-    event PaymentWithdrawn(address indexed receiver, uint256 indexed amount);
+    /// @dev is emitted when  tokens are moved out of paymaster
+    event TokenWithdrawn(address indexed receiver, address indexed token, uint256 indexed amount);
+
+    /// @dev is emitted when native tokens are moved out of paymaster
+    event NativeWithdrawn(address indexed receiver, uint256 indexed amount);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
 
-    /// @dev withdraws funds from pay master to target id from superRegistry
+    /// @dev withdraws token funds from pay master to target id from superRegistry
+    /// @param superRegistryId_ is the id of the target address in superRegistry
+    /// @param token_ is the token to withdraw from pay master
+    /// @param amount_ is the amount to withdraw from pay master
+    function withdrawTo(bytes32 superRegistryId_, address token_, uint256 amount_) external;
+
+    /// @dev withdraws native funds from pay master to target id from superRegistry
     /// @param superRegistryId_ is the id of the target address in superRegistry
     /// @param nativeAmount_ is the amount to withdraw from pay master
-    function withdrawTo(bytes32 superRegistryId_, uint256 nativeAmount_) external;
+    function withdrawNativeTo(bytes32 superRegistryId_, uint256 nativeAmount_) external;
 
     /// @dev withdraws fund from pay master to target id from superRegistry
     /// @param superRegistryId_ is the id of the target address in superRegistry

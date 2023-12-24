@@ -293,49 +293,57 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         IERC4626 v = IERC4626(vault);
         IERC20 a = IERC20(asset);
-        vars.asset = address(asset);
 
-        /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
-        uint256 assetsBalanceBefore = a.balanceOf(vars.receiver); 
-        assets = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
-        uint256 assetsBalanceAfter = a.balanceOf(vars.receiver);
-        if (assetsBalanceAfter - assetsBalanceBefore != assets) {
-            revert Error.VAULT_IMPLEMENTATION_FAILED();
-        }
+        if (!singleVaultData_.retain4626) {
+            vars.asset = address(asset);
 
-        if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
+            /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
+            uint256 assetsBalanceBefore = a.balanceOf(vars.receiver);
+            assets = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
+            uint256 assetsBalanceAfter = a.balanceOf(vars.receiver);
+            if (assetsBalanceAfter - assetsBalanceBefore != assets) {
+                revert Error.VAULT_IMPLEMENTATION_FAILED();
+            }
 
-        if (vars.len1 != 0) {
-            vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
-            vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
+            if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
-            /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
-            if (vars.amount > assets) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+            if (vars.len1 != 0) {
+                vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
+                vars.amount =
+                    IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
-            vars.chainId = CHAIN_ID;
+                /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
+                if (vars.amount > assets) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
-            /// @dev validate and perform the swap to desired output token and send to beneficiary
-            IBridgeValidator(vars.bridgeValidator).validateTxData(
-                IBridgeValidator.ValidateTxDataArgs(
+                vars.chainId = CHAIN_ID;
+
+                /// @dev validate and perform the swap to desired output token and send to beneficiary
+                IBridgeValidator(vars.bridgeValidator).validateTxData(
+                    IBridgeValidator.ValidateTxDataArgs(
+                        singleVaultData_.liqData.txData,
+                        vars.chainId,
+                        vars.chainId,
+                        singleVaultData_.liqData.liqDstChainId,
+                        false,
+                        address(this),
+                        singleVaultData_.receiverAddress,
+                        vars.asset,
+                        address(0)
+                    )
+                );
+
+                _dispatchTokens(
+                    superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                     singleVaultData_.liqData.txData,
-                    vars.chainId,
-                    vars.chainId,
-                    singleVaultData_.liqData.liqDstChainId,
-                    false,
-                    address(this),
-                    singleVaultData_.receiverAddress,
                     vars.asset,
-                    address(0)
-                )
-            );
-
-            _dispatchTokens(
-                superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
-                singleVaultData_.liqData.txData,
-                vars.asset,
-                vars.amount,
-                singleVaultData_.liqData.nativeAmount
-            );
+                    vars.amount,
+                    singleVaultData_.liqData.nativeAmount
+                );
+            }
+        } else {
+            /// @dev transfer shares to user and do not redeem shares for assets
+            v.safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
+            return 0;
         }
     }
 
@@ -366,72 +374,82 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         IERC4626 v = IERC4626(vault);
         IERC20 a = IERC20(asset);
-        vars.asset = address(asset);
+        if (!singleVaultData_.retain4626) {
+            vars.asset = address(asset);
 
-        /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
-        uint256 assetsBalanceBefore = a.balanceOf(vars.receiver);
-        assets = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
-        uint256 assetsBalanceAfter = a.balanceOf(vars.receiver);
-        if (assetsBalanceAfter - assetsBalanceBefore != assets) {
-            revert Error.VAULT_IMPLEMENTATION_FAILED();
-        }
+            /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
+            uint256 assetsBalanceBefore = a.balanceOf(vars.receiver);
+            assets = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
+            uint256 assetsBalanceAfter = a.balanceOf(vars.receiver);
+            if (assetsBalanceAfter - assetsBalanceBefore != assets) {
+                revert Error.VAULT_IMPLEMENTATION_FAILED();
+            }
 
-        if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
+            if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
-        if (len != 0) {
-            vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
-            vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
+            if (len != 0) {
+                vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
+                vars.amount =
+                    IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
-            /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
-            if (vars.amount > assets) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
+                /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
+                if (vars.amount > assets) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
 
-            /// @dev validate and perform the swap to desired output token and send to beneficiary
-            IBridgeValidator(vars.bridgeValidator).validateTxData(
-                IBridgeValidator.ValidateTxDataArgs(
+                /// @dev validate and perform the swap to desired output token and send to beneficiary
+                IBridgeValidator(vars.bridgeValidator).validateTxData(
+                    IBridgeValidator.ValidateTxDataArgs(
+                        singleVaultData_.liqData.txData,
+                        vars.dstChainId,
+                        srcChainId_,
+                        singleVaultData_.liqData.liqDstChainId,
+                        false,
+                        address(this),
+                        singleVaultData_.receiverAddress,
+                        vars.asset,
+                        address(0)
+                    )
+                );
+
+                _dispatchTokens(
+                    superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                     singleVaultData_.liqData.txData,
-                    vars.dstChainId,
-                    srcChainId_,
-                    singleVaultData_.liqData.liqDstChainId,
-                    false,
-                    address(this),
-                    singleVaultData_.receiverAddress,
                     vars.asset,
-                    address(0)
-                )
-            );
-
-            _dispatchTokens(
-                superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
-                singleVaultData_.liqData.txData,
-                vars.asset,
-                vars.amount,
-                singleVaultData_.liqData.nativeAmount
-            );
+                    vars.amount,
+                    singleVaultData_.liqData.nativeAmount
+                );
+            }
+        } else {
+            /// @dev transfer shares to user and do not redeem shares for assets
+            v.safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
+            return 0;
         }
 
         emit Processed(srcChainId_, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
     }
 
     function _processEmergencyWithdraw(address receiverAddress_, uint256 amount_) internal {
-        IERC4626 vaultContract = IERC4626(vault);
+        IERC4626 v = IERC4626(vault);
+        if (receiverAddress_ == address(0)) revert Error.ZERO_ADDRESS();
 
-        if (vaultContract.balanceOf(address(this)) < amount_) {
+        if (v.balanceOf(address(this)) < amount_) {
             revert Error.INSUFFICIENT_BALANCE();
         }
 
-        if (receiverAddress_ == address(0)) revert Error.ZERO_ADDRESS();
+        v.safeTransfer(receiverAddress_, amount_);
 
-        vaultContract.safeTransfer(receiverAddress_, amount_);
         emit EmergencyWithdrawalProcessed(receiverAddress_, amount_);
     }
 
-    function _processForwardDustToPaymaster() internal {
+    function _processForwardDustToPaymaster(address token_) internal {
+        if (token_ == address(0)) revert Error.ZERO_ADDRESS();
+
         address paymaster = superRegistry.getAddress(keccak256("PAYMASTER"));
-        IERC20 token = IERC20(getVaultAsset());
+        IERC20 token = IERC20(token_);
 
         uint256 dust = token.balanceOf(address(this));
         if (dust != 0) {
             token.safeTransfer(paymaster, dust);
+            emit FormDustForwardedToPaymaster(token_, dust);
         }
     }
 }

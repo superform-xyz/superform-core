@@ -73,6 +73,7 @@ contract PaymentHelperTest is ProtocolActions {
                     false,
                     false,
                     receiverAddress,
+                    receiverAddress,
                     emptyBytes
                 )
             ),
@@ -108,6 +109,7 @@ contract PaymentHelperTest is ProtocolActions {
                     false,
                     false,
                     receiverAddress,
+                    receiverAddress,
                     emptyBytes
                 )
             ),
@@ -133,6 +135,7 @@ contract PaymentHelperTest is ProtocolActions {
                     false,
                     false,
                     receiverAddress,
+                    receiverAddress,
                     emptyBytes
                 )
             ),
@@ -153,6 +156,7 @@ contract PaymentHelperTest is ProtocolActions {
                     false,
                     false,
                     receiverAddress,
+                    receiverAddress,
                     emptyBytes
                 )
             ),
@@ -172,6 +176,7 @@ contract PaymentHelperTest is ProtocolActions {
                     emptyBytes,
                     false,
                     false,
+                    receiverAddress,
                     receiverAddress,
                     emptyBytes
                 )
@@ -207,6 +212,7 @@ contract PaymentHelperTest is ProtocolActions {
                     new bool[](1),
                     new bool[](1),
                     receiverAddress,
+                    receiverAddress,
                     emptyBytes
                 )
             ),
@@ -226,6 +232,7 @@ contract PaymentHelperTest is ProtocolActions {
                     emptyBytes,
                     new bool[](1),
                     new bool[](1),
+                    receiverAddress,
                     receiverAddress,
                     emptyBytes
                 )
@@ -278,6 +285,7 @@ contract PaymentHelperTest is ProtocolActions {
                     false,
                     false,
                     receiverAddress,
+                    receiverAddress,
                     emptyBytes
                 )
             ),
@@ -327,6 +335,7 @@ contract PaymentHelperTest is ProtocolActions {
                     false,
                     false,
                     receiverAddress,
+                    receiverAddress,
                     emptyBytes
                 )
             ),
@@ -365,6 +374,7 @@ contract PaymentHelperTest is ProtocolActions {
                     emptyBytes,
                     false,
                     false,
+                    receiverAddress,
                     receiverAddress,
                     emptyBytes
                 )
@@ -438,6 +448,7 @@ contract PaymentHelperTest is ProtocolActions {
                     false,
                     false,
                     receiverAddress,
+                    receiverAddress,
                     emptyBytes
                 )
             ),
@@ -496,6 +507,7 @@ contract PaymentHelperTest is ProtocolActions {
                     false,
                     false,
                     receiverAddress,
+                    receiverAddress,
                     emptyBytes
                 )
             ),
@@ -544,6 +556,7 @@ contract PaymentHelperTest is ProtocolActions {
                     emptyBytes,
                     false,
                     false,
+                    receiverAddress,
                     receiverAddress,
                     emptyBytes
                 )

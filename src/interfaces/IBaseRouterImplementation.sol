@@ -70,4 +70,7 @@ interface IBaseRouterImplementation is IBaseRouter {
 
     /// @dev is emitted when a direct chain action is complete
     event Completed();
+
+    /// @dev is emitted when dust is forwarded to paymaster
+    event RouterDustForwardedToPaymaster(address indexed token, uint256 indexed amount);
 }
