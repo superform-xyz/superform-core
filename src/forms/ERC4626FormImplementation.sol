@@ -24,7 +24,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     //////////////////////////////////////////////////////////////
 
     uint8 internal immutable STATE_REGISTRY_ID;
-    uint256 private constant ENTIRE_SLIPPAGE = 10_000;
+    uint256 internal constant ENTIRE_SLIPPAGE = 10_000;
 
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
@@ -322,7 +322,9 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                     IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
                 /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
-                if (vars.amount > assets) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+                if (_isWithdrawTxDataAmountInvalid(vars.amount, assets, singleVaultData_.maxSlippage)) {
+                    revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+                }
 
                 vars.chainId = CHAIN_ID;
 
@@ -405,7 +407,10 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                     IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
                 /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
-                if (vars.amount > assets) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
+                /// @dev if less it should be within the slippage limit specified by the user
+                if (_isWithdrawTxDataAmountInvalid(vars.amount, assets, singleVaultData_.maxSlippage)) {
+                    revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
+                }
 
                 /// @dev validate and perform the swap to desired output token and send to beneficiary
                 IBridgeValidator(vars.bridgeValidator).validateTxData(
@@ -437,6 +442,21 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         }
 
         emit Processed(srcChainId_, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
+    }
+
+    function _isWithdrawTxDataAmountInvalid(
+        uint256 bridgeDecodedAmount_,
+        uint256 redeemedAmount_,
+        uint256 slippage_
+    )
+        internal
+        pure
+        returns (bool isInvalid_)
+    {
+        if (
+            bridgeDecodedAmount_ > redeemedAmount_
+                || bridgeDecodedAmount_ < ((redeemedAmount_ * (ENTIRE_SLIPPAGE - slippage_)) / ENTIRE_SLIPPAGE)
+        ) return true;
     }
 
     function _processEmergencyWithdraw(address receiverAddress_, uint256 amount_) internal {

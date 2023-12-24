@@ -136,7 +136,7 @@ contract ForwardDustFormTest is ProtocolActions {
                         superform,
                         ARBI,
                         ETH,
-                        nasty_ ? 0.2e18 : IBaseForm(superform).previewRedeemFrom(superPositionBalance), // nastiness
+                        nasty_ ? 0.99e18 : IBaseForm(superform).previewRedeemFrom(superPositionBalance), // nastiness
                             // here
                         receiverAddress,
                         false
@@ -157,7 +157,6 @@ contract ForwardDustFormTest is ProtocolActions {
 
         if (formImplementationId_ != 1) {
             vm.prank(getContract(ARBI, "CoreStateRegistry"));
-
             IBaseForm(superform).xChainWithdrawFromVault(data2, user, ETH);
         } else {
             vm.prank(getContract(ARBI, "TimelockStateRegistry"));

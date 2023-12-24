@@ -191,7 +191,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.prank(getContract(ETH, "CoreStateRegistry"));
         IBaseForm(superform).xChainWithdrawFromVault(data, deployer, ARBI);
 
-        vm.expectRevert(Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST.selector);
+        vm.expectRevert(Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST.selector);
         vm.prank(getContract(ETH, "TimelockStateRegistry"));
         ERC4626TimelockForm(payable(superform)).withdrawAfterCoolDown(
             TimelockPayload(1, ETH, block.timestamp, data, TimelockStatus.PENDING)
