@@ -32,6 +32,7 @@ contract PaymentHelper is IPaymentHelper {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
+    uint256 private constant PROOF_LENGTH = 160;
     uint8 private constant SUPPORTED_FEED_PRECISION = 8;
     uint32 private constant TIMELOCK_FORM_ID = 2;
     uint256 private constant MAX_UINT256 = type(uint256).max;
@@ -101,7 +102,7 @@ contract PaymentHelper is IPaymentHelper {
         if (superRegistry_ == address(0)) {
             revert Error.ZERO_ADDRESS();
         }
-        
+
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }
@@ -688,16 +689,13 @@ contract PaymentHelper is IPaymentHelper {
         uint256 gasReqPerByte = gasPerByte[dstChainId_];
         uint256 totalDstGasReqInWei = abi.encode(ambIdEncodedMessage).length * gasReqPerByte;
 
-        AMBMessage memory decodedMessage = abi.decode(message_, (AMBMessage));
-        decodedMessage.params = message_.computeProofBytes();
-
-        uint256 totalDstGasReqInWeiForProof = abi.encode(decodedMessage).length * gasReqPerByte;
+        /// @dev proof length is always of fixed length
+        uint256 totalDstGasReqInWeiForProof = PROOF_LENGTH * gasReqPerByte;
 
         extraDataPerAMB = new bytes[](len);
 
         for (uint256 i; i < len; ++i) {
             uint256 gasReq = i != 0 ? totalDstGasReqInWeiForProof : totalDstGasReqInWei;
-
             /// @dev amb id 1: layerzero
             /// @dev amb id 2: hyperlane
             /// @dev amb id 3: wormhole
