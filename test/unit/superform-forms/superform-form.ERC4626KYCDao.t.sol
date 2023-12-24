@@ -7,7 +7,7 @@ import "test/utils/ProtocolActions.sol";
 
 contract SuperformERC4626KYCDaoFormTest is BaseSetup {
     uint64 internal chainId = ETH;
-    address refundAddress = address(444);
+    address receiverAddress = address(444);
 
     function setUp() public override {
         super.setUp();
@@ -33,7 +33,8 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
             "",
             false,
             false,
-            refundAddress,
+            receiverAddress,
+            receiverAddress,
             ""
         );
 
@@ -71,7 +72,7 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
             LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ARBI, 0),
             false,
             false,
-            refundAddress,
+            receiverAddress,
             ""
         );
 
@@ -95,7 +96,7 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
             ETH, string.concat("DAI", "kycDAO4626", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[2]))
         );
 
-        IBaseForm(superform).forwardDustToPaymaster();
+        IBaseForm(superform).forwardDustToPaymaster(getContract(ETH, "DAI"));
     }
 
     function test_emergencyWithdraw() public {
@@ -110,6 +111,6 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
 
         vm.prank(getContract(ETH, "EmergencyQueue"));
 
-        IBaseForm(superform).emergencyWithdraw(users[0], refundAddress, 1e18);
+        IBaseForm(superform).emergencyWithdraw(receiverAddress, 1e18);
     }
 }

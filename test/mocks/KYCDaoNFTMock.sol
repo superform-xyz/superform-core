@@ -21,4 +21,11 @@ contract KYCDaoNFTMock is ERC721 {
 
         return false;
     }
+
+    function mintWithCode(uint32 /*authCode_*/ ) public returns (uint256) {
+        ++tokenId;
+
+        _mint(msg.sender, tokenId);
+        return tokenId;
+    }
 }

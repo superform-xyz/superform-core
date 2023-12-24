@@ -25,11 +25,17 @@ library Error {
     /// @dev thrown if wormhole relayer is not set
     error RELAYER_NOT_SET();
 
+    /// @dev thrown if get native token price estimate in paymentHelper is 0
+    error INVALID_NATIVE_TOKEN_PRICE();
+
     /// @dev thrown if indices are out of bounds
     error INDEX_OUT_OF_BOUNDS();
 
     /// @dev thrown if indices have duplicates
     error DUPLICATE_INDEX();
+
+    /// @dev thrown if a role to be revoked is not assigned
+    error ROLE_NOT_ASSIGNED();
 
     //////////////////////////////////////////////////////////////
     //                  AUTHORIZATION ERRORS                    //
@@ -332,6 +338,12 @@ library Error {
     /// @dev thrown if update payload function was called on a wrong payload
     error INVALID_PAYLOAD_UPDATE_REQUEST();
 
+    /// @dev thrown if a state registry id is 0
+    error INVALID_REGISTRY_ID();
+
+    /// @dev thrown if a form state registry id is 0
+    error INVALID_FORM_REGISTRY_ID();
+
     /// @dev thrown if trying to finalize the payload but the withdraw is still locked
     error LOCKED();
 
@@ -359,15 +371,11 @@ library Error {
     /// @dev thrown when redeeming from vault yields zero collateral
     error WITHDRAW_ZERO_COLLATERAL();
 
-    /// @dev thrown if a state registry id is 0
-    error INVALID_REGISTRY_ID();
-
-    /// @dev thrown if a form state registry id is 0
-    error INVALID_FORM_REGISTRY_ID();
-
     /*///////////////////////////////////////////////////////////////
                         PAYMASTER ERRORS
     //////////////////////////////////////////////////////////////*/
+    /// @dev cannot forward 4626 shares from any form
+    error CANNOT_FORWARD_4646_TOKEN();
 
     /// DST SWAPPER EXECUTION ERRORS
     /// @dev forbid xChain deposits with destination swaps without interim token set (for user protection)
@@ -395,11 +403,15 @@ library Error {
     error INVALID_DST_SWAPPER_FAILED_SWAP_NO_NATIVE_BALANCE();
 
     /// FORM EXECUTION ERRORS
+
     /// @dev thrown in KYCDAO form if no KYC token is present
     error NO_VALID_KYC_TOKEN();
 
     /// @dev thrown if form implementation is PAUSED, users cannot perform any action
     error PAUSED();
+
+    /// @dev thrown if shares != deposit output or assets != redeem output when minting SuperPositions
+    error VAULT_IMPLEMENTATION_FAILED();
 
     /// @dev thrown if withdrawal tx data is not updated
     error WITHDRAW_TOKEN_NOT_UPDATED();
