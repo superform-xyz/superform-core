@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
+import { Error } from "../libraries/Error.sol";
 
 /// @title BridgeValidator
 /// @author Zeropoint Labs
@@ -19,6 +20,9 @@ abstract contract BridgeValidator is IBridgeValidator {
     //////////////////////////////////////////////////////////////
 
     constructor(address superRegistry_) {
+        if (superRegistry_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
         superRegistry = ISuperRegistry(superRegistry_);
     }
 

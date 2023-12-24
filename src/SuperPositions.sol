@@ -167,6 +167,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         override
         onlyBatchMinter(ids_)
     {
+        if (ids_.length != amounts_.length) revert Error.ARRAY_LENGTH_MISMATCH();
         _batchMint(receiverAddressSP_, msg.sender, ids_, amounts_, "");
     }
 
@@ -185,6 +186,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         override
         onlyRouter
     {
+        if (ids_.length != amounts_.length) revert Error.ARRAY_LENGTH_MISMATCH();
         _batchBurn(srcSender_, msg.sender, ids_, amounts_);
     }
 

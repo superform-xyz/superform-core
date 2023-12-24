@@ -229,8 +229,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// @dev the difference in vault tokens, ready to be deposited, is compared with the amount inscribed in the
         /// superform data
         if (
-            vars.assetDifference
-                < ((singleVaultData_.amount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE)
+            vars.assetDifference * ENTIRE_SLIPPAGE
+            < singleVaultData_.amount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)
         ) {
             revert Error.DIRECT_DEPOSIT_SWAP_FAILED();
         }
