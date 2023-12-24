@@ -427,11 +427,11 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         internal 
         returns (uint256 assets)
     {
-        address assetReceiver = singleVaultData_.liqData.txData.length == 0 ? singleVaultData_.receiverAddress : address(this);
-        uint256 assetsBalanceBefore = a.balanceOf(assetReceiver);
+        address assetsReceiver = singleVaultData_.liqData.txData.length == 0 ? singleVaultData_.receiverAddress : address(this);
+        uint256 assetsBalanceBefore = a.balanceOf(assetsReceiver);
         uint256 assetsExpected = v.convertToAssets(singleVaultData_.amount);
-        assets = v.redeem(singleVaultData_.amount, assetReceiver, address(this));
-        uint256 assetsBalanceAfter = a.balanceOf(assetReceiver);
+        assets = v.redeem(singleVaultData_.amount, assetsReceiver, address(this));
+        uint256 assetsBalanceAfter = a.balanceOf(assetsReceiver);
 
         if ((assetsBalanceAfter - assetsBalanceBefore != assets) || 
             (assets < ((assetsExpected * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE))
