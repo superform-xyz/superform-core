@@ -304,8 +304,8 @@ contract PaymentHelper is IPaymentHelper {
             uint256 arrLen = req_.superformsData.retain4626s.length;
             uint256 ackLen;
 
-            for (uint256 j; j < arrLen; ++j) {
-                if (!req_.superformsData.retain4626s[j]) ++ackLen;
+            for (uint256 i; i < arrLen; ++i) {
+                if (!req_.superformsData.retain4626s[i]) ++ackLen;
             }
 
             /// @dev step 3: estimation execution cost of acknowledgement

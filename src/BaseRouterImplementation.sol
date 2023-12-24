@@ -289,10 +289,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev this loop is what allows to deposit to >1 different underlying on destination
         /// @dev if a loop fails in a validation the whole chain should be reverted
-        for (uint256 j; j < len; ++j) {
-            vars.liqRequest = req_.superformsData.liqRequests[j];
+        for (uint256 i; i < len; ++i) {
+            vars.liqRequest = req_.superformsData.liqRequests[i];
 
-            (superform,,) = req_.superformsData.superformIds[j].getSuperform();
+            (superform,,) = req_.superformsData.superformIds[i].getSuperform();
 
             /// @dev dispatch liquidity data
             if (
@@ -301,7 +301,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                         vars.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
                     )
                 )
-            ) ambData.liqData[j].interimToken = vars.liqRequest.interimToken;
+            ) ambData.liqData[i].interimToken = vars.liqRequest.interimToken;
         }
 
         /// @dev dispatch message information, notice multiVaults is set to 1
@@ -1126,9 +1126,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
             /// @dev approves individual final targets if needed here
             v.targetLen = targets_.length;
-            for (uint256 j; j < v.targetLen; ++j) {
+            for (uint256 i; i < v.targetLen; ++i) {
                 /// @dev approves the superform
-                v.token.safeIncreaseAllowance(targets_[j], v.amountsIn[j]);
+                v.token.safeIncreaseAllowance(targets_[i], v.amountsIn[i]);
             }
         }
 
