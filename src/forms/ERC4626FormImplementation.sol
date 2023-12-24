@@ -46,15 +46,12 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     struct directWithdrawLocalVars {
         uint64 chainId;
         address asset;
-        address receiver;
         address bridgeValidator;
-        uint256 len1;
         uint256 amount;
     }
 
     struct xChainWithdrawLocalVars {
         uint64 dstChainId;
-        address receiver;
         address asset;
         address bridgeValidator;
         uint256 balanceBefore;
@@ -273,11 +270,9 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
     function _processDirectWithdraw(InitSingleVaultData memory singleVaultData_) internal returns (uint256 assets) {
         directWithdrawLocalVars memory vars;
-        vars.len1 = singleVaultData_.liqData.txData.length;
 
         /// @dev if there is no txData, on withdraws the receiver is receiverAddress, otherwise it
         /// is this contract (before swap)
-        vars.receiver = vars.len1 == 0 ? singleVaultData_.receiverAddress : address(this);
 
         IERC4626 v = IERC4626(vault);
         IERC20 a = IERC20(asset);
@@ -286,14 +281,16 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             vars.asset = address(asset);
 
             /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
-            assets = _withdrawAndValidate(singleVaultData_,vars.receiver,v,a);
+            assets = _withdrawAndValidate(singleVaultData_,v,a);
 
-            if (vars.len1 != 0) {
+            if (singleVaultData_.liqData.txData.length != 0) {
                 vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
                 vars.amount =
                     IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
                 /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
+                /// @dev if less it should be within the slippage limit specified by the user
+                /// @dev important to maintain so that the keeper cannot update with malicious data after successful withdraw
                 if (_isWithdrawTxDataAmountInvalid(vars.amount, assets, singleVaultData_.maxSlippage)) {
                     revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
                 }
@@ -349,19 +346,13 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         (,, vars.dstChainId) = singleVaultData_.superformId.getSuperform();
 
-        /// @dev receiverAddress is checked for existence on source
-        /// @dev user will either provide an address equal to msg.sender (if EOA)
-        /// @dev or user will specify an address on the target chain for the collateral extraction (if Smart Contract
-        /// Wallet)
-        vars.receiver = len == 0 ? singleVaultData_.receiverAddress : address(this);
-
         IERC4626 v = IERC4626(vault);
         IERC20 a = IERC20(asset);
         if (!singleVaultData_.retain4626) {
             vars.asset = address(asset);
 
             /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
-            assets = _withdrawAndValidate(singleVaultData_,vars.receiver,v,a);
+            assets = _withdrawAndValidate(singleVaultData_,v,a);
 
             if (len != 0) {
                 vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
@@ -430,17 +421,17 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
     function _withdrawAndValidate(
         InitSingleVaultData memory singleVaultData_,
-        address receiver,
         IERC4626 v,
         IERC20 a
     ) 
         internal 
         returns (uint256 assets)
     {
-        uint256 assetsBalanceBefore = a.balanceOf(receiver);
+        address assetReceiver = singleVaultData_.liqData.txData.length == 0 ? singleVaultData_.receiverAddress : address(this);
+        uint256 assetsBalanceBefore = a.balanceOf(assetReceiver);
         uint256 assetsExpected = v.convertToAssets(singleVaultData_.amount);
-        assets = v.redeem(singleVaultData_.amount, receiver, address(this));
-        uint256 assetsBalanceAfter = a.balanceOf(receiver);
+        assets = v.redeem(singleVaultData_.amount, assetReceiver, address(this));
+        uint256 assetsBalanceAfter = a.balanceOf(assetReceiver);
 
         if ((assetsBalanceAfter - assetsBalanceBefore != assets) || 
             (assets < ((assetsExpected * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE))
@@ -449,8 +440,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         }
 
         if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
-
-        return assets;
     }
 
     function _isWithdrawTxDataAmountInvalid(
@@ -460,7 +449,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     )
         internal
         pure
-        returns (bool isInvalid_)
+        returns (bool isInvalid)
     {
         if (
             bridgeDecodedAmount_ > redeemedAmount_
