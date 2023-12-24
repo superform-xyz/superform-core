@@ -909,11 +909,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
 
         ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
-        bool valid;
 
         /// @dev slippage, amount, paused status validation
         for (uint256 i; i < len; ++i) {
-            valid = _validateSuperformData(
+            if(!_validateSuperformData(
                 superformsData_.superformIds[i],
                 superformsData_.maxSlippages[i],
                 superformsData_.amounts[i],
@@ -923,10 +922,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 deposit_,
                 factory,
                 true
-            );
-
-            if (!valid) {
-                return valid;
+            )) {
+                return false;
             }
 
             /// @dev ensure interimTokens aren't repeated on destination chains
