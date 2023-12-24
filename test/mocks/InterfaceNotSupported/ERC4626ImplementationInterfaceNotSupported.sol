@@ -97,7 +97,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
     //////////////////////////////////////////////////////////////*/
 
     /// @dev to avoid stack too deep errors
-    struct directDepositLocalVars {
+    struct DirectDepositLocalVars {
         uint64 chainId;
         address asset;
         address bridgeValidator;
@@ -110,7 +110,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
     }
 
     function _processDirectDeposit(InitSingleVaultData memory singleVaultData_) internal returns (uint256 shares) {
-        directDepositLocalVars memory vars;
+        DirectDepositLocalVars memory vars;
 
         IERC4626 v = IERC4626(vault);
         vars.asset = address(v.asset());
@@ -263,7 +263,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         emit Processed(srcChainId, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
     }
 
-    struct xChainWithdrawLocalVars {
+    struct XChainWithdrawLocalVars {
         uint64 dstChainId;
         address receiver;
         address asset;
@@ -288,7 +288,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
             revert Error.WITHDRAW_TX_DATA_NOT_UPDATED();
         }
 
-        xChainWithdrawLocalVars memory vars;
+        XChainWithdrawLocalVars memory vars;
         (,, vars.dstChainId) = singleVaultData_.superformId.getSuperform();
 
         /// @dev if there is no txData, on withdraws the receiver is the original beneficiary (srcSender), otherwise it

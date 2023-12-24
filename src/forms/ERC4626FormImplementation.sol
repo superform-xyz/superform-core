@@ -30,7 +30,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     //                           STRUCTS                        //
     //////////////////////////////////////////////////////////////
 
-    struct directDepositLocalVars {
+    struct DirectDepositLocalVars {
         uint64 chainId;
         address asset;
         address bridgeValidator;
@@ -43,7 +43,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         bytes signature;
     }
 
-    struct directWithdrawLocalVars {
+    struct DirectWithdrawLocalVars {
         uint64 chainId;
         address asset;
         address receiver;
@@ -52,7 +52,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         uint256 amount;
     }
 
-    struct xChainWithdrawLocalVars {
+    struct XChainWithdrawLocalVars {
         uint64 dstChainId;
         address receiver;
         address asset;
@@ -154,7 +154,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     //////////////////////////////////////////////////////////////
 
     function _processDirectDeposit(InitSingleVaultData memory singleVaultData_) internal returns (uint256 shares) {
-        directDepositLocalVars memory vars;
+        DirectDepositLocalVars memory vars;
 
         IERC4626 v = IERC4626(vault);
         vars.asset = address(asset);
@@ -284,7 +284,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     }
 
     function _processDirectWithdraw(InitSingleVaultData memory singleVaultData_) internal returns (uint256 assets) {
-        directWithdrawLocalVars memory vars;
+        DirectWithdrawLocalVars memory vars;
         vars.len1 = singleVaultData_.liqData.txData.length;
 
         /// @dev if there is no txData, on withdraws the receiver is receiverAddress, otherwise it
@@ -354,7 +354,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         internal
         returns (uint256 assets)
     {
-        xChainWithdrawLocalVars memory vars;
+        XChainWithdrawLocalVars memory vars;
 
         uint256 len = singleVaultData_.liqData.txData.length;
         /// @dev a case where the withdraw req liqData has a valid token and tx data is not updated by the keeper

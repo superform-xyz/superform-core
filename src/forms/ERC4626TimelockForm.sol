@@ -30,7 +30,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     //                           STRUCTS                         //
     //////////////////////////////////////////////////////////////
 
-    struct withdrawAfterCoolDownLocalVars {
+    struct WithdrawAfterCoolDownLocalVars {
         uint256 len1;
         address bridgeValidator;
         uint64 chainId;
@@ -78,7 +78,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
 
             return 0;
         }
-        withdrawAfterCoolDownLocalVars memory vars;
+        WithdrawAfterCoolDownLocalVars memory vars;
 
         IERC4626TimelockVault v = IERC4626TimelockVault(vault);
 
