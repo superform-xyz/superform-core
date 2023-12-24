@@ -32,11 +32,12 @@ contract PaymentHelper is IPaymentHelper {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
+    uint8 private constant SUPPORTED_FEED_PRECISION = 8;
+    uint32 private constant TIMELOCK_FORM_ID = 2;
+    uint256 private constant MAX_UINT256 = type(uint256).max;
 
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
-    uint32 private constant TIMELOCK_FORM_ID = 2;
-    uint256 private constant MAX_UINT256 = type(uint256).max;
 
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
@@ -537,11 +538,21 @@ contract PaymentHelper is IPaymentHelper {
         onlyProtocolAdmin
     {
         if (config_.nativeFeedOracle != address(0)) {
-            nativeFeedOracle[chainId_] = AggregatorV3Interface(config_.nativeFeedOracle);
+            AggregatorV3Interface nativeFeedOracleContract = AggregatorV3Interface(config_.nativeFeedOracle);
+            if (nativeFeedOracleContract.decimals() != SUPPORTED_FEED_PRECISION) {
+                revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
+            }
+
+            nativeFeedOracle[chainId_] = nativeFeedOracleContract;
         }
 
         if (config_.gasPriceOracle != address(0)) {
-            gasPriceOracle[chainId_] = AggregatorV3Interface(config_.gasPriceOracle);
+            AggregatorV3Interface gasPriceOracleContract = AggregatorV3Interface(config_.nativeFeedOracle);
+            if (gasPriceOracleContract.decimals() != SUPPORTED_FEED_PRECISION) {
+                revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
+            }
+
+            gasPriceOracle[chainId_] = gasPriceOracleContract;
         }
 
         swapGasUsed[chainId_] = config_.swapGasUsed;
@@ -570,12 +581,32 @@ contract PaymentHelper is IPaymentHelper {
     {
         /// @dev Type 1: DST TOKEN PRICE FEED ORACLE
         if (configType_ == 1) {
-            nativeFeedOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
+            AggregatorV3Interface nativeFeedOracleContract = AggregatorV3Interface(abi.decode(config_, (address)));
+
+            /// @dev allows setting price feed to address(0), equivalent for resetting native price
+            if (
+                address(nativeFeedOracleContract) != address(0)
+                    && nativeFeedOracleContract.decimals() != SUPPORTED_FEED_PRECISION
+            ) {
+                revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
+            }
+
+            nativeFeedOracle[chainId_] = nativeFeedOracleContract;
         }
 
         /// @dev Type 2: DST GAS PRICE ORACLE
         if (configType_ == 2) {
-            gasPriceOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
+            AggregatorV3Interface gasPriceOracleContract = AggregatorV3Interface(abi.decode(config_, (address)));
+
+            /// @dev allows setting gas price to address(0), equivalent for resetting gas price
+            if (
+                address(gasPriceOracleContract) != address(0)
+                    && gasPriceOracleContract.decimals() != SUPPORTED_FEED_PRECISION
+            ) {
+                revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
+            }
+
+            gasPriceOracle[chainId_] = gasPriceOracleContract;
         }
 
         /// @dev Type 3: SWAP GAS USED

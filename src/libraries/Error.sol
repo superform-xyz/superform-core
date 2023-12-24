@@ -423,6 +423,9 @@ library Error {
     /// @dev thrown if chainlink is reporting an incomplete round
     error CHAINLINK_INCOMPLETE_ROUND();
 
+    /// @dev thrown if feed decimals is not 8
+    error CHAINLINK_UNSUPPORTED_DECIMAL();
+
     /// EMERGENCY QUEUE EXECUTION ERRORS
 
     /// @dev thrown if emergency withdraw is not queued
