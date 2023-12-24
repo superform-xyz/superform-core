@@ -257,6 +257,5 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         sendingAssetId = swapData[0].sendingAssetId;
         amount = swapData[0].fromAmount;
         receivingAssetId = swapData[swapData.length - 1].receivingAssetId;
-        return (sendingAssetId, amount, receiver, receivingAssetId, receivingAmount);
     }
 }

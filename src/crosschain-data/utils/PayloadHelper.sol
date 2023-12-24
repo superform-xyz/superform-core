@@ -393,8 +393,6 @@ contract PayloadHelper is IPayloadHelper {
 
             nativeAmounts[i] = imvd.liqData[i].nativeAmount;
         }
-
-        return (bridgeIds, txDatas, tokens, interimTokens, liqDstChainIds, amountsIn, nativeAmounts);
     }
 
     function _decodeSingleLiqData(
@@ -441,7 +439,5 @@ contract PayloadHelper is IPayloadHelper {
 
         nativeAmounts = new uint256[](1);
         nativeAmounts[0] = isvd.liqData.nativeAmount;
-
-        return (bridgeIds, txDatas, tokens, interimTokens, liqDstChainIds, amountsIn, nativeAmounts);
     }
 }
