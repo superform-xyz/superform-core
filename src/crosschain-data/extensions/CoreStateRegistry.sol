@@ -77,7 +77,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         lastProposedTime = failedDeposit.lastProposedTimestamp;
     }
 
-    /// @dev used for try catching purposes
+    /// @inheritdoc ICoreStateRegistry
     function validateSlippage(uint256 finalAmount_, uint256 amount_, uint256 maxSlippage_) public view returns (bool) {
         // only internal transaction
         if (msg.sender != address(this)) {
@@ -86,6 +86,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         return PayloadUpdaterLib.validateSlippage(finalAmount_, amount_, maxSlippage_);
     }
+    
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
