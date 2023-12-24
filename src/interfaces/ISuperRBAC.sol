@@ -26,6 +26,16 @@ interface ISuperRBAC is IAccessControl {
     }
 
     //////////////////////////////////////////////////////////////
+    //                          EVENTS                          //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev is emitted when superRegistry is set
+    event SuperRegistrySet(address indexed superRegistry);
+
+    /// @dev is emitted when an admin is set for a role
+    event RoleAdminSet(bytes32 role, bytes32 adminRole);
+
+    //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
 

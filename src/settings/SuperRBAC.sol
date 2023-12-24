@@ -147,11 +147,15 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         if (superRegistry_ == address(0)) revert Error.ZERO_ADDRESS();
 
         superRegistry = ISuperRegistry(superRegistry_);
+
+        emit SuperRegistrySet(superRegistry_);
     }
 
     /// @inheritdoc ISuperRBAC
     function setRoleAdmin(bytes32 role_, bytes32 adminRole_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
         _setRoleAdmin(role_, adminRole_);
+
+        emit RoleAdminSet(role_, adminRole_);
     }
 
     /// @inheritdoc ISuperRBAC

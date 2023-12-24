@@ -16,6 +16,7 @@ interface ISuperPositions is IERC1155A {
         uint256 txInfo;
         address receiverAddressSP;
     }
+    
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////

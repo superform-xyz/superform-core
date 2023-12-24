@@ -201,6 +201,8 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         }
 
         authorizedImpl[domain_] = authorizedImpl_;
+
+        emit AuthorizedImplAdded(domain_, authorizedImpl_);
     }
 
     /// @inheritdoc IMessageRecipient
