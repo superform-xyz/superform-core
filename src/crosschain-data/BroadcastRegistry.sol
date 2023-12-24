@@ -101,9 +101,8 @@ contract BroadcastRegistry is IBroadcastRegistry {
         _broadcastPayload(srcSender_, ambId_, gasFee_, message_, extraData_);
 
         /// @dev refunds any overpaid msg.value
-        uint256 refundAmt = msg.value - gasFee_;
-        if (refundAmt > 0) {
-            (bool success,) = payable(srcSender_).call{ value: refundAmt }("");
+        if (msg.value > gasFee_) {
+            (bool success,) = payable(srcSender_).call{ value: msg.value - gasFee_ }("");
 
             if (!success) {
                 revert Error.FAILED_TO_SEND_NATIVE();
