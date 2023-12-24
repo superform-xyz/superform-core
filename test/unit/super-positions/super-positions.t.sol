@@ -30,7 +30,7 @@ contract SuperPositionsTest is BaseSetup {
         vault = getContract(ETH, VAULT_NAMES[0][0]);
         vm.prank(deployer);
         SuperformFactory(getContract(ETH, "SuperformFactory")).addFormImplementation(
-            formImplementation, formImplementationId, 0
+            formImplementation, formImplementationId, 1
         );
     }
 
@@ -120,7 +120,8 @@ contract SuperPositionsTest is BaseSetup {
             ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
         );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
+        /// non existent form implementation id so the get form state registry id returns 0
+        uint256 superformId = DataLib.packSuperform(superform, 5, ETH);
 
         ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, superformId, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));

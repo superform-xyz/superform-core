@@ -192,11 +192,16 @@ contract SuperformFactory is ISuperformFactory {
         formImplementation[formImplementationId_] = formImplementation_;
         formImplementationIds[formImplementation_] = formImplementationId_;
 
-        /// @dev formStateRegistryId can also be zero if the form requires no additional state registry
-        if (formStateRegistryId_ != 0) {
-            formStateRegistryId[formImplementationId_] = formStateRegistryId_;
+        /// @dev set CoreStateRegistry if the form implementation needs no special state registry
+        /// @dev if the form needs any special state registry, set this value to the id of the special state registry
+        /// and core state registry can be used by default.
+        /// @dev if this value is != 1, then the form supports two state registries (CoreStateRegistry + its special
+        /// state registry)
+        if (formStateRegistryId_ == 0) {
+            revert Error.INVALID_FORM_REGISTRY_ID();
         }
 
+        formStateRegistryId[formImplementationId_] = formStateRegistryId_;
         formImplementations.push(formImplementation_);
 
         emit FormImplementationAdded(formImplementation_, formImplementationId_, formStateRegistryId_);
