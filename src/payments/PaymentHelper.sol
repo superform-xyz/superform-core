@@ -534,19 +534,21 @@ contract PaymentHelper is IPaymentHelper {
         onlyProtocolAdmin
     {
         if (config_.nativeFeedOracle != address(0)) {
-            nativeFeedOracle[chainId_] = AggregatorV3Interface(config_.nativeFeedOracle);
-
-            if (nativeFeedOracle[chainId_].decimals() != SUPPORTED_FEED_PRECISION) {
+            AggregatorV3Interface nativeFeedOracleContract = AggregatorV3Interface(config_.nativeFeedOracle);
+            if (nativeFeedOracleContract.decimals() != SUPPORTED_FEED_PRECISION) {
                 revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
             }
+
+            nativeFeedOracle[chainId_] = nativeFeedOracleContract;
         }
 
         if (config_.gasPriceOracle != address(0)) {
-            gasPriceOracle[chainId_] = AggregatorV3Interface(config_.gasPriceOracle);
-
-            if (gasPriceOracle[chainId_].decimals() != SUPPORTED_FEED_PRECISION) {
+            AggregatorV3Interface gasPriceOracleContract = AggregatorV3Interface(config_.nativeFeedOracle);
+            if (gasPriceOracleContract.decimals() != SUPPORTED_FEED_PRECISION) {
                 revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
             }
+
+            gasPriceOracle[chainId_] = gasPriceOracleContract;
         }
 
         swapGasUsed[chainId_] = config_.swapGasUsed;
@@ -575,26 +577,28 @@ contract PaymentHelper is IPaymentHelper {
     {
         /// @dev Type 1: DST TOKEN PRICE FEED ORACLE
         if (configType_ == 1) {
-            address nativeFeedOracleAddress = abi.decode(config_, (address));
-            nativeFeedOracle[chainId_] = AggregatorV3Interface(nativeFeedOracleAddress);
-
+            AggregatorV3Interface nativeFeedOracleContract = AggregatorV3Interface(abi.decode(config_, (address)));
             if (
-                nativeFeedOracleAddress != address(0)
-                    && nativeFeedOracle[chainId_].decimals() != SUPPORTED_FEED_PRECISION
+                address(nativeFeedOracleContract) != address(0)
+                    && nativeFeedOracleContract.decimals() != SUPPORTED_FEED_PRECISION
             ) {
                 revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
             }
+
+            nativeFeedOracle[chainId_] = nativeFeedOracleContract;
         }
 
         /// @dev Type 2: DST GAS PRICE ORACLE
         if (configType_ == 2) {
-            address gasPriceOracleAddress = abi.decode(config_, (address));
-            gasPriceOracle[chainId_] = AggregatorV3Interface(gasPriceOracleAddress);
-
-            if (gasPriceOracleAddress != address(0) && gasPriceOracle[chainId_].decimals() != SUPPORTED_FEED_PRECISION)
-            {
+            AggregatorV3Interface gasPriceOracleContract = AggregatorV3Interface(abi.decode(config_, (address)));
+            if (
+                address(gasPriceOracleContract) != address(0)
+                    && gasPriceOracleContract.decimals() != SUPPORTED_FEED_PRECISION
+            ) {
                 revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
             }
+
+            gasPriceOracle[chainId_] = gasPriceOracleContract;
         }
 
         /// @dev Type 3: SWAP GAS USED
