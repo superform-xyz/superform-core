@@ -20,9 +20,10 @@ interface ReadOnlyBaseRegistry is IBaseStateRegistry {
 }
 
 /// @title PaymentHelper
-/// @author ZeroPoint Labs
 /// @dev helps estimating the cost for the entire transaction lifecycle
+/// @author ZeroPoint Labs
 contract PaymentHelper is IPaymentHelper {
+
     using DataLib for uint256;
     using ArrayCastLib for LiqRequest;
     using ArrayCastLib for bool;
@@ -32,6 +33,7 @@ contract PaymentHelper is IPaymentHelper {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
+
     uint256 private constant PROOF_LENGTH = 160;
     uint8 private constant SUPPORTED_FEED_PRECISION = 8;
     uint32 private constant TIMELOCK_FORM_ID = 2;

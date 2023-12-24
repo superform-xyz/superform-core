@@ -11,10 +11,10 @@ import { IWormhole } from "src/vendor/wormhole/IWormhole.sol";
 import "src/vendor/wormhole/Utils.sol";
 
 /// @title WormholeImplementation
+/// @dev uses multicast of wormhole for broadcasting to multiple chains
 /// @author Zeropoint Labs
-/// @notice allows broadcast state registry contracts to send messages to multiple chains
-/// @dev uses multicast of wormhole for broadcasting
 contract WormholeSRImplementation is IBroadcastAmbImplementation {
+    
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////

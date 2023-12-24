@@ -13,10 +13,10 @@ import { IWormholeReceiver } from "src/vendor/wormhole/IWormholeReceiver.sol";
 import "src/vendor/wormhole/Utils.sol";
 
 /// @title WormholeImplementation
-/// @author Zeropoint Labs
-/// @notice allows state registries to use wormhole for crosschain communication
 /// @dev uses automatic relayers of wormhole for 1:1 messaging
+/// @author Zeropoint Labs
 contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
+    
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////

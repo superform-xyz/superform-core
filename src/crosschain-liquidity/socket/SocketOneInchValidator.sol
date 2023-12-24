@@ -6,9 +6,10 @@ import { Error } from "src/libraries/Error.sol";
 import { ISocketOneInchImpl } from "src/vendor/socket/ISocketOneInchImpl.sol";
 
 /// @title SocketOneInchValidator
-/// @author Zeropoint Labs
 /// @dev to assert input Socket same-chain txData is valid
+/// @author Zeropoint Labs
 contract SocketOneInchValidator is BridgeValidator {
+    
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////

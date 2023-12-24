@@ -13,8 +13,10 @@ import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/Sa
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 
 /// @title ERC4626FormImplementation
-/// @notice Has common internal functions that can be re-used by actual form implementations
+/// @dev Has common internal functions that can be re-used by actual form implementations
+/// @author Zeropoint Labs
 abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
+
     using SafeERC20 for IERC20;
     using SafeERC20 for IERC4626;
     using DataLib for uint256;

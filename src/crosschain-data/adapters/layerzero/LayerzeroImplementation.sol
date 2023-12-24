@@ -13,9 +13,10 @@ import { ILayerZeroReceiver } from "src/vendor/layerzero/ILayerZeroReceiver.sol"
 import { ILayerZeroUserApplicationConfig } from "src/vendor/layerzero/ILayerZeroUserApplicationConfig.sol";
 
 /// @title LayerzeroImplementation
-/// @author Zeropoint Labs
 /// @dev allows state registries to use Layerzero for crosschain communication
+/// @author Zeropoint Labs
 contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicationConfig, ILayerZeroReceiver {
+    
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////

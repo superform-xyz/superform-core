@@ -2,9 +2,10 @@
 pragma solidity ^0.8.23;
 
 /// @title ICoreStateRegistry
+/// @dev Interface for Core State Registry
 /// @author ZeroPoint Labs
-/// @notice Interface for Core State Registry
 interface ICoreStateRegistry {
+    
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
     //////////////////////////////////////////////////////////////

@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import { InitSingleVaultData } from "src/types/DataTypes.sol";
 
 interface IEmergencyQueue {
+    
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////

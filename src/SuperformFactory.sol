@@ -18,6 +18,7 @@ import { Clones } from "openzeppelin-contracts/contracts/proxy/Clones.sol";
 /// @dev Central point of read & write access for all Superforms on this chain
 /// @author Zeropoint Labs
 contract SuperformFactory is ISuperformFactory {
+
     using DataLib for uint256;
     using Clones for address;
 

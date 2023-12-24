@@ -6,9 +6,10 @@ import { Error } from "src/libraries/Error.sol";
 import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
 
 /// @title SocketValidator
-/// @author Zeropoint Labs
 /// @dev to assert input Socket x-chain txData is valid
+/// @author Zeropoint Labs
 contract SocketValidator is BridgeValidator {
+
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////

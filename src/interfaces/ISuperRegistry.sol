@@ -2,9 +2,10 @@
 pragma solidity ^0.8.23;
 
 /// @title ISuperRegistry
-/// @author Zeropoint Labs.
-/// @dev interface for Super Registry
+/// @dev interface for SuperRegistry
+/// @author Zeropoint Labs
 interface ISuperRegistry {
+
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////

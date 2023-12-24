@@ -21,9 +21,10 @@ import {
 } from "src/types/DataTypes.sol";
 
 /// @title PayloadHelper
+/// @dev helps decode payload data for off-chain purposes
 /// @author ZeroPoint Labs
-/// @dev helps decode payload data more easily. Used for off-chain purposes
 contract PayloadHelper is IPayloadHelper {
+
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////

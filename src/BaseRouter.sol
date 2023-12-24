@@ -9,10 +9,11 @@ import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title BaseRouter
-/// @author Zeropoint Labs.
 /// @dev Routes users funds and action information to a remote execution chain.
 /// @dev abstract implementation that allows inheriting contract to implement the logic
+/// @author Zeropoint Labs
 abstract contract BaseRouter is IBaseRouter {
+
     using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////////////

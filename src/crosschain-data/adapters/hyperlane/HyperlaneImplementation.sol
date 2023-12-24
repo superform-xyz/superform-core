@@ -14,9 +14,10 @@ import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaym
 import { StandardHookMetadata } from "src/vendor/hyperlane/StandardHookMetadata.sol";
 
 /// @title HyperlaneImplementation
-/// @author Zeropoint Labs
 /// @dev allows state registries to use hyperlane for crosschain communication
+/// @author Zeropoint Labs
 contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
+    
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////

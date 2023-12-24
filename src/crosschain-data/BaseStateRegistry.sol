@@ -16,6 +16,7 @@ import { PayloadState, AMBMessage, AMBExtraData } from "src/types/DataTypes.sol"
 /// @dev payloads (messages). Inheriting children contracts have the flexibility to define their own processing
 /// mechanisms.
 abstract contract BaseStateRegistry is IBaseStateRegistry {
+    
     using ProofLib for AMBMessage;
     using ProofLib for bytes;
 

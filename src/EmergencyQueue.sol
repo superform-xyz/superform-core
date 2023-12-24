@@ -11,9 +11,10 @@ import { Error } from "src/libraries/Error.sol";
 import "src/types/DataTypes.sol";
 
 /// @title EmergencyQueue
-/// @author Zeropoint Labs
 /// @dev stores withdrawal requests when forms are paused
+/// @author Zeropoint Labs
 contract EmergencyQueue is IEmergencyQueue {
+
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////

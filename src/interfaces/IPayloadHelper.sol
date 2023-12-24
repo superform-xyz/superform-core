@@ -2,9 +2,10 @@
 pragma solidity ^0.8.23;
 
 /// @title IPayloadHelper
-/// @author ZeroPoint Labs
 /// @dev helps decoding the bytes payload and returns meaningful information
+/// @author ZeroPoint Labs
 interface IPayloadHelper {
+
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////

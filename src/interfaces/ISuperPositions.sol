@@ -5,11 +5,12 @@ import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 import { AMBMessage } from "../types/DataTypes.sol";
 
 /// @title ISuperPositions
-/// @author Zeropoint Labs.
-/// @dev interface for Super Positions
+/// @dev interface for SuperPositions
+/// @author Zeropoint Labs
 interface ISuperPositions is IERC1155A {
+
     //////////////////////////////////////////////////////////////
-    //                          STRUCTS                     //
+    //                          STRUCTS                         //
     //////////////////////////////////////////////////////////////
 
     struct TxHistory {

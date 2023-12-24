@@ -4,9 +4,10 @@ pragma solidity ^0.8.23;
 import { IAccessControl } from "openzeppelin-contracts/contracts/access/IAccessControl.sol";
 
 /// @title ISuperRBAC
-/// @author Zeropoint Labs.
 /// @dev interface for Super RBAC
+/// @author Zeropoint Labs
 interface ISuperRBAC is IAccessControl {
+
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                         //
     //////////////////////////////////////////////////////////////

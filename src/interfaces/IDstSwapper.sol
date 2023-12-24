@@ -2,10 +2,10 @@
 pragma solidity ^0.8.23;
 
 /// @title IDstSwapper
+/// @dev handles all destination chain swaps, accessed by superform keepers
 /// @author Zeropoint Labs
-/// @dev handles all destination chain swaps.
-/// @notice all write functions can only be accessed by superform keepers.
 interface IDstSwapper {
+    
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                         //
     //////////////////////////////////////////////////////////////

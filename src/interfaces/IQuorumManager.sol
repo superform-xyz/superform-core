@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+/// @title IQuorumManager
+/// @dev interface to manage the quorum needed to send messages from chain to chain
+/// @author ZeroPoint Labs
 interface IQuorumManager {
+
     //////////////////////////////////////////////////////////////
     //                          EVENTS                           //
     //////////////////////////////////////////////////////////////

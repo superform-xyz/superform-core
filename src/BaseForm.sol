@@ -13,9 +13,10 @@ import { ERC165 } from "openzeppelin-contracts/contracts/utils/introspection/ERC
 import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 
 /// @title BaseForm
-/// @author Zeropoint Labs.
 /// @dev Abstract contract to be inherited by different form implementations
+/// @author Zeropoint Labs
 abstract contract BaseForm is IBaseForm, Initializable, ERC165 {
+
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////

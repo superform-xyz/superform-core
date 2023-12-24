@@ -6,14 +6,16 @@ import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 import { Error } from "src/libraries/Error.sol";
 
 /// @title BridgeValidator
-/// @author Zeropoint Labs
 /// @dev To be inherited by specific bridge handlers to verify the calldata being sent
+/// @author Zeropoint Labs
 abstract contract BridgeValidator is IBridgeValidator {
+
     //////////////////////////////////////////////////////////////
-    //                         CONSTANTS                         //
+    //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
+
     ISuperRegistry public immutable superRegistry;
-    address immutable NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //

@@ -4,9 +4,10 @@ pragma solidity ^0.8.23;
 import { InitSingleVaultData, TimelockPayload } from "src/types/DataTypes.sol";
 
 /// @title ITimelockStateRegistry
+/// @dev Interface for Timelock Form State Registry
 /// @author ZeroPoint Labs
-/// @notice Interface for Timelock Form State Registry
 interface ITimelockStateRegistry {
+    
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////

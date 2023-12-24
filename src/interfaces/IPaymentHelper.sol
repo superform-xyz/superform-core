@@ -11,9 +11,10 @@ import {
 } from "src/types/DataTypes.sol";
 
 /// @title IPaymentHelper
-/// @author ZeroPoint Labs
 /// @dev helps decoding the bytes payload and returns meaningful information
+/// @author ZeroPoint Labs
 interface IPaymentHelper {
+
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                         //
     //////////////////////////////////////////////////////////////

@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-/// @title Bridge Handler Interface
+/// @title Bridge Validator Interface
+/// @dev Validate and handle bridging of tokens
 /// @author Zeropoint Labs
 interface IBridgeValidator {
+
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
     //////////////////////////////////////////////////////////////
