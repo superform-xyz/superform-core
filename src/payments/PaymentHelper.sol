@@ -578,6 +578,8 @@ contract PaymentHelper is IPaymentHelper {
         /// @dev Type 1: DST TOKEN PRICE FEED ORACLE
         if (configType_ == 1) {
             AggregatorV3Interface nativeFeedOracleContract = AggregatorV3Interface(abi.decode(config_, (address)));
+
+            /// @dev allows setting price feed to address(0), equivalent for resetting native price
             if (
                 address(nativeFeedOracleContract) != address(0)
                     && nativeFeedOracleContract.decimals() != SUPPORTED_FEED_PRECISION
@@ -591,6 +593,8 @@ contract PaymentHelper is IPaymentHelper {
         /// @dev Type 2: DST GAS PRICE ORACLE
         if (configType_ == 2) {
             AggregatorV3Interface gasPriceOracleContract = AggregatorV3Interface(abi.decode(config_, (address)));
+
+            /// @dev allows setting gas price to address(0), equivalent for resetting gas price
             if (
                 address(gasPriceOracleContract) != address(0)
                     && gasPriceOracleContract.decimals() != SUPPORTED_FEED_PRECISION
