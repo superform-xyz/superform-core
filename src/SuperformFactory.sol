@@ -120,8 +120,14 @@ contract SuperformFactory is ISuperformFactory {
     }
 
     /// @inheritdoc ISuperformFactory
-    function getFormStateRegistryId(uint32 formImplementationId_) external view override returns (uint8) {
-        return formStateRegistryId[formImplementationId_];
+    function getFormStateRegistryId(uint32 formImplementationId_)
+        external
+        view
+        override
+        returns (uint8 formStateRegistryId_)
+    {
+        formStateRegistryId_ = formStateRegistryId[formImplementationId_];
+        if (formStateRegistryId_ == 0) revert Error.INVALID_FORM_REGISTRY_ID();
     }
 
     /// @inheritdoc ISuperformFactory

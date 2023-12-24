@@ -30,6 +30,8 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
+    uint8 internal constant CORE_STATE_REGISTRY_ID = 1;
+
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
     bytes32 constant DEPLOY_NEW_AERC20 = keccak256("DEPLOY_NEW_AERC20");
@@ -325,14 +327,12 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     }
 
     function _isValidStateSyncer(uint8 registryId_, uint256 superformId_) internal view {
-        /// @dev Directly check if the registryId is 0 or doesn't match the allowed cases.
-        if (registryId_ == 0) {
-            revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
-        }
+        /// @dev registryId_ zero check is done in superRegistry.getStateRegistryId()
+
         /// @dev If registryId is 1, meaning CoreStateRegistry, no further checks are necessary.
         /// @dev This is because CoreStateRegistry is the default minter for all kinds of forms
         /// @dev In case registryId is > 1, we need to check if the registryId matches the formImplementationId
-        if (registryId_ == 1) {
+        if (registryId_ == CORE_STATE_REGISTRY_ID) {
             return;
         }
 
