@@ -39,7 +39,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     //////////////////////////////////////////////////////////////
 
     /// @dev maps all transaction data routed through the smart contract.
-    mapping(uint256 transactionId => uint256 txInfo) public override txHistory;
+    mapping(uint256 transactionId => TxHistory txHistory) public override txHistory;
 
     /// @dev is the base uri set by admin
     string public dynamicURI;
@@ -138,18 +138,28 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc ISuperPositions
-    function updateTxHistory(uint256 payloadId_, uint256 txInfo_) external override onlyRouter {
-        txHistory[payloadId_] = txInfo_;
+    function updateTxHistory(
+        uint256 payloadId_,
+        uint256 txInfo_,
+        address receiverAddressSP_
+    )
+        external
+        override
+        onlyRouter
+    {
+        txHistory[payloadId_] = TxHistory({ txInfo: txInfo_, receiverAddressSP: receiverAddressSP_ });
+
+        emit TxHistorySet(payloadId_, txInfo_, receiverAddressSP_);
     }
 
     /// @inheritdoc ISuperPositions
-    function mintSingle(address srcSender_, uint256 id_, uint256 amount_) external override onlyMinter(id_) {
-        _mint(srcSender_, msg.sender, id_, amount_, "");
+    function mintSingle(address receiverAddressSP_, uint256 id_, uint256 amount_) external override onlyMinter(id_) {
+        _mint(receiverAddressSP_, msg.sender, id_, amount_, "");
     }
 
     /// @inheritdoc ISuperPositions
     function mintBatch(
-        address srcSender_,
+        address receiverAddressSP_,
         uint256[] memory ids_,
         uint256[] memory amounts_
     )
@@ -157,7 +167,8 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         override
         onlyBatchMinter(ids_)
     {
-        _batchMint(srcSender_, msg.sender, ids_, amounts_, "");
+        if (ids_.length != amounts_.length) revert Error.ARRAY_LENGTH_MISMATCH();
+        _batchMint(receiverAddressSP_, msg.sender, ids_, amounts_, "");
     }
 
     /// @inheritdoc ISuperPositions
@@ -175,6 +186,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         override
         onlyRouter
     {
+        if (ids_.length != amounts_.length) revert Error.ARRAY_LENGTH_MISMATCH();
         _batchBurn(srcSender_, msg.sender, ids_, amounts_);
     }
 
@@ -182,8 +194,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     function stateMultiSync(AMBMessage memory data_) external override returns (uint64 srcChainId_) {
         /// @dev here we decode the txInfo and params from the data brought back from destination
 
-        (uint256 returnTxType, uint256 callbackType, uint8 multi,, address returnDataSrcSender,) =
-            data_.txInfo.decodeTxInfo();
+        (uint256 returnTxType, uint256 callbackType, uint8 multi,,,) = data_.txInfo.decodeTxInfo();
 
         if (callbackType != uint256(CallbackType.RETURN) && callbackType != uint256(CallbackType.FAIL)) {
             revert Error.INVALID_PAYLOAD_TYPE();
@@ -194,23 +205,20 @@ contract SuperPositions is ISuperPositions, ERC1155A {
 
         _validateStateSyncer(returnData.superformIds);
 
-        uint256 txInfo = txHistory[returnData.payloadId];
+        uint256 txInfo = txHistory[returnData.payloadId].txInfo;
 
         /// @dev if txInfo is zero then the payloadId is invalid for ack
         if (txInfo == 0) {
             revert Error.TX_HISTORY_NOT_FOUND();
         }
 
-        address srcSender;
         uint256 txType;
 
         /// @dev decode initial payload info stored on source chain in this contract
-        (txType,,,, srcSender, srcChainId_) = txInfo.decodeTxInfo();
+        (txType,,,,, srcChainId_) = txInfo.decodeTxInfo();
 
         /// @dev verify this is a not single vault mint
         if (multi != 1) revert Error.INVALID_PAYLOAD_TYPE();
-        /// @dev compare final shares beneficiary to be the same (dst/src)
-        if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
         /// @dev compare txType to be the same (dst/src)
         if (returnTxType != txType) revert Error.SRC_TX_TYPE_MISMATCH();
 
@@ -219,7 +227,13 @@ contract SuperPositions is ISuperPositions, ERC1155A {
             (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN))
                 || (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL))
         ) {
-            _batchMint(srcSender, msg.sender, returnData.superformIds, returnData.amounts, "");
+            _batchMint(
+                txHistory[returnData.payloadId].receiverAddressSP,
+                msg.sender,
+                returnData.superformIds,
+                returnData.amounts,
+                ""
+            );
         } else {
             revert Error.INVALID_PAYLOAD_TYPE();
         }
@@ -231,8 +245,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     function stateSync(AMBMessage memory data_) external override returns (uint64 srcChainId_) {
         /// @dev here we decode the txInfo and params from the data brought back from destination
 
-        (uint256 returnTxType, uint256 callbackType, uint8 multi,, address returnDataSrcSender,) =
-            data_.txInfo.decodeTxInfo();
+        (uint256 returnTxType, uint256 callbackType, uint8 multi,,,) = data_.txInfo.decodeTxInfo();
 
         if (callbackType != uint256(CallbackType.RETURN) && callbackType != uint256(CallbackType.FAIL)) {
             revert Error.INVALID_PAYLOAD_TYPE();
@@ -242,7 +255,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         ReturnSingleData memory returnData = abi.decode(data_.params, (ReturnSingleData));
         _validateStateSyncer(returnData.superformId);
 
-        uint256 txInfo = txHistory[returnData.payloadId];
+        uint256 txInfo = txHistory[returnData.payloadId].txInfo;
 
         /// @dev if txInfo is zero then the payloadId is invalid for ack
         if (txInfo == 0) {
@@ -250,16 +263,12 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         }
 
         uint256 txType;
-        address srcSender;
 
         /// @dev decode initial payload info stored on source chain in this contract
-        (txType,,,, srcSender, srcChainId_) = txInfo.decodeTxInfo();
+        (txType,,,,, srcChainId_) = txInfo.decodeTxInfo();
 
         /// @dev this is a not multi vault mint
         if (multi != 0) revert Error.INVALID_PAYLOAD_TYPE();
-
-        /// @dev compare final shares beneficiary to be the same (dst/src)
-        if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
         /// @dev compare txType to be the same (dst/src)
         if (returnTxType != txType) revert Error.SRC_TX_TYPE_MISMATCH();
 
@@ -268,7 +277,13 @@ contract SuperPositions is ISuperPositions, ERC1155A {
             (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN))
                 || (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL))
         ) {
-            _mint(srcSender, msg.sender, returnData.superformId, returnData.amount, "");
+            _mint(
+                txHistory[returnData.payloadId].receiverAddressSP,
+                msg.sender,
+                returnData.superformId,
+                returnData.amount,
+                ""
+            );
         } else {
             revert Error.INVALID_PAYLOAD_TYPE();
         }

@@ -71,6 +71,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     //////////////////////////////////////////////////////////////*/
 
     constructor(address superRegistry_) {
+        if (superRegistry_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
         superRegistry = ISuperRegistry(superRegistry_);
 
         _disableInitializers();
@@ -155,21 +158,14 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     }
 
     /// @inheritdoc IBaseForm
-    function emergencyWithdraw(
-        address srcSender_,
-        address refundAddress_,
-        uint256 amount_
-    )
-        external
-        override
-        onlyEmergencyQueue
-    {
-        _emergencyWithdraw(srcSender_, refundAddress_, amount_);
+    function emergencyWithdraw(address receiverAddress_, uint256 amount_) external override onlyEmergencyQueue {
+        _emergencyWithdraw(receiverAddress_, amount_);
     }
 
     /// @inheritdoc IBaseForm
-    function forwardDustToPaymaster() external override {
-        _forwardDustToPaymaster();
+    function forwardDustToPaymaster(address token_) external override {
+        if (token_ == vault) revert Error.CANNOT_FORWARD_4646_TOKEN();
+        _forwardDustToPaymaster(token_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -268,8 +264,8 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         returns (uint256 assets);
 
     /// @dev withdraws vault shares from form during emergency
-    function _emergencyWithdraw(address srcSender_, address refundAddress_, uint256 amount_) internal virtual;
+    function _emergencyWithdraw(address receiverAddress_, uint256 amount_) internal virtual;
 
     /// @dev forwards dust to paymaster
-    function _forwardDustToPaymaster() internal virtual;
+    function _forwardDustToPaymaster(address token_) internal virtual;
 }

@@ -84,6 +84,9 @@ interface ISuperRegistry {
     /// @dev returns the id of the emergency queue
     function EMERGENCY_QUEUE() external view returns (bytes32);
 
+    /// @dev returns the id of the superform receiver
+    function SUPERFORM_RECEIVER() external view returns (bytes32);
+
     /// @dev returns the id of the payment admin keeper
     function PAYMENT_ADMIN() external view returns (bytes32);
 
