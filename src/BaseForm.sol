@@ -4,13 +4,13 @@ pragma solidity ^0.8.23;
 import { Initializable } from "openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import { ERC165 } from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
 import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
-import { InitSingleVaultData } from "./types/DataTypes.sol";
 import { IBaseForm } from "./interfaces/IBaseForm.sol";
 import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
 import { Error } from "./libraries/Error.sol";
 import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
 import { IEmergencyQueue } from "./interfaces/IEmergencyQueue.sol";
 import { DataLib } from "./libraries/DataLib.sol";
+import { InitSingleVaultData } from "./types/DataTypes.sol";
 
 /// @title BaseForm
 /// @author Zeropoint Labs.

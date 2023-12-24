@@ -7,6 +7,8 @@ import { IBaseStateRegistry } from "../../interfaces/IBaseStateRegistry.sol";
 import { ITimelockStateRegistry } from "../../interfaces/ITimelockStateRegistry.sol";
 import { IPayloadHelper } from "../../interfaces/IPayloadHelper.sol";
 import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
+import { DataLib } from "../../libraries/DataLib.sol";
+import { ProofLib } from "../../libraries/ProofLib.sol";
 import { Error } from "../../libraries/Error.sol";
 import {
     CallbackType,
@@ -18,8 +20,7 @@ import {
     LiqRequest,
     AMBMessage
 } from "../../types/DataTypes.sol";
-import { DataLib } from "../../libraries/DataLib.sol";
-import { ProofLib } from "../../libraries/ProofLib.sol";
+
 
 /// @title PayloadHelper
 /// @author ZeroPoint Labs

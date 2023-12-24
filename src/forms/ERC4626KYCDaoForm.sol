@@ -3,12 +3,13 @@ pragma solidity ^0.8.23;
 
 import { kycDAO4626 } from "super-vaults/kycdao-4626/kycdao4626.sol";
 import { ERC721Holder } from "openzeppelin-contracts/contracts/token/ERC721/utils/ERC721Holder.sol";
-import { IKycdaoNTNFT } from "../vendor/kycDAO/IKycDAONTNFT.sol";
-import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
-import { InitSingleVaultData } from "../types/DataTypes.sol";
 import { ERC4626FormImplementation } from "./ERC4626FormImplementation.sol";
 import { BaseForm } from "../BaseForm.sol";
+import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
+import { IKycdaoNTNFT } from "../vendor/kycDAO/IKycDAONTNFT.sol";
 import { Error } from "../libraries/Error.sol";
+import { InitSingleVaultData } from "../types/DataTypes.sol";
+
 
 /// @title ERC4626KYCDaoForm
 /// @notice The Form implementation for IERC4626 vaults with kycDAO NFT checks

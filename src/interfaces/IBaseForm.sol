@@ -2,8 +2,8 @@
 pragma solidity ^0.8.23;
 
 import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
-import { InitSingleVaultData } from "../types/DataTypes.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
+import { InitSingleVaultData } from "../types/DataTypes.sol";
 
 /// @title IBaseForm
 /// @author ZeroPoint Labs

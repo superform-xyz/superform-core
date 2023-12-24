@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import { ReentrancyGuard } from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
+import { BaseStateRegistry } from "../BaseStateRegistry.sol";
 import { IBaseForm } from "../../interfaces/IBaseForm.sol";
 import { ISuperformFactory } from "../../interfaces/ISuperformFactory.sol";
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
@@ -14,7 +15,6 @@ import { IBaseStateRegistry } from "../../interfaces/IBaseStateRegistry.sol";
 import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
 import { IPaymentHelper } from "../../interfaces/IPaymentHelper.sol";
 import { Error } from "../../libraries/Error.sol";
-import { BaseStateRegistry } from "../BaseStateRegistry.sol";
 import { ProofLib } from "../../libraries/ProofLib.sol";
 import { DataLib } from "../../libraries/DataLib.sol";
 import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";

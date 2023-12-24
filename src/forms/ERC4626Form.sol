@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { InitSingleVaultData } from "../types/DataTypes.sol";
 import { ERC4626FormImplementation } from "./ERC4626FormImplementation.sol";
 import { BaseForm } from "../BaseForm.sol";
+import { InitSingleVaultData } from "../types/DataTypes.sol";
 
 /// @title ERC4626Form
 /// @notice The Form implementation for IERC4626 vaults

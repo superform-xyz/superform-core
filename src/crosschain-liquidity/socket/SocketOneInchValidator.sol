@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { Error } from "src/libraries/Error.sol";
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
+import { Error } from "src/libraries/Error.sol";
 import { ISocketOneInchImpl } from "src/vendor/socket/ISocketOneInchImpl.sol";
 
 /// @title SocketOneInchValidator
 /// @author Zeropoint Labs
-/// @dev to assert input txData is valid
+/// @dev to assert input Socket same-chain txData is valid
 contract SocketOneInchValidator is BridgeValidator {
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //

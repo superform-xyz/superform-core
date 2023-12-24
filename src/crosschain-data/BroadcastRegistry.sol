@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { Error } from "src/libraries/Error.sol";
+import { IBroadcastAmbImplementation } from "src/interfaces/IBroadcastAmbImplementation.sol";
 import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { Error } from "src/libraries/Error.sol";
+import { ProofLib } from "src/libraries/ProofLib.sol";
 import { BroadcastMessage, PayloadState } from "src/types/DataTypes.sol";
-import { IBroadcastAmbImplementation } from "src/interfaces/IBroadcastAmbImplementation.sol";
-import { ProofLib } from "../libraries/ProofLib.sol";
 
 interface Target {
     function stateSyncBroadcast(bytes memory data_) external;

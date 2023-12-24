@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { AMBMessage } from "../types/DataTypes.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
+import { AMBMessage } from "../types/DataTypes.sol";
 
 /// @title ISuperPositions
 /// @author Zeropoint Labs.

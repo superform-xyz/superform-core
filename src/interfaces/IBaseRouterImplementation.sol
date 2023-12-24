@@ -2,7 +2,6 @@
 pragma solidity ^0.8.23;
 
 import { IBaseRouter } from "./IBaseRouter.sol";
-
 import "../types/DataTypes.sol";
 
 /// @title IBaseRouterImplementation
