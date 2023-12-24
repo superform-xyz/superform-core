@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
+import { Error } from "src/libraries/Error.sol";
 
 /// @title BridgeValidator
 /// @author Zeropoint Labs
@@ -19,6 +20,9 @@ abstract contract BridgeValidator is IBridgeValidator {
     //////////////////////////////////////////////////////////////
 
     constructor(address superRegistry_) {
+        if (superRegistry_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
         superRegistry = ISuperRegistry(superRegistry_);
     }
 

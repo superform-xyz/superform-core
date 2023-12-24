@@ -119,6 +119,10 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     //////////////////////////////////////////////////////////////
 
     constructor(address superRBAC_) {
+        if (superRBAC_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
+
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }

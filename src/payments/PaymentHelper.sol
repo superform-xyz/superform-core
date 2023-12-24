@@ -33,11 +33,13 @@ contract PaymentHelper is IPaymentHelper {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
+    uint256 private constant PROOF_LENGTH = 160;
+    uint8 private constant SUPPORTED_FEED_PRECISION = 8;
+    uint32 private constant TIMELOCK_FORM_ID = 2;
+    uint256 private constant MAX_UINT256 = type(uint256).max;
 
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
-    uint32 private constant TIMELOCK_FORM_ID = 2;
-    uint256 private constant MAX_UINT256 = type(uint256).max;
 
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
@@ -98,6 +100,10 @@ contract PaymentHelper is IPaymentHelper {
     //////////////////////////////////////////////////////////////
 
     constructor(address superRegistry_) {
+        if (superRegistry_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
+
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }
@@ -534,11 +540,21 @@ contract PaymentHelper is IPaymentHelper {
         onlyProtocolAdmin
     {
         if (config_.nativeFeedOracle != address(0)) {
-            nativeFeedOracle[chainId_] = AggregatorV3Interface(config_.nativeFeedOracle);
+            AggregatorV3Interface nativeFeedOracleContract = AggregatorV3Interface(config_.nativeFeedOracle);
+            if (nativeFeedOracleContract.decimals() != SUPPORTED_FEED_PRECISION) {
+                revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
+            }
+
+            nativeFeedOracle[chainId_] = nativeFeedOracleContract;
         }
 
         if (config_.gasPriceOracle != address(0)) {
-            gasPriceOracle[chainId_] = AggregatorV3Interface(config_.gasPriceOracle);
+            AggregatorV3Interface gasPriceOracleContract = AggregatorV3Interface(config_.nativeFeedOracle);
+            if (gasPriceOracleContract.decimals() != SUPPORTED_FEED_PRECISION) {
+                revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
+            }
+
+            gasPriceOracle[chainId_] = gasPriceOracleContract;
         }
 
         swapGasUsed[chainId_] = config_.swapGasUsed;
@@ -567,12 +583,32 @@ contract PaymentHelper is IPaymentHelper {
     {
         /// @dev Type 1: DST TOKEN PRICE FEED ORACLE
         if (configType_ == 1) {
-            nativeFeedOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
+            AggregatorV3Interface nativeFeedOracleContract = AggregatorV3Interface(abi.decode(config_, (address)));
+
+            /// @dev allows setting price feed to address(0), equivalent for resetting native price
+            if (
+                address(nativeFeedOracleContract) != address(0)
+                    && nativeFeedOracleContract.decimals() != SUPPORTED_FEED_PRECISION
+            ) {
+                revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
+            }
+
+            nativeFeedOracle[chainId_] = nativeFeedOracleContract;
         }
 
         /// @dev Type 2: DST GAS PRICE ORACLE
         if (configType_ == 2) {
-            gasPriceOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
+            AggregatorV3Interface gasPriceOracleContract = AggregatorV3Interface(abi.decode(config_, (address)));
+
+            /// @dev allows setting gas price to address(0), equivalent for resetting gas price
+            if (
+                address(gasPriceOracleContract) != address(0)
+                    && gasPriceOracleContract.decimals() != SUPPORTED_FEED_PRECISION
+            ) {
+                revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
+            }
+
+            gasPriceOracle[chainId_] = gasPriceOracleContract;
         }
 
         /// @dev Type 3: SWAP GAS USED
@@ -654,16 +690,13 @@ contract PaymentHelper is IPaymentHelper {
         uint256 gasReqPerByte = gasPerByte[dstChainId_];
         uint256 totalDstGasReqInWei = abi.encode(ambIdEncodedMessage).length * gasReqPerByte;
 
-        AMBMessage memory decodedMessage = abi.decode(message_, (AMBMessage));
-        decodedMessage.params = message_.computeProofBytes();
-
-        uint256 totalDstGasReqInWeiForProof = abi.encode(decodedMessage).length * gasReqPerByte;
+        /// @dev proof length is always of fixed length
+        uint256 totalDstGasReqInWeiForProof = PROOF_LENGTH * gasReqPerByte;
 
         extraDataPerAMB = new bytes[](len);
 
         for (uint256 i; i < len; ++i) {
             uint256 gasReq = i != 0 ? totalDstGasReqInWeiForProof : totalDstGasReqInWei;
-
             /// @dev amb id 1: layerzero
             /// @dev amb id 2: hyperlane
             /// @dev amb id 3: wormhole
