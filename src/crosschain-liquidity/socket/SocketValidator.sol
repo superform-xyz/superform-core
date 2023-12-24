@@ -67,7 +67,7 @@ contract SocketValidator is BridgeValidator {
             if (decodedReq.receiverAddress != args_.receiverAddress) revert Error.INVALID_TXDATA_RECEIVER();
         }
 
-        /// @dev FIXME: add  3. token validations
+        /// @dev token validations
         if (
             (decodedReq.middlewareRequest.id == 0 && args_.liqDataToken != decodedReq.bridgeRequest.inputToken)
                 || (decodedReq.middlewareRequest.id != 0 && args_.liqDataToken != decodedReq.middlewareRequest.inputToken)

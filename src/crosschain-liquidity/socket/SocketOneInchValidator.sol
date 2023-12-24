@@ -44,7 +44,7 @@ contract SocketOneInchValidator is BridgeValidator {
             if (decodedReq.receiver != args_.receiverAddress) revert Error.INVALID_TXDATA_RECEIVER();
         }
 
-        /// @dev FIXME: add  3. token validations
+        /// @dev 3. token validations
         if (args_.liqDataToken != decodedReq.fromToken) revert Error.INVALID_TXDATA_TOKEN();
 
         return false;
