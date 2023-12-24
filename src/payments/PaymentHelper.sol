@@ -654,7 +654,7 @@ contract PaymentHelper is IPaymentHelper {
         uint256 gasReqPerByte = gasPerByte[dstChainId_];
         uint256 totalDstGasReqInWei = abi.encode(ambIdEncodedMessage).length * gasReqPerByte;
 
-        /// @dev proof length is always 96
+        /// @dev proof length is always of fixed length
         uint256 totalDstGasReqInWeiForProof = PROOF_LENGTH * gasReqPerByte;
 
         extraDataPerAMB = new bytes[](len);
