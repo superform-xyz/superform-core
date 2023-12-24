@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";

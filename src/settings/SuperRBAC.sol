@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { AccessControlEnumerable } from "openzeppelin-contracts/contracts/access/extensions/AccessControlEnumerable.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { Error } from "src/libraries/Error.sol";
 import { BroadcastMessage } from "src/types/DataTypes.sol";
+import { AccessControlEnumerable } from "openzeppelin-contracts/contracts/access/extensions/AccessControlEnumerable.sol";
 
 /// @title SuperRBAC
 /// @author Zeropoint Labs.

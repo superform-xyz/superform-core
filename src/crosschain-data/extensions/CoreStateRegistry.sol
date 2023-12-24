@@ -26,7 +26,7 @@ import {
     ReturnSingleData,
     InitSingleVaultData,
     LiqRequest
-} from "../../types/DataTypes.sol";
+} from "src/types/DataTypes.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 

@@ -14,10 +14,9 @@ import { ERC165Checker } from "openzeppelin-contracts/contracts/utils/introspect
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import { Clones } from "openzeppelin-contracts/contracts/proxy/Clones.sol";
 
-
-/// @title Superforms Factory
-/// @dev A secure, and easily queryable central point of access for all Superforms on any given chain,
-/// @author Zeropoint Labs.
+/// @title SuperformFactory
+/// @dev Central point of read & write access for all Superforms on this chain
+/// @author Zeropoint Labs
 contract SuperformFactory is ISuperformFactory {
     using DataLib for uint256;
     using Clones for address;

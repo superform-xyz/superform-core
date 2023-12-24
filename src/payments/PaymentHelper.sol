@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-
 import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
@@ -13,7 +12,7 @@ import { DataLib } from "src/libraries/DataLib.sol";
 import { ProofLib } from "src/libraries/ProofLib.sol";
 import { ArrayCastLib } from "src/libraries/ArrayCastLib.sol";
 import "src/types/DataTypes.sol";
-import { AggregatorV3Interface } from "../vendor/chainlink/AggregatorV3Interface.sol";
+import { AggregatorV3Interface } from "src/vendor/chainlink/AggregatorV3Interface.sol";
 
 /// @dev interface to read public variable from state registry
 interface ReadOnlyBaseRegistry is IBaseStateRegistry {

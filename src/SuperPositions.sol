@@ -23,7 +23,8 @@ import {
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /// @title SuperPositions
-/// @author Zeropoint Labs.
+/// @dev Cross-chain LP token minted on source chain
+/// @author Zeropoint Labs
 contract SuperPositions is ISuperPositions, ERC1155A {
     using DataLib for uint256;
 
