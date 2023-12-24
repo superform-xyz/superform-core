@@ -136,15 +136,9 @@ contract ForwardDustFormTest is ProtocolActions {
                         superform,
                         ARBI,
                         ETH,
-<<<<<<< HEAD
                         nasty_ ? 0.99e18 : IBaseForm(superform).previewRedeemFrom(superPositionBalance), // nastiness
                             // here within slippage limit
                         refundAddress,
-=======
-                        nasty_ ? 0.2e18 : IBaseForm(superform).previewRedeemFrom(superPositionBalance), // nastiness
-                            // here
-                        receiverAddress,
->>>>>>> origin/develop
                         false
                     )
                 ),
