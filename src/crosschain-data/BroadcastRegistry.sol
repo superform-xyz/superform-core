@@ -98,6 +98,10 @@ contract BroadcastRegistry is IBroadcastRegistry {
         override
         onlySender
     {
+        if (msg.value < gasFee_) {
+            revert Error.INVALID_BROADCAST_FEE();
+        }
+
         _broadcastPayload(srcSender_, ambId_, gasFee_, message_, extraData_);
 
         /// @dev refunds any overpaid msg.value

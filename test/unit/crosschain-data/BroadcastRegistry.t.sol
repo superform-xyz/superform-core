@@ -48,4 +48,10 @@ contract BroadcastRegistryTest is BaseSetup {
         assertEq(address(broadcastRegistry).balance, 0);
         assertEq(invalidReceiver.balance, 100 ether);
     }
+
+    function test_revertOnBroadcastUnderPayment() public {
+        vm.startPrank(invalidReceiver);
+        vm.expectRevert(Error.INVALID_BROADCAST_FEE.selector);
+        broadcastRegistry.broadcastPayload{ value: 1 ether }(invalidReceiver, 4, 2 ether, bytes("testmepls"), bytes(""));
+    }
 }
