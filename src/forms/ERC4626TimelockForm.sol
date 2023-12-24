@@ -110,7 +110,10 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
             vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(vars.liqData.txData, false);
 
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
-            if (vars.amount > assets) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+            if (_isWithdrawTxDataAmountInvalid(vars.amount, assets, p_.data.maxSlippage)) {
+                if (p_.isXChain == 1) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
+                revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+            }
 
             vars.chainId = CHAIN_ID;
 
