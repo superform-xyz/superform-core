@@ -17,7 +17,6 @@ import {
     InitMultiVaultData,
     InitSingleVaultData,
     TimelockPayload,
-    LiqRequest,
     AMBMessage
 } from "src/types/DataTypes.sol";
 
