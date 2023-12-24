@@ -58,6 +58,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @dev accessed in base form to send payloads to emergency queue
     /// @notice should not be allowed to be changed
     bytes32 public constant override EMERGENCY_QUEUE = keccak256("EMERGENCY_QUEUE");
+    bytes32 public constant override SUPERFORM_RECEIVER = keccak256("SUPERFORM_RECEIVER");
     /// @dev default keepers - identifiers
     /// @dev could be allowed to be changed
     bytes32 public constant override PAYMENT_ADMIN = keccak256("PAYMENT_ADMIN");

@@ -28,6 +28,9 @@ interface IBaseForm is IERC165 {
     /// @dev is emitted when an emergency withdrawal is processed
     event EmergencyWithdrawalProcessed(address indexed refundAddress, uint256 indexed amount);
 
+    /// @dev is emitted when dust is forwarded to the paymaster
+    event FormDustForwardedToPaymaster(address indexed token, uint256 indexed amount);
+
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
@@ -146,11 +149,11 @@ interface IBaseForm is IERC165 {
         returns (uint256 assets);
 
     /// @dev process withdrawal of shares if form is paused
-    /// @param srcSender_ The address of the sender of the transaction
-    /// @param refundAddress_ The address to refund the shares to
+    /// @param receiverAddress_ The address to refund the shares to
     /// @param amount_ The amount of vault shares to refund
-    function emergencyWithdraw(address srcSender_, address refundAddress_, uint256 amount_) external;
+    function emergencyWithdraw(address receiverAddress_, uint256 amount_) external;
 
     /// @dev moves all dust in the contract to Paymaster contract
-    function forwardDustToPaymaster() external;
+    /// @param token_ The address of the token to forward
+    function forwardDustToPaymaster(address token_) external;
 }

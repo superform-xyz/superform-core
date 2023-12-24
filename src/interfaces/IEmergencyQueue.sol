@@ -9,10 +9,9 @@ interface IEmergencyQueue {
     //////////////////////////////////////////////////////////////
 
     event WithdrawalQueued(
-        address indexed srcAddress,
-        address indexed refundAddress,
+        address indexed receiverAddress,
         uint256 indexed id,
-        uint256 superformId,
+        uint256 indexed superformId,
         uint256 amount,
         uint256 srcPayloadId
     );
@@ -36,7 +35,7 @@ interface IEmergencyQueue {
 
     /// @dev called by paused forms to queue up withdrawals for exit
     /// @param data_ is the single vault data passed by the user
-    function queueWithdrawal(InitSingleVaultData memory data_, address srcSender_) external;
+    function queueWithdrawal(InitSingleVaultData memory data_) external;
 
     /// @dev called by emergency admin to processed queued withdrawal
     /// @param id_ is the identifier of the queued action

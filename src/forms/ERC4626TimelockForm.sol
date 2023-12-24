@@ -17,6 +17,7 @@ import { Error } from "../libraries/Error.sol";
 /// @notice Form implementation to handle timelock extension for ERC4626 vaults
 contract ERC4626TimelockForm is ERC4626FormImplementation {
     using SafeERC20 for IERC20;
+    using SafeERC20 for IERC4626TimelockVault;
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
@@ -61,6 +62,9 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     //////////////////////////////////////////////////////////////
 
     /// @dev this function is called when the timelock deposit is ready to be withdrawn after being unlocked
+    /// @dev retain4626 flag is not added in this implementation unlike in ERC4626Implementation.sol because
+    /// @dev if a vault fails to redeem at this stage, superPositions are minted back to the user and he can
+    /// @dev try again with retain4626 flag set and take their shares directly
     /// @param p_ the payload data
     function withdrawAfterCoolDown(TimelockPayload memory p_)
         external
@@ -70,9 +74,8 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         if (p_.data.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
 
         if (_isPaused(p_.data.superformId)) {
-            IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
-                p_.data, p_.data.receiverAddress
-            );
+            IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(p_.data);
+
             return 0;
         }
         withdrawAfterCoolDownLocalVars memory vars;
@@ -175,7 +178,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
 
     /// @inheritdoc BaseForm
     /// @dev this is the step-1 for timelock form withdrawal, direct case
-    /// @dev will mandatorily process unlock
+    /// @dev will mandatorily process unlock unless the retain4626 flag is set
     /// @return shares is always 0
     function _directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
@@ -186,16 +189,21 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         override
         returns (uint256)
     {
-        /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to timelock
-        /// @dev state registry for re-processing at a later date
-        _storePayload(0, CHAIN_ID, _requestUnlock(singleVaultData_.amount), singleVaultData_);
-
+        if (!singleVaultData_.retain4626) {
+            /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to
+            /// timelock
+            /// @dev state registry for re-processing at a later date
+            _storePayload(0, CHAIN_ID, _requestUnlock(singleVaultData_.amount), singleVaultData_);
+        } else {
+            /// @dev transfer shares to user and do not redeem shares for assets
+            IERC4626TimelockVault(vault).safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
+        }
         return 0;
     }
 
     /// @inheritdoc BaseForm
     /// @dev this is the step-1 for timelock form withdrawal, xchain case
-    /// @dev will mandatorily process unlock
+    /// @dev will mandatorily process unlock unless the retain4626 flag is set
     /// @return shares is always 0
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
@@ -207,21 +215,27 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         override
         returns (uint256)
     {
-        /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to timelock
-        /// @dev state registry for re-processing at a later date
-        _storePayload(1, srcChainId_, _requestUnlock(singleVaultData_.amount), singleVaultData_);
+        if (!singleVaultData_.retain4626) {
+            /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to
+            /// timelock
+            /// @dev state registry for re-processing at a later date
+            _storePayload(1, srcChainId_, _requestUnlock(singleVaultData_.amount), singleVaultData_);
+        } else {
+            /// @dev transfer shares to user and do not redeem shares for assets
+            IERC4626TimelockVault(vault).safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
+        }
 
         return 0;
     }
 
     /// @inheritdoc BaseForm
-    function _emergencyWithdraw(address, /*srcSender_*/ address receiverAddress_, uint256 amount_) internal override {
+    function _emergencyWithdraw(address receiverAddress_, uint256 amount_) internal override {
         _processEmergencyWithdraw(receiverAddress_, amount_);
     }
 
     /// @inheritdoc BaseForm
-    function _forwardDustToPaymaster() internal override {
-        _processForwardDustToPaymaster();
+    function _forwardDustToPaymaster(address token_) internal override {
+        _processForwardDustToPaymaster(token_);
     }
 
     /// @dev calls the vault to request unlock

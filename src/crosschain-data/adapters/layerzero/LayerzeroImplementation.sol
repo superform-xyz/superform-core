@@ -323,7 +323,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     function _lzSend(
         uint16 dstChainId_,
         bytes memory payload_,
-        address payable refundAddress_,
+        address payable receiverAddress_,
         address zroPaymentAddress_,
         bytes memory adapterParams_,
         uint256 msgValue_
@@ -336,7 +336,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         }
 
         lzEndpoint.send{ value: msgValue_ }(
-            dstChainId_, trustedRemote, payload_, refundAddress_, zroPaymentAddress_, adapterParams_
+            dstChainId_, trustedRemote, payload_, receiverAddress_, zroPaymentAddress_, adapterParams_
         );
     }
 

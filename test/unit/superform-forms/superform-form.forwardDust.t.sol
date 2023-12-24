@@ -15,7 +15,7 @@ import "src/types/DataTypes.sol";
 
 contract ForwardDustFormTest is ProtocolActions {
     uint64 internal chainId = ETH;
-    address refundAddress = address(444);
+    address receiverAddress = address(444);
 
     function setUp() public override {
         super.setUp();
@@ -26,7 +26,7 @@ contract ForwardDustFormTest is ProtocolActions {
 
         uint256 balanceBefore = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
         assertGt(balanceBefore, 0);
-        IBaseForm(superform).forwardDustToPaymaster();
+        IBaseForm(superform).forwardDustToPaymaster(getContract(ARBI, "WETH"));
         uint256 balanceAfter = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
 
         assertEq(balanceAfter, 0);
@@ -37,7 +37,7 @@ contract ForwardDustFormTest is ProtocolActions {
 
         uint256 balanceBefore = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
         assertEq(balanceBefore, 0);
-        IBaseForm(superform).forwardDustToPaymaster();
+        IBaseForm(superform).forwardDustToPaymaster(getContract(ARBI, "WETH"));
         uint256 balanceAfter = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
 
         assertEq(balanceAfter, 0);
@@ -48,10 +48,25 @@ contract ForwardDustFormTest is ProtocolActions {
 
         uint256 balanceBefore = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
         assertGt(balanceBefore, 0);
-        IBaseForm(superform).forwardDustToPaymaster();
+        IBaseForm(superform).forwardDustToPaymaster(getContract(ARBI, "WETH"));
         uint256 balanceAfter = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
 
         assertEq(balanceAfter, 0);
+    }
+
+    function test_forwardDustToPaymaster_arbitraryToken_4626revert() public {
+        address superform = _successfulDepositWithdraw("VaultMock", 0, 1e18, 0, false, deployer);
+
+        address arbitraryToken = getContract(ARBI, "DAI");
+        deal(arbitraryToken, superform, 10e18);
+
+        IBaseForm(superform).forwardDustToPaymaster(arbitraryToken);
+        address vaultAddress = IBaseForm(superform).getVaultAddress();
+        vm.expectRevert(Error.CANNOT_FORWARD_4646_TOKEN.selector);
+        IBaseForm(superform).forwardDustToPaymaster(vaultAddress);
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        IBaseForm(superform).forwardDustToPaymaster(address(0));
     }
 
     function _successfulDepositWithdraw(
@@ -87,7 +102,8 @@ contract ForwardDustFormTest is ProtocolActions {
             "",
             false,
             false,
-            refundAddress,
+            receiverAddress,
+            receiverAddress,
             ""
         );
 
@@ -103,7 +119,8 @@ contract ForwardDustFormTest is ProtocolActions {
 
         vm.stopPrank();
 
-        uint256 superPositionBalance = SuperPositions(getContract(ARBI, "SuperPositions")).balanceOf(user, superformId);
+        uint256 superPositionBalance =
+            SuperPositions(getContract(ARBI, "SuperPositions")).balanceOf(receiverAddress, superformId);
 
         InitSingleVaultData memory data2 = InitSingleVaultData(
             1,
@@ -119,9 +136,15 @@ contract ForwardDustFormTest is ProtocolActions {
                         superform,
                         ARBI,
                         ETH,
+<<<<<<< HEAD
                         nasty_ ? 0.99e18 : IBaseForm(superform).previewRedeemFrom(superPositionBalance), // nastiness
                             // here within slippage limit
                         refundAddress,
+=======
+                        nasty_ ? 0.2e18 : IBaseForm(superform).previewRedeemFrom(superPositionBalance), // nastiness
+                            // here
+                        receiverAddress,
+>>>>>>> origin/develop
                         false
                     )
                 ),
@@ -133,7 +156,7 @@ contract ForwardDustFormTest is ProtocolActions {
             ),
             false,
             false,
-            refundAddress,
+            receiverAddress,
             ""
         );
         vm.selectFork(FORKS[ARBI]);

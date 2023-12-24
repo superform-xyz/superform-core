@@ -353,7 +353,6 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         (v.underlying, v.expAmount, v.maxSlippage) = _getFormUnderlyingFrom(coreStateRegistry_, payloadId_, index_);
 
         v.balanceBefore = IERC20(v.underlying).balanceOf(v.finalDst);
-
         _dispatchTokens(
             superRegistry.getBridgeAddress(bridgeId_),
             txData_,
