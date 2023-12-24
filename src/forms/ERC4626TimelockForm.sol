@@ -25,6 +25,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     //////////////////////////////////////////////////////////////
 
     uint8 constant stateRegistryId = 2; // TimelockStateRegistry
+    uint256 private constant ENTIRE_SLIPPAGE = 10_000;
 
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                         //
@@ -100,9 +101,12 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         IERC20 assetERC = IERC20(vars.asset);
 
         uint256 assetsBalanceBefore = assetERC.balanceOf(vars.receiver);
+        uint256 assetsExpected = v.convertToAssets(p_.data.amount);
         assets = v.redeem(p_.data.amount, vars.receiver, address(this));
         uint256 assetsBalanceAfter = assetERC.balanceOf(vars.receiver);
-        if (assetsBalanceAfter - assetsBalanceBefore != assets) {
+        if ((assetsBalanceAfter - assetsBalanceBefore != assets) || 
+                (assets < ((assetsExpected * (ENTIRE_SLIPPAGE - p_.data.maxSlippage)) / ENTIRE_SLIPPAGE))
+        ) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
         if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();

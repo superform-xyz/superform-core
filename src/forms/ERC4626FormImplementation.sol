@@ -242,9 +242,12 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// @dev deposit assets for shares and add extra validation check to ensure intended ERC4626 behavior
         address sharesReceiver = singleVaultData_.retain4626 ? singleVaultData_.receiverAddress : address(this);
         uint256 sharesBalanceBefore = v.balanceOf(sharesReceiver);
+        uint256 sharesExpected = v.convertToShares(vars.assetDifference);
         shares = v.deposit(vars.assetDifference, sharesReceiver);
         uint256 sharesBalanceAfter = v.balanceOf(sharesReceiver);
-        if (sharesBalanceAfter - sharesBalanceBefore != shares) {
+        if ((sharesBalanceAfter - sharesBalanceBefore != shares) || 
+                (shares < ((sharesExpected * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE))
+        ) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
     }
@@ -274,9 +277,12 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// @dev deposit assets for shares and add extra validation check to ensure intended ERC4626 behavior
         address sharesReceiver = singleVaultData_.retain4626 ? singleVaultData_.receiverAddress : address(this);
         uint256 sharesBalanceBefore = v.balanceOf(sharesReceiver);
+        uint256 sharesExpected = v.convertToShares(singleVaultData_.amount);
         shares = v.deposit(singleVaultData_.amount, sharesReceiver);
         uint256 sharesBalanceAfter = v.balanceOf(sharesReceiver);
-        if (sharesBalanceAfter - sharesBalanceBefore != shares) {
+        if ((sharesBalanceAfter - sharesBalanceBefore != shares) || 
+                (shares < ((sharesExpected * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE))
+        ) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
 
@@ -299,9 +305,12 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
             /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
             uint256 assetsBalanceBefore = a.balanceOf(vars.receiver);
+            uint256 assetsExpected = v.convertToAssets(singleVaultData_.amount);
             assets = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
             uint256 assetsBalanceAfter = a.balanceOf(vars.receiver);
-            if (assetsBalanceAfter - assetsBalanceBefore != assets) {
+            if ((assetsBalanceAfter - assetsBalanceBefore != assets) || 
+                    (assets < ((assetsExpected * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE))
+            ) {
                 revert Error.VAULT_IMPLEMENTATION_FAILED();
             }
 
@@ -379,9 +388,12 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
             /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
             uint256 assetsBalanceBefore = a.balanceOf(vars.receiver);
+            uint256 assetsExpected = v.convertToAssets(singleVaultData_.amount);
             assets = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
             uint256 assetsBalanceAfter = a.balanceOf(vars.receiver);
-            if (assetsBalanceAfter - assetsBalanceBefore != assets) {
+            if ((assetsBalanceAfter - assetsBalanceBefore != assets) || 
+                    (assets < ((assetsExpected * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE))
+            ) {
                 revert Error.VAULT_IMPLEMENTATION_FAILED();
             }
 
