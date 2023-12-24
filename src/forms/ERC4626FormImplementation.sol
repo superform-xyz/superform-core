@@ -240,16 +240,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         IERC20(vars.asset).safeIncreaseAllowance(vault, vars.assetDifference);
 
         /// @dev deposit assets for shares and add extra validation check to ensure intended ERC4626 behavior
-        address sharesReceiver = singleVaultData_.retain4626 ? singleVaultData_.receiverAddress : address(this);
-        uint256 sharesBalanceBefore = v.balanceOf(sharesReceiver);
-        uint256 sharesExpected = v.convertToShares(vars.assetDifference);
-        shares = v.deposit(vars.assetDifference, sharesReceiver);
-        uint256 sharesBalanceAfter = v.balanceOf(sharesReceiver);
-        if ((sharesBalanceAfter - sharesBalanceBefore != shares) || 
-                (shares < ((sharesExpected * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE))
-        ) {
-            revert Error.VAULT_IMPLEMENTATION_FAILED();
-        }
+        shares = _depositAndValidate(singleVaultData_,v,vars.assetDifference);
     }
 
     function _processXChainDeposit(
@@ -275,16 +266,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         IERC20(asset).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
 
         /// @dev deposit assets for shares and add extra validation check to ensure intended ERC4626 behavior
-        address sharesReceiver = singleVaultData_.retain4626 ? singleVaultData_.receiverAddress : address(this);
-        uint256 sharesBalanceBefore = v.balanceOf(sharesReceiver);
-        uint256 sharesExpected = v.convertToShares(singleVaultData_.amount);
-        shares = v.deposit(singleVaultData_.amount, sharesReceiver);
-        uint256 sharesBalanceAfter = v.balanceOf(sharesReceiver);
-        if ((sharesBalanceAfter - sharesBalanceBefore != shares) || 
-                (shares < ((sharesExpected * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE))
-        ) {
-            revert Error.VAULT_IMPLEMENTATION_FAILED();
-        }
+        shares = _depositAndValidate(singleVaultData_,v,singleVaultData_.amount);
 
         emit Processed(srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
     }
@@ -304,17 +286,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             vars.asset = address(asset);
 
             /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
-            uint256 assetsBalanceBefore = a.balanceOf(vars.receiver);
-            uint256 assetsExpected = v.convertToAssets(singleVaultData_.amount);
-            assets = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
-            uint256 assetsBalanceAfter = a.balanceOf(vars.receiver);
-            if ((assetsBalanceAfter - assetsBalanceBefore != assets) || 
-                    (assets < ((assetsExpected * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE))
-            ) {
-                revert Error.VAULT_IMPLEMENTATION_FAILED();
-            }
-
-            if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
+            assets = _withdrawAndValidate(singleVaultData_,vars.receiver,v,a);
 
             if (vars.len1 != 0) {
                 vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
@@ -389,17 +361,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             vars.asset = address(asset);
 
             /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
-            uint256 assetsBalanceBefore = a.balanceOf(vars.receiver);
-            uint256 assetsExpected = v.convertToAssets(singleVaultData_.amount);
-            assets = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
-            uint256 assetsBalanceAfter = a.balanceOf(vars.receiver);
-            if ((assetsBalanceAfter - assetsBalanceBefore != assets) || 
-                    (assets < ((assetsExpected * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE))
-            ) {
-                revert Error.VAULT_IMPLEMENTATION_FAILED();
-            }
-
-            if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
+            assets = _withdrawAndValidate(singleVaultData_,vars.receiver,v,a);
 
             if (len != 0) {
                 vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
@@ -408,6 +370,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
                 /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
                 /// @dev if less it should be within the slippage limit specified by the user
+                /// @dev important to maintain so that the keeper cannot update with malicious data after successful withdraw
                 if (_isWithdrawTxDataAmountInvalid(vars.amount, assets, singleVaultData_.maxSlippage)) {
                     revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
                 }
@@ -442,6 +405,52 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         }
 
         emit Processed(srcChainId_, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
+    }
+
+    function _depositAndValidate(
+        InitSingleVaultData memory singleVaultData_,
+        IERC4626 v,
+        uint256 assetDifference
+    ) 
+        internal
+        returns (uint256 shares)
+    {
+        address sharesReceiver = singleVaultData_.retain4626 ? singleVaultData_.receiverAddress : address(this);
+        uint256 sharesBalanceBefore = v.balanceOf(sharesReceiver);
+        uint256 sharesExpected = v.convertToShares(assetDifference);
+        shares = v.deposit(assetDifference, sharesReceiver);
+        uint256 sharesBalanceAfter = v.balanceOf(sharesReceiver);
+
+        if ((sharesBalanceAfter - sharesBalanceBefore != shares) || 
+            (shares < ((sharesExpected * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE))
+        ) {
+            revert Error.VAULT_IMPLEMENTATION_FAILED();
+        }
+    }
+
+    function _withdrawAndValidate(
+        InitSingleVaultData memory singleVaultData_,
+        address receiver,
+        IERC4626 v,
+        IERC20 a
+    ) 
+        internal 
+        returns (uint256 assets)
+    {
+        uint256 assetsBalanceBefore = a.balanceOf(receiver);
+        uint256 assetsExpected = v.convertToAssets(singleVaultData_.amount);
+        assets = v.redeem(singleVaultData_.amount, receiver, address(this));
+        uint256 assetsBalanceAfter = a.balanceOf(receiver);
+
+        if ((assetsBalanceAfter - assetsBalanceBefore != assets) || 
+            (assets < ((assetsExpected * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE))
+        ) {
+            revert Error.VAULT_IMPLEMENTATION_FAILED();
+        }
+
+        if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
+
+        return assets;
     }
 
     function _isWithdrawTxDataAmountInvalid(

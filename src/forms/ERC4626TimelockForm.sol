@@ -25,7 +25,6 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     //////////////////////////////////////////////////////////////
 
     uint8 constant stateRegistryId = 2; // TimelockStateRegistry
-    uint256 private constant ENTIRE_SLIPPAGE = 10_000;
 
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                         //
