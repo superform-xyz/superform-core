@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { IBaseRouter } from "./IBaseRouter.sol";
-import "../types/DataTypes.sol";
+import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
+import "src/types/DataTypes.sol";
 
 /// @title IBaseRouterImplementation
 /// @author Zeropoint Labs.

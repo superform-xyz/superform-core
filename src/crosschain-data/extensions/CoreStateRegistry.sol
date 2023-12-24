@@ -1,23 +1,21 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import { BaseStateRegistry } from "../BaseStateRegistry.sol";
-import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
-import { ISuperPositions } from "../../interfaces/ISuperPositions.sol";
-import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
-import { IPaymentHelper } from "../../interfaces/IPaymentHelper.sol";
-import { IBaseForm } from "../../interfaces/IBaseForm.sol";
-import { IDstSwapper } from "../../interfaces/IDstSwapper.sol";
-import { ISuperformFactory } from "../../interfaces/ISuperformFactory.sol";
-import { ICoreStateRegistry } from "../../interfaces/ICoreStateRegistry.sol";
-import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
-import { DataLib } from "../../libraries/DataLib.sol";
-import { ProofLib } from "../../libraries/ProofLib.sol";
-import { ArrayCastLib } from "../../libraries/ArrayCastLib.sol";
-import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
-import { Error } from "../../libraries/Error.sol";
+import { BaseStateRegistry } from "src/crosschain-data/BaseStateRegistry.sol";
+import { ICoreStateRegistry } from "src/interfaces/ICoreStateRegistry.sol";
+import { IBaseForm } from "src/interfaces/IBaseForm.sol";
+import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
+import { IDstSwapper } from "src/interfaces/IDstSwapper.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { ProofLib } from "src/libraries/ProofLib.sol";
+import { ArrayCastLib } from "src/libraries/ArrayCastLib.sol";
+import { PayloadUpdaterLib } from "src/libraries/PayloadUpdaterLib.sol";
+import { Error } from "src/libraries/Error.sol";
 import {
     PayloadState,
     AMBMessage,
@@ -29,6 +27,9 @@ import {
     InitSingleVaultData,
     LiqRequest
 } from "../../types/DataTypes.sol";
+import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
 /// @dev enables communication between Superform Core Contracts deployed on all supported networks

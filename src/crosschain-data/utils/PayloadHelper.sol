@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
-import { ISuperPositions } from "../../interfaces/ISuperPositions.sol";
-import { IBaseStateRegistry } from "../../interfaces/IBaseStateRegistry.sol";
-import { ITimelockStateRegistry } from "../../interfaces/ITimelockStateRegistry.sol";
-import { IPayloadHelper } from "../../interfaces/IPayloadHelper.sol";
-import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
-import { DataLib } from "../../libraries/DataLib.sol";
-import { ProofLib } from "../../libraries/ProofLib.sol";
-import { Error } from "../../libraries/Error.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
+import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.sol";
+import { IPayloadHelper } from "src/interfaces/IPayloadHelper.sol";
+import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { ProofLib } from "src/libraries/ProofLib.sol";
+import { Error } from "src/libraries/Error.sol";
 import {
     CallbackType,
     ReturnMultiData,
@@ -19,13 +19,11 @@ import {
     TimelockPayload,
     LiqRequest,
     AMBMessage
-} from "../../types/DataTypes.sol";
-
+} from "src/types/DataTypes.sol";
 
 /// @title PayloadHelper
 /// @author ZeroPoint Labs
 /// @dev helps decode payload data more easily. Used for off-chain purposes
-
 contract PayloadHelper is IPayloadHelper {
     using DataLib for uint256;
 

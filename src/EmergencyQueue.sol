@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-
-import { IBaseForm } from "./interfaces/IBaseForm.sol";
-import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
-import { ISuperRBAC } from "./interfaces/ISuperRBAC.sol";
-import { IEmergencyQueue } from "./interfaces/IEmergencyQueue.sol";
-import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
-import { DataLib } from "./libraries/DataLib.sol";
-import { Error } from "./libraries/Error.sol";
-import "./types/DataTypes.sol";
+import { IEmergencyQueue } from "src/interfaces/IEmergencyQueue.sol";
+import { IBaseForm } from "src/interfaces/IBaseForm.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { Error } from "src/libraries/Error.sol";
+import "src/types/DataTypes.sol";
 
 /// @title EmergencyQueue
 /// @author Zeropoint Labs

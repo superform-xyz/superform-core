@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { BaseRouterImplementation } from "./BaseRouterImplementation.sol";
-import { BaseRouter } from "./BaseRouter.sol";
-import { IBaseRouter } from "./interfaces/IBaseRouter.sol";
-import "./types/DataTypes.sol";
+import { BaseRouterImplementation } from "src/BaseRouterImplementation.sol";
+import { BaseRouter } from "src/BaseRouter.sol";
+import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
+import "src/types/DataTypes.sol";
 
 /// @title SuperformRouter
 /// @author Zeropoint Labs.

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
-import { Error } from "../../libraries/Error.sol";
+import { IQuorumManager } from "src/interfaces/IQuorumManager.sol";
+import { Error } from "src/libraries/Error.sol";
 
 /// @title QuorumManager
 /// @author ZeroPoint Labs

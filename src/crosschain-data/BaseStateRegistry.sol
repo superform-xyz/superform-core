@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-
-import { IQuorumManager } from "../interfaces/IQuorumManager.sol";
-import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
-import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
-import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
-import { Error } from "../libraries/Error.sol";
-import { ProofLib } from "../libraries/ProofLib.sol";
-import { PayloadState, AMBMessage, AMBExtraData } from "../types/DataTypes.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
+import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { IQuorumManager } from "src/interfaces/IQuorumManager.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { Error } from "src/libraries/Error.sol";
+import { ProofLib } from "src/libraries/ProofLib.sol";
+import { PayloadState, AMBMessage, AMBExtraData } from "src/types/DataTypes.sol";
 
 /// @title BaseStateRegistry
 /// @author Zeropoint Labs

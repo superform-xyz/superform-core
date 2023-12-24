@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import "../types/DataTypes.sol";
+import "src/types/DataTypes.sol";
 
 /// @title IBaseStateRegistry
 /// @author ZeroPoint Labs

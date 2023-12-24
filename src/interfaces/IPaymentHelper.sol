@@ -8,7 +8,7 @@ import {
     SingleXChainSingleVaultStateReq,
     SingleDirectSingleVaultStateReq,
     SingleDirectMultiVaultStateReq
-} from "../types/DataTypes.sol";
+} from "src/types/DataTypes.sol";
 
 /// @title IPaymentHelper
 /// @author ZeroPoint Labs

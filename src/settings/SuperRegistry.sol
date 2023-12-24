@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { QuorumManager } from "../crosschain-data/utils/QuorumManager.sol";
-import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
-import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
-import { Error } from "../libraries/Error.sol";
+import { QuorumManager } from "src/crosschain-data/utils/QuorumManager.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { Error } from "src/libraries/Error.sol";
 
 /// @title SuperRegistry
 /// @author Zeropoint Labs.

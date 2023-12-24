@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { Error } from "../libraries/Error.sol";
+import { Error } from "src/libraries/Error.sol";
 
 library DataLib {
     function packTxInfo(

@@ -2,11 +2,11 @@
 pragma solidity ^0.8.23;
 
 import { AccessControlEnumerable } from "openzeppelin-contracts/contracts/access/extensions/AccessControlEnumerable.sol";
-import { IBroadcastRegistry } from "../interfaces/IBroadcastRegistry.sol";
-import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
-import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
-import { Error } from "../libraries/Error.sol";
-import { BroadcastMessage } from "../types/DataTypes.sol";
+import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { Error } from "src/libraries/Error.sol";
+import { BroadcastMessage } from "src/types/DataTypes.sol";
 
 /// @title SuperRBAC
 /// @author Zeropoint Labs.

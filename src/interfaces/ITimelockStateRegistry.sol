@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { InitSingleVaultData, TimelockPayload } from "../types/DataTypes.sol";
+import { InitSingleVaultData, TimelockPayload } from "src/types/DataTypes.sol";
 
 /// @title ITimelockStateRegistry
 /// @author ZeroPoint Labs
