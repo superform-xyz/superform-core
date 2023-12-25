@@ -91,7 +91,15 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc ICoreStateRegistry
-    function updateDepositPayload(uint256 payloadId_, uint256[] calldata finalAmounts_) external virtual override {
+    function updateDepositPayload(
+        uint256 payloadId_,
+        address[] calldata finalTokens_,
+        uint256[] calldata finalAmounts_
+    )
+        external
+        virtual
+        override
+    {
         /// @dev validates the caller
         _onlyAllowedCaller(keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE"));
 
@@ -107,9 +115,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         PayloadState finalState;
         if (isMulti != 0) {
-            (prevPayloadBody, finalState) = _updateMultiDeposit(payloadId_, prevPayloadBody, finalAmounts_);
+            (prevPayloadBody, finalState) =
+                _updateMultiDeposit(payloadId_, prevPayloadBody, finalAmounts_, finalTokens_);
         } else {
-            (prevPayloadBody, finalState) = _updateSingleDeposit(payloadId_, prevPayloadBody, finalAmounts_[0]);
+            (prevPayloadBody, finalState) =
+                _updateSingleDeposit(payloadId_, prevPayloadBody, finalAmounts_[0], finalTokens_[0]);
         }
 
         /// @dev updates the payload proof
@@ -405,16 +415,15 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     function _updateMultiDeposit(
         uint256 payloadId_,
         bytes memory prevPayloadBody_,
-        uint256[] calldata finalAmounts_
+        uint256[] calldata finalAmounts_,
+        address[] calldata finalToken_
     )
         internal
         returns (bytes memory newPayloadBody_, PayloadState finalState_)
     {
         InitMultiVaultData memory multiVaultData = abi.decode(prevPayloadBody_, (InitMultiVaultData));
-        IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
 
         uint256 arrLen = finalAmounts_.length;
-
         /// @dev compare number of vaults to update with provided finalAmounts length
         if (multiVaultData.amounts.length != arrLen) {
             revert Error.DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH();
@@ -426,9 +435,13 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 revert Error.ZERO_AMOUNT();
             }
 
+            if (_getVaultAsset(_getSuperform(multiVaultData.superformIds[i])) != finalToken_[i]) {
+                revert Error.INVALID_UPDATE_FINAL_TOKEN();
+            }
+
             /// @dev observe not consuming the second return value
             (multiVaultData.amounts[i],, validLen) = _updateAmount(
-                dstSwapper,
+                IDstSwapper(_getAddress(keccak256("DST_SWAPPER"))),
                 multiVaultData.hasDstSwaps[i],
                 payloadId_,
                 i,
@@ -481,7 +494,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     function _updateSingleDeposit(
         uint256 payloadId_,
         bytes memory prevPayloadBody_,
-        uint256 finalAmount_
+        uint256 finalAmount_,
+        address finalToken_
     )
         internal
         returns (bytes memory newPayloadBody_, PayloadState finalState_)
@@ -491,6 +505,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         if (finalAmount_ == 0) {
             revert Error.ZERO_AMOUNT();
+        }
+
+        if (_getVaultAsset(_getSuperform(singleVaultData.superformId)) != finalToken_) {
+            revert Error.INVALID_UPDATE_FINAL_TOKEN();
         }
 
         /// @dev observe not consuming the third return value
@@ -647,8 +665,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         for (uint256 i; i < len; ++i) {
             if (txData_[i].length != 0 && multiVaultData_.liqData[i].txData.length == 0) {
-                (address superformAddress,,) = multiVaultData_.superformIds[i].getSuperform();
-                superform = IBaseForm(superformAddress);
+                superform = IBaseForm(_getSuperform(multiVaultData_.superformIds[i]));
 
                 /// @dev for withdrawals the payload update can happen on core state registry (for normal forms)
                 /// and also can happen in timelock state registry (for timelock form)
@@ -668,7 +685,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                             srcChainId_,
                             multiVaultData_.liqData[i].liqDstChainId,
                             false,
-                            superformAddress,
+                            address(superform),
                             multiVaultData_.receiverAddress,
                             superform.getVaultAsset(),
                             address(0)
@@ -715,9 +732,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             }
 
             /// @dev Store destination payloadId_ & index in extraFormData (tbd: 1-step flow doesnt need this)
-            (address superform_,,) = multiVaultData.superformIds[i].getSuperform();
-
-            try IBaseForm(superform_).xChainWithdrawFromVault(
+            try IBaseForm(_getSuperform(multiVaultData.superformIds[i])).xChainWithdrawFromVault(
                 InitSingleVaultData({
                     payloadId: multiVaultData.payloadId,
                     superformId: multiVaultData.superformIds[i],
@@ -864,9 +879,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             revert Error.SUPERFORM_ID_NONEXISTENT();
         }
 
-        (address superform_,,) = singleVaultData.superformId.getSuperform();
         /// @dev Withdraw from superform
-        try IBaseForm(superform_).xChainWithdrawFromVault(singleVaultData, srcSender_, srcChainId_) {
+        try IBaseForm(_getSuperform(singleVaultData.superformId)).xChainWithdrawFromVault(
+            singleVaultData, srcSender_, srcChainId_
+        ) {
             // Handle the case when the external call succeeds
         } catch {
             // Handle the case when the external call reverts for whatever reason

@@ -224,6 +224,9 @@ library Error {
     /// @dev thrown if payload is being updated with tx data length different than liq data length
     error DIFFERENT_PAYLOAD_UPDATE_TX_DATA_LENGTH();
 
+    /// @dev thrown if keeper update final token is different than the vault underlying
+    error INVALID_UPDATE_FINAL_TOKEN();
+
     /// @dev thrown if broadcast finality for wormhole is invalid
     error INVALID_BROADCAST_FINALITY();
 
