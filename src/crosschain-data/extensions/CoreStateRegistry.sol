@@ -236,7 +236,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             revert Error.RESCUE_ALREADY_PROPOSED();
         }
 
-        /// @dev note: should set this value to dstSwapper.failedSwap().amount for interim rescue
+        /// @dev should set this value to dstSwapper.failedSwap().amount for interim rescue
         failedDeposits[payloadId_].amounts = proposedAmounts_;
         failedDeposits[payloadId_].lastProposedTimestamp = block.timestamp;
 
@@ -584,6 +584,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 /// @dev if superform is invalid, try catch will fail and asset pushed is address (0)
                 /// @notice this means that if a user tries to game the protocol with an invalid superformId, the funds
                 /// bridged over that failed will be stuck here
+                /// @notice assets can still be spoofed with any vault.asset(), hence this is done via permissioned role
                 failedDeposits[payloadId_].settlementToken.push(asset);
                 failedDeposits[payloadId_].settleFromDstSwapper.push(false);
 
