@@ -141,10 +141,10 @@ contract PayloadHelper is IPayloadHelper {
         view
         override
         returns (
-            uint8[] memory bridgeIds,
             bytes[] memory txDatas,
             address[] memory tokens,
             address[] memory interimTokens,
+            uint8[] memory bridgeIds,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
             uint256[] memory nativeAmounts
@@ -359,10 +359,10 @@ contract PayloadHelper is IPayloadHelper {
         internal
         view
         returns (
-            uint8[] memory bridgeIds,
             bytes[] memory txDatas,
             address[] memory tokens,
             address[] memory interimTokens,
+            uint8[] memory bridgeIds,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
             uint256[] memory nativeAmounts
@@ -404,10 +404,10 @@ contract PayloadHelper is IPayloadHelper {
         internal
         view
         returns (
-            uint8[] memory bridgeIds,
             bytes[] memory txDatas,
             address[] memory tokens,
             address[] memory interimTokens,
+            uint8[] memory bridgeIds,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
             uint256[] memory nativeAmounts
