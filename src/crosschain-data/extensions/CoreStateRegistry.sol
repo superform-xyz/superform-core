@@ -501,7 +501,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         returns (bytes memory newPayloadBody_, PayloadState finalState_)
     {
         InitSingleVaultData memory singleVaultData = abi.decode(prevPayloadBody_, (InitSingleVaultData));
-        IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
 
         if (finalAmount_ == 0) {
             revert Error.ZERO_AMOUNT();
@@ -513,7 +512,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         /// @dev observe not consuming the third return value
         (singleVaultData.amount, finalState_,) = _updateAmount(
-            dstSwapper,
+            IDstSwapper(_getAddress(keccak256("DST_SWAPPER"))),
             singleVaultData.hasDstSwap,
             payloadId_,
             0,
@@ -723,7 +722,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         bool errors;
         uint256 len = multiVaultData.superformIds.length;
-        address superformFactory = superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"));
+        address superformFactory = _getAddress(keccak256("SUPERFORM_FACTORY"));
 
         for (uint256 i; i < len; ++i) {
             // @dev validates if superformId exists on factory
