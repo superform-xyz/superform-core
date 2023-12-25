@@ -28,7 +28,7 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation1, formImplementationId
+            formImplementation1, formImplementationId, 1
         );
 
         SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormImplementationPauseStatus(
@@ -55,7 +55,7 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation1, formImplementationId
+            formImplementation1, formImplementationId, 1
         );
 
         SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormImplementationPauseStatus(
@@ -83,7 +83,7 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
 
         /// @dev Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation1, formImplementationId
+            formImplementation1, formImplementationId, 1
         );
 
         /// @dev Invalid Form Implementation For Pausing
@@ -106,7 +106,7 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation1, formImplementationId
+            formImplementation1, formImplementationId, 1
         );
 
         vm.expectRevert(Error.MSG_VALUE_NOT_ZERO.selector);

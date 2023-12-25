@@ -47,6 +47,8 @@ contract SuperformFactory is ISuperformFactory {
 
     /// @dev each form implementation address can correspond only to a single formImplementationId
     mapping(address formImplementationAddress => uint32 formImplementationId) public formImplementationIds;
+    /// @dev this mapping is used only for crosschain cases and should be same across all the chains
+    mapping(uint32 formImplementationId => uint8 formRegistryId) public formStateRegistryId;
 
     mapping(uint32 formImplementationId => PauseStatus) public formImplementationPaused;
 
@@ -121,6 +123,17 @@ contract SuperformFactory is ISuperformFactory {
     }
 
     /// @inheritdoc ISuperformFactory
+    function getFormStateRegistryId(uint32 formImplementationId_)
+        external
+        view
+        override
+        returns (uint8 formStateRegistryId_)
+    {
+        formStateRegistryId_ = formStateRegistryId[formImplementationId_];
+        if (formStateRegistryId_ == 0) revert Error.INVALID_FORM_REGISTRY_ID();
+    }
+
+    /// @inheritdoc ISuperformFactory
     function isFormImplementationPaused(uint32 formImplementationId_) external view override returns (bool) {
         return formImplementationPaused[formImplementationId_] == PauseStatus.PAUSED;
     }
@@ -158,7 +171,8 @@ contract SuperformFactory is ISuperformFactory {
     /// @inheritdoc ISuperformFactory
     function addFormImplementation(
         address formImplementation_,
-        uint32 formImplementationId_
+        uint32 formImplementationId_,
+        uint8 formStateRegistryId_
     )
         public
         override
@@ -181,9 +195,19 @@ contract SuperformFactory is ISuperformFactory {
         formImplementation[formImplementationId_] = formImplementation_;
         formImplementationIds[formImplementation_] = formImplementationId_;
 
+        /// @dev set CoreStateRegistry if the form implementation needs no special state registry
+        /// @dev if the form needs any special state registry, set this value to the id of the special state registry
+        /// and core state registry can be used by default.
+        /// @dev if this value is != 1, then the form supports two state registries (CoreStateRegistry + its special
+        /// state registry)
+        if (formStateRegistryId_ == 0) {
+            revert Error.INVALID_FORM_REGISTRY_ID();
+        }
+
+        formStateRegistryId[formImplementationId_] = formStateRegistryId_;
         formImplementations.push(formImplementation_);
 
-        emit FormImplementationAdded(formImplementation_, formImplementationId_);
+        emit FormImplementationAdded(formImplementation_, formImplementationId_, formStateRegistryId_);
     }
 
     /// @inheritdoc ISuperformFactory

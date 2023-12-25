@@ -32,7 +32,7 @@ contract SuperPositionsTest is BaseSetup {
         vault = getContract(ETH, VAULT_NAMES[0][0]);
         vm.prank(deployer);
         SuperformFactory(getContract(ETH, "SuperformFactory")).addFormImplementation(
-            formImplementation, formImplementationId
+            formImplementation, formImplementationId, 1
         );
     }
 
@@ -103,16 +103,33 @@ contract SuperPositionsTest is BaseSetup {
     function test_revert_stateSync_NotMinterStateRegistry_InvalidRegistryId() public {
         uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
         address superform = getContract(
-            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[2]))
         );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[2], ETH);
 
         ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, superformId, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         vm.broadcast(getContract(ETH, "TimelockStateRegistry"));
         vm.expectRevert(Error.NOT_MINTER_STATE_REGISTRY_ROLE.selector);
+        superPositions.stateSync(maliciousMessage);
+    }
+
+    function test_revert_stateSync_InvalidFormRegistryId() public {
+        uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        /// non existent form implementation id so the get form state registry id returns 0
+        uint256 superformId = DataLib.packSuperform(superform, 5, ETH);
+
+        ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, superformId, 100);
+        AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
+
+        vm.broadcast(getContract(ETH, "TimelockStateRegistry"));
+        vm.expectRevert(Error.INVALID_FORM_REGISTRY_ID.selector);
         superPositions.stateSync(maliciousMessage);
     }
 

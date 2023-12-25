@@ -17,7 +17,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
     function test_updateTxDataBranch() external {
         /// @dev mocks receive payload as a form
         vm.selectFork(FORKS[ETH]);
-        (address superform, uint256 superformId) = _legacySuperformPackWithShift();
+        (address superform, uint256 superformId) = _legacySuperformPackWithShift(ETH);
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             1,
@@ -137,7 +137,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
     function test_processPayloadMintPositionBranch() external {
         /// @dev mocks receive payload as a form
         vm.selectFork(FORKS[AVAX]);
-        (, uint256 superformId) = _legacySuperformPackWithShift();
+        (, uint256 superformId) = _legacySuperformPackWithShift(AVAX);
 
         bytes memory _message = abi.encode(
             AMBMessage(
@@ -172,9 +172,11 @@ contract TimelockStateRegistryTest is ProtocolActions {
         timelockStateRegistry.dispatchPayload(address(420), ambIds, uint64(1), bytes(""), bytes(""));
     }
 
-    function _legacySuperformPackWithShift() internal view returns (address superform, uint256 superformId_) {
-        uint64 chainId_ = ETH;
-
+    function _legacySuperformPackWithShift(uint64 chainId_)
+        internal
+        view
+        returns (address superform, uint256 superformId_)
+    {
         superform = getContract(
             chainId_,
             string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))

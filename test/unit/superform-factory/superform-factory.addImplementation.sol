@@ -12,7 +12,9 @@ contract SuperformFactoryAddImplementationTest is BaseSetup {
     /// @param formImplementation is the address of the new form implementation
     /// @param formImplementationId is the id of the formImplementation
 
-    event FormImplementationAdded(address indexed formImplementation, uint256 indexed formImplementationId);
+    event FormImplementationAdded(
+        address indexed formImplementation, uint256 indexed formImplementationId, uint8 indexed formStateRegistryId
+    );
 
     function setUp() public override {
         super.setUp();
@@ -28,10 +30,23 @@ contract SuperformFactoryAddImplementationTest is BaseSetup {
         vm.startPrank(deployer);
         /// @dev Event With Implementation
         vm.expectEmit(true, true, true, true);
-        emit FormImplementationAdded(formImplementation, formImplementationId);
-
+        emit FormImplementationAdded(formImplementation, formImplementationId, 1);
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation, formImplementationId
+            formImplementation, formImplementationId, 1
+        );
+    }
+
+    /// testing adding form implementation with state registry id 0
+    function test_revert_addForm_InvalidFormStateRegistryId() public {
+        vm.selectFork(FORKS[chainId]);
+
+        address formImplementation = address(new ERC4626Form(getContract(chainId, "SuperRegistry")));
+        uint32 formImplementationId = 44;
+
+        vm.startPrank(deployer);
+        vm.expectRevert(Error.INVALID_FORM_REGISTRY_ID.selector);
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
+            formImplementation, formImplementationId, 0
         );
     }
 
@@ -46,18 +61,18 @@ contract SuperformFactoryAddImplementationTest is BaseSetup {
 
         vm.startPrank(deployer);
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation1, formImplementationId
+            formImplementation1, formImplementationId, 1
         );
         address imp =
             SuperformFactory(getContract(chainId, "SuperformFactory")).getFormImplementation(formImplementationId);
         assertEq(imp, formImplementation1);
         vm.expectRevert(Error.FORM_IMPLEMENTATION_ALREADY_EXISTS.selector);
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation2, formImplementationId
+            formImplementation2, formImplementationId, 1
         );
 
         vm.expectRevert(Error.FORM_IMPLEMENTATION_ID_ALREADY_EXISTS.selector);
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(formImplementation1, 555);
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(formImplementation1, 555, 1);
     }
 
     /// @dev Testing adding form with form address 0
@@ -70,7 +85,7 @@ contract SuperformFactoryAddImplementationTest is BaseSetup {
 
         vm.prank(deployer);
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(form, formId);
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(form, formId, 2);
     }
 
     /// @dev Testing adding becon with wrong form
@@ -83,6 +98,6 @@ contract SuperformFactoryAddImplementationTest is BaseSetup {
 
         vm.prank(deployer);
         vm.expectRevert(Error.ERC165_UNSUPPORTED.selector);
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(form, formId);
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(form, formId, 2);
     }
 }
