@@ -83,7 +83,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         if (superRegistry_ == address(0)) {
             revert Error.ZERO_ADDRESS();
         }
-        
+
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }
@@ -375,7 +375,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         v.balanceDiff = v.balanceAfter - v.balanceBefore;
 
         /// @dev if actual underlying is less than expAmount adjusted with maxSlippage, invariant breaks
-        if (v.balanceDiff * ENTIRE_SLIPPAGE < v.expAmount * (ENTIRE_SLIPPAGE - v.maxSlippage))  {
+        if (v.balanceDiff * ENTIRE_SLIPPAGE < v.expAmount * (ENTIRE_SLIPPAGE - v.maxSlippage)) {
             revert Error.SLIPPAGE_OUT_OF_BOUNDS();
         }
 

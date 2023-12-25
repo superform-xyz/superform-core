@@ -2645,7 +2645,7 @@ contract SuperformRouterTest is ProtocolActions {
                     false
                 ),
                 getContract(ETH, "DAI"),
-                address(0),
+                getContract(ARBI, "DAI"),
                 1,
                 ARBI,
                 0
@@ -2662,7 +2662,6 @@ contract SuperformRouterTest is ProtocolActions {
         v.ambIds[0] = 1;
         v.ambIds[1] = 2;
 
-        v.data.liqRequest.interimToken = getContract(ARBI, "DAI");
         SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(v.ambIds, ARBI, v.data);
 
         /// @dev approves before call
