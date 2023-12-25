@@ -68,6 +68,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         _;
     }
 
+    /// @dev is used in same chain case (as superform is available on the chain to validate caller)
     modifier onlyMinter(uint256 superformId) {
         address router = superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"));
 
@@ -326,6 +327,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     }
 
     /// @dev helps validate the state registry id for minting superform id
+    /// @dev is used in cross chain case (as superform is not available on the chain to validate caller)
     function _validateStateSyncer(uint256 superformId_) internal view {
         uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
         _isValidStateSyncer(registryId, superformId_);
