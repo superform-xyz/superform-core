@@ -52,12 +52,12 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     //                       MODIFIERS                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev sender varies based on functionality
-    /// @notice inheriting contracts should override this function (else not safe)
+    /// @dev inheriting contracts should override this function based on functionality
     modifier onlySender() virtual {
         _;
     }
 
+    /// @dev ensures that only added AMB implementations are accepted
     modifier onlyValidAmbImplementation() {
         if (!superRegistry.isValidAmbImpl(msg.sender)) {
             revert Error.NOT_AMB_IMPLEMENTATION();

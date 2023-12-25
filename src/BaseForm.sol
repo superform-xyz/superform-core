@@ -101,10 +101,6 @@ abstract contract BaseForm is IBaseForm, Initializable, ERC165 {
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
 
-    function supportsInterface(bytes4 interfaceId_) public view virtual override(ERC165, IERC165) returns (bool) {
-        return interfaceId_ == type(IBaseForm).interfaceId || super.supportsInterface(interfaceId_);
-    }
-
     /// @inheritdoc IBaseForm
     function superformYieldTokenName() external view virtual override returns (string memory);
 
@@ -255,6 +251,12 @@ abstract contract BaseForm is IBaseForm, Initializable, ERC165 {
     function forwardDustToPaymaster(address token_) external override {
         if (token_ == vault) revert Error.CANNOT_FORWARD_4646_TOKEN();
         _forwardDustToPaymaster(token_);
+    }
+
+    /// @dev Checks if the Form implementation has the appropriate interface support
+    /// @param interfaceId_ is the interfaceId to check  
+    function supportsInterface(bytes4 interfaceId_) public view virtual override(ERC165, IERC165) returns (bool) {
+        return interfaceId_ == type(IBaseForm).interfaceId || super.supportsInterface(interfaceId_);
     }
 
     //////////////////////////////////////////////////////////////

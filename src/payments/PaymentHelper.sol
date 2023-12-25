@@ -78,6 +78,14 @@ contract PaymentHelper is IPaymentHelper {
         bytes message;
     }
 
+    struct LocalEstimateVars {
+        uint256 len;
+        uint256 superformIdsLen;
+        uint256 totalDstGas;
+        uint256 ambFees;
+        bool paused;
+    }
+
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
     //////////////////////////////////////////////////////////////
@@ -138,14 +146,6 @@ contract PaymentHelper is IPaymentHelper {
     /// @inheritdoc IPaymentHelper
     function getRegisterTransmuterAMBData() external view override returns (bytes memory) {
         return extraDataForTransmuter;
-    }
-
-    struct LocalEstimateVars {
-        uint256 len;
-        uint256 superformIdsLen;
-        uint256 totalDstGas;
-        uint256 ambFees;
-        bool paused;
     }
 
     /// @inheritdoc IPaymentHelper

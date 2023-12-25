@@ -154,11 +154,13 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
 
+    /// @inheritdoc ISuperRegistry
     function getAddress(bytes32 id_) external view override returns (address addr) {
         addr = registry[id_][CHAIN_ID];
         if (addr == address(0)) revert Error.ZERO_ADDRESS();
     }
 
+    /// @inheritdoc ISuperRegistry
     function getAddressByChainId(bytes32 id_, uint64 chainId_) external view override returns (address addr) {
         addr = registry[id_][chainId_];
         if (addr == address(0)) revert Error.ZERO_ADDRESS();
@@ -232,6 +234,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         return false;
     }
 
+    /// @inheritdoc ISuperRegistry
     function PERMIT2() external view override returns (address) {
         if (permit2Address == address(0)) revert Error.ZERO_ADDRESS();
         return permit2Address;

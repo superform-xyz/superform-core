@@ -178,6 +178,8 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         }
     }
 
+    /// @dev function to receive broadcasted messages via Wormhole SR's
+    /// @param encodedMessage_ is the message to receive
     function receiveMessage(bytes memory encodedMessage_) public onlyWormholeVAARelayer {
         /// @dev 1. validate caller
         /// @dev 2. validate not broadcasted to emitter chain

@@ -56,12 +56,13 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         _;
     }
 
-    /// @dev allows only form to write to the receive payload
-    modifier onlyTimelockSuperform(uint256 superformId) {
-        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId)) {
+    /// @dev ensures only the timelock form can write to a timelock superform
+    /// @param superformId_ is the superformId of the superform to check 
+    modifier onlyTimelockSuperform(uint256 superformId_) {
+        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId_)) {
             revert Error.SUPERFORM_ID_NONEXISTENT();
         }
-        (address superform,,) = superformId.getSuperform();
+        (address superform,,) = superformId_.getSuperform();
         if (msg.sender != superform) revert Error.NOT_SUPERFORM();
 
         if (IBaseForm(superform).getStateRegistryId() != superRegistry.getStateRegistryId(address(this))) {
@@ -71,6 +72,8 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         _;
     }
 
+    /// @dev ensures only valid payloads are processed
+    /// @param payloadId_ is the payloadId to check
     modifier isValidPayloadId(uint256 payloadId_) {
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();
