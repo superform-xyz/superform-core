@@ -97,6 +97,7 @@ contract ForwardDustFormTest is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             amountToDeposit_,
+            amountToDeposit_,
             100,
             LiqRequest("", getContract(ARBI, "WETH"), address(0), 1, ARBI, 0),
             "",
@@ -125,6 +126,7 @@ contract ForwardDustFormTest is ProtocolActions {
         InitSingleVaultData memory data2 = InitSingleVaultData(
             1,
             superformId,
+            spAmountToRedeem_ == 0 ? superPositionBalance : spAmountToRedeem_,
             spAmountToRedeem_ == 0 ? superPositionBalance : spAmountToRedeem_,
             100,
             LiqRequest(

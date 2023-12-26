@@ -55,7 +55,8 @@ contract EmergencyQueueTest is ProtocolActions {
             InitSingleVaultData(
                 1,
                 _getTestSuperformId(),
-                1e18, // good hacker tries to take only 1e18
+                1e18, // good hacker tries to take only 1e18,
+                1e18,
                 1000,
                 LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
                 false,
@@ -85,7 +86,8 @@ contract EmergencyQueueTest is ProtocolActions {
             InitSingleVaultData(
                 1,
                 superformId,
-                1e18, // good hacker tries to take only 1e18
+                1e18, // good hacker tries to take only 1e18,
+                1e18,
                 1000,
                 LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
                 false,
@@ -116,6 +118,7 @@ contract EmergencyQueueTest is ProtocolActions {
                 1,
                 superformId,
                 1e18, // good hacker tries to take only 1e18
+                1e18,
                 1000,
                 LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
                 false,
@@ -483,6 +486,7 @@ contract EmergencyQueueTest is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(
             _getTestSuperformId(),
             1e18,
+            1e18,
             100,
             LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
             "",
@@ -517,6 +521,10 @@ contract EmergencyQueueTest is ProtocolActions {
         amounts[0] = 0.9e18;
         amounts[1] = 0.9e18;
 
+        uint256[] memory outputAmounts = new uint256[](2);
+        outputAmounts[0] = 0.9e18;
+        outputAmounts[1] = 0.9e18;
+
         uint256[] memory maxSlippages = new uint256[](2);
         maxSlippages[0] = 100;
         maxSlippages[1] = 100;
@@ -528,6 +536,7 @@ contract EmergencyQueueTest is ProtocolActions {
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds,
             amounts,
+            outputAmounts,
             maxSlippages,
             liqRequests,
             "",
@@ -563,6 +572,7 @@ contract EmergencyQueueTest is ProtocolActions {
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
+            1e18,
             1e18,
             1000,
             LiqRequest("", address(0), address(0), 1, ETH, 0),
@@ -640,6 +650,10 @@ contract EmergencyQueueTest is ProtocolActions {
         amounts[0] = 0.9e18;
         amounts[1] = 0.9e18;
 
+        uint256[] memory outputAmounts = new uint256[](2);
+        outputAmounts[0] = 0.9e18;
+        outputAmounts[1] = 0.9e18;
+
         uint256[] memory slippages = new uint256[](2);
         slippages[0] = 100;
         slippages[1] = 100;
@@ -651,6 +665,7 @@ contract EmergencyQueueTest is ProtocolActions {
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds,
             amounts,
+            outputAmounts,
             slippages,
             liqRequests,
             "",
@@ -740,7 +755,7 @@ contract EmergencyQueueTest is ProtocolActions {
         uint256 superformId = _getTestSuperformId();
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, 2e18, 100, LiqRequest("", dai, address(0), 1, 1, 0), "", false, false, mrperfect, mrperfect, ""
+            superformId, 2e18, 2e18, 100, LiqRequest("", dai, address(0), 1, 1, 0), "", false, false, mrperfect, mrperfect, ""
         );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
@@ -795,6 +810,7 @@ contract EmergencyQueueTest is ProtocolActions {
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
+            2e18,
             2e18,
             1000,
             LiqRequest(

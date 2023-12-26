@@ -228,6 +228,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                         vars.underlyingDstToken,
                         vars.targetSuperformIds,
                         vars.amounts,
+                        vars.amounts,
                         vars.liqBridges,
                         vars.receive4626,
                         1000,
@@ -274,6 +275,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     vars.underlyingDstToken[0],
                     address(0),
                     vars.targetSuperformIds[0],
+                    finalAmount,
                     finalAmount,
                     vars.liqBridges[0],
                     vars.receive4626[0],
@@ -902,6 +904,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                 address(0),
                 args.superformIds[i],
                 finalAmounts[i],
+                finalAmounts[i],
                 args.liqBridges[i],
                 args.receive4626[i],
                 args.maxSlippage,
@@ -951,6 +954,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         superformsData = MultiVaultSFData(
             args.superformIds,
             finalAmounts,
+            args.outputAmounts,
             maxSlippageTemp,
             liqRequests,
             v.permit2data,
@@ -1135,6 +1139,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         superformData = SingleVaultSFData(
             args.superformId,
             v.amount,
+            args.outputAmount,
             args.maxSlippage,
             v.liqReq,
             v.permit2Calldata,
@@ -1245,6 +1250,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         superformData = SingleVaultSFData(
             args.superformId,
             args.amount,
+            args.outputAmount,
             args.maxSlippage,
             vars.liqReq,
             "",

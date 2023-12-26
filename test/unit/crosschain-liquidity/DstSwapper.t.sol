@@ -112,6 +112,10 @@ contract DstSwapperTest is ProtocolActions {
         amounts[0] = 1e18;
         amounts[1] = 1e18;
 
+        uint256[] memory outputAmounts = new uint256[](2);
+        outputAmounts[0] = 1e18;
+        outputAmounts[1] = 1e18;
+
         uint256[] memory slippages = new uint256[](2);
         slippages[0] = 1000;
         slippages[1] = 1000;
@@ -138,6 +142,7 @@ contract DstSwapperTest is ProtocolActions {
                                 1,
                                 superformIds,
                                 amounts,
+                                outputAmounts,
                                 new uint256[](2),
                                 liqs,
                                 hasDstSwaps,
@@ -645,6 +650,7 @@ contract DstSwapperTest is ProtocolActions {
                                 1,
                                 superformId,
                                 1_798_823_082_965_464_723_525,
+                                1_798_823_082_965_464_723_525,
                                 0,
                                 liq,
                                 true,
@@ -729,7 +735,7 @@ contract DstSwapperTest is ProtocolActions {
                     abi.encode(
                         new uint8[](0),
                         abi.encode(
-                            InitSingleVaultData(1, superformId, amount, 0, liq, true, false, receiverAddress, bytes(""))
+                            InitSingleVaultData(1, superformId, amount, amount, 0, liq, true, false, receiverAddress, bytes(""))
                         )
                     )
                 )
@@ -766,7 +772,7 @@ contract DstSwapperTest is ProtocolActions {
                 ),
                 abi.encode(
                     new uint8[](0),
-                    abi.encode(InitSingleVaultData(1, superformId, 1e18, 1000, liq, true, false, users[0], bytes("")))
+                    abi.encode(InitSingleVaultData(1, superformId, 1e18, 1e18, 1000, liq, true, false, users[0], bytes("")))
                 )
             )
         );
@@ -799,6 +805,10 @@ contract DstSwapperTest is ProtocolActions {
         amounts[0] = 1e18;
         amounts[1] = 1e18;
 
+        uint256[] memory outputAmounts = new uint256[](2);
+        outputAmounts[0] = 1e18;
+        outputAmounts[1] = 1e18;
+
         bool[] memory hasDstSwaps = new bool[](2);
         hasDstSwaps[0] = true;
         hasDstSwaps[1] = true;
@@ -824,6 +834,7 @@ contract DstSwapperTest is ProtocolActions {
                                 1,
                                 superformIds,
                                 amounts,
+                                outputAmounts,
                                 maxSlippages,
                                 liq,
                                 hasDstSwaps,
@@ -862,6 +873,10 @@ contract DstSwapperTest is ProtocolActions {
         amounts[0] = 1e18;
         amounts[1] = 1e18;
 
+        uint256[] memory outputAmounts = new uint256[](2);
+        outputAmounts[0] = 1e18;
+        outputAmounts[1] = 1e18;
+
         bool[] memory hasDstSwaps = new bool[](2);
         hasDstSwaps[0] = false;
         hasDstSwaps[1] = true;
@@ -887,6 +902,7 @@ contract DstSwapperTest is ProtocolActions {
                                 1,
                                 superformIds,
                                 amounts,
+                                outputAmounts,
                                 maxSlippages,
                                 liq,
                                 hasDstSwaps,
@@ -920,6 +936,10 @@ contract DstSwapperTest is ProtocolActions {
         amounts[0] = amount;
         amounts[1] = amount;
 
+        uint256[] memory outputAmounts = new uint256[](2);
+        outputAmounts[0] = amount;
+        outputAmounts[1] = amount;
+
         bool[] memory hasDstSwaps = new bool[](2);
         hasDstSwaps[0] = true;
         hasDstSwaps[1] = true;
@@ -944,6 +964,7 @@ contract DstSwapperTest is ProtocolActions {
                                 1,
                                 superformIds,
                                 amounts,
+                                outputAmounts,
                                 new uint256[](2),
                                 liq,
                                 hasDstSwaps,

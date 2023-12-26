@@ -399,6 +399,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
 
+            vars.outputAmounts = vars.amounts;
+
             vars.liqBridges = LIQ_BRIDGES[DST_CHAINS[i]][actionIndex];
 
             vars.receive4626 = RECEIVE_4626[DST_CHAINS[i]][actionIndex];
@@ -416,6 +418,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         vars.underlyingDstToken,
                         vars.targetSuperformIds,
                         vars.amounts,
+                        vars.outputAmounts,
                         vars.liqBridges,
                         vars.receive4626,
                         MAX_SLIPPAGE,
@@ -462,6 +465,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     vars.underlyingDstToken[0],
                     action.dstSwap ? getContract(DST_CHAINS[i], UNDERLYING_TOKENS[0]) : address(0),
                     vars.targetSuperformIds[0],
+                    finalAmount,
                     finalAmount,
                     vars.liqBridges[0],
                     vars.receive4626[0],
@@ -1571,6 +1575,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 uniqueInterimToken,
                 args.superformIds[i],
                 finalAmounts[i],
+                finalAmounts[i],
                 args.liqBridges[i],
                 args.receive4626[i],
                 args.maxSlippage,
@@ -1621,6 +1626,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         superformsData = MultiVaultSFData(
             args.superformIds,
             finalAmounts,
+            args.outputAmounts,
             maxSlippageTemp,
             liqRequests,
             v.permit2data,
@@ -1846,6 +1852,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         superformData = SingleVaultSFData(
             args.superformId,
             v.amount,
+            args.outputAmount,
             args.maxSlippage,
             v.liqReq,
             v.permit2Calldata,
@@ -1959,6 +1966,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         superformData = SingleVaultSFData(
             args.superformId,
             args.amount,
+            args.outputAmount,
             args.maxSlippage,
             vars.liqReq,
             "",
@@ -3533,6 +3541,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
+            2e18,
             2e18,
             1000,
             LiqRequest(

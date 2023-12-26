@@ -48,6 +48,7 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    420,
                     LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420),
                     emptyBytes,
                     false,
@@ -84,6 +85,7 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    420,
                     LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420),
                     emptyBytes,
                     false,
@@ -110,6 +112,7 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    420,
                     LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420),
                     emptyBytes,
                     false,
@@ -131,6 +134,7 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    420,
                     LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420),
                     emptyBytes,
                     false,
@@ -150,6 +154,7 @@ contract PaymentHelperTest is ProtocolActions {
                 SingleVaultSFData(
                     _generateSuperformPackWithShift(),
                     /// timelock
+                    420,
                     420,
                     420,
                     LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420),
@@ -187,6 +192,7 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     uint256MemoryArray,
                     uint256MemoryArray,
+                    uint256MemoryArray,
                     liqRequestMemoryArray,
                     emptyBytes,
                     new bool[](1),
@@ -206,6 +212,7 @@ contract PaymentHelperTest is ProtocolActions {
                 MultiVaultSFData(
                     superFormIds,
                     /// timelock
+                    uint256MemoryArray,
                     uint256MemoryArray,
                     uint256MemoryArray,
                     liqRequestMemoryArray,
@@ -260,6 +267,7 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    420,
                     LiqRequest(txData, address(0), address(0), 1, ETH, 420),
                     emptyBytes,
                     false,
@@ -310,6 +318,7 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    420,
                     LiqRequest(txData, address(0), address(0), 1, ETH, 420),
                     emptyBytes,
                     false,
@@ -348,6 +357,7 @@ contract PaymentHelperTest is ProtocolActions {
                 SingleVaultSFData(
                     _generateTimelockSuperformPackWithShift(),
                     /// timelock
+                    420,
                     420,
                     420,
                     LiqRequest(txData, address(0), address(0), 1, ETH, 420),
@@ -423,6 +433,7 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    420,
                     LiqRequest(txData, address(0), address(0), 1, ETH, 420),
                     emptyBytes,
                     false,
@@ -482,6 +493,7 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    420,
                     LiqRequest(txData, address(0), address(0), 1, ETH, 420),
                     emptyBytes,
                     false,
@@ -530,6 +542,7 @@ contract PaymentHelperTest is ProtocolActions {
                 SingleVaultSFData(
                     _generateTimelockSuperformPackWithShift(),
                     /// timelock
+                    420,
                     420,
                     420,
                     LiqRequest(txData, address(0), address(0), 1, ETH, 420),

@@ -40,6 +40,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             1,
             superformId,
             1e18,
+            1e18,
             100,
             LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ARBI, 0),
             false,
@@ -81,6 +82,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             1,
             superformId,
             1e18,
+            1e18,
             100,
             LiqRequest(invalidNonEmptyTxData, address(0), address(0), 1, ETH, 0),
             false,
@@ -119,6 +121,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         InitSingleVaultData memory data = InitSingleVaultData(
             1,
             superformId,
+            1e18,
             1e18,
             100,
             LiqRequest("", address(0), address(0), 1, ETH, 0),
@@ -178,6 +181,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             1,
             superformId,
             1e18,
+            1e18,
             100,
             LiqRequest(
                 _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, ETH, 0
@@ -215,6 +219,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
+            1e18,
             1e18,
             100,
             LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ETH, 0),

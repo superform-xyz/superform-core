@@ -60,6 +60,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
                 1,
                 superformId,
                 420,
+                420,
                 0,
                 LiqRequest(
                     _buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "DAI"), address(0), 1, ETH, 0
@@ -92,6 +93,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
             InitSingleVaultData(
                 1,
                 superformId,
+                420,
                 420,
                 1000,
                 /// @dev note txData (2nd arg) is empty and token (3rd arg) is not address(0) to

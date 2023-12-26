@@ -52,6 +52,7 @@ struct StagesLocalVars {
     address[] toDst;
     uint256[] targetSuperformIds;
     uint256[] amounts;
+    uint256[] outputAmounts;
     uint8[] liqBridges;
     bool[] receive4626;
     uint256 chain0Index;
@@ -193,6 +194,7 @@ struct SingleVaultCallDataArgs {
     address uniqueInterimToken;
     uint256 superformId;
     uint256 amount;
+    uint256 outputAmount;
     uint8 liqBridge;
     bool receive4626;
     uint256 maxSlippage;
@@ -216,6 +218,7 @@ struct MultiVaultCallDataArgs {
     address[] underlyingTokensDst;
     uint256[] superformIds;
     uint256[] amounts;
+    uint256[] outputAmounts;
     uint8[] liqBridges;
     bool[] receive4626;
     uint256 maxSlippage;
