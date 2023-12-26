@@ -3,6 +3,9 @@ pragma solidity ^0.8.23;
 
 import { InitSingleVaultData } from "src/types/DataTypes.sol";
 
+/// @title IEmergencyQueue
+/// @dev Interface for EmergencyQueue
+/// @author ZeroPoint Labs
 interface IEmergencyQueue {
     
     //////////////////////////////////////////////////////////////

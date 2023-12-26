@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 /// @title IDstSwapper
-/// @dev handles all destination chain swaps, accessed by superform keepers
+/// @dev Interface for DstSwapper
 /// @author Zeropoint Labs
 interface IDstSwapper {
     

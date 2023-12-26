@@ -5,7 +5,7 @@ import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 import { AMBMessage } from "../types/DataTypes.sol";
 
 /// @title ISuperPositions
-/// @dev interface for SuperPositions
+/// @dev Interface for SuperPositions
 /// @author Zeropoint Labs
 interface ISuperPositions is IERC1155A {
 

@@ -218,7 +218,7 @@ contract SuperformFactory is ISuperformFactory {
 
         vaultToSuperforms[vault_].push(superformId_);
 
-        /// @dev Mapping vaults to formImplementationId for use in Backend
+        /// @dev map vaults to formImplementationId
         vaultToFormImplementationId[vault_].push(formImplementationId_);
 
         vaultFormImplCombinationToSuperforms[vaultFormImplementationCombination] = superformId_;

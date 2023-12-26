@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import "src/types/DataTypes.sol";
 
 /// @title IBaseRouter
-/// @dev interface for abstract Router
+/// @dev Interface for abstract BaseRouter
 /// @author Zeropoint Labs
 interface IBaseRouter {
 

@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import { LiqRequest } from "src/types/DataTypes.sol";
 
 /// @title IPayMaster
-/// @dev contract for destination transaction costs payment
+/// @dev Interface for PayMaster
 /// @author ZeroPoint Labs
 interface IPayMaster {
     

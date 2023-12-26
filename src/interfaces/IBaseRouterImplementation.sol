@@ -5,7 +5,7 @@ import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
 import "src/types/DataTypes.sol";
 
 /// @title IBaseRouterImplementation
-/// @dev interface for BaseRouterImplementation
+/// @dev Interface for BaseRouterImplementation
 /// @author Zeropoint Labs
 interface IBaseRouterImplementation is IBaseRouter {
     

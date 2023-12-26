@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import "src/types/DataTypes.sol";
 
 /// @title IBaseStateRegistry
-/// @dev Crosschain interaction point: send, store & process crosschain messages
+/// @dev Interface for BaseStateRegistry
 /// @author ZeroPoint Labs
 interface IBaseStateRegistry {
     

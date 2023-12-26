@@ -5,7 +5,7 @@ import { IQuorumManager } from "src/interfaces/IQuorumManager.sol";
 import { Error } from "src/libraries/Error.sol";
 
 /// @title QuorumManager
-/// @dev Quorum management to send messages from chain to chain
+/// @dev Quorum thresholds using in sending proofs from chain to chain
 /// @author ZeroPoint Labs
 abstract contract QuorumManager is IQuorumManager {
     

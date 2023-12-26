@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 /// @title IQuorumManager
-/// @dev interface to manage the quorum needed to send messages from chain to chain
+/// @dev Interface for QuorumManager
 /// @author ZeroPoint Labs
 interface IQuorumManager {
 

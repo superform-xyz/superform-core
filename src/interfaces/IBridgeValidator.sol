@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 /// @title Bridge Validator Interface
-/// @dev Validate and handle bridging of tokens
+/// @dev Interface all Bridge Validators must follow
 /// @author Zeropoint Labs
 interface IBridgeValidator {
 

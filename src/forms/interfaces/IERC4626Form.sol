@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 /// @title IERC4626Form
-/// @dev The Interface for the ERC4626Form
+/// @dev Interface for ERC4626Form
 /// @author Zeropoint Labs
 interface IERC4626Form is IERC20 {
 

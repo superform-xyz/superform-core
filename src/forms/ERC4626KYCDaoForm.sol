@@ -12,8 +12,7 @@ import { ERC721Holder } from "openzeppelin-contracts/contracts/token/ERC721/util
 
 
 /// @title ERC4626KYCDaoForm
-/// @dev The Form implementation for IERC4626 vaults with kycDAO NFT checks
-/// @dev This form must hold a kycDAO NFT to operate
+/// @dev The Form implementation for kycDAO-gated ERC4626 vaults, must hold kycDAO NFT
 /// @author Zeropoint Labs
 contract ERC4626KYCDaoForm is ERC4626FormImplementation, ERC721Holder {
 

@@ -32,6 +32,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
+    
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
     bytes32 constant DEPLOY_NEW_AERC20 = keccak256("DEPLOY_NEW_AERC20");

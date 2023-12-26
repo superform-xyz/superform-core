@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 /// @title IBroadcastRegistry
-/// @dev is an helper for base state registry with broadcasting abilities
+/// @dev Interface for BroadcastRegistry
 /// @author ZeroPoint Labs
 interface IBroadcastRegistry {
 

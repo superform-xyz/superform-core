@@ -610,7 +610,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 false,
                 retain4626_,
                 receiverAddress_,
-                /// needed if user if keeping 4626
                 extraFormData_
             ),
             srcSender_
@@ -689,7 +688,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             );
 
             /// @dev if retain4626 is set to True, set the amount of SuperPositions to mint to 0
-
             if (v.shares[i] != 0 && args_.vaultData.retain4626s[i]) {
                 v.shares[i] = 0;
             }
@@ -857,7 +855,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             }
         }
 
-        /// if it reaches this point then is valid
         return true;
     }
 
@@ -1002,7 +999,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                     abi.decode(permit2data_, (uint256, uint256, bytes));
 
                 /// @dev moves the tokens from the user to the router
-
                 IPermit2(v.permit2).permitTransferFrom(
                     // The permit message.
                     IPermit2.PermitTransferFrom({
@@ -1095,6 +1091,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                     abi.decode(permit2data_, (uint256, uint256, bytes));
 
                 v.permit2 = _getPermit2();
+                
                 /// @dev moves the tokens from the user to the router
                 IPermit2(v.permit2).permitTransferFrom(
                     // The permit message.

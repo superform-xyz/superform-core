@@ -85,7 +85,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(ISuperRegistry superRegistry_) BaseStateRegistry(superRegistry_) { }
+    constructor(ISuperRegistry superRegistry_) BaseStateRegistry(superRegistry_) {}
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
