@@ -412,7 +412,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         uint256 sharesBalanceAfter = v.balanceOf(sharesReceiver);
 
         if ((sharesBalanceAfter - sharesBalanceBefore != shares) || 
-            (shares < ((singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE))
+            (ENTIRE_SLIPPAGE * shares < ((singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) ))
         ) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
@@ -432,7 +432,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         uint256 assetsBalanceAfter = a.balanceOf(assetsReceiver);
 
         if ((assetsBalanceAfter - assetsBalanceBefore != assets) || 
-            (assets < ((singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE))
+            (ENTIRE_SLIPPAGE * assets < ((singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) ))
         ) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
@@ -451,7 +451,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     {
         if (
             bridgeDecodedAmount_ > redeemedAmount_
-                || bridgeDecodedAmount_ < ((redeemedAmount_ * (ENTIRE_SLIPPAGE - slippage_)) / ENTIRE_SLIPPAGE)
+                || ((bridgeDecodedAmount_ * ENTIRE_SLIPPAGE) < (redeemedAmount_ * (ENTIRE_SLIPPAGE - slippage_)))
         ) return true;
     }
 
