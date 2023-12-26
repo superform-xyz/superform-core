@@ -10,7 +10,6 @@ import { Error } from "src/libraries/Error.sol";
 /// @dev Keeps information on all addresses used in the Superform ecosystem
 /// @author Zeropoint Labs
 contract SuperRegistry is ISuperRegistry, QuorumManager {
-
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
@@ -346,7 +345,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
             if (ambAddress == address(0)) revert Error.ZERO_ADDRESS();
             if (ambId == 0) revert Error.ZERO_INPUT_VALUE();
-            if (ambAddresses[ambId] != address(0) || ambIds[ambAddress] != 0) revert Error.DISABLED();
+            if (ambAddresses[ambId] != address(0)) revert Error.DISABLED();
 
             ambAddresses[ambId] = ambAddress;
             ambIds[ambAddress] = ambId;
@@ -372,7 +371,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             uint8 registryId = registryId_[i];
             if (registryAddress == address(0)) revert Error.ZERO_ADDRESS();
             if (registryId == 0) revert Error.ZERO_INPUT_VALUE();
-            if (registryAddresses[registryId] != address(0) || stateRegistryIds[registryAddress] != 0) {
+            if (registryAddresses[registryId] != address(0)) {
                 revert Error.DISABLED();
             }
 
