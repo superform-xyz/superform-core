@@ -10,17 +10,15 @@ import { InitSingleVaultData } from "src/types/DataTypes.sol";
 import { kycDAO4626 } from "super-vaults/kycdao-4626/kycdao4626.sol";
 import { ERC721Holder } from "openzeppelin-contracts/contracts/token/ERC721/utils/ERC721Holder.sol";
 
-
 /// @title ERC4626KYCDaoForm
 /// @dev The Form implementation for kycDAO-gated ERC4626 vaults, must hold kycDAO NFT
 /// @author Zeropoint Labs
 contract ERC4626KYCDaoForm is ERC4626FormImplementation, ERC721Holder {
-
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
 
-    uint8 immutable stateRegistryId = 1; // CoreStateRegistry
+    uint8 constant stateRegistryId = 1; // CoreStateRegistry
 
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //

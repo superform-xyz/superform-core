@@ -26,18 +26,16 @@ import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol
 /// @dev Cross-chain LP token minted on source chain
 /// @author Zeropoint Labs
 contract SuperPositions is ISuperPositions, ERC1155A {
-
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
 
-
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
     uint8 internal constant CORE_STATE_REGISTRY_ID = 1;
-    bytes32 constant DEPLOY_NEW_AERC20 = keccak256("DEPLOY_NEW_AERC20");
+    bytes32 internal constant DEPLOY_NEW_AERC20 = keccak256("DEPLOY_NEW_AERC20");
 
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //

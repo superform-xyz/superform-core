@@ -9,12 +9,11 @@ import { InitSingleVaultData } from "src/types/DataTypes.sol";
 /// @dev The Form implementation for normal ERC4626 vaults
 /// @author Zeropoint Labs
 contract ERC4626Form is ERC4626FormImplementation {
-
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                         //
     //////////////////////////////////////////////////////////////
 
-    uint8 immutable stateRegistryId = 1; // CoreStateRegistry
+    uint8 constant stateRegistryId = 1; // CoreStateRegistry
 
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //

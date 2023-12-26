@@ -255,7 +255,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
     struct CheckDstPayloadLiqDataInternalVars {
         uint8[] bridgeIds;
-        bytes[] txDatas;
+        bytes[] txData;
         address[] tokens;
         uint64[] liqDstChainIds;
         uint256[] amounts;
@@ -266,13 +266,13 @@ contract PayloadHelperMultiTest is ProtocolActions {
         vm.selectFork(FORKS[DST_CHAINS[0]]);
         CheckDstPayloadLiqDataInternalVars memory v;
 
-        (v.txDatas, v.tokens,, v.bridgeIds, v.liqDstChainIds, v.amounts, v.nativeAmounts) = IPayloadHelper(
+        (v.txData, v.tokens,, v.bridgeIds, v.liqDstChainIds, v.amounts, v.nativeAmounts) = IPayloadHelper(
             contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]
         ).decodeCoreStateRegistryPayloadLiqData(2);
 
         assertEq(v.bridgeIds[0], 1);
 
-        assertGt(v.txDatas[0].length, 0);
+        assertGt(v.txData[0].length, 0);
 
         assertEq(v.tokens[0], externalToken_);
 

@@ -17,7 +17,6 @@ import { IERC4626TimelockVault } from "super-vaults/interfaces/IERC4626TimelockV
 /// @dev Form implementation to handle timelock extension for ERC4626 vaults
 /// @author Zeropoint Labs
 contract ERC4626TimelockForm is ERC4626FormImplementation {
-
     using SafeERC20 for IERC20;
     using SafeERC20 for IERC4626TimelockVault;
     using DataLib for uint256;
@@ -26,7 +25,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     //                         CONSTANTS                         //
     //////////////////////////////////////////////////////////////
 
-    uint8 immutable stateRegistryId = 2; // TimelockStateRegistry
+    uint8 constant stateRegistryId = 2; // TimelockStateRegistry
 
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                         //

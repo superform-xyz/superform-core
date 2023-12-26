@@ -10,14 +10,13 @@ import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/Sa
 /// @dev To be inherited by contracts that move liquidity
 /// @author ZeroPoint Labs
 abstract contract LiquidityHandler {
-    
     using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
 
-    address immutable NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     //////////////////////////////////////////////////////////////
     //                  INTERNAL FUNCTIONS                      //

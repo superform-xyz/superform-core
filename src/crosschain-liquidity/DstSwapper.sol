@@ -83,7 +83,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         if (superRegistry_ == address(0)) {
             revert Error.ZERO_ADDRESS();
         }
-        
+
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }
@@ -167,14 +167,14 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         uint256 payloadId_,
         uint256[] calldata indices_,
         uint8[] calldata bridgeIds_,
-        bytes[] calldata txDatas_
+        bytes[] calldata txData_
     )
         external
         override
         nonReentrant
         onlySwapper
     {
-        uint256 len = txDatas_.length;
+        uint256 len = txData_.length;
         if (len == 0) revert Error.ZERO_INPUT_VALUE();
         if (len != indices_.length && len != bridgeIds_.length) revert Error.ARRAY_LENGTH_MISMATCH();
 
@@ -198,7 +198,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
             }
 
             _processTx(
-                payloadId_, index, bridgeIds_[i], txDatas_[i], data.liqData[index].interimToken, coreStateRegistry
+                payloadId_, index, bridgeIds_[i], txData_[i], data.liqData[index].interimToken, coreStateRegistry
             );
         }
     }
@@ -375,7 +375,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         v.balanceDiff = v.balanceAfter - v.balanceBefore;
 
         /// @dev if actual underlying is less than expAmount adjusted with maxSlippage, invariant breaks
-        if (v.balanceDiff * ENTIRE_SLIPPAGE < v.expAmount * (ENTIRE_SLIPPAGE - v.maxSlippage))  {
+        if (v.balanceDiff * ENTIRE_SLIPPAGE < v.expAmount * (ENTIRE_SLIPPAGE - v.maxSlippage)) {
             revert Error.SLIPPAGE_OUT_OF_BOUNDS();
         }
 
