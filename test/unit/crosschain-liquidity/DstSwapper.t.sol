@@ -951,21 +951,20 @@ contract DstSwapperTest is ProtocolActions {
 
         uint8[] memory ambIds_ = new uint8[](1);
         ambIds_[0] = 1;
-        
+
         InitMultiVaultData memory initMultiVaultData = InitMultiVaultData(
             1,
             superformIds,
             amounts,
             outputAmounts,
-            new uint256[](2), // Assuming you want to initialize this with default values
+            new uint256[](2),
             liq,
             hasDstSwaps,
-            new bool[](2), // Assuming you want to initialize this with default values
+            new bool[](2), 
             receiverAddress,
             bytes("")
         );
 
-        // Prepare the encoded data for receivePayload
         bytes memory encodedData = abi.encode(
             AMBMessage(
                 DataLib.packTxInfo(1, 0, 1, 1, address(420), uint64(137)),
@@ -976,7 +975,6 @@ contract DstSwapperTest is ProtocolActions {
             )
         );
 
-        // Call receivePayload with the prepared data
         vm.prank(getContract(ETH, "LayerzeroImplementation"));
         CoreStateRegistry(coreStateRegistry).receivePayload(POLY, encodedData);
     }

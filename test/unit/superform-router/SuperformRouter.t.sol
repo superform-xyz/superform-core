@@ -975,10 +975,6 @@ contract SuperformRouterTest is ProtocolActions {
         amounts[0] = 1e18;
         amounts[1] = 1e18;
 
-        uint256[] memory outputAmounts = new uint256[](2);
-        outputAmounts[0] = 1e18;
-        outputAmounts[1] = 1e18;
-
         uint256[] memory maxSlippages = new uint256[](2);
         maxSlippages[0] = 1000;
         maxSlippages[1] = 1000;
@@ -994,7 +990,7 @@ contract SuperformRouterTest is ProtocolActions {
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds,
             amounts,
-            outputAmounts,
+            amounts,
             maxSlippages,
             liqReqs,
             "",
@@ -1004,6 +1000,7 @@ contract SuperformRouterTest is ProtocolActions {
             receiverAddress,
             ""
         );
+
         uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
         ambIds[1] = 2;
@@ -1044,10 +1041,6 @@ contract SuperformRouterTest is ProtocolActions {
 
         uint256[] memory amounts = new uint256[](0);
 
-        uint256[] memory outputAmounts = new uint256[](2);
-        outputAmounts[0] = 1e18;
-        outputAmounts[1] = 1e18;
-
         uint256[] memory maxSlippages = new uint256[](2);
         maxSlippages[0] = 1000;
         maxSlippages[1] = 1000;
@@ -1063,7 +1056,7 @@ contract SuperformRouterTest is ProtocolActions {
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds,
             amounts,
-            outputAmounts,
+            maxSlippages,
             maxSlippages,
             liqReqs,
             "",
@@ -1111,15 +1104,11 @@ contract SuperformRouterTest is ProtocolActions {
         superformIds[0] = superformId1;
         superformIds[1] = superformId2;
 
-        uint256[] memory amounts = new uint256[](0);
+        uint256[] memory amounts = new uint256[](2);
         amounts[0] = 1e18;
         amounts[1] = 1e18;
 
         uint256[] memory outputAmounts = new uint256[](0);
-
-        uint256[] memory maxSlippages = new uint256[](2);
-        maxSlippages[0] = 1000;
-        maxSlippages[1] = 1000;
 
         bool[] memory hasDstSwaps = new bool[](2);
 
@@ -1133,7 +1122,7 @@ contract SuperformRouterTest is ProtocolActions {
             superformIds,
             amounts,
             outputAmounts,
-            maxSlippages,
+            amounts,
             liqReqs,
             "",
             hasDstSwaps,
@@ -1184,10 +1173,6 @@ contract SuperformRouterTest is ProtocolActions {
         amounts[0] = 1e18;
         amounts[1] = 1e18;
 
-        uint256[] memory outputAmounts = new uint256[](2);
-        outputAmounts[0] = 1e18;
-        outputAmounts[1] = 1e18;
-
         uint256[] memory maxSlippages = new uint256[](2);
         maxSlippages[0] = 10_001;
         maxSlippages[1] = 99_999;
@@ -1203,7 +1188,7 @@ contract SuperformRouterTest is ProtocolActions {
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds,
             amounts,
-            outputAmounts,
+            amounts,
             maxSlippages,
             liqReqs,
             "",
@@ -1361,9 +1346,6 @@ contract SuperformRouterTest is ProtocolActions {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 1e18;
 
-        uint256[] memory outputAmounts = new uint256[](1);
-        outputAmounts[0] = 1e18;
-
         uint256[] memory maxSlippages = new uint256[](1);
         maxSlippages[0] = 100;
 
@@ -1381,7 +1363,7 @@ contract SuperformRouterTest is ProtocolActions {
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds,
             amounts,
-            outputAmounts,
+            amounts,
             maxSlippages,
             liqReq,
             "",
@@ -1427,9 +1409,6 @@ contract SuperformRouterTest is ProtocolActions {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 1e18;
 
-        uint256[] memory outputAmounts = new uint256[](1);
-        outputAmounts[0] = 1e18;
-
         uint256[] memory maxSlippages = new uint256[](1);
         maxSlippages[0] = 100;
 
@@ -1447,7 +1426,7 @@ contract SuperformRouterTest is ProtocolActions {
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds,
             amounts,
-            outputAmounts,
+            amounts,
             maxSlippages,
             liqReq,
             "",
@@ -1506,9 +1485,6 @@ contract SuperformRouterTest is ProtocolActions {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 1e18;
 
-        uint256[] memory outputAmounts = new uint256[](1);
-        outputAmounts[0] = 1e18;
-
         uint256[] memory maxSlippages = new uint256[](1);
         maxSlippages[0] = 100;
 
@@ -1525,7 +1501,7 @@ contract SuperformRouterTest is ProtocolActions {
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds,
             amounts,
-            outputAmounts,
+            amounts,
             maxSlippages,
             liqReq,
             "",
