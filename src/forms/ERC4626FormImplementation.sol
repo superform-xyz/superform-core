@@ -408,12 +408,11 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     {
         address sharesReceiver = singleVaultData_.retain4626 ? singleVaultData_.receiverAddress : address(this);
         uint256 sharesBalanceBefore = v.balanceOf(sharesReceiver);
-        uint256 sharesExpected = v.convertToShares(assetDifference);
         shares = v.deposit(assetDifference, sharesReceiver);
         uint256 sharesBalanceAfter = v.balanceOf(sharesReceiver);
 
         if ((sharesBalanceAfter - sharesBalanceBefore != shares) || 
-            (shares < ((sharesExpected * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE))
+            (shares < ((singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE))
         ) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
@@ -429,12 +428,11 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     {
         address assetsReceiver = singleVaultData_.liqData.txData.length == 0 ? singleVaultData_.receiverAddress : address(this);
         uint256 assetsBalanceBefore = a.balanceOf(assetsReceiver);
-        uint256 assetsExpected = v.convertToAssets(singleVaultData_.amount);
         assets = v.redeem(singleVaultData_.amount, assetsReceiver, address(this));
         uint256 assetsBalanceAfter = a.balanceOf(assetsReceiver);
 
         if ((assetsBalanceAfter - assetsBalanceBefore != assets) || 
-            (assets < ((assetsExpected * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE))
+            (assets < ((singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE))
         ) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }

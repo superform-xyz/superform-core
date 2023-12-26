@@ -100,11 +100,10 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         IERC20 assetERC = IERC20(vars.asset);
 
         uint256 assetsBalanceBefore = assetERC.balanceOf(vars.receiver);
-        uint256 assetsExpected = v.convertToAssets(p_.data.amount);
         assets = v.redeem(p_.data.amount, vars.receiver, address(this));
         uint256 assetsBalanceAfter = assetERC.balanceOf(vars.receiver);
         if ((assetsBalanceAfter - assetsBalanceBefore != assets) || 
-                (assets < ((assetsExpected * (ENTIRE_SLIPPAGE - p_.data.maxSlippage)) / ENTIRE_SLIPPAGE))
+                (assets < ((p_.data.outputAmount * (ENTIRE_SLIPPAGE - p_.data.maxSlippage)) / ENTIRE_SLIPPAGE))
         ) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }

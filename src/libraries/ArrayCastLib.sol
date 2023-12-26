@@ -29,6 +29,9 @@ library ArrayCastLib {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = data_.amount;
 
+        uint256[] memory outputAmounts = new uint256[](1);
+        outputAmounts[0] = data_.outputAmount;
+
         uint256[] memory maxSlippage = new uint256[](1);
         maxSlippage[0] = data_.maxSlippage;
 
@@ -39,6 +42,7 @@ library ArrayCastLib {
             data_.payloadId,
             superformIds,
             amounts,
+            outputAmounts,
             maxSlippage,
             liqData,
             castBoolToArray(data_.hasDstSwap),

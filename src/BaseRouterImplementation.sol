@@ -109,8 +109,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (
             !_validateSuperformData(
                 req_.superformData.superformId,
-                req_.superformData.maxSlippage,
                 req_.superformData.amount,
+                req_.superformData.outputAmount,
+                req_.superformData.maxSlippage,
                 req_.superformData.receiverAddress,
                 req_.superformData.receiverAddressSP,
                 CHAIN_ID,
@@ -126,6 +127,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             0,
             req_.superformData.superformId,
             req_.superformData.amount,
+            req_.superformData.outputAmount,
             req_.superformData.maxSlippage,
             req_.superformData.liqRequest,
             false,
@@ -152,8 +154,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (
             !_validateSuperformData(
                 req_.superformData.superformId,
-                req_.superformData.maxSlippage,
                 req_.superformData.amount,
+                req_.superformData.outputAmount,
+                req_.superformData.maxSlippage,
                 req_.superformData.receiverAddress,
                 req_.superformData.receiverAddressSP,
                 req_.dstChainId,
@@ -171,6 +174,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             vars.currentPayloadId,
             req_.superformData.superformId,
             req_.superformData.amount,
+            req_.superformData.outputAmount,
             req_.superformData.maxSlippage,
             req_.superformData.liqRequest,
             req_.superformData.hasDstSwap,
@@ -235,6 +239,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             0,
             req_.superformData.superformIds,
             req_.superformData.amounts,
+            req_.superformData.outputAmounts,
             req_.superformData.maxSlippages,
             req_.superformData.liqRequests,
             new bool[](req_.superformData.amounts.length),
@@ -270,6 +275,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             vars.currentPayloadId,
             req_.superformsData.superformIds,
             req_.superformsData.amounts,
+            req_.superformsData.outputAmounts,
             req_.superformsData.maxSlippages,
             req_.superformsData.liqRequests,
             req_.superformsData.hasDstSwaps,
@@ -331,8 +337,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (
             !_validateSuperformData(
                 req_.superformData.superformId,
-                req_.superformData.maxSlippage,
                 req_.superformData.amount,
+                req_.superformData.outputAmount,
+                req_.superformData.maxSlippage,
                 req_.superformData.receiverAddress,
                 req_.superformData.receiverAddressSP,
                 CHAIN_ID,
@@ -352,6 +359,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             0,
             req_.superformData.superformId,
             req_.superformData.amount,
+            req_.superformData.outputAmount,
             req_.superformData.maxSlippage,
             req_.superformData.liqRequest,
             false,
@@ -379,8 +387,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (
             !_validateSuperformData(
                 req_.superformData.superformId,
-                req_.superformData.maxSlippage,
                 req_.superformData.amount,
+                req_.superformData.outputAmount,
+                req_.superformData.maxSlippage,
                 req_.superformData.receiverAddress,
                 req_.superformData.receiverAddressSP,
                 req_.dstChainId,
@@ -402,6 +411,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             vars.currentPayloadId,
             req_.superformData.superformId,
             req_.superformData.amount,
+            req_.superformData.outputAmount,
             req_.superformData.maxSlippage,
             req_.superformData.liqRequest,
             false,
@@ -453,6 +463,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             0,
             req_.superformData.superformIds,
             req_.superformData.amounts,
+            req_.superformData.outputAmounts,
             req_.superformData.maxSlippages,
             req_.superformData.liqRequests,
             new bool[](req_.superformData.superformIds.length),
@@ -490,6 +501,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             vars.currentPayloadId,
             req_.superformsData.superformIds,
             req_.superformsData.amounts,
+            req_.superformsData.outputAmounts,
             req_.superformsData.maxSlippages,
             req_.superformsData.liqRequests,
             new bool[](req_.superformsData.amounts.length),
@@ -586,6 +598,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         uint256 payloadId_,
         uint256 superformId_,
         uint256 amount_,
+        uint256 outputAmount_,
         uint256 maxSlippage_,
         bool retain4626_,
         LiqRequest memory liqData_,
@@ -604,6 +617,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 payloadId_,
                 superformId_,
                 amount_,
+                outputAmount_,
                 maxSlippage_,
                 liqData_,
                 false,
@@ -640,6 +654,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             vaultData_.payloadId,
             vaultData_.superformId,
             vaultData_.amount,
+            vaultData_.outputAmount,
             vaultData_.maxSlippage,
             vaultData_.retain4626,
             vaultData_.liqData,
@@ -678,6 +693,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 args_.vaultData.payloadId,
                 args_.vaultData.superformIds[i],
                 args_.vaultData.amounts[i],
+                args_.vaultData.outputAmounts[i],
                 args_.vaultData.maxSlippages[i],
                 args_.vaultData.retain4626s[i],
                 args_.vaultData.liqData[i],
@@ -710,6 +726,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         uint256 payloadId_,
         uint256 superformId_,
         uint256 amount_,
+        uint256 outputAmount_,
         uint256 maxSlippage_,
         LiqRequest memory liqData_,
         bool retain4626_,
@@ -726,6 +743,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 payloadId_,
                 superformId_,
                 amount_,
+                outputAmount_,
                 maxSlippage_,
                 liqData_,
                 false,
@@ -748,6 +766,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             vaultData_.payloadId,
             vaultData_.superformId,
             vaultData_.amount,
+            vaultData_.outputAmount,
             vaultData_.maxSlippage,
             vaultData_.liqData,
             vaultData_.retain4626,
@@ -771,6 +790,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 vaultData_.payloadId,
                 vaultData_.superformIds[i],
                 vaultData_.amounts[i],
+                vaultData_.outputAmounts[i],
                 vaultData_.maxSlippages[i],
                 vaultData_.liqData[i],
                 vaultData_.retain4626s[i],
@@ -800,8 +820,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     function _validateSuperformData(
         uint256 superformId_,
-        uint256 maxSlippage_,
         uint256 amount_,
+        uint256 outputAmount_,
+        uint256 maxSlippage_,
         address receiverAddress_,
         address receiverAddressSP_,
         uint64 dstChainId_,
@@ -827,8 +848,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev 10000 = 100% slippage
         if (maxSlippage_ > 10_000) return false;
 
-        /// @dev amount can't be 0
-        if (amount_ == 0) return false;
+        /// @dev amounts can't be 0
+        if (amount_ == 0 || outputAmount_ == 0) return false;
 
         /// @dev only validate this for non multi case (multi case is validated in _validateSuperformsData)
         /// @dev ensure that receiver address is set always
@@ -877,19 +898,15 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (len == 0 || liqRequestsLen == 0) return false;
         if (len != liqRequestsLen) return false;
 
+        /// @dev all other length checks 
+        if (lenSuperforms != len || lenSuperforms != superformsData_.outputAmounts.length ||
+            lenSuperforms != superformsData_.maxSlippages.length ||lenSuperforms != superformsData_.hasDstSwaps.length ||
+            lenSuperforms != superformsData_.retain4626s.length) {
+            return false;
+        }
+
         /// @dev deposits beyond multi vault limit for a given destination chain blocked
         if (lenSuperforms > superRegistry.getVaultLimitPerDestination(dstChainId_)) {
-            return false;
-        }
-
-        /// @dev Additional length checks for hasDstSwaps and retain4626s
-        if (lenSuperforms != superformsData_.hasDstSwaps.length || lenSuperforms != superformsData_.retain4626s.length)
-        {
-            return false;
-        }
-
-        /// @dev superformIds/amounts/slippages array sizes validation
-        if (!(lenSuperforms == len && lenSuperforms == superformsData_.maxSlippages.length)) {
             return false;
         }
 
@@ -915,8 +932,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         for (uint256 i; i < len; ++i) {
             valid = _validateSuperformData(
                 superformsData_.superformIds[i],
-                superformsData_.maxSlippages[i],
                 superformsData_.amounts[i],
+                superformsData_.outputAmounts[i],
+                superformsData_.maxSlippages[i],
                 superformsData_.receiverAddress,
                 superformsData_.receiverAddressSP,
                 dstChainId_,
