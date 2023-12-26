@@ -48,16 +48,31 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         bool deposit;
     }
 
+    struct DirectDepositArgs {
+        address superform;
+        uint256 payloadId;
+        uint256 superformId;
+        uint256 amount;
+        uint256 outputAmount;
+        uint256 maxSlippage;
+        bool retain4626;
+        LiqRequest liqData;
+        address receiverAddress;
+        bytes extraFormData;
+        uint256 msgValue;
+        address srcSender;
+    }
+
     struct SingleDepositLocalVars {
         address superform;
         uint256 shares;
     }
 
-    struct MultiDepositArgs {
+    struct SingleDepositArgs {
         address srcSender;
         bytes permit2data;
         address receiverAddressSP;
-        InitMultiVaultData vaultData;
+        InitSingleVaultData vaultData;
     }
 
     struct MultiDepositLocalVars {
@@ -65,6 +80,13 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         address[] superforms;
         uint256[] shares;
         bool[] mints;
+    }
+
+    struct MultiDepositArgs {
+        address srcSender;
+        bytes permit2data;
+        address receiverAddressSP;
+        InitMultiVaultData vaultData;
     }
 
     struct SingleTokenForwardLocalVars {
@@ -138,7 +160,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev same chain action & forward residual payment to Paymaster
         _directSingleDeposit(
-            msg.sender, req_.superformData.permit2data, req_.superformData.receiverAddressSP, vaultData
+            SingleDepositArgs(
+                msg.sender, req_.superformData.permit2data, req_.superformData.receiverAddressSP, vaultData
+            )
         );
         emit Completed();
     }
@@ -593,81 +617,63 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     //////////////////////////////////////////////////////////////
 
     /// @notice fulfils the final stage of same chain deposit action
-    function _directDeposit(
-        address superform_,
-        uint256 payloadId_,
-        uint256 superformId_,
-        uint256 amount_,
-        uint256 outputAmount_,
-        uint256 maxSlippage_,
-        bool retain4626_,
-        LiqRequest memory liqData_,
-        address receiverAddress_,
-        bytes memory extraFormData_,
-        uint256 msgValue_,
-        address srcSender_
-    )
+    function _directDeposit(DirectDepositArgs memory args)
         internal
         virtual
         returns (uint256 shares)
     {
-        /// @dev deposits token to a given vault and mint vault positions directly through the form
-        shares = IBaseForm(superform_).directDepositIntoVault{ value: msgValue_ }(
+        // @dev deposits token to a given vault and mint vault positions directly through the form
+        shares = IBaseForm(args.superform).directDepositIntoVault{ value: args.msgValue }(
             InitSingleVaultData(
-                payloadId_,
-                superformId_,
-                amount_,
-                outputAmount_,
-                maxSlippage_,
-                liqData_,
+                args.payloadId,
+                args.superformId,
+                args.amount,
+                args.outputAmount,
+                args.maxSlippage,
+                args.liqData,
                 false,
-                retain4626_,
-                receiverAddress_,
-                /// needed if user if keeping 4626
-                extraFormData_
+                args.retain4626,
+                args.receiverAddress,
+                // needed if user is keeping 4626
+                args.extraFormData
             ),
-            srcSender_
+            args.srcSender
         );
     }
 
+
     /// @notice deposits to single vault on the same chain
     /// @dev calls `_directDeposit`
-    function _directSingleDeposit(
-        address srcSender_,
-        bytes memory permit2data_,
-        address receiverAddressSP_,
-        InitSingleVaultData memory vaultData_
-    )
-        internal
-        virtual
-    {
+    function _directSingleDeposit(SingleDepositArgs memory args_) internal virtual {
         SingleDepositLocalVars memory v;
 
-        /// @dev decode superforms
-        (v.superform,,) = vaultData_.superformId.getSuperform();
+        // @dev decode superforms
+        (v.superform,,) = args_.vaultData.superformId.getSuperform();
 
-        _singleVaultTokenForward(srcSender_, v.superform, permit2data_, vaultData_, false);
+        _singleVaultTokenForward(args_.srcSender, v.superform, args_.permit2data, args_.vaultData, false);
 
-        /// @dev deposits token to a given vault and mint vault positions.
+        // @dev deposits token to a given vault and mint vault positions.
         v.shares = _directDeposit(
-            v.superform,
-            vaultData_.payloadId,
-            vaultData_.superformId,
-            vaultData_.amount,
-            vaultData_.outputAmount,
-            vaultData_.maxSlippage,
-            vaultData_.retain4626,
-            vaultData_.liqData,
-            vaultData_.receiverAddress,
-            vaultData_.extraFormData,
-            vaultData_.liqData.nativeAmount,
-            srcSender_
+            DirectDepositArgs(
+                v.superform,
+                args_.vaultData.payloadId,
+                args_.vaultData.superformId,
+                args_.vaultData.amount,
+                args_.vaultData.outputAmount,
+                args_.vaultData.maxSlippage,
+                args_.vaultData.retain4626,
+                args_.vaultData.liqData,
+                args_.vaultData.receiverAddress,
+                args_.vaultData.extraFormData,
+                args_.vaultData.liqData.nativeAmount,
+                args_.srcSender
+            )
         );
 
-        if (v.shares != 0 && !vaultData_.retain4626) {
-            /// @dev mint super positions at the end of the deposit action if user doesn't retain 4626
+        if (v.shares != 0 && !args_.vaultData.retain4626) {
+            // @dev mint super positions at the end of the deposit action if user doesn't retain 4626
             ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintSingle(
-                receiverAddressSP_, vaultData_.superformId, v.shares
+                args_.receiverAddressSP, args_.vaultData.superformId, v.shares
             );
         }
     }
@@ -689,22 +695,23 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         for (uint256 i; i < v.len; ++i) {
             /// @dev deposits token to a given vault and mint vault positions.
             v.shares[i] = _directDeposit(
-                v.superforms[i],
-                args_.vaultData.payloadId,
-                args_.vaultData.superformIds[i],
-                args_.vaultData.amounts[i],
-                args_.vaultData.outputAmounts[i],
-                args_.vaultData.maxSlippages[i],
-                args_.vaultData.retain4626s[i],
-                args_.vaultData.liqData[i],
-                args_.vaultData.receiverAddress,
-                args_.vaultData.extraFormData,
-                args_.vaultData.liqData[i].nativeAmount,
-                args_.srcSender
+                DirectDepositArgs(
+                    v.superforms[i],
+                    args_.vaultData.payloadId,
+                    args_.vaultData.superformIds[i],
+                    args_.vaultData.amounts[i],
+                    args_.vaultData.outputAmounts[i],
+                    args_.vaultData.maxSlippages[i],
+                    args_.vaultData.retain4626s[i],
+                    args_.vaultData.liqData[i],
+                    args_.vaultData.receiverAddress,
+                    args_.vaultData.extraFormData,
+                    args_.vaultData.liqData[i].nativeAmount,
+                    args_.srcSender
+                )
             );
 
             /// @dev if retain4626 is set to True, set the amount of SuperPositions to mint to 0
-
             if (v.shares[i] != 0 && args_.vaultData.retain4626s[i]) {
                 v.shares[i] = 0;
             }
