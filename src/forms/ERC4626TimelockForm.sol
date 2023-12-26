@@ -103,10 +103,11 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         assets = v.redeem(p_.data.amount, vars.receiver, address(this));
         uint256 assetsBalanceAfter = assetERC.balanceOf(vars.receiver);
         if ((assetsBalanceAfter - assetsBalanceBefore != assets) || 
-                (assets < ((p_.data.outputAmount * (ENTIRE_SLIPPAGE - p_.data.maxSlippage)) / ENTIRE_SLIPPAGE))
+            (assets * ENTIRE_SLIPPAGE > p_.data.outputAmount * (ENTIRE_SLIPPAGE - p_.data.maxSlippage))
         ) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
+
         if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
         /// @dev validate and dispatches the tokens
