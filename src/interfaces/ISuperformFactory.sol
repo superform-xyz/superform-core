@@ -22,7 +22,10 @@ interface ISuperformFactory {
     /// @dev emitted when a new formImplementation is entered into the factory
     /// @param formImplementation is the address of the new form implementation
     /// @param formImplementationId is the id of the formImplementation
-    event FormImplementationAdded(address indexed formImplementation, uint256 indexed formImplementationId);
+    /// @param formStateRegistryId is any additional state registry id of the formImplementation
+    event FormImplementationAdded(
+        address indexed formImplementation, uint256 indexed formImplementationId, uint8 indexed formStateRegistryId
+    );
 
     /// @dev emitted when a new Superform is created
     /// @param formImplementationId is the id of the form implementation
@@ -58,6 +61,11 @@ interface ISuperformFactory {
     /// @param formImplementationId_ is the id of the form implementation
     /// @return formImplementation_ is the address of the form implementation
     function getFormImplementation(uint32 formImplementationId_) external view returns (address formImplementation_);
+
+    /// @dev returns the form state registry id of a form implementation
+    /// @param formImplementationId_ is the id of the form implementation
+    /// @return stateRegistryId_ is the additional state registry id of the form
+    function getFormStateRegistryId(uint32 formImplementationId_) external view returns (uint8 stateRegistryId_);
 
     /// @dev returns the paused status of form implementation
     /// @param formImplementationId_ is the id of the form implementation
@@ -95,7 +103,15 @@ interface ISuperformFactory {
     /// @dev allows an admin to add a Form implementation to the factory
     /// @param formImplementation_ is the address of a form implementation
     /// @param formImplementationId_ is the id of the form implementation (generated off-chain and equal in all chains)
-    function addFormImplementation(address formImplementation_, uint32 formImplementationId_) external;
+    /// @param formStateRegistryId_ is the id of any additional state registry for that form
+    /// @dev formStateRegistryId_ 1 is default for all form implementations, pass in formStateRegistryId_ only if an
+    /// additional state registry is required
+    function addFormImplementation(
+        address formImplementation_,
+        uint32 formImplementationId_,
+        uint8 formStateRegistryId_
+    )
+        external;
 
     /// @dev To add new vaults to Form implementations, fusing them together into Superforms
     /// @param formImplementationId_ is the form implementation we want to attach the vault to

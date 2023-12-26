@@ -2366,7 +2366,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
         returns (bool)
     {
         uint256 initialFork = vm.activeFork();
-
         vm.selectFork(FORKS[targetChainId_]);
 
         /// @dev tries to increase quorum and check if quorum validations are good

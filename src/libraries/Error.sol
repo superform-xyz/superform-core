@@ -360,6 +360,9 @@ library Error {
     /// @dev thrown if a state registry id is 0
     error INVALID_REGISTRY_ID();
 
+    /// @dev thrown if a form state registry id is 0
+    error INVALID_FORM_REGISTRY_ID();
+
     /// @dev thrown if trying to finalize the payload but the withdraw is still locked
     error LOCKED();
 
