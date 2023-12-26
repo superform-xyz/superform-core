@@ -820,33 +820,33 @@ contract DstSwapperTest is ProtocolActions {
         LiqRequest[] memory liq = new LiqRequest[](2);
         liq[0] = LiqRequest("", getContract(OP, "DAI"), interimToken_, 1, OP, 0);
         liq[1] = LiqRequest("", getContract(OP, "DAI"), interimToken_, 1, OP, 0);
-        CoreStateRegistry(coreStateRegistry).receivePayload(
-            ETH,
+
+        InitMultiVaultData memory initMultiVaultData = InitMultiVaultData(
+            1,
+            superformIds,
+            amounts,
+            outputAmounts,
+            maxSlippages,
+            liq,
+            hasDstSwaps,
+            new bool[](2),
+            users[0],
+            bytes("")
+        );
+
+        bytes memory encodedData = abi.encode(
+        AMBMessage(
+            DataLib.packTxInfo(
+                uint8(TransactionType.DEPOSIT), uint8(CallbackType.INIT), uint8(1), 1, users[0], ETH
+            ),
             abi.encode(
-                AMBMessage(
-                    DataLib.packTxInfo(
-                        uint8(TransactionType.DEPOSIT), uint8(CallbackType.INIT), uint8(1), 1, users[0], ETH
-                    ),
-                    abi.encode(
-                        new uint8[](1),
-                        abi.encode(
-                            InitMultiVaultData(
-                                1,
-                                superformIds,
-                                amounts,
-                                outputAmounts,
-                                maxSlippages,
-                                liq,
-                                hasDstSwaps,
-                                new bool[](2),
-                                users[0],
-                                bytes("")
-                            )
-                        )
-                    )
+                new uint8[](1),
+                abi.encode(initMultiVaultData)
                 )
             )
         );
+
+        CoreStateRegistry(coreStateRegistry).receivePayload(ETH, encodedData);
     }
 
     function _simulatePartialMultiVaultExistingPayloadOnOP(
@@ -951,31 +951,33 @@ contract DstSwapperTest is ProtocolActions {
 
         uint8[] memory ambIds_ = new uint8[](1);
         ambIds_[0] = 1;
-        vm.prank(getContract(ETH, "LayerzeroImplementation"));
-        CoreStateRegistry(coreStateRegistry).receivePayload(
-            POLY,
-            abi.encode(
-                AMBMessage(
-                    DataLib.packTxInfo(1, 0, 1, 1, address(420), uint64(137)),
-                    abi.encode(
-                        ambIds_,
-                        abi.encode(
-                            InitMultiVaultData(
-                                1,
-                                superformIds,
-                                amounts,
-                                outputAmounts,
-                                new uint256[](2),
-                                liq,
-                                hasDstSwaps,
-                                new bool[](2),
-                                receiverAddress,
-                                bytes("")
-                            )
-                        )
-                    )
+        
+        InitMultiVaultData memory initMultiVaultData = InitMultiVaultData(
+            1,
+            superformIds,
+            amounts,
+            outputAmounts,
+            new uint256[](2), // Assuming you want to initialize this with default values
+            liq,
+            hasDstSwaps,
+            new bool[](2), // Assuming you want to initialize this with default values
+            receiverAddress,
+            bytes("")
+        );
+
+        // Prepare the encoded data for receivePayload
+        bytes memory encodedData = abi.encode(
+            AMBMessage(
+                DataLib.packTxInfo(1, 0, 1, 1, address(420), uint64(137)),
+                abi.encode(
+                    new uint8[](1), // ambIds_
+                    abi.encode(initMultiVaultData)
                 )
             )
         );
+
+        // Call receivePayload with the prepared data
+        vm.prank(getContract(ETH, "LayerzeroImplementation"));
+        CoreStateRegistry(coreStateRegistry).receivePayload(POLY, encodedData);
     }
 }
