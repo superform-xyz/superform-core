@@ -224,6 +224,9 @@ library Error {
     /// @dev thrown if payload is being updated with tx data length different than liq data length
     error DIFFERENT_PAYLOAD_UPDATE_TX_DATA_LENGTH();
 
+    /// @dev thrown if keeper update final token is different than the vault underlying
+    error INVALID_UPDATE_FINAL_TOKEN();
+
     /// @dev thrown if broadcast finality for wormhole is invalid
     error INVALID_BROADCAST_FINALITY();
 
@@ -263,6 +266,9 @@ library Error {
 
     /// @dev error thrown when msg value should be zero in certain payable functions
     error MSG_VALUE_NOT_ZERO();
+
+    /// @dev error thrown when txData selector of lifi bridged is a blacklisted selector
+    error BLACKLISTED_SELECTOR();
 
     //////////////////////////////////////////////////////////////
     //                  EXECUTION ERRORS                        //
@@ -340,6 +346,9 @@ library Error {
 
     /// @dev thrown if a state registry id is 0
     error INVALID_REGISTRY_ID();
+
+    /// @dev thrown if a form state registry id is 0
+    error INVALID_FORM_REGISTRY_ID();
 
     /// @dev thrown if trying to finalize the payload but the withdraw is still locked
     error LOCKED();
@@ -422,6 +431,9 @@ library Error {
 
     /// @dev thrown if chainlink is reporting an incomplete round
     error CHAINLINK_INCOMPLETE_ROUND();
+
+    /// @dev thrown if feed decimals is not 8
+    error CHAINLINK_UNSUPPORTED_DECIMAL();
 
     /// EMERGENCY QUEUE EXECUTION ERRORS
 

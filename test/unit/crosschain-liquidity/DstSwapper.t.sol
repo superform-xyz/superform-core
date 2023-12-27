@@ -210,13 +210,15 @@ contract DstSwapperTest is ProtocolActions {
         SuperRegistry(getContract(OP, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
         uint256[] memory finalAmounts = new uint256[](1);
+        address[] memory bridgedTokens = new address[](1);
 
         finalAmounts[0] = 2e18;
+        bridgedTokens[0] = getContract(OP, "WETH");
         vm.expectRevert(Error.INVALID_DST_SWAP_AMOUNT.selector);
-        CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, finalAmounts);
+        CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, bridgedTokens, finalAmounts);
 
         finalAmounts[0] = 1e18;
-        CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, finalAmounts);
+        CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, bridgedTokens, finalAmounts);
 
         vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
         DstSwapper(dstSwapper).updateFailedTx(1, weth, 1e18);
@@ -320,7 +322,11 @@ contract DstSwapperTest is ProtocolActions {
 
         uint256[] memory finalAmounts = new uint256[](1);
         finalAmounts[0] = 1e18;
-        CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, finalAmounts);
+
+        address[] memory bridgedTokens = new address[](1);
+        bridgedTokens[0] = getContract(OP, "WETH");
+
+        CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, bridgedTokens, finalAmounts);
 
         vm.stopPrank();
 
@@ -402,7 +408,11 @@ contract DstSwapperTest is ProtocolActions {
         /// @dev set quorum to 0 for simplicity in testing setup
         SuperRegistry(getContract(OP, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
-        CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, amounts);
+        address[] memory bridgedTokens = new address[](2);
+        bridgedTokens[0] = getContract(OP, "WETH");
+        bridgedTokens[1] = getContract(OP, "WETH");
+
+        CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, bridgedTokens, amounts);
         vm.stopPrank();
 
         AMBs = [2, 3];
@@ -467,7 +477,11 @@ contract DstSwapperTest is ProtocolActions {
         /// @dev set quorum to 0 for simplicity in testing setup
         SuperRegistry(getContract(OP, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
-        CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, amounts);
+        address[] memory bridgedTokens = new address[](2);
+        bridgedTokens[0] = getContract(OP, "WETH");
+        bridgedTokens[1] = getContract(OP, "WETH");
+
+        CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, bridgedTokens, amounts);
 
         vm.stopPrank();
 
@@ -699,10 +713,13 @@ contract DstSwapperTest is ProtocolActions {
         SuperRegistry(getContract(OP, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
         uint256[] memory finalAmounts = new uint256[](1);
-
         finalAmounts[0] = 2e18;
+
+        address[] memory bridgedTokens = new address[](1);
+        bridgedTokens[0] = getContract(OP, "WETH");
+
         vm.expectRevert(Error.INVALID_DST_SWAPPER_FAILED_SWAP.selector);
-        CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, finalAmounts);
+        CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, bridgedTokens, finalAmounts);
     }
 
     function _simulateSingleVaultExistingPayload(

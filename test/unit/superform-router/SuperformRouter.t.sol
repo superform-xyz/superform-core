@@ -2858,6 +2858,7 @@ contract SuperformRouterTest is ProtocolActions {
     struct SimulateUpdateTestLocalVars {
         SingleVaultSFData data;
         uint8[] ambIds;
+        address[] bridgedTokens;
         uint256[] amounts;
         uint256 nativeAmount;
         uint256 swapAmount;
@@ -2918,7 +2919,7 @@ contract SuperformRouterTest is ProtocolActions {
                     false
                 ),
                 getContract(ETH, "DAI"),
-                address(0),
+                getContract(ARBI, "DAI"),
                 1,
                 ARBI,
                 0
@@ -2935,7 +2936,6 @@ contract SuperformRouterTest is ProtocolActions {
         v.ambIds[0] = 1;
         v.ambIds[1] = 2;
 
-        v.data.liqRequest.interimToken = getContract(ARBI, "DAI");
         SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(v.ambIds, ARBI, v.data);
 
         /// @dev approves before call
@@ -2971,6 +2971,9 @@ contract SuperformRouterTest is ProtocolActions {
         v.amounts = new uint256[](1);
         v.amounts[0] = keeperUpdateExactAmount ? 3e18 : 2e18; // false -± 2e18
 
+        v.bridgedTokens = new address[](1);
+        v.bridgedTokens[0] = getContract(ARBI, "DAI");
+
         v.swapAmount = swapperSwapExactBridgeAmount ? 3e18 : 2e18; // true -± 3e18
 
         if (hasDstSwap) {
@@ -2991,9 +2994,13 @@ contract SuperformRouterTest is ProtocolActions {
 
         if (hasDstSwap && keeperUpdateExactAmount && swapperSwapExactBridgeAmount) {
             vm.expectRevert(Error.INVALID_DST_SWAPPER_FAILED_SWAP.selector);
-            CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(1, v.amounts);
+            CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(
+                1, v.bridgedTokens, v.amounts
+            );
         } else {
-            CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(1, v.amounts);
+            CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(
+                1, v.bridgedTokens, v.amounts
+            );
             v.nativeAmount = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(1);
 
             vm.recordLogs();

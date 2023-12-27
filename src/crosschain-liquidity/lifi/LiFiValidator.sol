@@ -7,18 +7,18 @@ import { LiFiTxDataExtractor } from "src/vendor/lifi/LiFiTxDataExtractor.sol";
 import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import { StandardizedCallFacet } from "src/vendor/lifi/StandardizedCallFacet.sol";
+import { GenericSwapFacet } from "src/vendor/lifi/GenericSwapFacet.sol";
 
 /// @title LiFiValidator
 /// @author Zeropoint Labs
 /// @dev To assert input txData is valid
+
 contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address superRegistry_) BridgeValidator(superRegistry_) {
-        if (address(superRegistry_) == address(0)) revert Error.DISABLED();
-    }
+    constructor(address superRegistry_) BridgeValidator(superRegistry_) { }
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
@@ -32,92 +32,34 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
 
     /// @inheritdoc BridgeValidator
     function validateTxData(ValidateTxDataArgs calldata args_) external view override returns (bool hasDstSwap) {
-        /// @dev xchain actions can have bridgeData or bridgeData + swapData
-        /// @dev direct actions with deposit, cannot have bridge data - goes into catch block
-        /// @dev withdraw actions may have bridge data after withdrawing - goes into try block
-        /// @dev withdraw actions without bridge data (just swap) - goes into catch block
+        bytes4 selector = _extractSelector(args_.txData);
 
-        try this.extractMainParameters(args_.txData) returns (
-            string memory, /*bridge*/
-            address sendingAssetId,
-            address receiver,
-            uint256, /*amount*/
-            uint256, /*minAmount*/
-            uint256 destinationChainId,
-            bool, /*hasSourceSwaps*/
-            bool hasDestinationCall
-        ) {
-            /// @dev 0. Destination call validation
-            if (hasDestinationCall) revert Error.INVALID_TXDATA_NO_DESTINATIONCALL_ALLOWED();
+        address sendingAssetId;
+        address receiver;
+        bool hasDestinationCall;
+        uint256 destinationChainId;
 
-            /// @dev 1. chainId validation
-            /// @dev for deposits, liqDstChainId/toChainId will be the normal destination (where the target superform
-            /// is)
-            /// @dev for withdraws, liqDstChainId will be the desired chain to where the underlying must be
-            /// sent (post any bridge/swap). To ChainId is where the target superform is
-            /// @dev to after vault redemption
+        /// @dev 1 - check if it is a swapTokensGeneric call (match via selector)
+        if (selector == GenericSwapFacet.swapTokensGeneric.selector) {
+            /// @dev GenericSwapFacet
 
-            if (uint256(args_.liqDstChainId) != destinationChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
-
-            /// @dev 2. receiver address validation
-            if (args_.deposit) {
-                if (args_.srcChainId == args_.dstChainId) {
-                    revert Error.INVALID_ACTION();
-                } else {
-                    hasDstSwap =
-                        receiver == superRegistry.getAddressByChainId(keccak256("DST_SWAPPER"), args_.dstChainId);
-                    /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry (or) Dst Swapper
-                    if (
-                        !(
-                            receiver
-                                == superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY"), args_.dstChainId)
-                                || hasDstSwap
-                        )
-                    ) {
-                        revert Error.INVALID_TXDATA_RECEIVER();
-                    }
-
-                    /// @dev forbid xChain deposits with destination swaps without interim token set (for user
-                    /// protection)
-                    if (hasDstSwap && args_.liqDataInterimToken == address(0)) {
-                        revert Error.INVALID_INTERIM_TOKEN();
-                    }
-                }
-            } else {
-                /// @dev if withdraws, then receiver address must be the receiverAddress
-                if (receiver != args_.receiverAddress) revert Error.INVALID_TXDATA_RECEIVER();
-            }
-
-            /// @dev remap of address 0 to NATIVE because of how LiFi produces txData
-            if (sendingAssetId == address(0)) {
-                sendingAssetId = NATIVE;
-            }
-            /// @dev 3. token validations
-            if (args_.liqDataToken != sendingAssetId) revert Error.INVALID_TXDATA_TOKEN();
-        } catch {
-            (address sendingAssetId,, address receiver,,) = extractGenericSwapParameters(args_.txData);
-
-            if (args_.deposit) {
-                /// @dev 1. chainId validation
-                if (args_.srcChainId != args_.dstChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
-                if (args_.dstChainId != args_.liqDstChainId) revert Error.INVALID_DEPOSIT_LIQ_DST_CHAIN_ID();
-
-                /// @dev 2. receiver address validation
-                /// @dev If same chain deposits then receiver address must be the superform
-                if (receiver != args_.superform) revert Error.INVALID_TXDATA_RECEIVER();
-            } else {
-                /// @dev 2. receiver address validation
-                /// @dev if withdraws, then receiver address must be the receiverAddress
-                if (receiver != args_.receiverAddress) revert Error.INVALID_TXDATA_RECEIVER();
-            }
-
-            /// @dev remap of address 0 to NATIVE because of how LiFi produces txData
-            if (sendingAssetId == address(0)) {
-                sendingAssetId = NATIVE;
-            }
-            /// @dev 3. token validations
-            if (args_.liqDataToken != sendingAssetId) revert Error.INVALID_TXDATA_TOKEN();
+            (sendingAssetId,, receiver,,) = extractGenericSwapParameters(args_.txData);
+            _validateGenericParameters(args_, receiver, sendingAssetId);
+            /// @dev if valid return here
+            return false;
         }
+
+        /// @dev 2 - check if it is any other blacklisted selector
+
+        if (!_validateSelector(selector)) revert Error.BLACKLISTED_SELECTOR();
+
+        /// @dev 3 - proceed with normal extraction
+        (, sendingAssetId, receiver,,, destinationChainId,, hasDestinationCall) = extractMainParameters(args_.txData);
+
+        hasDstSwap =
+            _validateMainParameters(args_, hasDestinationCall, hasDstSwap, receiver, sendingAssetId, destinationChainId);
+
+        return hasDstSwap;
     }
 
     /// @inheritdoc BridgeValidator
@@ -126,54 +68,51 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         bool genericSwapDisallowed_
     )
         external
-        view
+        pure
         override
         returns (uint256 amount_)
     {
-        try this.extractMainParameters(txData_) returns (
-            string memory, /*bridge*/
-            address, /*sendingAssetId*/
-            address, /*receiver*/
-            uint256 amount,
-            uint256, /*minAmount*/
-            uint256, /*destinationChainId*/
-            bool, /*hasSourceSwaps*/
-            bool /*hasDestinationCall*/
-        ) {
-            /// @dev if there isn't a source swap, amount_ is minAmountOut from bridge data
+        bytes4 selector = _extractSelector(txData_);
 
-            amount_ = amount;
-        } catch {
-            if (genericSwapDisallowed_) revert Error.INVALID_ACTION();
-            /// @dev in the case of a generic swap, amount_ is the from amount
-
+        /// @dev 1 - check if it is a swapTokensGeneric call (match via selector)
+        if (selector == GenericSwapFacet.swapTokensGeneric.selector) {
+            if (genericSwapDisallowed_) {
+                revert Error.INVALID_ACTION();
+            }
             (, amount_,,,) = extractGenericSwapParameters(txData_);
+            return amount_;
         }
+
+        /// @dev 2 - check if it is any other blacklisted selector
+        if (!_validateSelector(selector)) revert Error.BLACKLISTED_SELECTOR();
+
+        /// @dev 3 - proceed with normal extraction
+        (, /*bridgeId*/,, amount_, /*amount*/, /*minAmount*/,, /*hasSourceSwaps*/ ) = extractMainParameters(txData_);
+        /// @dev if there isn't a source swap, amount_ is minAmountOut from bridge data
+
+        return amount_;
     }
 
     /// @inheritdoc BridgeValidator
     function decodeDstSwap(bytes calldata txData_) external pure override returns (address token_, uint256 amount_) {
-        (token_, amount_,,,) = extractGenericSwapParameters(txData_);
+        bytes4 selector = _extractSelector(txData_);
+        if (selector == GenericSwapFacet.swapTokensGeneric.selector) {
+            (token_, amount_,,,) = extractGenericSwapParameters(txData_);
+            return (token_, amount_);
+        } else {
+            revert Error.INVALID_ACTION();
+        }
     }
 
     /// @inheritdoc BridgeValidator
-    function decodeSwapOutputToken(bytes calldata txData_) external view override returns (address token_) {
-        try this.extractMainParameters(txData_) returns (
-            string memory, /*bridge*/
-            address, /*sendingAssetId*/
-            address, /*receiver*/
-            uint256, /*amount*/
-            uint256, /*minAmount*/
-            uint256, /*destinationChainId*/
-            bool, /*hasSourceSwaps*/
-            bool /*hasDestinationCall*/
-        ) {
-            /// @dev if there isn't a source swap, amountIn is minAmountOut from bridge data?
+    function decodeSwapOutputToken(bytes calldata txData_) external pure override returns (address token_) {
+        bytes4 selector = _extractSelector(txData_);
 
+        if (selector == GenericSwapFacet.swapTokensGeneric.selector) {
+            (,,, token_,) = extractGenericSwapParameters(txData_);
+            return token_;
+        } else {
             revert Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
-        } catch {
-            (,,, address receivingAssetId,) = extractGenericSwapParameters(txData_);
-            token_ = receivingAssetId;
         }
     }
 
@@ -258,5 +197,101 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         amount = swapData[0].fromAmount;
         receivingAssetId = swapData[swapData.length - 1].receivingAssetId;
         return (sendingAssetId, amount, receiver, receivingAssetId, receivingAmount);
+    }
+
+    function _validateMainParameters(
+        ValidateTxDataArgs calldata args_,
+        bool hasDestinationCall,
+        bool hasDstSwap,
+        address receiver,
+        address sendingAssetId,
+        uint256 destinationChainId
+    )
+        internal
+        view
+        returns (bool)
+    {
+        /// @notice xchain actions can have bridgeData or swapData + bridgeData
+
+        /// @dev 0. Destination call validation
+        if (hasDestinationCall) revert Error.INVALID_TXDATA_NO_DESTINATIONCALL_ALLOWED();
+
+        /// @dev 1. chainId validation
+        /// @dev for deposits, liqDstChainId/toChainId will be the normal destination (where the target superform
+        /// is)
+        /// @dev for withdraws, liqDstChainId will be the desired chain to where the underlying must be
+        /// sent (post any bridge/swap). To ChainId is where the target superform is
+        /// @dev to after vault redemption
+
+        if (uint256(args_.liqDstChainId) != destinationChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
+
+        /// @dev 2. receiver address validation
+        if (args_.deposit) {
+            if (args_.srcChainId == args_.dstChainId) {
+                revert Error.INVALID_ACTION();
+            } else {
+                hasDstSwap = receiver == superRegistry.getAddressByChainId(keccak256("DST_SWAPPER"), args_.dstChainId);
+                /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry (or) Dst Swapper
+                if (
+                    !(
+                        receiver
+                            == superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY"), args_.dstChainId)
+                            || hasDstSwap
+                    )
+                ) {
+                    revert Error.INVALID_TXDATA_RECEIVER();
+                }
+
+                /// @dev forbid xChain deposits with destination swaps without interim token set (for user
+                /// protection)
+                if (hasDstSwap && args_.liqDataInterimToken == address(0)) {
+                    revert Error.INVALID_INTERIM_TOKEN();
+                }
+            }
+        } else {
+            /// @dev if withdraws, then receiver address must be the receiverAddress
+            if (receiver != args_.receiverAddress) revert Error.INVALID_TXDATA_RECEIVER();
+        }
+
+        /// @dev remap of address 0 to NATIVE because of how LiFi produces txData
+        if (sendingAssetId == address(0)) {
+            sendingAssetId = NATIVE;
+        }
+        /// @dev 3. token validations
+        if (args_.liqDataToken != sendingAssetId) revert Error.INVALID_TXDATA_TOKEN();
+
+        return hasDstSwap;
+    }
+
+    function _validateGenericParameters(
+        ValidateTxDataArgs calldata args_,
+        address receiver,
+        address sendingAssetId
+    )
+        internal
+        pure
+    {
+        /// @notice direct actions with deposit, cannot have bridge data
+        /// @notice withdraw actions without bridge data (just swap) also fall in GenericSwap
+        if (args_.deposit) {
+            /// @dev 1. chainId validation
+            if (args_.srcChainId != args_.dstChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
+            if (args_.dstChainId != args_.liqDstChainId) revert Error.INVALID_DEPOSIT_LIQ_DST_CHAIN_ID();
+
+            /// @dev 2. receiver address validation
+            /// @dev If same chain deposits then receiver address must be the superform
+            if (receiver != args_.superform) revert Error.INVALID_TXDATA_RECEIVER();
+        } else {
+            /// @dev 2. receiver address validation
+            /// @dev if withdraws, then receiver address must be the receiverAddress
+            if (receiver != args_.receiverAddress) revert Error.INVALID_TXDATA_RECEIVER();
+        }
+
+        /// @dev remap of address 0 to NATIVE because of how LiFi produces txData
+        if (sendingAssetId == address(0)) {
+            sendingAssetId = NATIVE;
+        }
+        /// @dev 3. token validations
+        if (args_.liqDataToken != sendingAssetId) revert Error.INVALID_TXDATA_TOKEN();
     }
 }

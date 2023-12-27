@@ -1365,6 +1365,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         vm.selectFork(FORKS[args.targetChainId]);
         uint256 len = args.amounts.length;
         uint256[] memory finalAmounts = new uint256[](len);
+        address[] memory bridgedTokens = new address[](len);
 
         int256 dstSwapSlippage;
 
@@ -1386,7 +1387,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
             vm.prank(deployer);
             CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateDepositPayload(
-                args.payloadId, finalAmounts
+                args.payloadId, bridgedTokens, finalAmounts
             );
 
             /// @dev if scenario is meant to revert here (e.g invalid slippage)
@@ -1396,7 +1397,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             /// @dev removed string here: come to this later
 
             CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateDepositPayload(
-                args.payloadId, finalAmounts
+                args.payloadId, bridgedTokens, finalAmounts
             );
 
             return false;
@@ -1407,7 +1408,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             vm.expectRevert(errorMsg);
 
             CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateDepositPayload(
-                args.payloadId, finalAmounts
+                args.payloadId, bridgedTokens, finalAmounts
             );
 
             return false;
@@ -1426,6 +1427,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         vm.selectFork(FORKS[args.targetChainId]);
         uint256 finalAmount;
+        address bridgedToken;
 
         finalAmount = args.amount;
 
@@ -1444,8 +1446,11 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             uint256[] memory finalAmounts = new uint256[](1);
             finalAmounts[0] = finalAmount;
 
+            address[] memory bridgedTokens = new address[](1);
+            bridgedTokens[0] = bridgedToken;
+
             CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateDepositPayload(
-                args.payloadId, finalAmounts
+                args.payloadId, bridgedTokens, finalAmounts
             );
             /// @dev if scenario is meant to revert here (e.g invalid slippage)
         } else if (args.testType == TestType.RevertUpdateStateSlippage) {
@@ -1454,12 +1459,14 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             vm.expectRevert(args.revertError);
 
             /// @dev removed string here: come to this later
-
             uint256[] memory finalAmounts = new uint256[](1);
             finalAmounts[0] = finalAmount;
 
+            address[] memory bridgedTokens = new address[](1);
+            bridgedTokens[0] = bridgedToken;
+
             CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateDepositPayload(
-                args.payloadId, finalAmounts
+                args.payloadId, bridgedTokens, finalAmounts
             );
 
             return false;
@@ -1473,8 +1480,11 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             uint256[] memory finalAmounts = new uint256[](1);
             finalAmounts[0] = finalAmount;
 
+            address[] memory bridgedTokens = new address[](1);
+            bridgedTokens[0] = bridgedToken;
+
             CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateDepositPayload(
-                args.payloadId, finalAmounts
+                args.payloadId, bridgedTokens, finalAmounts
             );
 
             return false;

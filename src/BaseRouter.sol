@@ -5,7 +5,7 @@ import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IBaseRouter } from "./interfaces/IBaseRouter.sol";
 import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
-import "./libraries/Error.sol";
+import { Error } from "./libraries/Error.sol";
 import "./types/DataTypes.sol";
 
 /// @title BaseRouter
@@ -29,6 +29,10 @@ abstract contract BaseRouter is IBaseRouter {
 
     /// @param superRegistry_ the superform registry contract
     constructor(address superRegistry_) {
+        if (superRegistry_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
+        
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }

@@ -43,7 +43,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation, formImplementationId
+            formImplementation, formImplementationId, 1
         );
 
         /// @dev Creating superform using formImplementationId and vault
@@ -74,7 +74,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation, formImplementationId
+            formImplementation, formImplementationId, 1
         );
 
         /// @dev Creating superform using formImplementationId and vault
@@ -104,7 +104,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation, formImplementationId
+            formImplementation, formImplementationId, 1
         );
 
         /// @dev Creating superform using formImplementationId and vault
@@ -135,7 +135,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation, formImplementationId
+            formImplementation, formImplementationId, 1
         );
 
         /// @dev Creating superform using formImplementationId and vault
@@ -165,7 +165,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation, formImplementationId
+            formImplementation, formImplementationId, 1
         );
 
         /// @dev Creating superform using formImplementationId and vault
@@ -195,7 +195,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation, formImplementationId
+            formImplementation, formImplementationId, 1
         );
 
         /// @dev Creating superform using formImplementationId and vault
@@ -225,7 +225,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation, formImplementationId
+            formImplementation, formImplementationId, 1
         );
 
         /// @dev Creating superform using formImplementationId and vault
@@ -255,7 +255,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation, formImplementationId
+            formImplementation, formImplementationId, 1
         );
 
         /// @dev Creating superform using formImplementationId and vault
@@ -285,7 +285,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation, formImplementationId
+            formImplementation, formImplementationId, 1
         );
 
         /// @dev Creating superform using formImplementationId and vault
@@ -315,7 +315,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation, formImplementationId
+            formImplementation, formImplementationId, 1
         );
 
         /// @dev Creating superform using formImplementationId and vault
@@ -345,7 +345,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation, formImplementationId
+            formImplementation, formImplementationId, 1
         );
 
         /// @dev Creating superform using formImplementationId and vault
@@ -671,7 +671,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
 
         /// @dev Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
-        superformFactory.addFormImplementation(formImplementation, formImplementationId);
+        superformFactory.addFormImplementation(formImplementation, formImplementationId, 1);
 
         /// @dev should revert as superRegistry coming from SuperformFactory does not
         /// match the one set in the ERC4626Form
@@ -909,7 +909,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             daiAmount,
             daiAmount,
             100,
-            LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "DAI"), address(0), 1, ETH, 0),
+            LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "DAI"), address(0), 4, ETH, 0),
             "",
             false,
             false,
@@ -932,6 +932,46 @@ contract SuperformERC4626FormTest is ProtocolActions {
         /// Bridge tries to drain Superform's tokens and it fails
         vm.expectRevert();
         LiFiMockRugpull(payable(getContract(ETH, "LiFiMockRugpull"))).pullTokens(getContract(ETH, "DAI"), superform);
+    }
+
+    function test_blacklistedSelectors_reverts() public {
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        uint256 daiAmount = 10 * 1e18; // 10 DAI
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
+        bytes32 txId = keccak256("blacklisted");
+        bytes memory blacklistedTxData = abi.encodeWithSelector(
+            LiFiMockBlacklisted.startBridgeTokensViaCBridgeNativeMin.selector, txId, address(0x1), 5, 5, 100
+        );
+
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            daiAmount,
+            100,
+            LiqRequest(blacklistedTxData, getContract(ETH, "DAI"), address(0), 5, ETH, 0),
+            "",
+            false,
+            false,
+            receiverAddress,
+            receiverAddress,
+            ""
+        );
+
+        SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
+
+        address router = getContract(ETH, "SuperformRouter");
+
+        /// Make Superform's initial balance to 10 DAI
+        MockERC20(getContract(ETH, "DAI")).transfer(superform, daiAmount);
+
+        /// Single deposit 10 DAI to the Superform
+        MockERC20(getContract(ETH, "DAI")).approve(router, daiAmount);
+        vm.expectRevert(Error.BLACKLISTED_SELECTOR.selector);
+        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 
     /*///////////////////////////////////////////////////////////////

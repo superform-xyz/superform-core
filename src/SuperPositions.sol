@@ -30,6 +30,8 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
+    uint8 internal constant CORE_STATE_REGISTRY_ID = 1;
+
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
     bytes32 constant DEPLOY_NEW_AERC20 = keccak256("DEPLOY_NEW_AERC20");
@@ -66,15 +68,18 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         _;
     }
 
+    /// @dev is used in same chain case (as superform is available on the chain to validate caller)
     modifier onlyMinter(uint256 superformId) {
         address router = superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"));
 
-        /// if msg.sender isn't superformRouter then it must be state registry for that superform
+        /// if msg.sender isn't superformRouter then it must be state registry of that form
         if (msg.sender != router) {
-            (, uint32 formImplementationId,) = DataLib.getSuperform(superformId);
             uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
-            if (uint32(registryId) != formImplementationId) {
+            (address superform,,) = DataLib.getSuperform(superformId);
+            uint8 formRegistryId = IBaseForm(superform).getStateRegistryId();
+
+            if (registryId != formRegistryId) {
                 revert Error.NOT_MINTER();
             }
         }
@@ -167,6 +172,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         override
         onlyBatchMinter(ids_)
     {
+        if (ids_.length != amounts_.length) revert Error.ARRAY_LENGTH_MISMATCH();
         _batchMint(receiverAddressSP_, msg.sender, ids_, amounts_, "");
     }
 
@@ -185,6 +191,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         override
         onlyRouter
     {
+        if (ids_.length != amounts_.length) revert Error.ARRAY_LENGTH_MISMATCH();
         _batchBurn(srcSender_, msg.sender, ids_, amounts_);
     }
 
@@ -322,6 +329,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     }
 
     /// @dev helps validate the state registry id for minting superform id
+    /// @dev is used in cross chain case (as superform is not available on the chain to validate caller)
     function _validateStateSyncer(uint256 superformId_) internal view {
         uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
         _isValidStateSyncer(registryId, superformId_);
@@ -335,21 +343,21 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         }
     }
 
-    function _isValidStateSyncer(uint8 registryId_, uint256 superformId_) internal pure {
-        /// @dev Directly check if the registryId is 0 or doesn't match the allowed cases.
-        if (registryId_ == 0) {
-            revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
-        }
+    function _isValidStateSyncer(uint8 registryId_, uint256 superformId_) internal view {
+        /// @dev registryId_ zero check is done in superRegistry.getStateRegistryId()
+
         /// @dev If registryId is 1, meaning CoreStateRegistry, no further checks are necessary.
         /// @dev This is because CoreStateRegistry is the default minter for all kinds of forms
         /// @dev In case registryId is > 1, we need to check if the registryId matches the formImplementationId
-        if (registryId_ == 1) {
+        if (registryId_ == CORE_STATE_REGISTRY_ID) {
             return;
         }
 
         (, uint32 formImplementationId,) = DataLib.getSuperform(superformId_);
+        uint8 formRegistryId = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")))
+            .getFormStateRegistryId(formImplementationId);
 
-        if (uint32(registryId_) != formImplementationId) {
+        if (registryId_ != formRegistryId) {
             revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
         }
     }
