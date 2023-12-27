@@ -3,6 +3,7 @@
 # Read the RPC URL
 source .env
 
+# Example here: deployed chains initially were POLY, AVAX and GNOSIS. Now adding BSC
 
 # Run the script
 echo Running Stage 1: ...
