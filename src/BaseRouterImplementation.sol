@@ -21,8 +21,6 @@ import { IPermit2 } from "./vendor/dragonfly-xyz/IPermit2.sol";
 import "./crosschain-liquidity/LiquidityHandler.sol";
 import "./types/DataTypes.sol";
 
-import "forge-std/console.sol";
-
 /// @title BaseRouterImplementation
 /// @author Zeropoint Labs
 /// @dev Extends BaseRouter with standard internal execution functions
@@ -852,10 +850,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev 10000 = 100% slippage
         if (maxSlippage_ > 10_000) return false;
 
-        console.log(1);
         /// @dev amounts can't be 0
         if (amount_ == 0 || outputAmount_ == 0) return false;
-        console.log(2);
 
         /// @dev only validate this for non multi case (multi case is validated in _validateSuperformsData)
         /// @dev ensure that receiver address is set always
@@ -904,13 +900,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (len == 0 || liqRequestsLen == 0) return false;
         if (len != liqRequestsLen) return false;
 
-        console.log("A");
-        console.log(len);
-        console.log(lenSuperforms);
-        console.log(superformsData_.outputAmounts.length);
-        console.log(superformsData_.maxSlippages.length);
-        console.log(superformsData_.hasDstSwaps.length);
-        console.log(superformsData_.retain4626s.length);
         /// @dev all other length checks
         if (
             lenSuperforms != len || lenSuperforms != superformsData_.outputAmounts.length
@@ -920,13 +909,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         ) {
             return false;
         }
-        console.log("B");
 
         /// @dev deposits beyond multi vault limit for a given destination chain blocked
         if (lenSuperforms > superRegistry.getVaultLimitPerDestination(dstChainId_)) {
             return false;
         }
-        console.log("C");
 
         /// @dev since this is a multi case, validate receiverAddress here once
         if (superformsData_.receiverAddress == address(0)) {
@@ -945,7 +932,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
         bool valid;
-        console.log("D");
 
         /// @dev slippage, amount, paused status validation
         for (uint256 i; i < len; ++i) {
@@ -978,7 +964,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 }
             }
         }
-        console.log("E");
 
         return true;
     }
