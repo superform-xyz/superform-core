@@ -67,6 +67,10 @@ contract LiFiTxDataExtractor {
         if (selector == HopFacetPacked.startBridgeTokensViaHopL1ERC20Min.selector) {
             return false;
         }
+        /// @dev prevent recursive calls
+        if (selector == StandardizedCallFacet.standardizedCall.selector) {
+            return false;
+        }
         return true;
     }
 
