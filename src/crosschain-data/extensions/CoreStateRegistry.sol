@@ -709,7 +709,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         bool errors;
         uint256 len = multiVaultData.superformIds.length;
-        address superformFactory = superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"));
+        address superformFactory = _getAddress(keccak256("SUPERFORM_FACTORY"));
 
         for (uint256 i; i < len; ++i) {
             // @dev validates if superformId exists on factory
