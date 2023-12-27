@@ -97,7 +97,7 @@ contract ForwardDustFormTest is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             amountToDeposit_,
-            amountToDeposit_,
+            IBaseForm(superform).previewDepositTo(amountToDeposit_),
             100,
             LiqRequest("", getContract(ARBI, "WETH"), address(0), 1, ARBI, 0),
             "",

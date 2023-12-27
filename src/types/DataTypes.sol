@@ -47,7 +47,7 @@ struct MultiVaultSFData {
     // superformids must have same destination. Can have different underlyings
     uint256[] superformIds;
     uint256[] amounts; // on deposits, amount of token to deposit on dst, on withdrawals, superpositions to burn
-    uint256[] outputAmounts;  // on deposits, amount of shares to receive, on withdrawals, amount of assets to receive
+    uint256[] outputAmounts; // on deposits, amount of shares to receive, on withdrawals, amount of assets to receive
     uint256[] maxSlippages;
     LiqRequest[] liqRequests; // if length = 1; amount = sum(amounts) | else  amounts must match the amounts being sent
     bytes permit2data;
@@ -65,7 +65,7 @@ struct SingleVaultSFData {
     // superformids must have same destination. Can have different underlyings
     uint256 superformId;
     uint256 amount;
-    uint256 outputAmount;
+    uint256 outputAmount; // on deposits, amount of shares to receive, on withdrawals, amount of assets to receive
     uint256 maxSlippage;
     LiqRequest liqRequest; // if length = 1; amount = sum(amounts)| else  amounts must match the amounts being sent
     bytes permit2data;

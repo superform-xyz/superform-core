@@ -1602,6 +1602,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
             v.totalAmount += finalAmounts[i];
 
             finalAmounts[i] = superformData.amount;
+            console.log("finalAMount", finalAmounts[i]);
+            args.outputAmounts[i] = superformData.outputAmount;
+            console.log("args.outputAmounts[i]", args.outputAmounts[i]);
         }
 
         if (action == Actions.DepositPermit2) {
@@ -1845,14 +1848,15 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         console.log("test amount post-dst swap --", v.amount);
 
-        vm.selectFork(v.initialFork);
+        vm.selectFork(FORKS[args.toChainId]);
+        (address superform,,) = DataLib.getSuperform(args.superformId);
 
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
         /// vaults without resorting to extra args, just for withdraws)
         superformData = SingleVaultSFData(
             args.superformId,
             v.amount,
-            args.outputAmount,
+            IBaseForm(superform).previewDepositTo(v.amount),
             args.maxSlippage,
             v.liqReq,
             v.permit2Calldata,
@@ -1863,6 +1867,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             /// @dev repeat user for receiverAddressSP - not testing AA here
             abi.encode(false)
         );
+        vm.selectFork(v.initialFork);
     }
 
     struct SingleVaultWithdrawLocalVars {
@@ -1961,12 +1966,16 @@ abstract contract ProtocolActions is CommonProtocolActions {
             0
         );
 
+        vm.selectFork(FORKS[args.toChainId]);
+        (address superform,,) = DataLib.getSuperform(args.superformId);
+        console.log("finalAMount", args.amount);
+        console.log("-- OA---", IBaseForm(superform).previewRedeemFrom(args.amount));
         /// @dev extraData is currently used to send in the partialWithdraw vaults without resorting to extra args, just
         /// for withdraws
         superformData = SingleVaultSFData(
             args.superformId,
             args.amount,
-            args.outputAmount,
+            IBaseForm(superform).previewRedeemFrom(args.amount),
             args.maxSlippage,
             vars.liqReq,
             "",
@@ -1977,6 +1986,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
             /// @dev repeat user for receiverAddressSP - not testing AA here
             abi.encode(args.partialWithdrawVault)
         );
+
+        vm.selectFork(initialFork);
     }
 
     /*///////////////////////////////////////////////////////////////

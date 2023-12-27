@@ -68,7 +68,6 @@ import { PaymentHelper } from "src/payments/PaymentHelper.sol";
 import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
-
 import { Error } from "src/libraries/Error.sol";
 import "src/types/DataTypes.sol";
 import "./TestTypes.sol";
@@ -902,9 +901,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                     vars.superRegistryC.setAddress(
                         vars.superRegistryC.DST_SWAPPER_PROCESSOR(), deployer, vars.dstChainId
                     );
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.SUPERFORM_RECEIVER(), deployer, vars.dstChainId
-                    );
+                    vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_RECEIVER(), deployer, vars.dstChainId);
                 } else {
                     /// ack gas cost: 40000
                     /// timelock step form cost: 50000

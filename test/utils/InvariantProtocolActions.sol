@@ -1132,14 +1132,14 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         }
         console.log("test amount post-bridge", v.amount);
 
-        vm.selectFork(v.initialFork);
-
+        vm.selectFork(FORKS[args.toChainId]);
+        (address superform,,) = DataLib.getSuperform(args.superformId);
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
         /// vaults without resorting to extra args, just for withdraws)
         superformData = SingleVaultSFData(
             args.superformId,
             v.amount,
-            args.outputAmount,
+            IBaseForm(superform).previewDepositTo(v.amount),
             args.maxSlippage,
             v.liqReq,
             v.permit2Calldata,
@@ -1150,6 +1150,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             /// @dev repeat user for receiverAddressSP - not testing AA here
             abi.encode(false)
         );
+        vm.selectFork(v.initialFork);
     }
 
     struct SingleVaultWithdrawLocalVars {
@@ -1245,12 +1246,15 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             0
         );
 
+        vm.selectFork(FORKS[args.toChainId]);
+        (address superform,,) = DataLib.getSuperform(args.superformId);
+
         /// @dev extraData is currently used to send in the partialWithdraw vaults without resorting to extra args, just
         /// for withdraws
         superformData = SingleVaultSFData(
             args.superformId,
             args.amount,
-            args.outputAmount,
+            IBaseForm(superform).previewRedeemFrom(args.amount),
             args.maxSlippage,
             vars.liqReq,
             "",
@@ -1260,6 +1264,8 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             users[args.user],
             abi.encode(false)
         );
+
+        vm.selectFork(initialFork);
     }
 
     /*///////////////////////////////////////////////////////////////
