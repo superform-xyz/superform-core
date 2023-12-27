@@ -44,6 +44,7 @@ contract PayloadHelper is IPayloadHelper {
         address srcSender;
         uint64 srcChainId;
         uint256[] amounts;
+        uint256[] outputAmounts;
         uint256[] slippages;
         uint256[] superformIds;
         bool[] hasDstSwaps;
@@ -94,6 +95,7 @@ contract PayloadHelper is IPayloadHelper {
             address srcSender,
             uint64 srcChainId,
             uint256[] memory amounts,
+            uint256[] memory outputAmounts,
             uint256[] memory slippages,
             uint256[] memory superformIds,
             bool[] memory hasDstSwaps,
@@ -112,8 +114,16 @@ contract PayloadHelper is IPayloadHelper {
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
             (v.amounts, v.srcPayloadId) = _decodeReturnData(dstPayloadId_, v.multi, coreStateRegistry);
         } else if (v.callbackType == uint256(CallbackType.INIT)) {
-            (v.amounts, v.slippages, v.superformIds, v.hasDstSwaps, v.extraFormData, v.receiverAddress, v.srcPayloadId)
-            = _decodeInitData(dstPayloadId_, v.multi, coreStateRegistry);
+            (
+                v.amounts,
+                v.outputAmounts,
+                v.slippages,
+                v.superformIds,
+                v.hasDstSwaps,
+                v.extraFormData,
+                v.receiverAddress,
+                v.srcPayloadId
+            ) = _decodeInitData(dstPayloadId_, v.multi, coreStateRegistry);
         } else {
             revert Error.INVALID_PAYLOAD();
         }
@@ -124,6 +134,7 @@ contract PayloadHelper is IPayloadHelper {
             v.srcSender,
             v.srcChainId,
             v.amounts,
+            v.outputAmounts,
             v.slippages,
             v.superformIds,
             v.hasDstSwaps,
@@ -307,6 +318,7 @@ contract PayloadHelper is IPayloadHelper {
         view
         returns (
             uint256[] memory amounts,
+            uint256[] memory outputAmounts,
             uint256[] memory slippages,
             uint256[] memory superformIds,
             bool[] memory hasDstSwaps,
@@ -321,6 +333,7 @@ contract PayloadHelper is IPayloadHelper {
 
             return (
                 imvd.amounts,
+                imvd.outputAmounts,
                 imvd.maxSlippages,
                 imvd.superformIds,
                 imvd.hasDstSwaps,
@@ -335,6 +348,9 @@ contract PayloadHelper is IPayloadHelper {
             amounts = new uint256[](1);
             amounts[0] = isvd.amount;
 
+            outputAmounts = new uint256[](1);
+            outputAmounts[0] = isvd.outputAmount;
+
             slippages = new uint256[](1);
             slippages[0] = isvd.maxSlippage;
 
@@ -345,7 +361,14 @@ contract PayloadHelper is IPayloadHelper {
             receiverAddress = isvd.receiverAddress;
 
             return (
-                amounts, slippages, superformIds, hasDstSwaps, isvd.extraFormData, isvd.receiverAddress, isvd.payloadId
+                amounts,
+                outputAmounts,
+                slippages,
+                superformIds,
+                hasDstSwaps,
+                isvd.extraFormData,
+                isvd.receiverAddress,
+                isvd.payloadId
             );
         }
     }

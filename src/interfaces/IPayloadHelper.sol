@@ -16,6 +16,7 @@ interface IPayloadHelper {
     /// @return srcSender is the user who initiated the transaction on the srcChain
     /// @return srcChainId is the unique identifier of the srcChain
     /// @return amounts are the amounts to deposit/withdraw
+    /// @return outputAmounts are the expected outputAmounts specified by user
     /// @return slippages are the max slippages configured by the user (only for deposits)
     /// @return superformIds are the unique identifiers of the superforms
     /// @return hasDstSwaps are the array of flags indicating if the original liqData has a dstSwaps
@@ -31,6 +32,7 @@ interface IPayloadHelper {
             address srcSender,
             uint64 srcChainId,
             uint256[] memory amounts,
+            uint256[] memory outputAmounts,
             uint256[] memory slippages,
             uint256[] memory superformIds,
             bool[] memory hasDstSwaps,

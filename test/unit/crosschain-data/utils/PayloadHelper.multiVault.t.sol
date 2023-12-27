@@ -209,6 +209,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
             v.srcSender,
             v.srcChainId,
             v.amounts,
+            ,
             v.slippage,
             ,
             ,
@@ -288,8 +289,8 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
         CheckDstPayloadInternalVars memory v;
 
-        (v.txType, v.callbackType, v.srcSender, v.srcChainId, v.amounts, v.slippage,, v.hasDstSwaps,,, v.srcPayloadId) =
-            IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
+        (v.txType, v.callbackType, v.srcSender, v.srcChainId, v.amounts,, v.slippage,, v.hasDstSwaps,,, v.srcPayloadId)
+        = IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
 
         assertEq(v.txType, 0);
 
