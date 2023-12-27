@@ -735,7 +735,9 @@ contract DstSwapperTest is ProtocolActions {
                     abi.encode(
                         new uint8[](0),
                         abi.encode(
-                            InitSingleVaultData(1, superformId, amount, amount, 0, liq, true, false, receiverAddress, bytes(""))
+                            InitSingleVaultData(
+                                1, superformId, amount, amount, 0, liq, true, false, receiverAddress, bytes("")
+                            )
                         )
                     )
                 )
@@ -772,7 +774,9 @@ contract DstSwapperTest is ProtocolActions {
                 ),
                 abi.encode(
                     new uint8[](0),
-                    abi.encode(InitSingleVaultData(1, superformId, 1e18, 1e18, 1000, liq, true, false, users[0], bytes("")))
+                    abi.encode(
+                        InitSingleVaultData(1, superformId, 1e18, 1e18, 1000, liq, true, false, users[0], bytes(""))
+                    )
                 )
             )
         );
@@ -822,27 +826,16 @@ contract DstSwapperTest is ProtocolActions {
         liq[1] = LiqRequest("", getContract(OP, "DAI"), interimToken_, 1, OP, 0);
 
         InitMultiVaultData memory initMultiVaultData = InitMultiVaultData(
-            1,
-            superformIds,
-            amounts,
-            outputAmounts,
-            maxSlippages,
-            liq,
-            hasDstSwaps,
-            new bool[](2),
-            users[0],
-            bytes("")
+            1, superformIds, amounts, outputAmounts, maxSlippages, liq, hasDstSwaps, new bool[](2), users[0], bytes("")
         );
 
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+
         bytes memory encodedData = abi.encode(
-        AMBMessage(
-            DataLib.packTxInfo(
-                uint8(TransactionType.DEPOSIT), uint8(CallbackType.INIT), uint8(1), 1, users[0], ETH
-            ),
-            abi.encode(
-                new uint8[](1),
-                abi.encode(initMultiVaultData)
-                )
+            AMBMessage(
+                DataLib.packTxInfo(uint8(TransactionType.DEPOSIT), uint8(CallbackType.INIT), uint8(1), 1, users[0], ETH),
+                abi.encode(ambIds, abi.encode(initMultiVaultData))
             )
         );
 
@@ -960,7 +953,7 @@ contract DstSwapperTest is ProtocolActions {
             new uint256[](2),
             liq,
             hasDstSwaps,
-            new bool[](2), 
+            new bool[](2),
             receiverAddress,
             bytes("")
         );
@@ -968,10 +961,7 @@ contract DstSwapperTest is ProtocolActions {
         bytes memory encodedData = abi.encode(
             AMBMessage(
                 DataLib.packTxInfo(1, 0, 1, 1, address(420), uint64(137)),
-                abi.encode(
-                    new uint8[](1), // ambIds_
-                    abi.encode(initMultiVaultData)
-                )
+                abi.encode(ambIds_, abi.encode(initMultiVaultData))
             )
         );
 

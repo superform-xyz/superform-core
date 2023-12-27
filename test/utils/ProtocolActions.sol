@@ -1602,7 +1602,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             v.totalAmount += finalAmounts[i];
 
             finalAmounts[i] = superformData.amount;
-            console.log("finalAMount", finalAmounts[i]);
+            console.log("finalAmount", finalAmounts[i]);
             args.outputAmounts[i] = superformData.outputAmount;
             console.log("args.outputAmounts[i]", args.outputAmounts[i]);
         }
@@ -1768,7 +1768,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         if (liqRequestToken != NATIVE_TOKEN) {
             /// @dev - APPROVE transfer to SuperformRouter (because of Socket)
-
             if (action == Actions.DepositPermit2) {
                 vm.prank(users[args.user]);
                 MockERC20(liqRequestToken).approve(getContract(args.srcChainId, "CanonicalPermit2"), type(uint256).max);

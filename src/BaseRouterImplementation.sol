@@ -905,6 +905,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (len != liqRequestsLen) return false;
 
         console.log("A");
+        console.log(len);
+        console.log(lenSuperforms);
+        console.log(superformsData_.outputAmounts.length);
+        console.log(superformsData_.maxSlippages.length);
+        console.log(superformsData_.hasDstSwaps.length);
+        console.log(superformsData_.retain4626s.length);
         /// @dev all other length checks
         if (
             lenSuperforms != len || lenSuperforms != superformsData_.outputAmounts.length
