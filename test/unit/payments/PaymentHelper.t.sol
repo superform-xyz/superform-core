@@ -12,7 +12,7 @@ contract MockGasPriceOracle {
         return (0, 28 gwei, block.timestamp, block.timestamp, 28 gwei);
     }
 
-    function decimals() external view returns (uint8) {
+    function decimals() external pure returns (uint8) {
         return 8;
     }
 }
@@ -26,7 +26,7 @@ contract MalFunctioningPriceOracle {
         return (0, 0, block.timestamp, block.timestamp, 0);
     }
 
-    function decimals() external view returns (uint8) {
+    function decimals() external pure returns (uint8) {
         return 8;
     }
 }

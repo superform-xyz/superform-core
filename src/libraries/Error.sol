@@ -267,6 +267,9 @@ library Error {
     /// @dev error thrown when msg value should be zero in certain payable functions
     error MSG_VALUE_NOT_ZERO();
 
+    /// @dev error thrown when txData selector of lifi bridged is a blacklisted selector
+    error BLACKLISTED_SELECTOR();
+
     //////////////////////////////////////////////////////////////
     //                  EXECUTION ERRORS                        //
     //////////////////////////////////////////////////////////////
