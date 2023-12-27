@@ -6,38 +6,48 @@ pragma solidity ^0.8.23;
 /// @dev helps decoding the bytes payload and returns meaningful information
 interface IPayloadHelper {
     //////////////////////////////////////////////////////////////
+    //                           STRUCTS                        //
+    //////////////////////////////////////////////////////////////
+
+    /// @notice txType is the type of transaction. check {TransactionType} enum in DataTypes.sol
+    /// @notice callbackType is the type of payload. check {CallbackType} enum in DataTypes.sol
+    /// @notice srcSender is the user who initiated the transaction on the srcChain
+    /// @notice srcChainId is the unique identifier of the srcChain
+    /// @notice amounts are the amounts to deposit/withdraw
+    /// @notice outputAmounts are the expected outputAmounts specified by user
+    /// @notice slippages are the max slippages configured by the user (only for deposits)
+    /// @notice superformIds are the unique identifiers of the superforms
+    /// @notice hasDstSwaps are the array of flags indicating if the original liqData has a dstSwaps
+    /// @notice extraFormData is the extra form data (optional: passed for forms with special needs)
+    /// @notice receiverAddress is the address to be used for refunds
+    /// @notice srcPayloadId is the identifier of the corresponding payload on srcChain
+    struct DecodedDstPayload {
+        uint8 txType;
+        uint8 callbackType;
+        address srcSender;
+        uint64 srcChainId;
+        uint256[] amounts;
+        uint256[] outputAmounts;
+        uint256[] slippages;
+        uint256[] superformIds;
+        bool[] hasDstSwaps;
+        address receiverAddress;
+        uint256 srcPayloadId;
+        bytes extraFormData;
+        uint8 multi;
+    }
+
+    //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
 
     /// @dev reads the payload from the core state registry and decodes it in a more detailed manner.
     /// @param dstPayloadId_ is the unique identifier of the payload received in dst core state registry
-    /// @return txType is the type of transaction. check {TransactionType} enum in DataTypes.sol
-    /// @return callbackType is the type of payload. check {CallbackType} enum in DataTypes.sol
-    /// @return srcSender is the user who initiated the transaction on the srcChain
-    /// @return srcChainId is the unique identifier of the srcChain
-    /// @return amounts are the amounts to deposit/withdraw
-    /// @return slippages are the max slippages configured by the user (only for deposits)
-    /// @return superformIds are the unique identifiers of the superforms
-    /// @return hasDstSwaps are the array of flags indicating if the original liqData has a dstSwaps
-    /// @return extraFormData is the extra form data (optional: passed for forms with special needs)
-    /// @return receiverAddress is the address to be used for refunds
-    /// @return srcPayloadId is the identifier of the corresponding payload on srcChain
+    /// @return decodedDstPayload is the details of the payload, refer DecodedDstPayload struct for info
     function decodeCoreStateRegistryPayload(uint256 dstPayloadId_)
         external
         view
-        returns (
-            uint8 txType,
-            uint8 callbackType,
-            address srcSender,
-            uint64 srcChainId,
-            uint256[] memory amounts,
-            uint256[] memory slippages,
-            uint256[] memory superformIds,
-            bool[] memory hasDstSwaps,
-            bytes memory extraFormData,
-            address receiverAddress,
-            uint256 srcPayloadId
-        );
+        returns (DecodedDstPayload memory decodedDstPayload);
 
     /// @dev reads the payload from the core state registry and decodes liqData for it (to be used in withdraw cases)
     /// @param dstPayloadId_ is the unique identifier of the payload received in dst core state registry

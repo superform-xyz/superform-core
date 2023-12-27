@@ -100,11 +100,17 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         IERC20 assetERC = IERC20(vars.asset);
 
         uint256 assetsBalanceBefore = assetERC.balanceOf(vars.receiver);
+
         assets = v.redeem(p_.data.amount, vars.receiver, address(this));
         uint256 assetsBalanceAfter = assetERC.balanceOf(vars.receiver);
-        if (assetsBalanceAfter - assetsBalanceBefore != assets) {
+
+        if (
+            (assetsBalanceAfter - assetsBalanceBefore != assets)
+                || (assets * ENTIRE_SLIPPAGE < p_.data.outputAmount * (ENTIRE_SLIPPAGE - p_.data.maxSlippage))
+        ) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
+
         if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
         /// @dev validate and dispatches the tokens
@@ -113,7 +119,10 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
             vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(vars.liqData.txData, false);
 
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
-            if (vars.amount > assets) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+            if (_isWithdrawTxDataAmountInvalid(vars.amount, assets, p_.data.maxSlippage)) {
+                if (p_.isXChain == 1) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
+                revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+            }
 
             vars.chainId = CHAIN_ID;
 

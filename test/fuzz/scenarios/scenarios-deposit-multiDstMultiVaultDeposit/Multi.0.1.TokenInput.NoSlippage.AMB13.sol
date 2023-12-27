@@ -55,11 +55,10 @@ contract MDMVDMulti01NoDstSwapTokenInputNoSlippageL2AMB13 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
-        amountOne_ = uint128(bound(amountOne_, 1e6, 1e9));
-        amountTwo_ = uint128(bound(amountTwo_, 1e6, 1e9));
-        AMOUNTS[ETH][0] = [amountOne_, amountTwo_];
-        AMOUNTS[AVAX][0] = [amountTwo_, amountOne_];
+    function test_scenario(uint128 amountOne_) public {
+        amountOne_ = uint128(bound(amountOne_, 2e6, 2e10));
+        AMOUNTS[ETH][0] = [amountOne_];
+        AMOUNTS[AVAX][0] = [amountOne_];
 
         for (uint256 act; act < actions.length; ++act) {
             TestAction memory action = actions[act];

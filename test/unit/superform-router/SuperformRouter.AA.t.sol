@@ -205,6 +205,7 @@ contract SuperformRouterAATest is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             1e18,
+            1e18,
             10_000,
             /// @dev invalid slippage
             LiqRequest("", getContract(ARBI, "DAI"), address(0), 1, ARBI, 0),
@@ -298,6 +299,7 @@ contract SuperformRouterAATest is ProtocolActions {
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
+            1e18,
             1e18,
             10_000,
             /// @dev invalid slippage
@@ -440,6 +442,7 @@ contract SuperformRouterAATest is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(
             v.superformId,
             1e18,
+            1e18,
             1000,
             LiqRequest(
                 _buildLiqBridgeTxData(
@@ -522,6 +525,7 @@ contract SuperformRouterAATest is ProtocolActions {
 
         SingleVaultSFData memory data = SingleVaultSFData(
             v.superformId,
+            1e18,
             1e18,
             1000,
             LiqRequest(

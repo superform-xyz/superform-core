@@ -50,7 +50,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     //////////////////////////////////////////////////////////////
 
     modifier onlySender() override {
-        if (msg.sender != superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"))) revert Error.NOT_SUPERFORM_ROUTER();
+        if (msg.sender != _getAddress(keccak256("SUPERFORM_ROUTER"))) revert Error.NOT_SUPERFORM_ROUTER();
         _;
     }
 
@@ -461,28 +461,31 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         if (validLen != 0) {
             uint256[] memory finalSuperformIds = new uint256[](validLen);
             uint256[] memory finalAmounts = new uint256[](validLen);
+            uint256[] memory outputAmounts = new uint256[](validLen);
             uint256[] memory maxSlippage = new uint256[](validLen);
             bool[] memory hasDstSwaps = new bool[](validLen);
-            bool[] memory finalRetain4626s = new bool[](validLen);
+            bool[] memory retain4626s = new bool[](validLen);
 
             uint256 currLen;
             for (uint256 i; i < arrLen; ++i) {
                 if (multiVaultData.amounts[i] != 0) {
                     finalSuperformIds[currLen] = multiVaultData.superformIds[i];
                     finalAmounts[currLen] = multiVaultData.amounts[i];
+                    outputAmounts[currLen] = multiVaultData.outputAmounts[i];
                     maxSlippage[currLen] = multiVaultData.maxSlippages[i];
                     hasDstSwaps[currLen] = multiVaultData.hasDstSwaps[i];
-                    finalRetain4626s[currLen] = multiVaultData.retain4626s[i];
+                    retain4626s[currLen] = multiVaultData.retain4626s[i];
 
                     ++currLen;
                 }
             }
 
-            multiVaultData.amounts = finalAmounts;
             multiVaultData.superformIds = finalSuperformIds;
+            multiVaultData.amounts = finalAmounts;
+            multiVaultData.outputAmounts = outputAmounts;
             multiVaultData.maxSlippages = maxSlippage;
             multiVaultData.hasDstSwaps = hasDstSwaps;
-            multiVaultData.retain4626s = finalRetain4626s;
+            multiVaultData.retain4626s = retain4626s;
             finalState_ = PayloadState.UPDATED;
         } else {
             finalState_ = PayloadState.PROCESSED;
@@ -736,6 +739,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     payloadId: multiVaultData.payloadId,
                     superformId: multiVaultData.superformIds[i],
                     amount: multiVaultData.amounts[i],
+                    outputAmount: multiVaultData.outputAmounts[i],
                     maxSlippage: multiVaultData.maxSlippages[i],
                     liqData: multiVaultData.liqData[i],
                     hasDstSwap: false,
@@ -804,6 +808,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                             payloadId: multiVaultData.payloadId,
                             superformId: multiVaultData.superformIds[i],
                             amount: multiVaultData.amounts[i],
+                            outputAmount: multiVaultData.outputAmounts[i],
                             maxSlippage: multiVaultData.maxSlippages[i],
                             liqData: emptyRequest,
                             hasDstSwap: false,

@@ -97,7 +97,7 @@ contract SDMVW02NativeInputNoSlippageAMB12 is ProtocolActions {
                     DST_CHAINS[0]
                 );
                 /// @dev bound to amountTwo_ - 1 as partial is true for second vault
-                amountTwoWithdraw_ = uint128(bound(amountTwoWithdraw_, 1, superPositions[1] - 1));
+                amountTwoWithdraw_ = uint128(bound(amountTwoWithdraw_, 10, superPositions[1] - 1));
                 AMOUNTS[OP][1] = [superPositions[0], amountTwoWithdraw_];
             }
 
