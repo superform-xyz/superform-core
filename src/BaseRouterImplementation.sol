@@ -14,7 +14,22 @@ import { DataLib } from "src/libraries/DataLib.sol";
 import { Error } from "src/libraries/Error.sol";
 import { IPermit2 } from "src/vendor/dragonfly-xyz/IPermit2.sol";
 import { LiquidityHandler } from "src/crosschain-liquidity/LiquidityHandler.sol";
-import "src/types/DataTypes.sol";
+import {
+    SingleDirectSingleVaultStateReq,
+    SingleXChainSingleVaultStateReq,
+    SingleDirectMultiVaultStateReq,
+    SingleXChainMultiVaultStateReq,
+    MultiDstSingleVaultStateReq,
+    MultiDstMultiVaultStateReq,
+    LiqRequest,
+    InitSingleVaultData,
+    InitMultiVaultData,
+    MultiVaultSFData,
+    SingleVaultSFData,
+    AMBMessage,
+    CallbackType,
+    TransactionType
+} from "src/types/DataTypes.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC1155Receiver } from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol";
@@ -25,7 +40,6 @@ import { IERC1155Errors } from "openzeppelin-contracts/contracts/interfaces/draf
 /// @dev Extends BaseRouter with standard internal execution functions
 /// @author Zeropoint Labs
 abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRouter, LiquidityHandler {
-    
     using SafeERC20 for IERC20;
     using DataLib for uint256;
 
@@ -938,18 +952,20 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev slippage, amount, paused status validation
         for (uint256 i; i < len; ++i) {
-            if(!_validateSuperformData(
-                superformsData_.superformIds[i],
-                superformsData_.amounts[i],
-                superformsData_.outputAmounts[i],
-                superformsData_.maxSlippages[i],
-                superformsData_.receiverAddress,
-                superformsData_.receiverAddressSP,
-                dstChainId_,
-                deposit_,
-                factory,
-                true
-            )) {
+            if (
+                !_validateSuperformData(
+                    superformsData_.superformIds[i],
+                    superformsData_.amounts[i],
+                    superformsData_.outputAmounts[i],
+                    superformsData_.maxSlippages[i],
+                    superformsData_.receiverAddress,
+                    superformsData_.receiverAddressSP,
+                    dstChainId_,
+                    deposit_,
+                    factory,
+                    true
+                )
+            ) {
                 return false;
             }
 
@@ -1120,7 +1136,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                     abi.decode(permit2data_, (uint256, uint256, bytes));
 
                 v.permit2 = _getPermit2();
-                
+
                 /// @dev moves the tokens from the user to the router
                 IPermit2(v.permit2).permitTransferFrom(
                     // The permit message.

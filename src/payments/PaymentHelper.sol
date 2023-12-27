@@ -11,7 +11,23 @@ import { Error } from "src/libraries/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { ProofLib } from "src/libraries/ProofLib.sol";
 import { ArrayCastLib } from "src/libraries/ArrayCastLib.sol";
-import "src/types/DataTypes.sol";
+import {
+    SingleDirectSingleVaultStateReq,
+    SingleXChainSingleVaultStateReq,
+    SingleDirectMultiVaultStateReq,
+    SingleXChainMultiVaultStateReq,
+    MultiDstSingleVaultStateReq,
+    MultiDstMultiVaultStateReq,
+    LiqRequest,
+    AMBMessage,
+    MultiVaultSFData,
+    SingleVaultSFData,
+    AMBExtraData,
+    InitMultiVaultData,
+    InitSingleVaultData,
+    ReturnMultiData,
+    ReturnSingleData
+} from "src/types/DataTypes.sol";
 import { AggregatorV3Interface } from "src/vendor/chainlink/AggregatorV3Interface.sol";
 
 /// @dev interface to read public variable from state registry
@@ -23,7 +39,6 @@ interface ReadOnlyBaseRegistry is IBaseStateRegistry {
 /// @dev Helps estimate the cost for the entire transaction lifecycle
 /// @author ZeroPoint Labs
 contract PaymentHelper is IPaymentHelper {
-
     using DataLib for uint256;
     using ArrayCastLib for LiqRequest;
     using ArrayCastLib for bool;

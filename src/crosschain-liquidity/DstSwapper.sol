@@ -10,7 +10,7 @@ import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { IERC4626Form } from "src/forms/interfaces/IERC4626Form.sol";
 import { Error } from "src/libraries/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
-import "src/types/DataTypes.sol";
+import { InitSingleVaultData, InitMultiVaultData, PayloadState } from "src/types/DataTypes.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ReentrancyGuard } from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";

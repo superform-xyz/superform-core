@@ -4,13 +4,19 @@ pragma solidity ^0.8.23;
 import { BaseRouterImplementation } from "src/BaseRouterImplementation.sol";
 import { BaseRouter } from "src/BaseRouter.sol";
 import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
-import "src/types/DataTypes.sol";
+import {
+    SingleDirectSingleVaultStateReq,
+    SingleXChainSingleVaultStateReq,
+    SingleDirectMultiVaultStateReq,
+    SingleXChainMultiVaultStateReq,
+    MultiDstSingleVaultStateReq,
+    MultiDstMultiVaultStateReq
+} from "src/types/DataTypes.sol";
 
 /// @title SuperformRouter
 /// @dev Routes funds and action information to a remote execution chain
 /// @author Zeropoint Labs
 contract SuperformRouter is BaseRouterImplementation {
-
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////

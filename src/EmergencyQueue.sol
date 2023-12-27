@@ -8,13 +8,12 @@ import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { Error } from "src/libraries/Error.sol";
-import "src/types/DataTypes.sol";
+import { InitSingleVaultData, QueuedWithdrawal } from "src/types/DataTypes.sol";
 
 /// @title EmergencyQueue
 /// @dev Stores withdrawal requests when forms are paused
 /// @author Zeropoint Labs
 contract EmergencyQueue is IEmergencyQueue {
-
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
@@ -64,7 +63,7 @@ contract EmergencyQueue is IEmergencyQueue {
         if (superRegistry_ == address(0)) {
             revert Error.ZERO_ADDRESS();
         }
-        
+
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }

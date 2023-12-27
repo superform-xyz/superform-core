@@ -4,7 +4,14 @@ pragma solidity ^0.8.23;
 import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { Error } from "src/libraries/Error.sol";
-import "src/types/DataTypes.sol";
+import {
+    SingleDirectSingleVaultStateReq,
+    SingleXChainSingleVaultStateReq,
+    SingleDirectMultiVaultStateReq,
+    SingleXChainMultiVaultStateReq,
+    MultiDstSingleVaultStateReq,
+    MultiDstMultiVaultStateReq
+} from "src/types/DataTypes.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -12,7 +19,6 @@ import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/Sa
 /// @dev Abstract implementation that allows Routers to implement the logic
 /// @author Zeropoint Labs
 abstract contract BaseRouter is IBaseRouter {
-
     using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////////////
@@ -32,7 +38,7 @@ abstract contract BaseRouter is IBaseRouter {
         if (superRegistry_ == address(0)) {
             revert Error.ZERO_ADDRESS();
         }
-        
+
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }

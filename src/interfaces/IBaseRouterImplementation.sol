@@ -2,13 +2,12 @@
 pragma solidity ^0.8.23;
 
 import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
-import "src/types/DataTypes.sol";
+import { AMBMessage, LiqRequest, TransactionType } from "src/types/DataTypes.sol";
 
 /// @title IBaseRouterImplementation
 /// @dev Interface for BaseRouterImplementation
 /// @author Zeropoint Labs
 interface IBaseRouterImplementation is IBaseRouter {
-    
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
     //////////////////////////////////////////////////////////////

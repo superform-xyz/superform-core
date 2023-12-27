@@ -17,14 +17,22 @@ import { Error } from "src/libraries/Error.sol";
 import { ProofLib } from "src/libraries/ProofLib.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { PayloadUpdaterLib } from "src/libraries/PayloadUpdaterLib.sol";
-import "src/types/DataTypes.sol";
+import {
+    InitSingleVaultData,
+    AMBMessage,
+    TimelockPayload,
+    CallbackType,
+    TransactionType,
+    PayloadState,
+    TimelockStatus,
+    ReturnSingleData
+} from "src/types/DataTypes.sol";
 import { ReentrancyGuard } from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 
 /// @title TimelockStateRegistry
 /// @dev Handles communication in timelocked forms
 /// @author Zeropoint Labs
 contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, ReentrancyGuard {
-
     using DataLib for uint256;
     using ProofLib for AMBMessage;
 
@@ -57,7 +65,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     }
 
     /// @dev ensures only the timelock form can write to a timelock superform
-    /// @param superformId_ is the superformId of the superform to check 
+    /// @param superformId_ is the superformId of the superform to check
     modifier onlyTimelockSuperform(uint256 superformId_) {
         if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId_)) {
             revert Error.SUPERFORM_ID_NONEXISTENT();
@@ -85,7 +93,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(ISuperRegistry superRegistry_) BaseStateRegistry(superRegistry_) {}
+    constructor(ISuperRegistry superRegistry_) BaseStateRegistry(superRegistry_) { }
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //

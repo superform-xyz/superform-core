@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import "src/types/DataTypes.sol";
+import { PayloadState } from "src/types/DataTypes.sol";
 
 /// @title IBaseStateRegistry
 /// @dev Interface for BaseStateRegistry
 /// @author ZeroPoint Labs
 interface IBaseStateRegistry {
-    
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
