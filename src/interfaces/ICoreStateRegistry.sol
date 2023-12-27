@@ -2,9 +2,10 @@
 pragma solidity ^0.8.23;
 
 /// @title ICoreStateRegistry
+/// @dev Interface for CoreStateRegistry
 /// @author ZeroPoint Labs
-/// @notice Interface for Core State Registry
 interface ICoreStateRegistry {
+    
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
     //////////////////////////////////////////////////////////////
@@ -58,6 +59,15 @@ interface ICoreStateRegistry {
         external
         view
         returns (uint256[] memory superformIds, uint256[] memory amounts, uint256 lastProposedTime);
+
+    /// @dev used internally for try/catching
+    /// @param finalAmount_ is the final amount of tokens received
+    /// @param amount_ is the indicated amount of tokens to be received
+    /// @param maxSlippage_ is the amount of acceptable slippage for the transaction
+    function validateSlippage(uint256 finalAmount_, uint256 amount_, uint256 maxSlippage_)
+        external
+        view
+        returns (bool);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //

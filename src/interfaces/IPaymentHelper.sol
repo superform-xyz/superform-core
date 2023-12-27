@@ -8,12 +8,13 @@ import {
     SingleXChainSingleVaultStateReq,
     SingleDirectSingleVaultStateReq,
     SingleDirectMultiVaultStateReq
-} from "../types/DataTypes.sol";
+} from "src/types/DataTypes.sol";
 
 /// @title IPaymentHelper
+/// @dev Interface for PaymentHelper
 /// @author ZeroPoint Labs
-/// @dev helps decoding the bytes payload and returns meaningful information
 interface IPaymentHelper {
+
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                         //
     //////////////////////////////////////////////////////////////

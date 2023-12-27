@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { DataLib } from "./DataLib.sol";
-import { Error } from "../libraries/Error.sol";
-import { PayloadState, CallbackType, LiqRequest } from "../types/DataTypes.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { Error } from "src/libraries/Error.sol";
+import { PayloadState, CallbackType, LiqRequest } from "src/types/DataTypes.sol";
 
 /// @dev library to validate slippage updation
 library PayloadUpdaterLib {

@@ -3,6 +3,15 @@ pragma solidity ^0.8.23;
 
 import { ERC1155A } from "ERC1155A/ERC1155A.sol";
 import { aERC20 } from "ERC1155A/aERC20.sol";
+import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+import { IBaseForm } from "src/interfaces/IBaseForm.sol";
+import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
+import { IPaymentHelper } from "./interfaces/IPaymentHelper.sol";
+import { Error } from "src/libraries/Error.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
 import {
     TransactionType,
     ReturnMultiData,
@@ -12,29 +21,21 @@ import {
     BroadcastMessage
 } from "src/types/DataTypes.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
-import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
-import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
-import { IBaseForm } from "src/interfaces/IBaseForm.sol";
-import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
-import { IPaymentHelper } from "./interfaces/IPaymentHelper.sol";
-import { Error } from "src/libraries/Error.sol";
-import { DataLib } from "src/libraries/DataLib.sol";
 
 /// @title SuperPositions
-/// @author Zeropoint Labs.
+/// @dev Cross-chain LP token minted on source chain
+/// @author Zeropoint Labs
 contract SuperPositions is ISuperPositions, ERC1155A {
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
-    uint8 internal constant CORE_STATE_REGISTRY_ID = 1;
 
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
-    bytes32 constant DEPLOY_NEW_AERC20 = keccak256("DEPLOY_NEW_AERC20");
+    uint8 internal constant CORE_STATE_REGISTRY_ID = 1;
+    bytes32 internal constant DEPLOY_NEW_AERC20 = keccak256("DEPLOY_NEW_AERC20");
 
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //

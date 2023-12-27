@@ -1,18 +1,34 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { AggregatorV3Interface } from "../vendor/chainlink/AggregatorV3Interface.sol";
-import { IPaymentHelper } from "../interfaces/IPaymentHelper.sol";
-import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
-import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
-import { ISuperformFactory } from "../interfaces/ISuperformFactory.sol";
-import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
-import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
-import { Error } from "../libraries/Error.sol";
-import { DataLib } from "../libraries/DataLib.sol";
-import { ProofLib } from "../libraries/ProofLib.sol";
-import { ArrayCastLib } from "../libraries/ArrayCastLib.sol";
-import "../types/DataTypes.sol";
+import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
+import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { Error } from "src/libraries/Error.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { ProofLib } from "src/libraries/ProofLib.sol";
+import { ArrayCastLib } from "src/libraries/ArrayCastLib.sol";
+import {
+    SingleDirectSingleVaultStateReq,
+    SingleXChainSingleVaultStateReq,
+    SingleDirectMultiVaultStateReq,
+    SingleXChainMultiVaultStateReq,
+    MultiDstSingleVaultStateReq,
+    MultiDstMultiVaultStateReq,
+    LiqRequest,
+    AMBMessage,
+    MultiVaultSFData,
+    SingleVaultSFData,
+    AMBExtraData,
+    InitMultiVaultData,
+    InitSingleVaultData,
+    ReturnMultiData,
+    ReturnSingleData
+} from "src/types/DataTypes.sol";
+import { AggregatorV3Interface } from "src/vendor/chainlink/AggregatorV3Interface.sol";
 
 /// @dev interface to read public variable from state registry
 interface ReadOnlyBaseRegistry is IBaseStateRegistry {
@@ -20,8 +36,8 @@ interface ReadOnlyBaseRegistry is IBaseStateRegistry {
 }
 
 /// @title PaymentHelper
+/// @dev Helps estimate the cost for the entire transaction lifecycle
 /// @author ZeroPoint Labs
-/// @dev helps estimating the cost for the entire transaction lifecycle
 contract PaymentHelper is IPaymentHelper {
     using DataLib for uint256;
     using ArrayCastLib for LiqRequest;
@@ -32,6 +48,7 @@ contract PaymentHelper is IPaymentHelper {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
+
     uint256 private constant PROOF_LENGTH = 160;
     uint8 private constant SUPPORTED_FEED_PRECISION = 8;
     uint32 private constant TIMELOCK_FORM_ID = 2;
@@ -74,6 +91,14 @@ contract PaymentHelper is IPaymentHelper {
         uint8 isMulti;
         uint64 srcChainId;
         bytes message;
+    }
+
+    struct LocalEstimateVars {
+        uint256 len;
+        uint256 superformIdsLen;
+        uint256 totalDstGas;
+        uint256 ambFees;
+        bool paused;
     }
 
     //////////////////////////////////////////////////////////////
@@ -136,14 +161,6 @@ contract PaymentHelper is IPaymentHelper {
     /// @inheritdoc IPaymentHelper
     function getRegisterTransmuterAMBData() external view override returns (bytes memory) {
         return extraDataForTransmuter;
-    }
-
-    struct LocalEstimateVars {
-        uint256 len;
-        uint256 superformIdsLen;
-        uint256 totalDstGas;
-        uint256 ambFees;
-        bool paused;
     }
 
     /// @inheritdoc IPaymentHelper
@@ -310,8 +327,8 @@ contract PaymentHelper is IPaymentHelper {
             uint256 arrLen = req_.superformsData.retain4626s.length;
             uint256 ackLen;
 
-            for (uint256 j; j < arrLen; ++j) {
-                if (!req_.superformsData.retain4626s[j]) ++ackLen;
+            for (uint256 i; i < arrLen; ++i) {
+                if (!req_.superformsData.retain4626s[i]) ++ackLen;
             }
 
             /// @dev step 3: estimation execution cost of acknowledgement
@@ -855,6 +872,7 @@ contract PaymentHelper is IPaymentHelper {
                 _getNextPayloadId(),
                 sfData_.superformId,
                 sfData_.amount,
+                sfData_.outputAmount,
                 sfData_.maxSlippage,
                 sfData_.liqRequest,
                 sfData_.hasDstSwap,
@@ -877,6 +895,7 @@ contract PaymentHelper is IPaymentHelper {
                 _getNextPayloadId(),
                 sfData_.superformIds,
                 sfData_.amounts,
+                sfData_.outputAmounts,
                 sfData_.maxSlippages,
                 sfData_.liqRequests,
                 sfData_.hasDstSwaps,
@@ -928,10 +947,15 @@ contract PaymentHelper is IPaymentHelper {
     function _getGasPrice(uint64 chainId_) internal view returns (uint256) {
         address oracleAddr = address(gasPriceOracle[chainId_]);
         if (oracleAddr != address(0)) {
-            (, int256 value,, uint256 updatedAt,) = AggregatorV3Interface(oracleAddr).latestRoundData();
-            if (value <= 0) revert Error.CHAINLINK_MALFUNCTION();
-            if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
-            return uint256(value);
+            try AggregatorV3Interface(oracleAddr).latestRoundData() returns (
+                uint80, int256 value, uint256, uint256 updatedAt, uint80
+            ) {
+                if (value <= 0) revert Error.CHAINLINK_MALFUNCTION();
+                if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
+                return uint256(value);
+            } catch {
+                /// @dev do nothing and return the default price at the end of the function
+            }
         }
 
         return gasPrice[chainId_];
@@ -942,10 +966,15 @@ contract PaymentHelper is IPaymentHelper {
     function _getNativeTokenPrice(uint64 chainId_) internal view returns (uint256) {
         address oracleAddr = address(nativeFeedOracle[chainId_]);
         if (oracleAddr != address(0)) {
-            (, int256 dstTokenPrice,, uint256 updatedAt,) = AggregatorV3Interface(oracleAddr).latestRoundData();
-            if (dstTokenPrice <= 0) revert Error.CHAINLINK_MALFUNCTION();
-            if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
-            return uint256(dstTokenPrice);
+            try AggregatorV3Interface(oracleAddr).latestRoundData() returns (
+                uint80, int256 dstTokenPrice, uint256, uint256 updatedAt, uint80
+            ) {
+                if (dstTokenPrice <= 0) revert Error.CHAINLINK_MALFUNCTION();
+                if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
+                return uint256(dstTokenPrice);
+            } catch {
+                /// @dev do nothing and return the default price at the end of the function
+            }
         }
 
         return nativePrice[chainId_];

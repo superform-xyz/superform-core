@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { InitSingleVaultData } from "../types/DataTypes.sol";
+import { InitSingleVaultData } from "src/types/DataTypes.sol";
 
+/// @title IEmergencyQueue
+/// @dev Interface for EmergencyQueue
+/// @author ZeroPoint Labs
 interface IEmergencyQueue {
+    
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////

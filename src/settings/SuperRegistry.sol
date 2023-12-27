@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
-import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
-import { QuorumManager } from "../crosschain-data/utils/QuorumManager.sol";
-import { Error } from "../libraries/Error.sol";
+import { QuorumManager } from "src/crosschain-data/utils/QuorumManager.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { Error } from "src/libraries/Error.sol";
 
 /// @title SuperRegistry
-/// @author Zeropoint Labs.
-/// @dev Keeps information on all addresses used in the Superforms ecosystem.
+/// @dev Keeps information on all addresses used in the Superform ecosystem
+/// @author Zeropoint Labs
 contract SuperRegistry is ISuperRegistry, QuorumManager {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
@@ -21,44 +21,60 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @dev core protocol - identifiers
     /// @notice should not be allowed to be changed
     bytes32 public constant override SUPERFORM_ROUTER = keccak256("SUPERFORM_ROUTER");
+
     /// @dev can be used to set a new factory that has form ids paused
     /// @notice should not be allowed to be changed
     bytes32 public constant override SUPERFORM_FACTORY = keccak256("SUPERFORM_FACTORY");
+
     /// @dev not accessed in protocol
     /// @dev could be allowed to be changed
     bytes32 public constant override SUPER_TRANSMUTER = keccak256("SUPER_TRANSMUTER");
+
     /// @dev can be used to set a new paymaster to forward payments to
     /// @dev could be allowed to be changed
     bytes32 public constant override PAYMASTER = keccak256("PAYMASTER");
+
     /// @dev accessed in some areas of the protocol to calculate AMB fees. Already has a function to alter the
     /// configuration
     /// @dev could be allowed to be changed
     bytes32 public constant override PAYMENT_HELPER = keccak256("PAYMENT_HELPER");
+
     /// @dev accessed in many areas of the protocol. has direct access to superforms
     /// @notice should not be allowed to be changed
     bytes32 public constant override CORE_STATE_REGISTRY = keccak256("CORE_STATE_REGISTRY");
+
     /// @dev accessed in many areas of the protocol. has direct access to timelock form
     /// @notice should not be allowed to be changed
     bytes32 public constant override TIMELOCK_STATE_REGISTRY = keccak256("TIMELOCK_STATE_REGISTRY");
+
     /// @dev used to sync messages for pausing superforms or deploying transmuters
     /// @notice should not be allowed to be changed
     bytes32 public constant override BROADCAST_REGISTRY = keccak256("BROADCAST_REGISTRY");
+
     /// @dev not accessed in protocol
     /// @notice should not be allowed to be changed
     bytes32 public constant override SUPER_POSITIONS = keccak256("SUPER_POSITIONS");
+
     /// @dev accessed in many areas of the protocol
     /// @notice should not be allowed to be changed
     bytes32 public constant override SUPER_RBAC = keccak256("SUPER_RBAC");
+
     /// @dev not accessed in protocol
     /// @dev could be allowed to be changed
     bytes32 public constant override PAYLOAD_HELPER = keccak256("PAYLOAD_HELPER");
+
     /// @dev accessed in CSR and validators. can be used to alter behaviour of update deposit payloads
     /// @notice should not be allowed to be changed
     bytes32 public constant override DST_SWAPPER = keccak256("DST_SWAPPER");
+
     /// @dev accessed in base form to send payloads to emergency queue
     /// @notice should not be allowed to be changed
     bytes32 public constant override EMERGENCY_QUEUE = keccak256("EMERGENCY_QUEUE");
+
+    /// @dev receiver of bridge refunds and airdropped tokens
+    /// @notice should not be allowed to be changed
     bytes32 public constant override SUPERFORM_RECEIVER = keccak256("SUPERFORM_RECEIVER");
+
     /// @dev default keepers - identifiers
     /// @dev could be allowed to be changed
     bytes32 public constant override PAYMENT_ADMIN = keccak256("PAYMENT_ADMIN");
@@ -137,11 +153,13 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
 
+    /// @inheritdoc ISuperRegistry
     function getAddress(bytes32 id_) external view override returns (address addr) {
         addr = registry[id_][CHAIN_ID];
         if (addr == address(0)) revert Error.ZERO_ADDRESS();
     }
 
+    /// @inheritdoc ISuperRegistry
     function getAddressByChainId(bytes32 id_, uint64 chainId_) external view override returns (address addr) {
         addr = registry[id_][chainId_];
         if (addr == address(0)) revert Error.ZERO_ADDRESS();
@@ -215,6 +233,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         return false;
     }
 
+    /// @inheritdoc ISuperRegistry
     function PERMIT2() external view override returns (address) {
         if (permit2Address == address(0)) revert Error.ZERO_ADDRESS();
         return permit2Address;
@@ -326,7 +345,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
             if (ambAddress == address(0)) revert Error.ZERO_ADDRESS();
             if (ambId == 0) revert Error.ZERO_INPUT_VALUE();
-            if (ambAddresses[ambId] != address(0) || ambIds[ambAddress] != 0) revert Error.DISABLED();
+            if (ambAddresses[ambId] != address(0)) revert Error.DISABLED();
 
             ambAddresses[ambId] = ambAddress;
             ambIds[ambAddress] = ambId;
@@ -352,7 +371,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             uint8 registryId = registryId_[i];
             if (registryAddress == address(0)) revert Error.ZERO_ADDRESS();
             if (registryId == 0) revert Error.ZERO_INPUT_VALUE();
-            if (registryAddresses[registryId] != address(0) || stateRegistryIds[registryAddress] != 0) {
+            if (registryAddresses[registryId] != address(0)) {
                 revert Error.DISABLED();
             }
 

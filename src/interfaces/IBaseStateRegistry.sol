@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import "../types/DataTypes.sol";
+import { PayloadState } from "src/types/DataTypes.sol";
 
 /// @title IBaseStateRegistry
+/// @dev Interface for BaseStateRegistry
 /// @author ZeroPoint Labs
-/// @dev Is the crosschain interaction point. Send, store & process crosschain messages
 interface IBaseStateRegistry {
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //

@@ -201,25 +201,12 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
     function _checkDstPayloadInit(CheckDstPayloadInitArgs memory args) internal {
         vm.selectFork(FORKS[DST_CHAINS[0]]);
-        CheckDstPayloadInternalVars memory v;
+        IPayloadHelper.DecodedDstPayload memory v =
+            IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
 
-        (
-            v.txType,
-            v.callbackType,
-            v.srcSender,
-            v.srcChainId,
-            v.amounts,
-            v.slippage,
-            ,
-            ,
-            ,
-            v.receiverAddress,
-            v.srcPayloadId
-        ) = IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
-
-        v.extraDataGenerated = new bytes[](2);
-        v.extraDataGenerated[0] = abi.encode("500000");
-        v.extraDataGenerated[1] = abi.encode("0");
+        bytes[] memory extraDataGenerated = new bytes[](2);
+        extraDataGenerated[0] = abi.encode("500000");
+        extraDataGenerated[1] = abi.encode("0");
 
         assertEq(v.txType, 0);
 
@@ -234,28 +221,28 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
         for (uint256 i; i < v.amounts.length; ++i) {
             /// @dev ETH<>DAI swap on OP
-            v.daiAfterFirstSwap = (AMOUNTS[ARBI][0][i] * args.USDPerETHonOP_) / args.USDPerDAIonOP_;
+            uint256 daiAfterFirstSwap = (AMOUNTS[ARBI][0][i] * args.USDPerETHonOP_) / args.USDPerDAIonOP_;
             /// @dev DAI on OP <> DAI on ARBI
-            v.daiAfterSecondSwap = (v.daiAfterFirstSwap * args.USDPerDAIonOP_) / args.USDPerDAIonARBI_;
+            uint256 daiAfterSecondSwap = (daiAfterFirstSwap * args.USDPerDAIonOP_) / args.USDPerDAIonARBI_;
             /// @dev daiAfterSecondSwap doesn't include bridge slippage hence should be greater
-            assertLe(v.amounts[i], v.daiAfterSecondSwap);
+            assertLe(v.amounts[i], daiAfterSecondSwap);
         }
 
-        for (uint256 i = 0; i < v.slippage.length; ++i) {
-            assertEq(v.slippage[i], MAX_SLIPPAGE);
+        for (uint256 i = 0; i < v.slippages.length; ++i) {
+            assertEq(v.slippages[i], MAX_SLIPPAGE);
         }
 
         /// @notice: just asserting if fees are greater than 0
         /// no way to write serious tests on forked testnet at this point. should come back to this later on.
-        (v.ambFees,) = IPaymentHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PaymentHelper"))]).estimateAMBFees(
-            AMBs, DST_CHAINS[0], abi.encode(1), v.extraDataGenerated
+        (uint256 ambFees,) = IPaymentHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PaymentHelper"))]).estimateAMBFees(
+            AMBs, DST_CHAINS[0], abi.encode(1), extraDataGenerated
         );
-        assertGe(v.ambFees, 0);
+        assertGe(ambFees, 0);
     }
 
     struct CheckDstPayloadLiqDataInternalVars {
         uint8[] bridgeIds;
-        bytes[] txDatas;
+        bytes[] txData;
         address[] tokens;
         uint64[] liqDstChainIds;
         uint256[] amounts;
@@ -266,13 +253,13 @@ contract PayloadHelperMultiTest is ProtocolActions {
         vm.selectFork(FORKS[DST_CHAINS[0]]);
         CheckDstPayloadLiqDataInternalVars memory v;
 
-        (v.bridgeIds, v.txDatas, v.tokens,, v.liqDstChainIds, v.amounts, v.nativeAmounts) = IPayloadHelper(
+        (v.txData, v.tokens,, v.bridgeIds, v.liqDstChainIds, v.amounts, v.nativeAmounts) = IPayloadHelper(
             contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]
         ).decodeCoreStateRegistryPayloadLiqData(2);
 
         assertEq(v.bridgeIds[0], 1);
 
-        assertGt(v.txDatas[0].length, 0);
+        assertGt(v.txData[0].length, 0);
 
         assertEq(v.tokens[0], externalToken_);
 
@@ -286,9 +273,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
     function _checkDstPayloadReturn() internal {
         vm.selectFork(FORKS[CHAIN_0]);
 
-        CheckDstPayloadInternalVars memory v;
-
-        (v.txType, v.callbackType, v.srcSender, v.srcChainId, v.amounts, v.slippage,, v.hasDstSwaps,,, v.srcPayloadId) =
+        IPayloadHelper.DecodedDstPayload memory v =
             IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
 
         assertEq(v.txType, 0);
@@ -300,9 +285,9 @@ contract PayloadHelperMultiTest is ProtocolActions {
         /// chain id of polygon is 42161
         assertEq(v.srcPayloadId, 1);
 
-        for (uint256 i = 0; i < v.slippage.length; ++i) {
+        for (uint256 i = 0; i < v.slippages.length; ++i) {
             assertLe(v.amounts[i], AMOUNTS[ARBI][0][i]);
-            assertEq(v.slippage[i], MAX_SLIPPAGE);
+            assertEq(v.slippages[i], MAX_SLIPPAGE);
         }
     }
 }

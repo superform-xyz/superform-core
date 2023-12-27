@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import { InitSingleVaultData } from "src/types/DataTypes.sol";
 import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
-import { InitSingleVaultData } from "../types/DataTypes.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 
 /// @title IBaseForm
+/// @dev Interface for BaseForm
 /// @author ZeroPoint Labs
-/// @notice Interface for Base Form
 interface IBaseForm is IERC165 {
+    
     //////////////////////////////////////////////////////////////
     //                          EVENTS                           //
     //////////////////////////////////////////////////////////////

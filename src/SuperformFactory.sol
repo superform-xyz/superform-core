@@ -1,23 +1,24 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+import { BaseForm } from "src/BaseForm.sol";
+import { BroadcastMessage } from "src/types/DataTypes.sol";
+import { IBaseForm } from "src/interfaces/IBaseForm.sol";
+import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { Error } from "src/libraries/Error.sol";
 import { ERC165Checker } from "openzeppelin-contracts/contracts/utils/introspection/ERC165Checker.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
-import { BaseForm } from "./BaseForm.sol";
-import { BroadcastMessage } from "./types/DataTypes.sol";
-import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
-import { IBaseForm } from "./interfaces/IBaseForm.sol";
-import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
-import { ISuperRBAC } from "./interfaces/ISuperRBAC.sol";
-import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
-import { Error } from "./libraries/Error.sol";
-import { DataLib } from "./libraries/DataLib.sol";
 import { Clones } from "openzeppelin-contracts/contracts/proxy/Clones.sol";
 
-/// @title Superforms Factory
-/// @dev A secure, and easily queryable central point of access for all Superforms on any given chain,
-/// @author Zeropoint Labs.
+/// @title SuperformFactory
+/// @dev Central point of read & write access for all Superforms on this chain
+/// @author Zeropoint Labs
 contract SuperformFactory is ISuperformFactory {
+
     using DataLib for uint256;
     using Clones for address;
 
@@ -241,7 +242,7 @@ contract SuperformFactory is ISuperformFactory {
 
         vaultToSuperforms[vault_].push(superformId_);
 
-        /// @dev Mapping vaults to formImplementationId for use in Backend
+        /// @dev map vaults to formImplementationId
         vaultToFormImplementationId[vault_].push(formImplementationId_);
 
         vaultFormImplCombinationToSuperforms[vaultFormImplementationCombination] = superformId_;

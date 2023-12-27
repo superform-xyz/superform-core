@@ -167,6 +167,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformIds,
             uint256MemArr,
             uint256MemArr,
+            uint256MemArr,
             liqReqArr,
             bytes(""),
             new bool[](4),
@@ -688,6 +689,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformId,
             /// @dev 1e18 after decimal corrections and bridge slippage would give the following value
             999_900_000_000_000_000,
+            999_900_000_000_000_000,
             100,
             LiqRequest(
                 _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, AVAX, 0
@@ -752,6 +754,7 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
+            1e18,
             1e18,
             100,
             LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ETH, 0),
@@ -838,6 +841,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformIds,
             uint256MemArr,
             uint256MemArr,
+            uint256MemArr,
             liqReqArr,
             bytes(""),
             new bool[](2),
@@ -896,6 +900,7 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds,
+            amountArr,
             amountArr,
             maxSlippages,
             liqReqArr,
@@ -979,6 +984,7 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds,
+            uint256MemArr,
             uint256MemArr,
             uint256MemArr,
             liqReqArr,

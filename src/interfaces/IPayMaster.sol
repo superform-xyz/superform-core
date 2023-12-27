@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { LiqRequest } from "../types/DataTypes.sol";
+import { LiqRequest } from "src/types/DataTypes.sol";
 
 /// @title IPayMaster
+/// @dev Interface for PayMaster
 /// @author ZeroPoint Labs
-/// @dev contract for destination transaction costs payment
 interface IPayMaster {
+    
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////

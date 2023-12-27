@@ -1,22 +1,23 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
-import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
-import { StandardHookMetadata } from "src/vendor/hyperlane/StandardHookMetadata.sol";
-import { IMessageRecipient } from "src/vendor/hyperlane/IMessageRecipient.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
-import { AMBMessage } from "src/types/DataTypes.sol";
-import { Error } from "src/libraries/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
+import { Error } from "src/libraries/Error.sol";
+import { AMBMessage } from "src/types/DataTypes.sol";
+import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
+import { IMessageRecipient } from "src/vendor/hyperlane/IMessageRecipient.sol";
+import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
+import { StandardHookMetadata } from "src/vendor/hyperlane/StandardHookMetadata.sol";
 
 /// @title HyperlaneImplementation
+/// @dev Allows state registries to use Hyperlane v3 for crosschain communication
 /// @author Zeropoint Labs
-/// @dev allows state registries to use hyperlane for crosschain communication
 contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
+    
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
@@ -201,6 +202,8 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         }
 
         authorizedImpl[domain_] = authorizedImpl_;
+
+        emit AuthorizedImplAdded(domain_, authorizedImpl_);
     }
 
     /// @inheritdoc IMessageRecipient

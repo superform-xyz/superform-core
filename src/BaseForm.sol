@@ -1,21 +1,22 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import { IBaseForm } from "src/interfaces/IBaseForm.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+import { IEmergencyQueue } from "src/interfaces/IEmergencyQueue.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { Error } from "src/libraries/Error.sol";
+import { InitSingleVaultData } from "src/types/DataTypes.sol";
 import { Initializable } from "openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import { ERC165 } from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
 import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
-import { InitSingleVaultData } from "./types/DataTypes.sol";
-import { IBaseForm } from "./interfaces/IBaseForm.sol";
-import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
-import { Error } from "./libraries/Error.sol";
-import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
-import { IEmergencyQueue } from "./interfaces/IEmergencyQueue.sol";
-import { DataLib } from "./libraries/DataLib.sol";
 
 /// @title BaseForm
-/// @author Zeropoint Labs.
-/// @dev Abstract contract to be inherited by different form implementations
-abstract contract BaseForm is Initializable, ERC165, IBaseForm {
+/// @dev Abstract contract to be inherited by different Form implementations
+/// @author Zeropoint Labs
+abstract contract BaseForm is IBaseForm, Initializable, ERC165 {
+
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
@@ -99,10 +100,6 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
-
-    function supportsInterface(bytes4 interfaceId_) public view virtual override(ERC165, IERC165) returns (bool) {
-        return interfaceId_ == type(IBaseForm).interfaceId || super.supportsInterface(interfaceId_);
-    }
 
     /// @inheritdoc IBaseForm
     function superformYieldTokenName() external view virtual override returns (string memory);
@@ -254,6 +251,12 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     function forwardDustToPaymaster(address token_) external override {
         if (token_ == vault) revert Error.CANNOT_FORWARD_4646_TOKEN();
         _forwardDustToPaymaster(token_);
+    }
+
+    /// @dev Checks if the Form implementation has the appropriate interface support
+    /// @param interfaceId_ is the interfaceId to check  
+    function supportsInterface(bytes4 interfaceId_) public view virtual override(ERC165, IERC165) returns (bool) {
+        return interfaceId_ == type(IBaseForm).interfaceId || super.supportsInterface(interfaceId_);
     }
 
     //////////////////////////////////////////////////////////////

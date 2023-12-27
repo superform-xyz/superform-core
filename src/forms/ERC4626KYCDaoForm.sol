@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import { ERC4626FormImplementation } from "src/forms/ERC4626FormImplementation.sol";
+import { BaseForm } from "src/BaseForm.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { IKycdaoNTNFT } from "src/vendor/kycDAO/IKycDAONTNFT.sol";
+import { Error } from "src/libraries/Error.sol";
+import { InitSingleVaultData } from "src/types/DataTypes.sol";
 import { kycDAO4626 } from "super-vaults/kycdao-4626/kycdao4626.sol";
 import { ERC721Holder } from "openzeppelin-contracts/contracts/token/ERC721/utils/ERC721Holder.sol";
-import { IKycdaoNTNFT } from "../vendor/kycDAO/IKycDAONTNFT.sol";
-import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
-import { InitSingleVaultData } from "../types/DataTypes.sol";
-import { ERC4626FormImplementation } from "./ERC4626FormImplementation.sol";
-import { BaseForm } from "../BaseForm.sol";
-import { Error } from "../libraries/Error.sol";
 
 /// @title ERC4626KYCDaoForm
-/// @notice The Form implementation for IERC4626 vaults with kycDAO NFT checks
-/// @notice This form must hold a kycDAO NFT to operate
+/// @dev The Form implementation for kycDAO-gated ERC4626 vaults, must hold kycDAO NFT
+/// @author Zeropoint Labs
 contract ERC4626KYCDaoForm is ERC4626FormImplementation, ERC721Holder {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //

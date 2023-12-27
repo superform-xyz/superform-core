@@ -5,9 +5,8 @@ import { IERC4626Form } from "./IERC4626Form.sol";
 import { InitSingleVaultData, TimelockPayload } from "../../types/DataTypes.sol";
 
 /// @title IERC4626TimelockForm
+/// @dev Interface used by ERC4626TimelockForm. Required by TimelockStateRegistry to call processUnlock()
 /// @author Zeropoint Labs
-/// @notice Interface used by ERC4626TimelockForm. Required by TimelockStateRegistry to call processUnlock()
-/// function
 interface IERC4626TimelockForm is IERC4626Form {
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //

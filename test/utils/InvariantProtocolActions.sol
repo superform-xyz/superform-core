@@ -228,6 +228,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                         vars.underlyingDstToken,
                         vars.targetSuperformIds,
                         vars.amounts,
+                        vars.amounts,
                         vars.liqBridges,
                         vars.receive4626,
                         1000,
@@ -274,6 +275,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     vars.underlyingDstToken[0],
                     action.dstSwap ? getContract(vars.DST_CHAINS[i], UNDERLYING_TOKENS[0]) : address(0),
                     vars.targetSuperformIds[0],
+                    finalAmount,
                     finalAmount,
                     vars.liqBridges[0],
                     vars.receive4626[0],
@@ -708,16 +710,10 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                             /// @dev this is the step where the amounts are updated taking into account the final
                             /// slippage
                             if (action.multiVaults) {
-                                _updateMultiVaultDepositPayload(
-                                    vars.multiVaultsPayloadArg,
-                                    vars.underlyingWithBridgeSlippages,
-                                    vars.targetUnderlyings[i]
-                                );
+                                _updateMultiVaultDepositPayload(vars.multiVaultsPayloadArg, vars.targetUnderlyings[i]);
                             } else if (singleSuperformsData.length > 0) {
                                 _updateSingleVaultDepositPayload(
-                                    vars.singleVaultsPayloadArg,
-                                    vars.underlyingWithBridgeSlippage,
-                                    vars.targetUnderlyings[i][0]
+                                    vars.singleVaultsPayloadArg, vars.targetUnderlyings[i][0]
                                 );
                             }
                             vm.recordLogs();
@@ -734,16 +730,10 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                         } else if (action.testType == TestType.RevertProcessPayload) {
                             /// @dev this logic is essentially repeated from above
                             if (action.multiVaults) {
-                                _updateMultiVaultDepositPayload(
-                                    vars.multiVaultsPayloadArg,
-                                    vars.underlyingWithBridgeSlippages,
-                                    vars.targetUnderlyings[i]
-                                );
+                                _updateMultiVaultDepositPayload(vars.multiVaultsPayloadArg, vars.targetUnderlyings[i]);
                             } else if (singleSuperformsData.length > 0) {
                                 _updateSingleVaultDepositPayload(
-                                    vars.singleVaultsPayloadArg,
-                                    vars.underlyingWithBridgeSlippage,
-                                    vars.targetUnderlyings[i][0]
+                                    vars.singleVaultsPayloadArg, vars.targetUnderlyings[i][0]
                                 );
                             }
                             /// @dev process payload will revert in here
@@ -760,15 +750,11 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                             /// @dev branch used just for reverts of updatePayload (process payload is not even called)
                             if (action.multiVaults) {
                                 success = _updateMultiVaultDepositPayload(
-                                    vars.multiVaultsPayloadArg,
-                                    vars.underlyingWithBridgeSlippages,
-                                    vars.targetUnderlyings[i]
+                                    vars.multiVaultsPayloadArg, vars.targetUnderlyings[i]
                                 );
                             } else {
                                 success = _updateSingleVaultDepositPayload(
-                                    vars.singleVaultsPayloadArg,
-                                    vars.underlyingWithBridgeSlippage,
-                                    vars.targetUnderlyings[i][0]
+                                    vars.singleVaultsPayloadArg, vars.targetUnderlyings[i][0]
                                 );
                             }
 
@@ -898,6 +884,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                 uniqueInterimToken,
                 args.superformIds[i],
                 finalAmounts[i],
+                finalAmounts[i],
                 args.liqBridges[i],
                 args.receive4626[i],
                 args.maxSlippage,
@@ -948,6 +935,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         superformsData = MultiVaultSFData(
             args.superformIds,
             finalAmounts,
+            args.outputAmounts,
             maxSlippageTemp,
             liqRequests,
             v.permit2data,
@@ -1154,26 +1142,15 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         console.log("test amount post-bridge", v.amount);
 
-        /// @dev extra step to convert interim token on dst to underlying token on dst (if there is a dst Swap)
-        if (args.uniqueInterimToken != address(0)) {
-            if (v.decimal2 > v.decimal4) {
-                v.amount = (v.amount * uint256(v.USDPerUnderlyingOrInterimTokenDst))
-                    / (uint256(v.USDPerUnderlyingTokenDst) * 10 ** (v.decimal2 - v.decimal4));
-            } else {
-                v.amount = (v.amount * uint256(v.USDPerUnderlyingOrInterimTokenDst) * 10 ** (v.decimal4 - v.decimal2))
-                    / uint256(v.USDPerUnderlyingTokenDst);
-            }
-        }
-
-        console.log("test amount post-dst swap --", v.amount);
-
-        vm.selectFork(v.initialFork);
+        vm.selectFork(FORKS[args.toChainId]);
+        (address superform,,) = DataLib.getSuperform(args.superformId);
 
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
         /// vaults without resorting to extra args, just for withdraws)
         superformData = SingleVaultSFData(
             args.superformId,
             v.amount,
+            IBaseForm(superform).previewDepositTo(v.amount),
             args.maxSlippage,
             v.liqReq,
             v.permit2Calldata,
@@ -1184,6 +1161,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             /// @dev repeat user for receiverAddressSP - not testing AA here
             abi.encode(false)
         );
+        vm.selectFork(v.initialFork);
     }
 
     struct SingleVaultWithdrawLocalVars {
@@ -1279,11 +1257,15 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             0
         );
 
+        vm.selectFork(FORKS[args.toChainId]);
+        (address superform,,) = DataLib.getSuperform(args.superformId);
+
         /// @dev extraData is currently used to send in the partialWithdraw vaults without resorting to extra args, just
         /// for withdraws
         superformData = SingleVaultSFData(
             args.superformId,
             args.amount,
+            IBaseForm(superform).previewRedeemFrom(args.amount),
             args.maxSlippage,
             vars.liqReq,
             "",
@@ -1293,6 +1275,8 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             users[args.user],
             abi.encode(false)
         );
+
+        vm.selectFork(initialFork);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -1388,7 +1372,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
     function _updateMultiVaultDepositPayload(
         updateMultiVaultDepositPayloadArgs memory args,
-        uint256[] memory finalAmountsThatReachedCSR,
         uint256[] memory targetUnderlyings
     )
         internal
@@ -1407,17 +1390,16 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             bridgedTokens[i] = getContract(args.targetChainId, UNDERLYING_TOKENS[targetUnderlyings[i]]);
         }
 
+        /// @dev slippage calculation
         for (uint256 i = 0; i < len; ++i) {
             finalAmounts[i] = args.amounts[i];
             if (args.slippage > 0) {
-                /// @dev finalAmounts[i] has full slippage applied (final user expectedAmount)
-                uint256 amountPostDstSwap;
+                /// @dev bridge slippage is already applied in _buildSingleVaultDepositCallData()
+                //finalAmounts[i] = (finalAmounts[i] * uint256(10_000 - args.slippage)) / 10_000;
+
                 if (args.isdstSwap) {
                     dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
-                    amountPostDstSwap = (finalAmountsThatReachedCSR[i] * uint256(10_000 - dstSwapSlippage)) / 10_000;
-                    if (amountPostDstSwap < finalAmounts[i]) {
-                        finalAmounts[i] = amountPostDstSwap;
-                    }
+                    finalAmounts[i] = (finalAmounts[i] * uint256(10_000 - dstSwapSlippage)) / 10_000;
                 }
             }
         }
@@ -1460,7 +1442,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
     function _updateSingleVaultDepositPayload(
         updateSingleVaultDepositPayloadArgs memory args,
-        uint256 finalAmountsThatReachedCSR,
         uint256 targetUnderlying
     )
         internal
@@ -1478,12 +1459,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         if (args.isdstSwap) {
             dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
-            uint256 amountPostDstSwap;
-
-            amountPostDstSwap = (finalAmountsThatReachedCSR * uint256(10_000 - dstSwapSlippage)) / 10_000;
-            if (amountPostDstSwap < finalAmount) {
-                finalAmount = amountPostDstSwap;
-            }
+            finalAmount = (finalAmount * uint256(10_000 - dstSwapSlippage)) / 10_000;
         }
 
         /// @dev if test type is RevertProcessPayload, revert is further down the call chain

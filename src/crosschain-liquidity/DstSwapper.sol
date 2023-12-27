@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import { LiquidityHandler } from "src/crosschain-liquidity/LiquidityHandler.sol";
+import { IDstSwapper } from "src/interfaces/IDstSwapper.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
+import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { IERC4626Form } from "src/forms/interfaces/IERC4626Form.sol";
+import { Error } from "src/libraries/Error.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { InitSingleVaultData, InitMultiVaultData, PayloadState } from "src/types/DataTypes.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ReentrancyGuard } from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
-import { IDstSwapper } from "../interfaces/IDstSwapper.sol";
-import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
-import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
-import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
-import { LiquidityHandler } from "../crosschain-liquidity/LiquidityHandler.sol";
-import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
-import { IERC4626Form } from "../forms/interfaces/IERC4626Form.sol";
-import { Error } from "../libraries/Error.sol";
-import { DataLib } from "../libraries/DataLib.sol";
-import "../types/DataTypes.sol";
 
 /// @title DstSwapper
-/// @author Zeropoint Labs.
-/// @dev handles all destination chain swaps.
+/// @dev Handles all destination chain swaps
+/// @author Zeropoint Labs
 contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
     using SafeERC20 for IERC20;
 
@@ -27,7 +27,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
 
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
-    uint256 private constant ENTIRE_SLIPPAGE = 10_000;
+    uint256 internal constant ENTIRE_SLIPPAGE = 10_000;
 
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
@@ -83,7 +83,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         if (superRegistry_ == address(0)) {
             revert Error.ZERO_ADDRESS();
         }
-        
+
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }
@@ -375,7 +375,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         v.balanceDiff = v.balanceAfter - v.balanceBefore;
 
         /// @dev if actual underlying is less than expAmount adjusted with maxSlippage, invariant breaks
-        if (v.balanceDiff * ENTIRE_SLIPPAGE < v.expAmount * (ENTIRE_SLIPPAGE - v.maxSlippage))  {
+        if (v.balanceDiff * ENTIRE_SLIPPAGE < v.expAmount * (ENTIRE_SLIPPAGE - v.maxSlippage)) {
             revert Error.SLIPPAGE_OUT_OF_BOUNDS();
         }
 

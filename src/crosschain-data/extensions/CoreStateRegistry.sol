@@ -1,23 +1,21 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import { BaseStateRegistry } from "../BaseStateRegistry.sol";
-import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
-import { ISuperPositions } from "../../interfaces/ISuperPositions.sol";
-import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
-import { IPaymentHelper } from "../../interfaces/IPaymentHelper.sol";
-import { IBaseForm } from "../../interfaces/IBaseForm.sol";
-import { IDstSwapper } from "../../interfaces/IDstSwapper.sol";
-import { ISuperformFactory } from "../../interfaces/ISuperformFactory.sol";
-import { ICoreStateRegistry } from "../../interfaces/ICoreStateRegistry.sol";
-import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
-import { DataLib } from "../../libraries/DataLib.sol";
-import { ProofLib } from "../../libraries/ProofLib.sol";
-import { ArrayCastLib } from "../../libraries/ArrayCastLib.sol";
-import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
-import { Error } from "../../libraries/Error.sol";
+import { BaseStateRegistry } from "src/crosschain-data/BaseStateRegistry.sol";
+import { ICoreStateRegistry } from "src/interfaces/ICoreStateRegistry.sol";
+import { IBaseForm } from "src/interfaces/IBaseForm.sol";
+import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
+import { IDstSwapper } from "src/interfaces/IDstSwapper.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { ProofLib } from "src/libraries/ProofLib.sol";
+import { ArrayCastLib } from "src/libraries/ArrayCastLib.sol";
+import { PayloadUpdaterLib } from "src/libraries/PayloadUpdaterLib.sol";
+import { Error } from "src/libraries/Error.sol";
 import {
     PayloadState,
     AMBMessage,
@@ -28,12 +26,15 @@ import {
     ReturnSingleData,
     InitSingleVaultData,
     LiqRequest
-} from "../../types/DataTypes.sol";
-/// @title CoreStateRegistry
-/// @author Zeropoint Labs
-/// @dev enables communication between Superform Core Contracts deployed on all supported networks
+} from "src/types/DataTypes.sol";
+import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
+/// @title CoreStateRegistry
+/// @dev Enables communication between Superform core contracts deployed on all supported networks
+/// @author Zeropoint Labs
 contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
+    
     using SafeERC20 for IERC20;
     using DataLib for uint256;
     using ProofLib for AMBMessage;
@@ -50,7 +51,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     //////////////////////////////////////////////////////////////
 
     modifier onlySender() override {
-        if (msg.sender != superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"))) revert Error.NOT_SUPERFORM_ROUTER();
+        if (msg.sender != _getAddress(keccak256("SUPERFORM_ROUTER"))) revert Error.NOT_SUPERFORM_ROUTER();
         _;
     }
 
@@ -77,7 +78,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         lastProposedTime = failedDeposit.lastProposedTimestamp;
     }
 
-    /// @dev used for try catching purposes
+    /// @inheritdoc ICoreStateRegistry
     function validateSlippage(uint256 finalAmount_, uint256 amount_, uint256 maxSlippage_) public view returns (bool) {
         // only internal transaction
         if (msg.sender != address(this)) {
@@ -86,6 +87,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         return PayloadUpdaterLib.validateSlippage(finalAmount_, amount_, maxSlippage_);
     }
+    
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
@@ -244,7 +246,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             revert Error.RESCUE_ALREADY_PROPOSED();
         }
 
-        /// @dev note: should set this value to dstSwapper.failedSwap().amount for interim rescue
+        /// @dev should set this value to dstSwapper.failedSwap().amount for interim rescue
         failedDeposits[payloadId_].amounts = proposedAmounts_;
         failedDeposits[payloadId_].lastProposedTimestamp = block.timestamp;
 
@@ -461,28 +463,31 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         if (validLen != 0) {
             uint256[] memory finalSuperformIds = new uint256[](validLen);
             uint256[] memory finalAmounts = new uint256[](validLen);
+            uint256[] memory outputAmounts = new uint256[](validLen);
             uint256[] memory maxSlippage = new uint256[](validLen);
             bool[] memory hasDstSwaps = new bool[](validLen);
-            bool[] memory finalRetain4626s = new bool[](validLen);
+            bool[] memory retain4626s = new bool[](validLen);
 
             uint256 currLen;
             for (uint256 i; i < arrLen; ++i) {
                 if (multiVaultData.amounts[i] != 0) {
                     finalSuperformIds[currLen] = multiVaultData.superformIds[i];
                     finalAmounts[currLen] = multiVaultData.amounts[i];
+                    outputAmounts[currLen] = multiVaultData.outputAmounts[i];
                     maxSlippage[currLen] = multiVaultData.maxSlippages[i];
                     hasDstSwaps[currLen] = multiVaultData.hasDstSwaps[i];
-                    finalRetain4626s[currLen] = multiVaultData.retain4626s[i];
+                    retain4626s[currLen] = multiVaultData.retain4626s[i];
 
                     ++currLen;
                 }
             }
 
-            multiVaultData.amounts = finalAmounts;
             multiVaultData.superformIds = finalSuperformIds;
+            multiVaultData.amounts = finalAmounts;
+            multiVaultData.outputAmounts = outputAmounts;
             multiVaultData.maxSlippages = maxSlippage;
             multiVaultData.hasDstSwaps = hasDstSwaps;
-            multiVaultData.retain4626s = finalRetain4626s;
+            multiVaultData.retain4626s = retain4626s;
             finalState_ = PayloadState.UPDATED;
         } else {
             finalState_ = PayloadState.PROCESSED;
@@ -599,6 +604,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 /// @dev if superform is invalid, try catch will fail and asset pushed is address (0)
                 /// @notice this means that if a user tries to game the protocol with an invalid superformId, the funds
                 /// bridged over that failed will be stuck here
+                /// @notice assets can still be spoofed with any vault.asset(), hence this is done via permissioned role
                 failedDeposits[payloadId_].settlementToken.push(asset);
                 failedDeposits[payloadId_].settleFromDstSwapper.push(false);
 
@@ -736,6 +742,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     payloadId: multiVaultData.payloadId,
                     superformId: multiVaultData.superformIds[i],
                     amount: multiVaultData.amounts[i],
+                    outputAmount: multiVaultData.outputAmounts[i],
                     maxSlippage: multiVaultData.maxSlippages[i],
                     liqData: multiVaultData.liqData[i],
                     hasDstSwap: false,
@@ -804,6 +811,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                             payloadId: multiVaultData.payloadId,
                             superformId: multiVaultData.superformIds[i],
                             amount: multiVaultData.amounts[i],
+                            outputAmount: multiVaultData.outputAmounts[i],
                             maxSlippage: multiVaultData.maxSlippages[i],
                             liqData: emptyRequest,
                             hasDstSwap: false,

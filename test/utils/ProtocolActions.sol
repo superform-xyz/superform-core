@@ -399,6 +399,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
 
+            vars.outputAmounts = vars.amounts;
+
             vars.liqBridges = LIQ_BRIDGES[DST_CHAINS[i]][actionIndex];
 
             vars.receive4626 = RECEIVE_4626[DST_CHAINS[i]][actionIndex];
@@ -416,6 +418,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         vars.underlyingDstToken,
                         vars.targetSuperformIds,
                         vars.amounts,
+                        vars.outputAmounts,
                         vars.liqBridges,
                         vars.receive4626,
                         MAX_SLIPPAGE,
@@ -462,6 +465,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     vars.underlyingDstToken[0],
                     action.dstSwap ? getContract(DST_CHAINS[i], UNDERLYING_TOKENS[0]) : address(0),
                     vars.targetSuperformIds[0],
+                    finalAmount,
                     finalAmount,
                     vars.liqBridges[0],
                     vars.receive4626[0],
@@ -1571,6 +1575,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 uniqueInterimToken,
                 args.superformIds[i],
                 finalAmounts[i],
+                finalAmounts[i],
                 args.liqBridges[i],
                 args.receive4626[i],
                 args.maxSlippage,
@@ -1597,6 +1602,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
             v.totalAmount += finalAmounts[i];
 
             finalAmounts[i] = superformData.amount;
+            console.log("finalAmount", finalAmounts[i]);
+            args.outputAmounts[i] = superformData.outputAmount;
+            console.log("args.outputAmounts[i]", args.outputAmounts[i]);
         }
 
         if (action == Actions.DepositPermit2) {
@@ -1621,6 +1629,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         superformsData = MultiVaultSFData(
             args.superformIds,
             finalAmounts,
+            args.outputAmounts,
             maxSlippageTemp,
             liqRequests,
             v.permit2data,
@@ -1759,7 +1768,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         if (liqRequestToken != NATIVE_TOKEN) {
             /// @dev - APPROVE transfer to SuperformRouter (because of Socket)
-
             if (action == Actions.DepositPermit2) {
                 vm.prank(users[args.user]);
                 MockERC20(liqRequestToken).approve(getContract(args.srcChainId, "CanonicalPermit2"), type(uint256).max);
@@ -1839,13 +1847,15 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         console.log("test amount post-dst swap --", v.amount);
 
-        vm.selectFork(v.initialFork);
+        vm.selectFork(FORKS[args.toChainId]);
+        (address superform,,) = DataLib.getSuperform(args.superformId);
 
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
         /// vaults without resorting to extra args, just for withdraws)
         superformData = SingleVaultSFData(
             args.superformId,
             v.amount,
+            IBaseForm(superform).previewDepositTo(v.amount),
             args.maxSlippage,
             v.liqReq,
             v.permit2Calldata,
@@ -1856,6 +1866,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             /// @dev repeat user for receiverAddressSP - not testing AA here
             abi.encode(false)
         );
+        vm.selectFork(v.initialFork);
     }
 
     struct SingleVaultWithdrawLocalVars {
@@ -1954,11 +1965,16 @@ abstract contract ProtocolActions is CommonProtocolActions {
             0
         );
 
+        vm.selectFork(FORKS[args.toChainId]);
+        (address superform,,) = DataLib.getSuperform(args.superformId);
+        console.log("finalAMount", args.amount);
+        console.log("-- OA---", IBaseForm(superform).previewRedeemFrom(args.amount));
         /// @dev extraData is currently used to send in the partialWithdraw vaults without resorting to extra args, just
         /// for withdraws
         superformData = SingleVaultSFData(
             args.superformId,
             args.amount,
+            IBaseForm(superform).previewRedeemFrom(args.amount),
             args.maxSlippage,
             vars.liqReq,
             "",
@@ -1969,6 +1985,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
             /// @dev repeat user for receiverAddressSP - not testing AA here
             abi.encode(args.partialWithdrawVault)
         );
+
+        vm.selectFork(initialFork);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -3547,6 +3565,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
+            2e18,
             2e18,
             1000,
             LiqRequest(

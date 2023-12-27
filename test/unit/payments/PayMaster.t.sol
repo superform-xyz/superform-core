@@ -346,6 +346,7 @@ contract PayMasterTest is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             1e18,
+            1e18,
             100,
             LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ETH, 0),
             bytes(""),

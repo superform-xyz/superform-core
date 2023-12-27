@@ -1,17 +1,18 @@
-//SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { Error } from "src/libraries/Error.sol";
+import { BroadcastMessage } from "src/types/DataTypes.sol";
 import { AccessControlEnumerable } from "openzeppelin-contracts/contracts/access/extensions/AccessControlEnumerable.sol";
-import { IBroadcastRegistry } from "../interfaces/IBroadcastRegistry.sol";
-import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
-import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
-import { Error } from "../libraries/Error.sol";
-import { BroadcastMessage } from "../types/DataTypes.sol";
 
 /// @title SuperRBAC
-/// @author Zeropoint Labs.
-/// @dev Contract to manage roles in the entire superform protocol
+/// @dev Contract to manage roles in the Superform protocol
+/// @author Zeropoint Labs
 contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
+
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
@@ -147,11 +148,15 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         if (superRegistry_ == address(0)) revert Error.ZERO_ADDRESS();
 
         superRegistry = ISuperRegistry(superRegistry_);
+
+        emit SuperRegistrySet(superRegistry_);
     }
 
     /// @inheritdoc ISuperRBAC
     function setRoleAdmin(bytes32 role_, bytes32 adminRole_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
         _setRoleAdmin(role_, adminRole_);
+
+        emit RoleAdminSet(role_, adminRole_);
     }
 
     /// @inheritdoc ISuperRBAC
