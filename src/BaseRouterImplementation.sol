@@ -34,6 +34,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     /// @dev tracks the total payloads
     uint256 public payloadIds;
+    uint256 internal constant ENTIRE_SLIPPAGE = 10_000;
 
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
@@ -852,7 +853,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (dstChainId_ != sfDstChainId) return false;
 
         /// @dev 10000 = 100% slippage
-        if (maxSlippage_ > 10_000) return false;
+        if (maxSlippage_ > ENTIRE_SLIPPAGE) return false;
 
         /// @dev amounts can't be 0
         if (amount_ == 0 || outputAmount_ == 0) return false;
@@ -978,6 +979,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     /// @dev forwards the residual payment to Paymaster
     function _forwardPayment(uint256 _balanceBefore) internal virtual {
+        if (address(this).balance < _balanceBefore) revert Error.INSUFFICIENT_BALANCE();
+
         /// @dev deducts what's already available sends what's left in msg.value to Paymaster
         uint256 residualPayment = address(this).balance - _balanceBefore;
 
