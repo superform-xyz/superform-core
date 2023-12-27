@@ -707,46 +707,14 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                         );
 
                         if (action.testType == TestType.Pass) {
-                            if (action.dstSwap) {
-                                /// @dev calling state variables again to obtain fresh memory values corresponding to
-                                /// DST
-                                (,, vars.underlyingDstToken,) = _targetVaults(
-                                    vars.CHAIN_0,
-                                    vars.DST_CHAINS[i],
-                                    vars.targetVaults[i],
-                                    vars.targetFormKinds[i],
-                                    vars.targetUnderlyings[i]
-                                );
-                                vars.liqBridges = vars.targetLiqBridges[i];
-
-                                /// @dev dst swap is performed to ensure tokens reach CoreStateRegistry on deposits
-                                if (action.multiVaults) {
-                                    _batchProcessDstSwap(
-                                        vars.liqBridges,
-                                        vars.CHAIN_0,
-                                        aV[i].toChainId,
-                                        vars.underlyingDstToken,
-                                        vars.multiVaultsPayloadArg.amounts,
-                                        action.slippage
-                                    );
-                                } else {
-                                    _processDstSwap(
-                                        vars.liqBridges[0],
-                                        vars.CHAIN_0,
-                                        aV[i].toChainId,
-                                        vars.underlyingDstToken[0],
-                                        vars.singleVaultsPayloadArg.amount,
-                                        action.slippage
-                                    );
-                                }
-                            }
-
                             /// @dev this is the step where the amounts are updated taking into account the final
                             /// slippage
                             if (action.multiVaults) {
-                                _updateMultiVaultDepositPayload(vars.multiVaultsPayloadArg);
+                                _updateMultiVaultDepositPayload(vars.multiVaultsPayloadArg, vars.targetUnderlyings[i]);
                             } else if (singleSuperformsData.length > 0) {
-                                _updateSingleVaultDepositPayload(vars.singleVaultsPayloadArg);
+                                _updateSingleVaultDepositPayload(
+                                    vars.singleVaultsPayloadArg, vars.targetUnderlyings[i][0]
+                                );
                             }
 
                             vm.recordLogs();
@@ -763,9 +731,11 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                         } else if (action.testType == TestType.RevertProcessPayload) {
                             /// @dev this logic is essentially repeated from above
                             if (action.multiVaults) {
-                                _updateMultiVaultDepositPayload(vars.multiVaultsPayloadArg);
+                                _updateMultiVaultDepositPayload(vars.multiVaultsPayloadArg, vars.targetUnderlyings[i]);
                             } else if (singleSuperformsData.length > 0) {
-                                _updateSingleVaultDepositPayload(vars.singleVaultsPayloadArg);
+                                _updateSingleVaultDepositPayload(
+                                    vars.singleVaultsPayloadArg, vars.targetUnderlyings[i][0]
+                                );
                             }
                             /// @dev process payload will revert in here
                             success = _processPayload(
@@ -780,9 +750,13 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                         ) {
                             /// @dev branch used just for reverts of updatePayload (process payload is not even called)
                             if (action.multiVaults) {
-                                success = _updateMultiVaultDepositPayload(vars.multiVaultsPayloadArg);
+                                success = _updateMultiVaultDepositPayload(
+                                    vars.multiVaultsPayloadArg, vars.targetUnderlyings[i]
+                                );
                             } else {
-                                success = _updateSingleVaultDepositPayload(vars.singleVaultsPayloadArg);
+                                success = _updateSingleVaultDepositPayload(
+                                    vars.singleVaultsPayloadArg, vars.targetUnderlyings[i][0]
+                                );
                             }
 
                             if (!success) {
@@ -1359,7 +1333,13 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         return superformIds_;
     }
 
-    function _updateMultiVaultDepositPayload(updateMultiVaultDepositPayloadArgs memory args) internal returns (bool) {
+    function _updateMultiVaultDepositPayload(
+        updateMultiVaultDepositPayloadArgs memory args,
+        uint256[] memory targetUnderlyings
+    )
+        internal
+        returns (bool)
+    {
         uint256 initialFork = vm.activeFork();
 
         vm.selectFork(FORKS[args.targetChainId]);
@@ -1368,6 +1348,10 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         address[] memory bridgedTokens = new address[](len);
 
         int256 dstSwapSlippage;
+
+        for (uint256 i; i < len; ++i) {
+            bridgedTokens[i] = getContract(args.targetChainId, UNDERLYING_TOKENS[targetUnderlyings[i]]);
+        }
 
         /// @dev slippage calculation
         for (uint256 i = 0; i < len; ++i) {
@@ -1419,7 +1403,10 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         return true;
     }
 
-    function _updateSingleVaultDepositPayload(updateSingleVaultDepositPayloadArgs memory args)
+    function _updateSingleVaultDepositPayload(
+        updateSingleVaultDepositPayloadArgs memory args,
+        uint256 targetUnderlying
+    )
         internal
         returns (bool)
     {
@@ -1427,7 +1414,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         vm.selectFork(FORKS[args.targetChainId]);
         uint256 finalAmount;
-        address bridgedToken;
+        address bridgedToken = getContract(args.targetChainId, UNDERLYING_TOKENS[targetUnderlying]);
 
         finalAmount = args.amount;
 
