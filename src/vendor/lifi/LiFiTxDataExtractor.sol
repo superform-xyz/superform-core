@@ -44,6 +44,29 @@ contract LiFiTxDataExtractor {
         if (selector == HopFacetPacked.startBridgeTokensViaHopL2NativeMin.selector) {
             return false;
         }
+        if (selector == HopFacetPacked.startBridgeTokensViaHopL2ERC20Packed.selector) {
+            return false;
+        }
+
+        if (selector == HopFacetPacked.startBridgeTokensViaHopL2ERC20Min.selector) {
+            return false;
+        }
+
+        if (selector == HopFacetPacked.startBridgeTokensViaHopL1NativePacked.selector) {
+            return false;
+        }
+
+        if (selector == HopFacetPacked.startBridgeTokensViaHopL1NativeMin.selector) {
+            return false;
+        }
+
+        if (selector == HopFacetPacked.startBridgeTokensViaHopL1ERC20Packed.selector) {
+            return false;
+        }
+
+        if (selector == HopFacetPacked.startBridgeTokensViaHopL1ERC20Min.selector) {
+            return false;
+        }
         return true;
     }
 

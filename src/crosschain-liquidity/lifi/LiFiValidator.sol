@@ -42,8 +42,6 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         /// @dev 1 - check if it is a swapTokensGeneric call (match via selector)
         if (selector == GenericSwapFacet.swapTokensGeneric.selector) {
             /// @dev GenericSwapFacet
-            /// @dev direct actions with deposit, cannot have bridge data - goes in here
-            /// @dev withdraw actions without bridge data (just swap) -  goes in here
 
             (sendingAssetId,, receiver,,) = extractGenericSwapParameters(args_.txData);
             _validateGenericParameters(args_, receiver, sendingAssetId);
@@ -57,9 +55,6 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
 
         /// @dev 3 - proceed with normal extraction
         (, sendingAssetId, receiver,,, destinationChainId,, hasDestinationCall) = extractMainParameters(args_.txData);
-
-        /// @dev xchain actions can have bridgeData or bridgeData + swapData -  goes in here
-        /// @dev withdraw actions may have bridge data after withdrawing -  goes in here
 
         hasDstSwap =
             _validateMainParameters(args_, hasDestinationCall, hasDstSwap, receiver, sendingAssetId, destinationChainId);
@@ -80,11 +75,12 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         bytes4 selector = _extractSelector(txData_);
 
         /// @dev 1 - check if it is a swapTokensGeneric call (match via selector)
-        if (selector == GenericSwapFacet.swapTokensGeneric.selector && !genericSwapDisallowed_) {
+        if (selector == GenericSwapFacet.swapTokensGeneric.selector) {
+            if (genericSwapDisallowed_) {
+                revert Error.INVALID_ACTION();
+            }
             (, amount_,,,) = extractGenericSwapParameters(txData_);
             return amount_;
-        } else if (selector == GenericSwapFacet.swapTokensGeneric.selector && genericSwapDisallowed_) {
-            revert Error.INVALID_ACTION();
         }
 
         /// @dev 2 - check if it is any other blacklisted selector
@@ -215,6 +211,8 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         view
         returns (bool)
     {
+        /// @notice xchain actions can have bridgeData or swapData + bridgeData
+
         /// @dev 0. Destination call validation
         if (hasDestinationCall) revert Error.INVALID_TXDATA_NO_DESTINATIONCALL_ALLOWED();
 
@@ -273,6 +271,8 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         internal
         pure
     {
+        /// @notice direct actions with deposit, cannot have bridge data
+        /// @notice withdraw actions without bridge data (just swap) also fall in GenericSwap
         if (args_.deposit) {
             /// @dev 1. chainId validation
             if (args_.srcChainId != args_.dstChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
