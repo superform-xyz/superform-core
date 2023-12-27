@@ -1,21 +1,22 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import { IBaseForm } from "src/interfaces/IBaseForm.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+import { IEmergencyQueue } from "src/interfaces/IEmergencyQueue.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { Error } from "src/libraries/Error.sol";
+import { InitSingleVaultData } from "src/types/DataTypes.sol";
 import { Initializable } from "openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import { ERC165 } from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
 import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
-import { InitSingleVaultData } from "./types/DataTypes.sol";
-import { IBaseForm } from "./interfaces/IBaseForm.sol";
-import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
-import { Error } from "./libraries/Error.sol";
-import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
-import { IEmergencyQueue } from "./interfaces/IEmergencyQueue.sol";
-import { DataLib } from "./libraries/DataLib.sol";
 
 /// @title BaseForm
-/// @author Zeropoint Labs.
-/// @dev Abstract contract to be inherited by different form implementations
-abstract contract BaseForm is Initializable, ERC165, IBaseForm {
+/// @dev Abstract contract to be inherited by different Form implementations
+/// @author Zeropoint Labs
+abstract contract BaseForm is IBaseForm, Initializable, ERC165 {
+
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
@@ -82,6 +83,10 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     //////////////////////////////////////////////////////////////
 
     constructor(address superRegistry_) {
+        if (superRegistry_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
+
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }
@@ -95,10 +100,6 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
-
-    function supportsInterface(bytes4 interfaceId_) public view virtual override(ERC165, IERC165) returns (bool) {
-        return interfaceId_ == type(IBaseForm).interfaceId || super.supportsInterface(interfaceId_);
-    }
 
     /// @inheritdoc IBaseForm
     function superformYieldTokenName() external view virtual override returns (string memory);
@@ -156,11 +157,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
 
-    receive() external payable { }
-
-    /// @param superRegistry_        ISuperRegistry address deployed
-    /// @param vault_         The vault address this form pertains to
-    /// @dev sets caller as the admin of the contract.
+    /// @param superRegistry_  ISuperRegistry address deployed
+    /// @param vault_ The vault address this form pertains to
+    /// @param asset_ The underlying asset address of the vault this form pertains to
     function initialize(address superRegistry_, address vault_, address asset_) external initializer {
         if (ISuperRegistry(superRegistry_) != superRegistry) revert Error.NOT_SUPER_REGISTRY();
         if (vault_ == address(0) || asset_ == address(0)) revert Error.ZERO_ADDRESS();
@@ -178,9 +177,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         override
         onlySuperRouter
         notPaused(singleVaultData_)
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
-        dstAmount = _directDepositIntoVault(singleVaultData_, srcSender_);
+        shares = _directDepositIntoVault(singleVaultData_, srcSender_);
     }
 
     /// @inheritdoc IBaseForm
@@ -191,14 +190,12 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         external
         override
         onlySuperRouter
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
         if (!_isPaused(singleVaultData_.superformId)) {
-            dstAmount = _directWithdrawFromVault(singleVaultData_, srcSender_);
+            assets = _directWithdrawFromVault(singleVaultData_, srcSender_);
         } else {
-            IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
-                singleVaultData_, srcSender_
-            );
+            IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(singleVaultData_);
         }
     }
 
@@ -212,9 +209,13 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         override
         onlyCoreStateRegistry
         notPaused(singleVaultData_)
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
-        dstAmount = _xChainDepositIntoVault(singleVaultData_, srcSender_, srcChainId_);
+        if (srcChainId_ != 0 && srcChainId_ != CHAIN_ID) {
+            shares = _xChainDepositIntoVault(singleVaultData_, srcSender_, srcChainId_);
+        } else {
+            revert Error.INVALID_CHAIN_ID();
+        }
     }
 
     /// @inheritdoc IBaseForm
@@ -226,33 +227,36 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         external
         override
         onlyCoreStateRegistry
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
-        if (!_isPaused(singleVaultData_.superformId)) {
-            dstAmount = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
+        if (srcChainId_ != 0 && srcChainId_ != CHAIN_ID) {
+            if (!_isPaused(singleVaultData_.superformId)) {
+                assets = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
+            } else {
+                IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
+                    singleVaultData_
+                );
+            }
         } else {
-            IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
-                singleVaultData_, srcSender_
-            );
+            revert Error.INVALID_CHAIN_ID();
         }
     }
 
     /// @inheritdoc IBaseForm
-    function emergencyWithdraw(
-        address srcSender_,
-        address refundAddress_,
-        uint256 amount_
-    )
-        external
-        override
-        onlyEmergencyQueue
-    {
-        _emergencyWithdraw(srcSender_, refundAddress_, amount_);
+    function emergencyWithdraw(address receiverAddress_, uint256 amount_) external override onlyEmergencyQueue {
+        _emergencyWithdraw(receiverAddress_, amount_);
     }
 
     /// @inheritdoc IBaseForm
-    function forwardDustToPaymaster() external override {
-        _forwardDustToPaymaster();
+    function forwardDustToPaymaster(address token_) external override {
+        if (token_ == vault) revert Error.CANNOT_FORWARD_4646_TOKEN();
+        _forwardDustToPaymaster(token_);
+    }
+
+    /// @dev Checks if the Form implementation has the appropriate interface support
+    /// @param interfaceId_ is the interfaceId to check  
+    function supportsInterface(bytes4 interfaceId_) public view virtual override(ERC165, IERC165) returns (bool) {
+        return interfaceId_ == type(IBaseForm).interfaceId || super.supportsInterface(interfaceId_);
     }
 
     //////////////////////////////////////////////////////////////
@@ -266,7 +270,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     )
         internal
         virtual
-        returns (uint256 dstAmount);
+        returns (uint256 shares);
 
     /// @dev Deposits underlying tokens into a vault
     function _xChainDepositIntoVault(
@@ -276,7 +280,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     )
         internal
         virtual
-        returns (uint256 dstAmount);
+        returns (uint256 shares);
 
     /// @dev Withdraws underlying tokens from a vault
     function _directWithdrawFromVault(
@@ -285,7 +289,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     )
         internal
         virtual
-        returns (uint256 dstAmount_);
+        returns (uint256 assets);
 
     /// @dev Withdraws underlying tokens from a vault
     function _xChainWithdrawFromVault(
@@ -295,24 +299,23 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     )
         internal
         virtual
-        returns (uint256 dstAmount);
+        returns (uint256 assets);
 
     /// @dev withdraws vault shares from form during emergency
-    function _emergencyWithdraw(address srcSender_, address refundAddress_, uint256 amount_) internal virtual;
+    function _emergencyWithdraw(address receiverAddress_, uint256 amount_) internal virtual;
 
     /// @dev forwards dust to paymaster
-    function _forwardDustToPaymaster() internal virtual;
+    function _forwardDustToPaymaster(address token_) internal virtual;
 
     /// @dev returns if a form id is paused
     function _isPaused(uint256 superformId) internal view returns (bool) {
-        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId)) {
+        address factory = superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"));
+        if (!ISuperformFactory(factory).isSuperform(superformId)) {
             revert Error.SUPERFORM_ID_NONEXISTENT();
         }
 
         (, uint32 formImplementationId_,) = superformId.getSuperform();
 
-        return ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
-            formImplementationId_
-        );
+        return ISuperformFactory(factory).isFormImplementationPaused(formImplementationId_);
     }
 }

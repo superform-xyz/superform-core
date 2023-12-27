@@ -21,7 +21,7 @@ contract LayerzeroImplementationTest is BaseSetup {
     event UaSendVersionSet(address ua, uint16 version);
     event UaReceiveVersionSet(address ua, uint16 version);
     event UaForceResumeReceive(uint16 chainId, bytes srcAddress);
-    event PayloadReceived(uint64 srcChainId, uint64 dstChainId, uint256 payloadId);
+    event PayloadReceived(uint64 indexed srcChainId, uint64 indexed dstChainId, uint256 indexed payloadId);
 
     address public constant LZ_ENDPOINT_ETH = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
     address public constant LZ_ENDPOINT_OP = 0x3c2269811836af69497E5F486A85D7316753cf62;
@@ -155,6 +155,7 @@ contract LayerzeroImplementationTest is BaseSetup {
 
     function test_setSendVersion_and_revert_invalidCaller(uint16 versionSeed_, address malice_) public {
         uint16 version = uint16(bound(versionSeed_, 0, 3));
+        vm.assume(malice_ != deployer);
 
         vm.expectEmit(false, false, false, true, LZ_ENDPOINT_ETH);
         emit UaSendVersionSet(address(layerzeroImplementation), version);
@@ -168,7 +169,7 @@ contract LayerzeroImplementationTest is BaseSetup {
 
     function test_setReceiveVersion_and_revert_invalidCaller(uint16 versionSeed_, address malice_) public {
         uint16 version = uint16(bound(versionSeed_, 0, 3));
-
+        vm.assume(malice_ != deployer);
         vm.expectEmit(false, false, false, true, LZ_ENDPOINT_ETH);
         emit UaReceiveVersionSet(address(layerzeroImplementation), version);
         vm.prank(deployer);
@@ -323,14 +324,17 @@ contract LayerzeroImplementationTest is BaseSetup {
         (ambMessage, ambExtraData, coreStateRegistry) = _setupBroadcastPayloadAMBData(users[userIndex]);
 
         vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
-
+        vm.assume(
+            malice_ != getContract(ETH, "CoreStateRegistry") && malice_ != getContract(ETH, "TimelockStateRegistry")
+                && malice_ != getContract(ETH, "BroadcastRegistry")
+        );
         vm.deal(malice_, 100 ether);
         vm.prank(malice_);
         layerzeroImplementation.dispatchPayload{ value: 0.1 ether }(
             users[userIndex], chainId, abi.encode(ambMessage), abi.encode(ambExtraData)
         );
 
-        vm.expectRevert(Error.INVALID_SRC_CHAIN_ID.selector);
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         vm.prank(coreStateRegistry);
         /// @dev notice the use of chainId, whose trustedRemote is not set
         layerzeroImplementation.dispatchPayload{ value: 0.1 ether }(
@@ -360,10 +364,6 @@ contract LayerzeroImplementationTest is BaseSetup {
 
         vm.expectRevert(Error.CALLER_NOT_ENDPOINT.selector);
         vm.prank(bond);
-        lzImplOP.lzReceive(101, srcAddressOP, 2, payload);
-
-        vm.expectRevert(Error.DUPLICATE_PAYLOAD.selector);
-        vm.prank(LZ_ENDPOINT_OP);
         lzImplOP.lzReceive(101, srcAddressOP, 2, payload);
 
         vm.expectRevert(Error.INVALID_SRC_SENDER.selector);

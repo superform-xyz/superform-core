@@ -4,9 +4,10 @@ pragma solidity ^0.8.23;
 import { IAccessControl } from "openzeppelin-contracts/contracts/access/IAccessControl.sol";
 
 /// @title ISuperRBAC
-/// @author Zeropoint Labs.
-/// @dev interface for Super RBAC
+/// @dev Interface for SuperRBAC
+/// @author Zeropoint Labs
 interface ISuperRBAC is IAccessControl {
+
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                         //
     //////////////////////////////////////////////////////////////
@@ -24,6 +25,16 @@ interface ISuperRBAC is IAccessControl {
         address csrRescuer;
         address csrDisputer;
     }
+
+    //////////////////////////////////////////////////////////////
+    //                          EVENTS                          //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev is emitted when superRegistry is set
+    event SuperRegistrySet(address indexed superRegistry);
+
+    /// @dev is emitted when an admin is set for a role
+    event RoleAdminSet(bytes32 role, bytes32 adminRole);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //

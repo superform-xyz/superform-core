@@ -1,26 +1,27 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { Error } from "src/libraries/Error.sol";
+import { IBroadcastAmbImplementation } from "src/interfaces/IBroadcastAmbImplementation.sol";
 import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { Error } from "src/libraries/Error.sol";
+import { ProofLib } from "src/libraries/ProofLib.sol";
 import { BroadcastMessage, PayloadState } from "src/types/DataTypes.sol";
-import { IBroadcastAmbImplementation } from "src/interfaces/IBroadcastAmbImplementation.sol";
-import { ProofLib } from "../libraries/ProofLib.sol";
 
 interface Target {
     function stateSyncBroadcast(bytes memory data_) external;
 }
 
 /// @title BroadcastRegistry
+/// @dev Helps core contracts communicate with multiple dst chains through supported AMBs
 /// @author ZeroPoint Labs
-/// @notice helps core contract communicate with multiple dst chains through supported AMBs
 contract BroadcastRegistry is IBroadcastRegistry {
+
     using ProofLib for bytes;
 
     //////////////////////////////////////////////////////////////
-    //                         CONSTANTS                         //
+    //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
 
     ISuperRegistry public immutable superRegistry;
@@ -89,6 +90,7 @@ contract BroadcastRegistry is IBroadcastRegistry {
     function broadcastPayload(
         address srcSender_,
         uint8 ambId_,
+        uint256 gasFee_,
         bytes memory message_,
         bytes memory extraData_
     )
@@ -97,9 +99,20 @@ contract BroadcastRegistry is IBroadcastRegistry {
         override
         onlySender
     {
-        (uint256 gasFee, bytes memory extraData) = abi.decode(extraData_, (uint256, bytes));
+        if (msg.value < gasFee_) {
+            revert Error.INVALID_BROADCAST_FEE();
+        }
 
-        _broadcastPayload(srcSender_, ambId_, gasFee, message_, extraData);
+        _broadcastPayload(srcSender_, ambId_, gasFee_, message_, extraData_);
+
+        /// @dev refunds any overpaid msg.value
+        if (msg.value > gasFee_) {
+            (bool success,) = payable(srcSender_).call{ value: msg.value - gasFee_ }("");
+
+            if (!success) {
+                revert Error.FAILED_TO_SEND_NATIVE();
+            }
+        }
     }
 
     /// @inheritdoc IBroadcastRegistry
@@ -144,13 +157,13 @@ contract BroadcastRegistry is IBroadcastRegistry {
     function _broadcastPayload(
         address srcSender_,
         uint8 ambId_,
-        uint256 gasToPay_,
+        uint256 gasFee_,
         bytes memory message_,
         bytes memory extraData_
     )
         internal
     {
-        IBroadcastAmbImplementation(superRegistry.getAmbAddress(ambId_)).broadcastPayload{ value: gasToPay_ }(
+        IBroadcastAmbImplementation(superRegistry.getAmbAddress(ambId_)).broadcastPayload{ value: gasFee_ }(
             srcSender_, message_, extraData_
         );
     }

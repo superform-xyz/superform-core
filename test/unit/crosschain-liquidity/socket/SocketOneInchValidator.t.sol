@@ -130,7 +130,7 @@ contract SocketOneInchValidatorTest is ProtocolActions {
     }
 
     function test_validateTxData_reverts() public {
-        vm.expectRevert(Error.INVALID_ACTION.selector);
+        vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
         SocketOneInchValidator(getContract(BSC, "SocketOneInchValidator")).validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
                 _buildDummyTxDataUnitTests(

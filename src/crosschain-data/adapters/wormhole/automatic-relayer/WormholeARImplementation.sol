@@ -1,28 +1,27 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { AMBMessage } from "src/types/DataTypes.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
 import { Error } from "src/libraries/Error.sol";
+import { AMBMessage } from "src/types/DataTypes.sol";
 import { IWormholeRelayer, VaaKey } from "src/vendor/wormhole/IWormholeRelayer.sol";
 import { IWormholeReceiver } from "src/vendor/wormhole/IWormholeReceiver.sol";
-import { DataLib } from "src/libraries/DataLib.sol";
 import "src/vendor/wormhole/Utils.sol";
 
 /// @title WormholeImplementation
+/// @dev Allows state registries to use Wormhole AR's for crosschain communication
 /// @author Zeropoint Labs
-/// @notice allows state registries to use wormhole for crosschain communication
-/// @dev uses automatic relayers of wormhole for 1:1 messaging
 contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
+    
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
-
     ISuperRegistry public immutable superRegistry;
 
     //////////////////////////////////////////////////////////////
@@ -30,6 +29,7 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     //////////////////////////////////////////////////////////////
 
     IWormholeRelayer public relayer;
+    uint16 public refundChainId;
 
     mapping(uint64 => uint16) public ambChainId;
     mapping(uint16 => uint64) public superChainId;
@@ -41,7 +41,10 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     //////////////////////////////////////////////////////////////
 
     /// @dev emitted when wormhole relayer is set
-    event WormholeRelayerSet(address wormholeRelayer);
+    event WormholeRelayerSet(address indexed wormholeRelayer);
+
+    /// @dev emitted when refund chain id is set
+    event WormholeRefundChainIdSet(uint16 indexed refundChainId);
 
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
@@ -128,7 +131,7 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
-        address, /*srcSender_*/
+        address srcSender_,
         uint64 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
@@ -139,12 +142,16 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         override
         onlyValidStateRegistry
     {
-        uint16 dstChainId = ambChainId[dstChainId_];
+        if (refundChainId == 0) {
+            revert Error.REFUND_CHAIN_ID_NOT_SET();
+        }
 
+        uint16 dstChainId = ambChainId[dstChainId_];
         (uint256 dstNativeAirdrop, uint256 dstGasLimit) = abi.decode(extraData_, (uint256, uint256));
 
+        /// @dev refunds any excess on this chain back to srcSender_
         relayer.sendPayloadToEvm{ value: msg.value }(
-            dstChainId, authorizedImpl[dstChainId], message_, dstNativeAirdrop, dstGasLimit
+            dstChainId, authorizedImpl[dstChainId], message_, dstNativeAirdrop, dstGasLimit, refundChainId, srcSender_
         );
     }
 
@@ -158,13 +165,29 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
             address newDeliveryProviderAddress
         ) = abi.decode(data_, (VaaKey, uint16, uint256, uint256, address));
 
+        (uint256 fees,) = relayer.quoteEVMDeliveryPrice(targetChain, 0, newGasLimit);
+
+        if (msg.value < fees) {
+            revert Error.INVALID_RETRY_FEE();
+        }
+
         if (newDeliveryProviderAddress == address(0)) {
             revert Error.ZERO_ADDRESS();
         }
 
-        relayer.resendToEvm{ value: msg.value }(
+        relayer.resendToEvm{ value: fees }(
             deliveryVaaKey, targetChain, newReceiverValue, newGasLimit, newDeliveryProviderAddress
         );
+
+        /// refunds excess msg.value to msg.sender
+        uint256 excessPaid = msg.value - fees;
+        if (excessPaid > 0) {
+            (bool success,) = payable(msg.sender).call{ value: excessPaid }("");
+
+            if (!success) {
+                revert Error.FAILED_TO_SEND_NATIVE();
+            }
+        }
     }
 
     /// @inheritdoc IWormholeReceiver
@@ -198,7 +221,13 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         (,,, uint8 registryId,,) = decoded.txInfo.decodeTxInfo();
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(superRegistry.getStateRegistry(registryId));
 
-        targetRegistry.receivePayload(superChainId[sourceChain_], payload_);
+        uint64 sourceChain = superChainId[sourceChain_];
+
+        if (sourceChain == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
+        targetRegistry.receivePayload(sourceChain, payload_);
     }
 
     /// @dev allows protocol admin to add new chain ids in future
@@ -226,6 +255,15 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         superChainId[ambChainId_] = superChainId_;
 
         emit ChainAdded(superChainId_);
+    }
+
+    /// @dev allows protocol admin to set wormhole chain id for refunds
+    /// @param refundChainId_ is the wormhole chain id of current chain
+    function setRefundChainId(uint16 refundChainId_) external onlyProtocolAdmin {
+        if (refundChainId_ == 0) revert Error.INVALID_CHAIN_ID();
+        refundChainId = refundChainId_;
+
+        emit WormholeRefundChainIdSet(refundChainId_);
     }
 
     /// @dev allows protocol admin to set receiver implementation on a new chain id

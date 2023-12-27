@@ -27,9 +27,14 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         vm.prank(deployer);
         uint256[] memory amounts = new uint256[](1);
+        address[] memory bridgedTokens = new address[](1);
         /// @dev 1e18 after decimal corrections and bridge slippage would give the following value
         amounts[0] = 999_900_000_000_000_000;
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, amounts);
+        bridgedTokens[0] = getContract(AVAX, "DAI");
+
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(
+            1, bridgedTokens, amounts
+        );
 
         vm.prank(getContract(AVAX, "CoreStateRegistry"));
         MockERC20(getContract(AVAX, "DAI")).transfer(deployer, 999_900_000_000_000_000);
@@ -60,15 +65,31 @@ contract CoreStateRegistryTest is ProtocolActions {
         finalAmounts[0] = 0;
         finalAmounts[1] = 419;
 
+        address[] memory bridgedTokens = new address[](2);
+        bridgedTokens[0] = getContract(AVAX, "DAI");
+        bridgedTokens[1] = getContract(AVAX, "DAI");
+
         vm.prank(deployer);
         vm.expectRevert(Error.ZERO_AMOUNT.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(
+            1, bridgedTokens, finalAmounts
+        );
 
         finalAmounts[0] = 419;
         finalAmounts[1] = 419;
 
         vm.prank(deployer);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
+        bridgedTokens[0] = getContract(AVAX, "WETH");
+        vm.expectRevert(Error.INVALID_UPDATE_FINAL_TOKEN.selector);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(
+            1, bridgedTokens, finalAmounts
+        );
+
+        vm.prank(deployer);
+        bridgedTokens[0] = getContract(AVAX, "DAI");
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(
+            1, bridgedTokens, finalAmounts
+        );
 
         vm.prank(getContract(AVAX, "CoreStateRegistry"));
         MockERC20(getContract(AVAX, "DAI")).transfer(deployer, 840);
@@ -146,10 +167,12 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformIds,
             uint256MemArr,
             uint256MemArr,
+            uint256MemArr,
             liqReqArr,
             bytes(""),
             new bool[](4),
             new bool[](4),
+            receiverAddress,
             receiverAddress,
             bytes("")
         );
@@ -180,8 +203,16 @@ contract CoreStateRegistryTest is ProtocolActions {
         finalAmounts[2] = 419;
         finalAmounts[3] = 100;
 
+        address[] memory bridgedTokens = new address[](4);
+        bridgedTokens[0] = getContract(AVAX, "DAI");
+        bridgedTokens[1] = getContract(AVAX, "DAI");
+        bridgedTokens[2] = getContract(AVAX, "DAI");
+        bridgedTokens[3] = getContract(AVAX, "DAI");
+
         vm.prank(deployer);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(
+            1, bridgedTokens, finalAmounts
+        );
         uint256 nativeValue = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
 
         vm.prank(deployer);
@@ -233,9 +264,20 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         vm.prank(deployer);
         uint256[] memory amounts = new uint256[](1);
-
         amounts[0] = 999_900_000_000_000_000;
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, amounts);
+
+        address[] memory bridgedTokens = new address[](1);
+        bridgedTokens[0] = getContract(AVAX, "WETH");
+        vm.expectRevert(Error.INVALID_UPDATE_FINAL_TOKEN.selector);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(
+            1, bridgedTokens, amounts
+        );
+
+        vm.prank(deployer);
+        bridgedTokens[0] = getContract(AVAX, "DAI");
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(
+            1, bridgedTokens, amounts
+        );
 
         uint256 nativeValue = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
 
@@ -262,11 +304,16 @@ contract CoreStateRegistryTest is ProtocolActions {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 2222;
 
+        address[] memory bridgedTokens = new address[](1);
+        bridgedTokens[0] = getContract(AVAX, "DAI");
+
         vm.prank(deployer);
         vm.expectEmit();
         // We emit the event we expect to see.
         emit ICoreStateRegistry.FailedXChainDeposits(1);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, amounts);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(
+            1, bridgedTokens, amounts
+        );
     }
 
     /// @dev test processPayload without updating multi vault deposit payload
@@ -294,14 +341,21 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         _successfulSingleDeposit(ambIds_);
         vm.selectFork(FORKS[AVAX]);
+
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 0;
+
+        address[] memory bridgedTokens = new address[](1);
+        bridgedTokens[0] = getContract(AVAX, "DAI");
+
         vm.prank(deployer);
         SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
         vm.prank(deployer);
         vm.expectRevert(Error.ZERO_AMOUNT.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, amounts);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(
+            1, bridgedTokens, amounts
+        );
 
         vm.prank(deployer);
         SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 2);
@@ -311,7 +365,9 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         vm.prank(deployer);
         vm.expectRevert(Error.INSUFFICIENT_QUORUM.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, amounts);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(
+            1, bridgedTokens, amounts
+        );
     }
 
     /// @dev test all revert cases with single vault withdraw payload update
@@ -374,7 +430,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             ETH,
             ETH,
             false,
-            deployer,
+            receiverAddress,
             uint256(ETH),
             /// @dev amount is 1 less than (actualWithdrawAmount * 0.9) => slippage > 10% => should revert
             ((actualWithdrawAmount * 9) / 10) - 1,
@@ -403,18 +459,23 @@ contract CoreStateRegistryTest is ProtocolActions {
         _successfulMultiDeposit(ambIds_);
 
         uint256[] memory finalAmounts = new uint256[](1);
+        address[] memory bridgedTokens = new address[](1);
 
         vm.selectFork(FORKS[AVAX]);
         vm.prank(deployer);
         vm.expectRevert(Error.INSUFFICIENT_QUORUM.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(
+            1, bridgedTokens, finalAmounts
+        );
 
         vm.prank(deployer);
         SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
         vm.prank(deployer);
         vm.expectRevert(Error.DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(
+            1, bridgedTokens, finalAmounts
+        );
     }
 
     /// @dev test revert cases for duplicate proof bridge id
@@ -424,11 +485,11 @@ contract CoreStateRegistryTest is ProtocolActions {
         ambIds_[1] = 2;
         ambIds_[2] = 3;
         ambIds_[3] = 2;
-        _failingMultiDeposit(ambIds_, Error.DUPLICATE_PROOF_BRIDGE_ID.selector);
+        _failingMultiDeposit(ambIds_, Error.INVALID_PROOF_BRIDGE_IDS.selector);
 
         ambIds_[2] = 2;
         ambIds_[3] = 3;
-        _failingMultiDeposit(ambIds_, Error.DUPLICATE_PROOF_BRIDGE_ID.selector);
+        _failingMultiDeposit(ambIds_, Error.INVALID_PROOF_BRIDGE_IDS.selector);
     }
 
     function test_processPayload_reverts() public {
@@ -519,6 +580,11 @@ contract CoreStateRegistryTest is ProtocolActions {
         uint256[] memory finalAmounts = new uint256[](2);
         finalAmounts[0] = 420;
         finalAmounts[1] = 420;
+
+        address[] memory bridgedTokens = new address[](2);
+        bridgedTokens[0] = getContract(AVAX, "DAI");
+        bridgedTokens[1] = getContract(AVAX, "DAI");
+
         vm.selectFork(FORKS[AVAX]);
         vm.prank(deployer);
         SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
@@ -531,7 +597,9 @@ contract CoreStateRegistryTest is ProtocolActions {
             abi.encode(false)
         );
         vm.prank(deployer);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(
+            1, bridgedTokens, finalAmounts
+        );
 
         vm.prank(deployer);
         vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
@@ -550,6 +618,9 @@ contract CoreStateRegistryTest is ProtocolActions {
         uint256[] memory finalAmounts = new uint256[](1);
         finalAmounts[0] = 999_900_000_000_000_000;
 
+        address[] memory bridgedTokens = new address[](1);
+        bridgedTokens[0] = getContract(AVAX, "DAI");
+
         vm.selectFork(FORKS[AVAX]);
         vm.prank(deployer);
         SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
@@ -563,7 +634,9 @@ contract CoreStateRegistryTest is ProtocolActions {
         );
 
         vm.prank(deployer);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(
+            1, bridgedTokens, finalAmounts
+        );
 
         vm.prank(deployer);
         vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
@@ -616,6 +689,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformId,
             /// @dev 1e18 after decimal corrections and bridge slippage would give the following value
             999_900_000_000_000_000,
+            999_900_000_000_000_000,
             100,
             LiqRequest(
                 _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, AVAX, 0
@@ -623,6 +697,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             bytes(""),
             false,
             false,
+            receiverAddress,
             receiverAddress,
             bytes("")
         );
@@ -680,11 +755,13 @@ contract CoreStateRegistryTest is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             1e18,
+            1e18,
             100,
             LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ETH, 0),
             bytes(""),
             false,
             false,
+            receiverAddress,
             receiverAddress,
             bytes("")
         );
@@ -764,10 +841,12 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformIds,
             uint256MemArr,
             uint256MemArr,
+            uint256MemArr,
             liqReqArr,
             bytes(""),
             new bool[](2),
             new bool[](2),
+            receiverAddress,
             receiverAddress,
             bytes("")
         );
@@ -822,11 +901,13 @@ contract CoreStateRegistryTest is ProtocolActions {
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds,
             amountArr,
+            amountArr,
             maxSlippages,
             liqReqArr,
             bytes(""),
             new bool[](2),
             new bool[](2),
+            receiverAddress,
             receiverAddress,
             bytes("")
         );
@@ -905,10 +986,12 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformIds,
             uint256MemArr,
             uint256MemArr,
+            uint256MemArr,
             liqReqArr,
             bytes(""),
             new bool[](2),
             new bool[](2),
+            receiverAddress,
             receiverAddress,
             bytes("")
         );

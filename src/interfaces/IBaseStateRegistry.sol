@@ -1,28 +1,28 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import "../types/DataTypes.sol";
+import { PayloadState } from "src/types/DataTypes.sol";
 
 /// @title IBaseStateRegistry
+/// @dev Interface for BaseStateRegistry
 /// @author ZeroPoint Labs
-/// @dev Is the crosschain interaction point. Send, store & process crosschain messages
 interface IBaseStateRegistry {
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
 
     /// @dev is emitted when a cross-chain payload is received in the state registry
-    event PayloadReceived(uint64 srcChainId, uint64 dstChainId, uint256 payloadId);
+    event PayloadReceived(uint64 indexed srcChainId, uint64 indexed dstChainId, uint256 indexed payloadId);
 
     /// @dev is emitted when a cross-chain proof is received in the state registry
     /// NOTE: comes handy if quorum required is more than 0
-    event ProofReceived(bytes proof);
+    event ProofReceived(bytes indexed proof);
 
     /// @dev is emitted when a payload id gets updated
-    event PayloadUpdated(uint256 payloadId);
+    event PayloadUpdated(uint256 indexed payloadId);
 
     /// @dev is emitted when a payload id gets processed
-    event PayloadProcessed(uint256 payloadId);
+    event PayloadProcessed(uint256 indexed payloadId);
 
     /// @dev is emitted when the super registry address is updated
     event SuperRegistryUpdated(address indexed superRegistry);

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { DataLib } from "./DataLib.sol";
-import { Error } from "../libraries/Error.sol";
-import { PayloadState, CallbackType, LiqRequest } from "../types/DataTypes.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { Error } from "src/libraries/Error.sol";
+import { PayloadState, CallbackType, LiqRequest } from "src/types/DataTypes.sol";
 
 /// @dev library to validate slippage updation
 library PayloadUpdaterLib {
@@ -34,7 +34,7 @@ library PayloadUpdaterLib {
     function validateLiqReq(LiqRequest memory req_) internal pure {
         /// revert if token is address(0) -> user wants settlement without any liq data
         /// revert if token is not address(0) and txData is already present
-        if (req_.token == address(0) || (req_.token != address(0) && req_.txData.length != 0)) {
+        if (req_.token == address(0) || req_.txData.length != 0) {
             revert Error.CANNOT_UPDATE_WITHDRAW_TX_DATA();
         }
     }

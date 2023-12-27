@@ -1,17 +1,23 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { Error } from "src/libraries/Error.sol";
+import {
+    SingleDirectSingleVaultStateReq,
+    SingleXChainSingleVaultStateReq,
+    SingleDirectMultiVaultStateReq,
+    SingleXChainMultiVaultStateReq,
+    MultiDstSingleVaultStateReq,
+    MultiDstMultiVaultStateReq
+} from "src/types/DataTypes.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IBaseRouter } from "./interfaces/IBaseRouter.sol";
-import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
-import "./libraries/Error.sol";
-import "./types/DataTypes.sol";
 
 /// @title BaseRouter
-/// @author Zeropoint Labs.
-/// @dev Routes users funds and action information to a remote execution chain.
-/// @dev abstract implementation that allows inheriting contract to implement the logic
+/// @dev Abstract implementation that allows Routers to implement the logic
+/// @author Zeropoint Labs
 abstract contract BaseRouter is IBaseRouter {
     using SafeERC20 for IERC20;
 
@@ -29,6 +35,10 @@ abstract contract BaseRouter is IBaseRouter {
 
     /// @param superRegistry_ the superform registry contract
     constructor(address superRegistry_) {
+        if (superRegistry_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
+
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }
@@ -112,4 +122,7 @@ abstract contract BaseRouter is IBaseRouter {
 
     /// @inheritdoc IBaseRouter
     function multiDstMultiVaultWithdraw(MultiDstMultiVaultStateReq calldata req_) external payable virtual override;
+
+    /// @inheritdoc IBaseRouter
+    function forwardDustToPaymaster(address token_) external virtual override;
 }

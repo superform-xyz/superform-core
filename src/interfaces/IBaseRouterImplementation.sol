@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { IBaseRouter } from "./IBaseRouter.sol";
-
-import "../types/DataTypes.sol";
+import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
+import { AMBMessage, LiqRequest, TransactionType } from "src/types/DataTypes.sol";
 
 /// @title IBaseRouterImplementation
-/// @author Zeropoint Labs.
-/// @dev interface for BaseRouterImplementation
+/// @dev Interface for BaseRouterImplementation
+/// @author Zeropoint Labs
 interface IBaseRouterImplementation is IBaseRouter {
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
@@ -70,4 +69,7 @@ interface IBaseRouterImplementation is IBaseRouter {
 
     /// @dev is emitted when a direct chain action is complete
     event Completed();
+
+    /// @dev is emitted when dust is forwarded to paymaster
+    event RouterDustForwardedToPaymaster(address indexed token, uint256 indexed amount);
 }

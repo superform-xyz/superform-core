@@ -19,6 +19,8 @@ contract SuperPositionsTest is BaseSetup {
     address vault;
     uint32 formImplementationId = 4;
 
+    address receiverAddress = deployer;
+
     function setUp() public override {
         super.setUp();
         vm.selectFork(FORKS[ETH]);
@@ -30,7 +32,7 @@ contract SuperPositionsTest is BaseSetup {
         vault = getContract(ETH, VAULT_NAMES[0][0]);
         vm.prank(deployer);
         SuperformFactory(getContract(ETH, "SuperformFactory")).addFormImplementation(
-            formImplementation, formImplementationId
+            formImplementation, formImplementationId, 1
         );
     }
 
@@ -77,7 +79,7 @@ contract SuperPositionsTest is BaseSetup {
     function test_revert_stateSync_InvalidPayloadStatus() public {
         uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
         vm.prank(getContract(ETH, "SuperformRouter"));
-        SuperPositions(address(superPositions)).updateTxHistory(0, txInfo);
+        SuperPositions(address(superPositions)).updateTxHistory(0, txInfo, receiverAddress);
 
         ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, 1, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
@@ -87,30 +89,47 @@ contract SuperPositionsTest is BaseSetup {
         superPositions.stateSync(maliciousMessage);
     }
 
-    function test_revert_stateSync_NotMinterStateRegistry() public {
+    function test_revert_stateSync_INVALID_REGISTRY_ID() public {
         uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
 
         ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, 1, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         vm.broadcast(getContract(ETH, "SuperformRouter"));
-        vm.expectRevert(Error.NOT_MINTER_STATE_REGISTRY_ROLE.selector);
+        vm.expectRevert(Error.INVALID_REGISTRY_ID.selector);
         superPositions.stateSync(maliciousMessage);
     }
 
     function test_revert_stateSync_NotMinterStateRegistry_InvalidRegistryId() public {
         uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
         address superform = getContract(
-            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[2]))
         );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[2], ETH);
 
         ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, superformId, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         vm.broadcast(getContract(ETH, "TimelockStateRegistry"));
         vm.expectRevert(Error.NOT_MINTER_STATE_REGISTRY_ROLE.selector);
+        superPositions.stateSync(maliciousMessage);
+    }
+
+    function test_revert_stateSync_InvalidFormRegistryId() public {
+        uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        /// non existent form implementation id so the get form state registry id returns 0
+        uint256 superformId = DataLib.packSuperform(superform, 5, ETH);
+
+        ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, superformId, 100);
+        AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
+
+        vm.broadcast(getContract(ETH, "TimelockStateRegistry"));
+        vm.expectRevert(Error.INVALID_FORM_REGISTRY_ID.selector);
         superPositions.stateSync(maliciousMessage);
     }
 
@@ -129,7 +148,7 @@ contract SuperPositionsTest is BaseSetup {
         /// @dev multi = 1
         uint256 txInfo = DataLib.packTxInfo(0, 2, 1, 1, address(0), ETH);
         vm.prank(getContract(ETH, "SuperformRouter"));
-        SuperPositions(address(superPositions)).updateTxHistory(0, 1);
+        SuperPositions(address(superPositions)).updateTxHistory(0, 1, receiverAddress);
 
         ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, 1, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
@@ -139,25 +158,11 @@ contract SuperPositionsTest is BaseSetup {
         superPositions.stateSync(maliciousMessage);
     }
 
-    function test_revert_stateSync_SrcSenderMismatch() public {
-        /// @dev returnDataSrcSender = address(0x1)
-        uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0x1), ETH);
-        vm.prank(getContract(ETH, "SuperformRouter"));
-        SuperPositions(address(superPositions)).updateTxHistory(0, 1);
-
-        ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, 1, 100);
-        AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
-
-        vm.broadcast(getContract(ETH, "CoreStateRegistry"));
-        vm.expectRevert(Error.SRC_SENDER_MISMATCH.selector);
-        superPositions.stateSync(maliciousMessage);
-    }
-
     function test_revert_stateSync_SrcTxTypeMismatch() public {
         /// @dev TxType = 1
         uint256 txInfo = DataLib.packTxInfo(1, 2, 0, 1, address(0), ETH);
         vm.prank(getContract(ETH, "SuperformRouter"));
-        SuperPositions(address(superPositions)).updateTxHistory(0, txInfo);
+        SuperPositions(address(superPositions)).updateTxHistory(0, txInfo, receiverAddress);
 
         txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
         ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, 1, 100);
@@ -189,7 +194,7 @@ contract SuperPositionsTest is BaseSetup {
     function test_revert_stateMultiSync_InvalidPayloadStatus() public {
         uint256 txInfo = DataLib.packTxInfo(0, 2, 1, 1, address(0), ETH);
         vm.prank(getContract(ETH, "SuperformRouter"));
-        SuperPositions(address(superPositions)).updateTxHistory(0, txInfo);
+        SuperPositions(address(superPositions)).updateTxHistory(0, txInfo, receiverAddress);
 
         uint256[] memory x = new uint256[](1);
         x[0] = 100;
@@ -219,7 +224,7 @@ contract SuperPositionsTest is BaseSetup {
     function test_revert_stateMultiSync_InvalidPayload_Multi() public {
         uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
         vm.prank(getContract(ETH, "SuperformRouter"));
-        SuperPositions(address(superPositions)).updateTxHistory(0, 1);
+        SuperPositions(address(superPositions)).updateTxHistory(0, 1, receiverAddress);
 
         uint256[] memory x = new uint256[](1);
         x[0] = 100;
@@ -232,26 +237,10 @@ contract SuperPositionsTest is BaseSetup {
         superPositions.stateMultiSync(maliciousMessage);
     }
 
-    function test_revert_stateMultiSync_SrcSenderMismatch() public {
-        uint256 txInfo = DataLib.packTxInfo(0, 2, 1, 1, address(0x1), ETH);
-        vm.prank(getContract(ETH, "SuperformRouter"));
-        SuperPositions(address(superPositions)).updateTxHistory(0, 1);
-
-        uint256[] memory x = new uint256[](1);
-        x[0] = 100;
-
-        ReturnMultiData memory maliciousReturnData = ReturnMultiData(0, x, x);
-        AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
-
-        vm.broadcast(getContract(ETH, "CoreStateRegistry"));
-        vm.expectRevert(Error.SRC_SENDER_MISMATCH.selector);
-        superPositions.stateMultiSync(maliciousMessage);
-    }
-
     function test_revert_stateMultiSync_SrcTxTypeMismatch() public {
         uint256 txInfo = DataLib.packTxInfo(1, 2, 1, 1, address(0), ETH);
         vm.prank(getContract(ETH, "SuperformRouter"));
-        SuperPositions(address(superPositions)).updateTxHistory(0, txInfo);
+        SuperPositions(address(superPositions)).updateTxHistory(0, txInfo, receiverAddress);
         txInfo = DataLib.packTxInfo(0, 2, 1, 1, address(0), ETH);
         uint256[] memory x = new uint256[](1);
         x[0] = 100;

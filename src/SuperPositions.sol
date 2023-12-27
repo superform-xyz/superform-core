@@ -3,6 +3,15 @@ pragma solidity ^0.8.23;
 
 import { ERC1155A } from "ERC1155A/ERC1155A.sol";
 import { aERC20 } from "ERC1155A/aERC20.sol";
+import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+import { IBaseForm } from "src/interfaces/IBaseForm.sol";
+import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
+import { IPaymentHelper } from "./interfaces/IPaymentHelper.sol";
+import { Error } from "src/libraries/Error.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
 import {
     TransactionType,
     ReturnMultiData,
@@ -12,34 +21,28 @@ import {
     BroadcastMessage
 } from "src/types/DataTypes.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
-import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
-import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
-import { IBaseForm } from "src/interfaces/IBaseForm.sol";
-import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
-import { IPaymentHelper } from "./interfaces/IPaymentHelper.sol";
-import { Error } from "src/libraries/Error.sol";
-import { DataLib } from "src/libraries/DataLib.sol";
 
 /// @title SuperPositions
-/// @author Zeropoint Labs.
+/// @dev Cross-chain LP token minted on source chain
+/// @author Zeropoint Labs
 contract SuperPositions is ISuperPositions, ERC1155A {
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
+
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
-    bytes32 constant DEPLOY_NEW_AERC20 = keccak256("DEPLOY_NEW_AERC20");
+    uint8 internal constant CORE_STATE_REGISTRY_ID = 1;
+    bytes32 internal constant DEPLOY_NEW_AERC20 = keccak256("DEPLOY_NEW_AERC20");
 
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
     //////////////////////////////////////////////////////////////
 
     /// @dev maps all transaction data routed through the smart contract.
-    mapping(uint256 transactionId => uint256 txInfo) public override txHistory;
+    mapping(uint256 transactionId => TxHistory txHistory) public override txHistory;
 
     /// @dev is the base uri set by admin
     string public dynamicURI;
@@ -66,15 +69,18 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         _;
     }
 
+    /// @dev is used in same chain case (as superform is available on the chain to validate caller)
     modifier onlyMinter(uint256 superformId) {
         address router = superRegistry.getAddress(keccak256("SUPERFORM_ROUTER"));
 
-        /// if msg.sender isn't superformRouter then it must be state registry for that superform
+        /// if msg.sender isn't superformRouter then it must be state registry of that form
         if (msg.sender != router) {
-            (, uint32 formBeaconId,) = DataLib.getSuperform(superformId);
             uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
-            if (uint32(registryId) != formBeaconId) {
+            (address superform,,) = DataLib.getSuperform(superformId);
+            uint8 formRegistryId = IBaseForm(superform).getStateRegistryId();
+
+            if (registryId != formRegistryId) {
                 revert Error.NOT_MINTER();
             }
         }
@@ -96,10 +102,10 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         if (msg.sender != router) {
             uint256 len = superformIds.length;
             for (uint256 i; i < len; ++i) {
-                (, uint32 formBeaconId,) = DataLib.getSuperform(superformIds[i]);
+                (, uint32 formImplementationId,) = DataLib.getSuperform(superformIds[i]);
                 uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
-                if (uint32(registryId) != formBeaconId) {
+                if (uint32(registryId) != formImplementationId) {
                     revert Error.NOT_MINTER();
                 }
             }
@@ -138,18 +144,28 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc ISuperPositions
-    function updateTxHistory(uint256 payloadId_, uint256 txInfo_) external override onlyRouter {
-        txHistory[payloadId_] = txInfo_;
+    function updateTxHistory(
+        uint256 payloadId_,
+        uint256 txInfo_,
+        address receiverAddressSP_
+    )
+        external
+        override
+        onlyRouter
+    {
+        txHistory[payloadId_] = TxHistory({ txInfo: txInfo_, receiverAddressSP: receiverAddressSP_ });
+
+        emit TxHistorySet(payloadId_, txInfo_, receiverAddressSP_);
     }
 
     /// @inheritdoc ISuperPositions
-    function mintSingle(address srcSender_, uint256 id_, uint256 amount_) external override onlyMinter(id_) {
-        _mint(srcSender_, msg.sender, id_, amount_, "");
+    function mintSingle(address receiverAddressSP_, uint256 id_, uint256 amount_) external override onlyMinter(id_) {
+        _mint(receiverAddressSP_, msg.sender, id_, amount_, "");
     }
 
     /// @inheritdoc ISuperPositions
     function mintBatch(
-        address srcSender_,
+        address receiverAddressSP_,
         uint256[] memory ids_,
         uint256[] memory amounts_
     )
@@ -157,7 +173,8 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         override
         onlyBatchMinter(ids_)
     {
-        _batchMint(srcSender_, msg.sender, ids_, amounts_, "");
+        if (ids_.length != amounts_.length) revert Error.ARRAY_LENGTH_MISMATCH();
+        _batchMint(receiverAddressSP_, msg.sender, ids_, amounts_, "");
     }
 
     /// @inheritdoc ISuperPositions
@@ -175,6 +192,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         override
         onlyRouter
     {
+        if (ids_.length != amounts_.length) revert Error.ARRAY_LENGTH_MISMATCH();
         _batchBurn(srcSender_, msg.sender, ids_, amounts_);
     }
 
@@ -182,8 +200,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     function stateMultiSync(AMBMessage memory data_) external override returns (uint64 srcChainId_) {
         /// @dev here we decode the txInfo and params from the data brought back from destination
 
-        (uint256 returnTxType, uint256 callbackType, uint8 multi,, address returnDataSrcSender,) =
-            data_.txInfo.decodeTxInfo();
+        (uint256 returnTxType, uint256 callbackType, uint8 multi,,,) = data_.txInfo.decodeTxInfo();
 
         if (callbackType != uint256(CallbackType.RETURN) && callbackType != uint256(CallbackType.FAIL)) {
             revert Error.INVALID_PAYLOAD_TYPE();
@@ -194,23 +211,20 @@ contract SuperPositions is ISuperPositions, ERC1155A {
 
         _validateStateSyncer(returnData.superformIds);
 
-        uint256 txInfo = txHistory[returnData.payloadId];
+        uint256 txInfo = txHistory[returnData.payloadId].txInfo;
 
         /// @dev if txInfo is zero then the payloadId is invalid for ack
         if (txInfo == 0) {
             revert Error.TX_HISTORY_NOT_FOUND();
         }
 
-        address srcSender;
         uint256 txType;
 
         /// @dev decode initial payload info stored on source chain in this contract
-        (txType,,,, srcSender, srcChainId_) = txInfo.decodeTxInfo();
+        (txType,,,,, srcChainId_) = txInfo.decodeTxInfo();
 
         /// @dev verify this is a not single vault mint
         if (multi != 1) revert Error.INVALID_PAYLOAD_TYPE();
-        /// @dev compare final shares beneficiary to be the same (dst/src)
-        if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
         /// @dev compare txType to be the same (dst/src)
         if (returnTxType != txType) revert Error.SRC_TX_TYPE_MISMATCH();
 
@@ -219,7 +233,13 @@ contract SuperPositions is ISuperPositions, ERC1155A {
             (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN))
                 || (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL))
         ) {
-            _batchMint(srcSender, msg.sender, returnData.superformIds, returnData.amounts, "");
+            _batchMint(
+                txHistory[returnData.payloadId].receiverAddressSP,
+                msg.sender,
+                returnData.superformIds,
+                returnData.amounts,
+                ""
+            );
         } else {
             revert Error.INVALID_PAYLOAD_TYPE();
         }
@@ -231,8 +251,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     function stateSync(AMBMessage memory data_) external override returns (uint64 srcChainId_) {
         /// @dev here we decode the txInfo and params from the data brought back from destination
 
-        (uint256 returnTxType, uint256 callbackType, uint8 multi,, address returnDataSrcSender,) =
-            data_.txInfo.decodeTxInfo();
+        (uint256 returnTxType, uint256 callbackType, uint8 multi,,,) = data_.txInfo.decodeTxInfo();
 
         if (callbackType != uint256(CallbackType.RETURN) && callbackType != uint256(CallbackType.FAIL)) {
             revert Error.INVALID_PAYLOAD_TYPE();
@@ -242,7 +261,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         ReturnSingleData memory returnData = abi.decode(data_.params, (ReturnSingleData));
         _validateStateSyncer(returnData.superformId);
 
-        uint256 txInfo = txHistory[returnData.payloadId];
+        uint256 txInfo = txHistory[returnData.payloadId].txInfo;
 
         /// @dev if txInfo is zero then the payloadId is invalid for ack
         if (txInfo == 0) {
@@ -250,16 +269,12 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         }
 
         uint256 txType;
-        address srcSender;
 
         /// @dev decode initial payload info stored on source chain in this contract
-        (txType,,,, srcSender, srcChainId_) = txInfo.decodeTxInfo();
+        (txType,,,,, srcChainId_) = txInfo.decodeTxInfo();
 
         /// @dev this is a not multi vault mint
         if (multi != 0) revert Error.INVALID_PAYLOAD_TYPE();
-
-        /// @dev compare final shares beneficiary to be the same (dst/src)
-        if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
         /// @dev compare txType to be the same (dst/src)
         if (returnTxType != txType) revert Error.SRC_TX_TYPE_MISMATCH();
 
@@ -268,7 +283,13 @@ contract SuperPositions is ISuperPositions, ERC1155A {
             (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN))
                 || (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL))
         ) {
-            _mint(srcSender, msg.sender, returnData.superformId, returnData.amount, "");
+            _mint(
+                txHistory[returnData.payloadId].receiverAddressSP,
+                msg.sender,
+                returnData.superformId,
+                returnData.amount,
+                ""
+            );
         } else {
             revert Error.INVALID_PAYLOAD_TYPE();
         }
@@ -309,6 +330,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     }
 
     /// @dev helps validate the state registry id for minting superform id
+    /// @dev is used in cross chain case (as superform is not available on the chain to validate caller)
     function _validateStateSyncer(uint256 superformId_) internal view {
         uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
         _isValidStateSyncer(registryId, superformId_);
@@ -322,21 +344,21 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         }
     }
 
-    function _isValidStateSyncer(uint8 registryId_, uint256 superformId_) internal pure {
-        /// @dev Directly check if the registryId is 0 or doesn't match the allowed cases.
-        if (registryId_ == 0) {
-            revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
-        }
+    function _isValidStateSyncer(uint8 registryId_, uint256 superformId_) internal view {
+        /// @dev registryId_ zero check is done in superRegistry.getStateRegistryId()
+
         /// @dev If registryId is 1, meaning CoreStateRegistry, no further checks are necessary.
         /// @dev This is because CoreStateRegistry is the default minter for all kinds of forms
         /// @dev In case registryId is > 1, we need to check if the registryId matches the formImplementationId
-        if (registryId_ == 1) {
+        if (registryId_ == CORE_STATE_REGISTRY_ID) {
             return;
         }
 
         (, uint32 formImplementationId,) = DataLib.getSuperform(superformId_);
+        uint8 formRegistryId = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")))
+            .getFormStateRegistryId(formImplementationId);
 
-        if (uint32(registryId_) != formImplementationId) {
+        if (registryId_ != formRegistryId) {
             revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
         }
     }
@@ -347,9 +369,8 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         }
         (address superform,,) = id.getSuperform();
 
-        string memory name =
-            string(abi.encodePacked("SuperPositions AERC20 ", IBaseForm(superform).superformYieldTokenName()));
-        string memory symbol = string(abi.encodePacked("aERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
+        string memory name = string.concat("SuperPositions AERC20 ", IBaseForm(superform).superformYieldTokenName());
+        string memory symbol = string.concat("aERC20-", IBaseForm(superform).superformYieldTokenSymbol());
         uint8 decimal = uint8(IBaseForm(superform).getVaultDecimals());
         aErc20Token = address(new aERC20(name, symbol, decimal));
         /// @dev broadcast and deploy to the other destination chains
@@ -369,20 +390,31 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     /// @dev interacts with broadcast state registry to broadcasting state changes to all connected remote chains
     /// @param message_ is the crosschain message to be sent.
     function _broadcast(bytes memory message_) internal {
-        (uint256 totalFees, bytes memory extraData) =
+        bytes memory registerTransmuterAMBData =
             IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER"))).getRegisterTransmuterAMBData();
 
-        (uint8 ambId, bytes memory broadcastParams) = abi.decode(extraData, (uint8, bytes));
+        (uint8 ambId, bytes memory broadcastParams) = abi.decode(registerTransmuterAMBData, (uint8, bytes));
 
-        if (msg.value < totalFees) {
+        /// @dev if the broadcastParams are wrong this will revert
+        (uint256 gasFee, bytes memory extraData) = abi.decode(broadcastParams, (uint256, bytes));
+
+        if (msg.value < gasFee) {
             revert Error.INVALID_BROADCAST_FEE();
         }
 
         /// @dev ambIds are validated inside the broadcast state registry
-        /// @dev broadcastParams if wrong will revert in the amb implementation
-        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{
-            value: msg.value
-        }(msg.sender, ambId, message_, broadcastParams);
+        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{ value: gasFee }(
+            msg.sender, ambId, gasFee, message_, extraData
+        );
+
+        if (msg.value > gasFee) {
+            /// @dev forwards the rest to msg.sender
+            (bool success,) = payable(msg.sender).call{ value: msg.value - gasFee }("");
+
+            if (!success) {
+                revert Error.FAILED_TO_SEND_NATIVE();
+            }
+        }
     }
 
     /// @dev deploys new transmuter on broadcasting

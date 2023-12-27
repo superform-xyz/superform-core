@@ -1,17 +1,34 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { AggregatorV3Interface } from "../vendor/chainlink/AggregatorV3Interface.sol";
-import { IPaymentHelper } from "../interfaces/IPaymentHelper.sol";
-import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
-import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
-import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
-import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
-import { Error } from "../libraries/Error.sol";
-import { DataLib } from "../libraries/DataLib.sol";
-import { ProofLib } from "../libraries/ProofLib.sol";
-import { ArrayCastLib } from "../libraries/ArrayCastLib.sol";
-import "../types/DataTypes.sol";
+import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
+import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { Error } from "src/libraries/Error.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { ProofLib } from "src/libraries/ProofLib.sol";
+import { ArrayCastLib } from "src/libraries/ArrayCastLib.sol";
+import {
+    SingleDirectSingleVaultStateReq,
+    SingleXChainSingleVaultStateReq,
+    SingleDirectMultiVaultStateReq,
+    SingleXChainMultiVaultStateReq,
+    MultiDstSingleVaultStateReq,
+    MultiDstMultiVaultStateReq,
+    LiqRequest,
+    AMBMessage,
+    MultiVaultSFData,
+    SingleVaultSFData,
+    AMBExtraData,
+    InitMultiVaultData,
+    InitSingleVaultData,
+    ReturnMultiData,
+    ReturnSingleData
+} from "src/types/DataTypes.sol";
+import { AggregatorV3Interface } from "src/vendor/chainlink/AggregatorV3Interface.sol";
 
 /// @dev interface to read public variable from state registry
 interface ReadOnlyBaseRegistry is IBaseStateRegistry {
@@ -19,8 +36,8 @@ interface ReadOnlyBaseRegistry is IBaseStateRegistry {
 }
 
 /// @title PaymentHelper
+/// @dev Helps estimate the cost for the entire transaction lifecycle
 /// @author ZeroPoint Labs
-/// @dev helps estimating the cost for the entire transaction lifecycle
 contract PaymentHelper is IPaymentHelper {
     using DataLib for uint256;
     using ArrayCastLib for LiqRequest;
@@ -32,9 +49,13 @@ contract PaymentHelper is IPaymentHelper {
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
 
+    uint256 private constant PROOF_LENGTH = 160;
+    uint8 private constant SUPPORTED_FEED_PRECISION = 8;
+    uint32 private constant TIMELOCK_FORM_ID = 2;
+    uint256 private constant MAX_UINT256 = type(uint256).max;
+
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
-    uint32 private constant TIMELOCK_FORM_ID = 2;
 
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
@@ -52,9 +73,9 @@ contract PaymentHelper is IPaymentHelper {
     mapping(uint64 chainId => uint256 gasPerByte) public gasPerByte;
     mapping(uint64 chainId => uint256 gasForOps) public ackGasCost;
     mapping(uint64 chainId => uint256 gasForOps) public timelockCost;
+    mapping(uint64 chainId => uint256 gasForOps) public emergencyCost;
 
     /// @dev register transmuter params
-    uint256 public totalTransmuterFees;
     bytes public extraDataForTransmuter;
 
     //////////////////////////////////////////////////////////////
@@ -70,6 +91,14 @@ contract PaymentHelper is IPaymentHelper {
         uint8 isMulti;
         uint64 srcChainId;
         bytes message;
+    }
+
+    struct LocalEstimateVars {
+        uint256 len;
+        uint256 superformIdsLen;
+        uint256 totalDstGas;
+        uint256 ambFees;
+        bool paused;
     }
 
     //////////////////////////////////////////////////////////////
@@ -95,6 +124,10 @@ contract PaymentHelper is IPaymentHelper {
     //////////////////////////////////////////////////////////////
 
     constructor(address superRegistry_) {
+        if (superRegistry_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
+
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }
@@ -126,13 +159,8 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @inheritdoc IPaymentHelper
-    function getRegisterTransmuterAMBData()
-        external
-        view
-        override
-        returns (uint256 totalFees, bytes memory extraData)
-    {
-        return (totalTransmuterFees, extraDataForTransmuter);
+    function getRegisterTransmuterAMBData() external view override returns (bytes memory) {
+        return extraDataForTransmuter;
     }
 
     /// @inheritdoc IPaymentHelper
@@ -145,53 +173,64 @@ contract PaymentHelper is IPaymentHelper {
         override
         returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
     {
-        uint256 len = req_.dstChainIds.length;
-        uint256 superformIdsLen;
-        uint256 totalDstGas;
+        LocalEstimateVars memory v;
+        v.len = req_.dstChainIds.length;
 
-        for (uint256 i; i < len; ++i) {
-            totalDstGas = 0;
+        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+        for (uint256 i; i < v.len; ++i) {
+            bool xChain = req_.dstChainIds[i] != CHAIN_ID;
+
+            v.totalDstGas = 0;
 
             /// @dev step 1: estimate amb costs
-            uint256 ambFees = _estimateAMBFees(
-                req_.ambIds[i], req_.dstChainIds[i], _generateMultiVaultMessage(req_.superformsData[i])
-            );
+            v.ambFees = xChain
+                ? _estimateAMBFees(req_.ambIds[i], req_.dstChainIds[i], _generateMultiVaultMessage(req_.superformsData[i]))
+                : 0;
 
-            superformIdsLen = req_.superformsData[i].superformIds.length;
+            v.superformIdsLen = req_.superformsData[i].superformIds.length;
 
-            srcAmount += ambFees;
+            srcAmount += v.ambFees;
 
             if (isDeposit_) {
-                /// @dev step 2: estimate update cost (only for deposit)
-                totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], superformIdsLen);
-
-                /// @dev step 3: estimation processing cost of acknowledgement
-                /// @notice optimistically estimating. (Ideal case scenario: no failed deposits / withdrawals)
-                srcAmount += _estimateAckProcessingCost(superformIdsLen);
-
-                /// @dev step 4: estimate liq amount
+                /// @dev step 2: estimate liq amount
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequests);
 
-                /// @dev step 5: estimate dst swap cost if it exists
-                totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwaps);
-            }
+                if (xChain) {
+                    /// @dev step 3: estimate update cost (only for deposit)
+                    v.totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], v.superformIdsLen);
 
-            /// @dev step 6: estimate execution costs in dst (withdraw / deposit)
-            /// note: execution cost includes acknowledgement messaging cost
-            totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], superformIdsLen);
+                    uint256 arrLen = req_.superformsData[i].retain4626s.length;
+                    uint256 ackLen;
+                    for (uint256 j; j < arrLen; ++j) {
+                        if (!req_.superformsData[i].retain4626s[j]) ++ackLen;
+                    }
+                    /// @dev step 4: estimation processing cost of acknowledgement
+                    /// @notice optimistically estimating. (Ideal case scenario: no failed deposits / withdrawals)
+                    srcAmount += _estimateAckProcessingCost(v.superformIdsLen);
 
-            /// @dev step 6: estimate if timelock form processing costs are involved
-            if (!isDeposit_) {
-                for (uint256 j; j < superformIdsLen; ++j) {
+                    /// @dev step 5: estimate dst swap cost if it exists
+                    v.totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwaps);
+                }
+            } else {
+                /// @dev step 6: estimate if timelock form processing costs are involved
+                for (uint256 j; j < v.superformIdsLen; ++j) {
                     (, uint32 formId,) = req_.superformsData[i].superformIds[j].getSuperform();
-                    if (formId == TIMELOCK_FORM_ID) {
-                        totalDstGas += timelockCost[req_.dstChainIds[i]];
+                    v.paused = factory.isFormImplementationPaused(formId);
+
+                    if (!v.paused && formId == TIMELOCK_FORM_ID) {
+                        v.totalDstGas += timelockCost[req_.dstChainIds[i]];
+                    } else if (v.paused) {
+                        v.totalDstGas += emergencyCost[req_.dstChainIds[i]];
                     }
                 }
             }
 
-            /// @dev step 7: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
-            dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
+            /// @dev step 7: estimate execution costs in dst (withdraw / deposit)
+            /// note: execution cost includes acknowledgement messaging cost
+            v.totalDstGas += xChain ? _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], v.superformIdsLen) : 0;
+
+            /// @dev step 8: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
+            dstAmount += _convertToNativeFee(req_.dstChainIds[i], v.totalDstGas);
         }
 
         totalAmount = srcAmount + dstAmount + liqAmount;
@@ -208,42 +247,53 @@ contract PaymentHelper is IPaymentHelper {
         returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
     {
         uint256 len = req_.dstChainIds.length;
+        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+
         for (uint256 i; i < len; ++i) {
+            bool xChain = req_.dstChainIds[i] != CHAIN_ID;
             uint256 totalDstGas;
 
             /// @dev step 1: estimate amb costs
-            uint256 ambFees = _estimateAMBFees(
-                req_.ambIds[i], req_.dstChainIds[i], _generateSingleVaultMessage(req_.superformsData[i])
-            );
+            uint256 ambFees = xChain
+                ? _estimateAMBFees(req_.ambIds[i], req_.dstChainIds[i], _generateSingleVaultMessage(req_.superformsData[i]))
+                : 0;
 
             srcAmount += ambFees;
 
             if (isDeposit_) {
-                /// @dev step 2: estimate update cost (only for deposit)
-                totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], 1);
-
-                /// @dev step 3: estimation execution cost of acknowledgement
-                srcAmount += _estimateAckProcessingCost(1);
-
-                /// @dev step 4: estimate the liqAmount
+                /// @dev step 2: estimate the liqAmount
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequest.castLiqRequestToArray());
+                if (xChain) {
+                    /// @dev step 3: estimate update cost (only for deposit)
+                    totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], 1);
 
-                /// @dev step 5: estimate if swap costs are involved
-                totalDstGas +=
-                    _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwap.castBoolToArray());
+                    /// @dev step 4: estimation execution cost of acknowledgement
+                    if (!req_.superformsData[i].retain4626) {
+                        srcAmount += _estimateAckProcessingCost(1);
+                    }
+
+                    /// @dev step 5: estimate if swap costs are involved
+                    totalDstGas +=
+                        _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].hasDstSwap.castBoolToArray());
+                }
+            } else {
+                /// @dev step 6: estimate if timelock form processing costs are involved
+                (, uint32 formId,) = req_.superformsData[i].superformId.getSuperform();
+
+                bool paused = factory.isFormImplementationPaused(formId);
+
+                if (!paused && formId == TIMELOCK_FORM_ID) {
+                    totalDstGas += timelockCost[req_.dstChainIds[i]];
+                } else if (paused) {
+                    totalDstGas += emergencyCost[req_.dstChainIds[i]];
+                }
             }
 
-            /// @dev step 5: estimate execution costs in dst
+            /// @dev step 7: estimate execution costs in dst
             /// note: execution cost includes acknowledgement messaging cost
-            totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], 1);
+            totalDstGas += xChain ? _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], 1) : 0;
 
-            /// @dev step 6: estimate if timelock form processing costs are involved
-            (, uint32 formId,) = req_.superformsData[i].superformId.getSuperform();
-            if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
-                totalDstGas += timelockCost[req_.dstChainIds[i]];
-            }
-
-            /// @dev step 7: convert all dst gas estimates to src chain estimate
+            /// @dev step 8: convert all dst gas estimates to src chain estimate
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
         }
 
@@ -263,40 +313,51 @@ contract PaymentHelper is IPaymentHelper {
         uint256 totalDstGas;
         uint256 superformIdsLen = req_.superformsData.superformIds.length;
 
-        /// @dev step 1: estimate amb costs
+        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+
+        /// @dev step 1: estimate AMB costs
         uint256 ambFees =
             _estimateAMBFees(req_.ambIds, req_.dstChainId, _generateMultiVaultMessage(req_.superformsData));
-
         srcAmount += ambFees;
 
-        /// @dev step 2: estimate update cost (only for deposit)
-        if (isDeposit_) totalDstGas += _estimateUpdateCost(req_.dstChainId, superformIdsLen);
+        if (isDeposit_) {
+            /// @dev step 2: estimate update cost (only for deposit)
+            totalDstGas += _estimateUpdateCost(req_.dstChainId, superformIdsLen);
 
-        /// @dev step 3: estimate execution costs in dst
-        /// note: execution cost includes acknowledgement messaging cost
-        totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, superformIdsLen);
+            uint256 arrLen = req_.superformsData.retain4626s.length;
+            uint256 ackLen;
 
-        /// @dev step 4: estimation execution cost of acknowledgement
-        if (isDeposit_) srcAmount += _estimateAckProcessingCost(superformIdsLen);
+            for (uint256 i; i < arrLen; ++i) {
+                if (!req_.superformsData.retain4626s[i]) ++ackLen;
+            }
 
-        /// @dev step 5: estimate liq amount
-        if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformsData.liqRequests);
+            /// @dev step 3: estimation execution cost of acknowledgement
+            srcAmount += _estimateAckProcessingCost(ackLen);
 
-        /// @dev step 6: estimate if swap costs are involved
-        if (isDeposit_) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformsData.hasDstSwaps);
+            /// @dev step 4: estimate the liqAmount
+            liqAmount += _estimateLiqAmount(req_.superformsData.liqRequests);
 
-        /// @dev step 7: estimate if timelock form processing costs are involved
-        if (!isDeposit_) {
+            /// @dev step 5: estimate if swap costs are involved
+            totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformsData.hasDstSwaps);
+        } else {
+            /// @dev step 6: process non-deposit logic for timelock form processing costs
             for (uint256 i; i < superformIdsLen; ++i) {
                 (, uint32 formId,) = req_.superformsData.superformIds[i].getSuperform();
 
-                if (formId == TIMELOCK_FORM_ID) {
-                    totalDstGas += timelockCost[CHAIN_ID];
+                bool paused = factory.isFormImplementationPaused(formId);
+
+                if (!paused && formId == TIMELOCK_FORM_ID) {
+                    totalDstGas += timelockCost[req_.dstChainId];
+                } else if (paused) {
+                    totalDstGas += emergencyCost[req_.dstChainId];
                 }
             }
         }
 
-        /// @dev step 8: convert all dst gas estimates to src chain estimate
+        /// @dev step 7: estimate execution costs in destination
+        totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, superformIdsLen);
+
+        /// @dev step 8: convert all destination gas estimates to source chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
 
         totalAmount = srcAmount + dstAmount + liqAmount;
@@ -313,37 +374,44 @@ contract PaymentHelper is IPaymentHelper {
         returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
     {
         uint256 totalDstGas;
-        /// @dev step 1: estimate amb costs
+        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+
+        /// @dev step 1: estimate AMB costs
         uint256 ambFees =
             _estimateAMBFees(req_.ambIds, req_.dstChainId, _generateSingleVaultMessage(req_.superformData));
-
         srcAmount += ambFees;
 
-        /// @dev step 2: estimate update cost (only for deposit)
-        if (isDeposit_) totalDstGas += _estimateUpdateCost(req_.dstChainId, 1);
+        if (isDeposit_) {
+            /// @dev step 2: estimate update cost (only for deposit)
+            totalDstGas += _estimateUpdateCost(req_.dstChainId, 1);
 
-        /// @dev step 3: estimate execution costs in dst
-        /// note: execution cost includes acknowledgement messaging cost
+            /// @dev step 3: estimation execution cost of acknowledgement
+            if (!req_.superformData.retain4626) {
+                srcAmount += _estimateAckProcessingCost(1);
+            }
+
+            /// @dev step 4: estimate the liqAmount
+            liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
+
+            /// @dev step 5: estimate if swap costs are involved
+            totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformData.hasDstSwap.castBoolToArray());
+        } else {
+            /// @dev step 6: process non-deposit logic for timelock form processing costs
+            (, uint32 formId,) = req_.superformData.superformId.getSuperform();
+
+            bool paused = factory.isFormImplementationPaused(formId);
+
+            if (!paused && formId == TIMELOCK_FORM_ID) {
+                totalDstGas += timelockCost[req_.dstChainId];
+            } else if (paused) {
+                totalDstGas += emergencyCost[req_.dstChainId];
+            }
+        }
+
+        /// @dev step 7: estimate execution costs in destination
         totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, 1);
 
-        /// @dev step 4: estimation execution cost of acknowledgement
-        if (isDeposit_) srcAmount += _estimateAckProcessingCost(1);
-
-        /// @dev step 5: estimate the liq amount
-        if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
-
-        /// @dev step 6: estimate if swap costs are involved
-        if (isDeposit_) {
-            totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformData.hasDstSwap.castBoolToArray());
-        }
-
-        /// @dev step 7: estimate if timelock form processing costs are involved
-        (, uint32 formId,) = req_.superformData.superformId.getSuperform();
-        if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
-            totalDstGas += timelockCost[CHAIN_ID];
-        }
-
-        /// @dev step 8: convert all dst gas estimates to src chain estimate
+        /// @dev step 8: convert all destination gas estimates to source chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
 
         totalAmount = srcAmount + dstAmount + liqAmount;
@@ -359,13 +427,22 @@ contract PaymentHelper is IPaymentHelper {
         override
         returns (uint256 liqAmount, uint256 srcAmount, uint256 totalAmount)
     {
-        (, uint32 formId,) = req_.superformData.superformId.getSuperform();
-        /// @dev only if timelock form withdrawal is involved
-        if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
-            srcAmount += timelockCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
-        }
+        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
 
-        if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
+        if (!isDeposit_) {
+            /// @dev only if timelock form withdrawal is involved
+            (, uint32 formId,) = req_.superformData.superformId.getSuperform();
+
+            bool paused = factory.isFormImplementationPaused(formId);
+
+            if (!paused && formId == TIMELOCK_FORM_ID) {
+                srcAmount += timelockCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
+            } else if (paused) {
+                srcAmount += emergencyCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
+            }
+        } else {
+            liqAmount = _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
+        }
 
         /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
@@ -381,17 +458,25 @@ contract PaymentHelper is IPaymentHelper {
         override
         returns (uint256 liqAmount, uint256 srcAmount, uint256 totalAmount)
     {
-        uint256 len = req_.superformData.superformIds.length;
-        for (uint256 i; i < len; ++i) {
-            (, uint32 formId,) = req_.superformData.superformIds[i].getSuperform();
-            uint256 timelockPrice = timelockCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
-            /// @dev only if timelock form withdrawal is involved
-            if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
-                srcAmount += timelockPrice;
-            }
-        }
+        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
 
-        if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequests);
+        if (!isDeposit_) {
+            uint256 len = req_.superformData.superformIds.length;
+            uint256 timelockPrice = timelockCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
+            uint256 emergencyPrice = emergencyCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
+            for (uint256 i; i < len; ++i) {
+                (, uint32 formId,) = req_.superformData.superformIds[i].getSuperform();
+                bool paused = factory.isFormImplementationPaused(formId);
+
+                if (!paused && formId == TIMELOCK_FORM_ID) {
+                    srcAmount += timelockPrice;
+                } else if (paused) {
+                    srcAmount += emergencyPrice;
+                }
+            }
+        } else {
+            liqAmount += _estimateLiqAmount(req_.superformData.liqRequests);
+        }
 
         /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
@@ -412,17 +497,49 @@ contract PaymentHelper is IPaymentHelper {
         uint256[] memory fees = new uint256[](len);
 
         /// @dev just checks the estimate for sending message from src -> dst
-        for (uint256 i; i < len; ++i) {
-            fees[i] = CHAIN_ID != dstChainId_
-                ? IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
+        if (CHAIN_ID != dstChainId_) {
+            for (uint256 i; i < len; ++i) {
+                fees[i] = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
                     dstChainId_, message_, extraData_[i]
-                )
-                : 0;
+                );
 
-            totalFees += fees[i];
+                totalFees += fees[i];
+            }
         }
 
         return (totalFees, fees);
+    }
+
+    /// @dev helps estimate the acknowledgement costs for amb processing
+    function estimateAckCost(uint256 payloadId_) external view returns (uint256 totalFees) {
+        EstimateAckCostVars memory v;
+        IBaseStateRegistry coreStateRegistry =
+            IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
+        v.currPayloadId = coreStateRegistry.payloadsCount();
+
+        if (payloadId_ > v.currPayloadId) revert Error.INVALID_PAYLOAD_ID();
+
+        v.payloadHeader = coreStateRegistry.payloadHeader(payloadId_);
+        v.payloadBody = coreStateRegistry.payloadBody(payloadId_);
+
+        (, v.callbackType, v.isMulti,,, v.srcChainId) = DataLib.decodeTxInfo(v.payloadHeader);
+
+        /// if callback type is return then return 0
+        if (v.callbackType != 0) return 0;
+
+        if (v.isMulti == 1) {
+            InitMultiVaultData memory data = abi.decode(v.payloadBody, (InitMultiVaultData));
+            v.payloadBody = abi.encode(ReturnMultiData(v.currPayloadId, data.superformIds, data.amounts));
+        } else {
+            InitSingleVaultData memory data = abi.decode(v.payloadBody, (InitSingleVaultData));
+            v.payloadBody = abi.encode(ReturnSingleData(v.currPayloadId, data.superformId, data.amount));
+        }
+
+        v.ackAmbIds = coreStateRegistry.getMessageAMB(payloadId_);
+
+        v.message = abi.encode(AMBMessage(coreStateRegistry.payloadHeader(payloadId_), v.payloadBody));
+
+        return _estimateAMBFees(v.ackAmbIds, v.srcChainId, v.message);
     }
 
     //////////////////////////////////////////////////////////////
@@ -439,11 +556,21 @@ contract PaymentHelper is IPaymentHelper {
         onlyProtocolAdmin
     {
         if (config_.nativeFeedOracle != address(0)) {
-            nativeFeedOracle[chainId_] = AggregatorV3Interface(config_.nativeFeedOracle);
+            AggregatorV3Interface nativeFeedOracleContract = AggregatorV3Interface(config_.nativeFeedOracle);
+            if (nativeFeedOracleContract.decimals() != SUPPORTED_FEED_PRECISION) {
+                revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
+            }
+
+            nativeFeedOracle[chainId_] = nativeFeedOracleContract;
         }
 
         if (config_.gasPriceOracle != address(0)) {
-            gasPriceOracle[chainId_] = AggregatorV3Interface(config_.gasPriceOracle);
+            AggregatorV3Interface gasPriceOracleContract = AggregatorV3Interface(config_.nativeFeedOracle);
+            if (gasPriceOracleContract.decimals() != SUPPORTED_FEED_PRECISION) {
+                revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
+            }
+
+            gasPriceOracle[chainId_] = gasPriceOracleContract;
         }
 
         swapGasUsed[chainId_] = config_.swapGasUsed;
@@ -455,6 +582,9 @@ contract PaymentHelper is IPaymentHelper {
         gasPerByte[chainId_] = config_.dstGasPerByte;
         ackGasCost[chainId_] = config_.ackGasCost;
         timelockCost[chainId_] = config_.timelockCost;
+        emergencyCost[chainId_] = config_.emergencyCost;
+
+        emit ChainConfigAdded(chainId_, config_);
     }
 
     /// @inheritdoc IPaymentHelper
@@ -469,12 +599,32 @@ contract PaymentHelper is IPaymentHelper {
     {
         /// @dev Type 1: DST TOKEN PRICE FEED ORACLE
         if (configType_ == 1) {
-            nativeFeedOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
+            AggregatorV3Interface nativeFeedOracleContract = AggregatorV3Interface(abi.decode(config_, (address)));
+
+            /// @dev allows setting price feed to address(0), equivalent for resetting native price
+            if (
+                address(nativeFeedOracleContract) != address(0)
+                    && nativeFeedOracleContract.decimals() != SUPPORTED_FEED_PRECISION
+            ) {
+                revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
+            }
+
+            nativeFeedOracle[chainId_] = nativeFeedOracleContract;
         }
 
         /// @dev Type 2: DST GAS PRICE ORACLE
         if (configType_ == 2) {
-            gasPriceOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
+            AggregatorV3Interface gasPriceOracleContract = AggregatorV3Interface(abi.decode(config_, (address)));
+
+            /// @dev allows setting gas price to address(0), equivalent for resetting gas price
+            if (
+                address(gasPriceOracleContract) != address(0)
+                    && gasPriceOracleContract.decimals() != SUPPORTED_FEED_PRECISION
+            ) {
+                revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
+            }
+
+            gasPriceOracle[chainId_] = gasPriceOracleContract;
         }
 
         /// @dev Type 3: SWAP GAS USED
@@ -522,18 +672,16 @@ contract PaymentHelper is IPaymentHelper {
             timelockCost[chainId_] = abi.decode(config_, (uint256));
         }
 
+        /// @dev Type 12: EMERGENCY PROCESSING COST
+        if (configType_ == 12) {
+            emergencyCost[chainId_] = abi.decode(config_, (uint256));
+        }
+
         emit ChainConfigUpdated(chainId_, configType_, config_);
     }
 
     /// @inheritdoc IPaymentHelper
-    function updateRegisterAERC20Params(
-        uint256 totalTransmuterFees_,
-        bytes memory extraDataForTransmuter_
-    )
-        external
-        onlyEmergencyAdmin
-    {
-        totalTransmuterFees = totalTransmuterFees_;
+    function updateRegisterAERC20Params(bytes memory extraDataForTransmuter_) external onlyEmergencyAdmin {
         extraDataForTransmuter = extraDataForTransmuter_;
     }
 
@@ -558,16 +706,13 @@ contract PaymentHelper is IPaymentHelper {
         uint256 gasReqPerByte = gasPerByte[dstChainId_];
         uint256 totalDstGasReqInWei = abi.encode(ambIdEncodedMessage).length * gasReqPerByte;
 
-        AMBMessage memory decodedMessage = abi.decode(message_, (AMBMessage));
-        decodedMessage.params = message_.computeProofBytes();
-
-        uint256 totalDstGasReqInWeiForProof = abi.encode(decodedMessage).length * gasReqPerByte;
+        /// @dev proof length is always of fixed length
+        uint256 totalDstGasReqInWeiForProof = PROOF_LENGTH * gasReqPerByte;
 
         extraDataPerAMB = new bytes[](len);
 
         for (uint256 i; i < len; ++i) {
             uint256 gasReq = i != 0 ? totalDstGasReqInWeiForProof : totalDstGasReqInWei;
-
             /// @dev amb id 1: layerzero
             /// @dev amb id 2: hyperlane
             /// @dev amb id 3: wormhole
@@ -583,38 +728,6 @@ contract PaymentHelper is IPaymentHelper {
                 extraDataPerAMB[i] = abi.encode(0, gasReq);
             }
         }
-    }
-
-    /// @dev helps estimate the acknowledgement costs for amb processing
-    function estimateAckCost(uint256 payloadId_) external view returns (uint256 totalFees) {
-        EstimateAckCostVars memory v;
-        IBaseStateRegistry coreStateRegistry =
-            IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
-        v.currPayloadId = coreStateRegistry.payloadsCount();
-
-        if (payloadId_ > v.currPayloadId) revert Error.INVALID_PAYLOAD_ID();
-
-        v.payloadHeader = coreStateRegistry.payloadHeader(payloadId_);
-        v.payloadBody = coreStateRegistry.payloadBody(payloadId_);
-
-        (, v.callbackType, v.isMulti,,, v.srcChainId) = DataLib.decodeTxInfo(v.payloadHeader);
-
-        /// if callback type is return then return 0
-        if (v.callbackType != 0) return 0;
-
-        if (v.isMulti == 1) {
-            InitMultiVaultData memory data = abi.decode(v.payloadBody, (InitMultiVaultData));
-            v.payloadBody = abi.encode(ReturnMultiData(v.currPayloadId, data.superformIds, data.amounts));
-        } else {
-            InitSingleVaultData memory data = abi.decode(v.payloadBody, (InitSingleVaultData));
-            v.payloadBody = abi.encode(ReturnSingleData(v.currPayloadId, data.superformId, data.amount));
-        }
-
-        v.ackAmbIds = coreStateRegistry.getMessageAMB(payloadId_);
-
-        v.message = abi.encode(AMBMessage(coreStateRegistry.payloadHeader(payloadId_), v.payloadBody));
-
-        return _estimateAMBFees(v.ackAmbIds, v.srcChainId, v.message);
     }
 
     /// @dev helps estimate the cross-chain message costs
@@ -634,18 +747,18 @@ contract PaymentHelper is IPaymentHelper {
         AMBMessage memory ambIdEncodedMessage = abi.decode(message_, (AMBMessage));
         ambIdEncodedMessage.params = abi.encode(ambIds_, ambIdEncodedMessage.params);
 
-        bytes memory proof_ = abi.encode(AMBMessage(type(uint256).max, abi.encode(keccak256(message_))));
+        bytes memory proof_ = abi.encode(AMBMessage(MAX_UINT256, abi.encode(keccak256(message_))));
 
         /// @dev just checks the estimate for sending message from src -> dst
         /// @dev only ambIds_[0] = primary amb (rest of the ambs send only the proof)
-        for (uint256 i; i < len; ++i) {
-            uint256 tempFee = CHAIN_ID != dstChainId_
-                ? IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
+        if (CHAIN_ID != dstChainId_) {
+            for (uint256 i; i < len; ++i) {
+                uint256 tempFee = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
                     dstChainId_, i != 0 ? proof_ : abi.encode(ambIdEncodedMessage), extraDataPerAMB[i]
-                )
-                : 0;
+                );
 
-            totalFees += tempFee;
+                totalFees += tempFee;
+            }
         }
     }
 
@@ -668,18 +781,18 @@ contract PaymentHelper is IPaymentHelper {
 
         feeSplitUp = new uint256[](len);
 
-        bytes memory proof_ = abi.encode(AMBMessage(type(uint256).max, abi.encode(keccak256(message_))));
+        bytes memory proof_ = abi.encode(AMBMessage(MAX_UINT256, abi.encode(keccak256(message_))));
 
         /// @dev just checks the estimate for sending message from src -> dst
-        for (uint256 i; i < len; ++i) {
-            uint256 tempFee = CHAIN_ID != dstChainId_
-                ? IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
+        if (CHAIN_ID != dstChainId_) {
+            for (uint256 i; i < len; ++i) {
+                uint256 tempFee = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
                     dstChainId_, i != 0 ? proof_ : abi.encode(ambIdEncodedMessage), extraDataPerAMB[i]
-                )
-                : 0;
+                );
 
-            totalFees += tempFee;
-            feeSplitUp[i] = tempFee;
+                totalFees += tempFee;
+                feeSplitUp[i] = tempFee;
+            }
         }
     }
 
@@ -759,6 +872,7 @@ contract PaymentHelper is IPaymentHelper {
                 _getNextPayloadId(),
                 sfData_.superformId,
                 sfData_.amount,
+                sfData_.outputAmount,
                 sfData_.maxSlippage,
                 sfData_.liqRequest,
                 sfData_.hasDstSwap,
@@ -767,7 +881,7 @@ contract PaymentHelper is IPaymentHelper {
                 sfData_.extraFormData
             )
         );
-        message_ = abi.encode(AMBMessage(type(uint256).max, ambData));
+        message_ = abi.encode(AMBMessage(MAX_UINT256, ambData));
     }
 
     /// @dev generates the amb message for multi vault data
@@ -781,6 +895,7 @@ contract PaymentHelper is IPaymentHelper {
                 _getNextPayloadId(),
                 sfData_.superformIds,
                 sfData_.amounts,
+                sfData_.outputAmounts,
                 sfData_.maxSlippages,
                 sfData_.liqRequests,
                 sfData_.hasDstSwaps,
@@ -789,7 +904,7 @@ contract PaymentHelper is IPaymentHelper {
                 sfData_.extraFormData
             )
         );
-        message_ = abi.encode(AMBMessage(type(uint256).max, ambData));
+        message_ = abi.encode(AMBMessage(MAX_UINT256, ambData));
     }
 
     /// @dev helps convert the dst gas fee into src chain native fee
@@ -815,6 +930,8 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev converts the usd value to source chain's native token
         /// @dev native token price is 8 decimal which cancels the 8 decimal multiplied in previous step
+        uint256 nativeTokenPrice = _getNativeTokenPrice(CHAIN_ID); // native token price - 8 decimal
+        if (nativeTokenPrice == 0) revert Error.INVALID_NATIVE_TOKEN_PRICE();
         nativeFee = (dstUsdValue) / _getNativeTokenPrice(CHAIN_ID);
     }
 
@@ -830,10 +947,15 @@ contract PaymentHelper is IPaymentHelper {
     function _getGasPrice(uint64 chainId_) internal view returns (uint256) {
         address oracleAddr = address(gasPriceOracle[chainId_]);
         if (oracleAddr != address(0)) {
-            (, int256 value,, uint256 updatedAt,) = AggregatorV3Interface(oracleAddr).latestRoundData();
-            if (value <= 0) revert Error.CHAINLINK_MALFUNCTION();
-            if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
-            return uint256(value);
+            try AggregatorV3Interface(oracleAddr).latestRoundData() returns (
+                uint80, int256 value, uint256, uint256 updatedAt, uint80
+            ) {
+                if (value <= 0) revert Error.CHAINLINK_MALFUNCTION();
+                if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
+                return uint256(value);
+            } catch {
+                /// @dev do nothing and return the default price at the end of the function
+            }
         }
 
         return gasPrice[chainId_];
@@ -844,10 +966,15 @@ contract PaymentHelper is IPaymentHelper {
     function _getNativeTokenPrice(uint64 chainId_) internal view returns (uint256) {
         address oracleAddr = address(nativeFeedOracle[chainId_]);
         if (oracleAddr != address(0)) {
-            (, int256 dstTokenPrice,, uint256 updatedAt,) = AggregatorV3Interface(oracleAddr).latestRoundData();
-            if (dstTokenPrice <= 0) revert Error.CHAINLINK_MALFUNCTION();
-            if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
-            return uint256(dstTokenPrice);
+            try AggregatorV3Interface(oracleAddr).latestRoundData() returns (
+                uint80, int256 dstTokenPrice, uint256, uint256 updatedAt, uint80
+            ) {
+                if (dstTokenPrice <= 0) revert Error.CHAINLINK_MALFUNCTION();
+                if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
+                return uint256(dstTokenPrice);
+            } catch {
+                /// @dev do nothing and return the default price at the end of the function
+            }
         }
 
         return nativePrice[chainId_];

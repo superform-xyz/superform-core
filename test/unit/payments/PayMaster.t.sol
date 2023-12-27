@@ -90,20 +90,45 @@ contract PayMasterTest is ProtocolActions {
 
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
         vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
-        PayMaster(payable(feeCollector)).withdrawTo(keccak256("CORE_REGISTRY_PROCESSOR"), 2 wei);
+        PayMaster(payable(feeCollector)).withdrawNativeTo(keccak256("CORE_REGISTRY_PROCESSOR"), 2 wei);
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
         superRegistry.setAddress(keccak256("CORE_REGISTRY_PROCESSOR"), address(0), ETH);
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        PayMaster(payable(feeCollector)).withdrawTo(keccak256("CORE_REGISTRY_PROCESSOR"), 1 wei);
+        PayMaster(payable(feeCollector)).withdrawNativeTo(keccak256("CORE_REGISTRY_PROCESSOR"), 1 wei);
 
         superRegistry.setAddress(keccak256("CORE_REGISTRY_PROCESSOR"), txProcessorETH, ETH);
 
         /// @dev admin moves the payment from fee collector to tx processor
-        PayMaster(payable(feeCollector)).withdrawTo(keccak256("CORE_REGISTRY_PROCESSOR"), 1 wei);
+        PayMaster(payable(feeCollector)).withdrawNativeTo(keccak256("CORE_REGISTRY_PROCESSOR"), 1 wei);
         assertEq(feeCollector.balance, 0);
         assertEq(txProcessorETH.balance, 1 wei);
+    }
+
+    function test_withdrawNativeToSuperformReceiver() public {
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address feeCollector = getContract(ETH, "PayMaster");
+        address token = getContract(ETH, "DAI");
+        /// @dev transfer 10 dai to paymaster
+        deal(token, feeCollector, 10e18);
+
+        /// @dev admin tries withdraw 0
+        vm.expectRevert(Error.ZERO_INPUT_VALUE.selector);
+        PayMaster(payable(feeCollector)).withdrawTo(keccak256("SUPERFORM_RECEIVER"), token, 0);
+
+        /// @dev admin tries withdraw token address 0
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        PayMaster(payable(feeCollector)).withdrawTo(keccak256("SUPERFORM_RECEIVER"), address(0), 10e18);
+
+        /// @dev admin tries withdraw token  above balance
+        vm.expectRevert(Error.INSUFFICIENT_BALANCE.selector);
+        PayMaster(payable(feeCollector)).withdrawTo(keccak256("SUPERFORM_RECEIVER"), token, 11e18);
+
+        /// @dev admin tries withdraw
+        PayMaster(payable(feeCollector)).withdrawTo(keccak256("SUPERFORM_RECEIVER"), token, 10e18);
     }
 
     function test_withdrawNativeToTxUpdater() public {
@@ -118,18 +143,18 @@ contract PayMasterTest is ProtocolActions {
 
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
         vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
-        PayMaster(payable(feeCollector)).withdrawTo(keccak256("CORE_REGISTRY_UPDATER"), 2 wei);
+        PayMaster(payable(feeCollector)).withdrawNativeTo(keccak256("CORE_REGISTRY_UPDATER"), 2 wei);
 
         /// @dev admin tries withdraw if updater address is zero (check if handled gracefully)
         superRegistry.setAddress(keccak256("CORE_REGISTRY_UPDATER"), address(0), ETH);
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        PayMaster(payable(feeCollector)).withdrawTo(keccak256("CORE_REGISTRY_UPDATER"), 1 wei);
+        PayMaster(payable(feeCollector)).withdrawNativeTo(keccak256("CORE_REGISTRY_UPDATER"), 1 wei);
 
         superRegistry.setAddress(keccak256("CORE_REGISTRY_UPDATER"), txUpdaterETH, ETH);
 
         /// @dev admin moves the payment from fee collector to tx updater
-        PayMaster(payable(feeCollector)).withdrawTo(keccak256("CORE_REGISTRY_UPDATER"), 1 wei);
+        PayMaster(payable(feeCollector)).withdrawNativeTo(keccak256("CORE_REGISTRY_UPDATER"), 1 wei);
         assertEq(feeCollector.balance, 0);
         assertEq(txUpdaterETH.balance, 1 wei);
     }
@@ -147,7 +172,7 @@ contract PayMasterTest is ProtocolActions {
 
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
         vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
-        PayMaster(payable(feeCollector)).withdrawTo(keccak256("KEEPER_MOCK"), 1 wei);
+        PayMaster(payable(feeCollector)).withdrawNativeTo(keccak256("KEEPER_MOCK"), 1 wei);
     }
 
     function test_rebalanceToCoreStateRegistryTxProcessor() public {
@@ -300,9 +325,11 @@ contract PayMasterTest is ProtocolActions {
 
         bytes memory data = abi.encode(messageId, destination, 1_500_000);
 
+        uint256 fees = HyperlaneImplementation(hyperlane).igp().quoteGasPayment(destination, 1_500_000);
+
         vm.prank(deployer);
         vm.deal(feeCollector, 10 ether);
-        PayMaster(payable(feeCollector)).treatAMB(2, 10 ether, data);
+        PayMaster(payable(feeCollector)).treatAMB(2, fees, data);
     }
 
     function _successfulDeposit() internal {
@@ -319,11 +346,13 @@ contract PayMasterTest is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             1e18,
+            1e18,
             100,
             LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ETH, 0),
             bytes(""),
             false,
             false,
+            receiverAddress,
             receiverAddress,
             bytes("")
         );

@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+/// @title IQuorumManager
+/// @dev Interface for QuorumManager
+/// @author ZeroPoint Labs
 interface IQuorumManager {
+
     //////////////////////////////////////////////////////////////
     //                          EVENTS                           //
     //////////////////////////////////////////////////////////////
@@ -9,7 +13,7 @@ interface IQuorumManager {
     /// @dev emitted when a new quorum is set for a specific chain
     /// @param srcChainId the chain id from which the message (payload) is sent
     /// @param quorum the minimum number of message bridges required for processing
-    event QuorumSet(uint64 indexed srcChainId, uint256 quorum);
+    event QuorumSet(uint64 indexed srcChainId, uint256 indexed quorum);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //

@@ -228,6 +228,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                         vars.underlyingDstToken,
                         vars.targetSuperformIds,
                         vars.amounts,
+                        vars.amounts,
                         vars.liqBridges,
                         vars.receive4626,
                         1000,
@@ -272,7 +273,9 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     vars.toDst[0],
                     vars.underlyingSrcToken[0],
                     vars.underlyingDstToken[0],
+                    address(0),
                     vars.targetSuperformIds[0],
+                    finalAmount,
                     finalAmount,
                     vars.liqBridges[0],
                     vars.receive4626[0],
@@ -704,47 +707,14 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                         );
 
                         if (action.testType == TestType.Pass) {
-                            if (action.dstSwap) {
-                                /// @dev calling state variables again to obtain fresh memory values corresponding to
-                                /// DST
-                                (,, vars.underlyingDstToken,) = _targetVaults(
-                                    vars.CHAIN_0,
-                                    vars.DST_CHAINS[i],
-                                    vars.targetVaults[i],
-                                    vars.targetFormKinds[i],
-                                    vars.targetUnderlyings[i]
-                                );
-                                vars.liqBridges = vars.targetLiqBridges[i];
-
-                                /// @dev dst swap is performed to ensure tokens reach CoreStateRegistry on deposits
-                                if (action.multiVaults) {
-                                    vars.amounts = vars.targetAmounts[i];
-                                    _batchProcessDstSwap(
-                                        vars.liqBridges,
-                                        vars.CHAIN_0,
-                                        aV[i].toChainId,
-                                        vars.underlyingDstToken,
-                                        vars.multiVaultsPayloadArg.amounts,
-                                        action.slippage
-                                    );
-                                } else {
-                                    _processDstSwap(
-                                        vars.liqBridges[0],
-                                        vars.CHAIN_0,
-                                        aV[i].toChainId,
-                                        vars.underlyingDstToken[0],
-                                        vars.singleVaultsPayloadArg.amount,
-                                        action.slippage
-                                    );
-                                }
-                            }
-
                             /// @dev this is the step where the amounts are updated taking into account the final
                             /// slippage
                             if (action.multiVaults) {
-                                _updateMultiVaultDepositPayload(vars.multiVaultsPayloadArg);
+                                _updateMultiVaultDepositPayload(vars.multiVaultsPayloadArg, vars.targetUnderlyings[i]);
                             } else if (singleSuperformsData.length > 0) {
-                                _updateSingleVaultDepositPayload(vars.singleVaultsPayloadArg);
+                                _updateSingleVaultDepositPayload(
+                                    vars.singleVaultsPayloadArg, vars.targetUnderlyings[i][0]
+                                );
                             }
 
                             vm.recordLogs();
@@ -761,9 +731,11 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                         } else if (action.testType == TestType.RevertProcessPayload) {
                             /// @dev this logic is essentially repeated from above
                             if (action.multiVaults) {
-                                _updateMultiVaultDepositPayload(vars.multiVaultsPayloadArg);
+                                _updateMultiVaultDepositPayload(vars.multiVaultsPayloadArg, vars.targetUnderlyings[i]);
                             } else if (singleSuperformsData.length > 0) {
-                                _updateSingleVaultDepositPayload(vars.singleVaultsPayloadArg);
+                                _updateSingleVaultDepositPayload(
+                                    vars.singleVaultsPayloadArg, vars.targetUnderlyings[i][0]
+                                );
                             }
                             /// @dev process payload will revert in here
                             success = _processPayload(
@@ -778,9 +750,13 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                         ) {
                             /// @dev branch used just for reverts of updatePayload (process payload is not even called)
                             if (action.multiVaults) {
-                                success = _updateMultiVaultDepositPayload(vars.multiVaultsPayloadArg);
+                                success = _updateMultiVaultDepositPayload(
+                                    vars.multiVaultsPayloadArg, vars.targetUnderlyings[i]
+                                );
                             } else {
-                                success = _updateSingleVaultDepositPayload(vars.singleVaultsPayloadArg);
+                                success = _updateSingleVaultDepositPayload(
+                                    vars.singleVaultsPayloadArg, vars.targetUnderlyings[i][0]
+                                );
                             }
 
                             if (!success) {
@@ -899,7 +875,9 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                 args.toDst[i],
                 args.underlyingTokens[i],
                 args.underlyingTokensDst[i],
+                address(0),
                 args.superformIds[i],
+                finalAmounts[i],
                 finalAmounts[i],
                 args.liqBridges[i],
                 args.receive4626[i],
@@ -950,12 +928,15 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         superformsData = MultiVaultSFData(
             args.superformIds,
             finalAmounts,
+            args.outputAmounts,
             maxSlippageTemp,
             liqRequests,
             v.permit2data,
             hasDstSwap,
             args.receive4626,
             users[args.user],
+            users[args.user],
+            /// @dev repeat user for receiverAddressSP - not testing AA here
             abi.encode(false)
         );
     }
@@ -1125,21 +1106,25 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         }
         console.log("test amount post-bridge", v.amount);
 
-        vm.selectFork(v.initialFork);
-
+        vm.selectFork(FORKS[args.toChainId]);
+        (address superform,,) = DataLib.getSuperform(args.superformId);
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
         /// vaults without resorting to extra args, just for withdraws)
         superformData = SingleVaultSFData(
             args.superformId,
             v.amount,
+            IBaseForm(superform).previewDepositTo(v.amount),
             args.maxSlippage,
             v.liqReq,
             v.permit2Calldata,
             args.dstSwap,
             args.receive4626,
             users[args.user],
+            users[args.user],
+            /// @dev repeat user for receiverAddressSP - not testing AA here
             abi.encode(false)
         );
+        vm.selectFork(v.initialFork);
     }
 
     struct SingleVaultWithdrawLocalVars {
@@ -1228,26 +1213,33 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         vars.liqReq = LiqRequest(
             vars.txData,
             /// @dev for certain test cases, insert txData as null here
-            args.underlyingTokenDst,
+            args.externalToken,
             address(0),
             args.liqBridge,
             args.liqDstChainId,
             0
         );
 
+        vm.selectFork(FORKS[args.toChainId]);
+        (address superform,,) = DataLib.getSuperform(args.superformId);
+
         /// @dev extraData is currently used to send in the partialWithdraw vaults without resorting to extra args, just
         /// for withdraws
         superformData = SingleVaultSFData(
             args.superformId,
             args.amount,
+            IBaseForm(superform).previewRedeemFrom(args.amount),
             args.maxSlippage,
             vars.liqReq,
             "",
             args.dstSwap,
             args.receive4626,
             users[args.user],
+            users[args.user],
             abi.encode(false)
         );
+
+        vm.selectFork(initialFork);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -1341,14 +1333,25 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         return superformIds_;
     }
 
-    function _updateMultiVaultDepositPayload(updateMultiVaultDepositPayloadArgs memory args) internal returns (bool) {
+    function _updateMultiVaultDepositPayload(
+        updateMultiVaultDepositPayloadArgs memory args,
+        uint256[] memory targetUnderlyings
+    )
+        internal
+        returns (bool)
+    {
         uint256 initialFork = vm.activeFork();
 
         vm.selectFork(FORKS[args.targetChainId]);
         uint256 len = args.amounts.length;
         uint256[] memory finalAmounts = new uint256[](len);
+        address[] memory bridgedTokens = new address[](len);
 
         int256 dstSwapSlippage;
+
+        for (uint256 i; i < len; ++i) {
+            bridgedTokens[i] = getContract(args.targetChainId, UNDERLYING_TOKENS[targetUnderlyings[i]]);
+        }
 
         /// @dev slippage calculation
         for (uint256 i = 0; i < len; ++i) {
@@ -1368,7 +1371,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
             vm.prank(deployer);
             CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateDepositPayload(
-                args.payloadId, finalAmounts
+                args.payloadId, bridgedTokens, finalAmounts
             );
 
             /// @dev if scenario is meant to revert here (e.g invalid slippage)
@@ -1378,7 +1381,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             /// @dev removed string here: come to this later
 
             CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateDepositPayload(
-                args.payloadId, finalAmounts
+                args.payloadId, bridgedTokens, finalAmounts
             );
 
             return false;
@@ -1389,7 +1392,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             vm.expectRevert(errorMsg);
 
             CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateDepositPayload(
-                args.payloadId, finalAmounts
+                args.payloadId, bridgedTokens, finalAmounts
             );
 
             return false;
@@ -1400,7 +1403,10 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         return true;
     }
 
-    function _updateSingleVaultDepositPayload(updateSingleVaultDepositPayloadArgs memory args)
+    function _updateSingleVaultDepositPayload(
+        updateSingleVaultDepositPayloadArgs memory args,
+        uint256 targetUnderlying
+    )
         internal
         returns (bool)
     {
@@ -1408,6 +1414,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         vm.selectFork(FORKS[args.targetChainId]);
         uint256 finalAmount;
+        address bridgedToken = getContract(args.targetChainId, UNDERLYING_TOKENS[targetUnderlying]);
 
         finalAmount = args.amount;
 
@@ -1426,8 +1433,11 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             uint256[] memory finalAmounts = new uint256[](1);
             finalAmounts[0] = finalAmount;
 
+            address[] memory bridgedTokens = new address[](1);
+            bridgedTokens[0] = bridgedToken;
+
             CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateDepositPayload(
-                args.payloadId, finalAmounts
+                args.payloadId, bridgedTokens, finalAmounts
             );
             /// @dev if scenario is meant to revert here (e.g invalid slippage)
         } else if (args.testType == TestType.RevertUpdateStateSlippage) {
@@ -1436,12 +1446,14 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             vm.expectRevert(args.revertError);
 
             /// @dev removed string here: come to this later
-
             uint256[] memory finalAmounts = new uint256[](1);
             finalAmounts[0] = finalAmount;
 
+            address[] memory bridgedTokens = new address[](1);
+            bridgedTokens[0] = bridgedToken;
+
             CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateDepositPayload(
-                args.payloadId, finalAmounts
+                args.payloadId, bridgedTokens, finalAmounts
             );
 
             return false;
@@ -1455,8 +1467,11 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             uint256[] memory finalAmounts = new uint256[](1);
             finalAmounts[0] = finalAmount;
 
+            address[] memory bridgedTokens = new address[](1);
+            bridgedTokens[0] = bridgedToken;
+
             CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateDepositPayload(
-                args.payloadId, finalAmounts
+                args.payloadId, bridgedTokens, finalAmounts
             );
 
             return false;
@@ -1572,7 +1587,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         vm.prank(deployer);
 
-        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).processTx(1, 0, liqBridgeKind_, txData);
+        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).processTx(1, liqBridgeKind_, txData);
         vm.selectFork(initialFork);
     }
 
