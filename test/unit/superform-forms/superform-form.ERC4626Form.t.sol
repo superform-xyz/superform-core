@@ -951,6 +951,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             daiAmount,
+            daiAmount,
             100,
             LiqRequest(blacklistedTxData, getContract(ETH, "DAI"), address(0), 5, ETH, 0),
             "",
