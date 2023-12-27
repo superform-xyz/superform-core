@@ -125,6 +125,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         return superRegistry.PERMIT2();
     }
 
+    /// @dev returns the address from super registry
+    function _getAddress(bytes32 id_) internal view returns (address) {
+        return superRegistry.getAddress(id_);
+    }
+
     /// @dev handles same-chain single vault deposit
     function _singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq memory req_) internal virtual {
         /// @dev validate superformData
@@ -138,7 +143,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 req_.superformData.receiverAddressSP,
                 CHAIN_ID,
                 true,
-                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))),
+                ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY"))),
                 false
             )
         ) {
@@ -185,7 +190,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 req_.superformData.receiverAddressSP,
                 req_.dstChainId,
                 true,
-                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))),
+                ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY"))),
                 false
             )
         ) {
@@ -368,14 +373,14 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 req_.superformData.receiverAddressSP,
                 CHAIN_ID,
                 false,
-                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))),
+                ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY"))),
                 false
             )
         ) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
-        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnSingle(
+        ISuperPositions(_getAddress(keccak256("SUPER_POSITIONS"))).burnSingle(
             msg.sender, req_.superformData.superformId, req_.superformData.amount
         );
 
@@ -418,14 +423,14 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 req_.superformData.receiverAddressSP,
                 req_.dstChainId,
                 false,
-                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))),
+                ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY"))),
                 false
             )
         ) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
-        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnSingle(
+        ISuperPositions(_getAddress(keccak256("SUPER_POSITIONS"))).burnSingle(
             msg.sender, req_.superformData.superformId, req_.superformData.amount
         );
 
@@ -479,7 +484,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
 
         /// @dev SuperPositions are burnt optimistically here
-        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnBatch(
+        ISuperPositions(_getAddress(keccak256("SUPER_POSITIONS"))).burnBatch(
             msg.sender, req_.superformData.superformIds, req_.superformData.amounts
         );
 
@@ -515,7 +520,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
-        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnBatch(
+        ISuperPositions(_getAddress(keccak256("SUPER_POSITIONS"))).burnBatch(
             msg.sender, req_.superformsData.superformIds, req_.superformsData.amounts
         );
 
@@ -587,28 +592,27 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     }
 
     function _dispatchAmbMessage(DispatchAMBMessageVars memory vars_, address receiverAddressSP_) internal virtual {
-        AMBMessage memory ambMessage = AMBMessage(
-            DataLib.packTxInfo(
-                uint8(vars_.txType),
-                uint8(CallbackType.INIT),
-                vars_.multiVaults,
-                STATE_REGISTRY_TYPE,
-                vars_.srcSender,
-                vars_.srcChainId
-            ),
-            vars_.ambData
+        uint256 txInfo = DataLib.packTxInfo(
+            uint8(vars_.txType),
+            uint8(CallbackType.INIT),
+            vars_.multiVaults,
+            STATE_REGISTRY_TYPE,
+            vars_.srcSender,
+            vars_.srcChainId
         );
 
-        (uint256 fees, bytes memory extraData) = IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER")))
-            .calculateAMBData(vars_.dstChainId, vars_.ambIds, abi.encode(ambMessage));
+        bytes memory ambMessage = abi.encode(AMBMessage(txInfo, vars_.ambData));
 
-        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).updateTxHistory(
-            vars_.currentPayloadId, ambMessage.txInfo, receiverAddressSP_
+        (uint256 fees, bytes memory extraData) = IPaymentHelper(_getAddress(keccak256("PAYMENT_HELPER")))
+            .calculateAMBData(vars_.dstChainId, vars_.ambIds, ambMessage);
+
+        ISuperPositions(_getAddress(keccak256("SUPER_POSITIONS"))).updateTxHistory(
+            vars_.currentPayloadId, txInfo, receiverAddressSP_
         );
 
         /// @dev this call dispatches the message to the AMB bridge through dispatchPayload
-        IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY"))).dispatchPayload{ value: fees }(
-            vars_.srcSender, vars_.ambIds, vars_.dstChainId, abi.encode(ambMessage), extraData
+        IBaseStateRegistry(_getAddress(keccak256("CORE_STATE_REGISTRY"))).dispatchPayload{ value: fees }(
+            vars_.srcSender, vars_.ambIds, vars_.dstChainId, ambMessage, extraData
         );
     }
 
@@ -667,7 +671,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         if (v.shares != 0 && !args_.vaultData.retain4626) {
             // @dev mint super positions at the end of the deposit action if user doesn't retain 4626
-            ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintSingle(
+            ISuperPositions(_getAddress(keccak256("SUPER_POSITIONS"))).mintSingle(
                 args_.receiverAddressSP, args_.vaultData.superformId, v.shares
             );
         }
@@ -713,7 +717,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
 
         /// @dev in direct deposits, SuperPositions are minted right after depositing to vaults
-        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintBatch(
+        ISuperPositions(_getAddress(keccak256("SUPER_POSITIONS"))).mintBatch(
             args_.receiverAddressSP, args_.vaultData.superformIds, v.shares
         );
     }
@@ -806,7 +810,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     function _forwardDustToPaymaster(address token_) internal {
         if (token_ == address(0)) revert Error.ZERO_ADDRESS();
 
-        address paymaster = superRegistry.getAddress(keccak256("PAYMASTER"));
+        address paymaster = _getAddress(keccak256("PAYMASTER"));
         IERC20 token = IERC20(token_);
 
         uint256 dust = token.balanceOf(address(this));
@@ -930,7 +934,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             }
         }
 
-        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+        ISuperformFactory factory = ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY")));
         bool valid;
 
         /// @dev slippage, amount, paused status validation
@@ -978,9 +982,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         uint256 residualPayment = address(this).balance - _balanceBefore;
 
         if (residualPayment != 0) {
-            IPayMaster(superRegistry.getAddress(keccak256("PAYMASTER"))).makePayment{ value: residualPayment }(
-                msg.sender
-            );
+            IPayMaster(_getAddress(keccak256("PAYMASTER"))).makePayment{ value: residualPayment }(msg.sender);
         }
     }
 
