@@ -205,6 +205,9 @@ library Error {
     /// LIQUIDITY BRIDGE INPUT VALIDATION ERRORS
     /// ---------------------------------------------------------
 
+    /// @dev error thrown when txData selector of lifi bridged is a blacklisted selector
+    error BLACKLISTED_SELECTOR();
+
     /// @dev thrown if a certain action of the user is not allowed given the txData provided
     error INVALID_ACTION();
 
@@ -237,6 +240,9 @@ library Error {
 
     /// @dev thrown if payload is being updated with tx data length different than liq data length
     error DIFFERENT_PAYLOAD_UPDATE_TX_DATA_LENGTH();
+
+    /// @dev thrown if keeper update final token is different than the vault underlying
+    error INVALID_UPDATE_FINAL_TOKEN();
 
     /// @dev thrown if broadcast finality for wormhole is invalid
     error INVALID_BROADCAST_FINALITY();

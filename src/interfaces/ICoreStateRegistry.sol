@@ -75,9 +75,15 @@ interface ICoreStateRegistry {
 
     /// @dev allows accounts with {CORE_STATE_REGISTRY_UPDATER_ROLE} to modify a received cross-chain deposit payload.
     /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
+    /// @param finalTokens_ is the token received by the core state registry.
     /// @param finalAmounts_ is the amount to be updated.
     /// NOTE: amounts cannot be updated beyond user specified safe slippage limit.
-    function updateDepositPayload(uint256 payloadId_, uint256[] calldata finalAmounts_) external;
+    function updateDepositPayload(
+        uint256 payloadId_,
+        address[] calldata finalTokens_,
+        uint256[] calldata finalAmounts_
+    )
+        external;
 
     /// @dev allows accounts with {CORE_STATE_REGISTRY_UPDATER_ROLE} to modify a received cross-chain withdraw payload.
     /// @param payloadId_  is the identifier of the cross-chain payload to be updated.

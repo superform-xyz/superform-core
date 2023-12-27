@@ -857,6 +857,7 @@ contract PaymentHelper is IPaymentHelper {
                 _getNextPayloadId(),
                 sfData_.superformId,
                 sfData_.amount,
+                sfData_.outputAmount,
                 sfData_.maxSlippage,
                 sfData_.liqRequest,
                 sfData_.hasDstSwap,
@@ -879,6 +880,7 @@ contract PaymentHelper is IPaymentHelper {
                 _getNextPayloadId(),
                 sfData_.superformIds,
                 sfData_.amounts,
+                sfData_.outputAmounts,
                 sfData_.maxSlippages,
                 sfData_.liqRequests,
                 sfData_.hasDstSwaps,
@@ -930,10 +932,15 @@ contract PaymentHelper is IPaymentHelper {
     function _getGasPrice(uint64 chainId_) internal view returns (uint256) {
         address oracleAddr = address(gasPriceOracle[chainId_]);
         if (oracleAddr != address(0)) {
-            (, int256 value,, uint256 updatedAt,) = AggregatorV3Interface(oracleAddr).latestRoundData();
-            if (value <= 0) revert Error.CHAINLINK_MALFUNCTION();
-            if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
-            return uint256(value);
+            try AggregatorV3Interface(oracleAddr).latestRoundData() returns (
+                uint80, int256 value, uint256, uint256 updatedAt, uint80
+            ) {
+                if (value <= 0) revert Error.CHAINLINK_MALFUNCTION();
+                if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
+                return uint256(value);
+            } catch {
+                /// @dev do nothing and return the default price at the end of the function
+            }
         }
 
         return gasPrice[chainId_];
@@ -944,10 +951,15 @@ contract PaymentHelper is IPaymentHelper {
     function _getNativeTokenPrice(uint64 chainId_) internal view returns (uint256) {
         address oracleAddr = address(nativeFeedOracle[chainId_]);
         if (oracleAddr != address(0)) {
-            (, int256 dstTokenPrice,, uint256 updatedAt,) = AggregatorV3Interface(oracleAddr).latestRoundData();
-            if (dstTokenPrice <= 0) revert Error.CHAINLINK_MALFUNCTION();
-            if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
-            return uint256(dstTokenPrice);
+            try AggregatorV3Interface(oracleAddr).latestRoundData() returns (
+                uint80, int256 dstTokenPrice, uint256, uint256 updatedAt, uint80
+            ) {
+                if (dstTokenPrice <= 0) revert Error.CHAINLINK_MALFUNCTION();
+                if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
+                return uint256(dstTokenPrice);
+            } catch {
+                /// @dev do nothing and return the default price at the end of the function
+            }
         }
 
         return nativePrice[chainId_];

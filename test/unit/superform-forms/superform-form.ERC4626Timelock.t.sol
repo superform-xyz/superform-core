@@ -10,7 +10,9 @@ import { DataLib } from "src/libraries/DataLib.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { ERC4626TimelockForm } from "src/forms/ERC4626TimelockForm.sol";
+import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import "src/types/DataTypes.sol";
+import "forge-std/console.sol";
 
 contract SuperformERC4626TimelockFormTest is ProtocolActions {
     uint64 internal chainId = ETH;
@@ -39,6 +41,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         InitSingleVaultData memory data = InitSingleVaultData(
             1,
             superformId,
+            1e18,
             1e18,
             100,
             LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ARBI, 0),
@@ -81,6 +84,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             1,
             superformId,
             1e18,
+            1e18,
             100,
             LiqRequest(invalidNonEmptyTxData, address(0), address(0), 1, ETH, 0),
             false,
@@ -119,6 +123,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         InitSingleVaultData memory data = InitSingleVaultData(
             1,
             superformId,
+            1e18,
             1e18,
             100,
             LiqRequest("", address(0), address(0), 1, ETH, 0),
@@ -178,6 +183,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             1,
             superformId,
             1e18,
+            1e18,
             100,
             LiqRequest(
                 _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, ETH, 0
@@ -191,7 +197,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.prank(getContract(ETH, "CoreStateRegistry"));
         IBaseForm(superform).xChainWithdrawFromVault(data, deployer, ARBI);
 
-        vm.expectRevert(Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST.selector);
+        vm.expectRevert(Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST.selector);
         vm.prank(getContract(ETH, "TimelockStateRegistry"));
         ERC4626TimelockForm(payable(superform)).withdrawAfterCoolDown(
             TimelockPayload(1, ETH, block.timestamp, data, TimelockStatus.PENDING)
@@ -215,6 +221,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
+            1e18,
             1e18,
             100,
             LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ETH, 0),

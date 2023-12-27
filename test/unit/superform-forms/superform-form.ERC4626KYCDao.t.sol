@@ -28,6 +28,7 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             1e18,
+            1e18,
             100,
             LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
             "",
@@ -67,6 +68,7 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
         InitSingleVaultData memory data = InitSingleVaultData(
             1,
             superformId,
+            1e18,
             1e18,
             100,
             LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ARBI, 0),

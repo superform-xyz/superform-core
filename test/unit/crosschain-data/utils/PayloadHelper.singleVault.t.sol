@@ -168,22 +168,6 @@ contract PayloadHelperSingleTest is ProtocolActions {
         PayloadHelper(getContract(ETH, "PayloadHelper")).decodeCoreStateRegistryPayload(1);
     }
 
-    struct CheckDstPayloadInternalVars {
-        bytes[] extraDataGenerated;
-        uint256 ambFees;
-        uint8 txType;
-        uint8 callbackType;
-        address srcSender;
-        uint64 srcChainId;
-        uint256[] amounts;
-        uint256[] slippage;
-        uint256[] superformIds;
-        bool[] hasDstSwaps;
-        bytes extraFormData;
-        address receiverAddress;
-        uint256 srcPayloadId;
-    }
-
     function _checkSrcPayload() internal {
         vm.selectFork(FORKS[CHAIN_0]);
 
@@ -209,27 +193,16 @@ contract PayloadHelperSingleTest is ProtocolActions {
     function _checkDstPayloadInit() internal {
         vm.selectFork(FORKS[DST_CHAINS[0]]);
 
-        CheckDstPayloadInternalVars memory v;
         vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);
         IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(3);
 
-        (
-            v.txType,
-            v.callbackType,
-            v.srcSender,
-            v.srcChainId,
-            v.amounts,
-            v.slippage,
-            ,
-            ,
-            ,
-            v.receiverAddress,
-            v.srcPayloadId
-        ) = IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
+        IPayloadHelper.DecodedDstPayload memory v =
+            IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
         IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).getDstPayloadProof(1);
-        v.extraDataGenerated = new bytes[](2);
-        v.extraDataGenerated[0] = abi.encode("500000");
-        v.extraDataGenerated[1] = abi.encode("0");
+
+        bytes[] memory extraDataGenerated = new bytes[](2);
+        extraDataGenerated[0] = abi.encode("500000");
+        extraDataGenerated[1] = abi.encode("0");
 
         /// @dev 0 for deposit
         assertEq(v.txType, 0);
@@ -244,28 +217,26 @@ contract PayloadHelperSingleTest is ProtocolActions {
 
         assertEq(v.receiverAddress, users[0]);
 
-        for (uint256 i = 0; i < v.slippage.length; ++i) {
+        for (uint256 i = 0; i < v.slippages.length; ++i) {
             console.log("v.amounts[i]: %s", v.amounts[i]);
             console.log("AMOUNTS[POLY][0][i]: %s", AMOUNTS[POLY][0][i]);
             /// @dev TODO: fix this assertion considering exchange rates
             // assertLe(v.amounts[i], AMOUNTS[POLY][0][i]);
-            assertEq(v.slippage[i], MAX_SLIPPAGE);
+            assertEq(v.slippages[i], MAX_SLIPPAGE);
         }
 
         /// @notice: just asserting if fees are greater than 0
         /// FIXME no way to write serious tests on forked testnet at this point. should come back to this later on.
-        (v.ambFees,) = IPaymentHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PaymentHelper"))]).estimateAMBFees(
-            AMBs, DST_CHAINS[0], abi.encode(1), v.extraDataGenerated
+        (uint256 ambFees,) = IPaymentHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PaymentHelper"))]).estimateAMBFees(
+            AMBs, DST_CHAINS[0], abi.encode(1), extraDataGenerated
         );
-        assertGe(v.ambFees, 0);
+        assertGe(ambFees, 0);
     }
 
     function _checkDstPayloadReturn() internal {
         vm.selectFork(FORKS[CHAIN_0]);
 
-        CheckDstPayloadInternalVars memory v;
-
-        (v.txType, v.callbackType, v.srcSender, v.srcChainId, v.amounts, v.slippage,, v.hasDstSwaps,,, v.srcPayloadId) =
+        IPayloadHelper.DecodedDstPayload memory v =
             IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
 
         /// @dev 0 for deposit
@@ -278,9 +249,9 @@ contract PayloadHelperSingleTest is ProtocolActions {
         assertEq(v.srcChainId, 137);
         assertEq(v.srcPayloadId, 1);
 
-        for (uint256 i = 0; i < v.slippage.length; ++i) {
+        for (uint256 i = 0; i < v.slippages.length; ++i) {
             assertLe(v.amounts[i], AMOUNTS[POLY][0][i]);
-            assertEq(v.slippage[i], MAX_SLIPPAGE);
+            assertEq(v.slippages[i], MAX_SLIPPAGE);
         }
     }
 

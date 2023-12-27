@@ -371,6 +371,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             1e18,
+            1e18,
             100,
             LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
             "",
@@ -409,6 +410,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
+            2e18,
             2e18,
             100,
             LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
@@ -467,6 +469,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             2e18,
+            2e18,
             100,
             LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "DAI"), address(0), 1, ETH, 0),
             "",
@@ -506,6 +509,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
+            SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(receiverAddress, superformId),
             SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(receiverAddress, superformId),
             100,
             LiqRequest(_buildMaliciousTxData(1, DAI, superform, ETH, 2e18, receiverAddress), DAI, address(0), 1, ETH, 0),
@@ -552,6 +556,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             1,
             superformId,
             1e18,
+            1e18,
             100,
             LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ARBI, 0),
             false,
@@ -586,6 +591,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         InitSingleVaultData memory data = InitSingleVaultData(
             1,
             1,
+            1e18,
             1e18,
             100,
             LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ARBI, 0),
@@ -622,6 +628,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         InitSingleVaultData memory data = InitSingleVaultData(
             1,
             superformId,
+            amount,
             amount,
             100,
             LiqRequest(
@@ -690,6 +697,9 @@ contract SuperformERC4626FormTest is ProtocolActions {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 1e18;
 
+        uint256[] memory outputAmounts = new uint256[](1);
+        outputAmounts[0] = 1e18;
+
         uint256[] memory maxSlippages = new uint256[](1);
         maxSlippages[0] = 1000;
 
@@ -700,6 +710,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds,
             amounts,
+            outputAmounts,
             maxSlippages,
             liqReqs,
             "",
@@ -738,6 +749,9 @@ contract SuperformERC4626FormTest is ProtocolActions {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 1e18;
 
+        uint256[] memory outputAmounts = new uint256[](1);
+        outputAmounts[0] = 1e18;
+
         uint256[] memory maxSlippages = new uint256[](1);
         maxSlippages[0] = 1000;
 
@@ -759,6 +773,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds,
             amounts,
+            outputAmounts,
             maxSlippages,
             liqReqs,
             "",
@@ -793,6 +808,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             1e18,
+            1e18,
             100,
             LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
             "",
@@ -819,6 +835,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         data = SingleVaultSFData(
             superformId,
+            1e18,
             1e18,
             100,
             LiqRequest(
@@ -890,8 +907,9 @@ contract SuperformERC4626FormTest is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             daiAmount,
+            daiAmount,
             100,
-            LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "DAI"), address(0), 1, ETH, 0),
+            LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "DAI"), address(0), 4, ETH, 0),
             "",
             false,
             false,
@@ -916,6 +934,46 @@ contract SuperformERC4626FormTest is ProtocolActions {
         LiFiMockRugpull(payable(getContract(ETH, "LiFiMockRugpull"))).pullTokens(getContract(ETH, "DAI"), superform);
     }
 
+    function test_blacklistedSelectors_reverts() public {
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        uint256 daiAmount = 10 * 1e18; // 10 DAI
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
+        bytes32 txId = keccak256("blacklisted");
+        bytes memory blacklistedTxData = abi.encodeWithSelector(
+            LiFiMockBlacklisted.startBridgeTokensViaCBridgeNativeMin.selector, txId, address(0x1), 5, 5, 100
+        );
+
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            daiAmount,
+            100,
+            LiqRequest(blacklistedTxData, getContract(ETH, "DAI"), address(0), 5, ETH, 0),
+            "",
+            false,
+            false,
+            receiverAddress,
+            receiverAddress,
+            ""
+        );
+
+        SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
+
+        address router = getContract(ETH, "SuperformRouter");
+
+        /// Make Superform's initial balance to 10 DAI
+        MockERC20(getContract(ETH, "DAI")).transfer(superform, daiAmount);
+
+        /// Single deposit 10 DAI to the Superform
+        MockERC20(getContract(ETH, "DAI")).approve(router, daiAmount);
+        vm.expectRevert(Error.BLACKLISTED_SELECTOR.selector);
+        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
+    }
+
     /*///////////////////////////////////////////////////////////////
                         INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -933,6 +991,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
+            1e18,
             1e18,
             100,
             LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),

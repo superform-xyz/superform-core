@@ -143,7 +143,7 @@ contract SuperRegistryTest is BaseSetup {
         address[] memory bridgeAddress = new address[](3);
         address[] memory bridgeValidator = new address[](3);
 
-        bridgeId[0] = 5;
+        bridgeId[0] = 8;
         bridgeAddress[0] = address(0x1);
         bridgeValidator[0] = address(0x2);
         bridgeId[1] = 6;

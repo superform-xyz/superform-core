@@ -97,6 +97,7 @@ contract ForwardDustFormTest is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             amountToDeposit_,
+            IBaseForm(superform).previewDepositTo(amountToDeposit_),
             100,
             LiqRequest("", getContract(ARBI, "WETH"), address(0), 1, ARBI, 0),
             "",
@@ -126,6 +127,7 @@ contract ForwardDustFormTest is ProtocolActions {
             1,
             superformId,
             spAmountToRedeem_ == 0 ? superPositionBalance : spAmountToRedeem_,
+            spAmountToRedeem_ == 0 ? superPositionBalance : spAmountToRedeem_,
             100,
             LiqRequest(
                 _buildDummyTxDataUnitTests(
@@ -136,7 +138,7 @@ contract ForwardDustFormTest is ProtocolActions {
                         superform,
                         ARBI,
                         ETH,
-                        nasty_ ? 0.2e18 : IBaseForm(superform).previewRedeemFrom(superPositionBalance), // nastiness
+                        nasty_ ? 0.99e18 : IBaseForm(superform).previewRedeemFrom(superPositionBalance), // nastiness
                             // here
                         receiverAddress,
                         false
@@ -157,7 +159,6 @@ contract ForwardDustFormTest is ProtocolActions {
 
         if (formImplementationId_ != 1) {
             vm.prank(getContract(ARBI, "CoreStateRegistry"));
-
             IBaseForm(superform).xChainWithdrawFromVault(data2, user, ETH);
         } else {
             vm.prank(getContract(ARBI, "TimelockStateRegistry"));

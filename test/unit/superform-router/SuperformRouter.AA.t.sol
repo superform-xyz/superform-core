@@ -205,6 +205,7 @@ contract SuperformRouterAATest is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             1e18,
+            1e18,
             10_000,
             /// @dev invalid slippage
             LiqRequest("", getContract(ARBI, "DAI"), address(0), 1, ARBI, 0),
@@ -299,6 +300,7 @@ contract SuperformRouterAATest is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             1e18,
+            1e18,
             10_000,
             /// @dev invalid slippage
             LiqRequest(
@@ -371,13 +373,19 @@ contract SuperformRouterAATest is ProtocolActions {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 1e18;
 
-        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(1, amounts);
+        address[] memory bridgedTokens = new address[](1);
+        bridgedTokens[0] = getContract(ARBI, "DAI");
 
-        uint256 nativeAmount = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(1);
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(
+            1, bridgedTokens, amounts
+        );
 
         vm.recordLogs();
-        vm.prank(deployer);
-        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: nativeAmount }(1);
+        vm.startPrank(deployer);
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{
+            value: PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(1)
+        }(1);
+        vm.stopPrank();
 
         if (!receive4626_) {
             logs = vm.getRecordedLogs();
@@ -433,6 +441,7 @@ contract SuperformRouterAATest is ProtocolActions {
 
         SingleVaultSFData memory data = SingleVaultSFData(
             v.superformId,
+            1e18,
             1e18,
             1000,
             LiqRequest(
@@ -516,6 +525,7 @@ contract SuperformRouterAATest is ProtocolActions {
 
         SingleVaultSFData memory data = SingleVaultSFData(
             v.superformId,
+            1e18,
             1e18,
             1000,
             LiqRequest(

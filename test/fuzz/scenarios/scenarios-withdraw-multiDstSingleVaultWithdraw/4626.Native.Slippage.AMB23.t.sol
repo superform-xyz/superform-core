@@ -124,7 +124,7 @@ contract MDSVWNormal4626NativeSlippageAMB23 is ProtocolActions {
                     );
 
                     /// @dev bounded to 1 less due to partial withdrawals
-                    amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[0] - 1));
+                    amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1e6, superPositions[0] - 1));
                     AMOUNTS[DST_CHAINS[i]][1] = [amountOneWithdraw_];
                 }
             }

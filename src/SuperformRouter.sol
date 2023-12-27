@@ -76,12 +76,11 @@ contract SuperformRouter is BaseRouterImplementation {
         payable
         override(BaseRouter, IBaseRouter)
     {
-        uint64 srcChainId = CHAIN_ID;
         uint256 balanceBefore = address(this).balance - msg.value;
         uint256 len = req_.dstChainIds.length;
 
         for (uint256 i; i < len; ++i) {
-            if (srcChainId == req_.dstChainIds[i]) {
+            if (CHAIN_ID == req_.dstChainIds[i]) {
                 _singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq(req_.superformsData[i]));
             } else {
                 _singleXChainSingleVaultDeposit(
@@ -99,11 +98,11 @@ contract SuperformRouter is BaseRouterImplementation {
         payable
         override(BaseRouter, IBaseRouter)
     {
-        uint64 chainId = CHAIN_ID;
         uint256 balanceBefore = address(this).balance - msg.value;
         uint256 len = req_.dstChainIds.length;
+
         for (uint256 i; i < len; ++i) {
-            if (chainId == req_.dstChainIds[i]) {
+            if (CHAIN_ID == req_.dstChainIds[i]) {
                 _singleDirectMultiVaultDeposit(SingleDirectMultiVaultStateReq(req_.superformsData[i]));
             } else {
                 _singleXChainMultiVaultDeposit(
@@ -191,12 +190,11 @@ contract SuperformRouter is BaseRouterImplementation {
         payable
         override(BaseRouter, IBaseRouter)
     {
-        uint64 chainId = CHAIN_ID;
         uint256 balanceBefore = address(this).balance - msg.value;
         uint256 len = req_.dstChainIds.length;
 
         for (uint256 i; i < len; ++i) {
-            if (chainId == req_.dstChainIds[i]) {
+            if (CHAIN_ID == req_.dstChainIds[i]) {
                 _singleDirectMultiVaultWithdraw(SingleDirectMultiVaultStateReq(req_.superformsData[i]));
             } else {
                 _singleXChainMultiVaultWithdraw(
