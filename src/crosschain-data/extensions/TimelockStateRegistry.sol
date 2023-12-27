@@ -1,29 +1,37 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import { BaseStateRegistry } from "src/crosschain-data/BaseStateRegistry.sol";
+import { IBaseForm } from "src/interfaces/IBaseForm.sol";
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
+import { IQuorumManager } from "src/interfaces/IQuorumManager.sol";
+import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
+import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
+import { IERC4626TimelockForm } from "src/forms/interfaces/IERC4626TimelockForm.sol";
+import { Error } from "src/libraries/Error.sol";
+import { ProofLib } from "src/libraries/ProofLib.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { PayloadUpdaterLib } from "src/libraries/PayloadUpdaterLib.sol";
+import {
+    InitSingleVaultData,
+    AMBMessage,
+    TimelockPayload,
+    CallbackType,
+    TransactionType,
+    PayloadState,
+    TimelockStatus,
+    ReturnSingleData
+} from "src/types/DataTypes.sol";
 import { ReentrancyGuard } from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
-import { IBaseForm } from "../../interfaces/IBaseForm.sol";
-import { ISuperformFactory } from "../../interfaces/ISuperformFactory.sol";
-import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
-import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
-import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
-import { ISuperPositions } from "../../interfaces/ISuperPositions.sol";
-import { IERC4626TimelockForm } from "../../forms/interfaces/IERC4626TimelockForm.sol";
-import { ITimelockStateRegistry } from "../../interfaces/ITimelockStateRegistry.sol";
-import { IBaseStateRegistry } from "../../interfaces/IBaseStateRegistry.sol";
-import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
-import { IPaymentHelper } from "../../interfaces/IPaymentHelper.sol";
-import { Error } from "../../libraries/Error.sol";
-import { BaseStateRegistry } from "../BaseStateRegistry.sol";
-import { ProofLib } from "../../libraries/ProofLib.sol";
-import { DataLib } from "../../libraries/DataLib.sol";
-import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
-import "../../types/DataTypes.sol";
 
 /// @title TimelockStateRegistry
+/// @dev Handles communication in timelocked forms
 /// @author Zeropoint Labs
-/// @notice handles communication in timelocked forms
-
 contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, ReentrancyGuard {
     using DataLib for uint256;
     using ProofLib for AMBMessage;
@@ -56,12 +64,13 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         _;
     }
 
-    /// @dev allows only form to write to the receive payload
-    modifier onlyTimelockSuperform(uint256 superformId) {
-        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId)) {
+    /// @dev ensures only the timelock form can write to a timelock superform
+    /// @param superformId_ is the superformId of the superform to check
+    modifier onlyTimelockSuperform(uint256 superformId_) {
+        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId_)) {
             revert Error.SUPERFORM_ID_NONEXISTENT();
         }
-        (address superform,,) = superformId.getSuperform();
+        (address superform,,) = superformId_.getSuperform();
         if (msg.sender != superform) revert Error.NOT_SUPERFORM();
 
         if (IBaseForm(superform).getStateRegistryId() != superRegistry.getStateRegistryId(address(this))) {
@@ -71,6 +80,8 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         _;
     }
 
+    /// @dev ensures only valid payloads are processed
+    /// @param payloadId_ is the payloadId to check
     modifier isValidPayloadId(uint256 payloadId_) {
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();
@@ -100,7 +111,6 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     /// @inheritdoc ITimelockStateRegistry
     function receivePayload(
         uint8 type_,
-        address srcSender_,
         uint64 srcChainId_,
         uint256 lockedTill_,
         InitSingleVaultData memory data_
@@ -109,10 +119,12 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         override
         onlyTimelockSuperform(data_.superformId)
     {
+        if (data_.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
+
         ++timelockPayloadCounter;
 
         timelockPayload[timelockPayloadCounter] =
-            TimelockPayload(type_, srcSender_, srcChainId_, lockedTill_, data_, TimelockStatus.PENDING);
+            TimelockPayload(type_, srcChainId_, lockedTill_, data_, TimelockStatus.PENDING);
     }
 
     /// @inheritdoc ITimelockStateRegistry
@@ -139,9 +151,9 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         /// @dev set status here to prevent re-entrancy
         p.status = TimelockStatus.PROCESSED;
 
-        (address superform,,) = p.data.superformId.getSuperform();
+        (address superformAddress,,) = p.data.superformId.getSuperform();
 
-        IERC4626TimelockForm form = IERC4626TimelockForm(superform);
+        IERC4626TimelockForm superform = IERC4626TimelockForm(superformAddress);
 
         /// @dev this step is used to re-feed txData to avoid using old txData that would have expired by now
         if (txData_.length != 0) {
@@ -156,9 +168,9 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
                     p.srcChainId,
                     p.data.liqData.liqDstChainId,
                     false,
-                    superform,
+                    superformAddress,
                     p.data.receiverAddress,
-                    p.data.liqData.token,
+                    superform.getVaultAsset(),
                     address(0)
                 )
             );
@@ -166,7 +178,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
             finalAmount = bridgeValidator.decodeAmountIn(txData_, false);
             if (
                 !PayloadUpdaterLib.validateSlippage(
-                    finalAmount, form.previewRedeemFrom(p.data.amount), p.data.maxSlippage
+                    finalAmount, superform.previewRedeemFrom(p.data.amount), p.data.maxSlippage
                 )
             ) {
                 revert Error.SLIPPAGE_OUT_OF_BOUNDS();
@@ -175,21 +187,21 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
             p.data.liqData.txData = txData_;
         }
 
-        try form.withdrawAfterCoolDown(p) { }
+        try superform.withdrawAfterCoolDown(p) { }
         catch {
             /// @dev dispatch acknowledgement to mint superPositions back because of failure
             if (p.isXChain == 1) {
                 (uint256 payloadId,) = abi.decode(p.data.extraFormData, (uint256, uint256));
 
                 _dispatchAcknowledgement(
-                    p.srcChainId, _getDeliveryAMB(payloadId), _constructSingleReturnData(p.srcSender, p.data)
+                    p.srcChainId, _getDeliveryAMB(payloadId), _constructSingleReturnData(p.data.receiverAddress, p.data)
                 );
             }
 
             /// @dev for direct chain, superPositions are minted directly
             if (p.isXChain == 0) {
                 ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintSingle(
-                    p.srcSender, p.data.superformId, p.data.amount
+                    p.data.receiverAddress, p.data.superformId, p.data.amount
                 );
             }
         }
@@ -255,7 +267,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     /// xChainWithdraw succeeds.
     /// @dev Constructs return message in case of a FAILURE to perform redemption of already unlocked assets
     function _constructSingleReturnData(
-        address srcSender_,
+        address receiverAddress_,
         InitSingleVaultData memory singleVaultData_
     )
         internal
@@ -270,7 +282,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
                     uint8(CallbackType.FAIL),
                     0,
                     superRegistry.getStateRegistryId(address(this)),
-                    srcSender_,
+                    receiverAddress_,
                     CHAIN_ID
                 ),
                 abi.encode(

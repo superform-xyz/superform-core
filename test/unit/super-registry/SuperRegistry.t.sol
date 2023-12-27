@@ -143,7 +143,7 @@ contract SuperRegistryTest is BaseSetup {
         address[] memory bridgeAddress = new address[](3);
         address[] memory bridgeValidator = new address[](3);
 
-        bridgeId[0] = 5;
+        bridgeId[0] = 8;
         bridgeAddress[0] = address(0x1);
         bridgeValidator[0] = address(0x2);
         bridgeId[1] = 6;
@@ -322,18 +322,18 @@ contract SuperRegistryTest is BaseSetup {
         superRegistry.setStateRegistryAddress(registryId, registryAddress);
     }
 
-    function test_setVaultLimitPerTx() public {
+    function test_setVaultLimitPerDestination() public {
         vm.prank(deployer);
-        superRegistry.setVaultLimitPerTx(1, 100);
-        assertEq(superRegistry.getVaultLimitPerTx(1), 100);
+        superRegistry.setVaultLimitPerDestination(1, 100);
+        assertEq(superRegistry.getVaultLimitPerDestination(1), 100);
 
         vm.prank(deployer);
         vm.expectRevert(Error.ZERO_INPUT_VALUE.selector);
-        superRegistry.setVaultLimitPerTx(1, 0);
+        superRegistry.setVaultLimitPerDestination(1, 0);
 
         vm.prank(address(420));
-        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
-        superRegistry.setVaultLimitPerTx(1, 100);
+        vm.expectRevert(Error.NOT_EMERGENCY_ADMIN.selector);
+        superRegistry.setVaultLimitPerDestination(1, 100);
     }
 
     function test_setRequiredMessagingQuorum_and_revert_invalidCaller() public {
@@ -349,7 +349,7 @@ contract SuperRegistryTest is BaseSetup {
     function test_set_delay() public {
         vm.prank(deployer);
         vm.expectRevert(Error.INVALID_TIMELOCK_DELAY.selector);
-        superRegistry.setDelay(30 minutes);
+        superRegistry.setDelay(5 minutes);
 
         vm.prank(deployer);
         vm.expectRevert(Error.INVALID_TIMELOCK_DELAY.selector);

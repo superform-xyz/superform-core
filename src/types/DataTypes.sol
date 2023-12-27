@@ -27,7 +27,8 @@ enum PayloadState {
 struct LiqRequest {
     /// @dev generated data
     bytes txData;
-    /// @dev input token. Relevant for withdraws especially to know when to update txData
+    /// @dev input token for deposits, desired output token on target liqDstChainId for withdraws. Must be set for
+    /// txData to be updated on destination for withdraws
     address token;
     /// @dev intermediary token on destination. Relevant for xChain deposits where a destination swap is needed for
     /// validation purposes
@@ -45,13 +46,17 @@ struct LiqRequest {
 struct MultiVaultSFData {
     // superformids must have same destination. Can have different underlyings
     uint256[] superformIds;
-    uint256[] amounts;
+    uint256[] amounts; // on deposits, amount of token to deposit on dst, on withdrawals, superpositions to burn
+    uint256[] outputAmounts; // on deposits, amount of shares to receive, on withdrawals, amount of assets to receive
     uint256[] maxSlippages;
     LiqRequest[] liqRequests; // if length = 1; amount = sum(amounts) | else  amounts must match the amounts being sent
     bytes permit2data;
     bool[] hasDstSwaps;
     bool[] retain4626s; // if true, we don't mint SuperPositions, and send the 4626 back to the user instead
     address receiverAddress;
+    /// this address must always be an EOA otherwise funds may be lost
+    address receiverAddressSP;
+    /// this address can be a EOA or a contract that implements onERC1155Receiver. must always be set for deposits
     bytes extraFormData; // extraFormData
 }
 
@@ -60,12 +65,16 @@ struct SingleVaultSFData {
     // superformids must have same destination. Can have different underlyings
     uint256 superformId;
     uint256 amount;
+    uint256 outputAmount; // on deposits, amount of shares to receive, on withdrawals, amount of assets to receive
     uint256 maxSlippage;
     LiqRequest liqRequest; // if length = 1; amount = sum(amounts)| else  amounts must match the amounts being sent
     bytes permit2data;
     bool hasDstSwap;
     bool retain4626; // if true, we don't mint SuperPositions, and send the 4626 back to the user instead
     address receiverAddress;
+    /// this address must always be an EOA otherwise funds may be lost
+    address receiverAddressSP;
+    /// this address can be a EOA or a contract that implements onERC1155Receiver. must always be set for deposits
     bytes extraFormData; // extraFormData
 }
 
@@ -108,10 +117,12 @@ struct SingleDirectMultiVaultStateReq {
 }
 
 /// @dev struct for SuperRouter with re-arranged data for the message (contains the payloadId)
+/// @dev realize that receiverAddressSP is not passed, only needed on source chain to mint
 struct InitMultiVaultData {
     uint256 payloadId;
     uint256[] superformIds;
     uint256[] amounts;
+    uint256[] outputAmounts;
     uint256[] maxSlippages;
     LiqRequest[] liqData;
     bool[] hasDstSwaps;
@@ -125,6 +136,7 @@ struct InitSingleVaultData {
     uint256 payloadId;
     uint256 superformId;
     uint256 amount;
+    uint256 outputAmount;
     uint256 maxSlippage;
     LiqRequest liqData;
     bool hasDstSwap;
@@ -135,8 +147,7 @@ struct InitSingleVaultData {
 
 /// @dev struct for Emergency Queue
 struct QueuedWithdrawal {
-    address srcSender;
-    address refundAddress;
+    address receiverAddress;
     uint256 superformId;
     uint256 amount;
     uint256 srcPayloadId;
@@ -153,7 +164,6 @@ enum TimelockStatus {
 /// @dev holds information about the timelock payload
 struct TimelockPayload {
     uint8 isXChain;
-    address srcSender;
     uint64 srcChainId;
     uint256 lockedTill;
     InitSingleVaultData data;
@@ -188,12 +198,6 @@ struct ReturnSingleData {
     uint256 superformId;
     uint256 amount;
 }
-/// @dev struct that contains the data on the fees to pay
-
-struct SingleDstAMBParams {
-    uint256 gasToPay;
-    bytes encodedAMBExtraData;
-}
 
 /// @dev struct that contains the data on the fees to pay to the AMBs
 struct AMBExtraData {
@@ -205,10 +209,4 @@ struct AMBExtraData {
 struct BroadCastAMBExtraData {
     uint256[] gasPerDst;
     bytes[] extraDataPerDst;
-}
-
-/// @dev acknowledgement extra data (contains gas information from dst to src callbacks)
-struct AckAMBData {
-    uint8[] ambIds;
-    bytes extraData;
 }

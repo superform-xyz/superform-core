@@ -55,15 +55,15 @@ contract EmergencyQueueTest is ProtocolActions {
             InitSingleVaultData(
                 1,
                 _getTestSuperformId(),
-                1e18, // good hacker tries to take only 1e18
+                1e18, // good hacker tries to take only 1e18,
+                1e18,
                 1000,
                 LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
                 false,
                 false,
                 mrimperfect,
                 ""
-            ),
-            mrperfect
+            )
         );
     }
 
@@ -86,15 +86,15 @@ contract EmergencyQueueTest is ProtocolActions {
             InitSingleVaultData(
                 1,
                 superformId,
-                1e18, // good hacker tries to take only 1e18
+                1e18, // good hacker tries to take only 1e18,
+                1e18,
                 1000,
                 LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
                 false,
                 false,
                 mrimperfect,
                 ""
-            ),
-            mrperfect
+            )
         );
     }
 
@@ -118,14 +118,14 @@ contract EmergencyQueueTest is ProtocolActions {
                 1,
                 superformId,
                 1e18, // good hacker tries to take only 1e18
+                1e18,
                 1000,
                 LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
                 false,
                 false,
                 mrimperfect,
                 ""
-            ),
-            mrperfect
+            )
         );
     }
 
@@ -324,7 +324,7 @@ contract EmergencyQueueTest is ProtocolActions {
         assertEq(balanceBefore + 1e18, balanceAfter);
     }
 
-    function test_emergencyWithdraw() public {
+    function test_emergencyWithdraw_INSUFFICIENT_BALANCE() public {
         /// user deposits successfully to a form
         _successfulDepositXChain(1, "VaultMock", 0, mrperfect, false);
 
@@ -340,7 +340,26 @@ contract EmergencyQueueTest is ProtocolActions {
 
         vm.prank(emergencyQueue);
         vm.expectRevert(Error.INSUFFICIENT_BALANCE.selector);
-        IBaseForm(superform).emergencyWithdraw(address(0), address(0), 10e20);
+        IBaseForm(superform).emergencyWithdraw(address(0x1), 10e20);
+    }
+
+    function test_emergencyWithdraw_ZEROADDRESS() public {
+        /// user deposits successfully to a form
+        _successfulDepositXChain(1, "VaultMock", 0, mrperfect, false);
+
+        /// processing the queued withdrawal and assert
+        vm.selectFork(FORKS[ARBI]);
+
+        /// @dev deployer has emergency admin role
+        address emergencyQueue = getContract(ARBI, "EmergencyQueue");
+
+        address superform = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        vm.prank(emergencyQueue);
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        IBaseForm(superform).emergencyWithdraw(address(0), 10e20);
     }
 
     function test_emergencyQueueProcessingXChainMultiVault() public {
@@ -467,11 +486,13 @@ contract EmergencyQueueTest is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(
             _getTestSuperformId(),
             1e18,
+            1e18,
             100,
             LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
             "",
             false,
             false,
+            mrimperfect,
             mrimperfect,
             ""
         );
@@ -500,6 +521,10 @@ contract EmergencyQueueTest is ProtocolActions {
         amounts[0] = 0.9e18;
         amounts[1] = 0.9e18;
 
+        uint256[] memory outputAmounts = new uint256[](2);
+        outputAmounts[0] = 0.9e18;
+        outputAmounts[1] = 0.9e18;
+
         uint256[] memory maxSlippages = new uint256[](2);
         maxSlippages[0] = 100;
         maxSlippages[1] = 100;
@@ -509,7 +534,17 @@ contract EmergencyQueueTest is ProtocolActions {
         liqRequests[1] = liqRequests[0];
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, maxSlippages, liqRequests, "", new bool[](2), new bool[](2), mrimperfect, ""
+            superformIds,
+            amounts,
+            outputAmounts,
+            maxSlippages,
+            liqRequests,
+            "",
+            new bool[](2),
+            new bool[](2),
+            mrimperfect,
+            mrimperfect,
+            ""
         );
 
         SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
@@ -538,11 +573,13 @@ contract EmergencyQueueTest is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             1e18,
+            1e18,
             1000,
             LiqRequest("", address(0), address(0), 1, ETH, 0),
             "",
             false,
             false,
+            mrimperfect,
             mrimperfect,
             ""
         );
@@ -613,6 +650,10 @@ contract EmergencyQueueTest is ProtocolActions {
         amounts[0] = 0.9e18;
         amounts[1] = 0.9e18;
 
+        uint256[] memory outputAmounts = new uint256[](2);
+        outputAmounts[0] = 0.9e18;
+        outputAmounts[1] = 0.9e18;
+
         uint256[] memory slippages = new uint256[](2);
         slippages[0] = 100;
         slippages[1] = 100;
@@ -622,7 +663,17 @@ contract EmergencyQueueTest is ProtocolActions {
         liqRequests[1] = liqRequests[0];
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, slippages, liqRequests, "", new bool[](2), new bool[](2), mrimperfect, ""
+            superformIds,
+            amounts,
+            outputAmounts,
+            slippages,
+            liqRequests,
+            "",
+            new bool[](2),
+            new bool[](2),
+            mrimperfect,
+            mrimperfect,
+            ""
         );
 
         uint8[] memory ambIds = new uint8[](2);
@@ -704,7 +755,7 @@ contract EmergencyQueueTest is ProtocolActions {
         uint256 superformId = _getTestSuperformId();
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, 2e18, 100, LiqRequest("", dai, address(0), 1, 1, 0), "", false, false, mrperfect, ""
+            superformId, 2e18, 2e18, 100, LiqRequest("", dai, address(0), 1, 1, 0), "", false, false, mrperfect, mrperfect, ""
         );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
@@ -760,6 +811,7 @@ contract EmergencyQueueTest is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             2e18,
+            2e18,
             1000,
             LiqRequest(
                 _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, ARBI, 0
@@ -767,6 +819,7 @@ contract EmergencyQueueTest is ProtocolActions {
             "",
             false,
             false,
+            mrimperfect,
             mrimperfect,
             ""
         );
@@ -808,7 +861,12 @@ contract EmergencyQueueTest is ProtocolActions {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 2e18;
 
-        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(payloadId, amounts);
+        address[] memory bridgedTokens = new address[](1);
+        bridgedTokens[0] = getContract(ARBI, "DAI");
+
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(
+            payloadId, bridgedTokens, amounts
+        );
 
         uint256 nativeAmount = PaymentHelper(getContract(ARBI, "PaymentHelper")).estimateAckCost(1);
 

@@ -71,6 +71,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     //////////////////////////////////////////////////////////////*/
 
     constructor(address superRegistry_) {
+        if (superRegistry_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
         superRegistry = ISuperRegistry(superRegistry_);
 
         _disableInitializers();
@@ -105,9 +108,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         override
         onlySuperRouter
         notPaused(singleVaultData_)
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
-        dstAmount = _directDepositIntoVault(singleVaultData_, srcSender_);
+        shares = _directDepositIntoVault(singleVaultData_, srcSender_);
     }
 
     /// @inheritdoc IBaseForm
@@ -119,9 +122,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         override
         onlySuperRouter
         notPaused(singleVaultData_)
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
-        dstAmount = _directWithdrawFromVault(singleVaultData_, srcSender_);
+        assets = _directWithdrawFromVault(singleVaultData_, srcSender_);
     }
 
     /// @inheritdoc IBaseForm
@@ -134,9 +137,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         override
         onlyCoreStateRegistry
         notPaused(singleVaultData_)
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
-        dstAmount = _xChainDepositIntoVault(singleVaultData_, srcSender_, srcChainId_);
+        shares = _xChainDepositIntoVault(singleVaultData_, srcSender_, srcChainId_);
     }
 
     /// @inheritdoc IBaseForm
@@ -149,27 +152,20 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         override
         onlyCoreStateRegistry
         notPaused(singleVaultData_)
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
-        dstAmount = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
+        assets = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
     }
 
     /// @inheritdoc IBaseForm
-    function emergencyWithdraw(
-        address srcSender_,
-        address refundAddress_,
-        uint256 amount_
-    )
-        external
-        override
-        onlyEmergencyQueue
-    {
-        _emergencyWithdraw(srcSender_, refundAddress_, amount_);
+    function emergencyWithdraw(address receiverAddress_, uint256 amount_) external override onlyEmergencyQueue {
+        _emergencyWithdraw(receiverAddress_, amount_);
     }
 
     /// @inheritdoc IBaseForm
-    function forwardDustToPaymaster() external override {
-        _forwardDustToPaymaster();
+    function forwardDustToPaymaster(address token_) external override {
+        if (token_ == vault) revert Error.CANNOT_FORWARD_4646_TOKEN();
+        _forwardDustToPaymaster(token_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -236,7 +232,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     )
         internal
         virtual
-        returns (uint256 dstAmount);
+        returns (uint256 shares);
 
     /// @dev Withdraws underlying tokens from a vault
     function _directWithdrawFromVault(
@@ -245,7 +241,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     )
         internal
         virtual
-        returns (uint256 dstAmount_);
+        returns (uint256 assets);
 
     /// @dev Deposits underlying tokens into a vault
     function _xChainDepositIntoVault(
@@ -255,7 +251,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     )
         internal
         virtual
-        returns (uint256 dstAmount);
+        returns (uint256 shares);
 
     /// @dev Withdraws underlying tokens from a vault
     function _xChainWithdrawFromVault(
@@ -265,11 +261,11 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     )
         internal
         virtual
-        returns (uint256 dstAmount);
+        returns (uint256 assets);
 
     /// @dev withdraws vault shares from form during emergency
-    function _emergencyWithdraw(address srcSender_, address refundAddress_, uint256 amount_) internal virtual;
+    function _emergencyWithdraw(address receiverAddress_, uint256 amount_) internal virtual;
 
     /// @dev forwards dust to paymaster
-    function _forwardDustToPaymaster() internal virtual;
+    function _forwardDustToPaymaster(address token_) internal virtual;
 }

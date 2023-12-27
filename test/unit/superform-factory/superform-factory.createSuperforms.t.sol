@@ -61,12 +61,6 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
 
         vm.selectFork(FORKS[chainId]);
 
-        /// @dev testing the getAllSuperforms function
-        (vars.superformIds_, vars.superforms_) =
-            SuperformFactory(getContract(chainId, "SuperformFactory")).getAllSuperforms();
-
-        assertEq(vars.superformIds_.length, vars.superforms_.length);
-
         /// @dev Testing Coss Chain Superform Deployments
         vars.transformedChainIds_ = new uint256[](vars.chainIds_.length);
 
@@ -97,21 +91,14 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation, formImplementationId
+            formImplementation, formImplementationId, 1
         );
 
         uint256 totalSuperformsBefore = SuperformFactory(getContract(chainId, "SuperformFactory")).getSuperformCount();
 
         /// @dev Creating superform using form
-        (uint256 superformIdCreated, address superformCreated) =
+        (uint256 superformIdCreated,) =
             SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formImplementationId, vault);
-
-        (uint256[] memory superformIds_, address[] memory superforms_) =
-            SuperformFactory(getContract(chainId, "SuperformFactory")).getAllSuperformsFromVault(vault);
-
-        assertEq(superformIdCreated, superformIds_[superformIds_.length - 1]);
-
-        assertEq(superformCreated, superforms_[superforms_.length - 1]);
 
         uint256 totalSuperformsAfter = SuperformFactory(getContract(chainId, "SuperformFactory")).getSuperformCount();
         assertEq(totalSuperformsAfter, totalSuperformsBefore + 1);
@@ -137,7 +124,7 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
 
         /// Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation1, formImplementationId
+            formImplementation1, formImplementationId, 1
         );
 
         /// @dev Creating superform using form
@@ -158,7 +145,7 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation, formImplementationId
+            formImplementation, formImplementationId, 1
         );
 
         /// @dev Creating superform using form
@@ -183,7 +170,7 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
         vm.expectRevert(Error.FORM_INTERFACE_UNSUPPORTED.selector);
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation, formImplementationId
+            formImplementation, formImplementationId, 1
         );
     }
 

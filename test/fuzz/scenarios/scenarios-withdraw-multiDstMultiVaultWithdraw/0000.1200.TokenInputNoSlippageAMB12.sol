@@ -107,8 +107,8 @@ contract MDMVW00001200TokenInputSlippageAMB12 is ProtocolActions {
         amountOne_ = uint128(bound(amountOne_, 2e6, 2e10));
         amountTwo_ = uint128(bound(amountTwo_, 2e6, 2e10));
         amountThree_ = uint128(bound(amountThree_, 2e6, 2e10));
-        AMOUNTS[ARBI][0] = [amountOne_, amountTwo_, amountThree_, amountOne_];
 
+        AMOUNTS[ARBI][0] = [amountOne_, amountTwo_, amountThree_, amountOne_];
         AMOUNTS[POLY][0] = [amountOne_, amountOne_, amountTwo_, amountThree_];
 
         for (uint256 act = 0; act < actions.length; ++act) {
@@ -131,9 +131,9 @@ contract MDMVW00001200TokenInputSlippageAMB12 is ProtocolActions {
 
                     /// @dev superPostions[0] = superPositions[1] = superPositions[2] for ARBI (as it's the same
                     /// superform)
-                    amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, (superPositions[0] / 3) + 1));
-                    amountTwoWithdraw_ = uint128(bound(amountTwoWithdraw_, 1, (superPositions[1] / 3) + 1));
-                    amountThreeWithdraw_ = uint128(bound(amountThreeWithdraw_, 1, (superPositions[2] / 3) + 1));
+                    amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 0.1e6, (superPositions[0] / 3) + 1));
+                    amountTwoWithdraw_ = uint128(bound(amountTwoWithdraw_, 0.1e6, (superPositions[1] / 3) + 1));
+                    amountThreeWithdraw_ = uint128(bound(amountThreeWithdraw_, 0.1e6, (superPositions[2] / 3) + 1));
 
                     if (PARTIAL[DST_CHAINS[i]][1].length > 0) {
                         AMOUNTS[DST_CHAINS[i]][1] =

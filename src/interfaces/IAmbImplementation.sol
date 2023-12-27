@@ -2,15 +2,16 @@
 pragma solidity ^0.8.23;
 
 /// @title IAmbImplementation
+/// @dev Interface for arbitrary message bridge (AMB) implementations
 /// @author ZeroPoint Labs
-/// @dev interface for arbitrary message bridge implementation
 interface IAmbImplementation {
+    
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
 
-    event ChainAdded(uint64 superChainId);
-    event AuthorizedImplAdded(uint64 superChainId, address authImpl);
+    event ChainAdded(uint64 indexed superChainId);
+    event AuthorizedImplAdded(uint64 indexed superChainId, address indexed authImpl);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //

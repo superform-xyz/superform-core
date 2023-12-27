@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
-import { ISuperPositions } from "../../interfaces/ISuperPositions.sol";
-import { IBaseStateRegistry } from "../../interfaces/IBaseStateRegistry.sol";
-import { ITimelockStateRegistry } from "../../interfaces/ITimelockStateRegistry.sol";
-import { IPayloadHelper } from "../../interfaces/IPayloadHelper.sol";
-import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
-import { Error } from "../../libraries/Error.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
+import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.sol";
+import { IPayloadHelper } from "src/interfaces/IPayloadHelper.sol";
+import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { ProofLib } from "src/libraries/ProofLib.sol";
+import { Error } from "src/libraries/Error.sol";
 import {
     CallbackType,
     ReturnMultiData,
@@ -15,17 +17,14 @@ import {
     InitMultiVaultData,
     InitSingleVaultData,
     TimelockPayload,
-    LiqRequest,
     AMBMessage
-} from "../../types/DataTypes.sol";
-import { DataLib } from "../../libraries/DataLib.sol";
-import { ProofLib } from "../../libraries/ProofLib.sol";
+} from "src/types/DataTypes.sol";
 
 /// @title PayloadHelper
+/// @dev Helps decode payload data for off-chain purposes
 /// @author ZeroPoint Labs
-/// @dev helps decode payload data more easily. Used for off-chain purposes
-
 contract PayloadHelper is IPayloadHelper {
+
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
@@ -37,25 +36,6 @@ contract PayloadHelper is IPayloadHelper {
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
     //////////////////////////////////////////////////////////////
-
-    struct DecodeDstPayloadInternalVars {
-        uint8 txType;
-        uint8 callbackType;
-        address srcSender;
-        uint64 srcChainId;
-        uint256[] amounts;
-        uint256[] slippages;
-        uint256[] superformIds;
-        bool[] hasDstSwaps;
-        address receiverAddress;
-        uint256 srcPayloadId;
-        bytes extraFormData;
-        uint8 multi;
-        ReturnMultiData rd;
-        ReturnSingleData rsd;
-        InitMultiVaultData imvd;
-        InitSingleVaultData isvd;
-    }
 
     struct DecodeDstPayloadLiqDataInternalVars {
         uint8 callbackType;
@@ -76,6 +56,9 @@ contract PayloadHelper is IPayloadHelper {
     //////////////////////////////////////////////////////////////
 
     constructor(address superRegistry_) {
+        if (superRegistry_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
@@ -88,49 +71,29 @@ contract PayloadHelper is IPayloadHelper {
         external
         view
         override
-        returns (
-            uint8 txType,
-            uint8 callbackType,
-            address srcSender,
-            uint64 srcChainId,
-            uint256[] memory amounts,
-            uint256[] memory slippages,
-            uint256[] memory superformIds,
-            bool[] memory hasDstSwaps,
-            bytes memory extraFormData,
-            address receiverAddress,
-            uint256 srcPayloadId
-        )
+        returns (DecodedDstPayload memory v)
     {
-        IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
-        _isValidPayloadId(dstPayloadId_, coreStateRegistry);
+        _isValidPayloadId(dstPayloadId_, _getCoreStateRegistry());
 
-        DecodeDstPayloadInternalVars memory v;
         (v.txType, v.callbackType, v.multi, v.srcSender, v.srcChainId) =
-            _decodePayloadHeader(dstPayloadId_, coreStateRegistry);
+            _decodePayloadHeader(dstPayloadId_, _getCoreStateRegistry());
 
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
-            (v.amounts, v.srcPayloadId) = _decodeReturnData(dstPayloadId_, v.multi, coreStateRegistry);
+            (v.amounts, v.srcPayloadId) = _decodeReturnData(dstPayloadId_, v.multi, _getCoreStateRegistry());
         } else if (v.callbackType == uint256(CallbackType.INIT)) {
-            (v.amounts, v.slippages, v.superformIds, v.hasDstSwaps, v.extraFormData, v.receiverAddress, v.srcPayloadId)
-            = _decodeInitData(dstPayloadId_, v.multi, coreStateRegistry);
+            (
+                v.amounts,
+                v.outputAmounts,
+                v.slippages,
+                v.superformIds,
+                v.hasDstSwaps,
+                v.extraFormData,
+                v.receiverAddress,
+                v.srcPayloadId
+            ) = _decodeInitData(dstPayloadId_, v.multi, _getCoreStateRegistry());
         } else {
             revert Error.INVALID_PAYLOAD();
         }
-
-        return (
-            v.txType,
-            v.callbackType,
-            v.srcSender,
-            v.srcChainId,
-            v.amounts,
-            v.slippages,
-            v.superformIds,
-            v.hasDstSwaps,
-            v.extraFormData,
-            v.receiverAddress,
-            v.srcPayloadId
-        );
     }
 
     /// @inheritdoc IPayloadHelper
@@ -139,9 +102,10 @@ contract PayloadHelper is IPayloadHelper {
         view
         override
         returns (
-            uint8[] memory bridgeIds,
             bytes[] memory txDatas,
             address[] memory tokens,
+            address[] memory interimTokens,
+            uint8[] memory bridgeIds,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
             uint256[] memory nativeAmounts
@@ -165,9 +129,17 @@ contract PayloadHelper is IPayloadHelper {
         external
         view
         override
-        returns (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId)
+        returns (
+            uint8 txType,
+            uint8 callbackType,
+            uint8 multi,
+            address srcSender,
+            address receiverAddressSP,
+            uint64 srcChainId
+        )
     {
-        uint256 txInfo =
+        uint256 txInfo;
+        (txInfo, receiverAddressSP) =
             ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).txHistory(srcPayloadId_);
 
         if (txInfo == 0) {
@@ -182,7 +154,7 @@ contract PayloadHelper is IPayloadHelper {
         external
         view
         override
-        returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
+        returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
     {
         ITimelockStateRegistry timelockStateRegistry =
             ITimelockStateRegistry(superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY")));
@@ -194,7 +166,11 @@ contract PayloadHelper is IPayloadHelper {
         TimelockPayload memory payload = timelockStateRegistry.getTimelockPayload(timelockPayloadId_);
 
         return (
-            payload.srcSender, payload.srcChainId, payload.data.payloadId, payload.data.superformId, payload.data.amount
+            payload.data.receiverAddress,
+            payload.srcChainId,
+            payload.data.payloadId,
+            payload.data.superformId,
+            payload.data.amount
         );
     }
 
@@ -294,6 +270,7 @@ contract PayloadHelper is IPayloadHelper {
         view
         returns (
             uint256[] memory amounts,
+            uint256[] memory outputAmounts,
             uint256[] memory slippages,
             uint256[] memory superformIds,
             bool[] memory hasDstSwaps,
@@ -308,6 +285,7 @@ contract PayloadHelper is IPayloadHelper {
 
             return (
                 imvd.amounts,
+                imvd.outputAmounts,
                 imvd.maxSlippages,
                 imvd.superformIds,
                 imvd.hasDstSwaps,
@@ -322,6 +300,9 @@ contract PayloadHelper is IPayloadHelper {
             amounts = new uint256[](1);
             amounts[0] = isvd.amount;
 
+            outputAmounts = new uint256[](1);
+            outputAmounts[0] = isvd.outputAmount;
+
             slippages = new uint256[](1);
             slippages[0] = isvd.maxSlippage;
 
@@ -332,7 +313,14 @@ contract PayloadHelper is IPayloadHelper {
             receiverAddress = isvd.receiverAddress;
 
             return (
-                amounts, slippages, superformIds, hasDstSwaps, isvd.extraFormData, isvd.receiverAddress, isvd.payloadId
+                amounts,
+                outputAmounts,
+                slippages,
+                superformIds,
+                hasDstSwaps,
+                isvd.extraFormData,
+                isvd.receiverAddress,
+                isvd.payloadId
             );
         }
     }
@@ -344,9 +332,10 @@ contract PayloadHelper is IPayloadHelper {
         internal
         view
         returns (
-            uint8[] memory bridgeIds,
             bytes[] memory txDatas,
             address[] memory tokens,
+            address[] memory interimTokens,
+            uint8[] memory bridgeIds,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
             uint256[] memory nativeAmounts
@@ -357,6 +346,7 @@ contract PayloadHelper is IPayloadHelper {
         bridgeIds = new uint8[](imvd.liqData.length);
         txDatas = new bytes[](imvd.liqData.length);
         tokens = new address[](imvd.liqData.length);
+        interimTokens = new address[](imvd.liqData.length);
         liqDstChainIds = new uint64[](imvd.liqData.length);
         amountsIn = new uint256[](imvd.liqData.length);
         nativeAmounts = new uint256[](imvd.liqData.length);
@@ -367,6 +357,7 @@ contract PayloadHelper is IPayloadHelper {
             bridgeIds[i] = imvd.liqData[i].bridgeId;
             txDatas[i] = imvd.liqData[i].txData;
             tokens[i] = imvd.liqData[i].token;
+            interimTokens[i] = imvd.liqData[i].interimToken;
             liqDstChainIds[i] = imvd.liqData[i].liqDstChainId;
 
             /// @dev decodes amount from txdata only if its present
@@ -377,8 +368,6 @@ contract PayloadHelper is IPayloadHelper {
 
             nativeAmounts[i] = imvd.liqData[i].nativeAmount;
         }
-
-        return (bridgeIds, txDatas, tokens, liqDstChainIds, amountsIn, nativeAmounts);
     }
 
     function _decodeSingleLiqData(
@@ -388,9 +377,10 @@ contract PayloadHelper is IPayloadHelper {
         internal
         view
         returns (
-            uint8[] memory bridgeIds,
             bytes[] memory txDatas,
             address[] memory tokens,
+            address[] memory interimTokens,
+            uint8[] memory bridgeIds,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
             uint256[] memory nativeAmounts
@@ -408,6 +398,9 @@ contract PayloadHelper is IPayloadHelper {
         tokens = new address[](1);
         tokens[0] = isvd.liqData.token;
 
+        interimTokens = new address[](1);
+        interimTokens[0] = isvd.liqData.interimToken;
+
         liqDstChainIds = new uint64[](1);
         liqDstChainIds[0] = isvd.liqData.liqDstChainId;
 
@@ -421,7 +414,5 @@ contract PayloadHelper is IPayloadHelper {
 
         nativeAmounts = new uint256[](1);
         nativeAmounts[0] = isvd.liqData.nativeAmount;
-
-        return (bridgeIds, txDatas, tokens, liqDstChainIds, amountsIn, nativeAmounts);
     }
 }

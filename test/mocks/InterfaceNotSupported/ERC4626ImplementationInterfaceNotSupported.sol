@@ -97,11 +97,11 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
     //////////////////////////////////////////////////////////////*/
 
     /// @dev to avoid stack too deep errors
-    struct directDepositLocalVars {
+    struct DirectDepositLocalVars {
         uint64 chainId;
         address asset;
         address bridgeValidator;
-        uint256 dstAmount;
+        uint256 shares;
         uint256 balanceBefore;
         uint256 balanceAfter;
         uint256 nonce;
@@ -109,8 +109,8 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         bytes signature;
     }
 
-    function _processDirectDeposit(InitSingleVaultData memory singleVaultData_) internal returns (uint256 dstAmount) {
-        directDepositLocalVars memory vars;
+    function _processDirectDeposit(InitSingleVaultData memory singleVaultData_) internal returns (uint256 shares) {
+        DirectDepositLocalVars memory vars;
 
         IERC4626 v = IERC4626(vault);
         vars.asset = address(v.asset());
@@ -121,7 +121,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         if (address(token) != NATIVE) {
             /// @dev handles the asset token transfers.
             if (token.allowance(msg.sender, address(this)) < singleVaultData_.amount) {
-                revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+                revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
             }
 
             /// @dev transfers input token, which is the same as vault asset, to the form
@@ -164,13 +164,13 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
 
         /// @dev the balance of vault tokens, ready to be deposited is compared with the previous balance
         if (vars.balanceAfter - vars.balanceBefore < singleVaultData_.amount) {
-            revert Error.DIRECT_DEPOSIT_INVALID_DATA();
+            revert Error.DIRECT_DEPOSIT_SWAP_FAILED();
         }
 
         /// @dev the vault asset is approved and deposited to the vault
         IERC20(vars.asset).safeIncreaseAllowance(vault, singleVaultData_.amount);
 
-        dstAmount = v.deposit(singleVaultData_.amount, address(this));
+        shares = v.deposit(singleVaultData_.amount, address(this));
     }
 
     struct ProcessDirectWithdrawLocalVars {
@@ -188,7 +188,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         address srcSender
     )
         internal
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
         ProcessDirectWithdrawLocalVars memory v;
         v.len1 = singleVaultData_.liqData.txData.length;
@@ -199,19 +199,15 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         v.v = IERC4626(vault);
         v.asset = address(v.v.asset());
 
-        /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same as
-        /// the vault asset
-        if (singleVaultData_.liqData.token != v.asset) revert Error.DIRECT_WITHDRAW_INVALID_TOKEN();
-
         /// @dev redeem the underlying
-        dstAmount = v.v.redeem(singleVaultData_.amount, v.receiver, address(this));
+        assets = v.v.redeem(singleVaultData_.amount, v.receiver, address(this));
 
         if (v.len1 != 0) {
             v.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
             v.amount = IBridgeValidator(v.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
             /// @dev this check here might be too much already, but can't hurt
-            if (v.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+            if (v.amount > assets) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
             v.chainId = uint64(block.chainid);
 
@@ -248,7 +244,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         uint64 srcChainId
     )
         internal
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
         (,, uint64 dstChainId) = singleVaultData_.superformId.getSuperform();
         address vaultLoc = vault;
@@ -262,12 +258,12 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         IERC20(v.asset()).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
 
         /// @dev This makes ERC4626Form (address(this)) owner of v.shares
-        dstAmount = v.deposit(singleVaultData_.amount, address(this));
+        shares = v.deposit(singleVaultData_.amount, address(this));
 
         emit Processed(srcChainId, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
     }
 
-    struct xChainWithdrawLocalVars {
+    struct XChainWithdrawLocalVars {
         uint64 dstChainId;
         address receiver;
         address asset;
@@ -283,7 +279,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         uint64 srcChainId
     )
         internal
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
         uint256 len = singleVaultData_.liqData.txData.length;
 
@@ -292,7 +288,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
             revert Error.WITHDRAW_TX_DATA_NOT_UPDATED();
         }
 
-        xChainWithdrawLocalVars memory vars;
+        XChainWithdrawLocalVars memory vars;
         (,, vars.dstChainId) = singleVaultData_.superformId.getSuperform();
 
         /// @dev if there is no txData, on withdraws the receiver is the original beneficiary (srcSender), otherwise it
@@ -302,19 +298,15 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         IERC4626 v = IERC4626(vault);
         vars.asset = v.asset();
 
-        /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same as
-        /// the vault asset
-        if (vars.asset != singleVaultData_.liqData.token) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
-
         /// @dev redeem vault positions (we operate only on positions, not assets)
-        dstAmount = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
+        assets = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
 
         if (len != 0) {
             vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
             vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
-            if (vars.amount > dstAmount) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
+            if (vars.amount > assets) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(vars.bridgeValidator).validateTxData(
@@ -335,7 +327,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
-                dstAmount,
+                assets,
                 singleVaultData_.liqData.nativeAmount
             );
         }
@@ -343,29 +335,28 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         emit Processed(srcChainId, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
     }
 
-    function _processEmergencyWithdraw(address refundAddress_, uint256 amount_) internal {
+    function _processEmergencyWithdraw(address receiverAddress_, uint256 amount_) internal {
         IERC4626 vaultContract = IERC4626(vault);
 
         if (vaultContract.balanceOf(address(this)) < amount_) {
             revert Error.INSUFFICIENT_BALANCE();
         }
 
-        vaultContract.transfer(refundAddress_, amount_);
+        vaultContract.transfer(receiverAddress_, amount_);
 
-        emit EmergencyWithdrawalProcessed(refundAddress_, amount_);
+        emit EmergencyWithdrawalProcessed(receiverAddress_, amount_);
     }
 
-    function _processForwardDustToPaymaster() internal {
-        address paymaster = superRegistry.getAddress(keccak256("PAYMASTER"));
-        if (paymaster != address(0)) {
-            IERC20 token = IERC20(getVaultAsset());
+    function _processForwardDustToPaymaster(address token_) internal {
+        if (token_ == address(0)) revert Error.ZERO_ADDRESS();
 
-            uint256 dust = token.balanceOf(address(this));
-            if (dust > 0) {
-                token.safeTransferFrom(address(this), paymaster, dust);
-            }
-        } else {
-            revert Error.ZERO_ADDRESS();
+        address paymaster = superRegistry.getAddress(keccak256("PAYMASTER"));
+        IERC20 token = IERC20(token_);
+
+        uint256 dust = token.balanceOf(address(this));
+        if (dust != 0) {
+            token.safeTransfer(paymaster, dust);
+            emit FormDustForwardedToPaymaster(token_, dust);
         }
     }
 

@@ -10,6 +10,9 @@ contract MainnetDeploy is AbstractDeploySingle {
 
     uint64[] TARGET_DEPLOYMENT_CHAINS = [BSC, POLY, AVAX];
 
+    ///@dev ORIGINAL SALT
+    bytes32 constant salt = "NO_SLEEP_VIK";
+
     /// @notice The main stage 1 script entrypoint
     function deployStage1(uint256 selectedChainIndex) external {
         _preDeploymentSetup();
@@ -22,7 +25,7 @@ contract MainnetDeploy is AbstractDeploySingle {
             }
         }
 
-        _deployStage1(selectedChainIndex, trueIndex, Cycle.Prod, TARGET_DEPLOYMENT_CHAINS);
+        _deployStage1(selectedChainIndex, trueIndex, Cycle.Prod, TARGET_DEPLOYMENT_CHAINS, salt);
     }
 
     /// @dev stage 2 must be called only after stage 1 is complete for all chains!

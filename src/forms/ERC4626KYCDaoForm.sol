@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import { ERC4626FormImplementation } from "src/forms/ERC4626FormImplementation.sol";
+import { BaseForm } from "src/BaseForm.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { IKycdaoNTNFT } from "src/vendor/kycDAO/IKycDAONTNFT.sol";
+import { Error } from "src/libraries/Error.sol";
+import { InitSingleVaultData } from "src/types/DataTypes.sol";
 import { kycDAO4626 } from "super-vaults/kycdao-4626/kycdao4626.sol";
-import { InitSingleVaultData } from "../types/DataTypes.sol";
-import { ERC4626FormImplementation } from "./ERC4626FormImplementation.sol";
-import { BaseForm } from "../BaseForm.sol";
-import { Error } from "../libraries/Error.sol";
+import { ERC721Holder } from "openzeppelin-contracts/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 /// @title ERC4626KYCDaoForm
-/// @notice The Form implementation for IERC4626 vaults with kycDAO NFT checks
-/// @notice This form must hold a kycDAO NFT to operate
-contract ERC4626KYCDaoForm is ERC4626FormImplementation {
+/// @dev The Form implementation for kycDAO-gated ERC4626 vaults, must hold kycDAO NFT
+/// @author Zeropoint Labs
+contract ERC4626KYCDaoForm is ERC4626FormImplementation, ERC721Holder {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
@@ -36,6 +39,20 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
         _;
     }
 
+    modifier onlyProtocolAdmin() {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
+            revert Error.NOT_PROTOCOL_ADMIN();
+        }
+        _;
+    }
+    //////////////////////////////////////////////////////////////
+    //                  EXTERNAL ADMIN FUNCTIONS                //
+    //////////////////////////////////////////////////////////////
+
+    function mintKYC(uint32 authCode_) external onlyProtocolAdmin {
+        IKycdaoNTNFT(address(kycDAO4626(vault).kycValidity())).mintWithCode(authCode_);
+    }
+
     //////////////////////////////////////////////////////////////
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
@@ -48,9 +65,9 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
         internal
         override
         onlyKYC(srcSender_)
-        returns (uint256 dstAmount)
+        returns (uint256 shares)
     {
-        dstAmount = _processDirectDeposit(singleVaultData_);
+        shares = _processDirectDeposit(singleVaultData_);
     }
 
     function _xChainDepositIntoVault(
@@ -61,7 +78,7 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
         internal
         pure
         override
-        returns (uint256 /*dstAmount*/ )
+        returns (uint256 /*shares*/ )
     {
         revert Error.NOT_IMPLEMENTED();
     }
@@ -74,9 +91,9 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
         internal
         override
         onlyKYC(srcSender_)
-        returns (uint256 dstAmount)
+        returns (uint256 assets)
     {
-        dstAmount = _processDirectWithdraw(singleVaultData_, srcSender_);
+        assets = _processDirectWithdraw(singleVaultData_);
     }
 
     /// @inheritdoc BaseForm
@@ -88,26 +105,18 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
         internal
         pure
         override
-        returns (uint256 /*dstAmount*/ )
+        returns (uint256 /*assets*/ )
     {
         revert Error.NOT_IMPLEMENTED();
     }
 
     /// @inheritdoc BaseForm
-    function _emergencyWithdraw(
-        address srcSender_,
-        address refundAddress_,
-        uint256 amount_
-    )
-        internal
-        override
-        onlyKYC(srcSender_)
-    {
-        _processEmergencyWithdraw(refundAddress_, amount_);
+    function _emergencyWithdraw(address receiverAddress_, uint256 amount_) internal override {
+        _processEmergencyWithdraw(receiverAddress_, amount_);
     }
 
     /// @inheritdoc BaseForm
-    function _forwardDustToPaymaster() internal override {
-        _processForwardDustToPaymaster();
+    function _forwardDustToPaymaster(address token_) internal override {
+        _processForwardDustToPaymaster(token_);
     }
 }

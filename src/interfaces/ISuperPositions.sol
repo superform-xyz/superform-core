@@ -1,33 +1,48 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { AMBMessage } from "../types/DataTypes.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
+import { AMBMessage } from "../types/DataTypes.sol";
 
 /// @title ISuperPositions
-/// @author Zeropoint Labs.
-/// @dev interface for Super Positions
+/// @dev Interface for SuperPositions
+/// @author Zeropoint Labs
 interface ISuperPositions is IERC1155A {
+
+    //////////////////////////////////////////////////////////////
+    //                          STRUCTS                         //
+    //////////////////////////////////////////////////////////////
+
+    struct TxHistory {
+        uint256 txInfo;
+        address receiverAddressSP;
+    }
+    
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
 
     /// @dev is emitted when a dynamic uri is updated
-    event DynamicURIUpdated(string oldURI, string newURI, bool frozen);
+    event DynamicURIUpdated(string indexed oldURI, string indexed newURI, bool indexed frozen);
 
     /// @dev is emitted when a cross-chain transaction is completed.
-    event Completed(uint256 txId);
+    event Completed(uint256 indexed txId);
 
     /// @dev is emitted when a aErc20 token is registered
     event AERC20TokenRegistered(uint256 indexed tokenId, address indexed tokenAddress);
+
+    /// @dev is emitted when a tx info is saved
+    event TxHistorySet(uint256 indexed payloadId, uint256 txInfo, address indexed receiverAddress);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
 
-    /// @dev returns the payload header for a tx id on the source chain
+    /// @dev returns the payload header and the receiver address for a tx id on the source chain
     /// @param txId_ is the identifier of the transaction issued by superform router
-    function txHistory(uint256 txId_) external view returns (uint256);
+    /// @return txInfo is the header of the payload
+    /// @return receiverAddressSP is the address of the receiver of superPositions
+    function txHistory(uint256 txId_) external view returns (uint256 txInfo, address receiverAddressSP);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
@@ -35,20 +50,21 @@ interface ISuperPositions is IERC1155A {
 
     /// @dev saves the message being sent together with the associated id formulated in a router
     /// @param payloadId_ is the id of the message being saved
-    /// @param txInfo_ is the relevant information of the transaction being saved
-    function updateTxHistory(uint256 payloadId_, uint256 txInfo_) external;
+    /// @param txInfo_ is the header of the AMBMessage of the transaction being saved
+    /// @param receiverAddressSP_ is the address of the receiver of superPositions
+    function updateTxHistory(uint256 payloadId_, uint256 txInfo_, address receiverAddressSP_) external;
 
     /// @dev allows minter to mint shares on source
-    /// @param srcSender_ is the beneficiary of shares
+    /// @param receiverAddress_ is the beneficiary of shares
     /// @param id_ is the id of the shares
     /// @param amount_ is the amount of shares to mint
-    function mintSingle(address srcSender_, uint256 id_, uint256 amount_) external;
+    function mintSingle(address receiverAddress_, uint256 id_, uint256 amount_) external;
 
     /// @dev allows minter to mint shares on source in batch
-    /// @param srcSender_ is the beneficiary of shares
+    /// @param receiverAddress_ is the beneficiary of shares
     /// @param ids_ are the ids of the shares
     /// @param amounts_ are the amounts of shares to mint
-    function mintBatch(address srcSender_, uint256[] memory ids_, uint256[] memory amounts_) external;
+    function mintBatch(address receiverAddress_, uint256[] memory ids_, uint256[] memory amounts_) external;
 
     /// @dev allows superformRouter to burn shares on source
     /// @notice burn is done optimistically by the router in the beginning of the withdraw transactions
