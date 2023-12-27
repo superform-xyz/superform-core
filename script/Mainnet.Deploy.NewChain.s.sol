@@ -19,13 +19,14 @@ contract MainnetDeployNewChain is AbstractDeploySingle {
     uint64[] TARGET_DEPLOYMENT_CHAINS = [ETH, AVAX, GNOSIS];
     uint64[] FINAL_DEPLOYED_CHAINS = [ETH, AVAX, GNOSIS];
     */
+    //!WARNING ENUSRE output folder has correct addresses of the deployment!
 
-    uint64[] TARGET_DEPLOYMENT_CHAINS = [BASE];
-    uint64[] FINAL_DEPLOYED_CHAINS = [BASE, BSC, POLY, AVAX];
+    uint64[] TARGET_DEPLOYMENT_CHAINS = [ETH, BASE, OP, ARBI];
+    uint64[] FINAL_DEPLOYED_CHAINS = [ETH, BASE, OP, ARBI, BSC, POLY, AVAX];
     uint64[] PREVIOUS_DEPLOYMENT = [BSC, POLY, AVAX];
 
     ///@dev ORIGINAL SALT
-    bytes32 constant salt = "CANTINA_DEPLOYMENT_4";
+    bytes32 constant salt = "NO_SLEEP_VIK";
 
     /// @notice The main stage 1 script entrypoint
     function deployStage1(uint256 selectedChainIndex) external {

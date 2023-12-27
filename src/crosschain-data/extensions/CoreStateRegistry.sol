@@ -34,7 +34,6 @@ import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/Sa
 /// @dev Enables communication between Superform core contracts deployed on all supported networks
 /// @author Zeropoint Labs
 contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
-    
     using SafeERC20 for IERC20;
     using DataLib for uint256;
     using ProofLib for AMBMessage;
@@ -87,7 +86,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         return PayloadUpdaterLib.validateSlippage(finalAmount_, amount_, maxSlippage_);
     }
-    
+
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
@@ -198,9 +197,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         /// @dev mint superPositions for successful deposits or remint for failed withdraws
         if (callbackType == uint256(CallbackType.RETURN) || callbackType == uint256(CallbackType.FAIL)) {
-            isMulti == 1
-                ? ISuperPositions(_getAddress(keccak256("SUPER_POSITIONS"))).stateMultiSync(message_)
-                : ISuperPositions(_getAddress(keccak256("SUPER_POSITIONS"))).stateSync(message_);
+            ISuperPositions superPositions = ISuperPositions(_getAddress(keccak256("SUPER_POSITIONS")));
+            isMulti == 1 ? superPositions.stateMultiSync(message_) : superPositions.stateSync(message_);
         } else if (callbackType == uint8(CallbackType.INIT)) {
             /// @dev for initial payload processing
             bytes memory returnMessage;
@@ -313,13 +311,12 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         /// @dev set to zero to prevent re-entrancy
         failedDeposits_.lastProposedTimestamp = 0;
-        IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
 
         uint256 len = failedDeposits_.amounts.length;
         for (uint256 i; i < len; ++i) {
             /// @dev refunds the amount to user specified refund address
             if (failedDeposits_.settleFromDstSwapper[i]) {
-                dstSwapper.processFailedTx(
+                IDstSwapper(_getAddress(keccak256("DST_SWAPPER"))).processFailedTx(
                     failedDeposits_.receiverAddress, failedDeposits_.settlementToken[i], failedDeposits_.amounts[i]
                 );
             } else {
@@ -692,7 +689,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                             false,
                             address(superform),
                             multiVaultData_.receiverAddress,
-                            superform.getVaultAsset(),
+                            _getVaultAsset(address(superform)),
                             address(0)
                         )
                     );
@@ -842,7 +839,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                         /// @dev clearing multiVaultData.amounts so that in case that fulfillment is true these amounts
                         /// are not minted
                         multiVaultData.amounts[i] = 0;
-                        failedDeposits[payloadId_].settlementToken.push(IBaseForm(superforms[i]).getVaultAsset());
+                        failedDeposits[payloadId_].settlementToken.push(_getVaultAsset(superforms[i]));
                         failedDeposits[payloadId_].settleFromDstSwapper.push(false);
                     }
                 } else {

@@ -11,7 +11,7 @@ contract MainnetDeploy is AbstractDeploySingle {
     uint64[] TARGET_DEPLOYMENT_CHAINS = [BSC, POLY, AVAX];
 
     ///@dev ORIGINAL SALT
-    bytes32 constant salt = "CANTINA_DEPLOYMENT_4";
+    bytes32 constant salt = "NO_SLEEP_VIK";
 
     /// @notice The main stage 1 script entrypoint
     function deployStage1(uint256 selectedChainIndex) external {

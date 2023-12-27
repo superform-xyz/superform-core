@@ -249,6 +249,17 @@ abstract contract AbstractDeploySingle is Script {
 
     uint256 public constant milionTokensE18 = 1 ether;
 
+    uint256[] public gasPrices = [
+        35 * 10e9, // ETH
+        5 * 10e9, // BSC
+        45 * 10e9, // AVAX
+        200 * 10e9, // POLY
+        1 * 10e8, // ARBI
+        1 * 10e8, // OP
+        1 * 10e8, // BASE
+        4 * 10e9 // GNOSIS
+    ];
+
     /*//////////////////////////////////////////////////////////////
                         CHAINLINK VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -616,7 +627,8 @@ abstract contract AbstractDeploySingle is Script {
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
             vars.chainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
         );
-        PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 8, abi.encode(50 * 10 ** 9 wei));
+        /// 500000000000
+        PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 8, abi.encode(gasPrices[trueIndex]));
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 9, abi.encode(750));
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 10, abi.encode(40_000));
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 11, abi.encode(50_000));
@@ -876,7 +888,7 @@ abstract contract AbstractDeploySingle is Script {
                 80_000,
                 12e8,
                 /// 12 usd
-                28 gwei,
+                gasPrices[vars.dstTrueIndex],
                 750,
                 10_000,
                 10_000,
