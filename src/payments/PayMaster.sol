@@ -1,20 +1,22 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import { LiquidityHandler } from "src/crosschain-liquidity/LiquidityHandler.sol";
+import { IPayMaster } from "src/interfaces/IPayMaster.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
+import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { Error } from "src/libraries/Error.sol";
+import { LiqRequest } from "src/types/DataTypes.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import { Error } from "../libraries/Error.sol";
-import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
-import { IPayMaster } from "../interfaces/IPayMaster.sol";
-import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
-import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
-import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
-import { LiquidityHandler } from "../crosschain-liquidity/LiquidityHandler.sol";
-import { LiqRequest } from "../types/DataTypes.sol";
 
 /// @title PayMaster
+/// @dev Manages cross-chain payments and rebalancing of funds
 /// @author ZeroPoint Labs
 contract PayMaster is IPayMaster, LiquidityHandler {
+    
     using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////////////

@@ -1,29 +1,44 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { BaseRouter } from "./BaseRouter.sol";
+import { BaseRouter } from "src/BaseRouter.sol";
+import { IBaseRouterImplementation } from "src/interfaces/IBaseRouterImplementation.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
+import { IPayMaster } from "src/interfaces/IPayMaster.sol";
+import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+import { IBaseForm } from "src/interfaces/IBaseForm.sol";
+import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
+import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { Error } from "src/libraries/Error.sol";
+import { IPermit2 } from "src/vendor/dragonfly-xyz/IPermit2.sol";
+import { LiquidityHandler } from "src/crosschain-liquidity/LiquidityHandler.sol";
+import {
+    SingleDirectSingleVaultStateReq,
+    SingleXChainSingleVaultStateReq,
+    SingleDirectMultiVaultStateReq,
+    SingleXChainMultiVaultStateReq,
+    MultiDstSingleVaultStateReq,
+    MultiDstMultiVaultStateReq,
+    LiqRequest,
+    InitSingleVaultData,
+    InitMultiVaultData,
+    MultiVaultSFData,
+    SingleVaultSFData,
+    AMBMessage,
+    CallbackType,
+    TransactionType
+} from "src/types/DataTypes.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC1155Receiver } from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 import { IERC1155Errors } from "openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
-import { IBaseStateRegistry } from "./interfaces/IBaseStateRegistry.sol";
-import { IBaseRouterImplementation } from "./interfaces/IBaseRouterImplementation.sol";
-import { IPayMaster } from "./interfaces/IPayMaster.sol";
-import { IPaymentHelper } from "./interfaces/IPaymentHelper.sol";
-import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
-import { IBaseForm } from "./interfaces/IBaseForm.sol";
-import { IBridgeValidator } from "./interfaces/IBridgeValidator.sol";
-import { ISuperPositions } from "./interfaces/ISuperPositions.sol";
-import { DataLib } from "./libraries/DataLib.sol";
-import { Error } from "./libraries/Error.sol";
-import { IPermit2 } from "./vendor/dragonfly-xyz/IPermit2.sol";
-import "./crosschain-liquidity/LiquidityHandler.sol";
-import "./types/DataTypes.sol";
 
 /// @title BaseRouterImplementation
-/// @author Zeropoint Labs
 /// @dev Extends BaseRouter with standard internal execution functions
+/// @author Zeropoint Labs
 abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRouter, LiquidityHandler {
     using SafeERC20 for IERC20;
     using DataLib for uint256;
@@ -325,10 +340,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev this loop is what allows to deposit to >1 different underlying on destination
         /// @dev if a loop fails in a validation the whole chain should be reverted
-        for (uint256 j; j < len; ++j) {
-            vars.liqRequest = req_.superformsData.liqRequests[j];
+        for (uint256 i; i < len; ++i) {
+            vars.liqRequest = req_.superformsData.liqRequests[i];
 
-            (superform,,) = req_.superformsData.superformIds[j].getSuperform();
+            (superform,,) = req_.superformsData.superformIds[i].getSuperform();
 
             /// @dev dispatch liquidity data
             if (
@@ -337,7 +352,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                         vars.liqRequest, superform, vars.srcChainId, req_.dstChainId, msg.sender, true
                     )
                 )
-            ) ambData.liqData[j].interimToken = vars.liqRequest.interimToken;
+            ) ambData.liqData[i].interimToken = vars.liqRequest.interimToken;
         }
 
         /// @dev dispatch message information, notice multiVaults is set to 1
@@ -635,7 +650,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 false,
                 args.retain4626,
                 args.receiverAddress,
-                // needed if user is keeping 4626
                 args.extraFormData
             ),
             args.srcSender
@@ -884,7 +898,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             }
         }
 
-        /// if it reaches this point then is valid
         return true;
     }
 
@@ -936,25 +949,24 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
 
         ISuperformFactory factory = ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY")));
-        bool valid;
 
         /// @dev slippage, amount, paused status validation
         for (uint256 i; i < len; ++i) {
-            valid = _validateSuperformData(
-                superformsData_.superformIds[i],
-                superformsData_.amounts[i],
-                superformsData_.outputAmounts[i],
-                superformsData_.maxSlippages[i],
-                superformsData_.receiverAddress,
-                superformsData_.receiverAddressSP,
-                dstChainId_,
-                deposit_,
-                factory,
-                true
-            );
-
-            if (!valid) {
-                return valid;
+            if (
+                !_validateSuperformData(
+                    superformsData_.superformIds[i],
+                    superformsData_.amounts[i],
+                    superformsData_.outputAmounts[i],
+                    superformsData_.maxSlippages[i],
+                    superformsData_.receiverAddress,
+                    superformsData_.receiverAddressSP,
+                    dstChainId_,
+                    deposit_,
+                    factory,
+                    true
+                )
+            ) {
+                return false;
             }
 
             /// @dev ensure interimTokens aren't repeated on destination chains
@@ -1032,7 +1044,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                     abi.decode(permit2data_, (uint256, uint256, bytes));
 
                 /// @dev moves the tokens from the user to the router
-
                 IPermit2(v.permit2).permitTransferFrom(
                     // The permit message.
                     IPermit2.PermitTransferFrom({
@@ -1125,6 +1136,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                     abi.decode(permit2data_, (uint256, uint256, bytes));
 
                 v.permit2 = _getPermit2();
+
                 /// @dev moves the tokens from the user to the router
                 IPermit2(v.permit2).permitTransferFrom(
                     // The permit message.
@@ -1154,9 +1166,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
             /// @dev approves individual final targets if needed here
             v.targetLen = targets_.length;
-            for (uint256 j; j < v.targetLen; ++j) {
+            for (uint256 i; i < v.targetLen; ++i) {
                 /// @dev approves the superform
-                v.token.safeIncreaseAllowance(targets_[j], v.amountsIn[j]);
+                v.token.safeIncreaseAllowance(targets_[i], v.amountsIn[i]);
             }
         }
 

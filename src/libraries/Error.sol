@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 library Error {
+
     //////////////////////////////////////////////////////////////
     //                  CONFIGURATION ERRORS                    //
     //////////////////////////////////////////////////////////////
@@ -22,17 +23,14 @@ library Error {
     /// @dev thrown if rescue delay is not yet set for a chain
     error DELAY_NOT_SET();
 
-    /// @dev thrown if wormhole relayer is not set
-    error RELAYER_NOT_SET();
-
     /// @dev thrown if get native token price estimate in paymentHelper is 0
     error INVALID_NATIVE_TOKEN_PRICE();
 
-    /// @dev thrown if indices are out of bounds
-    error INDEX_OUT_OF_BOUNDS();
+    /// @dev thrown if wormhole refund chain id is not set
+    error REFUND_CHAIN_ID_NOT_SET();
 
-    /// @dev thrown if indices have duplicates
-    error DUPLICATE_INDEX();
+    /// @dev thrown if wormhole relayer is not set
+    error RELAYER_NOT_SET();
 
     /// @dev thrown if a role to be revoked is not assigned
     error ROLE_NOT_ASSIGNED();
@@ -43,6 +41,8 @@ library Error {
     ///@notice errors thrown if functions cannot be called
 
     /// COMMON AUTHORIZATION ERRORS
+    /// ---------------------------------------------------------
+
     /// @dev thrown if caller is not address(this), internal call
     error INVALID_INTERNAL_CALL();
 
@@ -72,9 +72,6 @@ library Error {
 
     /// @dev thrown if msg.sender is not minter state registry
     error NOT_MINTER_STATE_REGISTRY_ROLE();
-
-    /// @dev thrown if refund chain id is not set
-    error REFUND_CHAIN_ID_NOT_SET();
 
     /// @dev thrown if msg.sender is not paymaster
     error NOT_PAYMASTER();
@@ -113,6 +110,8 @@ library Error {
     error NOT_PRIVILEGED_CALLER(bytes32 role);
 
     /// STATE REGISTRY AUTHORIZATION ERRORS
+    /// ---------------------------------------------------------
+
     /// @dev layerzero adapter specific error, thrown if caller not layerzero endpoint
     error CALLER_NOT_ENDPOINT();
 
@@ -131,11 +130,16 @@ library Error {
     ///@notice errors thrown if input variables are not valid
 
     /// COMMON INPUT VALIDATION ERRORS
+    /// ---------------------------------------------------------
+
     /// @dev thrown if there is an array length mismatch
     error ARRAY_LENGTH_MISMATCH();
 
     /// @dev thrown if payload id does not exist
     error INVALID_PAYLOAD_ID();
+
+    /// @dev error thrown when msg value should be zero in certain payable functions
+    error MSG_VALUE_NOT_ZERO();
 
     /// @dev thrown if amb ids length is 0
     error ZERO_AMB_ID_LENGTH();
@@ -150,6 +154,8 @@ library Error {
     error ZERO_INPUT_VALUE();
 
     /// SUPERFORM ROUTER INPUT VALIDATION ERRORS
+    /// ---------------------------------------------------------
+
     /// @dev thrown if the vaults data is invalid
     error INVALID_SUPERFORMS_DATA();
 
@@ -157,6 +163,8 @@ library Error {
     error RECEIVER_ADDRESS_NOT_SET();
 
     /// SUPERFORM FACTORY INPUT VALIDATION ERRORS
+    /// ---------------------------------------------------------
+
     /// @dev thrown if a form is not ERC165 compatible
     error ERC165_UNSUPPORTED();
 
@@ -182,6 +190,8 @@ library Error {
     error VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS();
 
     /// FORM INPUT VALIDATION ERRORS
+    /// ---------------------------------------------------------
+
     /// @dev thrown if in case of no txData, if liqData.token != vault.asset()
     /// in case of txData, if token output of swap != vault.asset()
     error DIFFERENT_TOKENS();
@@ -193,6 +203,11 @@ library Error {
     error XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
 
     /// LIQUIDITY BRIDGE INPUT VALIDATION ERRORS
+    /// ---------------------------------------------------------
+
+    /// @dev error thrown when txData selector of lifi bridged is a blacklisted selector
+    error BLACKLISTED_SELECTOR();
+
     /// @dev thrown if a certain action of the user is not allowed given the txData provided
     error INVALID_ACTION();
 
@@ -218,6 +233,8 @@ library Error {
     error NO_TXDATA_PRESENT();
 
     /// STATE REGISTRY INPUT VALIDATION ERRORS
+    /// ---------------------------------------------------------
+
     /// @dev thrown if payload is being updated with final amounts length different than amounts length
     error DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH();
 
@@ -258,17 +275,13 @@ library Error {
     error SLIPPAGE_OUT_OF_BOUNDS();
 
     /// SUPERPOSITION INPUT VALIDATION ERRORS
+    /// ---------------------------------------------------------
+
     /// @dev thrown if src senders mismatch in state sync
     error SRC_SENDER_MISMATCH();
 
     /// @dev thrown if src tx types mismatch in state sync
     error SRC_TX_TYPE_MISMATCH();
-
-    /// @dev error thrown when msg value should be zero in certain payable functions
-    error MSG_VALUE_NOT_ZERO();
-
-    /// @dev error thrown when txData selector of lifi bridged is a blacklisted selector
-    error BLACKLISTED_SELECTOR();
 
     //////////////////////////////////////////////////////////////
     //                  EXECUTION ERRORS                        //
@@ -276,6 +289,8 @@ library Error {
     ///@notice errors thrown due to function execution logic
 
     /// COMMON EXECUTION ERRORS
+    /// ---------------------------------------------------------
+
     /// @dev thrown if the swap in a direct deposit resulted in insufficient tokens
     error DIRECT_DEPOSIT_SWAP_FAILED();
 
@@ -287,6 +302,9 @@ library Error {
 
     /// @dev thrown if allowance is not correct to deposit
     error INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
+
+    /// @dev thrown if contract has insufficient balance for operations
+    error INSUFFICIENT_BALANCE();
 
     /// @dev thrown if native amount is not at least equal to the amount in the request
     error INSUFFICIENT_NATIVE_AMOUNT();
@@ -300,10 +318,9 @@ library Error {
     /// @dev thrown if payload type is invalid
     error INVALID_PAYLOAD_TYPE();
 
-    /// @dev thrown if contract has insufficient balance for operations
-    error INSUFFICIENT_BALANCE();
-
     /// LIQUIDITY BRIDGE EXECUTION ERRORS
+    /// ---------------------------------------------------------
+
     /// @dev thrown if we try to decode the final swap output token in a xChain liquidity bridging action
     error CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
 
@@ -314,6 +331,8 @@ library Error {
     error INVALID_DEPOSIT_TOKEN();
 
     /// STATE REGISTRY EXECUTION ERRORS
+    /// ---------------------------------------------------------
+
     /// @dev thrown if bridge tokens haven't arrived to destination
     error BRIDGE_TOKENS_PENDING();
 
@@ -371,33 +390,20 @@ library Error {
     /// @dev thrown if payload hash is zero during `retryMessage` on Layezero implementation
     error ZERO_PAYLOAD_HASH();
 
-    /// @dev thrown in forms where a certain functionality is not allowed or implemented
-    error NOT_IMPLEMENTED();
-
-    /// @dev thrown when redeeming from vault yields zero collateral
-    error WITHDRAW_ZERO_COLLATERAL();
-
-    /*///////////////////////////////////////////////////////////////
-                        PAYMASTER ERRORS
-    //////////////////////////////////////////////////////////////*/
-    /// @dev cannot forward 4626 shares from any form
-    error CANNOT_FORWARD_4646_TOKEN();
-
     /// DST SWAPPER EXECUTION ERRORS
-    /// @dev forbid xChain deposits with destination swaps without interim token set (for user protection)
-    error INVALID_INTERIM_TOKEN();
+    /// ---------------------------------------------------------
 
     /// @dev thrown if process dst swap is tried for processed payload id
     error DST_SWAP_ALREADY_PROCESSED();
 
+    /// @dev thrown if indices have duplicates
+    error DUPLICATE_INDEX();
+
     /// @dev thrown if failed dst swap is already updated
     error FAILED_DST_SWAP_ALREADY_UPDATED();
 
-    /// @dev thrown if failed dst swap is already processed
-    error FAILED_DST_SWAP_ALREADY_PROCESSED();
-
-    /// @dev thrown if dst swap output is less than minimum expected
-    error INVALID_SWAP_OUTPUT();
+    /// @dev thrown if indices are out of bounds
+    error INDEX_OUT_OF_BOUNDS();
 
     /// @dev thrown if failed swap token amount is 0
     error INVALID_DST_SWAPPER_FAILED_SWAP();
@@ -408,10 +414,23 @@ library Error {
     /// @dev thrown if failed swap token amount is not 0 and if native amount is less than amount (non zero)
     error INVALID_DST_SWAPPER_FAILED_SWAP_NO_NATIVE_BALANCE();
 
+    /// @dev forbid xChain deposits with destination swaps without interim token set (for user protection)
+    error INVALID_INTERIM_TOKEN();
+
+    /// @dev thrown if dst swap output is less than minimum expected
+    error INVALID_SWAP_OUTPUT();
+
     /// FORM EXECUTION ERRORS
+    /// ---------------------------------------------------------
+
+    /// @dev thrown if try to forward 4626 share from the superform
+    error CANNOT_FORWARD_4646_TOKEN();
 
     /// @dev thrown in KYCDAO form if no KYC token is present
     error NO_VALID_KYC_TOKEN();
+
+    /// @dev thrown in forms where a certain functionality is not allowed or implemented
+    error NOT_IMPLEMENTED();
 
     /// @dev thrown if form implementation is PAUSED, users cannot perform any action
     error PAUSED();
@@ -425,7 +444,12 @@ library Error {
     /// @dev thrown if withdrawal tx data is not updated
     error WITHDRAW_TX_DATA_NOT_UPDATED();
 
+    /// @dev thrown when redeeming from vault yields zero collateral
+    error WITHDRAW_ZERO_COLLATERAL();
+
     /// PAYMENT HELPER EXECUTION ERRORS
+    /// ---------------------------------------------------------
+
     /// @dev thrown if chainlink is reporting an improper price
     error CHAINLINK_MALFUNCTION();
 
@@ -436,6 +460,7 @@ library Error {
     error CHAINLINK_UNSUPPORTED_DECIMAL();
 
     /// EMERGENCY QUEUE EXECUTION ERRORS
+    /// ---------------------------------------------------------
 
     /// @dev thrown if emergency withdraw is not queued
     error EMERGENCY_WITHDRAW_NOT_QUEUED();
@@ -444,6 +469,8 @@ library Error {
     error EMERGENCY_WITHDRAW_PROCESSED_ALREADY();
 
     /// SUPERPOSITION EXECUTION ERRORS
+    /// ---------------------------------------------------------
+
     /// @dev thrown if uri cannot be updated
     error DYNAMIC_URI_FROZEN();
 

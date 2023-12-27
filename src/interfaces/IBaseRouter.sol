@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import "../types/DataTypes.sol";
+import "src/types/DataTypes.sol";
 
 /// @title IBaseRouter
-/// @author Zeropoint Labs.
-/// @dev interface for abstract Router
+/// @dev Interface for abstract BaseRouter
+/// @author Zeropoint Labs
 interface IBaseRouter {
+
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////

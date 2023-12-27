@@ -1,21 +1,22 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { AMBMessage } from "src/types/DataTypes.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
 import { Error } from "src/libraries/Error.sol";
+import { AMBMessage } from "src/types/DataTypes.sol";
+import { ILayerZeroEndpoint } from "src/vendor/layerzero/ILayerZeroEndpoint.sol";
 import { ILayerZeroReceiver } from "src/vendor/layerzero/ILayerZeroReceiver.sol";
 import { ILayerZeroUserApplicationConfig } from "src/vendor/layerzero/ILayerZeroUserApplicationConfig.sol";
-import { ILayerZeroEndpoint } from "src/vendor/layerzero/ILayerZeroEndpoint.sol";
-import { DataLib } from "src/libraries/DataLib.sol";
 
 /// @title LayerzeroImplementation
+/// @dev Allows state registries to use Layerzero for crosschain communication
 /// @author Zeropoint Labs
-/// @dev allows state registries to use Layerzero for crosschain communication
 contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicationConfig, ILayerZeroReceiver {
+    
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
@@ -100,7 +101,10 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         }
     }
 
-    /// @dev returns the configuration of this contract
+    /// @dev gets the configuration of the current LayerZero implementation supported
+    /// @param version_ is the messaging library version
+    /// @param chainId_ is the layerzero chainId for the pending config change
+    /// @param configType_ is the type of configuration
     function getConfig(
         uint16 version_,
         uint16 chainId_,
@@ -114,7 +118,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         return lzEndpoint.getConfig(version_, chainId_, address(this), configType_);
     }
 
-    /// @dev allows protocol admin to configure UA on layerzero
+    /// @inheritdoc ILayerZeroUserApplicationConfig
     function setConfig(
         uint16 version_,
         uint16 chainId_,
@@ -128,22 +132,24 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         lzEndpoint.setConfig(version_, chainId_, configType_, config_);
     }
 
-    /// @dev allows protocol admin to configure send version on layerzero
+    /// @inheritdoc ILayerZeroUserApplicationConfig
     function setSendVersion(uint16 version_) external override onlyProtocolAdmin {
         lzEndpoint.setSendVersion(version_);
     }
 
-    /// @dev allows protocol admin to configure receive version on layerzero
+    /// @inheritdoc ILayerZeroUserApplicationConfig
     function setReceiveVersion(uint16 version_) external override onlyProtocolAdmin {
         lzEndpoint.setReceiveVersion(version_);
     }
 
-    /// @dev allows protocol admin to unblock queue of messages if needed
+    /// @inheritdoc ILayerZeroUserApplicationConfig
     function forceResumeReceive(uint16 srcChainId_, bytes calldata srcAddress_) external override onlyEmergencyAdmin {
         lzEndpoint.forceResumeReceive(srcChainId_, srcAddress_);
     }
 
     /// @dev allows protocol admin to set contract which can receive messages
+    /// @param srcChainId_ is the layerzero source chain id
+    /// @param srcAddress_ is the address to set as the trusted remote on the source chain
     function setTrustedRemote(uint16 srcChainId_, bytes calldata srcAddress_) external onlyProtocolAdmin {
         trustedRemoteLookup[srcChainId_] = srcAddress_;
         emit SetTrustedRemote(srcChainId_, srcAddress_);
@@ -153,6 +159,9 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
 
+    /// @dev checks if another contract on another chain is a trusted remote
+    /// @param srcChainId_ is the layerzero source chain id
+    /// @param srcAddress_ is the address to check
     function isTrustedRemote(uint16 srcChainId_, bytes calldata srcAddress_) external view returns (bool) {
         if (srcChainId_ == 0) {
             revert Error.INVALID_CHAIN_ID();
@@ -262,6 +271,10 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         _blockingLzReceive(srcChainId_, srcAddress_, nonce_, payload_);
     }
 
+    /// @dev receive failed messages on this Endpoint destination
+    /// @param srcChainId_ is the layerzero source chain id
+    /// @param srcAddress_ is the address on the source chain
+    /// @param payload_ is the payload to store
     function nonblockingLzReceive(uint16 srcChainId_, bytes memory srcAddress_, bytes memory payload_) public {
         // only internal transaction
         if (msg.sender != address(this)) {
@@ -271,6 +284,11 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         _nonblockingLzReceive(srcChainId_, srcAddress_, payload_);
     }
 
+    /// @dev retry failed messages on this Endpoint destination
+    /// @param srcChainId_ is the layerzero source chain id
+    /// @param srcAddress_ is the address on the source chain
+    /// @param nonce_ is the sequential location of the stuck payload
+    /// @param payload_ is the payload to retry
     function retryMessage(
         uint16 srcChainId_,
         bytes memory srcAddress_,

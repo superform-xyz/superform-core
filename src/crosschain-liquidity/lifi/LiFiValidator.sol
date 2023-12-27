@@ -10,10 +10,10 @@ import { StandardizedCallFacet } from "src/vendor/lifi/StandardizedCallFacet.sol
 import { GenericSwapFacet } from "src/vendor/lifi/GenericSwapFacet.sol";
 
 /// @title LiFiValidator
+/// @dev Asserts LiFi input txData is valid
 /// @author Zeropoint Labs
-/// @dev To assert input txData is valid
-
 contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
+    
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
@@ -196,7 +196,6 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         sendingAssetId = swapData[0].sendingAssetId;
         amount = swapData[0].fromAmount;
         receivingAssetId = swapData[swapData.length - 1].receivingAssetId;
-        return (sendingAssetId, amount, receiver, receivingAssetId, receivingAmount);
     }
 
     function _validateMainParameters(

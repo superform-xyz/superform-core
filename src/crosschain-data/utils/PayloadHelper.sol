@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
-import { ISuperPositions } from "../../interfaces/ISuperPositions.sol";
-import { IBaseStateRegistry } from "../../interfaces/IBaseStateRegistry.sol";
-import { ITimelockStateRegistry } from "../../interfaces/ITimelockStateRegistry.sol";
-import { IPayloadHelper } from "../../interfaces/IPayloadHelper.sol";
-import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
-import { Error } from "../../libraries/Error.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
+import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.sol";
+import { IPayloadHelper } from "src/interfaces/IPayloadHelper.sol";
+import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { ProofLib } from "src/libraries/ProofLib.sol";
+import { Error } from "src/libraries/Error.sol";
 import {
     CallbackType,
     ReturnMultiData,
@@ -15,17 +17,14 @@ import {
     InitMultiVaultData,
     InitSingleVaultData,
     TimelockPayload,
-    LiqRequest,
     AMBMessage
-} from "../../types/DataTypes.sol";
-import { DataLib } from "../../libraries/DataLib.sol";
-import { ProofLib } from "../../libraries/ProofLib.sol";
+} from "src/types/DataTypes.sol";
 
 /// @title PayloadHelper
+/// @dev Helps decode payload data for off-chain purposes
 /// @author ZeroPoint Labs
-/// @dev helps decode payload data more easily. Used for off-chain purposes
-
 contract PayloadHelper is IPayloadHelper {
+
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
@@ -103,10 +102,10 @@ contract PayloadHelper is IPayloadHelper {
         view
         override
         returns (
-            uint8[] memory bridgeIds,
             bytes[] memory txDatas,
             address[] memory tokens,
             address[] memory interimTokens,
+            uint8[] memory bridgeIds,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
             uint256[] memory nativeAmounts
@@ -333,10 +332,10 @@ contract PayloadHelper is IPayloadHelper {
         internal
         view
         returns (
-            uint8[] memory bridgeIds,
             bytes[] memory txDatas,
             address[] memory tokens,
             address[] memory interimTokens,
+            uint8[] memory bridgeIds,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
             uint256[] memory nativeAmounts
@@ -369,8 +368,6 @@ contract PayloadHelper is IPayloadHelper {
 
             nativeAmounts[i] = imvd.liqData[i].nativeAmount;
         }
-
-        return (bridgeIds, txDatas, tokens, interimTokens, liqDstChainIds, amountsIn, nativeAmounts);
     }
 
     function _decodeSingleLiqData(
@@ -380,10 +377,10 @@ contract PayloadHelper is IPayloadHelper {
         internal
         view
         returns (
-            uint8[] memory bridgeIds,
             bytes[] memory txDatas,
             address[] memory tokens,
             address[] memory interimTokens,
+            uint8[] memory bridgeIds,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
             uint256[] memory nativeAmounts
@@ -417,7 +414,5 @@ contract PayloadHelper is IPayloadHelper {
 
         nativeAmounts = new uint256[](1);
         nativeAmounts[0] = isvd.liqData.nativeAmount;
-
-        return (bridgeIds, txDatas, tokens, interimTokens, liqDstChainIds, amountsIn, nativeAmounts);
     }
 }

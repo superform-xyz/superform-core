@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
-import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
-import { Error } from "../libraries/Error.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
+import { Error } from "src/libraries/Error.sol";
 
 /// @title BridgeValidator
+/// @dev Inherited by specific bridge handlers to verify the calldata being sent
 /// @author Zeropoint Labs
-/// @dev To be inherited by specific bridge handlers to verify the calldata being sent
 abstract contract BridgeValidator is IBridgeValidator {
+
     //////////////////////////////////////////////////////////////
-    //                         CONSTANTS                         //
+    //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
+
     ISuperRegistry public immutable superRegistry;
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 

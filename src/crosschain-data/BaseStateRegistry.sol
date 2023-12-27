@@ -1,21 +1,22 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { Error } from "../libraries/Error.sol";
-import { IQuorumManager } from "../interfaces/IQuorumManager.sol";
-import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
-import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
-import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
-import { PayloadState, AMBMessage, AMBExtraData } from "../types/DataTypes.sol";
-import { ProofLib } from "../libraries/ProofLib.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
+import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { IQuorumManager } from "src/interfaces/IQuorumManager.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { Error } from "src/libraries/Error.sol";
+import { ProofLib } from "src/libraries/ProofLib.sol";
+import { PayloadState, AMBMessage, AMBExtraData } from "src/types/DataTypes.sol";
 
 /// @title BaseStateRegistry
-/// @author Zeropoint Labs
-/// @dev contract module that allows inheriting contracts to implement crosschain messaging & processing mechanisms.
-/// @dev This is a lightweight version that allows only dispatching and receiving crosschain
+/// @dev Contract module that allows inheriting contracts to implement crosschain messaging & processing mechanisms.
+/// @dev this is a lightweight version that allows only dispatching and receiving crosschain
 /// @dev payloads (messages). Inheriting children contracts have the flexibility to define their own processing
 /// mechanisms.
+/// @author Zeropoint Labs
 abstract contract BaseStateRegistry is IBaseStateRegistry {
+    
     using ProofLib for AMBMessage;
     using ProofLib for bytes;
 
@@ -51,12 +52,12 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     //                       MODIFIERS                          //
     //////////////////////////////////////////////////////////////
 
-    /// @dev sender varies based on functionality
-    /// @notice inheriting contracts should override this function (else not safe)
+    /// @dev inheriting contracts should override this function based on functionality
     modifier onlySender() virtual {
         _;
     }
 
+    /// @dev ensures that only added AMB implementations are accepted
     modifier onlyValidAmbImplementation() {
         if (!superRegistry.isValidAmbImpl(msg.sender)) {
             revert Error.NOT_AMB_IMPLEMENTATION();

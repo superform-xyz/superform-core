@@ -198,12 +198,6 @@ struct ReturnSingleData {
     uint256 superformId;
     uint256 amount;
 }
-/// @dev struct that contains the data on the fees to pay
-
-struct SingleDstAMBParams {
-    uint256 gasToPay;
-    bytes encodedAMBExtraData;
-}
 
 /// @dev struct that contains the data on the fees to pay to the AMBs
 struct AMBExtraData {
@@ -215,10 +209,4 @@ struct AMBExtraData {
 struct BroadCastAMBExtraData {
     uint256[] gasPerDst;
     bytes[] extraDataPerDst;
-}
-
-/// @dev acknowledgement extra data (contains gas information from dst to src callbacks)
-struct AckAMBData {
-    uint8[] ambIds;
-    bytes extraData;
 }

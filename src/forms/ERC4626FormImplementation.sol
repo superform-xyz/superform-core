@@ -1,20 +1,22 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import { BaseForm } from "src/BaseForm.sol";
+import { LiquidityHandler } from "src/crosschain-liquidity/LiquidityHandler.sol";
+import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
+import { Error } from "src/libraries/Error.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { InitSingleVaultData } from "src/types/DataTypes.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
-import { LiquidityHandler } from "../crosschain-liquidity/LiquidityHandler.sol";
-import { InitSingleVaultData } from "../types/DataTypes.sol";
-import { BaseForm } from "../BaseForm.sol";
-import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
-import { Error } from "../libraries/Error.sol";
-import { DataLib } from "../libraries/DataLib.sol";
 
 /// @title ERC4626FormImplementation
-/// @notice Has common internal functions that can be re-used by actual form implementations
+/// @dev Has common ERC4626 internal functions that can be re-used by implementations
+/// @author Zeropoint Labs
 abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
+
     using SafeERC20 for IERC20;
     using SafeERC20 for IERC4626;
     using DataLib for uint256;
@@ -30,7 +32,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     //                           STRUCTS                        //
     //////////////////////////////////////////////////////////////
 
-    struct directDepositLocalVars {
+    struct DirectDepositLocalVars {
         uint64 chainId;
         address asset;
         address bridgeValidator;
@@ -43,14 +45,14 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         bytes signature;
     }
 
-    struct directWithdrawLocalVars {
+    struct DirectWithdrawLocalVars {
         uint64 chainId;
         address asset;
         address bridgeValidator;
         uint256 amount;
     }
 
-    struct xChainWithdrawLocalVars {
+    struct XChainWithdrawLocalVars {
         uint64 dstChainId;
         address asset;
         address bridgeValidator;
@@ -151,7 +153,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     //////////////////////////////////////////////////////////////
 
     function _processDirectDeposit(InitSingleVaultData memory singleVaultData_) internal returns (uint256 shares) {
-        directDepositLocalVars memory vars;
+        DirectDepositLocalVars memory vars;
 
         IERC4626 v = IERC4626(vault);
         vars.asset = address(asset);
@@ -269,7 +271,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     }
 
     function _processDirectWithdraw(InitSingleVaultData memory singleVaultData_) internal returns (uint256 assets) {
-        directWithdrawLocalVars memory vars;
+    
+        DirectWithdrawLocalVars memory vars;
 
         /// @dev if there is no txData, on withdraws the receiver is receiverAddress, otherwise it
         /// is this contract (before swap)
@@ -335,7 +338,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         internal
         returns (uint256 assets)
     {
-        xChainWithdrawLocalVars memory vars;
+        XChainWithdrawLocalVars memory vars;
 
         uint256 len = singleVaultData_.liqData.txData.length;
         /// @dev a case where the withdraw req liqData has a valid token and tx data is not updated by the keeper

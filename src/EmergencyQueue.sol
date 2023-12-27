@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { DataLib } from "./libraries/DataLib.sol";
-import { IBaseForm } from "./interfaces/IBaseForm.sol";
-import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
-import { ISuperRBAC } from "./interfaces/ISuperRBAC.sol";
-import { IEmergencyQueue } from "./interfaces/IEmergencyQueue.sol";
-import { Error } from "./libraries/Error.sol";
-import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
-import "./types/DataTypes.sol";
+import { IEmergencyQueue } from "src/interfaces/IEmergencyQueue.sol";
+import { IBaseForm } from "src/interfaces/IBaseForm.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { Error } from "src/libraries/Error.sol";
+import { InitSingleVaultData, QueuedWithdrawal } from "src/types/DataTypes.sol";
 
 /// @title EmergencyQueue
+/// @dev Stores withdrawal requests when forms are paused
 /// @author Zeropoint Labs
-/// @dev stores withdrawal requests when forms are paused
 contract EmergencyQueue is IEmergencyQueue {
     using DataLib for uint256;
 
@@ -63,7 +63,7 @@ contract EmergencyQueue is IEmergencyQueue {
         if (superRegistry_ == address(0)) {
             revert Error.ZERO_ADDRESS();
         }
-        
+
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }

@@ -2,9 +2,10 @@
 pragma solidity ^0.8.23;
 
 /// @title IPayloadHelper
+/// @dev Interface for PayloadHelper
 /// @author ZeroPoint Labs
-/// @dev helps decoding the bytes payload and returns meaningful information
 interface IPayloadHelper {
+
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
     //////////////////////////////////////////////////////////////
@@ -51,10 +52,10 @@ interface IPayloadHelper {
 
     /// @dev reads the payload from the core state registry and decodes liqData for it (to be used in withdraw cases)
     /// @param dstPayloadId_ is the unique identifier of the payload received in dst core state registry
-    /// @return bridgeIds are the ids of the bridges to be used
     /// @return txDatas are the array of txData to be sent to the bridges
     /// @return tokens are the tokens to be used in the liqData
     /// @return interimTokens are the interim tokens to be used in the liqData
+    /// @return bridgeIds are the ids of the bridges to be used
     /// @return liqDstChainIds are the final destination chain id for the underlying token (can be arbitrary on
     /// withdraws)
     /// @return amountsIn are the from amounts to the liquidity bridge
@@ -63,10 +64,10 @@ interface IPayloadHelper {
         external
         view
         returns (
-            uint8[] memory bridgeIds,
             bytes[] memory txDatas,
             address[] memory tokens,
             address[] memory interimTokens,
+            uint8[] memory bridgeIds,
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
             uint256[] memory nativeAmounts

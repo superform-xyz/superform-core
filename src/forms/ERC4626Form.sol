@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { InitSingleVaultData } from "../types/DataTypes.sol";
-import { ERC4626FormImplementation } from "./ERC4626FormImplementation.sol";
-import { BaseForm } from "../BaseForm.sol";
+import { ERC4626FormImplementation } from "src/forms/ERC4626FormImplementation.sol";
+import { BaseForm } from "src/BaseForm.sol";
+import { InitSingleVaultData } from "src/types/DataTypes.sol";
 
 /// @title ERC4626Form
-/// @notice The Form implementation for IERC4626 vaults
+/// @dev The Form implementation for normal ERC4626 vaults
+/// @author Zeropoint Labs
 contract ERC4626Form is ERC4626FormImplementation {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                         //

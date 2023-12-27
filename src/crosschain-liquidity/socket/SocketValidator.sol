@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { Error } from "src/libraries/Error.sol";
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
+import { Error } from "src/libraries/Error.sol";
 import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
 
 /// @title SocketValidator
+/// @dev Asserts Socket x-chain input txData is valid
 /// @author Zeropoint Labs
-/// @dev to assert input txData is valid
 contract SocketValidator is BridgeValidator {
+
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
@@ -65,7 +66,7 @@ contract SocketValidator is BridgeValidator {
             if (decodedReq.receiverAddress != args_.receiverAddress) revert Error.INVALID_TXDATA_RECEIVER();
         }
 
-        /// @dev FIXME: add  3. token validations
+        /// @dev token validations
         if (
             (decodedReq.middlewareRequest.id == 0 && args_.liqDataToken != decodedReq.bridgeRequest.inputToken)
                 || (decodedReq.middlewareRequest.id != 0 && args_.liqDataToken != decodedReq.middlewareRequest.inputToken)

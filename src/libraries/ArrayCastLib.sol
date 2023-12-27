@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { InitSingleVaultData, InitMultiVaultData, LiqRequest } from "../types/DataTypes.sol";
+import { InitSingleVaultData, InitMultiVaultData, LiqRequest } from "src/types/DataTypes.sol";
 
 /// @dev library to cast single values into array for streamlining helper functions
 /// @notice not gas optimized, suggested for usage only in view/pure functions
