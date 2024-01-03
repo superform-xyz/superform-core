@@ -45,7 +45,9 @@ abstract contract CommonProtocolActions is BaseSetup {
         view
         returns (bytes memory txData)
     {
-        if (args.liqBridgeKind == 1) {
+        /// @dev note: 4 is added here to test a bridge acting maliciously (check
+        /// test_maliciousBridge_protectionAgainstTokenDrain)
+        if (args.liqBridgeKind == 1 || args.liqBridgeKind == 4) {
             if (!sameChain) {
                 ILiFi.BridgeData memory bridgeData;
                 LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
@@ -296,9 +298,7 @@ abstract contract CommonProtocolActions is BaseSetup {
                 address(0),
                 ///  @dev  callTo (approveTo)
                 sendingTokenDst_,
-                /// @dev in dst swap, assumes a swap between same token - FIXME
                 receivingTokenDst_,
-                /// @dev in dst swap, assumes a swap between same token - FIXME
                 amount_,
                 /// @dev _buildLiqBridgeTxDataDstSwap() will only be called when DstSwap is true
                 /// @dev and dstswap means cross-chain (last arg)

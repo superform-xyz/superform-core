@@ -1,31 +1,30 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+import { BaseForm } from "src/BaseForm.sol";
+import { BroadcastMessage } from "src/types/DataTypes.sol";
+import { IBaseForm } from "src/interfaces/IBaseForm.sol";
+import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { Error } from "src/libraries/Error.sol";
 import { ERC165Checker } from "openzeppelin-contracts/contracts/utils/introspection/ERC165Checker.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
-import { BaseForm } from "./BaseForm.sol";
-import { BroadcastMessage } from "./types/DataTypes.sol";
-import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
-import { IBaseForm } from "./interfaces/IBaseForm.sol";
-import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
-import { ISuperRBAC } from "./interfaces/ISuperRBAC.sol";
-import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
-import { Error } from "./libraries/Error.sol";
-import { DataLib } from "./libraries/DataLib.sol";
 import { Clones } from "openzeppelin-contracts/contracts/proxy/Clones.sol";
 
-/// @title Superforms Factory
-/// @dev A secure, and easily queryable central point of access for all Superforms on any given chain,
-/// @author Zeropoint Labs.
+/// @title SuperformFactory
+/// @dev Central point of read & write access for all Superforms on this chain
+/// @author Zeropoint Labs
 contract SuperformFactory is ISuperformFactory {
+
     using DataLib for uint256;
     using Clones for address;
 
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
-    uint8 private constant NON_PAUSED = 1;
-    uint8 private constant PAUSED = 2;
 
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
@@ -36,9 +35,8 @@ contract SuperformFactory is ISuperformFactory {
     //////////////////////////////////////////////////////////////
 
     uint256 public xChainPayloadCounter;
-    uint256 public superformCounter;
 
-    /// @dev all form beacon addresses
+    /// @dev all form implementation addresses
     address[] public formImplementations;
 
     /// @dev all superform ids
@@ -46,7 +44,12 @@ contract SuperformFactory is ISuperformFactory {
     mapping(uint256 superformId => bool superformIdExists) public isSuperform;
 
     /// @notice If formImplementationId is 0, formImplementation is not part of the protocol
-    mapping(uint32 formImplementationId => address formBeaconAddress) public formImplementation;
+    mapping(uint32 formImplementationId => address formImplementationAddress) public formImplementation;
+
+    /// @dev each form implementation address can correspond only to a single formImplementationId
+    mapping(address formImplementationAddress => uint32 formImplementationId) public formImplementationIds;
+    /// @dev this mapping is used only for crosschain cases and should be same across all the chains
+    mapping(uint32 formImplementationId => uint8 formRegistryId) public formStateRegistryId;
 
     mapping(uint32 formImplementationId => PauseStatus) public formImplementationPaused;
 
@@ -89,6 +92,10 @@ contract SuperformFactory is ISuperformFactory {
 
     /// @param superRegistry_ the superform registry contract
     constructor(address superRegistry_) {
+        if (superRegistry_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
+        
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }
@@ -114,6 +121,17 @@ contract SuperformFactory is ISuperformFactory {
     /// @inheritdoc ISuperformFactory
     function getFormImplementation(uint32 formImplementationId_) external view override returns (address) {
         return formImplementation[formImplementationId_];
+    }
+
+    /// @inheritdoc ISuperformFactory
+    function getFormStateRegistryId(uint32 formImplementationId_)
+        external
+        view
+        override
+        returns (uint8 formStateRegistryId_)
+    {
+        formStateRegistryId_ = formStateRegistryId[formImplementationId_];
+        if (formStateRegistryId_ == 0) revert Error.INVALID_FORM_REGISTRY_ID();
     }
 
     /// @inheritdoc ISuperformFactory
@@ -147,22 +165,6 @@ contract SuperformFactory is ISuperformFactory {
         }
     }
 
-    /// @inheritdoc ISuperformFactory
-    function getAllSuperforms()
-        external
-        view
-        override
-        returns (uint256[] memory superformIds_, address[] memory superforms_)
-    {
-        superformIds_ = superforms;
-        uint256 len = superformIds_.length;
-        superforms_ = new address[](len);
-
-        for (uint256 i; i < len; ++i) {
-            (superforms_[i],,) = superformIds_[i].getSuperform();
-        }
-    }
-
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
@@ -170,15 +172,20 @@ contract SuperformFactory is ISuperformFactory {
     /// @inheritdoc ISuperformFactory
     function addFormImplementation(
         address formImplementation_,
-        uint32 formImplementationId_
+        uint32 formImplementationId_,
+        uint8 formStateRegistryId_
     )
         public
         override
         onlyProtocolAdmin
     {
         if (formImplementation_ == address(0)) revert Error.ZERO_ADDRESS();
+
         if (!ERC165Checker.supportsERC165(formImplementation_)) revert Error.ERC165_UNSUPPORTED();
         if (formImplementation[formImplementationId_] != address(0)) {
+            revert Error.FORM_IMPLEMENTATION_ALREADY_EXISTS();
+        }
+        if (formImplementationIds[formImplementation_] != 0) {
             revert Error.FORM_IMPLEMENTATION_ID_ALREADY_EXISTS();
         }
         if (!ERC165Checker.supportsInterface(formImplementation_, type(IBaseForm).interfaceId)) {
@@ -187,10 +194,21 @@ contract SuperformFactory is ISuperformFactory {
 
         /// @dev save the newly added address in the mapping and array registry
         formImplementation[formImplementationId_] = formImplementation_;
+        formImplementationIds[formImplementation_] = formImplementationId_;
 
+        /// @dev set CoreStateRegistry if the form implementation needs no special state registry
+        /// @dev if the form needs any special state registry, set this value to the id of the special state registry
+        /// and core state registry can be used by default.
+        /// @dev if this value is != 1, then the form supports two state registries (CoreStateRegistry + its special
+        /// state registry)
+        if (formStateRegistryId_ == 0) {
+            revert Error.INVALID_FORM_REGISTRY_ID();
+        }
+
+        formStateRegistryId[formImplementationId_] = formStateRegistryId_;
         formImplementations.push(formImplementation_);
 
-        emit FormImplementationAdded(formImplementation_, formImplementationId_);
+        emit FormImplementationAdded(formImplementation_, formImplementationId_, formStateRegistryId_);
     }
 
     /// @inheritdoc ISuperformFactory
@@ -207,15 +225,15 @@ contract SuperformFactory is ISuperformFactory {
         address tFormImplementation = formImplementation[formImplementationId_];
         if (tFormImplementation == address(0)) revert Error.FORM_DOES_NOT_EXIST();
 
-        /// @dev Same vault and beacon can be used only once to create superform
+        /// @dev Same vault and implementation can be used only once to create superform
         bytes32 vaultFormImplementationCombination = keccak256(abi.encode(tFormImplementation, vault_));
         if (vaultFormImplCombinationToSuperforms[vaultFormImplementationCombination] != 0) {
             revert Error.VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS();
         }
 
         /// @dev instantiate the superform
-        superform_ = tFormImplementation.cloneDeterministic(keccak256(abi.encode(uint256(CHAIN_ID), superformCounter)));
-        ++superformCounter;
+        superform_ = tFormImplementation.cloneDeterministic(
+            keccak256(abi.encode(uint256(CHAIN_ID), formImplementationId_, vault_)));
 
         BaseForm(payable(superform_)).initialize(address(superRegistry), vault_, address(IERC4626(vault_).asset()));
 
@@ -224,7 +242,7 @@ contract SuperformFactory is ISuperformFactory {
 
         vaultToSuperforms[vault_].push(superformId_);
 
-        /// @dev Mapping vaults to formImplementationId for use in Backend
+        /// @dev map vaults to formImplementationId
         vaultToFormImplementationId[vault_].push(formImplementationId_);
 
         vaultFormImplCombinationToSuperforms[vaultFormImplementationCombination] = superformId_;
@@ -258,6 +276,8 @@ contract SuperformFactory is ISuperformFactory {
             );
 
             _broadcast(abi.encode(factoryPayload), extraData_);
+        } else if (msg.value != 0) {
+            revert Error.MSG_VALUE_NOT_ZERO();
         }
 
         emit FormImplementationPaused(formImplementationId_, status_);
@@ -282,11 +302,26 @@ contract SuperformFactory is ISuperformFactory {
     function _broadcast(bytes memory message_, bytes memory extraData_) internal {
         (uint8 ambId, bytes memory broadcastParams) = abi.decode(extraData_, (uint8, bytes));
 
+        /// @dev if the broadcastParams are wrong this will revert
+        (uint256 gasFee, bytes memory extraData) = abi.decode(broadcastParams, (uint256, bytes));
+
+        if (msg.value < gasFee) {
+            revert Error.INVALID_BROADCAST_FEE();
+        }
+
         /// @dev ambIds are validated inside the broadcast state registry
-        /// @dev broadcastParams if wrong will revert in the amb implementation
-        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{
-            value: msg.value
-        }(msg.sender, ambId, message_, broadcastParams);
+        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{ value: gasFee }(
+            msg.sender, ambId, gasFee, message_, extraData
+        );
+
+        if (msg.value > gasFee) {
+            /// @dev forwards the rest to msg.sender
+            (bool success,) = payable(msg.sender).call{ value: msg.value - gasFee }("");
+
+            if (!success) {
+                revert Error.FAILED_TO_SEND_NATIVE();
+            }
+        }
     }
 
     /// @dev synchronize paused status update message from remote chain

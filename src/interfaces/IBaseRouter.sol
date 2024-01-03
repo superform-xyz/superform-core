@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import "../types/DataTypes.sol";
+import "src/types/DataTypes.sol";
 
 /// @title IBaseRouter
-/// @author Zeropoint Labs.
-/// @dev interface for abstract Router
+/// @dev Interface for abstract BaseRouter
+/// @author Zeropoint Labs
 interface IBaseRouter {
+
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
@@ -58,4 +59,8 @@ interface IBaseRouter {
     /// @dev Performs multi destination x multi vault withdraws
     /// @param req_ is the request object containing all the necessary data for the action
     function multiDstMultiVaultWithdraw(MultiDstMultiVaultStateReq calldata req_) external payable;
+
+    /// @dev Forwards dust to Paymaster
+    /// @param token_ the token to forward
+    function forwardDustToPaymaster(address token_) external;
 }

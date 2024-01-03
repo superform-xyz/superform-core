@@ -1,63 +1,80 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
-import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
-import { QuorumManager } from "../crosschain-data/utils/QuorumManager.sol";
-import { Error } from "../libraries/Error.sol";
+import { QuorumManager } from "src/crosschain-data/utils/QuorumManager.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { Error } from "src/libraries/Error.sol";
 
 /// @title SuperRegistry
-/// @author Zeropoint Labs.
-/// @dev Keeps information on all addresses used in the Superforms ecosystem.
+/// @dev Keeps information on all addresses used in the Superform ecosystem
+/// @author Zeropoint Labs
 contract SuperRegistry is ISuperRegistry, QuorumManager {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
 
-    uint256 private constant MIN_DELAY = 1 hours;
+    uint256 private constant MIN_DELAY = 15 minutes;
     uint256 private constant MAX_DELAY = 24 hours;
     uint64 public immutable CHAIN_ID;
 
     /// @dev core protocol - identifiers
     /// @notice should not be allowed to be changed
     bytes32 public constant override SUPERFORM_ROUTER = keccak256("SUPERFORM_ROUTER");
+
     /// @dev can be used to set a new factory that has form ids paused
     /// @notice should not be allowed to be changed
     bytes32 public constant override SUPERFORM_FACTORY = keccak256("SUPERFORM_FACTORY");
+
     /// @dev not accessed in protocol
     /// @dev could be allowed to be changed
     bytes32 public constant override SUPER_TRANSMUTER = keccak256("SUPER_TRANSMUTER");
+
     /// @dev can be used to set a new paymaster to forward payments to
     /// @dev could be allowed to be changed
     bytes32 public constant override PAYMASTER = keccak256("PAYMASTER");
+
     /// @dev accessed in some areas of the protocol to calculate AMB fees. Already has a function to alter the
     /// configuration
     /// @dev could be allowed to be changed
     bytes32 public constant override PAYMENT_HELPER = keccak256("PAYMENT_HELPER");
+
     /// @dev accessed in many areas of the protocol. has direct access to superforms
     /// @notice should not be allowed to be changed
     bytes32 public constant override CORE_STATE_REGISTRY = keccak256("CORE_STATE_REGISTRY");
+
     /// @dev accessed in many areas of the protocol. has direct access to timelock form
     /// @notice should not be allowed to be changed
     bytes32 public constant override TIMELOCK_STATE_REGISTRY = keccak256("TIMELOCK_STATE_REGISTRY");
+
     /// @dev used to sync messages for pausing superforms or deploying transmuters
     /// @notice should not be allowed to be changed
     bytes32 public constant override BROADCAST_REGISTRY = keccak256("BROADCAST_REGISTRY");
+
     /// @dev not accessed in protocol
     /// @notice should not be allowed to be changed
     bytes32 public constant override SUPER_POSITIONS = keccak256("SUPER_POSITIONS");
+
     /// @dev accessed in many areas of the protocol
     /// @notice should not be allowed to be changed
     bytes32 public constant override SUPER_RBAC = keccak256("SUPER_RBAC");
+
     /// @dev not accessed in protocol
     /// @dev could be allowed to be changed
     bytes32 public constant override PAYLOAD_HELPER = keccak256("PAYLOAD_HELPER");
+
     /// @dev accessed in CSR and validators. can be used to alter behaviour of update deposit payloads
     /// @notice should not be allowed to be changed
     bytes32 public constant override DST_SWAPPER = keccak256("DST_SWAPPER");
+
     /// @dev accessed in base form to send payloads to emergency queue
     /// @notice should not be allowed to be changed
     bytes32 public constant override EMERGENCY_QUEUE = keccak256("EMERGENCY_QUEUE");
+
+    /// @dev receiver of bridge refunds and airdropped tokens
+    /// @notice should not be allowed to be changed
+    bytes32 public constant override SUPERFORM_RECEIVER = keccak256("SUPERFORM_RECEIVER");
+
     /// @dev default keepers - identifiers
     /// @dev could be allowed to be changed
     bytes32 public constant override PAYMENT_ADMIN = keccak256("PAYMENT_ADMIN");
@@ -87,7 +104,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     mapping(uint8 ambId => address ambAddresses) public ambAddresses;
     mapping(uint8 ambId => bool isBroadcastAMB) public isBroadcastAMB;
 
-    mapping(uint64 chainId => uint256 vaultLimitPerTx) public vaultLimitPerTx;
+    mapping(uint64 chainId => uint256 vaultLimitPerDestination) public vaultLimitPerDestination;
 
     mapping(uint8 registryId => address registryAddress) public registryAddresses;
     /// @dev is the reverse mapping of registryAddresses
@@ -98,6 +115,13 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
     //////////////////////////////////////////////////////////////
+
+    modifier onlyEmergencyAdmin() {
+        if (!ISuperRBAC(registry[SUPER_RBAC][CHAIN_ID]).hasEmergencyAdminRole(msg.sender)) {
+            revert Error.NOT_EMERGENCY_ADMIN();
+        }
+        _;
+    }
 
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(registry[SUPER_RBAC][CHAIN_ID]).hasProtocolAdminRole(msg.sender)) {
@@ -111,6 +135,10 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     //////////////////////////////////////////////////////////////
 
     constructor(address superRBAC_) {
+        if (superRBAC_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
+
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }
@@ -125,11 +153,13 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
 
+    /// @inheritdoc ISuperRegistry
     function getAddress(bytes32 id_) external view override returns (address addr) {
         addr = registry[id_][CHAIN_ID];
         if (addr == address(0)) revert Error.ZERO_ADDRESS();
     }
 
+    /// @inheritdoc ISuperRegistry
     function getAddressByChainId(bytes32 id_, uint64 chainId_) external view override returns (address addr) {
         addr = registry[id_][chainId_];
         if (addr == address(0)) revert Error.ZERO_ADDRESS();
@@ -167,11 +197,17 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @inheritdoc ISuperRegistry
     function getStateRegistryId(address registryAddress_) external view override returns (uint8 registryId_) {
         registryId_ = stateRegistryIds[registryAddress_];
+        if (registryId_ == 0) revert Error.INVALID_REGISTRY_ID();
     }
 
     /// @inheritdoc ISuperRegistry
-    function getVaultLimitPerDestination(uint64 chainId_) external view override returns (uint256 vaultLimitPerTx_) {
-        vaultLimitPerTx_ = vaultLimitPerTx[chainId_];
+    function getVaultLimitPerDestination(uint64 chainId_)
+        external
+        view
+        override
+        returns (uint256 vaultLimitPerDestination_)
+    {
+        vaultLimitPerDestination_ = vaultLimitPerDestination[chainId_];
     }
 
     /// @inheritdoc ISuperRegistry
@@ -197,6 +233,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         return false;
     }
 
+    /// @inheritdoc ISuperRegistry
     function PERMIT2() external view override returns (address) {
         if (permit2Address == address(0)) revert Error.ZERO_ADDRESS();
         return permit2Address;
@@ -205,6 +242,16 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc ISuperRegistry
+    function setVaultLimitPerDestination(uint64 chainId_, uint256 vaultLimit_) external override onlyEmergencyAdmin {
+        if (vaultLimit_ == 0) {
+            revert Error.ZERO_INPUT_VALUE();
+        }
+
+        vaultLimitPerDestination[chainId_] = vaultLimit_;
+        emit SetVaultLimitPerDestination(chainId_, vaultLimit_);
+    }
 
     /// @inheritdoc ISuperRegistry
     function setDelay(uint256 delay_) external override onlyProtocolAdmin {
@@ -226,16 +273,6 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         permit2Address = permit2_;
 
         emit SetPermit2(permit2_);
-    }
-
-    /// @inheritdoc ISuperRegistry
-    function setVaultLimitPerDestination(uint64 chainId_, uint256 vaultLimit_) external override onlyProtocolAdmin {
-        if (vaultLimit_ == 0) {
-            revert Error.ZERO_INPUT_VALUE();
-        }
-
-        vaultLimitPerTx[chainId_] = vaultLimit_;
-        emit SetVaultLimitPerDestination(chainId_, vaultLimit_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -276,6 +313,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             address bridgeAddress = bridgeAddress_[i];
             address bridgeValidatorT = bridgeValidator_[i];
             if (bridgeAddress == address(0)) revert Error.ZERO_ADDRESS();
+            if (bridgeId == 0) revert Error.ZERO_INPUT_VALUE();
             if (bridgeValidatorT == address(0)) revert Error.ZERO_ADDRESS();
 
             if (bridgeAddresses[bridgeId] != address(0)) revert Error.DISABLED();
@@ -306,7 +344,8 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             bool broadcastAMB = isBroadcastAMB_[i];
 
             if (ambAddress == address(0)) revert Error.ZERO_ADDRESS();
-            if (ambAddresses[ambId] != address(0) || ambIds[ambAddress] != 0) revert Error.DISABLED();
+            if (ambId == 0) revert Error.ZERO_INPUT_VALUE();
+            if (ambAddresses[ambId] != address(0)) revert Error.DISABLED();
 
             ambAddresses[ambId] = ambAddress;
             ambIds[ambAddress] = ambId;
@@ -331,7 +370,8 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             address registryAddress = registryAddress_[i];
             uint8 registryId = registryId_[i];
             if (registryAddress == address(0)) revert Error.ZERO_ADDRESS();
-            if (registryAddresses[registryId] != address(0) || stateRegistryIds[registryAddress] != 0) {
+            if (registryId == 0) revert Error.ZERO_INPUT_VALUE();
+            if (registryAddresses[registryId] != address(0)) {
                 revert Error.DISABLED();
             }
 
@@ -343,6 +383,10 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     /// @inheritdoc QuorumManager
     function setRequiredMessagingQuorum(uint64 srcChainId_, uint256 quorum_) external override onlyProtocolAdmin {
+        if (srcChainId_ == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
         requiredQuorum[srcChainId_] = quorum_;
 
         emit QuorumSet(srcChainId_, quorum_);

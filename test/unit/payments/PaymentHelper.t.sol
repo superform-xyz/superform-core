@@ -11,11 +11,30 @@ contract MockGasPriceOracle {
     {
         return (0, 28 gwei, block.timestamp, block.timestamp, 28 gwei);
     }
+
+    function decimals() external pure returns (uint8) {
+        return 8;
+    }
+}
+
+contract MalFunctioningPriceOracle {
+    function latestRoundData()
+        external
+        view
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
+    {
+        return (0, 0, block.timestamp, block.timestamp, 0);
+    }
+
+    function decimals() external pure returns (uint8) {
+        return 8;
+    }
 }
 
 contract PaymentHelperTest is ProtocolActions {
     PaymentHelper public paymentHelper;
     MockGasPriceOracle public mockGasPriceOracle;
+    MalFunctioningPriceOracle public malFunctioningOracle;
 
     address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address receiverAddress = address(444);
@@ -26,11 +45,12 @@ contract PaymentHelperTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
         paymentHelper = PaymentHelper(getContract(ETH, "PaymentHelper"));
         mockGasPriceOracle = new MockGasPriceOracle();
+        malFunctioningOracle = new MalFunctioningPriceOracle();
     }
 
     function test_getGasPrice_chainlink_malfunction() public {
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(1, 2, abi.encode(address(0x222)));
+        paymentHelper.updateRemoteChain(1, 2, abi.encode(address(malFunctioningOracle)));
 
         address gasPriceOracle = address(paymentHelper.gasPriceOracle(ETH));
         vm.mockCall(
@@ -48,10 +68,12 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    420,
                     LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420),
                     emptyBytes,
                     false,
                     false,
+                    receiverAddress,
                     receiverAddress,
                     emptyBytes
                 )
@@ -64,7 +86,7 @@ contract PaymentHelperTest is ProtocolActions {
 
     function test_getGasPrice_chainlink_incomplete_round() public {
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(1, 2, abi.encode(address(0x222)));
+        paymentHelper.updateRemoteChain(1, 2, abi.encode(address(malFunctioningOracle)));
 
         address gasPriceOracle = address(paymentHelper.gasPriceOracle(ETH));
 
@@ -83,10 +105,12 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    420,
                     LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420),
                     emptyBytes,
                     false,
                     false,
+                    receiverAddress,
                     receiverAddress,
                     emptyBytes
                 )
@@ -108,10 +132,12 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    420,
                     LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420),
                     emptyBytes,
                     false,
                     false,
+                    receiverAddress,
                     receiverAddress,
                     emptyBytes
                 )
@@ -128,10 +154,12 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    420,
                     LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420),
                     emptyBytes,
                     false,
                     false,
+                    receiverAddress,
                     receiverAddress,
                     emptyBytes
                 )
@@ -148,10 +176,12 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    420,
                     LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420),
                     emptyBytes,
                     false,
                     false,
+                    receiverAddress,
                     receiverAddress,
                     emptyBytes
                 )
@@ -182,10 +212,12 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     uint256MemoryArray,
                     uint256MemoryArray,
+                    uint256MemoryArray,
                     liqRequestMemoryArray,
                     emptyBytes,
                     new bool[](1),
                     new bool[](1),
+                    receiverAddress,
                     receiverAddress,
                     emptyBytes
                 )
@@ -202,10 +234,12 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     uint256MemoryArray,
                     uint256MemoryArray,
+                    uint256MemoryArray,
                     liqRequestMemoryArray,
                     emptyBytes,
                     new bool[](1),
                     new bool[](1),
+                    receiverAddress,
                     receiverAddress,
                     emptyBytes
                 )
@@ -253,10 +287,12 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    420,
                     LiqRequest(txData, address(0), address(0), 1, ETH, 420),
                     emptyBytes,
                     false,
                     false,
+                    receiverAddress,
                     receiverAddress,
                     emptyBytes
                 )
@@ -302,10 +338,12 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    420,
                     LiqRequest(txData, address(0), address(0), 1, ETH, 420),
                     emptyBytes,
                     false,
                     false,
+                    receiverAddress,
                     receiverAddress,
                     emptyBytes
                 )
@@ -341,10 +379,12 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    420,
                     LiqRequest(txData, address(0), address(0), 1, ETH, 420),
                     emptyBytes,
                     false,
                     false,
+                    receiverAddress,
                     receiverAddress,
                     emptyBytes
                 )
@@ -413,10 +453,12 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    420,
                     LiqRequest(txData, address(0), address(0), 1, ETH, 420),
                     emptyBytes,
                     false,
                     false,
+                    receiverAddress,
                     receiverAddress,
                     emptyBytes
                 )
@@ -471,10 +513,12 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    420,
                     LiqRequest(txData, address(0), address(0), 1, ETH, 420),
                     emptyBytes,
                     false,
                     false,
+                    receiverAddress,
                     receiverAddress,
                     emptyBytes
                 )
@@ -520,10 +564,12 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    420,
                     LiqRequest(txData, address(0), address(0), 1, ETH, 420),
                     emptyBytes,
                     false,
                     false,
+                    receiverAddress,
                     receiverAddress,
                     emptyBytes
                 )
@@ -539,17 +585,17 @@ contract PaymentHelperTest is ProtocolActions {
 
         /// set config type: 1
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(1, 1, abi.encode(address(420)));
+        paymentHelper.updateRemoteChain(1, 1, abi.encode(address(mockGasPriceOracle)));
 
         address result1 = address(paymentHelper.nativeFeedOracle(1));
-        assertEq(result1, address(420));
+        assertEq(result1, address(mockGasPriceOracle));
 
         /// set config type: 2
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(1, 2, abi.encode(address(421)));
+        paymentHelper.updateRemoteChain(1, 2, abi.encode(address(mockGasPriceOracle)));
 
         address result2 = address(paymentHelper.gasPriceOracle(1));
-        assertEq(result2, address(421));
+        assertEq(result2, address(mockGasPriceOracle));
 
         /// set config type: 3
         vm.prank(deployer);
@@ -619,7 +665,7 @@ contract PaymentHelperTest is ProtocolActions {
         vm.prank(deployer);
         paymentHelper.addRemoteChain(
             420,
-            IPaymentHelper.PaymentHelperConfig(address(420), address(421), 422, 423, 424, 425, 426, 427, 428, 429, 430)
+            IPaymentHelper.PaymentHelperConfig(address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431)
         );
     }
 
@@ -628,17 +674,17 @@ contract PaymentHelperTest is ProtocolActions {
 
         /// set config type: 1
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(420, 1, abi.encode(address(420)));
+        paymentHelper.updateRemoteChain(420, 1, abi.encode(address(mockGasPriceOracle)));
 
         address result1 = address(paymentHelper.nativeFeedOracle(420));
-        assertEq(result1, address(420));
+        assertEq(result1, address(mockGasPriceOracle));
 
         /// set config type: 2
         vm.prank(deployer);
-        paymentHelper.updateRemoteChain(420, 2, abi.encode(address(421)));
+        paymentHelper.updateRemoteChain(420, 2, abi.encode(address(mockGasPriceOracle)));
 
         address result2 = address(paymentHelper.gasPriceOracle(420));
-        assertEq(result2, address(421));
+        assertEq(result2, address(mockGasPriceOracle));
 
         /// set config type: 3
         vm.prank(deployer);
@@ -702,6 +748,13 @@ contract PaymentHelperTest is ProtocolActions {
 
         uint256 result11 = paymentHelper.timelockCost(1);
         assertEq(result11, 430);
+
+        /// set config type: 12
+        vm.prank(deployer);
+        paymentHelper.updateRemoteChain(1, 12, abi.encode(431));
+
+        uint256 result12 = paymentHelper.emergencyCost(1);
+        assertEq(result12, 431);
     }
 
     function _generateTimelockSuperformPackWithShift() internal pure returns (uint256 superformId_) {

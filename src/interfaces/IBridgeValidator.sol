@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-/// @title Bridge Handler Interface
+/// @title Bridge Validator Interface
+/// @dev Interface all Bridge Validators must follow
 /// @author Zeropoint Labs
 interface IBridgeValidator {
+
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
     //////////////////////////////////////////////////////////////
@@ -15,7 +17,7 @@ interface IBridgeValidator {
         uint64 liqDstChainId;
         bool deposit;
         address superform;
-        address srcSender;
+        address receiverAddress;
         address liqDataToken;
         address liqDataInterimToken;
     }
@@ -44,7 +46,7 @@ interface IBridgeValidator {
         bool genericSwapDisallowed_
     )
         external
-        view
+        pure
         returns (uint256 amount_);
 
     /// @dev decodes neccesary information for processing swaps on the destination chain
@@ -56,5 +58,5 @@ interface IBridgeValidator {
     /// @dev decodes the final output token address (for only direct chain actions!)
     /// @param txData_ is the txData to be decoded
     /// @return token_ the address of the token
-    function decodeSwapOutputToken(bytes calldata txData_) external view returns (address token_);
+    function decodeSwapOutputToken(bytes calldata txData_) external pure returns (address token_);
 }

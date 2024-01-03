@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
-import { Error } from "../../libraries/Error.sol";
+import { IQuorumManager } from "src/interfaces/IQuorumManager.sol";
+import { Error } from "src/libraries/Error.sol";
 
 /// @title QuorumManager
+/// @dev Quorum thresholds using in sending proofs from chain to chain
 /// @author ZeroPoint Labs
-/// @dev separates quorum management concerns into an abstract contract. Can be re-used (currently used by
-/// superRegistry) to set different quorums per amb in different areas of the protocol
 abstract contract QuorumManager is IQuorumManager {
+    
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
     //////////////////////////////////////////////////////////////

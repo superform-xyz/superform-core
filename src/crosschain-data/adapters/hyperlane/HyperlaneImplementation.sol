@@ -1,22 +1,23 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
-import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
-import { StandardHookMetadata } from "src/vendor/hyperlane/StandardHookMetadata.sol";
-import { IMessageRecipient } from "src/vendor/hyperlane/IMessageRecipient.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
-import { AMBMessage } from "src/types/DataTypes.sol";
-import { Error } from "src/libraries/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
+import { Error } from "src/libraries/Error.sol";
+import { AMBMessage } from "src/types/DataTypes.sol";
+import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
+import { IMessageRecipient } from "src/vendor/hyperlane/IMessageRecipient.sol";
+import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
+import { StandardHookMetadata } from "src/vendor/hyperlane/StandardHookMetadata.sol";
 
 /// @title HyperlaneImplementation
+/// @dev Allows state registries to use Hyperlane v3 for crosschain communication
 /// @author Zeropoint Labs
-/// @dev allows state registries to use hyperlane for crosschain communication
 contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
+    
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
@@ -41,8 +42,8 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
 
-    event MailboxAdded(address _newMailbox);
-    event GasPayMasterAdded(address _igp);
+    event MailboxAdded(address indexed _newMailbox);
+    event GasPayMasterAdded(address indexed _igp);
 
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
@@ -85,6 +86,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /// @param mailbox_ is the address of hyperlane mailbox
     /// @param igp_ is the address of hyperlane gas paymaster
     function setHyperlaneConfig(IMailbox mailbox_, IInterchainGasPaymaster igp_) external onlyProtocolAdmin {
+        if (address(mailbox_) == address(0) || address(igp_) == address(0)) revert Error.ZERO_ADDRESS();
         mailbox = mailbox_;
         igp = igp_;
 
@@ -137,6 +139,10 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     {
         uint32 domain = ambChainId[dstChainId_];
 
+        if (domain == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
         mailbox.dispatch{ value: msg.value }(
             domain, _castAddr(authorizedImpl[domain]), message_, _generateHookMetadata(extraData_, srcSender_)
         );
@@ -145,6 +151,13 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /// @inheritdoc IAmbImplementation
     function retryPayload(bytes memory data_) external payable override {
         (bytes32 messageId, uint32 destinationDomain, uint256 gasAmount) = abi.decode(data_, (bytes32, uint32, uint256));
+        uint256 fees = igp.quoteGasPayment(destinationDomain, gasAmount);
+
+        if (msg.value < fees) {
+            revert Error.INVALID_RETRY_FEE();
+        }
+
+        /// refunds any excess msg.value to msg.sender
         igp.payForGas{ value: msg.value }(messageId, destinationDomain, gasAmount, msg.sender);
     }
 
@@ -189,10 +202,12 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         }
 
         authorizedImpl[domain_] = authorizedImpl_;
+
+        emit AuthorizedImplAdded(domain_, authorizedImpl_);
     }
 
     /// @inheritdoc IMessageRecipient
-    function handle(uint32 origin_, bytes32 sender_, bytes calldata body_) external override onlyMailbox {
+    function handle(uint32 origin_, bytes32 sender_, bytes calldata body_) external payable override onlyMailbox {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
@@ -216,7 +231,13 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         (,,, uint8 registryId,,) = decoded.txInfo.decodeTxInfo();
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(superRegistry.getStateRegistry(registryId));
 
-        targetRegistry.receivePayload(superChainId[origin_], body_);
+        uint64 origin = superChainId[origin_];
+
+        if (origin == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
+        targetRegistry.receivePayload(origin, body_);
     }
 
     //////////////////////////////////////////////////////////////

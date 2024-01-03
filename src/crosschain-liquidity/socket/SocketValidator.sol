@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { Error } from "src/libraries/Error.sol";
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
+import { Error } from "src/libraries/Error.sol";
 import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
 
 /// @title SocketValidator
+/// @dev Asserts Socket x-chain input txData is valid
 /// @author Zeropoint Labs
-/// @dev to assert input txData is valid
 contract SocketValidator is BridgeValidator {
+
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
+
     constructor(address superRegistry_) BridgeValidator(superRegistry_) { }
 
     //////////////////////////////////////////////////////////////
@@ -60,11 +62,11 @@ contract SocketValidator is BridgeValidator {
                 }
             }
         } else {
-            /// @dev if withdraws, then receiver address must be the srcSender
-            if (decodedReq.receiverAddress != args_.srcSender) revert Error.INVALID_TXDATA_RECEIVER();
+            /// @dev if withdraws, then receiver address must be the receiverAddress
+            if (decodedReq.receiverAddress != args_.receiverAddress) revert Error.INVALID_TXDATA_RECEIVER();
         }
 
-        /// @dev FIXME: add  3. token validations
+        /// @dev token validations
         if (
             (decodedReq.middlewareRequest.id == 0 && args_.liqDataToken != decodedReq.bridgeRequest.inputToken)
                 || (decodedReq.middlewareRequest.id != 0 && args_.liqDataToken != decodedReq.middlewareRequest.inputToken)
@@ -91,10 +93,13 @@ contract SocketValidator is BridgeValidator {
         override
         returns (address, /*token_*/ uint256 /*amount_*/ )
     {
-        revert();
+        /// @dev SocketValidator cannot be used for just swaps, see SocketOneinchValidator
+        revert Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
     }
 
+    /// @inheritdoc BridgeValidator
     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
+        /// @dev SocketValidator cannot be used for just swaps, see SocketOneinchValidator
         revert Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
     }
 
@@ -113,7 +118,7 @@ contract SocketValidator is BridgeValidator {
     }
 
     /// @dev helps parsing socket calldata and return the socket request
-    function _parseCallData(bytes calldata callData) internal pure returns (bytes memory) {
+    function _parseCallData(bytes calldata callData) internal pure returns (bytes calldata) {
         return callData[4:];
     }
 }

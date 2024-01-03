@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
-import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
+import { Error } from "src/libraries/Error.sol";
 
 /// @title BridgeValidator
+/// @dev Inherited by specific bridge handlers to verify the calldata being sent
 /// @author Zeropoint Labs
-/// @dev To be inherited by specific bridge handlers to verify the calldata being sent
 abstract contract BridgeValidator is IBridgeValidator {
+
     //////////////////////////////////////////////////////////////
-    //                         CONSTANTS                         //
+    //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
+
     ISuperRegistry public immutable superRegistry;
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -19,6 +22,9 @@ abstract contract BridgeValidator is IBridgeValidator {
     //////////////////////////////////////////////////////////////
 
     constructor(address superRegistry_) {
+        if (superRegistry_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
@@ -51,7 +57,7 @@ abstract contract BridgeValidator is IBridgeValidator {
         bool genericSwapDisallowed_
     )
         external
-        view
+        pure
         virtual
         override
         returns (uint256 amount_);
@@ -67,7 +73,7 @@ abstract contract BridgeValidator is IBridgeValidator {
     /// @inheritdoc IBridgeValidator
     function decodeSwapOutputToken(bytes calldata txData_)
         external
-        view
+        pure
         virtual
         override
         returns (address outputToken_);

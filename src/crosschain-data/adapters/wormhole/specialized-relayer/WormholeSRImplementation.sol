@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
 import { IBroadcastAmbImplementation } from "src/interfaces/IBroadcastAmbImplementation.sol";
+import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
 import { Error } from "src/libraries/Error.sol";
 import { IWormhole } from "src/vendor/wormhole/IWormhole.sol";
-import { DataLib } from "src/libraries/DataLib.sol";
 import "src/vendor/wormhole/Utils.sol";
 
 /// @title WormholeImplementation
+/// @dev Allows state registries to use Wormhole SR's for broadcasting
 /// @author Zeropoint Labs
-/// @notice allows broadcast state registry contracts to send messages to multiple chains
-/// @dev uses multicast of wormhole for broadcasting
 contract WormholeSRImplementation is IBroadcastAmbImplementation {
+    
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
@@ -43,11 +43,11 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
     //////////////////////////////////////////////////////////////
 
     /// @dev emitted when wormhole core is set
-    event WormholeCoreSet(address wormholeCore);
+    event WormholeCoreSet(address indexed wormholeCore);
     /// @dev emitted when wormhole relyaer is set
-    event WormholeRelayerSet(address wormholeRelayer);
+    event WormholeRelayerSet(address indexed wormholeRelayer);
     /// @dev emitted when broadcast finality is set
-    event BroadcastFinalitySet(uint8 finality);
+    event BroadcastFinalitySet(uint8 indexed finality);
 
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
@@ -178,6 +178,8 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         }
     }
 
+    /// @dev function to receive broadcasted messages via Wormhole SR's
+    /// @param encodedMessage_ is the message to receive
     function receiveMessage(bytes memory encodedMessage_) public onlyWormholeVAARelayer {
         /// @dev 1. validate caller
         /// @dev 2. validate not broadcasted to emitter chain
@@ -191,7 +193,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         }
 
         if (wormholeMessage.emitterChainId == wormhole.chainId()) {
-            revert Error.INVALID_SRC_CHAIN_ID();
+            revert Error.INVALID_CHAIN_ID();
         }
 
         if (fromWormholeFormat(wormholeMessage.emitterAddress) != authorizedImpl[wormholeMessage.emitterChainId]) {
@@ -205,8 +207,14 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         processedMessages[wormholeMessage.hash] = true;
 
         /// @dev decoding payload
+        uint64 emitterChainId = superChainId[wormholeMessage.emitterChainId];
+
+        if (emitterChainId == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
         IBroadcastRegistry(superRegistry.getStateRegistry(BROADCAST_REGISTRY_ID)).receiveBroadcastPayload(
-            superChainId[wormholeMessage.emitterChainId], wormholeMessage.payload
+            emitterChainId, wormholeMessage.payload
         );
     }
 

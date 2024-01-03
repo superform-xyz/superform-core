@@ -1,17 +1,18 @@
-//SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { Error } from "src/libraries/Error.sol";
+import { BroadcastMessage } from "src/types/DataTypes.sol";
 import { AccessControlEnumerable } from "openzeppelin-contracts/contracts/access/extensions/AccessControlEnumerable.sol";
-import { IBroadcastRegistry } from "../interfaces/IBroadcastRegistry.sol";
-import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
-import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
-import { Error } from "../libraries/Error.sol";
-import { BroadcastMessage } from "../types/DataTypes.sol";
 
 /// @title SuperRBAC
-/// @author Zeropoint Labs.
-/// @dev Contract to manage roles in the entire superform protocol
+/// @dev Contract to manage roles in the Superform protocol
+/// @author Zeropoint Labs
 contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
+
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
@@ -147,11 +148,15 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         if (superRegistry_ == address(0)) revert Error.ZERO_ADDRESS();
 
         superRegistry = ISuperRegistry(superRegistry_);
+
+        emit SuperRegistrySet(superRegistry_);
     }
 
     /// @inheritdoc ISuperRBAC
     function setRoleAdmin(bytes32 role_, bytes32 adminRole_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
         _setRoleAdmin(role_, adminRole_);
+
+        emit RoleAdminSet(role_, adminRole_);
     }
 
     /// @inheritdoc ISuperRBAC
@@ -171,12 +176,15 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
             role_ == PROTOCOL_ADMIN_ROLE || role_ == EMERGENCY_ADMIN_ROLE || role_ == BROADCASTER_ROLE
                 || role_ == WORMHOLE_VAA_RELAYER_ROLE
         ) revert Error.CANNOT_REVOKE_NON_BROADCASTABLE_ROLES();
-        _revokeRole(role_, superRegistry.getAddress(superRegistryAddressId_));
-        if (extraData_.length != 0) {
-            BroadcastMessage memory rolesPayload = BroadcastMessage(
-                "SUPER_RBAC", SYNC_REVOKE, abi.encode(++xChainPayloadCounter, role_, superRegistryAddressId_)
-            );
-            _broadcast(abi.encode(rolesPayload), extraData_);
+        if (_revokeRole(role_, superRegistry.getAddress(superRegistryAddressId_))) {
+            if (extraData_.length != 0) {
+                BroadcastMessage memory rolesPayload = BroadcastMessage(
+                    "SUPER_RBAC", SYNC_REVOKE, abi.encode(++xChainPayloadCounter, role_, superRegistryAddressId_)
+                );
+                _broadcast(abi.encode(rolesPayload), extraData_);
+            }
+        } else {
+            revert Error.ROLE_NOT_ASSIGNED();
         }
     }
 
@@ -194,7 +202,11 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
                 role == PROTOCOL_ADMIN_ROLE || role == EMERGENCY_ADMIN_ROLE || role == BROADCASTER_ROLE
                     || role == WORMHOLE_VAA_RELAYER_ROLE
             )
-        ) _revokeRole(role, superRegistry.getAddress(superRegistryAddressId));
+        ) {
+            if (!_revokeRole(role, superRegistry.getAddress(superRegistryAddressId))) {
+                revert Error.ROLE_NOT_ASSIGNED();
+            }
+        }
     }
 
     //////////////////////////////////////////////////////////////
@@ -216,10 +228,26 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     /// @param extraData_ is the amb override information.
     function _broadcast(bytes memory message_, bytes memory extraData_) internal {
         (uint8 ambId, bytes memory broadcastParams) = abi.decode(extraData_, (uint8, bytes));
-        /// @dev ambIds are validated inside the factory state registry
-        /// @dev if the broadcastParams are wrong, this will revert in the amb implementation
-        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{
-            value: msg.value
-        }(msg.sender, ambId, message_, broadcastParams);
+
+        /// @dev if the broadcastParams are wrong this will revert
+        (uint256 gasFee, bytes memory extraData) = abi.decode(broadcastParams, (uint256, bytes));
+
+        if (msg.value < gasFee) {
+            revert Error.INVALID_BROADCAST_FEE();
+        }
+
+        /// @dev ambIds are validated inside the broadcast state registry
+        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{ value: gasFee }(
+            msg.sender, ambId, gasFee, message_, extraData
+        );
+
+        if (msg.value > gasFee) {
+            /// @dev forwards the rest to msg.sender
+            (bool success,) = payable(msg.sender).call{ value: msg.value - gasFee }("");
+
+            if (!success) {
+                revert Error.FAILED_TO_SEND_NATIVE();
+            }
+        }
     }
 }

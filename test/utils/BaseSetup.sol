@@ -18,6 +18,8 @@ import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import { LiFiMock } from "../mocks/LiFiMock.sol";
 import { SocketMock } from "../mocks/SocketMock.sol";
 import { SocketOneInchMock } from "../mocks/SocketOneInchMock.sol";
+import { LiFiMockRugpull } from "../mocks/LiFiMockRugpull.sol";
+import { LiFiMockBlacklisted } from "../mocks/LiFiMockBlacklisted.sol";
 
 import { MockERC20 } from "../mocks/MockERC20.sol";
 import { VaultMock } from "../mocks/VaultMock.sol";
@@ -67,7 +69,6 @@ import { PaymentHelper } from "src/payments/PaymentHelper.sol";
 import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
-
 import { Error } from "src/libraries/Error.sol";
 import "src/types/DataTypes.sol";
 import "./TestTypes.sol";
@@ -298,7 +299,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     mapping(
         uint64 chainId
             => mapping(
-                uint32 formBeaconId
+                uint32 formImplementationId
                     => mapping(string underlying => mapping(uint256 vaultKindIndex => address realVault))
             )
     ) public REAL_VAULT_ADDRESS;
@@ -491,6 +492,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             contracts[vars.chainId][bytes32(bytes("WormholeARImplementation"))] = vars.wormholeImplementation;
 
             WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayer);
+            /// set refund chain id to wormhole chain id
+            WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(wormhole_chainIds[i]);
 
             /// @dev 6.5- deploy Wormhole Specialized Relayer Implementation
             vars.wormholeSRImplementation = address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC));
@@ -522,6 +525,17 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             contracts[vars.chainId][bytes32(bytes("SocketOneInchMock"))] = vars.socketOneInch;
             vm.allowCheatcodes(vars.socketOneInch);
 
+            /// @dev 7.1.4 deploy LiFiMockRugpull. This mock tests a behaviour where the bridge is malicious and tries
+            /// to steal tokens
+            vars.liFiMockRugpull = address(new LiFiMockRugpull{ salt: salt }());
+            contracts[vars.chainId][bytes32(bytes("LiFiMockRugpull"))] = vars.liFiMockRugpull;
+            vm.allowCheatcodes(vars.liFiMockRugpull);
+
+            /// @dev 7.1.5 deploy LiFiMockBlacklisted. This mock tests the behaviour of blacklisted selectors
+            vars.liFiMockBlacklisted = address(new LiFiMockBlacklisted{ salt: salt }());
+            contracts[vars.chainId][bytes32(bytes("LiFiMockBlacklisted"))] = vars.liFiMockBlacklisted;
+            vm.allowCheatcodes(vars.liFiMockBlacklisted);
+
             /// @dev 7.2.1- deploy  lifi validator
             vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
@@ -541,10 +555,14 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             bridgeAddresses.push(vars.lifiRouter);
             bridgeAddresses.push(vars.socketRouter);
             bridgeAddresses.push(vars.socketOneInch);
+            bridgeAddresses.push(vars.liFiMockRugpull);
+            bridgeAddresses.push(vars.liFiMockBlacklisted);
 
             bridgeValidators.push(vars.lifiValidator);
             bridgeValidators.push(vars.socketValidator);
             bridgeValidators.push(vars.socketOneInchValidator);
+            bridgeValidators.push(vars.lifiValidator);
+            bridgeValidators.push(vars.lifiValidator);
 
             /// @dev 8.1 - Deploy UNDERLYING_TOKENS and VAULTS
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; ++j) {
@@ -629,11 +647,13 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
 
             /// @dev 11 - Add newly deployed form implementations to Factory
-            ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0]);
+            ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0], 1);
 
-            ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626TimelockForm, FORM_IMPLEMENTATION_IDS[1]);
+            ISuperformFactory(vars.factory).addFormImplementation(
+                vars.erc4626TimelockForm, FORM_IMPLEMENTATION_IDS[1], 2
+            );
 
-            ISuperformFactory(vars.factory).addFormImplementation(vars.kycDao4626Form, FORM_IMPLEMENTATION_IDS[2]);
+            ISuperformFactory(vars.factory).addFormImplementation(vars.kycDao4626Form, FORM_IMPLEMENTATION_IDS[2], 1);
 
             /// @dev 12 - Deploy SuperformRouter
             vars.superformRouter = address(new SuperformRouter{ salt: salt }(vars.superRegistry));
@@ -642,8 +662,12 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
 
             /// @dev 13 - Deploy SuperPositions
-            vars.superPositions =
-                address(new SuperPositions{ salt: salt }("https://apiv2-dev.superform.xyz/", vars.superRegistry));
+            vars.superPositions = address(
+                new SuperPositions{ salt: salt }(
+                    "https://ipfs-gateway.superform.xyz/ipns/k51qzi5uqu5dg90fqdo9j63m556wlddeux4mlgyythp30zousgh3huhyzouyq8/JSON/",
+                    vars.superRegistry
+                )
+            );
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);
@@ -684,6 +708,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_RESCUER(), deployer, vars.chainId);
             vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_DISPUTER(), deployer, vars.chainId);
             vars.superRegistryC.setAddress(vars.superRegistryC.DST_SWAPPER_PROCESSOR(), deployer, vars.chainId);
+            vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_RECEIVER(), deployer, vars.chainId);
+
             vars.superRegistryC.setDelay(86_400);
             /// @dev 17 deploy emergency queue
             vars.emergencyQueue = address(new EmergencyQueue{ salt: salt }(vars.superRegistry));
@@ -786,12 +812,13 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                             28 gwei,
                             750,
                             10_000,
+                            10_000,
                             10_000
                         )
                     );
-                    /// @dev 0.01 ether is just a mock value. Wormhole fees are currently 0
+                    /// @dev 0.01 ether is just a mock value. Wormhole fees are currently 0 on mainnet
                     PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(
-                        0.01 ether, generateBroadcastParams(5, 1)
+                        generateBroadcastParams(0.01 ether)
                     );
 
                     vars.superRegistryC.setAddress(
@@ -884,6 +911,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                     vars.superRegistryC.setAddress(
                         vars.superRegistryC.DST_SWAPPER_PROCESSOR(), deployer, vars.dstChainId
                     );
+                    vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_RECEIVER(), deployer, vars.dstChainId);
                 } else {
                     /// ack gas cost: 40000
                     /// timelock step form cost: 50000
@@ -893,6 +921,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                     );
                     PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 10, abi.encode(40_000));
                     PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 11, abi.encode(50_000));
+                    PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 12, abi.encode(10_000));
                     PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
                         vars.chainId, 8, abi.encode(50 * 10 ** 9 wei)
                     );
@@ -919,7 +948,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
                         if (FORM_IMPLEMENTATION_IDS[j] == 3) {
                             /// mint a kycDAO Nft to the newly kycDAO superform
-                            KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(vars.superform);
+                            ERC4626KYCDaoForm(vars.superform).mintKYC(1);
                         }
 
                         contracts[chainIds[i]][bytes32(
@@ -1092,9 +1121,13 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// 1 is lifi
         /// 2 is socket
         /// 3 is socket one inch impl
+        /// 4 is lifi rugpull
+        /// 5 is lifi blacklist
         bridgeIds.push(1);
         bridgeIds.push(2);
         bridgeIds.push(3);
+        bridgeIds.push(4);
+        bridgeIds.push(5);
 
         /// @dev setup users
         userKeys.push(1);
@@ -1170,7 +1203,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         mapping(
             uint64 chainId
                 => mapping(
-                    uint32 formBeaconId
+                    uint32 formImplementationId
                         => mapping(string underlying => mapping(uint256 vaultKindIndex => address realVault))
                 )
             ) storage existingVaults = REAL_VAULT_ADDRESS;

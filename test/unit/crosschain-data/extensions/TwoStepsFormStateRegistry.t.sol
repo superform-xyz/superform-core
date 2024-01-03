@@ -17,7 +17,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
     function test_updateTxDataBranch() external {
         /// @dev mocks receive payload as a form
         vm.selectFork(FORKS[ETH]);
-        (address superform, uint256 superformId) = _legacySuperformPackWithShift();
+        (address superform, uint256 superformId) = _legacySuperformPackWithShift(ETH);
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             1,
@@ -43,23 +43,23 @@ contract TimelockStateRegistryTest is ProtocolActions {
 
         vm.prank(getContract(AVAX, "SuperformRouter"));
         SuperPositions(getContract(AVAX, "SuperPositions")).updateTxHistory(
-            1, DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH)
+            1, DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH), receiverAddress
         );
 
         vm.prank(getContract(AVAX, "SuperformRouter"));
         SuperPositions(getContract(AVAX, "SuperPositions")).updateTxHistory(
-            1, DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH)
+            1, DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH), receiverAddress
         );
 
         vm.prank(superform);
         timelockStateRegistry.receivePayload(
             0,
-            deployer,
             ETH,
             block.timestamp - 5 seconds,
             InitSingleVaultData(
                 1,
                 superformId,
+                420,
                 420,
                 0,
                 LiqRequest(
@@ -88,12 +88,12 @@ contract TimelockStateRegistryTest is ProtocolActions {
         vm.prank(superform);
         timelockStateRegistry.receivePayload(
             0,
-            deployer,
             ETH,
             block.timestamp - 5 seconds,
             InitSingleVaultData(
                 1,
                 superformId,
+                420,
                 420,
                 1000,
                 /// @dev note txData (2nd arg) is empty and token (3rd arg) is not address(0) to
@@ -139,7 +139,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
     function test_processPayloadMintPositionBranch() external {
         /// @dev mocks receive payload as a form
         vm.selectFork(FORKS[AVAX]);
-        (, uint256 superformId) = _legacySuperformPackWithShift();
+        (, uint256 superformId) = _legacySuperformPackWithShift(AVAX);
 
         bytes memory _message = abi.encode(
             AMBMessage(
@@ -150,7 +150,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
 
         vm.prank(getContract(AVAX, "SuperformRouter"));
         SuperPositions(getContract(AVAX, "SuperPositions")).updateTxHistory(
-            1, DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH)
+            1, DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH), receiverAddress
         );
 
         vm.prank(getContract(AVAX, "HyperlaneImplementation"));
@@ -174,9 +174,11 @@ contract TimelockStateRegistryTest is ProtocolActions {
         timelockStateRegistry.dispatchPayload(address(420), ambIds, uint64(1), bytes(""), bytes(""));
     }
 
-    function _legacySuperformPackWithShift() internal view returns (address superform, uint256 superformId_) {
-        uint64 chainId_ = ETH;
-
+    function _legacySuperformPackWithShift(uint64 chainId_)
+        internal
+        view
+        returns (address superform, uint256 superformId_)
+    {
         superform = getContract(
             chainId_,
             string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))

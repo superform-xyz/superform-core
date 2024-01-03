@@ -2,15 +2,16 @@
 pragma solidity ^0.8.23;
 
 /// @title IBroadcastAmbImplementation
+/// @dev Interface for AMBs used in Broadcasting
 /// @author ZeroPoint Labs
-/// @dev interface for arbitrary message bridge implementation the supports broadcasting
 interface IBroadcastAmbImplementation {
+    
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
 
-    event ChainAdded(uint64 superChainId);
-    event AuthorizedImplAdded(uint64 superChainId, address authImpl);
+    event ChainAdded(uint64 indexed superChainId);
+    event AuthorizedImplAdded(uint64 indexed superChainId, address indexed authImpl);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //

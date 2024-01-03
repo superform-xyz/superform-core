@@ -2,9 +2,10 @@
 pragma solidity ^0.8.23;
 
 /// @title ISuperRegistry
-/// @author Zeropoint Labs.
-/// @dev interface for Super Registry
+/// @dev Interface for SuperRegistry
+/// @author Zeropoint Labs
 interface ISuperRegistry {
+
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
@@ -24,16 +25,16 @@ interface ISuperRegistry {
     event SetBridgeValidator(uint256 indexed bridgeId, address indexed bridgeValidator);
 
     /// @dev is emitted when a new amb is configured.
-    event SetAmbAddress(uint8 ambId_, address ambAddress_, bool isBroadcastAMB_);
+    event SetAmbAddress(uint8 indexed ambId_, address indexed ambAddress_, bool indexed isBroadcastAMB_);
 
     /// @dev is emitted when a new state registry is configured.
-    event SetStateRegistryAddress(uint8 registryId_, address registryAddress_);
+    event SetStateRegistryAddress(uint8 indexed registryId_, address indexed registryAddress_);
 
     /// @dev is emitted when a new delay is configured.
-    event SetDelay(uint256 oldDelay_, uint256 newDelay_);
+    event SetDelay(uint256 indexed oldDelay_, uint256 indexed newDelay_);
 
     /// @dev is emitted when a new vault limit is configured
-    event SetVaultLimitPerDestination(uint64 chainId_, uint256 vaultLimit_);
+    event SetVaultLimitPerDestination(uint64 indexed chainId_, uint256 indexed vaultLimit_);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
@@ -83,6 +84,9 @@ interface ISuperRegistry {
 
     /// @dev returns the id of the emergency queue
     function EMERGENCY_QUEUE() external view returns (bytes32);
+
+    /// @dev returns the id of the superform receiver
+    function SUPERFORM_RECEIVER() external view returns (bytes32);
 
     /// @dev returns the id of the payment admin keeper
     function PAYMENT_ADMIN() external view returns (bytes32);
@@ -150,9 +154,9 @@ interface ISuperRegistry {
 
     /// @dev gets the safe vault limit
     /// @param chainId_ is the id of the remote chain
-    /// @return vaultLimitPerTx_ is the safe number of vaults to deposit
+    /// @return vaultLimitPerDestination_ is the safe number of vaults to deposit
     /// without hitting out of gas error
-    function getVaultLimitPerDestination(uint64 chainId_) external view returns (uint256 vaultLimitPerTx_);
+    function getVaultLimitPerDestination(uint64 chainId_) external view returns (uint256 vaultLimitPerDestination_);
 
     /// @dev helps validate if an address is a valid state registry
     /// @param registryAddress_ is the address of the state registry
