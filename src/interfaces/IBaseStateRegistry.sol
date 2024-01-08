@@ -16,7 +16,7 @@ interface IBaseStateRegistry {
 
     /// @dev is emitted when a cross-chain proof is received in the state registry
     /// NOTE: comes handy if quorum required is more than 0
-    event ProofReceived(bytes indexed proof);
+    event ProofReceived(bytes32 indexed proof);
 
     /// @dev is emitted when a payload id gets updated
     event PayloadUpdated(uint256 indexed payloadId);
