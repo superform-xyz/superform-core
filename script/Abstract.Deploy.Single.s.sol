@@ -226,6 +226,7 @@ abstract contract AbstractDeploySingle is Script {
 
     /// @dev uses CREATE2
     address public wormholeRelayer = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
+    address public wormholeBaseRelayer = 0x706F82e9bb5b0813501714Ab5974216704980e31;
 
     /// @dev superformChainIds
 
@@ -463,7 +464,8 @@ abstract contract AbstractDeploySingle is Script {
         vars.wormholeImplementation = address(new WormholeARImplementation{ salt: salt }(vars.superRegistryC));
         contracts[vars.chainId][bytes32(bytes("WormholeARImplementation"))] = vars.wormholeImplementation;
 
-        WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayer);
+        address wormholeRelayerConfig = vars.chainId == BASE ? wormholeBaseRelayer : wormholeRelayer;
+        WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayerConfig);
         WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(wormhole_chainIds[trueIndex]);
 
         /*
