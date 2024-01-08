@@ -713,20 +713,7 @@ contract PaymentHelper is IPaymentHelper {
 
         for (uint256 i; i < len; ++i) {
             uint256 gasReq = i != 0 ? totalDstGasReqInWeiForProof : totalDstGasReqInWei;
-            /// @dev amb id 1: layerzero
-            /// @dev amb id 2: hyperlane
-            /// @dev amb id 3: wormhole
-
-            /// @notice id 1: encoded layerzero adapter params (version 2). Other values are not used atm.
-            /// @notice id 2: encoded dst gas limit
-            /// @notice id 3: encoded dst gas limit
-            if (ambIds_[i] == 1) {
-                extraDataPerAMB[i] = abi.encodePacked(uint16(2), gasReq, uint256(0), address(0));
-            } else if (ambIds_[i] == 2) {
-                extraDataPerAMB[i] = abi.encode(gasReq);
-            } else if (ambIds_[i] == 3) {
-                extraDataPerAMB[i] = abi.encode(0, gasReq);
-            }
+            extraDataPerAMB[i] = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).generateExtraData(gasReq);
         }
     }
 

@@ -17,7 +17,6 @@ import { StandardHookMetadata } from "src/vendor/hyperlane/StandardHookMetadata.
 /// @dev Allows state registries to use Hyperlane v3 for crosschain communication
 /// @author Zeropoint Labs
 contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
-    
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
@@ -118,6 +117,12 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         fees = mailbox.quoteDispatch(
             domain, _castAddr(authorizedImpl[domain]), message_, _generateHookMetadata(extraData_, msg.sender)
         );
+    }
+
+    /// @inheritdoc IAmbImplementation
+    function generateExtraData(uint256 gasLimit) external pure override returns (bytes memory extraData) {
+        /// @notice encoded dst gas limit
+        extraData = abi.encode(gasLimit);
     }
 
     //////////////////////////////////////////////////////////////
