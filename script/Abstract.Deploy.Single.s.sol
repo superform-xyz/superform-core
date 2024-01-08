@@ -832,14 +832,18 @@ abstract contract AbstractDeploySingle is Script {
         LayerzeroImplementation(payable(vars.lzImplementation)).setChainId(vars.dstChainId, vars.dstLzChainId);
 
         /// @dev for mainnet
-        LayerzeroImplementation(payable(vars.lzImplementation)).setConfig(
-            0,
-            /// Defaults To Zero
-            vars.dstLzChainId,
-            6,
-            /// For Oracle Config
-            abi.encode(CHAINLINK_lzOracle)
-        );
+        /// @dev do not override default oracle with chainlink for BASE
+
+        if (vars.chainId != BASE) {
+            LayerzeroImplementation(payable(vars.lzImplementation)).setConfig(
+                0,
+                /// Defaults To Zero
+                vars.dstLzChainId,
+                6,
+                /// For Oracle Config
+                abi.encode(CHAINLINK_lzOracle)
+            );
+        }
 
         HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setReceiver(
             vars.dstHypChainId, vars.dstHyperlaneImplementation
