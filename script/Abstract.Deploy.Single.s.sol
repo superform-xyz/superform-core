@@ -464,7 +464,7 @@ abstract contract AbstractDeploySingle is Script {
         contracts[vars.chainId][bytes32(bytes("WormholeARImplementation"))] = vars.wormholeImplementation;
 
         WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayer);
-        WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(wormhole_chainIds[i]);
+        WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(wormhole_chainIds[trueIndex]);
 
         /*
         /// @dev 6.5- deploy Wormhole Specialized Relayer Implementation
