@@ -35,8 +35,8 @@ interface ICoreStateRegistry {
     /// @dev is emitted when a rescue is proposed for failed deposits in a payload
     event RescueProposed(
         uint256 indexed payloadId,
-        uint256[] indexed superformIds,
-        uint256[] indexed proposedAmount,
+        uint256[] superformIds,
+        uint256[] proposedAmount,
         uint256 proposedTime
     );
 
