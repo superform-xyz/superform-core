@@ -5,6 +5,8 @@ import { Error } from "src/libraries/Error.sol";
 import "test/utils/ProtocolActions.sol";
 
 contract SuperformRouterTest is ProtocolActions {
+    error InvalidSigner();
+
     address receiverAddress = address(444);
 
     struct MultiVaultDepositVars {
@@ -238,7 +240,17 @@ contract SuperformRouterTest is ProtocolActions {
         liqReq[0] = LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0);
 
         MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds, amounts, outputAmounts, maxSlippages, liqReq, "", hasDstSwaps, retain4626s, address(0), address(0), ""
+            superformIds,
+            amounts,
+            outputAmounts,
+            maxSlippages,
+            liqReq,
+            "",
+            hasDstSwaps,
+            retain4626s,
+            address(0),
+            address(0),
+            ""
         );
 
         SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
@@ -506,7 +518,17 @@ contract SuperformRouterTest is ProtocolActions {
         LiqRequest memory liqReq = LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0);
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, amount, outputAmount, maxSlippage, liqReq, "", false, false, receiverAddress, receiverAddress, ""
+            superformId,
+            amount,
+            outputAmount,
+            maxSlippage,
+            liqReq,
+            "",
+            false,
+            false,
+            receiverAddress,
+            receiverAddress,
+            ""
         );
 
         SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds, ETH, data);
@@ -545,7 +567,17 @@ contract SuperformRouterTest is ProtocolActions {
         LiqRequest memory liqReq = LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0);
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, amount, outputAmount, maxSlippage, liqReq, "", false, false, receiverAddress, receiverAddress, ""
+            superformId,
+            amount,
+            outputAmount,
+            maxSlippage,
+            liqReq,
+            "",
+            false,
+            false,
+            receiverAddress,
+            receiverAddress,
+            ""
         );
 
         SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds, ARBI, data);
@@ -1263,7 +1295,7 @@ contract SuperformRouterTest is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             0,
-            /// @dev 0 amount here and in the LiqRequest, 
+            /// @dev 0 amount here and in the LiqRequest,
             1e18,
             100,
             LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
@@ -1959,7 +1991,7 @@ contract SuperformRouterTest is ProtocolActions {
         v.amounts = new uint256[](2);
         v.amounts[0] = 1e18;
         v.amounts[1] = 1e18;
-        
+
         v.outputAmounts = new uint256[](2);
         v.outputAmounts[0] = 1e18;
         v.outputAmounts[1] = 1e18;
@@ -2180,6 +2212,136 @@ contract SuperformRouterTest is ProtocolActions {
                     abi.encode(
                         v.permit.nonce, v.permit.deadline, _signPermit(v.permit, v.superformRouter, userKeys[1], ETH)
                     ),
+                    v.hasDstSwaps,
+                    v.retain4626s,
+                    receiverAddress,
+                    receiverAddress,
+                    ""
+                )
+            )
+        );
+        vm.stopPrank();
+    }
+
+    function test_tokenForwardWithManInMiddlePermit2Sig() public {
+        MultiVaultDepositVars memory v;
+        /// @dev in this test no tokens would be bridged (no txData)
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(users[1]);
+
+        v.superformRouter = getContract(ETH, "SuperformRouter");
+
+        v.superformIds = new uint256[](2);
+        v.superformIds[0] = DataLib.packSuperform(
+            getContract(
+                ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+            ),
+            FORM_IMPLEMENTATION_IDS[0],
+            ARBI
+        );
+        v.superformIds[1] = DataLib.packSuperform(
+            getContract(
+                ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+            ),
+            FORM_IMPLEMENTATION_IDS[0],
+            ARBI
+        );
+
+        v.amounts = new uint256[](2);
+        v.amounts[0] = 1e18;
+        v.amounts[1] = 1e18;
+
+        v.outputAmounts = new uint256[](2);
+        v.outputAmounts[0] = 1e18;
+        v.outputAmounts[1] = 1e18;
+
+        v.maxSlippages = new uint256[](2);
+        v.maxSlippages[0] = 1000;
+        v.maxSlippages[1] = 1000;
+
+        v.hasDstSwaps = new bool[](2);
+
+        v.retain4626s = new bool[](2);
+
+        v.liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
+            getContract(ARBI, "DAI"),
+            v.superformRouter,
+            ETH,
+            ARBI,
+            ARBI,
+            false,
+            getContract(ARBI, "CoreStateRegistry"),
+            uint256(ARBI),
+            1e18,
+            //1e18,
+            false,
+            /// @dev placeholder value, not used
+            0,
+            1,
+            1,
+            1
+        );
+
+        v.liqReqs = new LiqRequest[](2);
+        v.liqReqs[0] = LiqRequest(
+            _buildLiqBridgeTxData(v.liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, ARBI, 0
+        );
+
+        v.liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
+            getContract(ARBI, "WETH"),
+            v.superformRouter,
+            ETH,
+            ARBI,
+            ARBI,
+            false,
+            getContract(ARBI, "CoreStateRegistry"),
+            uint256(ARBI),
+            1e18,
+            //1e18,
+            false,
+            /// @dev placeholder value, not used
+            0,
+            1,
+            1,
+            1
+        );
+
+        v.liqReqs[1] = LiqRequest(
+            _buildLiqBridgeTxData(v.liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, ARBI, 0
+        );
+        /// @dev approve total amount
+        v.permit = IPermit2.PermitTransferFrom({
+            permitted: IPermit2.TokenPermissions({ token: IERC20(getContract(ETH, "DAI")), amount: 2e18 }),
+            nonce: _randomUint256(),
+            deadline: block.timestamp
+        });
+        MockERC20(getContract(ETH, "DAI")).approve(getContract(ETH, "CanonicalPermit2"), type(uint256).max);
+
+        v.ambIds = new uint8[](2);
+        v.ambIds[0] = 1;
+        v.ambIds[1] = 2;
+
+        /// @dev sign using keys of user 0 to simulate the scenario
+        bytes memory signedPermit = _signPermit(v.permit, v.superformRouter, userKeys[0], ETH);
+
+        vm.expectRevert(InvalidSigner.selector);
+        SuperformRouter(payable(v.superformRouter)).singleXChainMultiVaultDeposit{ value: 2 ether }(
+            SingleXChainMultiVaultStateReq(
+                v.ambIds,
+                ARBI,
+                MultiVaultSFData(
+                    v.superformIds,
+                    v.amounts,
+                    v.outputAmounts,
+                    v.maxSlippages,
+                    v.liqReqs,
+                    abi.encode(v.permit.nonce, v.permit.deadline, signedPermit),
                     v.hasDstSwaps,
                     v.retain4626s,
                     receiverAddress,
