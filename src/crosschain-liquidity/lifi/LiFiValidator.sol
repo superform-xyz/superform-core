@@ -13,7 +13,6 @@ import { GenericSwapFacet } from "src/vendor/lifi/GenericSwapFacet.sol";
 /// @dev Asserts LiFi input txData is valid
 /// @author Zeropoint Labs
 contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
-    
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
@@ -98,6 +97,12 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         bytes4 selector = _extractSelector(txData_);
         if (selector == GenericSwapFacet.swapTokensGeneric.selector) {
             (token_, amount_,,,) = extractGenericSwapParameters(txData_);
+
+            /// @dev remap of address 0 to NATIVE because of how LiFi produces txData
+            if (token_ == address(0)) {
+                token_ = NATIVE;
+            }
+
             return (token_, amount_);
         } else {
             revert Error.INVALID_ACTION();
@@ -256,6 +261,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         if (sendingAssetId == address(0)) {
             sendingAssetId = NATIVE;
         }
+
         /// @dev 3. token validations
         if (args_.liqDataToken != sendingAssetId) revert Error.INVALID_TXDATA_TOKEN();
 
