@@ -122,7 +122,10 @@ contract LiFiTxDataExtractor {
             (bridgeData, stargateData) =
                 abi.decode(_slice(callData, 4, callData.length - 4), (ILiFi.BridgeData, StargateFacet.StargateData));
 
-            receiver = abi.decode(stargateData.callTo, (address));
+            bytes memory to = stargateData.callTo;
+            assembly {
+                receiver := mload(add(to, 20))
+            }
 
             return (bridgeData, receiver);
         }
@@ -132,8 +135,10 @@ contract LiFiTxDataExtractor {
                 _slice(callData, 4, callData.length - 4),
                 (ILiFi.BridgeData, LibSwap.SwapData[], StargateFacet.StargateData)
             );
-            receiver = abi.decode(stargateData.callTo, (address));
-
+            bytes memory to = stargateData.callTo;
+            assembly {
+                receiver := mload(add(to, 20))
+            }
             return (bridgeData, receiver);
         }
 
@@ -143,7 +148,7 @@ contract LiFiTxDataExtractor {
             (bridgeData, celerIMData) =
                 abi.decode(_slice(callData, 4, callData.length - 4), (ILiFi.BridgeData, CelerIM.CelerIMData));
 
-            receiver = abi.decode(celerIMData.callTo, (address));
+            receiver = bridgeData.receiver;
 
             return (bridgeData, receiver);
         }
@@ -153,7 +158,7 @@ contract LiFiTxDataExtractor {
             (bridgeData,, celerIMData) = abi.decode(
                 _slice(callData, 4, callData.length - 4), (ILiFi.BridgeData, LibSwap.SwapData[], CelerIM.CelerIMData)
             );
-            receiver = abi.decode(celerIMData.callTo, (address));
+            receiver = bridgeData.receiver;
 
             return (bridgeData, receiver);
         }
