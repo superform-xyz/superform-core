@@ -226,6 +226,7 @@ abstract contract AbstractDeploySingle is Script {
 
     /// @dev uses CREATE2
     address public wormholeRelayer = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
+    address public wormholeBaseRelayer = 0x706F82e9bb5b0813501714Ab5974216704980e31;
 
     /// @dev superformChainIds
 
@@ -463,8 +464,9 @@ abstract contract AbstractDeploySingle is Script {
         vars.wormholeImplementation = address(new WormholeARImplementation{ salt: salt }(vars.superRegistryC));
         contracts[vars.chainId][bytes32(bytes("WormholeARImplementation"))] = vars.wormholeImplementation;
 
-        WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayer);
-        WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(wormhole_chainIds[i]);
+        address wormholeRelayerConfig = vars.chainId == BASE ? wormholeBaseRelayer : wormholeRelayer;
+        WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayerConfig);
+        WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(wormhole_chainIds[trueIndex]);
 
         /*
         /// @dev 6.5- deploy Wormhole Specialized Relayer Implementation
@@ -832,14 +834,18 @@ abstract contract AbstractDeploySingle is Script {
         LayerzeroImplementation(payable(vars.lzImplementation)).setChainId(vars.dstChainId, vars.dstLzChainId);
 
         /// @dev for mainnet
-        LayerzeroImplementation(payable(vars.lzImplementation)).setConfig(
-            0,
-            /// Defaults To Zero
-            vars.dstLzChainId,
-            6,
-            /// For Oracle Config
-            abi.encode(CHAINLINK_lzOracle)
-        );
+        /// @dev do not override default oracle with chainlink for BASE
+
+        if (vars.chainId != BASE) {
+            LayerzeroImplementation(payable(vars.lzImplementation)).setConfig(
+                0,
+                /// Defaults To Zero
+                vars.dstLzChainId,
+                6,
+                /// For Oracle Config
+                abi.encode(CHAINLINK_lzOracle)
+            );
+        }
 
         HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setReceiver(
             vars.dstHypChainId, vars.dstHyperlaneImplementation
