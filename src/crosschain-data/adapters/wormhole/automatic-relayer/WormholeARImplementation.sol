@@ -16,7 +16,6 @@ import "src/vendor/wormhole/Utils.sol";
 /// @dev Allows state registries to use Wormhole AR's for crosschain communication
 /// @author Zeropoint Labs
 contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
-    
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
@@ -123,6 +122,12 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         }
 
         (fees,) = relayer.quoteEVMDeliveryPrice(dstChainId, dstNativeAirdrop, dstGasLimit);
+    }
+
+    /// @inheritdoc IAmbImplementation
+    function generateExtraData(uint256 gasLimit) external pure override returns (bytes memory extraData) {
+        /// @notice encoded dst gas limit
+        extraData = abi.encode(0, gasLimit);
     }
 
     //////////////////////////////////////////////////////////////

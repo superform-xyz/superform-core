@@ -5,7 +5,6 @@ pragma solidity ^0.8.23;
 /// @dev Interface for arbitrary message bridge (AMB) implementations
 /// @author ZeroPoint Labs
 interface IAmbImplementation {
-    
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
@@ -31,6 +30,12 @@ interface IAmbImplementation {
         external
         view
         returns (uint256 fees);
+
+    /// @dev returns the extra data for the given gas request
+    /// @param gasLimit is the amount of gas limit in wei to override
+    /// @return extraData is the bytes encoded extra data
+    /// NOTE: this process is unique to the message bridge
+    function generateExtraData(uint256 gasLimit) external pure returns (bytes memory extraData);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
