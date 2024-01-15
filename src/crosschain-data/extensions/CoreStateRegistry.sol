@@ -434,10 +434,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 revert Error.ZERO_AMOUNT();
             }
 
-            if (_getVaultAsset(_getSuperform(multiVaultData.superformIds[i])) != finalToken_[i]) {
-                revert Error.INVALID_UPDATE_FINAL_TOKEN();
-            }
-
             /// @dev observe not consuming the second return value
             (multiVaultData.amounts[i],, validLen) = _updateAmount(
                 IDstSwapper(_getAddress(keccak256("DST_SWAPPER"))),
@@ -445,10 +441,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 payloadId_,
                 i,
                 finalAmounts_[i],
+                finalToken_[i],
                 multiVaultData.superformIds[i],
                 multiVaultData.amounts[i],
                 multiVaultData.maxSlippages[i],
-                finalState_,
                 validLen
             );
         }
@@ -508,10 +504,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             revert Error.ZERO_AMOUNT();
         }
 
-        if (_getVaultAsset(_getSuperform(singleVaultData.superformId)) != finalToken_) {
-            revert Error.INVALID_UPDATE_FINAL_TOKEN();
-        }
-
         /// @dev observe not consuming the third return value
         (singleVaultData.amount, finalState_,) = _updateAmount(
             IDstSwapper(_getAddress(keccak256("DST_SWAPPER"))),
@@ -519,10 +511,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             payloadId_,
             0,
             finalAmount_,
+            finalToken_,
             singleVaultData.superformId,
             singleVaultData.amount,
             singleVaultData.maxSlippage,
-            finalState_,
             0
         );
 
@@ -535,14 +527,14 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         uint256 payloadId_,
         uint256 index_,
         uint256 finalAmount_,
+        address finalToken_,
         uint256 superformId_,
         uint256 amount_,
         uint256 maxSlippage_,
-        PayloadState finalState_,
         uint256 validLen_
     )
         internal
-        returns (uint256, PayloadState, uint256)
+        returns (uint256, PayloadState finalState_, uint256)
     {
         bool failedSwapQueued;
         if (hasDstSwap_) {
@@ -552,16 +544,20 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
                 if (amount != finalAmount_) {
                     revert Error.INVALID_DST_SWAP_AMOUNT();
-                } else {
-                    failedSwapQueued = true;
-                    failedDeposits[payloadId_].superformIds.push(superformId_);
-                    failedDeposits[payloadId_].settlementToken.push(interimToken);
-                    failedDeposits[payloadId_].settleFromDstSwapper.push(true);
-
-                    /// @dev sets amount to zero and will mark the payload as PROCESSED
-                    amount_ = 0;
-                    finalState_ = PayloadState.PROCESSED;
                 }
+
+                if (interimToken != finalToken_) {
+                    revert Error.INVALID_UPDATE_FINAL_TOKEN();
+                }
+
+                failedSwapQueued = true;
+                failedDeposits[payloadId_].superformIds.push(superformId_);
+                failedDeposits[payloadId_].settlementToken.push(interimToken);
+                failedDeposits[payloadId_].settleFromDstSwapper.push(true);
+
+                /// @dev sets amount to zero and will mark the payload as PROCESSED
+                amount_ = 0;
+                finalState_ = PayloadState.PROCESSED;
             }
         }
 
@@ -595,6 +591,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 address asset;
                 try IBaseForm(_getSuperform(superformId_)).getVaultAsset() returns (address asset_) {
                     asset = asset_;
+
+                    if (asset_ != finalToken_) {
+                        revert Error.INVALID_UPDATE_FINAL_TOKEN();
+                    }
                 } catch {
                     /// @dev if its error, we just consider asset as zero address
                 }
@@ -610,6 +610,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 amount_ = 0;
                 finalState_ = PayloadState.PROCESSED;
             } else {
+                if (_getVaultAsset(_getSuperform(superformId_)) != finalToken_) {
+                    revert Error.INVALID_UPDATE_FINAL_TOKEN();
+                }
+
                 ++validLen_;
             }
         }
