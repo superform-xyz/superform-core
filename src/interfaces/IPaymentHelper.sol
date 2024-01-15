@@ -14,7 +14,6 @@ import {
 /// @dev Interface for PaymentHelper
 /// @author ZeroPoint Labs
 interface IPaymentHelper {
-
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                         //
     //////////////////////////////////////////////////////////////
@@ -50,7 +49,7 @@ interface IPaymentHelper {
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
 
-    event ChainConfigUpdated(uint64 indexed chainId_, uint256 indexed configType_, bytes indexed config_);
+    event ChainConfigUpdated(uint64 indexed chainId_, uint256 indexed configType_, bytes config_);
     event ChainConfigAdded(uint64 chainId_, PaymentHelperConfig config_);
 
     //////////////////////////////////////////////////////////////
