@@ -33,6 +33,7 @@ import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
 import { EmergencyQueue } from "src/EmergencyQueue.sol";
+import { VaultClaimer } from "src/VaultClaimer.sol";
 import { generateBroadcastParams } from "test/utils/AmbParams.sol";
 
 struct SetupVars {
@@ -88,7 +89,7 @@ abstract contract AbstractDeploySingle is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[17] public contractNames = [
+    string[18] public contractNames = [
         "CoreStateRegistry",
         //"TimelockStateRegistry",
         //"BroadcastRegistry",
@@ -111,7 +112,8 @@ abstract contract AbstractDeploySingle is Script {
         "PayloadHelper",
         "PaymentHelper",
         "PayMaster",
-        "EmergencyQueue"
+        "EmergencyQueue",
+        "VaultClaimer"
     ];
 
     enum Chains {
@@ -636,6 +638,9 @@ abstract contract AbstractDeploySingle is Script {
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 11, abi.encode(50_000));
         /// @dev FIXME emergencyCost value
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 12, abi.encode(10_000));
+
+        /// @dev 19 deploy vault claimer
+        contracts[vars.chainId][bytes32(bytes("VaultClaimer"))] = address(new VaultClaimer{ salt: salt }());
 
         vm.stopBroadcast();
 
