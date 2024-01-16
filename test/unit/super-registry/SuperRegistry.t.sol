@@ -428,4 +428,29 @@ contract SuperRegistryTest is BaseSetup {
             }
         }
     }
+
+    function test_batchSetAddress_twoNewAddresses() public {
+        vm.selectFork(FORKS[ETH]);
+
+        // Define ids, newAddresses, and chainIds
+        bytes32[] memory ids = new bytes32[](2);
+        ids[0] = keccak256(abi.encodePacked("id1"));
+        ids[1] = keccak256(abi.encodePacked("id2"));
+
+        address[] memory newAddresses = new address[](2);
+        newAddresses[0] = address(0x123);
+        newAddresses[1] = address(0x456);
+
+        uint64[] memory chainIds = new uint64[](2);
+        chainIds[0] = 1;
+        chainIds[1] = 1;
+
+        // Call batchSetAddress
+        vm.prank(deployer);
+        superRegistry.batchSetAddress(ids, newAddresses, chainIds);
+
+        // Verify the addresses were set correctly
+        assertEq(superRegistry.getAddress(ids[0]), newAddresses[0]);
+        assertEq(superRegistry.getAddress(ids[1]), newAddresses[1]);
+    }
 }
