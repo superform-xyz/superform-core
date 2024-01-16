@@ -227,7 +227,7 @@ contract PaymentHelper is IPaymentHelper {
             /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
             /// @dev ensure that acknowledgement costs from dst to src are not double counted
             bool anyRetain4626False = false;
-            for (uint256 j = 0; j < req_.superformsData[i].retain4626s.length; ++j) {
+            for (uint256 j; j < req_.superformsData[i].retain4626s.length; ++j) {
                 if (!req_.superformsData[i].retain4626s[j]) {
                     anyRetain4626False = true;
                     break;
