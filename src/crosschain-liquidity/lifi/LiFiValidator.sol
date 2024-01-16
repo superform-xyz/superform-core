@@ -42,7 +42,7 @@ contract LiFiValidator is ILiFiValidator, BridgeValidator, LiFiTxDataExtractor {
     //////////////////////////////////////////////////////////////
 
     constructor(address superRegistry_) BridgeValidator(superRegistry_) {
-        /// @dev this  blacklists certain packed and min selectors. Aditionally, it also blacklists all Hop & Amarok
+        /// @dev this blacklists certain packed and min selectors. Aditionally, it also blacklists all Hop & Amarok
         /// @dev selectors as superform is not compatible with unexpected refund tokens
         /// @dev see
         /// https://docs.li.fi/li.fi-api/li.fi-api/checking-the-status-of-a-transaction#handling-unexpected-receiving-token
@@ -101,7 +101,7 @@ contract LiFiValidator is ILiFiValidator, BridgeValidator, LiFiTxDataExtractor {
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc ILiFiValidator
-    function isSelectorBlacklisted(bytes4 selector_) external view override returns (bool blacklisted) {
+    function isSelectorBlacklisted(bytes4 selector_) public view override returns (bool blacklisted) {
         return blacklistedSelectors[selector_];
     }
 
@@ -131,7 +131,7 @@ contract LiFiValidator is ILiFiValidator, BridgeValidator, LiFiTxDataExtractor {
         }
 
         /// @dev 2 - check if it is any other blacklisted selector
-        if (blacklistedSelectors[selector]) revert Error.BLACKLISTED_SELECTOR();
+        if (isSelectorBlacklisted(selector)) revert Error.BLACKLISTED_SELECTOR();
 
         /// @dev 3 - proceed with normal extraction
         (, sendingAssetId, receiver,,, destinationChainId,, hasDestinationCall) = extractMainParameters(args_.txData);
@@ -164,7 +164,7 @@ contract LiFiValidator is ILiFiValidator, BridgeValidator, LiFiTxDataExtractor {
         }
 
         /// @dev 2 - check if it is any other blacklisted selector
-        if (blacklistedSelectors[selector]) revert Error.BLACKLISTED_SELECTOR();
+        if (isSelectorBlacklisted(selector)) revert Error.BLACKLISTED_SELECTOR();
 
         /// @dev 3 - proceed with normal extraction
         (, /*bridgeId*/,, amount_, /*amount*/, /*minAmount*/,, /*hasSourceSwaps*/ ) = extractMainParameters(txData_);

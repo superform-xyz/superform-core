@@ -16,7 +16,7 @@ contract SocketValidator is ISocketValidator, BridgeValidator {
     //////////////////////////////////////////////////////////////
 
     /// @dev mapping to store the blacklisted route ids
-    mapping(uint256 chainId => mapping(uint256 routeId => bool blacklisted)) private blacklistedRouteIds;
+    mapping(uint256 routeId => bool blacklisted) private blacklistedRouteIds;
     uint64 public immutable CHAIN_ID;
 
     //////////////////////////////////////////////////////////////
@@ -35,13 +35,6 @@ contract SocketValidator is ISocketValidator, BridgeValidator {
 
     constructor(address superRegistry_) BridgeValidator(superRegistry_) {
         CHAIN_ID = uint64(block.chainid);
-
-        ///@dev Blacklists Hop by default in all chains where it is available
-        blacklistedRouteIds[1][18] = true; // Mainnet
-        blacklistedRouteIds[10][15] = true; // Optimism
-        blacklistedRouteIds[42_161][16] = true; // Arbitrum
-        blacklistedRouteIds[137][21] = true; // Polygon
-        blacklistedRouteIds[8453][1] = true; // Base
     }
 
     //////////////////////////////////////////////////////////////
@@ -50,12 +43,12 @@ contract SocketValidator is ISocketValidator, BridgeValidator {
 
     /// @inheritdoc ISocketValidator
     function addToBlacklist(uint256 id_) external override onlyEmergencyAdmin {
-        blacklistedRouteIds[CHAIN_ID][id_] = true;
+        blacklistedRouteIds[id_] = true;
     }
 
     /// @inheritdoc ISocketValidator
     function removeFromBlacklist(uint256 id_) external override onlyEmergencyAdmin {
-        delete blacklistedRouteIds[CHAIN_ID][id_];
+        delete blacklistedRouteIds[id_];
     }
 
     //////////////////////////////////////////////////////////////
@@ -63,8 +56,8 @@ contract SocketValidator is ISocketValidator, BridgeValidator {
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc ISocketValidator
-    function isRouteBlacklisted(uint64 chainId_, uint256 id_) external view override returns (bool blacklisted) {
-        return blacklistedRouteIds[chainId_][id_];
+    function isRouteBlacklisted(uint256 id_) public view override returns (bool blacklisted) {
+        return blacklistedRouteIds[id_];
     }
 
     /// @inheritdoc BridgeValidator
@@ -77,7 +70,7 @@ contract SocketValidator is ISocketValidator, BridgeValidator {
         ISocketRegistry.UserRequest memory decodedReq = _decodeTxData(args_.txData);
 
         // Check if the route id is blacklisted
-        if (blacklistedRouteIds[CHAIN_ID][decodedReq.bridgeRequest.id]) {
+        if (isRouteBlacklisted(decodedReq.bridgeRequest.id)) {
             revert Error.BLACKLISTED_ROUTE_ID();
         }
 

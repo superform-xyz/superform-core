@@ -20,8 +20,7 @@ interface ISocketValidator {
     //////////////////////////////////////////////////////////////
 
     /// @dev Checks if given route id is blacklisted
-    /// @param chainId_ the chain to check
     /// @param id_ the route id to check
     /// @return blacklisted if selector is blacklisted
-    function isRouteBlacklisted(uint64 chainId_, uint256 id_) external view returns (bool blacklisted);
+    function isRouteBlacklisted(uint256 id_) external view returns (bool blacklisted);
 }

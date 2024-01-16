@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import { Error } from "src/libraries/Error.sol";
 import "test/utils/ProtocolActions.sol";
 import "src/interfaces/IBridgeValidator.sol";
+import { GenericSwapFacet } from "src/vendor/lifi/GenericSwapFacet.sol";
 
 contract LiFiValidatorTest is ProtocolActions {
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -32,6 +33,48 @@ contract LiFiValidatorTest is ProtocolActions {
                 ETH,
                 BSC,
                 BSC,
+                true,
+                address(0),
+                deployer,
+                NATIVE,
+                NATIVE
+            )
+        );
+    }
+
+    function test_lifi_validator_blacklistedSelector() public {
+        vm.prank(deployer);
+        LiFiValidator(getContract(ETH, "LiFiValidator")).addToBlacklist(bytes4(keccak256("blacklistedFunction()")));
+
+        bytes memory txData = abi.encodeWithSignature("blacklistedFunction()");
+
+        vm.expectRevert(Error.BLACKLISTED_SELECTOR.selector);
+        LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, BSC, BSC, true, address(0), deployer, NATIVE, NATIVE)
+        );
+    }
+
+    function test_validateTxData_sameSrcDstChainId() public {
+        vm.expectRevert(Error.INVALID_ACTION.selector);
+        // Call validateTxData with srcChainId equal to dstChainId
+        LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                _buildDummyTxDataUnitTests(
+                    BuildDummyTxDataUnitTestsVars(
+                        1,
+                        address(0),
+                        address(0),
+                        deployer,
+                        ETH,
+                        ETH, // srcChainId is the same as dstChainId
+                        uint256(100),
+                        getContract(ETH, "CoreStateRegistry"),
+                        false
+                    )
+                ),
+                ETH,
+                ETH, // srcChainId is the same as dstChainId
+                ETH,
                 true,
                 address(0),
                 deployer,
@@ -263,5 +306,256 @@ contract LiFiValidatorTest is ProtocolActions {
         assertEq(destinationChainId, POLY);
         assertEq(hasSourceSwaps, hasSourceSwaps_);
         assertEq(hasDestinationCall, hasDstCall_);
+    }
+
+    function test_addRemoveFromBlacklist() public {
+        vm.startPrank(deployer);
+
+        LiFiValidator lifiValidator = LiFiValidator(getContract(ETH, "LiFiValidator"));
+        lifiValidator.addToBlacklist(bytes4(keccak256("function3()")));
+        assertTrue(lifiValidator.isSelectorBlacklisted(bytes4(keccak256("function3()"))));
+
+        lifiValidator.removeFromBlacklist(bytes4(keccak256("function3()")));
+        assertFalse(lifiValidator.isSelectorBlacklisted(bytes4(keccak256("functio31()"))));
+    }
+
+    function test_lifi_validator_decodeAmountIn_blacklistedSelector() public {
+        vm.prank(deployer);
+        LiFiValidator(getContract(ETH, "LiFiValidator")).addToBlacklist(bytes4(keccak256("blacklistedFunction()")));
+
+        bytes memory txData = abi.encodeWithSignature("blacklistedFunction()");
+
+        vm.expectRevert(Error.BLACKLISTED_SELECTOR.selector);
+        LiFiValidator(getContract(ETH, "LiFiValidator")).decodeAmountIn(txData, false);
+    }
+
+    function test_decodeAmountIn_invalidAction() public {
+        // Build dummy txData with the swapTokensGeneric selector
+        bytes memory txData = abi.encodeWithSelector(GenericSwapFacet.swapTokensGeneric.selector);
+
+        vm.expectRevert(Error.INVALID_ACTION.selector);
+        // Call decodeAmountIn with the dummy txData and genericSwapDisallowed set to true
+        LiFiValidator(getContract(ETH, "LiFiValidator")).decodeAmountIn(txData, true);
+    }
+
+    function test_decodeDstSwap_zeroAddressToken() public {
+        // Build dummy _swapData with token_ set to address(0)
+        LibSwap.SwapData[] memory _swapData = new LibSwap.SwapData[](1);
+        _swapData[0] = LibSwap.SwapData({
+            callTo: address(1),
+            approveTo: address(2),
+            sendingAssetId: address(0),
+            receivingAssetId: address(0),
+            fromAmount: 100,
+            callData: "",
+            requiresDeposit: false
+        });
+
+        // Build dummy txData with the swapTokensGeneric selector and _swapData containing token_ set to address(0)
+        bytes memory txData = abi.encodeWithSelector(
+            GenericSwapFacet.swapTokensGeneric.selector,
+            bytes32(0),
+            "integrator",
+            "referrer",
+            address(this),
+            100,
+            _swapData
+        );
+
+        // Call decodeDstSwap with the dummy txData
+        (address token, uint256 amount) = LiFiValidator(getContract(ETH, "LiFiValidator")).decodeDstSwap(txData);
+
+        // Check that token_ is remapped to NATIVE
+        assertEq(token, NATIVE);
+        // Check that the amount is correct
+        assertEq(amount, 100);
+    }
+
+    function test_decodeDstSwap_invalid_action() public {
+        bytes memory txData = abi.encodeWithSignature("someFunc()");
+
+        vm.expectRevert(Error.INVALID_ACTION.selector);
+        LiFiValidator(getContract(ETH, "LiFiValidator")).decodeDstSwap(txData);
+    }
+
+    function test_decodeSwapOutputToken_invalid_action() public {
+        bytes memory txData = abi.encodeWithSignature("someFunc()");
+
+        vm.expectRevert(Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN.selector);
+        LiFiValidator(getContract(ETH, "LiFiValidator")).decodeSwapOutputToken(txData);
+    }
+
+    function test_validateTxData_wrongChainIds_swapTokensGeneric() public {
+        // Build dummy _swapData
+        LibSwap.SwapData[] memory _swapData = new LibSwap.SwapData[](1);
+        _swapData[0] = LibSwap.SwapData({
+            callTo: address(1),
+            approveTo: address(2),
+            sendingAssetId: address(3),
+            receivingAssetId: address(4),
+            fromAmount: 100,
+            callData: "",
+            requiresDeposit: false
+        });
+
+        // Build dummy txData with the swapTokensGeneric selector and _swapData containing token_ set to address(0)
+        bytes memory txData = abi.encodeWithSelector(
+            GenericSwapFacet.swapTokensGeneric.selector,
+            bytes32(0),
+            "integrator",
+            "referrer",
+            address(this),
+            100,
+            _swapData
+        );
+
+        vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
+        // Call validateTxData with srcChainId equal to dstChainId
+        LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                txData,
+                ETH,
+                BSC, // srcChainId is different than dstChainId
+                ETH,
+                true,
+                address(0),
+                deployer,
+                NATIVE,
+                NATIVE
+            )
+        );
+
+        vm.expectRevert(Error.INVALID_DEPOSIT_LIQ_DST_CHAIN_ID.selector);
+        // Call validateTxData with srcChainId equal to dstChainId
+        LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                txData,
+                ETH,
+                ETH,
+                BSC, // srcChainId is different than liqDstChainId
+                true,
+                address(0),
+                deployer,
+                NATIVE,
+                NATIVE
+            )
+        );
+    }
+
+    function test_validateTxData_invalidreceiver_swapTokensGeneric() public {
+        // Build dummy _swapData
+        LibSwap.SwapData[] memory _swapData = new LibSwap.SwapData[](1);
+        _swapData[0] = LibSwap.SwapData({
+            callTo: address(0),
+            approveTo: address(2),
+            sendingAssetId: address(3),
+            receivingAssetId: address(4),
+            fromAmount: 100,
+            callData: "",
+            requiresDeposit: false
+        });
+
+        // Build dummy txData with the swapTokensGeneric selector and _swapData containing token_ set to address(0)
+        bytes memory txData = abi.encodeWithSelector(
+            GenericSwapFacet.swapTokensGeneric.selector,
+            bytes32(0),
+            "integrator",
+            "referrer",
+            address(this),
+            100,
+            _swapData
+        );
+
+        vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
+        // Call validateTxData with srcChainId equal to dstChainId
+        LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                txData,
+                ETH,
+                ETH, // srcChainId is different than dstChainId
+                ETH,
+                true,
+                address(0),
+                deployer,
+                NATIVE,
+                NATIVE
+            )
+        );
+    }
+
+    function test_validateTxData_invalidreceiver_swapTokensGeneric_withdraw() public {
+        // Build dummy _swapData
+        LibSwap.SwapData[] memory _swapData = new LibSwap.SwapData[](1);
+        _swapData[0] = LibSwap.SwapData({
+            callTo: deployer,
+            approveTo: address(2),
+            sendingAssetId: address(3),
+            receivingAssetId: address(4),
+            fromAmount: 100,
+            callData: "",
+            requiresDeposit: false
+        });
+
+        // Build dummy txData with the swapTokensGeneric selector and _swapData containing token_ set to address(0)
+        bytes memory txData = abi.encodeWithSelector(
+            GenericSwapFacet.swapTokensGeneric.selector,
+            bytes32(0),
+            "integrator",
+            "referrer",
+            address(this),
+            100,
+            _swapData
+        );
+
+        vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
+        // Call validateTxData with srcChainId equal to dstChainId
+        LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                txData,
+                ETH,
+                ETH, // srcChainId is different than dstChainId
+                ETH,
+                false,
+                address(0),
+                deployer,
+                NATIVE,
+                NATIVE
+            )
+        );
+    }
+
+    function test_validateTxData_sendingAssetId_0() public {
+        // Build dummy _swapData
+        LibSwap.SwapData[] memory _swapData = new LibSwap.SwapData[](1);
+        _swapData[0] = LibSwap.SwapData({
+            callTo: deployer,
+            approveTo: address(2),
+            sendingAssetId: address(0),
+            receivingAssetId: address(4),
+            fromAmount: 100,
+            callData: "",
+            requiresDeposit: false
+        });
+
+        // Build dummy txData with the swapTokensGeneric selector and _swapData containing token_ set to address(0)
+        bytes memory txData = abi.encodeWithSelector(
+            GenericSwapFacet.swapTokensGeneric.selector, bytes32(0), "integrator", "referrer", deployer, 100, _swapData
+        );
+
+        vm.expectRevert(Error.INVALID_TXDATA_TOKEN.selector);
+        // Call validateTxData with srcChainId equal to dstChainId
+        LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                txData,
+                ETH,
+                ETH, // srcChainId is different than dstChainId
+                ETH,
+                false,
+                address(0),
+                deployer,
+                address(0),
+                NATIVE
+            )
+        );
     }
 }
