@@ -2,7 +2,6 @@
 pragma solidity ^0.8.23;
 
 library Error {
-
     //////////////////////////////////////////////////////////////
     //                  CONFIGURATION ERRORS                    //
     //////////////////////////////////////////////////////////////
@@ -204,6 +203,9 @@ library Error {
 
     /// LIQUIDITY BRIDGE INPUT VALIDATION ERRORS
     /// ---------------------------------------------------------
+
+    /// @dev thrown if route id is blacklisted in a liquidity bridge
+    error BLACKLISTED_ROUTE_ID();
 
     /// @dev error thrown when txData selector of lifi bridged is a blacklisted selector
     error BLACKLISTED_SELECTOR();

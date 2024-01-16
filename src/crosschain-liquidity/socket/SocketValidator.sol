@@ -4,34 +4,82 @@ pragma solidity ^0.8.23;
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
 import { Error } from "src/libraries/Error.sol";
 import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { ISocketValidator } from "src/interfaces/ISocketValidator.sol";
 
 /// @title SocketValidator
 /// @dev Asserts Socket x-chain input txData is valid
 /// @author Zeropoint Labs
-contract SocketValidator is BridgeValidator {
+contract SocketValidator is ISocketValidator, BridgeValidator {
+    //////////////////////////////////////////////////////////////
+    //                     STATE VARIABLES                      //
+    //////////////////////////////////////////////////////////////
 
+    /// @dev mapping to store the blacklisted route ids
+    mapping(uint256 chainId => mapping(uint256 routeId => bool blacklisted)) private blacklistedRouteIds;
+    uint64 public immutable CHAIN_ID;
+
+    //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
+
+    modifier onlyEmergencyAdmin() {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasEmergencyAdminRole(msg.sender)) {
+            revert Error.NOT_EMERGENCY_ADMIN();
+        }
+        _;
+    }
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address superRegistry_) BridgeValidator(superRegistry_) { }
+    constructor(address superRegistry_) BridgeValidator(superRegistry_) {
+        CHAIN_ID = uint64(block.chainid);
+
+        ///@dev Blacklists Hop by default in all chains where it is available
+        blacklistedRouteIds[1][18] = true; // Mainnet
+        blacklistedRouteIds[10][15] = true; // Optimism
+        blacklistedRouteIds[42_161][16] = true; // Arbitrum
+        blacklistedRouteIds[137][21] = true; // Polygon
+        blacklistedRouteIds[8453][1] = true; // Base
+    }
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
 
-    /// @inheritdoc BridgeValidator
-    function validateReceiver(bytes calldata txData_, address receiver) external pure override returns (bool) {
-        return (receiver == _decodeTxData(txData_).receiverAddress);
+    /// @inheritdoc ISocketValidator
+    function addToBlacklist(uint256 id_) external override onlyEmergencyAdmin {
+        blacklistedRouteIds[CHAIN_ID][id_] = true;
+    }
+
+    /// @inheritdoc ISocketValidator
+    function removeFromBlacklist(uint256 id_) external override onlyEmergencyAdmin {
+        delete blacklistedRouteIds[CHAIN_ID][id_];
     }
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
 
+    /// @inheritdoc ISocketValidator
+    function isRouteBlacklisted(uint64 chainId_, uint256 id_) external view override returns (bool blacklisted) {
+        return blacklistedRouteIds[chainId_][id_];
+    }
+
+    /// @inheritdoc BridgeValidator
+    function validateReceiver(bytes calldata txData_, address receiver) external pure override returns (bool) {
+        return (receiver == _decodeTxData(txData_).receiverAddress);
+    }
+
     /// @inheritdoc BridgeValidator
     function validateTxData(ValidateTxDataArgs calldata args_) external view override returns (bool hasDstSwap) {
         ISocketRegistry.UserRequest memory decodedReq = _decodeTxData(args_.txData);
+
+        // Check if the route id is blacklisted
+        if (blacklistedRouteIds[CHAIN_ID][decodedReq.bridgeRequest.id]) {
+            revert Error.BLACKLISTED_ROUTE_ID();
+        }
 
         /// @dev 1. chain id validation (only allow xChain with this)
         if (decodedReq.toChainId != uint256(args_.liqDstChainId)) revert Error.INVALID_TXDATA_CHAIN_ID();

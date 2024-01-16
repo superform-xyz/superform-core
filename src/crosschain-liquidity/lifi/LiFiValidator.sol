@@ -8,20 +8,102 @@ import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import { StandardizedCallFacet } from "src/vendor/lifi/StandardizedCallFacet.sol";
 import { GenericSwapFacet } from "src/vendor/lifi/GenericSwapFacet.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { ILiFiValidator } from "src/interfaces/ILiFiValidator.sol";
+import { AmarokFacet } from "src/vendor/lifi/AmarokFacet.sol";
+import { CBridgeFacetPacked } from "src/vendor/lifi/CBridgeFacetPacked.sol";
+import { HopFacet } from "src/vendor/lifi/HopFacet.sol";
+import { HopFacetOptimized } from "src/vendor/lifi/HopFacetOptimized.sol";
+import { HopFacetPacked } from "src/vendor/lifi/HopFacetPacked.sol";
 
 /// @title LiFiValidator
 /// @dev Asserts LiFi input txData is valid
 /// @author Zeropoint Labs
-contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
+contract LiFiValidator is ILiFiValidator, BridgeValidator, LiFiTxDataExtractor {
+    //////////////////////////////////////////////////////////////
+    //                     STATE VARIABLES                      //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev mapping to store the blacklisted selectors
+    mapping(bytes4 selector => bool blacklisted) private blacklistedSelectors;
+
+    //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
+
+    modifier onlyEmergencyAdmin() {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasEmergencyAdminRole(msg.sender)) {
+            revert Error.NOT_EMERGENCY_ADMIN();
+        }
+        _;
+    }
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address superRegistry_) BridgeValidator(superRegistry_) { }
+    constructor(address superRegistry_) BridgeValidator(superRegistry_) {
+        /// @dev this  blacklists certain packed and min selectors. Aditionally, it also blacklists all Hop & Amarok
+        /// @dev selectors as superform is not compatible with unexpected refund tokens
+        /// @dev see
+        /// https://docs.li.fi/li.fi-api/li.fi-api/checking-the-status-of-a-transaction#handling-unexpected-receiving-token
+        /// @notice this is a patch to prevent a user to bypass txData validation checks
+
+        /// @dev blacklist packed and min selectors
+        blacklistedSelectors[CBridgeFacetPacked.startBridgeTokensViaCBridgeNativePacked.selector] = true;
+        blacklistedSelectors[CBridgeFacetPacked.startBridgeTokensViaCBridgeNativeMin.selector] = true;
+        blacklistedSelectors[CBridgeFacetPacked.startBridgeTokensViaCBridgeERC20Packed.selector] = true;
+        blacklistedSelectors[CBridgeFacetPacked.startBridgeTokensViaCBridgeERC20Min.selector] = true;
+        blacklistedSelectors[HopFacetPacked.startBridgeTokensViaHopL2NativePacked.selector] = true;
+        blacklistedSelectors[HopFacetPacked.startBridgeTokensViaHopL2NativeMin.selector] = true;
+        blacklistedSelectors[HopFacetPacked.startBridgeTokensViaHopL2ERC20Packed.selector] = true;
+        blacklistedSelectors[HopFacetPacked.startBridgeTokensViaHopL2ERC20Min.selector] = true;
+        blacklistedSelectors[HopFacetPacked.startBridgeTokensViaHopL1NativePacked.selector] = true;
+        blacklistedSelectors[HopFacetPacked.startBridgeTokensViaHopL1NativeMin.selector] = true;
+        blacklistedSelectors[HopFacetPacked.startBridgeTokensViaHopL1ERC20Packed.selector] = true;
+        blacklistedSelectors[HopFacetPacked.startBridgeTokensViaHopL1ERC20Min.selector] = true;
+
+        /// @dev blacklist normal and optimized hop facet
+        blacklistedSelectors[HopFacet.startBridgeTokensViaHop.selector] = true;
+        blacklistedSelectors[HopFacet.swapAndStartBridgeTokensViaHop.selector] = true;
+        blacklistedSelectors[HopFacetOptimized.startBridgeTokensViaHopL1ERC20.selector] = true;
+        blacklistedSelectors[HopFacetOptimized.startBridgeTokensViaHopL1Native.selector] = true;
+        blacklistedSelectors[HopFacetOptimized.swapAndStartBridgeTokensViaHopL1ERC20.selector] = true;
+        blacklistedSelectors[HopFacetOptimized.swapAndStartBridgeTokensViaHopL1Native.selector] = true;
+        blacklistedSelectors[HopFacetOptimized.startBridgeTokensViaHopL2ERC20.selector] = true;
+        blacklistedSelectors[HopFacetOptimized.startBridgeTokensViaHopL2Native.selector] = true;
+        blacklistedSelectors[HopFacetOptimized.swapAndStartBridgeTokensViaHopL2ERC20.selector] = true;
+        blacklistedSelectors[HopFacetOptimized.swapAndStartBridgeTokensViaHopL2Native.selector] = true;
+
+        /// @dev blacklist amarok facet
+        blacklistedSelectors[AmarokFacet.startBridgeTokensViaAmarok.selector] = true;
+        blacklistedSelectors[AmarokFacet.swapAndStartBridgeTokensViaAmarok.selector] = true;
+
+        /// @dev prevent recursive calls
+        blacklistedSelectors[StandardizedCallFacet.standardizedCall.selector] = true;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL  FUNCTIONS                         //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc ILiFiValidator
+    function addToBlacklist(bytes4 selector_) external override onlyEmergencyAdmin {
+        blacklistedSelectors[selector_] = true;
+    }
+
+    /// @inheritdoc ILiFiValidator
+    function removeFromBlacklist(bytes4 selector_) external override onlyEmergencyAdmin {
+        delete blacklistedSelectors[selector_];
+    }
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc ILiFiValidator
+    function isSelectorBlacklisted(bytes4 selector_) external view override returns (bool blacklisted) {
+        return blacklistedSelectors[selector_];
+    }
 
     /// @inheritdoc BridgeValidator
     function validateReceiver(bytes calldata txData_, address receiver_) external pure override returns (bool valid_) {
@@ -49,8 +131,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         }
 
         /// @dev 2 - check if it is any other blacklisted selector
-
-        if (!_validateSelector(selector)) revert Error.BLACKLISTED_SELECTOR();
+        if (blacklistedSelectors[selector]) revert Error.BLACKLISTED_SELECTOR();
 
         /// @dev 3 - proceed with normal extraction
         (, sendingAssetId, receiver,,, destinationChainId,, hasDestinationCall) = extractMainParameters(args_.txData);
@@ -67,7 +148,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         bool genericSwapDisallowed_
     )
         external
-        pure
+        view
         override
         returns (uint256 amount_)
     {
@@ -83,7 +164,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         }
 
         /// @dev 2 - check if it is any other blacklisted selector
-        if (!_validateSelector(selector)) revert Error.BLACKLISTED_SELECTOR();
+        if (blacklistedSelectors[selector]) revert Error.BLACKLISTED_SELECTOR();
 
         /// @dev 3 - proceed with normal extraction
         (, /*bridgeId*/,, amount_, /*amount*/, /*minAmount*/,, /*hasSourceSwaps*/ ) = extractMainParameters(txData_);

@@ -5,7 +5,6 @@ pragma solidity ^0.8.23;
 /// @dev Interface all Bridge Validators must follow
 /// @author Zeropoint Labs
 interface IBridgeValidator {
-
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
     //////////////////////////////////////////////////////////////
@@ -46,7 +45,7 @@ interface IBridgeValidator {
         bool genericSwapDisallowed_
     )
         external
-        pure
+        view
         returns (uint256 amount_);
 
     /// @dev decodes neccesary information for processing swaps on the destination chain
