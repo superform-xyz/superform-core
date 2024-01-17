@@ -544,6 +544,23 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.socketValidator = address(new SocketValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars.socketValidator;
 
+            if (vars.chainId == 1) {
+                // Mainnet Hop
+                SocketValidator(vars.socketValidator).addToBlacklist(18);
+            } else if (vars.chainId == 10) {
+                // Optimism Hop
+                SocketValidator(vars.socketValidator).addToBlacklist(15);
+            } else if (vars.chainId == 42_161) {
+                // Arbitrum hop
+                SocketValidator(vars.socketValidator).addToBlacklist(16);
+            } else if (vars.chainId == 137) {
+                // Polygon hop
+                SocketValidator(vars.socketValidator).addToBlacklist(21);
+            } else if (vars.chainId == 8453) {
+                // Base hop
+                SocketValidator(vars.socketValidator).addToBlacklist(1);
+            }
+
             /// @dev 7.2.3- deploy socket one inch validator
             vars.socketOneInchValidator = address(new SocketOneInchValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("SocketOneInchValidator"))] = vars.socketOneInchValidator;

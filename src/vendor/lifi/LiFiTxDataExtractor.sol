@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
-import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
+import { ILiFi } from "./ILiFi.sol";
+import { LibSwap } from "./LibSwap.sol";
 import { StandardizedCallFacet } from "./StandardizedCallFacet.sol";
 import { AmarokFacet } from "./AmarokFacet.sol";
-import { CBridgeFacetPacked } from "./CBridgeFacetPacked.sol";
-import { HopFacetPacked } from "./HopFacetPacked.sol";
 import { CelerIMFacetBase, CelerIM } from "./CelerIMFacetBase.sol";
 import { StargateFacet } from "./StargateFacet.sol";
 
@@ -20,59 +18,6 @@ import { StargateFacet } from "./StargateFacet.sol";
 contract LiFiTxDataExtractor {
     error SliceOverflow();
     error SliceOutOfBounds();
-
-    /// @dev this function blacklists certain packed and min selectors.
-    /// @notice this is a patch to prevent a user to bypass our txData validation checks
-    /// @notice the offered solution here is not scallable and should be replaced by a better solution with a lifi
-    /// maintained list
-    function _validateSelector(bytes4 selector) internal pure returns (bool valid) {
-        if (selector == CBridgeFacetPacked.startBridgeTokensViaCBridgeNativePacked.selector) {
-            return false;
-        }
-        if (selector == CBridgeFacetPacked.startBridgeTokensViaCBridgeNativeMin.selector) {
-            return false;
-        }
-        if (selector == CBridgeFacetPacked.startBridgeTokensViaCBridgeERC20Packed.selector) {
-            return false;
-        }
-        if (selector == CBridgeFacetPacked.startBridgeTokensViaCBridgeERC20Min.selector) {
-            return false;
-        }
-        if (selector == HopFacetPacked.startBridgeTokensViaHopL2NativePacked.selector) {
-            return false;
-        }
-        if (selector == HopFacetPacked.startBridgeTokensViaHopL2NativeMin.selector) {
-            return false;
-        }
-        if (selector == HopFacetPacked.startBridgeTokensViaHopL2ERC20Packed.selector) {
-            return false;
-        }
-
-        if (selector == HopFacetPacked.startBridgeTokensViaHopL2ERC20Min.selector) {
-            return false;
-        }
-
-        if (selector == HopFacetPacked.startBridgeTokensViaHopL1NativePacked.selector) {
-            return false;
-        }
-
-        if (selector == HopFacetPacked.startBridgeTokensViaHopL1NativeMin.selector) {
-            return false;
-        }
-
-        if (selector == HopFacetPacked.startBridgeTokensViaHopL1ERC20Packed.selector) {
-            return false;
-        }
-
-        if (selector == HopFacetPacked.startBridgeTokensViaHopL1ERC20Min.selector) {
-            return false;
-        }
-        /// @dev prevent recursive calls
-        if (selector == StandardizedCallFacet.standardizedCall.selector) {
-            return false;
-        }
-        return true;
-    }
 
     function _extractSelector(bytes calldata data) internal pure returns (bytes4 selector) {
         selector = bytes4(data[:4]);
