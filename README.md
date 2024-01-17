@@ -12,7 +12,7 @@ For DeFi protocols, it acts as an instant out-of-the-box distribution platform f
 - Manage metadata for yield opportunities
 - Users can deposit into your vaults from any chain without the need to deploy your vaults on that chain
 
-**Core capabilities for users:** 
+**Core capabilities for users include:** 
 - Deposit or withdraw into any vault using any asset from any chain
 - Batch desired actions across multiple vaults and multiple chains in a single transaction
 - Automate and mange your yield portfolio from any chain
@@ -120,31 +120,6 @@ In this section we will run through examples where users deposit and withdraw in
 - If no transaction data was provided with the transaction, but the user defined an intended token and chain to recieve assets back on, assuming both the payload and proof have arrived, a keeper can call `updateWithdrawPayload` to update the payload with transaction data. This can be done to reduce the chance of transaction data failure due to latency. 
 - The keeper can then process the received message using `processPayload`. Here the withdraw action is try-catched for errors. Should the action pass, the underlying obtained is bridged back to the user in the form of the desired tokens to be received. If the action fails, a message is sent back indicating that SuperPositions need to be re-minted for the user according to the original amounts that were burned. No rescue methods are implemented given the re-minting behavior on withdrawals. 
 
-## Off-chain Architecture
-
-Superform employs a variety of keepers to support best-in-class UX of interacting cross-chain. While this introduces a degree of centralization in our protocol, these roles can be decentralized over time and have no control over user funds. These include:
-
-- PAYMENT_ADMIN_ROLE: Role for managing payment-related actions in `PayMaster.sol`
-- BROADCASTER_ROLE: Role for managing broadcasting payloads in `BroadcastStateRegistry.sol`
-- CORE_STATE_REGISTRY_PROCESSOR_ROLE: Role for managing processing operations in `CoreStateRegistry.sol`
-- TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE: Role for managing processing operations in `TimelockStateRegistry.sol`
-- BROADCAST_REGISTRY_PROCESSOR_ROLE : Role for managing processing broadcast payloads in `BroadcastStateRegistry.sol`
-- CORE_STATE_REGISTRY_UPDATER_ROLE: Role for managing updating operations in `CoreStateRegistry.sol`
-- DST_SWAPPER_ROLE: Role for managing swapping operations on `DstSwapper.sol`
-- CORE_STATE_REGISTRY_RESCUER_ROLE: Role for managing rescue operations in `CoreStateRegistry.sol`
-- CORE_STATE_REGISTRY_DISPUTER_ROLE: Role for managing dispute operations in `CoreStateRegistry.sol`
-- WORMHOLE_VAA_RELAYER_ROLE: Role that will be reading VAA's for broadcast functionality in `WormholeSRImplementation.sol`
-
-For the purpose of this audit, exploits concerning the inappropriate behavior of these roles will not be considered. 
-
-## Out of scope
-
-We leave these in the repository to see intended behavior, but the following contracts and behaviors are out of scope:
-
-- Anything in [`src/vendor`](./src/vendor)
-- Exploits concerning the inappropriate behavior of keeper roles mentioned previously
-- Prior findings in any audit report linked in this readme
-
 ## Tests
 
 Step by step instructions on setting up the project and running it
@@ -175,9 +150,3 @@ forge install
 ```sh
 $ forge test
 ```
-
-## Audits
-
-- [Gerard Persoon](https://twitter.com/gpersoon): [2023-09-superform.pdf](https://github.com/superform-xyz/superform-core/files/13300598/2023-09-superform.pdf)
-
-- [Hans Friese](https://twitter.com/hansfriese): [Superform_Core_Review_Final_Hans_20230921.pdf](https://github.com/superform-xyz/superform-core/files/13300591/Superform_Core_Review_Final_Hans_20230921.pdf)
