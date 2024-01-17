@@ -20,6 +20,7 @@ import { SocketMock } from "../mocks/SocketMock.sol";
 import { SocketOneInchMock } from "../mocks/SocketOneInchMock.sol";
 import { LiFiMockRugpull } from "../mocks/LiFiMockRugpull.sol";
 import { LiFiMockBlacklisted } from "../mocks/LiFiMockBlacklisted.sol";
+import { LiFiMockSwapToAttacker } from "../mocks/LiFiMockSwapToAttacker.sol";
 
 import { MockERC20 } from "../mocks/MockERC20.sol";
 import { VaultMock } from "../mocks/VaultMock.sol";
@@ -536,6 +537,11 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             contracts[vars.chainId][bytes32(bytes("LiFiMockBlacklisted"))] = vars.liFiMockBlacklisted;
             vm.allowCheatcodes(vars.liFiMockBlacklisted);
 
+            /// @dev 7.1.6 deploy LiFiMockSwapToAttacker. This mock tests the behaviour of blacklisted selectors
+            vars.liFiMockSwapToAttacker = address(new LiFiMockSwapToAttacker{ salt: salt }());
+            contracts[vars.chainId][bytes32(bytes("LiFiMockBlacklisted"))] = vars.liFiMockSwapToAttacker;
+            vm.allowCheatcodes(vars.liFiMockSwapToAttacker);
+
             /// @dev 7.2.1- deploy  lifi validator
             vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
@@ -574,10 +580,12 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             bridgeAddresses.push(vars.socketOneInch);
             bridgeAddresses.push(vars.liFiMockRugpull);
             bridgeAddresses.push(vars.liFiMockBlacklisted);
+            bridgeAddresses.push(vars.liFiMockSwapToAttacker);
 
             bridgeValidators.push(vars.lifiValidator);
             bridgeValidators.push(vars.socketValidator);
             bridgeValidators.push(vars.socketOneInchValidator);
+            bridgeValidators.push(vars.lifiValidator);
             bridgeValidators.push(vars.lifiValidator);
             bridgeValidators.push(vars.lifiValidator);
 
@@ -1140,11 +1148,14 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// 3 is socket one inch impl
         /// 4 is lifi rugpull
         /// 5 is lifi blacklist
+        /// 6 is lifi swap to attacker
+
         bridgeIds.push(1);
         bridgeIds.push(2);
         bridgeIds.push(3);
         bridgeIds.push(4);
         bridgeIds.push(5);
+        bridgeIds.push(6);
 
         /// @dev setup users
         userKeys.push(1);

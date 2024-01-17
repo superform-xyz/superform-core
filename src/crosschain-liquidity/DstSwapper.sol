@@ -176,7 +176,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
     {
         uint256 len = txData_.length;
         if (len == 0) revert Error.ZERO_INPUT_VALUE();
-        if (len != indices_.length && len != bridgeIds_.length) revert Error.ARRAY_LENGTH_MISMATCH();
+        if (len != indices_.length || len != bridgeIds_.length) revert Error.ARRAY_LENGTH_MISMATCH();
 
         IBaseStateRegistry coreStateRegistry = _getCoreStateRegistry();
         _isValidPayloadId(payloadId_, coreStateRegistry);
@@ -469,10 +469,6 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
             maxSlippage = data.maxSlippages[index_];
             amount = data.amounts[index_];
         } else {
-            if (index_ != 0) {
-                revert Error.INVALID_INDEX();
-            }
-
             InitSingleVaultData memory data = abi.decode(payload, (InitSingleVaultData));
             (address superform,,) = DataLib.getSuperform(data.superformId);
             underlying = IERC4626Form(superform).getVaultAsset();

@@ -335,6 +335,44 @@ abstract contract CommonProtocolActions is BaseSetup {
                 amount_,
                 abi.encode(from_, uint256(USDPerSendingTokenDst), uint256(USDPerReceivingTokenDst))
             );
+        } else if (liqBridgeKind_ == 6) {
+            /// @dev for lifi, to swap to attacker
+            LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
+
+            swapData[0] = LibSwap.SwapData(
+                address(0),
+                ///  @dev  callTo (arbitrary)
+                address(0),
+                ///  @dev  callTo (approveTo)
+                sendingTokenDst_,
+                receivingTokenDst_,
+                amount_,
+                /// @dev _buildLiqBridgeTxDataDstSwap() will only be called when DstSwap is true
+                /// @dev and dstswap means cross-chain (last arg)
+                abi.encode(
+                    from_,
+                    FORKS[toChainId_],
+                    receivingTokenDst_,
+                    slippage_,
+                    true,
+                    MULTI_TX_SLIPPAGE_SHARE,
+                    false,
+                    uint256(USDPerSendingTokenDst),
+                    uint256(USDPerReceivingTokenDst),
+                    1
+                ),
+                false // arbitrary
+            );
+
+            txData = abi.encodeWithSelector(
+                LiFiMockSwapToAttacker.swapTokensGeneric.selector,
+                bytes32(0),
+                "",
+                "",
+                getContract(toChainId_, "CoreStateRegistry"),
+                0,
+                swapData
+            );
         }
     }
 

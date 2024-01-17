@@ -106,6 +106,22 @@ contract LiquidityHandlerTest is ProtocolActions {
         liquidityHandler.dispatchTokensTest(bridgeAddress, txData, token, transferAmount, 0);
     }
 
+    function test_dispatchNativeTokensWithInsufficientBalance() public {
+        uint256 transferAmount = 1e18; // 1 token
+        address token = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+        address bridgeAddress = SuperRegistry(getContract(ETH, "SuperRegistry")).getBridgeAddress(1);
+
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            BuildDummyTxDataUnitTestsVars(
+                1, token, token, address(liquidityHandler), ETH, ARBI, transferAmount, address(liquidityHandler), false
+            )
+        );
+        vm.prank(deployer);
+
+        vm.expectRevert(Error.INSUFFICIENT_BALANCE.selector);
+        liquidityHandler.dispatchTokensTest(bridgeAddress, txData, token, transferAmount, 1e18);
+    }
+
     function test_dispatchNativeTokensWithInvalidTxData() public {
         uint256 transferAmount = 1e18; // 1 token
         address token = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;

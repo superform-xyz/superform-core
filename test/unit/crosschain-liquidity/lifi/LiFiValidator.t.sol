@@ -325,6 +325,16 @@ contract LiFiValidatorTest is ProtocolActions {
         lifiValidator.removeFromBlacklist(bytes4(keccak256("function3()")));
     }
 
+    function test_lifi_validator_validateReceiver_blacklistedSelector() public {
+        vm.prank(deployer);
+        LiFiValidator(getContract(ETH, "LiFiValidator")).addToBlacklist(bytes4(keccak256("blacklistedFunction()")));
+
+        bytes memory txData = abi.encodeWithSignature("blacklistedFunction()");
+
+        vm.expectRevert(Error.BLACKLISTED_SELECTOR.selector);
+        LiFiValidator(getContract(ETH, "LiFiValidator")).validateReceiver(txData, address(0));
+    }
+
     function test_lifi_validator_decodeAmountIn_blacklistedSelector() public {
         vm.prank(deployer);
         LiFiValidator(getContract(ETH, "LiFiValidator")).addToBlacklist(bytes4(keccak256("blacklistedFunction()")));
@@ -562,6 +572,43 @@ contract LiFiValidatorTest is ProtocolActions {
                 address(0),
                 NATIVE
             )
+        );
+    }
+
+    function test_validateTxData_no_dstcall_allowed() public {
+        // Build dummy _swapData
+        LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
+        swapData[0] = LibSwap.SwapData({
+            callTo: deployer,
+            approveTo: address(2),
+            sendingAssetId: address(0),
+            receivingAssetId: address(4),
+            fromAmount: 100,
+            callData: "",
+            requiresDeposit: false
+        });
+
+        ILiFi.BridgeData memory bridgeData;
+
+        bridgeData = ILiFi.BridgeData(
+            bytes32("1"),
+            /// request id
+            "",
+            "",
+            address(0),
+            address(0),
+            address(0),
+            100,
+            uint256(ETH),
+            false,
+            true
+        );
+        bytes memory txData =
+            abi.encodeWithSelector(LiFiMock.swapAndStartBridgeTokensViaBridge.selector, bridgeData, swapData);
+
+        vm.expectRevert(Error.INVALID_TXDATA_NO_DESTINATIONCALL_ALLOWED.selector);
+        LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ETH, ETH, false, address(0), deployer, address(0), NATIVE)
         );
     }
 }
