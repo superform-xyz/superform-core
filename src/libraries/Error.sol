@@ -204,11 +204,17 @@ library Error {
     /// LIQUIDITY BRIDGE INPUT VALIDATION ERRORS
     /// ---------------------------------------------------------
 
-    /// @dev thrown if route id is blacklisted in a liquidity bridge
+    /// @dev thrown if route id is blacklisted in socket
     error BLACKLISTED_ROUTE_ID();
 
-    /// @dev error thrown when txData selector of lifi bridged is a blacklisted selector
+    /// @dev thrown if route id is not blacklisted in socket
+    error NOT_BLACKLISTED_ROUTE_ID();
+
+    /// @dev error thrown when txData selector of lifi bridge is a blacklisted selector
     error BLACKLISTED_SELECTOR();
+
+    /// @dev error thrown when txData selector of lifi bridge is not a blacklisted selector
+    error NOT_BLACKLISTED_SELECTOR();
 
     /// @dev thrown if a certain action of the user is not allowed given the txData provided
     error INVALID_ACTION();

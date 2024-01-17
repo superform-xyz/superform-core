@@ -5,6 +5,15 @@ pragma solidity ^0.8.23;
 /// @author Zeropoint Labs
 interface ILiFiValidator {
     //////////////////////////////////////////////////////////////
+    //                      EVENTS                              //
+    //////////////////////////////////////////////////////////////
+    ///@dev emitted when a selector is added to the blacklist
+    event AddedToBlacklist(bytes4 selector);
+
+    ///@dev emitted when a selector is removed from the blacklist
+    event RemovedFromBlacklist(bytes4 selector);
+
+    //////////////////////////////////////////////////////////////
     //              EXTERNAL  FUNCTIONS                         //
     //////////////////////////////////////////////////////////////
 

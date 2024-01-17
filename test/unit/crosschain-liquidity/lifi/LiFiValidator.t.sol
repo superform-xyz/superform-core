@@ -315,8 +315,14 @@ contract LiFiValidatorTest is ProtocolActions {
         lifiValidator.addToBlacklist(bytes4(keccak256("function3()")));
         assertTrue(lifiValidator.isSelectorBlacklisted(bytes4(keccak256("function3()"))));
 
+        vm.expectRevert(Error.BLACKLISTED_SELECTOR.selector);
+        lifiValidator.addToBlacklist(bytes4(keccak256("function3()")));
+
         lifiValidator.removeFromBlacklist(bytes4(keccak256("function3()")));
         assertFalse(lifiValidator.isSelectorBlacklisted(bytes4(keccak256("functio31()"))));
+
+        vm.expectRevert(Error.NOT_BLACKLISTED_SELECTOR.selector);
+        lifiValidator.removeFromBlacklist(bytes4(keccak256("function3()")));
     }
 
     function test_lifi_validator_decodeAmountIn_blacklistedSelector() public {

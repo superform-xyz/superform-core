@@ -37,7 +37,7 @@ abstract contract BridgeValidator is IBridgeValidator {
         address receiver_
     )
         external
-        pure
+        view
         virtual
         override
         returns (bool valid_);

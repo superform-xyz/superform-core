@@ -43,12 +43,18 @@ contract SocketValidator is ISocketValidator, BridgeValidator {
 
     /// @inheritdoc ISocketValidator
     function addToBlacklist(uint256 id_) external override onlyEmergencyAdmin {
+        if (blacklistedRouteIds[id_]) revert Error.BLACKLISTED_ROUTE_ID();
+
         blacklistedRouteIds[id_] = true;
+        emit AddedToBlacklist(id_);
     }
 
     /// @inheritdoc ISocketValidator
     function removeFromBlacklist(uint256 id_) external override onlyEmergencyAdmin {
+        if (!blacklistedRouteIds[id_]) revert Error.NOT_BLACKLISTED_ROUTE_ID();
+
         delete blacklistedRouteIds[id_];
+        emit RemovedFromBlacklist(id_);
     }
 
     //////////////////////////////////////////////////////////////

@@ -269,7 +269,13 @@ contract SocketValidatorTest is ProtocolActions {
         socketValidator.addToBlacklist(20);
         assertTrue(socketValidator.isRouteBlacklisted(20));
 
+        vm.expectRevert(Error.BLACKLISTED_ROUTE_ID.selector);
+        socketValidator.addToBlacklist(20);
+
         socketValidator.removeFromBlacklist(20);
         assertFalse(socketValidator.isRouteBlacklisted(20));
+
+        vm.expectRevert(Error.NOT_BLACKLISTED_ROUTE_ID.selector);
+        socketValidator.removeFromBlacklist(20);
     }
 }

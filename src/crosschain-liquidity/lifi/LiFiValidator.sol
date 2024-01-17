@@ -50,36 +50,82 @@ contract LiFiValidator is ILiFiValidator, BridgeValidator, LiFiTxDataExtractor {
 
         /// @dev blacklist packed and min selectors
         blacklistedSelectors[CBridgeFacetPacked.startBridgeTokensViaCBridgeNativePacked.selector] = true;
+        emit AddedToBlacklist(CBridgeFacetPacked.startBridgeTokensViaCBridgeNativePacked.selector);
+
         blacklistedSelectors[CBridgeFacetPacked.startBridgeTokensViaCBridgeNativeMin.selector] = true;
+        emit AddedToBlacklist(CBridgeFacetPacked.startBridgeTokensViaCBridgeNativeMin.selector);
+
         blacklistedSelectors[CBridgeFacetPacked.startBridgeTokensViaCBridgeERC20Packed.selector] = true;
+        emit AddedToBlacklist(CBridgeFacetPacked.startBridgeTokensViaCBridgeERC20Packed.selector);
+
         blacklistedSelectors[CBridgeFacetPacked.startBridgeTokensViaCBridgeERC20Min.selector] = true;
+        emit AddedToBlacklist(CBridgeFacetPacked.startBridgeTokensViaCBridgeERC20Min.selector);
+
         blacklistedSelectors[HopFacetPacked.startBridgeTokensViaHopL2NativePacked.selector] = true;
+        emit AddedToBlacklist(HopFacetPacked.startBridgeTokensViaHopL2NativePacked.selector);
+
         blacklistedSelectors[HopFacetPacked.startBridgeTokensViaHopL2NativeMin.selector] = true;
+        emit AddedToBlacklist(HopFacetPacked.startBridgeTokensViaHopL2NativeMin.selector);
+
         blacklistedSelectors[HopFacetPacked.startBridgeTokensViaHopL2ERC20Packed.selector] = true;
+        emit AddedToBlacklist(HopFacetPacked.startBridgeTokensViaHopL2ERC20Packed.selector);
+
         blacklistedSelectors[HopFacetPacked.startBridgeTokensViaHopL2ERC20Min.selector] = true;
+        emit AddedToBlacklist(HopFacetPacked.startBridgeTokensViaHopL2ERC20Min.selector);
+
         blacklistedSelectors[HopFacetPacked.startBridgeTokensViaHopL1NativePacked.selector] = true;
+        emit AddedToBlacklist(HopFacetPacked.startBridgeTokensViaHopL1NativePacked.selector);
+
         blacklistedSelectors[HopFacetPacked.startBridgeTokensViaHopL1NativeMin.selector] = true;
+        emit AddedToBlacklist(HopFacetPacked.startBridgeTokensViaHopL1NativeMin.selector);
+
         blacklistedSelectors[HopFacetPacked.startBridgeTokensViaHopL1ERC20Packed.selector] = true;
+        emit AddedToBlacklist(HopFacetPacked.startBridgeTokensViaHopL1ERC20Packed.selector);
+
         blacklistedSelectors[HopFacetPacked.startBridgeTokensViaHopL1ERC20Min.selector] = true;
+        emit AddedToBlacklist(HopFacetPacked.startBridgeTokensViaHopL1ERC20Min.selector);
 
         /// @dev blacklist normal and optimized hop facet
         blacklistedSelectors[HopFacet.startBridgeTokensViaHop.selector] = true;
+        emit AddedToBlacklist(HopFacet.startBridgeTokensViaHop.selector);
+
         blacklistedSelectors[HopFacet.swapAndStartBridgeTokensViaHop.selector] = true;
+        emit AddedToBlacklist(HopFacet.swapAndStartBridgeTokensViaHop.selector);
+
         blacklistedSelectors[HopFacetOptimized.startBridgeTokensViaHopL1ERC20.selector] = true;
+        emit AddedToBlacklist(HopFacetOptimized.startBridgeTokensViaHopL1ERC20.selector);
+
         blacklistedSelectors[HopFacetOptimized.startBridgeTokensViaHopL1Native.selector] = true;
+        emit AddedToBlacklist(HopFacetOptimized.startBridgeTokensViaHopL1Native.selector);
+
         blacklistedSelectors[HopFacetOptimized.swapAndStartBridgeTokensViaHopL1ERC20.selector] = true;
+        emit AddedToBlacklist(HopFacetOptimized.swapAndStartBridgeTokensViaHopL1ERC20.selector);
+
         blacklistedSelectors[HopFacetOptimized.swapAndStartBridgeTokensViaHopL1Native.selector] = true;
+        emit AddedToBlacklist(HopFacetOptimized.swapAndStartBridgeTokensViaHopL1Native.selector);
+
         blacklistedSelectors[HopFacetOptimized.startBridgeTokensViaHopL2ERC20.selector] = true;
+        emit AddedToBlacklist(HopFacetOptimized.startBridgeTokensViaHopL2ERC20.selector);
+
         blacklistedSelectors[HopFacetOptimized.startBridgeTokensViaHopL2Native.selector] = true;
+        emit AddedToBlacklist(HopFacetOptimized.startBridgeTokensViaHopL2Native.selector);
+
         blacklistedSelectors[HopFacetOptimized.swapAndStartBridgeTokensViaHopL2ERC20.selector] = true;
+        emit AddedToBlacklist(HopFacetOptimized.swapAndStartBridgeTokensViaHopL2ERC20.selector);
+
         blacklistedSelectors[HopFacetOptimized.swapAndStartBridgeTokensViaHopL2Native.selector] = true;
+        emit AddedToBlacklist(HopFacetOptimized.swapAndStartBridgeTokensViaHopL2Native.selector);
 
         /// @dev blacklist amarok facet
         blacklistedSelectors[AmarokFacet.startBridgeTokensViaAmarok.selector] = true;
+        emit AddedToBlacklist(AmarokFacet.startBridgeTokensViaAmarok.selector);
+
         blacklistedSelectors[AmarokFacet.swapAndStartBridgeTokensViaAmarok.selector] = true;
+        emit AddedToBlacklist(AmarokFacet.swapAndStartBridgeTokensViaAmarok.selector);
 
         /// @dev prevent recursive calls
         blacklistedSelectors[StandardizedCallFacet.standardizedCall.selector] = true;
+        emit AddedToBlacklist(StandardizedCallFacet.standardizedCall.selector);
     }
 
     //////////////////////////////////////////////////////////////
@@ -88,12 +134,18 @@ contract LiFiValidator is ILiFiValidator, BridgeValidator, LiFiTxDataExtractor {
 
     /// @inheritdoc ILiFiValidator
     function addToBlacklist(bytes4 selector_) external override onlyEmergencyAdmin {
+        if (blacklistedSelectors[selector_]) revert Error.BLACKLISTED_SELECTOR();
+
         blacklistedSelectors[selector_] = true;
+        emit AddedToBlacklist(selector_);
     }
 
     /// @inheritdoc ILiFiValidator
     function removeFromBlacklist(bytes4 selector_) external override onlyEmergencyAdmin {
+        if (!blacklistedSelectors[selector_]) revert Error.NOT_BLACKLISTED_SELECTOR();
+
         delete blacklistedSelectors[selector_];
+        emit RemovedFromBlacklist(selector_);
     }
 
     //////////////////////////////////////////////////////////////
@@ -106,7 +158,10 @@ contract LiFiValidator is ILiFiValidator, BridgeValidator, LiFiTxDataExtractor {
     }
 
     /// @inheritdoc BridgeValidator
-    function validateReceiver(bytes calldata txData_, address receiver_) external pure override returns (bool valid_) {
+    function validateReceiver(bytes calldata txData_, address receiver_) external view override returns (bool valid_) {
+        /// @dev check if it is a blacklisted selector
+        if (isSelectorBlacklisted(_extractSelector(txData_))) revert Error.BLACKLISTED_SELECTOR();
+
         (, address receiver) = _extractBridgeData(txData_);
         return receiver == receiver_;
     }
@@ -120,7 +175,10 @@ contract LiFiValidator is ILiFiValidator, BridgeValidator, LiFiTxDataExtractor {
         bool hasDestinationCall;
         uint256 destinationChainId;
 
-        /// @dev 1 - check if it is a swapTokensGeneric call (match via selector)
+        /// @dev 1 - check if it is a blacklisted selector
+        if (isSelectorBlacklisted(selector)) revert Error.BLACKLISTED_SELECTOR();
+
+        /// @dev 2 - check if it is a swapTokensGeneric call (match via selector)
         if (selector == GenericSwapFacet.swapTokensGeneric.selector) {
             /// @dev GenericSwapFacet
 
@@ -129,9 +187,6 @@ contract LiFiValidator is ILiFiValidator, BridgeValidator, LiFiTxDataExtractor {
             /// @dev if valid return here
             return false;
         }
-
-        /// @dev 2 - check if it is any other blacklisted selector
-        if (isSelectorBlacklisted(selector)) revert Error.BLACKLISTED_SELECTOR();
 
         /// @dev 3 - proceed with normal extraction
         (, sendingAssetId, receiver,,, destinationChainId,, hasDestinationCall) = extractMainParameters(args_.txData);
@@ -154,7 +209,10 @@ contract LiFiValidator is ILiFiValidator, BridgeValidator, LiFiTxDataExtractor {
     {
         bytes4 selector = _extractSelector(txData_);
 
-        /// @dev 1 - check if it is a swapTokensGeneric call (match via selector)
+        /// @dev 1 - check if it is a  blacklisted selector
+        if (isSelectorBlacklisted(selector)) revert Error.BLACKLISTED_SELECTOR();
+
+        /// @dev 2 - check if it is a swapTokensGeneric call (match via selector)
         if (selector == GenericSwapFacet.swapTokensGeneric.selector) {
             if (genericSwapDisallowed_) {
                 revert Error.INVALID_ACTION();
@@ -162,9 +220,6 @@ contract LiFiValidator is ILiFiValidator, BridgeValidator, LiFiTxDataExtractor {
             (, amount_,,,) = extractGenericSwapParameters(txData_);
             return amount_;
         }
-
-        /// @dev 2 - check if it is any other blacklisted selector
-        if (isSelectorBlacklisted(selector)) revert Error.BLACKLISTED_SELECTOR();
 
         /// @dev 3 - proceed with normal extraction
         (, /*bridgeId*/,, amount_, /*amount*/, /*minAmount*/,, /*hasSourceSwaps*/ ) = extractMainParameters(txData_);
