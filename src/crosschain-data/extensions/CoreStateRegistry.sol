@@ -434,10 +434,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 revert Error.ZERO_AMOUNT();
             }
 
-            if (finalToken_[i] == address(0)) {
-                revert Error.ZERO_FINAL_TOKEN();
-            }
-
             /// @dev observe not consuming the second return value
             (multiVaultData.amounts[i],, validLen) = _updateAmount(
                 IDstSwapper(_getAddress(keccak256("DST_SWAPPER"))),
@@ -508,10 +504,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             revert Error.ZERO_AMOUNT();
         }
 
-        if (finalToken_ == address(0)) {
-            revert Error.ZERO_FINAL_TOKEN();
-        }
-
         /// @dev observe not consuming the third return value
         (singleVaultData.amount, finalState_,) = _updateAmount(
             IDstSwapper(_getAddress(keccak256("DST_SWAPPER"))),
@@ -544,6 +536,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         internal
         returns (uint256, PayloadState finalState_, uint256)
     {
+        if (finalToken_ == address(0)) {
+            revert Error.ZERO_FINAL_TOKEN();
+        }
+
         bool failedSwapQueued;
         if (hasDstSwap_) {
             if (dstSwapper.swappedAmount(payloadId_, index_) != finalAmount_) {
