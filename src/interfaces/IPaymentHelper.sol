@@ -27,7 +27,7 @@ interface IPaymentHelper {
     /// @param defaultNativePrice is the native price on the specified chain
     /// @param defaultGasPrice is the gas price on the specified chain
     /// @param dstGasPerByte is the gas per size of data on the specified chain
-    /// @param ackGasCost is the gas cost for processing acknowledgements on src chain
+    /// @param ackGasCost is the gas cost for sending and processing from dst->src
     /// @param timelockCost is the extra cost for processing timelocked payloads
     /// @param emergencyCost is the extra cost for processing emergency payloads
     struct PaymentHelperConfig {

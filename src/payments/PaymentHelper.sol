@@ -66,14 +66,14 @@ contract PaymentHelper is IPaymentHelper {
     mapping(uint64 chainId => AggregatorV3Interface) public gasPriceOracle;
     mapping(uint64 chainId => uint256 gasForSwap) public swapGasUsed;
     mapping(uint64 chainId => uint256 gasForUpdate) public updateGasUsed;
-    mapping(uint64 chainId => uint256 gasForOps) public depositGasUsed;
-    mapping(uint64 chainId => uint256 gasForOps) public withdrawGasUsed;
+    mapping(uint64 chainId => uint256 gasForDeposit) public depositGasUsed;
+    mapping(uint64 chainId => uint256 gasForWithdraw) public withdrawGasUsed;
     mapping(uint64 chainId => uint256 defaultNativePrice) public nativePrice;
     mapping(uint64 chainId => uint256 defaultGasPrice) public gasPrice;
     mapping(uint64 chainId => uint256 gasPerByte) public gasPerByte;
-    mapping(uint64 chainId => uint256 gasForOps) public ackGasCost;
-    mapping(uint64 chainId => uint256 gasForOps) public timelockCost;
-    mapping(uint64 chainId => uint256 gasForOps) public emergencyCost;
+    mapping(uint64 chainId => uint256 gasForAck) public ackGasCost;
+    mapping(uint64 chainId => uint256 gasForTimelock) public timelockCost;
+    mapping(uint64 chainId => uint256 gasForEmergency) public emergencyCost;
 
     /// @dev register transmuter params
     bytes public extraDataForTransmuter;
@@ -199,13 +199,11 @@ contract PaymentHelper is IPaymentHelper {
                     /// @dev step 3: estimate update cost (only for deposit)
                     v.totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], v.superformIdsLen);
 
-                    uint256 arrLen = req_.superformsData[i].retain4626s.length;
                     uint256 ackLen;
-                    for (uint256 j; j < arrLen; ++j) {
+                    for (uint256 j; j < v.superformIdsLen; ++j) {
                         if (!req_.superformsData[i].retain4626s[j]) ++ackLen;
                     }
-                    /// @dev step 4: estimation processing cost of acknowledgement
-                    /// @notice optimistically estimating. (Ideal case scenario: no failed deposits / withdrawals)
+                    /// @dev step 4: estimation processing cost of acknowledgement on source
                     srcAmount += _estimateAckProcessingCost(v.superformIdsLen);
 
                     /// @dev step 5: estimate dst swap cost if it exists
@@ -225,9 +223,21 @@ contract PaymentHelper is IPaymentHelper {
                 }
             }
 
-            /// @dev step 7: estimate execution costs in dst (withdraw / deposit)
-            /// note: execution cost includes acknowledgement messaging cost
-            v.totalDstGas += xChain ? _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], v.superformIdsLen) : 0;
+            /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
+            /// @dev ensure that acknowledgement costs from dst to src are not double counted
+            bool hasRetain4626;
+            for (uint256 j; j < v.superformIdsLen; ++j) {
+                if (!req_.superformsData[i].retain4626s[j]) {
+                    hasRetain4626 = true;
+                    break;
+                }
+            }
+            if (hasRetain4626 && xChain) {
+                v.totalDstGas += _estimateDstExecutionCost(isDeposit_, false, req_.dstChainIds[i], v.superformIdsLen);
+            } else {
+                v.totalDstGas +=
+                    xChain ? _estimateDstExecutionCost(isDeposit_, true, req_.dstChainIds[i], v.superformIdsLen) : 0;
+            }
 
             /// @dev step 8: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], v.totalDstGas);
@@ -263,11 +273,12 @@ contract PaymentHelper is IPaymentHelper {
             if (isDeposit_) {
                 /// @dev step 2: estimate the liqAmount
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequest.castLiqRequestToArray());
+
                 if (xChain) {
                     /// @dev step 3: estimate update cost (only for deposit)
                     totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], 1);
 
-                    /// @dev step 4: estimation execution cost of acknowledgement
+                    /// @dev step 4: estimation execution cost of acknowledgement on source
                     if (!req_.superformsData[i].retain4626) {
                         srcAmount += _estimateAckProcessingCost(1);
                     }
@@ -289,9 +300,10 @@ contract PaymentHelper is IPaymentHelper {
                 }
             }
 
-            /// @dev step 7: estimate execution costs in dst
-            /// note: execution cost includes acknowledgement messaging cost
-            totalDstGas += xChain ? _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], 1) : 0;
+            /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
+            totalDstGas += xChain
+                ? _estimateDstExecutionCost(isDeposit_, req_.superformsData[i].retain4626, req_.dstChainIds[i], 1)
+                : 0;
 
             /// @dev step 8: convert all dst gas estimates to src chain estimate
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
@@ -321,21 +333,19 @@ contract PaymentHelper is IPaymentHelper {
         srcAmount += ambFees;
 
         if (isDeposit_) {
-            /// @dev step 2: estimate update cost (only for deposit)
+            /// @dev step 2: estimate the liqAmount
+            liqAmount += _estimateLiqAmount(req_.superformsData.liqRequests);
+
+            /// @dev step 3: estimate update cost (only for deposit)
             totalDstGas += _estimateUpdateCost(req_.dstChainId, superformIdsLen);
 
-            uint256 arrLen = req_.superformsData.retain4626s.length;
             uint256 ackLen;
-
-            for (uint256 i; i < arrLen; ++i) {
+            for (uint256 i; i < superformIdsLen; ++i) {
                 if (!req_.superformsData.retain4626s[i]) ++ackLen;
             }
 
-            /// @dev step 3: estimation execution cost of acknowledgement
+            /// @dev step 4: estimation execution cost of acknowledgement on source
             srcAmount += _estimateAckProcessingCost(ackLen);
-
-            /// @dev step 4: estimate the liqAmount
-            liqAmount += _estimateLiqAmount(req_.superformsData.liqRequests);
 
             /// @dev step 5: estimate if swap costs are involved
             totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformsData.hasDstSwaps);
@@ -354,8 +364,20 @@ contract PaymentHelper is IPaymentHelper {
             }
         }
 
-        /// @dev step 7: estimate execution costs in destination
-        totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, superformIdsLen);
+        /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
+        /// @dev ensure that acknowledgement costs from dst to src are not double counted
+        bool hasRetain4626;
+        for (uint256 i; i < superformIdsLen; ++i) {
+            if (!req_.superformsData.retain4626s[i]) {
+                hasRetain4626 = true;
+                break;
+            }
+        }
+        if (hasRetain4626) {
+            totalDstGas += _estimateDstExecutionCost(isDeposit_, false, req_.dstChainId, superformIdsLen);
+        } else {
+            totalDstGas += _estimateDstExecutionCost(isDeposit_, true, req_.dstChainId, superformIdsLen);
+        }
 
         /// @dev step 8: convert all destination gas estimates to source chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
@@ -382,16 +404,16 @@ contract PaymentHelper is IPaymentHelper {
         srcAmount += ambFees;
 
         if (isDeposit_) {
-            /// @dev step 2: estimate update cost (only for deposit)
+            /// @dev step 2: estimate the liqAmount
+            liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
+
+            /// @dev step 3: estimate update cost (only for deposit)
             totalDstGas += _estimateUpdateCost(req_.dstChainId, 1);
 
-            /// @dev step 3: estimation execution cost of acknowledgement
+            /// @dev step 4: estimation execution cost of acknowledgement on source
             if (!req_.superformData.retain4626) {
                 srcAmount += _estimateAckProcessingCost(1);
             }
-
-            /// @dev step 4: estimate the liqAmount
-            liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
 
             /// @dev step 5: estimate if swap costs are involved
             totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformData.hasDstSwap.castBoolToArray());
@@ -408,8 +430,8 @@ contract PaymentHelper is IPaymentHelper {
             }
         }
 
-        /// @dev step 7: estimate execution costs in destination
-        totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, 1);
+        /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
+        totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.superformData.retain4626, req_.dstChainId, 1);
 
         /// @dev step 8: convert all destination gas estimates to source chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
@@ -839,9 +861,11 @@ contract PaymentHelper is IPaymentHelper {
         return vaultsCount_ * updateGasUsed[dstChainId_];
     }
 
-    /// @dev helps estimate the dst chain processing gas limit
+    /// @dev helps estimate the dst chain processing cost including the dst->src message cost
+    /// @dev assumes that withdrawals optimisically succeed
     function _estimateDstExecutionCost(
         bool isDeposit_,
+        bool retain4626_,
         uint64 dstChainId_,
         uint256 vaultsCount_
     )
@@ -850,8 +874,12 @@ contract PaymentHelper is IPaymentHelper {
         returns (uint256 gasUsed)
     {
         uint256 executionGasPerVault = isDeposit_ ? depositGasUsed[dstChainId_] : withdrawGasUsed[dstChainId_];
+        gasUsed = executionGasPerVault * vaultsCount_;
 
-        return executionGasPerVault * vaultsCount_;
+        /// @dev add ackGasCost only if it's a deposit and retain4626 is false
+        if (isDeposit_ && !retain4626_) {
+            gasUsed += ackGasCost[dstChainId_];
+        }
     }
 
     /// @dev helps estimate the src chain processing fee
