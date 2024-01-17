@@ -250,6 +250,28 @@ contract CoreStateRegistryTest is ProtocolActions {
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload(1);
     }
 
+    /// @dev test updateDepositPayload with zero final token input
+    function test_updateDepositPayloadWithZeroFinalToken() public {
+        uint8[] memory ambIds_ = new uint8[](2);
+        ambIds_[0] = 1;
+        ambIds_[1] = 2;
+
+        _successfulSingleDeposit(ambIds_);
+
+        vm.selectFork(FORKS[AVAX]);
+        vm.prank(deployer);
+        SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 10_000;
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.ZERO_FINAL_TOKEN.selector);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(
+            1, new address[](1), amounts
+        );
+    }
+
     /// @dev test processPayload without updating deposit payload
     function test_processPayloadForAlreadyProcessedPayload() public {
         uint8[] memory ambIds_ = new uint8[](2);
