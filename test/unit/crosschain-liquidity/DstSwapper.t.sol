@@ -324,8 +324,11 @@ contract DstSwapperTest is ProtocolActions {
         finalAmounts[0] = 1e18;
 
         address[] memory bridgedTokens = new address[](1);
-        bridgedTokens[0] = native;
+        bridgedTokens[0] = address(420);
+        vm.expectRevert(Error.INVALID_UPDATE_FINAL_TOKEN.selector);
+        CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, bridgedTokens, finalAmounts);
 
+        bridgedTokens[0] = native;
         CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, bridgedTokens, finalAmounts);
 
         vm.stopPrank();
