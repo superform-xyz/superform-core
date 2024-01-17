@@ -1402,31 +1402,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                 GAS ESTIMATION & PAYLOAD HELPERS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev Generates the extraData for each amb
-    /// @dev TODO - Sujith to comment further
-    function _generateExtraData(uint8[] memory selectedAmbIds) internal pure returns (bytes[] memory) {
-        bytes[] memory ambParams = new bytes[](selectedAmbIds.length);
-
-        for (uint256 i; i < selectedAmbIds.length; ++i) {
-            /// @dev 1 = Lz
-            if (selectedAmbIds[i] == 1) {
-                ambParams[i] = bytes("");
-            }
-
-            /// @dev 2 = Hyperlane
-            if (selectedAmbIds[i] == 2) {
-                ambParams[i] = abi.encode(500_000);
-            }
-
-            /// @dev 3 = Wormhole
-            if (selectedAmbIds[i] == 3) {
-                ambParams[i] = abi.encode(0, 500_000);
-            }
-        }
-
-        return ambParams;
-    }
-
     struct LocalAckVars {
         uint256 totalFees;
         uint256 ambCount;

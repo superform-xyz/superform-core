@@ -188,6 +188,12 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         (fees,) = lzEndpoint.estimateFees(chainId, address(this), message_, false, extraData_);
     }
 
+    /// @inheritdoc IAmbImplementation
+    function generateExtraData(uint256 gasLimit) external pure override returns (bytes memory extraData) {
+        /// @notice encoded layerzero adapter params (version 2). Other values are not used atm.
+        extraData = abi.encodePacked(uint16(2), gasLimit, uint256(0), address(0));
+    }
+
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////

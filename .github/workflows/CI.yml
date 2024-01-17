@@ -45,7 +45,7 @@ jobs:
         run: "FOUNDRY_PROFILE=localdev forge build"
 
       - name: "Cache the build so that it can be re-used by the other jobs"
-        uses: "actions/cache/save@v3"
+        uses: "actions/cache/save@v4"
         with:
           key: "foundry-build-${{ github.sha }}"
           path: |
@@ -71,7 +71,7 @@ jobs:
         uses: "foundry-rs/foundry-toolchain@v1"
 
       - name: "Restore the cached build"
-        uses: "actions/cache/restore@v3"
+        uses: "actions/cache/restore@v4"
         with:
           fail-on-cache-miss: true
           key: "foundry-build-${{ github.sha }}"
