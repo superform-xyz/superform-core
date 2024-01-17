@@ -37,6 +37,7 @@ This repository includes all Superform contracts and can be split into two categ
 
     .
     ├── script
+    ├── security-review
     ├── src
       ├── crosschain-data
       ├── crosschain-liquidity
@@ -48,10 +49,11 @@ This repository includes all Superform contracts and can be split into two categ
       ├── types
       ├── vendor
     ├── test
-    ├── utils
     ├── foundry.toml
     └── README.md
 
+- `script` contains deployment and utility scripts and outputs [`/script`](./script)
+- `security-review` contains information relevant to prior security reviews and the scope of bug bounties[`/security-review`](./security-review)
 - `src` is the source folder for all smart contract code[`/src`](./src)
   - `crosschain-data` implements the sending of messages from chain to chain via various AMBs [`/src/crosschain-data`](./src/crosschain-data)
   - `crosschain-liquidity` implements the movement of tokens from chain to chain via bridge aggregators [`/src/crosschain-liquidity`](./src/crosschain-liquidity)
@@ -62,6 +64,7 @@ This repository includes all Superform contracts and can be split into two categ
   - `settings` define, set, and manage roles in the Superform ecosystem [`/src/settings`](./src/settings)
   - `types` define core data structures used in the protocol [`/src/types`](./src/types)
   - `vendor` is where all externally written interfaces reside [`/src/vendor`](./src/vendor)
+- `test` contains tests for contracts in src [`/test`](./test)
 
 ## Documentation
 

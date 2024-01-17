@@ -1,6 +1,6 @@
 # Overview
 
-This directory contains information relevant to prior security reviews and information relevant to the scope of bug bounties. 
+This directory contains information relevant to prior security reviews and the scope of bug bounties. 
 
 ## Out of scope
 
