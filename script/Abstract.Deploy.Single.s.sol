@@ -246,7 +246,7 @@ abstract contract AbstractDeploySingle is Script {
 
     uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 100];
     string[] public chainNames =
-        ["Ethereum", "Binance", "Avalanche", "Polygon", "Arbitrum", "Optimism", "Fantom", "Base", "Gnosis"];
+        ["Ethereum", "Binance", "Avalanche", "Polygon", "Arbitrum", "Optimism", "Base", "Gnosis"];
 
     /// @dev vendor chain ids
     uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111, 184, 145];
@@ -321,7 +321,7 @@ abstract contract AbstractDeploySingle is Script {
         if (cycle == Cycle.Dev) {
             (ownerAddress, deployerPrivateKey) = makeAddrAndKey("tenderly");
         } else {
-            deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
+            //deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
             ownerAddress = vm.envAddress("OWNER_ADDRESS");
         }
 
@@ -372,7 +372,7 @@ abstract contract AbstractDeploySingle is Script {
 
         vars.ambAddresses = new address[](ambIds.length);
 
-        vm.startBroadcast(deployerPrivateKey);
+        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
 
         /// @dev 1 - Deploy SuperRBAC
         vars.superRBAC = address(
@@ -695,7 +695,7 @@ abstract contract AbstractDeploySingle is Script {
         //
         vars.chainId = targetDeploymentChains[i];
 
-        vm.startBroadcast(deployerPrivateKey);
+        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
 
         vars.lzImplementation = _readContract(chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
         vars.hyperlaneImplementation = _readContract(chainNames[trueIndex], vars.chainId, "HyperlaneImplementation");
@@ -749,7 +749,7 @@ abstract contract AbstractDeploySingle is Script {
 
         vars.chainId = s_superFormChainIds[i];
 
-        vm.startBroadcast(deployerPrivateKey);
+        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
 
         SuperRBAC srbac = SuperRBAC(payable(_readContract(chainNames[trueIndex], vars.chainId, "SuperRBAC")));
         bytes32 protocolAdminRole = srbac.PROTOCOL_ADMIN_ROLE();
@@ -781,7 +781,7 @@ abstract contract AbstractDeploySingle is Script {
 
         vars.chainId = previousDeploymentChains[i];
 
-        vm.startBroadcast(deployerPrivateKey);
+        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
 
         vars.lzImplementation = _readContract(chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
         vars.hyperlaneImplementation = _readContract(chainNames[trueIndex], vars.chainId, "HyperlaneImplementation");

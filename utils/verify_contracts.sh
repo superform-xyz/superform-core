@@ -4,21 +4,24 @@
 source .env
 
 networks=(
-    8453
+    10
     42161
+    8453
     # add more networks here if needed
 )
 
 api_keys=(
-    $BASESCAN_API
+    $OPSCAN_API
     $ARBISCAN_API
+    $BASESCAN_API
     # add more API keys here if needed
 )
 
 ## CONTRACTS VERIFICATION
-super_constructor_arg="$(cast abi-encode "constructor(address)" 0xB97612A25491E34F5fd11D521c14A042eca039Fa)"
-superposition_constructor_arg="$(cast abi-encode "constructor(string, address)" https://ipfs-gateway.superform.xyz/ipns/k51qzi5uqu5dg90fqdo9j63m556wlddeux4mlgyythp30zousgh3huhyzouyq8/JSON/ 0xB97612A25491E34F5fd11D521c14A042eca039Fa)"
-superregistry_constructor_arg="$(cast abi-encode "constructor(address)" 0x5512926dfD71dFE572B8ABCf8dc16521cD8dc03C)"
+empty_constructor_arg="$(cast abi-encode "constructor()")"
+super_constructor_arg="$(cast abi-encode "constructor(address)" 0x617950dcf1Ca6177C06E100b7a1452c8906A9Ec5)"
+superposition_constructor_arg="$(cast abi-encode "constructor(string, address)" https://ipfs-gateway.superform.xyz/ipns/k51qzi5uqu5dg90fqdo9j63m556wlddeux4mlgyythp30zousgh3huhyzouyq8/JSON/ 0x617950dcf1Ca6177C06E100b7a1452c8906A9Ec5)"
+superregistry_constructor_arg="$(cast abi-encode "constructor(address)" 0x329788cd153E9874cfb65294C4B8EE7aDA329f60)"
 
 file_names=(
     "src/crosschain-data/extensions/CoreStateRegistry.sol"
@@ -37,6 +40,7 @@ file_names=(
     "src/crosschain-data/adapters/wormhole/automatic-relayer/WormholeARImplementation.sol"
     "src/SuperPositions.sol"
     "src/settings/SuperRegistry.sol"
+    "src/VaultClaimer.sol"
     # Add more file names here if needed
 )
 
@@ -57,26 +61,28 @@ contract_names=(
     "WormholeARImplementation"
     "SuperPositions"
     "SuperRegistry"
+    "VaultClaimer"
     # Add more contract names here if needed
 )
 
 contract_addresses=(
-    0x67812f7490d0931dA9f2A47Cc402476B08f78502
-    0x377E5829f552cd3435538006e754e24fA304ABd4
-    0x20aA26bC4e64F5D0Bf74e6Bb1387eba124314ca3
-    0xBd0e276779619b8FA82041810A94B52795eFAAf7
-    0x8D64B4b4be39769441dCA258AA2aD035E2A876f6
-    0x40aF1811116541A62982a486A6B9E9287d1F115A
-    0x9DC12F4CCcf34Cb3CF744696b5b98D85F12D2977
-    0x3cA25b41bb127F43B5eC5b283457e8065138A850
-    0x962435D50C95EBf870aC9E98954b6f0170167fa6
-    0x1f03015196953f393aEb8a7bA423bE6Dd850Cf8d
-    0x750f09A785cf308015EAd09D62fB0AdF92b6e56D
-    0x5BC1905b3195A85DE0e831e0514005807765bB54
-    0xf274b178423B0A80E4c731419DcaD4363f6f9254
-    0x2a489b88EcA3Ace75AA0f00AFa6659EDa5e4a7Ed
-    0x4D4a0F29EFf9091360fd475fA3dB1Cc966faD958
-    0xB97612A25491E34F5fd11D521c14A042eca039Fa
+    0x41933290F00390578A35EEa9E8a37B5b48926b5d
+    0xAD92C9A55225F3bAEE9D4f1cB807872eE8af3D18
+    0x5ed70013DA6aa2c076b2d3853Eb17704CAb8c233
+    0x8f24b0010E18915409B7056C9f6D264503BFEa33
+    0x46968109F3b193AcE4EB1a28076b372A8951345C
+    0x454866FfCA61EE5C874df00b387858Da646b5ec9
+    0xE438D85618bEb99054DaeB14d2CBD976F77F360F
+    0x3Fdf950794Ce55088f4b708F6D5312DF79fFf585
+    0x0d002293422E020c3AE3CEF3E63e2CA4Dd31FB00
+    0xf445548FC5cC3D6a4c70bb4A0aC89241370Ba2f3
+    0x63eb5584bae6dBa0610F953Ff5d2EB11e8f8B920
+    0xdc072816dF2812Ab30Fce59E31B2Af27d0fAB575
+    0xF62c937ec43385152843aFa3707833bB4CfEE4E9
+    0x039f3EBd7E0E86c235dEf8eff2FaEA8d8D974F9B
+    0xD64e2FB22ADf73Ce1F23E93D08E93dc826C947bc
+    0x617950dcf1Ca6177C06E100b7a1452c8906A9Ec5
+    0x2EA3C881C91E1529329413D57E1B280D45E51dDD
     # Add more addresses here if needed
 )
 
@@ -97,6 +103,7 @@ constructor_args=(
     $super_constructor_arg
     $superposition_constructor_arg
     $superregistry_constructor_arg
+    $empty_constructor_arg
 )
 
 # loop through networks

@@ -8,10 +8,10 @@ contract MainnetDeploy is AbstractDeploySingle {
                         SELECT CHAIN IDS TO DEPLOY HERE
     //////////////////////////////////////////////////////////////*/
 
-    uint64[] TARGET_DEPLOYMENT_CHAINS = [BSC, POLY, AVAX];
+    uint64[] TARGET_DEPLOYMENT_CHAINS = [OP, ARBI, BASE];
 
     ///@dev ORIGINAL SALT
-    bytes32 constant salt = "NO_SLEEP_VIK";
+    bytes32 constant salt = "NO_SLEEP_VIK2";
 
     /// @notice The main stage 1 script entrypoint
     function deployStage1(uint256 selectedChainIndex) external {
