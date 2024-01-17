@@ -4,7 +4,9 @@ pragma solidity ^0.8.23;
 import { Error } from "src/libraries/Error.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
 import { MockERC20 } from "test/mocks/MockERC20.sol";
-import { VaultMock } from "test/mocks/VaultMock.sol";
+import { VaultMock} from "test/mocks/VaultMock.sol";
+import { VaultMockFailedDeposit } from "test/mocks/VaultMockFailedDeposit.sol";
+import { VaultMockFailedWithdraw } from "test/mocks/VaultMockFailedWithdraw.sol";
 import { SuperformFactory } from "src/SuperformFactory.sol";
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import "test/utils/ProtocolActions.sol";
@@ -494,6 +496,51 @@ contract SuperformERC4626FormTest is ProtocolActions {
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 
+    function test_superformDirectDepositVaultImplementationFailed() public {
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superRegistry = getContract(chainId, "SuperRegistry");
+
+        /// @dev Deploying Forms
+        address formImplementation = address(new ERC4626Form(superRegistry));
+        uint32 formImplementationId = 0;
+
+        VaultMockFailedDeposit vault = new VaultMockFailedDeposit(IERC20(getContract(ETH, "DAI")), "Mock Vault", "Mock");
+
+        // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
+            formImplementation, formImplementationId, 1
+        );
+        /// @dev Creating superform using formImplementationId and failed deposit vault
+        (uint256 superformId,) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
+            formImplementationId, address(vault)
+        );
+
+        /// @dev superform data with 1e18 final amount
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            1e18,
+            1e18,
+            100,
+            LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
+            "",
+            false,
+            false,
+            receiverAddress,
+            receiverAddress,
+            ""
+        );
+
+        SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
+
+        address router = getContract(ETH, "SuperformRouter");
+        MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
+
+        vm.expectRevert(Error.VAULT_IMPLEMENTATION_FAILED.selector);
+        SuperformRouter(payable(router)).singleDirectSingleVaultDeposit(req);
+    }
+
     function test_superformDirectWithdrawalWithMaliciousTxData() public {
         _successfulDeposit(false);
 
@@ -532,6 +579,58 @@ contract SuperformERC4626FormTest is ProtocolActions {
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultWithdraw(req);
     }
 
+    function test_superformDirectWithdrawVaultImplementationFailed() public {
+
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superRegistry = getContract(chainId, "SuperRegistry");
+
+        /// @dev Deploying Forms
+        address formImplementation = address(new ERC4626Form(superRegistry));
+        uint32 formImplementationId = 0;
+
+        VaultMockFailedWithdraw vault = new VaultMockFailedWithdraw(IERC20(getContract(ETH, "DAI")), "Mock Vault", "Mock");
+
+        // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
+            formImplementation, formImplementationId, 1
+        );
+        /// @dev Creating superform using formImplementationId and failed deposit vault
+        (uint256 superformId,) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
+            formImplementationId, address(vault)
+        );
+
+        vm.stopPrank();
+        address router = getContract(ETH, "SuperformRouter");
+        vm.startPrank(router);
+        SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
+        vm.stopPrank();
+        
+        vm.startPrank(deployer);
+        /// @dev superform data with 1e18 final amount
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            1e18,
+            1e18,
+            100,
+            LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
+            "",
+            false,
+            false,
+            receiverAddress,
+            receiverAddress,
+            ""
+        );
+
+        SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
+
+        SuperPositions(getContract(ETH, "SuperPositions")).setApprovalForAll(router, true);
+
+        vm.expectRevert(Error.VAULT_IMPLEMENTATION_FAILED.selector);
+        SuperformRouter(payable(router)).singleDirectSingleVaultWithdraw(req);
+    }
+
     function test_superformXChainWithdrawalWithoutUpdatingTxData() public {
         /// @dev prank deposits (just mint super-shares)
         _successfulDeposit(false);
@@ -568,6 +667,60 @@ contract SuperformERC4626FormTest is ProtocolActions {
         vm.expectRevert(Error.WITHDRAW_TX_DATA_NOT_UPDATED.selector);
         IBaseForm(superform).xChainWithdrawFromVault(data, deployer, ARBI);
     }
+
+    function test_superformXChainWithdrawalWithoutUpdatingToken() public {
+        _successfulDeposit(false);
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
+
+        MockERC20(getContract(ETH, "DAI")).transfer(superform, 1e18);
+        vm.stopPrank();
+
+        vm.startPrank(getContract(ETH, "CoreStateRegistry"));
+
+        InitSingleVaultData memory data = InitSingleVaultData(
+            1,
+            superformId,
+            1e18,
+            1e18,
+            100,
+            LiqRequest(                
+                _buildDummyTxDataUnitTests(
+                    BuildDummyTxDataUnitTestsVars(
+                        1,
+                        getContract(ETH, "WETH"),
+                        getContract(ETH, "DAI"),
+                        superform,
+                        ETH,
+                        ETH,
+                        1e18,
+                        getContract(ETH, "CoreStateRegistry"),
+                        false
+                    )
+                ), 
+                address(0), 
+                address(0), 
+                1, 
+                ARBI, 
+                0),
+            false,
+            false,
+            receiverAddress,
+            ""
+        );
+
+        vm.expectRevert(Error.WITHDRAW_TOKEN_NOT_UPDATED.selector);
+
+        IBaseForm(superform).xChainWithdrawFromVault(data, deployer, ARBI);
+
+        vm.stopPrank();
+    }
+
 
     function test_superformXChainWithdrawal_NonExistentSuperform() public {
         /// @dev prank deposits (just mint super-shares)
