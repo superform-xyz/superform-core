@@ -199,9 +199,8 @@ contract PaymentHelper is IPaymentHelper {
                     /// @dev step 3: estimate update cost (only for deposit)
                     v.totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], v.superformIdsLen);
 
-                    uint256 arrLen = req_.superformsData[i].retain4626s.length;
                     uint256 ackLen;
-                    for (uint256 j; j < arrLen; ++j) {
+                    for (uint256 j; j < v.superformIdsLen; ++j) {
                         if (!req_.superformsData[i].retain4626s[j]) ++ackLen;
                     }
                     /// @dev step 4: estimation processing cost of acknowledgement on source
@@ -226,17 +225,18 @@ contract PaymentHelper is IPaymentHelper {
 
             /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
             /// @dev ensure that acknowledgement costs from dst to src are not double counted
-            bool anyRetain4626False = false;
-            for (uint256 j; j < req_.superformsData[i].retain4626s.length; ++j) {
+            bool hasRetain4626;
+            for (uint256 j; j < v.superformIdsLen; ++j) {
                 if (!req_.superformsData[i].retain4626s[j]) {
-                    anyRetain4626False = true;
+                    hasRetain4626 = true;
                     break;
                 }
             }
-            if (anyRetain4626False && xChain) {
+            if (hasRetain4626 && xChain) {
                 v.totalDstGas += _estimateDstExecutionCost(isDeposit_, false, req_.dstChainIds[i], v.superformIdsLen);
             } else {
-                v.totalDstGas += xChain ? _estimateDstExecutionCost(isDeposit_, true, req_.dstChainIds[i], v.superformIdsLen) : 0;
+                v.totalDstGas +=
+                    xChain ? _estimateDstExecutionCost(isDeposit_, true, req_.dstChainIds[i], v.superformIdsLen) : 0;
             }
 
             /// @dev step 8: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
@@ -301,7 +301,9 @@ contract PaymentHelper is IPaymentHelper {
             }
 
             /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
-            totalDstGas += xChain ? _estimateDstExecutionCost(isDeposit_, req_.superformsData[i].retain4626, req_.dstChainIds[i], 1) : 0;
+            totalDstGas += xChain
+                ? _estimateDstExecutionCost(isDeposit_, req_.superformsData[i].retain4626, req_.dstChainIds[i], 1)
+                : 0;
 
             /// @dev step 8: convert all dst gas estimates to src chain estimate
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
@@ -337,10 +339,8 @@ contract PaymentHelper is IPaymentHelper {
             /// @dev step 3: estimate update cost (only for deposit)
             totalDstGas += _estimateUpdateCost(req_.dstChainId, superformIdsLen);
 
-            uint256 arrLen = req_.superformsData.retain4626s.length;
             uint256 ackLen;
-
-            for (uint256 i; i < arrLen; ++i) {
+            for (uint256 i; i < superformIdsLen; ++i) {
                 if (!req_.superformsData.retain4626s[i]) ++ackLen;
             }
 
@@ -366,14 +366,14 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
         /// @dev ensure that acknowledgement costs from dst to src are not double counted
-        bool anyRetain4626False = false;
-        for (uint256 i; i < req_.superformsData.retain4626s.length; ++i) {
+        bool hasRetain4626;
+        for (uint256 i; i < superformIdsLen; ++i) {
             if (!req_.superformsData.retain4626s[i]) {
-                anyRetain4626False = true;
+                hasRetain4626 = true;
                 break;
             }
         }
-        if (anyRetain4626False) {
+        if (hasRetain4626) {
             totalDstGas += _estimateDstExecutionCost(isDeposit_, false, req_.dstChainId, superformIdsLen);
         } else {
             totalDstGas += _estimateDstExecutionCost(isDeposit_, true, req_.dstChainId, superformIdsLen);
@@ -862,7 +862,7 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @dev helps estimate the dst chain processing cost including the dst->src message cost
-    /// @dev assumes that withdrawals optimisically succeed 
+    /// @dev assumes that withdrawals optimisically succeed
     function _estimateDstExecutionCost(
         bool isDeposit_,
         bool retain4626_,
