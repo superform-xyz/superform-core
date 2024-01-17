@@ -5,7 +5,6 @@ pragma solidity ^0.8.23;
 /// @dev Interface for SuperRegistry
 /// @author Zeropoint Labs
 interface ISuperRegistry {
-
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
@@ -189,6 +188,17 @@ interface ISuperRegistry {
     /// @param chainId_ is the remote chain identifier
     /// @param vaultLimit_ is the max limit of vaults per transaction
     function setVaultLimitPerDestination(uint64 chainId_, uint256 vaultLimit_) external;
+
+    /// @dev sets new addresses on specific chains.
+    /// @param ids_ are the identifiers of the address on that chain
+    /// @param newAddresses_  are the new addresses on that chain
+    /// @param chainIds_ are the chain ids of that chain
+    function batchSetAddress(
+        bytes32[] calldata ids_,
+        address[] calldata newAddresses_,
+        uint64[] calldata chainIds_
+    )
+        external;
 
     /// @dev sets a new address on a specific chain.
     /// @param id_ the identifier of the address on that chain

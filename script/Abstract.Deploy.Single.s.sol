@@ -78,6 +78,9 @@ struct SetupVars {
     address emergencyQueue;
     SuperRegistry superRegistryC;
     SuperRBAC superRBACC;
+    bytes32[] ids;
+    address[] newAddresses;
+    uint64[] chainIdsSetAddresses;
 }
 
 abstract contract AbstractDeploySingle is Script {
@@ -606,33 +609,42 @@ abstract contract AbstractDeploySingle is Script {
         );
 
         /// @dev 16 setup setup srcChain keepers
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.PAYMENT_ADMIN(), 0xD911673eAF0D3e15fe662D58De15511c5509bAbB, vars.chainId
-        );
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), 0x23c658FE050B4eAeB9401768bF5911D11621629c, vars.chainId
-        );
-        /// @dev FIXME setting this temporarily to EMERGENCY_ADMIN as we are not using it in this release
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR(), EMERGENCY_ADMIN, vars.chainId
-        );
-        /// @dev FIXME setting this temporarily to EMERGENCY_ADMIN as we are not using it in this release
-        vars.superRegistryC.setAddress(vars.superRegistryC.TIMELOCK_REGISTRY_PROCESSOR(), EMERGENCY_ADMIN, vars.chainId);
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.CORE_REGISTRY_UPDATER(), 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f, vars.chainId
-        );
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.CORE_REGISTRY_RESCUER(), 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5, vars.chainId
-        );
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.CORE_REGISTRY_DISPUTER(), 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a, vars.chainId
-        );
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.DST_SWAPPER_PROCESSOR(), 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C, vars.chainId
-        );
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.SUPERFORM_RECEIVER(), 0x1a6805487322565202848f239C1B5bC32303C2FE, vars.chainId
-        );
+        vars.ids = new bytes32[](9);
+
+        vars.ids[0] = vars.superRegistryC.PAYMENT_ADMIN();
+        vars.ids[1] = vars.superRegistryC.CORE_REGISTRY_PROCESSOR();
+        vars.ids[2] = vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR();
+        vars.ids[3] = vars.superRegistryC.TIMELOCK_REGISTRY_PROCESSOR();
+        vars.ids[4] = vars.superRegistryC.CORE_REGISTRY_UPDATER();
+        vars.ids[5] = vars.superRegistryC.CORE_REGISTRY_RESCUER();
+        vars.ids[6] = vars.superRegistryC.CORE_REGISTRY_DISPUTER();
+        vars.ids[7] = vars.superRegistryC.DST_SWAPPER_PROCESSOR();
+        vars.ids[8] = vars.superRegistryC.SUPERFORM_RECEIVER();
+
+        vars.newAddresses = new address[](9);
+        vars.newAddresses[0] = 0xD911673eAF0D3e15fe662D58De15511c5509bAbB;
+        vars.newAddresses[1] = 0x23c658FE050B4eAeB9401768bF5911D11621629c;
+        vars.newAddresses[2] = EMERGENCY_ADMIN;
+        vars.newAddresses[3] = EMERGENCY_ADMIN;
+        vars.newAddresses[4] = 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f;
+        vars.newAddresses[5] = 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5;
+        vars.newAddresses[6] = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
+        vars.newAddresses[7] = 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C;
+        vars.newAddresses[8] = 0x1a6805487322565202848f239C1B5bC32303C2FE;
+
+        vars.chainIdsSetAddresses = new uint64[](9);
+        vars.chainIdsSetAddresses[0] = vars.chainId;
+        vars.chainIdsSetAddresses[1] = vars.chainId;
+        vars.chainIdsSetAddresses[2] = vars.chainId;
+        vars.chainIdsSetAddresses[3] = vars.chainId;
+        vars.chainIdsSetAddresses[4] = vars.chainId;
+        vars.chainIdsSetAddresses[5] = vars.chainId;
+        vars.chainIdsSetAddresses[6] = vars.chainId;
+        vars.chainIdsSetAddresses[7] = vars.chainId;
+        vars.chainIdsSetAddresses[8] = vars.chainId;
+
+        vars.superRegistryC.batchSetAddress(vars.ids, vars.newAddresses, vars.chainIdsSetAddresses);
+
         vars.superRegistryC.setDelay(86_400);
 
         /// @dev 17 deploy emergency queue
@@ -919,41 +931,72 @@ abstract contract AbstractDeploySingle is Script {
 
         PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(abi.encode(4, abi.encode(0, "")));
 
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.SUPERFORM_ROUTER(),
-            _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperformRouter"),
-            vars.dstChainId
-        );
+        bytes32[] memory ids = new bytes32[](19);
+        ids[0] = vars.superRegistryC.SUPERFORM_ROUTER();
+        ids[1] = vars.superRegistryC.SUPERFORM_FACTORY();
+        ids[2] = vars.superRegistryC.PAYMASTER();
+        ids[3] = vars.superRegistryC.PAYMENT_HELPER();
+        ids[4] = vars.superRegistryC.CORE_STATE_REGISTRY();
+        ids[5] = vars.superRegistryC.DST_SWAPPER();
+        ids[6] = vars.superRegistryC.SUPER_POSITIONS();
+        ids[7] = vars.superRegistryC.SUPER_RBAC();
+        ids[8] = vars.superRegistryC.PAYLOAD_HELPER();
+        ids[9] = vars.superRegistryC.EMERGENCY_QUEUE();
+        ids[10] = vars.superRegistryC.PAYMENT_ADMIN();
+        ids[11] = vars.superRegistryC.CORE_REGISTRY_PROCESSOR();
+        ids[12] = vars.superRegistryC.CORE_REGISTRY_UPDATER();
+        ids[13] = vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR();
+        ids[14] = vars.superRegistryC.TIMELOCK_REGISTRY_PROCESSOR();
+        ids[15] = vars.superRegistryC.CORE_REGISTRY_RESCUER();
+        ids[16] = vars.superRegistryC.CORE_REGISTRY_DISPUTER();
+        ids[17] = vars.superRegistryC.DST_SWAPPER_PROCESSOR();
+        ids[18] = vars.superRegistryC.SUPERFORM_RECEIVER();
 
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.SUPERFORM_FACTORY(),
-            _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperformFactory"),
-            vars.dstChainId
-        );
+        address[] memory newAddresses = new address[](19);
+        newAddresses[0] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperformRouter");
+        newAddresses[1] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperformFactory");
+        newAddresses[2] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "PayMaster");
+        newAddresses[3] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "PaymentHelper");
+        newAddresses[4] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "CoreStateRegistry");
+        newAddresses[5] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "DstSwapper");
+        newAddresses[6] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperPositions");
+        newAddresses[7] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperRBAC");
+        newAddresses[8] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "PayloadHelper");
+        newAddresses[9] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "EmergencyQueue");
+        newAddresses[10] = 0xD911673eAF0D3e15fe662D58De15511c5509bAbB;
+        newAddresses[11] = 0x23c658FE050B4eAeB9401768bF5911D11621629c;
+        newAddresses[12] = 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f;
+        /// @dev FIXME setting this temporarily to EMERGENCY_ADMIN as we are not using it in this release
+        newAddresses[13] = EMERGENCY_ADMIN;
+        /// @dev FIXME setting this temporarily to EMERGENCY_ADMIN as we are not using it in this release
+        newAddresses[14] = EMERGENCY_ADMIN;
+        newAddresses[15] = 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5;
+        newAddresses[16] = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
+        newAddresses[17] = 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C;
+        newAddresses[18] = 0x1a6805487322565202848f239C1B5bC32303C2FE;
 
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.PAYMASTER(),
-            _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "PayMaster"),
-            vars.dstChainId
-        );
+        uint64[] memory chainIdsSetAddresses = new uint64[](19);
+        chainIdsSetAddresses[0] = vars.dstChainId;
+        chainIdsSetAddresses[1] = vars.dstChainId;
+        chainIdsSetAddresses[2] = vars.dstChainId;
+        chainIdsSetAddresses[3] = vars.dstChainId;
+        chainIdsSetAddresses[4] = vars.dstChainId;
+        chainIdsSetAddresses[5] = vars.dstChainId;
+        chainIdsSetAddresses[6] = vars.dstChainId;
+        chainIdsSetAddresses[7] = vars.dstChainId;
+        chainIdsSetAddresses[8] = vars.dstChainId;
+        chainIdsSetAddresses[9] = vars.dstChainId;
+        chainIdsSetAddresses[10] = vars.dstChainId;
+        chainIdsSetAddresses[11] = vars.dstChainId;
+        chainIdsSetAddresses[12] = vars.dstChainId;
+        chainIdsSetAddresses[13] = vars.dstChainId;
+        chainIdsSetAddresses[14] = vars.dstChainId;
+        chainIdsSetAddresses[15] = vars.dstChainId;
+        chainIdsSetAddresses[16] = vars.dstChainId;
+        chainIdsSetAddresses[17] = vars.dstChainId;
+        chainIdsSetAddresses[18] = vars.dstChainId;
 
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.PAYMENT_HELPER(),
-            _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "PaymentHelper"),
-            vars.dstChainId
-        );
-
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.CORE_STATE_REGISTRY(),
-            _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "CoreStateRegistry"),
-            vars.dstChainId
-        );
-
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.DST_SWAPPER(),
-            _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "DstSwapper"),
-            vars.dstChainId
-        );
+        vars.superRegistryC.batchSetAddress(ids, newAddresses, chainIdsSetAddresses);
 
         /*
         vars.superRegistryC.setAddress(
@@ -970,65 +1013,6 @@ abstract contract AbstractDeploySingle is Script {
             vars.dstChainId
         );
         */
-
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.SUPER_POSITIONS(),
-            _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperPositions"),
-            vars.dstChainId
-        );
-
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.SUPER_RBAC(),
-            _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperRBAC"),
-            vars.dstChainId
-        );
-
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.PAYLOAD_HELPER(),
-            _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "PayloadHelper"),
-            vars.dstChainId
-        );
-
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.EMERGENCY_QUEUE(),
-            _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "EmergencyQueue"),
-            vars.dstChainId
-        );
-
-        /// @dev FIXME - in mainnet who is this?
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.PAYMENT_ADMIN(), 0xD911673eAF0D3e15fe662D58De15511c5509bAbB, vars.dstChainId
-        );
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), 0x23c658FE050B4eAeB9401768bF5911D11621629c, vars.dstChainId
-        );
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.CORE_REGISTRY_UPDATER(), 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f, vars.dstChainId
-        );
-        /// @dev FIXME setting this temporarily to EMERGENCY_ADMIN as we are not using it in this release
-
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR(), EMERGENCY_ADMIN, vars.dstChainId
-        );
-        /// @dev FIXME setting this temporarily to EMERGENCY_ADMIN as we are not using it in this release
-
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.TIMELOCK_REGISTRY_PROCESSOR(), EMERGENCY_ADMIN, vars.dstChainId
-        );
-
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.CORE_REGISTRY_RESCUER(), 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5, vars.dstChainId
-        );
-
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.CORE_REGISTRY_DISPUTER(), 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a, vars.dstChainId
-        );
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.DST_SWAPPER_PROCESSOR(), 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C, vars.dstChainId
-        );
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.SUPERFORM_RECEIVER(), 0x1a6805487322565202848f239C1B5bC32303C2FE, vars.dstChainId
-        );
     }
 
     function _preDeploymentSetup() internal {

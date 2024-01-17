@@ -276,7 +276,26 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
-    function setAddress(bytes32 id_, address newAddress_, uint64 chainId_) external override onlyProtocolAdmin {
+    function batchSetAddress(
+        bytes32[] calldata ids_,
+        address[] calldata newAddresses_,
+        uint64[] calldata chainIds_
+    )
+        external
+        override
+        onlyProtocolAdmin
+    {
+        uint256 len = ids_.length;
+
+        if (len != newAddresses_.length || len != chainIds_.length) revert Error.ARRAY_LENGTH_MISMATCH();
+
+        for (uint256 i; i < len; ++i) {
+            setAddress(ids_[i], newAddresses_[i], chainIds_[i]);
+        }
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function setAddress(bytes32 id_, address newAddress_, uint64 chainId_) public override onlyProtocolAdmin {
         address oldAddress = registry[id_][chainId_];
         if (oldAddress != address(0)) {
             /// @notice SUPERFORM_FACTORY, CORE_STATE_REGISTRY, TIMELOCK_STATE_REGISTRY, BROADCAST_REGISTRY, SUPER_RBAC,
