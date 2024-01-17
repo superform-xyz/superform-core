@@ -189,14 +189,14 @@ interface ISuperRegistry {
     /// @param vaultLimit_ is the max limit of vaults per transaction
     function setVaultLimitPerDestination(uint64 chainId_, uint256 vaultLimit_) external;
 
-    /// @dev sets a new addresses on specific chains.
+    /// @dev sets new addresses on specific chains.
     /// @param ids_ are the identifiers of the address on that chain
-    /// @param newAddresses_  arethe new addresses on that chain
-    /// @param chainIds_ are the chain id sof that chain
+    /// @param newAddresses_  are the new addresses on that chain
+    /// @param chainIds_ are the chain ids of that chain
     function batchSetAddress(
-        bytes32[] memory ids_,
-        address[] memory newAddresses_,
-        uint64[] memory chainIds_
+        bytes32[] calldata ids_,
+        address[] calldata newAddresses_,
+        uint64[] calldata chainIds_
     )
         external;
 

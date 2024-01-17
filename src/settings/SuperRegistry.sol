@@ -277,9 +277,9 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     /// @inheritdoc ISuperRegistry
     function batchSetAddress(
-        bytes32[] memory ids_,
-        address[] memory newAddresses_,
-        uint64[] memory chainIds_
+        bytes32[] calldata ids_,
+        address[] calldata newAddresses_,
+        uint64[] calldata chainIds_
     )
         external
         override
