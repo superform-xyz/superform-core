@@ -143,13 +143,13 @@ contract SuperRegistryTest is BaseSetup {
         address[] memory bridgeAddress = new address[](3);
         address[] memory bridgeValidator = new address[](3);
 
-        bridgeId[0] = 8;
+        bridgeId[0] = 20;
         bridgeAddress[0] = address(0x1);
         bridgeValidator[0] = address(0x2);
-        bridgeId[1] = 6;
+        bridgeId[1] = 30;
         bridgeAddress[1] = address(0x3);
         bridgeValidator[1] = address(0x4);
-        bridgeId[2] = 7;
+        bridgeId[2] = 40;
         bridgeAddress[2] = address(0x5);
         bridgeValidator[2] = address(0x6);
 
@@ -161,8 +161,8 @@ contract SuperRegistryTest is BaseSetup {
         superRegistry.setBridgeAddresses(bridgeId, bridgeAddress, bridgeValidator);
         vm.prank(deployer);
 
-        assertEq(superRegistry.getBridgeAddress(6), address(0x3));
-        assertEq(superRegistry.getBridgeValidator(7), address(0x6));
+        assertEq(superRegistry.getBridgeAddress(30), address(0x3));
+        assertEq(superRegistry.getBridgeValidator(40), address(0x6));
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(bond);
