@@ -2,7 +2,6 @@
 pragma solidity ^0.8.23;
 
 library Error {
-
     //////////////////////////////////////////////////////////////
     //                  CONFIGURATION ERRORS                    //
     //////////////////////////////////////////////////////////////
@@ -149,6 +148,9 @@ library Error {
 
     /// @dev thrown if amount input is 0
     error ZERO_AMOUNT();
+
+    /// @dev thrown if final token is address 0
+    error ZERO_FINAL_TOKEN();
 
     /// @dev thrown if value input is 0
     error ZERO_INPUT_VALUE();
