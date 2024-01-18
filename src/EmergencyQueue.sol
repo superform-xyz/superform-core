@@ -100,6 +100,7 @@ contract EmergencyQueue is IEmergencyQueue {
         _executeQueuedWithdrawal(id_);
     }
 
+    /// @inheritdoc IEmergencyQueue
     function batchExecuteQueuedWithdrawal(uint256[] calldata ids_) external override onlyEmergencyAdmin {
         for (uint256 i; i < ids_.length; ++i) {
             _executeQueuedWithdrawal(ids_[i]);
