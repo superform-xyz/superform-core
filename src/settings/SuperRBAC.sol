@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
-import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
+import { Broadcastable } from "src/crosschain-data/utils/Broadcastable.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { Error } from "src/libraries/Error.sol";
 import { BroadcastMessage } from "src/types/DataTypes.sol";
@@ -11,8 +11,7 @@ import { AccessControlEnumerable } from "openzeppelin-contracts/contracts/access
 /// @title SuperRBAC
 /// @dev Contract to manage roles in the Superform protocol
 /// @author Zeropoint Labs
-contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
-
+contract SuperRBAC is ISuperRBAC, AccessControlEnumerable, Broadcastable {
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
@@ -181,7 +180,12 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
                 BroadcastMessage memory rolesPayload = BroadcastMessage(
                     "SUPER_RBAC", SYNC_REVOKE, abi.encode(++xChainPayloadCounter, role_, superRegistryAddressId_)
                 );
-                _broadcast(abi.encode(rolesPayload), extraData_);
+                _broadcast(
+                    superRegistry.getAddress(keccak256("BROADCAST_REGISTRY")),
+                    superRegistry.getAddress(keccak256("PAYMASTER")),
+                    abi.encode(rolesPayload),
+                    extraData_
+                );
             }
         } else {
             revert Error.ROLE_NOT_ASSIGNED();
@@ -221,33 +225,5 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
             if (getRoleMemberCount(role_) == 1) revert Error.CANNOT_REVOKE_LAST_ADMIN();
         }
         return super._revokeRole(role_, account_);
-    }
-
-    /// @dev interacts with role state registry to broadcasting state changes to all connected remote chains
-    /// @param message_ is the crosschain message to be sent.
-    /// @param extraData_ is the amb override information.
-    function _broadcast(bytes memory message_, bytes memory extraData_) internal {
-        (uint8 ambId, bytes memory broadcastParams) = abi.decode(extraData_, (uint8, bytes));
-
-        /// @dev if the broadcastParams are wrong this will revert
-        (uint256 gasFee, bytes memory extraData) = abi.decode(broadcastParams, (uint256, bytes));
-
-        if (msg.value < gasFee) {
-            revert Error.INVALID_BROADCAST_FEE();
-        }
-
-        /// @dev ambIds are validated inside the broadcast state registry
-        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{ value: gasFee }(
-            msg.sender, ambId, gasFee, message_, extraData
-        );
-
-        if (msg.value > gasFee) {
-            /// @dev forwards the rest to msg.sender
-            (bool success,) = payable(msg.sender).call{ value: msg.value - gasFee }("");
-
-            if (!success) {
-                revert Error.FAILED_TO_SEND_NATIVE();
-            }
-        }
     }
 }

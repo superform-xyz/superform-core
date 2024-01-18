@@ -3,12 +3,12 @@ pragma solidity ^0.8.23;
 
 import { ERC1155A } from "ERC1155A/ERC1155A.sol";
 import { aERC20 } from "ERC1155A/aERC20.sol";
+import { Broadcastable } from "src/crosschain-data/utils/Broadcastable.sol";
 import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
-import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
 import { IPaymentHelper } from "./interfaces/IPaymentHelper.sol";
 import { Error } from "src/libraries/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
@@ -25,7 +25,7 @@ import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol
 /// @title SuperPositions
 /// @dev Cross-chain LP token minted on source chain
 /// @author Zeropoint Labs
-contract SuperPositions is ISuperPositions, ERC1155A {
+contract SuperPositions is ISuperPositions, ERC1155A, Broadcastable {
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
@@ -380,41 +380,16 @@ contract SuperPositions is ISuperPositions, ERC1155A {
             abi.encode(CHAIN_ID, ++xChainPayloadCounter, id, name, symbol, decimal)
         );
 
-        _broadcast(abi.encode(transmuterPayload));
+        _broadcast(
+            superRegistry.getAddress(keccak256("BROADCAST_REGISTRY")),
+            superRegistry.getAddress(keccak256("PAYMASTER")),
+            abi.encode(transmuterPayload),
+            IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER"))).getRegisterTransmuterAMBData()
+        );
 
         emit AERC20TokenRegistered(id, aErc20Token);
 
         return aErc20Token;
-    }
-
-    /// @dev interacts with broadcast state registry to broadcasting state changes to all connected remote chains
-    /// @param message_ is the crosschain message to be sent.
-    function _broadcast(bytes memory message_) internal {
-        bytes memory registerTransmuterAMBData =
-            IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER"))).getRegisterTransmuterAMBData();
-
-        (uint8 ambId, bytes memory broadcastParams) = abi.decode(registerTransmuterAMBData, (uint8, bytes));
-
-        /// @dev if the broadcastParams are wrong this will revert
-        (uint256 gasFee, bytes memory extraData) = abi.decode(broadcastParams, (uint256, bytes));
-
-        if (msg.value < gasFee) {
-            revert Error.INVALID_BROADCAST_FEE();
-        }
-
-        /// @dev ambIds are validated inside the broadcast state registry
-        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{ value: gasFee }(
-            msg.sender, ambId, gasFee, message_, extraData
-        );
-
-        if (msg.value > gasFee) {
-            /// @dev forwards the rest to msg.sender
-            (bool success,) = payable(msg.sender).call{ value: msg.value - gasFee }("");
-
-            if (!success) {
-                revert Error.FAILED_TO_SEND_NATIVE();
-            }
-        }
     }
 
     /// @dev deploys new transmuter on broadcasting

@@ -2,10 +2,10 @@
 pragma solidity ^0.8.23;
 
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+import { Broadcastable } from "src/crosschain-data/utils/Broadcastable.sol";
 import { BaseForm } from "src/BaseForm.sol";
 import { BroadcastMessage } from "src/types/DataTypes.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
-import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
@@ -17,8 +17,7 @@ import { Clones } from "openzeppelin-contracts/contracts/proxy/Clones.sol";
 /// @title SuperformFactory
 /// @dev Central point of read & write access for all Superforms on this chain
 /// @author Zeropoint Labs
-contract SuperformFactory is ISuperformFactory {
-
+contract SuperformFactory is ISuperformFactory, Broadcastable {
     using DataLib for uint256;
     using Clones for address;
 
@@ -95,7 +94,7 @@ contract SuperformFactory is ISuperformFactory {
         if (superRegistry_ == address(0)) {
             revert Error.ZERO_ADDRESS();
         }
-        
+
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }
@@ -233,7 +232,8 @@ contract SuperformFactory is ISuperformFactory {
 
         /// @dev instantiate the superform
         superform_ = tFormImplementation.cloneDeterministic(
-            keccak256(abi.encode(uint256(CHAIN_ID), formImplementationId_, vault_)));
+            keccak256(abi.encode(uint256(CHAIN_ID), formImplementationId_, vault_))
+        );
 
         BaseForm(payable(superform_)).initialize(address(superRegistry), vault_, address(IERC4626(vault_).asset()));
 
@@ -275,7 +275,12 @@ contract SuperformFactory is ISuperformFactory {
                 abi.encode(CHAIN_ID, ++xChainPayloadCounter, formImplementationId_, status_)
             );
 
-            _broadcast(abi.encode(factoryPayload), extraData_);
+            _broadcast(
+                superRegistry.getAddress(keccak256("BROADCAST_REGISTRY")),
+                superRegistry.getAddress(keccak256("PAYMASTER")),
+                abi.encode(factoryPayload),
+                extraData_
+            );
         } else if (msg.value != 0) {
             revert Error.MSG_VALUE_NOT_ZERO();
         }
@@ -295,34 +300,6 @@ contract SuperformFactory is ISuperformFactory {
     //////////////////////////////////////////////////////////////
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
-
-    /// @dev interacts with broadcast state registry to broadcasting state changes to all connected remote chains
-    /// @param message_ is the crosschain message to be sent.
-    /// @param extraData_ is the amb override information.
-    function _broadcast(bytes memory message_, bytes memory extraData_) internal {
-        (uint8 ambId, bytes memory broadcastParams) = abi.decode(extraData_, (uint8, bytes));
-
-        /// @dev if the broadcastParams are wrong this will revert
-        (uint256 gasFee, bytes memory extraData) = abi.decode(broadcastParams, (uint256, bytes));
-
-        if (msg.value < gasFee) {
-            revert Error.INVALID_BROADCAST_FEE();
-        }
-
-        /// @dev ambIds are validated inside the broadcast state registry
-        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{ value: gasFee }(
-            msg.sender, ambId, gasFee, message_, extraData
-        );
-
-        if (msg.value > gasFee) {
-            /// @dev forwards the rest to msg.sender
-            (bool success,) = payable(msg.sender).call{ value: msg.value - gasFee }("");
-
-            if (!success) {
-                revert Error.FAILED_TO_SEND_NATIVE();
-            }
-        }
-    }
 
     /// @dev synchronize paused status update message from remote chain
     /// @notice is a part of broadcasting / dispatching through factory state registry

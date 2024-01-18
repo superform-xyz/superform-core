@@ -26,10 +26,6 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @notice should not be allowed to be changed
     bytes32 public constant override SUPERFORM_FACTORY = keccak256("SUPERFORM_FACTORY");
 
-    /// @dev not accessed in protocol
-    /// @dev could be allowed to be changed
-    bytes32 public constant override SUPER_TRANSMUTER = keccak256("SUPER_TRANSMUTER");
-
     /// @dev can be used to set a new paymaster to forward payments to
     /// @dev could be allowed to be changed
     bytes32 public constant override PAYMASTER = keccak256("PAYMASTER");
