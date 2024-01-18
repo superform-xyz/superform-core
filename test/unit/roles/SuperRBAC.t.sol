@@ -10,6 +10,8 @@ import { SuperRBAC } from "src/settings/SuperRBAC.sol";
 
 import { Error } from "src/libraries/Error.sol";
 
+contract Invalid { }
+
 contract SuperRBACTest is BaseSetup {
     SuperRBAC public superRBAC;
     ISuperRegistry public superRegistry;
@@ -88,6 +90,40 @@ contract SuperRBACTest is BaseSetup {
     function test_revokePaymentAdminRole() public {
         _revokeAndCheck(
             superRBAC.PAYMENT_ADMIN_ROLE(), superRegistry.PAYMENT_ADMIN(), deployer, "", generateBroadcastParams(0), 0
+        );
+    }
+
+    function test_revokeCsrDisputerRole_withGasFeeGt0AndMsgValue0() public {
+        _revokeAndCheck(
+            superRBAC.CORE_STATE_REGISTRY_DISPUTER_ROLE(),
+            superRegistry.CORE_REGISTRY_DISPUTER(),
+            deployer,
+            "",
+            generateBroadcastParams(100),
+            0
+        );
+    }
+
+    function test_revokeCsrDisputerRole_withGasFeeGt0AndMsgValue101() public {
+        _revokeAndCheck(
+            superRBAC.CORE_STATE_REGISTRY_DISPUTER_ROLE(),
+            superRegistry.CORE_REGISTRY_DISPUTER(),
+            deployer,
+            "",
+            generateBroadcastParams(100),
+            101
+        );
+    }
+
+    function test_revokeCsrDisputerRole_withGasFeeGt0AndMsgValue101_invalidRefundReceiver() public {
+        address invalid = address(new Invalid());
+        _revokeAndCheck(
+            superRBAC.CORE_STATE_REGISTRY_DISPUTER_ROLE(),
+            superRegistry.CORE_REGISTRY_DISPUTER(),
+            invalid,
+            "",
+            generateBroadcastParams(100),
+            101
         );
     }
 
@@ -205,17 +241,6 @@ contract SuperRBACTest is BaseSetup {
         );
     }
 
-    function test_revokeCoreStateRegistryDisputerRole() public {
-        _revokeAndCheck(
-            superRBAC.CORE_STATE_REGISTRY_DISPUTER_ROLE(),
-            superRegistry.CORE_REGISTRY_DISPUTER(),
-            deployer,
-            "",
-            generateBroadcastParams(0),
-            0
-        );
-    }
-
     function test_revokeDstSwapperProcessorRole() public {
         _revokeAndCheck(
             superRBAC.DST_SWAPPER_ROLE(),
@@ -261,6 +286,20 @@ contract SuperRBACTest is BaseSetup {
         );
     }
 
+    function test_stateSync_roleToRevokeDoesNotExist() public {
+        vm.expectRevert(Error.ROLE_NOT_ASSIGNED.selector);
+        vm.prank(getContract(ETH, "BroadcastRegistry"));
+        superRBAC.stateSyncBroadcast(
+            abi.encode(
+                BroadcastMessage(
+                    "SUPER_RBAC",
+                    keccak256("SYNC_REVOKE"),
+                    abi.encode(1, keccak256("NON_EXISTENT_ROLE"), keccak256("SUPERFORM_ROUTER"))
+                )
+            )
+        );
+    }
+
     function test_setup_new_role() public {
         vm.prank(deployer);
         superRBAC.setRoleAdmin(keccak256("NEW_ROLE"), keccak256("PROTOCOL_ADMIN_ROLE"));
@@ -292,6 +331,16 @@ contract SuperRBACTest is BaseSetup {
         );
     }
 
+    function test_revokeSuperBroadcast_RoleNotAssigned() public {
+        vm.deal(deployer, 1 ether);
+        vm.prank(deployer);
+        /// @dev setting the status as false in chain id = ETH
+        vm.expectRevert(Error.ROLE_NOT_ASSIGNED.selector);
+        superRBAC.revokeRoleSuperBroadcast{ value: 1 ether }(
+            keccak256("ROLE"), generateBroadcastParams(0), keccak256("SUPERFORM_ROUTER")
+        );
+    }
+
     function _revokeAndCheck(
         bytes32 superRBACRole_,
         bytes32 superRegistryAddressId_,
@@ -303,7 +352,7 @@ contract SuperRBACTest is BaseSetup {
         internal
     {
         vm.deal(actor_, value_ + 1 ether);
-        vm.prank(actor_);
+        bytes32 roleToCompare = superRBAC.CORE_STATE_REGISTRY_DISPUTER_ROLE();
 
         vm.recordLogs();
 
@@ -315,62 +364,86 @@ contract SuperRBACTest is BaseSetup {
         }
 
         /// @dev setting the status as false in chain id = ETH
-        superRBAC.revokeRoleSuperBroadcast{ value: value_ }(superRBACRole_, extraData_, superRegistryAddressId_);
+        if (superRBACRole_ != roleToCompare) {
+            vm.prank(actor_);
 
-        vm.startPrank(deployer);
-        _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
-        vm.stopPrank();
+            superRBAC.revokeRoleSuperBroadcast{ value: value_ }(superRBACRole_, extraData_, superRegistryAddressId_);
 
-        console.log("has role on eth", superRBAC.hasRole(superRBACRole_, memberAddress));
-        /// @dev role revoked on ETH
-        assertFalse(superRBAC.hasRole(superRBACRole_, memberAddress));
+            vm.startPrank(deployer);
+            _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
+            vm.stopPrank();
 
-        /// @dev broadcasting revokes to other chains on hold
-        SuperRBAC superRBAC_;
-        // /// @dev process the payload across all other chains
-        for (uint256 i = 0; i < chainIds.length; ++i) {
-            if (bytes(member_).length > 0) {
-                memberAddress = getContract(chainIds[i], member_);
-            }
-            if (chainIds[i] != ETH) {
-                vm.selectFork(FORKS[chainIds[i]]);
-                superRBAC_ = SuperRBAC(getContract(chainIds[i], "SuperRBAC"));
+            console.log("has role on eth", superRBAC.hasRole(superRBACRole_, memberAddress));
+            /// @dev role revoked on ETH
+            assertFalse(superRBAC.hasRole(superRBACRole_, memberAddress));
 
-                assertTrue(superRBAC_.hasRole(superRBACRole_, memberAddress));
-                console.log("has role on other chain b4", superRBAC_.hasRole(superRBACRole_, memberAddress));
-
-                vm.prank(deployer);
-                BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(1);
-                assertFalse(superRBAC_.hasRole(superRBACRole_, memberAddress));
-
-                console.log("has role on other chain after", superRBAC_.hasRole(superRBACRole_, memberAddress));
-            }
-        }
-
-        /// try processing the same payload again
-        for (uint256 i = 0; i < chainIds.length; ++i) {
-            if (chainIds[i] != ETH) {
-                vm.selectFork(FORKS[chainIds[i]]);
-                /// @dev re-grant broadcast state registry role in case it was revoked to test remaining of cases
-                if (superRBACRole_ == keccak256("BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE")) {
-                    vm.prank(deployer);
-                    SuperRBAC(getContract(chainIds[i], "SuperRBAC")).grantRole(superRBACRole_, deployer);
+            /// @dev broadcasting revokes to other chains on hold
+            SuperRBAC superRBAC_;
+            // /// @dev process the payload across all other chains
+            for (uint256 i = 0; i < chainIds.length; ++i) {
+                if (bytes(member_).length > 0) {
+                    memberAddress = getContract(chainIds[i], member_);
                 }
+                if (chainIds[i] != ETH) {
+                    vm.selectFork(FORKS[chainIds[i]]);
+                    superRBAC_ = SuperRBAC(getContract(chainIds[i], "SuperRBAC"));
 
-                vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
-                vm.prank(deployer);
-                BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(1);
+                    assertTrue(superRBAC_.hasRole(superRBACRole_, memberAddress));
+                    console.log("has role on other chain b4", superRBAC_.hasRole(superRBACRole_, memberAddress));
+
+                    vm.prank(deployer);
+                    BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(1);
+                    assertFalse(superRBAC_.hasRole(superRBACRole_, memberAddress));
+
+                    console.log("has role on other chain after", superRBAC_.hasRole(superRBACRole_, memberAddress));
+                }
             }
-        }
 
-        /// try processing not available payload id
-        for (uint256 i = 0; i < chainIds.length; ++i) {
-            if (chainIds[i] != ETH) {
-                vm.selectFork(FORKS[chainIds[i]]);
+            /// try processing the same payload again
+            for (uint256 i = 0; i < chainIds.length; ++i) {
+                if (chainIds[i] != ETH) {
+                    vm.selectFork(FORKS[chainIds[i]]);
+                    /// @dev re-grant broadcast state registry role in case it was revoked to test remaining of cases
+                    if (superRBACRole_ == keccak256("BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE")) {
+                        vm.prank(deployer);
+                        SuperRBAC(getContract(chainIds[i], "SuperRBAC")).grantRole(superRBACRole_, deployer);
+                    }
 
-                vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);
+                    vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
+                    vm.prank(deployer);
+                    BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(1);
+                }
+            }
+
+            /// try processing not available payload id
+            for (uint256 i = 0; i < chainIds.length; ++i) {
+                if (chainIds[i] != ETH) {
+                    vm.selectFork(FORKS[chainIds[i]]);
+
+                    vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);
+                    vm.prank(deployer);
+                    BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(2);
+                }
+            }
+        } else {
+            if (value_ == 0) {
+                vm.prank(actor_);
+                vm.expectRevert(Error.INVALID_BROADCAST_FEE.selector);
+                superRBAC.revokeRoleSuperBroadcast{ value: value_ }(superRBACRole_, extraData_, superRegistryAddressId_);
+            } else if (value_ > 100 && actor_ == deployer) {
+                vm.prank(actor_);
+                superRBAC.revokeRoleSuperBroadcast{ value: value_ }(superRBACRole_, extraData_, superRegistryAddressId_);
+            } else if (value_ > 100 && actor_ != deployer) {
+                vm.mockCall(
+                    address(superRegistry),
+                    abi.encodeWithSelector(superRegistry.getAddress.selector, keccak256("PAYMASTER")),
+                    abi.encode(actor_)
+                );
+
                 vm.prank(deployer);
-                BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(2);
+                vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
+                superRBAC.revokeRoleSuperBroadcast{ value: value_ }(superRBACRole_, extraData_, superRegistryAddressId_);
+                vm.clearMockedCalls();
             }
         }
     }
