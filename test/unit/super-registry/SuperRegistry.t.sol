@@ -346,7 +346,7 @@ contract SuperRegistryTest is BaseSetup {
         superRegistry.setRequiredMessagingQuorum(OP, 5);
     }
 
-    function test_set_delay() public {
+    function test_setDelay() public {
         vm.prank(deployer);
         vm.expectRevert(Error.INVALID_TIMELOCK_DELAY.selector);
         superRegistry.setDelay(5 minutes);
@@ -357,6 +357,12 @@ contract SuperRegistryTest is BaseSetup {
 
         vm.prank(deployer);
         superRegistry.setDelay(11 hours);
+    }
+
+    function test_setQuorum_invalid_chainId() public {
+        vm.prank(deployer);
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        superRegistry.setRequiredMessagingQuorum(0,2);
     }
 
     function test_getAmbId() public {
