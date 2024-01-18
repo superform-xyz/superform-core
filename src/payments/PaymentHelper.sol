@@ -587,7 +587,7 @@ contract PaymentHelper is IPaymentHelper {
         }
 
         if (config_.gasPriceOracle != address(0)) {
-            AggregatorV3Interface gasPriceOracleContract = AggregatorV3Interface(config_.nativeFeedOracle);
+            AggregatorV3Interface gasPriceOracleContract = AggregatorV3Interface(config_.gasPriceOracle);
             if (gasPriceOracleContract.decimals() != SUPPORTED_FEED_PRECISION) {
                 revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
             }
