@@ -12,7 +12,7 @@ abstract contract Broadcastable {
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
 
-    /// @dev interacts with role state registry to broadcasting state changes to all connected remote chains
+    /// @dev broadcasts state changes to all connected remote chains
     /// @param broadcastRegistry_ is the address of the broadcast registry contract.
     /// @param payMaster_ is the address of the paymaster contract.
     /// @param message_ is the crosschain message to be sent.
