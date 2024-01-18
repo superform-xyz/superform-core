@@ -130,7 +130,7 @@ jobs:
       - name: 'Install Tenderly CLI'
         run: curl https://raw.githubusercontent.com/Tenderly/tenderly-cli/master/scripts/install-linux.sh | sudo sh
       - name: 'Deploy to Tenderly Devnets'
-        run: ./utils/run_script_tenderly.sh
+        run: ./script/utils/run_script_tenderly.sh
         shell: bash
       - name: "Add devnet deployment summary"
         run: |
