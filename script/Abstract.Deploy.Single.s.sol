@@ -255,14 +255,27 @@ abstract contract AbstractDeploySingle is Script {
 
     uint256 public constant milionTokensE18 = 1 ether;
 
+    /// @dev check https://api-utils.superform.xyz/docs#/Utils/get_gas_prices_gwei_gas_get
     uint256[] public gasPrices = [
-        35 * 10e9, // ETH
-        5 * 10e9, // BSC
-        45 * 10e9, // AVAX
-        200 * 10e9, // POLY
-        1 * 10e8, // ARBI
-        1 * 10e8, // OP
-        1 * 10e8, // BASE
+        50_000_000_000, // ETH
+        3_000_000_000, // BSC
+        25_000_000_000, // AVAX
+        50_000_000_000, // POLY
+        100_000_000, // ARBI
+        4_000_000, // OP
+        1_000_000, // BASE
+        4 * 10e9 // GNOSIS
+    ];
+
+    /// @dev check https://api-utils.superform.xyz/docs#/Utils/get_native_prices_chainlink_native_get
+    uint256[] public nativePrices = [
+        253_400_000_000, // ETH
+        31_439_000_000, // BSC
+        3_529_999_999, // AVAX
+        81_216_600, // POLY
+        253_400_000_000, // ARBI
+        253_400_000_000, // OP
+        253_400_000_000, // BASE
         4 * 10e9 // GNOSIS
     ];
 
@@ -658,11 +671,22 @@ abstract contract AbstractDeploySingle is Script {
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
             vars.chainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
         );
-        /// 500000000000
+        PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
+            vars.chainId, 7, abi.encode(nativePrices[trueIndex])
+        );
+
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 8, abi.encode(gasPrices[trueIndex]));
+
+        /// @dev gas per byte
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 9, abi.encode(750));
-        PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 10, abi.encode(40_000));
+
+        /// @dev ackGasCost to mint superPositions
+        PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
+            vars.chainId, 10, abi.encode(vars.chainId == ARBI ? 500_000 : 150_000)
+        );
+
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 11, abi.encode(50_000));
+
         /// @dev FIXME emergencyCost value
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 12, abi.encode(10_000));
 
@@ -908,27 +932,27 @@ abstract contract AbstractDeploySingle is Script {
         SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
 
         vars.superRegistryC.setVaultLimitPerDestination(vars.dstChainId, 5);
+        /*
+        updateGasUsed Arb = 1M, others = 200k
 
-        /// @dev these values are mocks and has to be replaced
-        /// swap gas cost: 50000
-        /// update gas cost: 40000
-        /// deposit gas cost: 70000
-        /// withdraw gas cost: 80000
-        /// default gas price: 50 Gwei
+        ackGasCost[CHAIN_ID], Arb = 500k, others = 150k -- i.e. ackGasCost on 42161 of ackGasCost[42161] = 500k
+
+        swapGasUsed Arb = 2M, others = 1M
+        */
         PaymentHelper(payable(vars.paymentHelper)).addRemoteChain(
             vars.dstChainId,
             IPaymentHelper.PaymentHelperConfig(
                 PRICE_FEEDS[vars.chainId][vars.dstChainId],
                 address(0),
-                50_000,
-                40_000,
-                70_000,
-                80_000,
-                12e8,
-                /// 12 usd
+                vars.dstChainId == ARBI ? 2_000_000 : 1_000_000,
+                vars.dstChainId == ARBI ? 1_000_000 : 200_000,
+                vars.dstChainId == ARBI ? 1_000_000 : 200_000,
+                vars.dstChainId == ARBI ? 750_000 : 150_000,
+                nativePrices[vars.dstTrueIndex],
                 gasPrices[vars.dstTrueIndex],
                 750,
-                10_000,
+                2_000_000,
+                /// @dev ackGasCost to move a msg from dst to source
                 10_000,
                 10_000
             )
