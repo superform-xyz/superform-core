@@ -255,6 +255,7 @@ abstract contract AbstractDeploySingle is Script {
 
     uint256 public constant milionTokensE18 = 1 ether;
 
+    /// @dev check https://api-utils.superform.xyz/docs#/Utils/get_gas_prices_gwei_gas_get
     uint256[] public gasPrices = [
         50_000_000_000, // ETH
         3_000_000_000, // BSC
@@ -263,6 +264,18 @@ abstract contract AbstractDeploySingle is Script {
         100_000_000, // ARBI
         4_000_000, // OP
         1_000_000, // BASE
+        4 * 10e9 // GNOSIS
+    ];
+
+    /// @dev check https://api-utils.superform.xyz/docs#/Utils/get_native_prices_chainlink_native_get
+    uint256[] public nativePrices = [
+        253_400_000_000, // ETH
+        31_439_000_000, // BSC
+        3_529_999_999, // AVAX
+        81_216_600, // POLY
+        253_400_000_000, // ARBI
+        253_400_000_000, // OP
+        253_400_000_000, // BASE
         4 * 10e9 // GNOSIS
     ];
 
@@ -658,7 +671,10 @@ abstract contract AbstractDeploySingle is Script {
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
             vars.chainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
         );
-        /// 500000000000
+        PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
+            vars.chainId, 7, abi.encode(nativePrices[trueIndex])
+        );
+
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 8, abi.encode(gasPrices[trueIndex]));
 
         /// @dev gas per byte
@@ -932,8 +948,7 @@ abstract contract AbstractDeploySingle is Script {
                 vars.dstChainId == ARBI ? 1_000_000 : 200_000,
                 vars.dstChainId == ARBI ? 1_000_000 : 200_000,
                 vars.dstChainId == ARBI ? 750_000 : 150_000,
-                12e8,
-                /// 12 usd
+                nativePrices[vars.dstTrueIndex],
                 gasPrices[vars.dstTrueIndex],
                 750,
                 2_000_000,
