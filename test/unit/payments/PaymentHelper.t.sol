@@ -121,6 +121,35 @@ contract PaymentHelperTest is ProtocolActions {
         vm.clearMockedCalls();
     }
 
+    function test_estimateSingleDirectSingleVault_formImplPaused() public {
+        vm.prank(deployer);
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
+            2, ISuperformFactory.PauseStatus(1), ""
+        );
+        /// @dev scenario: single vault withdrawal involving timelock with paused implementation
+        bytes memory emptyBytes;
+        (,, uint256 fees) = paymentHelper.estimateSingleDirectSingleVault(
+            SingleDirectSingleVaultStateReq(
+                SingleVaultSFData(
+                    _generateTimelockSuperformPackWithShift(),
+                    /// timelock
+                    420,
+                    420,
+                    420,
+                    LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420),
+                    emptyBytes,
+                    false,
+                    false,
+                    receiverAddress,
+                    receiverAddress,
+                    emptyBytes
+                )
+            ),
+            false
+        );
+        assertGt(fees, 0);
+    }
+
     function test_estimateSingleDirectSingleVault() public {
         /// @dev scenario: single vault withdrawal involving timelock
         /// expected fees to be greater than zero
