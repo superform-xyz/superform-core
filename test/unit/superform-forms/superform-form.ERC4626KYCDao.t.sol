@@ -89,6 +89,42 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
         IBaseForm(superform).xChainWithdrawFromVault(data, deployer, ARBI);
     }
 
+    function test_superform_invalidChainId() public {
+        /// @dev prank deposits (just mint super-shares)
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "kycDAO4626", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[2]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[2], ETH);
+
+        MockERC20(getContract(ETH, "DAI")).transfer(superform, 1e18);
+        vm.stopPrank();
+
+        InitSingleVaultData memory data = InitSingleVaultData(
+            1,
+            superformId,
+            1e18,
+            1e18,
+            100,
+            LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ARBI, 0),
+            false,
+            false,
+            receiverAddress,
+            ""
+        );
+
+        vm.prank(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        IBaseForm(superform).xChainWithdrawFromVault(data, deployer, 0);
+
+        vm.prank(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        IBaseForm(superform).xChainDepositIntoVault(data, deployer, 0);
+    }
+
     function test_forwardDustToPaymaster() public {
         /// @dev prank deposits (just mint super-shares)
         vm.selectFork(FORKS[ETH]);

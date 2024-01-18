@@ -72,6 +72,134 @@ contract SuperformRouterTest is ProtocolActions {
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 
+    function test_deposit_noTxData() public {
+        /// scenario: deposit to an invalid super form id (which doesn't exist on the chain)
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        /// try depositing without approval
+        address superform = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
+
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            1e18,
+            1e18,
+            100,
+            LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
+            "",
+            false,
+            false,
+            receiverAddress,
+            receiverAddress,
+            ""
+        );
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+
+        SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds, ARBI, data);
+
+        address router = getContract(ETH, "SuperformRouter");
+
+        /// @dev approves before call
+        MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
+
+        vm.expectRevert(Error.NO_TXDATA_PRESENT.selector);
+        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleXChainSingleVaultDeposit(req);
+    }
+
+    function test_deposit_noReceiverAddress() public {
+        /// scenario: deposit to an invalid super form id (which doesn't exist on the chain)
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        /// try depositing without approval
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
+
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            1e18,
+            1e18,
+            100,
+            LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
+            "",
+            false,
+            false,
+            receiverAddress,
+            address(0),
+            ""
+        );
+
+        SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
+
+        address router = getContract(ETH, "SuperformRouter");
+
+        /// @dev approves before call
+        MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
+
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
+        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
+    }
+
+    function test_deposit_multiVault_noReceiverAddress() public {
+        /// scenario: deposit to an invalid super form id (which doesn't exist on the chain)
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        /// try depositing without approval
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
+
+        uint256[] memory superformids = new uint256[](1);
+        superformids[0] = superformId;
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 1e18;
+
+        uint256[] memory outputAmounts = new uint256[](1);
+        outputAmounts[0] = 1e18;
+
+        uint256[] memory maxSlippages = new uint256[](1);
+        maxSlippages[0] = 100;
+
+        LiqRequest[] memory liqReq = new LiqRequest[](1);
+        liqReq[0] = LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0);
+
+        MultiVaultSFData memory data = MultiVaultSFData(
+            superformids,
+            amounts,
+            outputAmounts,
+            maxSlippages,
+            liqReq,
+            "",
+            new bool[](1),
+            new bool[](1),
+            receiverAddress,
+            address(0),
+            ""
+        );
+
+        SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
+
+        address router = getContract(ETH, "SuperformRouter");
+
+        /// @dev approves before call
+        MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
+
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
+        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectMultiVaultDeposit(req);
+    }
+
     function test_withdrawFromInvalidFormImplId() public {
         /// scenario: withdraw from a superform by modifying the form implementation id
         vm.selectFork(FORKS[ETH]);
