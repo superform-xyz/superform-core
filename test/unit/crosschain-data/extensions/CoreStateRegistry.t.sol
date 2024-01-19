@@ -99,6 +99,12 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.prank(deployer);
         vm.expectRevert(Error.BRIDGE_TOKENS_PENDING.selector);
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: nativeValue }(1);
+
+        vm.prank(deployer);
+        MockERC20(getContract(AVAX, "DAI")).transfer(getContract(AVAX, "CoreStateRegistry"), 838);
+
+        vm.prank(deployer);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: nativeValue }(1);
     }
 
     /// @dev this test ensures that if a superform update failed because of slippage in 2 of 4 vaults
