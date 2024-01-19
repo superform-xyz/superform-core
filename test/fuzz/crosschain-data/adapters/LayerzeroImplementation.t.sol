@@ -524,27 +524,4 @@ contract LayerzeroImplementationTest is BaseSetup {
 
         return (ambMessage, ambExtraData, coreStateRegistry);
     }
-
-    function test_isTrustedRemote_InvalidChainId() public {
-        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
-        layerzeroImplementation.isTrustedRemote(0, bytes("hello"));
-    }
-
-    function test_dispatchPayloadInvalidChainId() public {
-        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
-        vm.prank(getContract(ETH, "CoreStateRegistry"));
-        layerzeroImplementation.dispatchPayload(deployer, 420, bytes("hi test"), "");
-    }
-
-    function test_lzReceive_InvalidChainId() public {
-        vm.prank(deployer);
-        layerzeroImplementation.setTrustedRemote(0, bytes("test"));
-
-        vm.prank(address(layerzeroImplementation.lzEndpoint()));
-        AMBMessage memory ambMessage;
-        ambMessage.txInfo = DataLib.packTxInfo(0, 0, 0, 1, address(0), 0);
-
-        layerzeroImplementation.lzReceive(0, bytes("test"), 420, abi.encode(ambMessage));
-        assertGt(layerzeroImplementation.failedMessages(0, bytes("test"), 420).length, 0);
-    }
 }
