@@ -225,14 +225,14 @@ contract PaymentHelper is IPaymentHelper {
 
             /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
             /// @dev ensure that acknowledgement costs from dst to src are not double counted
-            bool hasRetain4626;
+            bool noRetain4626;
             for (uint256 j; j < v.superformIdsLen; ++j) {
                 if (!req_.superformsData[i].retain4626s[j]) {
-                    hasRetain4626 = true;
+                    noRetain4626 = true;
                     break;
                 }
             }
-            if (hasRetain4626 && xChain) {
+            if (noRetain4626 && xChain) {
                 v.totalDstGas += _estimateDstExecutionCost(isDeposit_, false, req_.dstChainIds[i], v.superformIdsLen);
             } else {
                 v.totalDstGas +=
@@ -366,14 +366,14 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
         /// @dev ensure that acknowledgement costs from dst to src are not double counted
-        bool hasRetain4626;
+        bool noRetain4626;
         for (uint256 i; i < superformIdsLen; ++i) {
             if (!req_.superformsData.retain4626s[i]) {
-                hasRetain4626 = true;
+                noRetain4626 = true;
                 break;
             }
         }
-        if (hasRetain4626) {
+        if (noRetain4626) {
             totalDstGas += _estimateDstExecutionCost(isDeposit_, false, req_.dstChainId, superformIdsLen);
         } else {
             totalDstGas += _estimateDstExecutionCost(isDeposit_, true, req_.dstChainId, superformIdsLen);
