@@ -204,6 +204,132 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         );
     }
 
+    function test_superformDirectTimelockWithdrawalLiqDataAmountGreaterThanAmountRedeemed() public {
+        /// @dev prank deposits (just mint super-shares)
+        _successfulDeposit();
+
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[1], ETH);
+
+        MockERC20(getContract(ETH, "DAI")).transfer(superform, 1e18);
+        vm.stopPrank();
+
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
+            superform,
+            ETH,
+            ARBI,
+            ETH,
+            false,
+            superform,
+            uint256(ETH),
+            2e18,
+            //2e18,
+            false,
+            0,
+            1,
+            1,
+            1
+        );
+
+        InitSingleVaultData memory data = InitSingleVaultData(
+            1,
+            superformId,
+            1e18,
+            1e18,
+            100,
+            LiqRequest(
+                _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, ETH, 0
+            ),
+            false,
+            false,
+            receiverAddress,
+            ""
+        );
+
+        vm.prank(getContract(ETH, "SuperformRouter"));
+        IBaseForm(superform).directWithdrawFromVault(data, deployer);
+
+        vm.expectRevert(Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST.selector);
+        vm.prank(getContract(ETH, "TimelockStateRegistry"));
+        ERC4626TimelockForm(payable(superform)).withdrawAfterCoolDown(
+            TimelockPayload(0, ETH, block.timestamp, data, TimelockStatus.PENDING)
+        );
+    }
+
+    function test_superformDirectTimelockWithdrawalInvalidVaultImplementation() public {
+        /// @dev prank deposits (just mint super-shares)
+        _successfulDeposit();
+
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[1], ETH);
+
+        MockERC20(getContract(ETH, "DAI")).transfer(superform, 1e18);
+        vm.stopPrank();
+
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
+            superform,
+            ETH,
+            ARBI,
+            ETH,
+            false,
+            superform,
+            uint256(ETH),
+            2e18,
+            //2e18,
+            false,
+            0,
+            1,
+            1,
+            1
+        );
+
+        InitSingleVaultData memory data = InitSingleVaultData(
+            1,
+            superformId,
+            1e18,
+            1e18,
+            100,
+            LiqRequest(
+                _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), address(0), 1, ETH, 0
+            ),
+            false,
+            false,
+            receiverAddress,
+            ""
+        );
+
+        vm.prank(getContract(ETH, "SuperformRouter"));
+        IBaseForm(superform).directWithdrawFromVault(data, deployer);
+
+        data.amount = 0.5e18;
+
+        vm.expectRevert(Error.VAULT_IMPLEMENTATION_FAILED.selector);
+        vm.prank(getContract(ETH, "TimelockStateRegistry"));
+        ERC4626TimelockForm(payable(superform)).withdrawAfterCoolDown(
+            TimelockPayload(0, ETH, block.timestamp, data, TimelockStatus.PENDING)
+        );
+    }
+
     /*///////////////////////////////////////////////////////////////
                         INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
