@@ -304,11 +304,6 @@ contract PaymentHelperTest is ProtocolActions {
     }
 
     function test_estimateSingleXChainMultiVault_retain4626() public {
-        vm.prank(deployer);
-        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
-            2, ISuperformFactory.PauseStatus(1), ""
-        );
-
         uint8[] memory ambIds = new uint8[](1);
 
         ambIds[0] = 1;
@@ -351,12 +346,7 @@ contract PaymentHelperTest is ProtocolActions {
         assertGt(fees, 0);
     }
 
-    function test_estimateSingleXChainMultiVault_sameDst() public {
-        vm.prank(deployer);
-        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
-            2, ISuperformFactory.PauseStatus(1), ""
-        );
-
+    function test_estimateSingleXChainMultiVault_sameDst_deposit() public {
         uint8[] memory ambIds = new uint8[](1);
 
         ambIds[0] = 1;
@@ -391,7 +381,7 @@ contract PaymentHelperTest is ProtocolActions {
                     emptyBytes
                 )
             ),
-            false
+            true
         );
         assertGt(fees, 0);
     }
