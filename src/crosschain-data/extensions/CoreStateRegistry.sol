@@ -789,9 +789,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         bool fulfilment;
         bool errors;
         for (uint256 i; i < numberOfVaults; ++i) {
-            /// @dev if updating the deposit payload fails because of slippage, multiVaultData.amounts[i] is set to 0
-            /// @dev this means that this amount was already added to the failedDeposits state variable and should not
-            /// be re-added (or processed here)
+            /// @dev it is not possible in theory to have multiVaultData.amounts to be 0 at this point
+            /// @dev this is due to the fact that 0 values are moved in updateDeposit which must always run prior to
+            /// processing the payload
+            /// @dev this check is added here only for sanity purposes and full coverage of the line is not possible
             if (multiVaultData.amounts[i] != 0) {
                 underlying = IERC20(_getVaultAsset(superforms[i]));
 
