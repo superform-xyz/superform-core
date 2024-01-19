@@ -21,9 +21,9 @@ contract MainnetDeployNewChain is AbstractDeploySingle {
     */
     //!WARNING ENUSRE output folder has correct addresses of the deployment!
 
-    uint64[] TARGET_DEPLOYMENT_CHAINS = [ETH, BASE, OP, ARBI];
-    uint64[] FINAL_DEPLOYED_CHAINS = [ETH, BASE, OP, ARBI, BSC, POLY, AVAX];
-    uint64[] PREVIOUS_DEPLOYMENT = [BSC, POLY, AVAX];
+    uint64[] TARGET_DEPLOYMENT_CHAINS = [ETH];
+    uint64[] FINAL_DEPLOYED_CHAINS = [ETH, BSC, AVAX, POLY, ARBI, OP, BASE];
+    uint64[] PREVIOUS_DEPLOYMENT = [BSC, AVAX, POLY, ARBI, OP, BASE];
 
     ///@dev ORIGINAL SALT
     bytes32 constant salt = "NO_SLEEP_VIK";

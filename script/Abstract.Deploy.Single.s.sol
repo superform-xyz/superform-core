@@ -408,6 +408,7 @@ abstract contract AbstractDeploySingle is Script {
                 })
             )
         );
+
         contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars.superRBAC;
         vars.superRBACC = SuperRBAC(vars.superRBAC);
 
@@ -782,8 +783,8 @@ abstract contract AbstractDeploySingle is Script {
         srbac.grantRole(protocolAdminRole, PROTOCOL_ADMINS[trueIndex]);
         srbac.grantRole(emergencyAdminRole, EMERGENCY_ADMIN);
 
-        srbac.revokeRole(emergencyAdminRole, ownerAddress);
-        srbac.revokeRole(protocolAdminRole, ownerAddress);
+        //srbac.revokeRole(emergencyAdminRole, ownerAddress);
+        //srbac.revokeRole(protocolAdminRole, ownerAddress);
 
         vm.stopBroadcast();
     }
