@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import { Error } from "src/libraries/Error.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
 import { MockERC20 } from "test/mocks/MockERC20.sol";
-import { VaultMock} from "test/mocks/VaultMock.sol";
+import { VaultMock } from "test/mocks/VaultMock.sol";
 import { VaultMockFailedDeposit } from "test/mocks/VaultMockFailedDeposit.sol";
 import { VaultMockFailedWithdraw } from "test/mocks/VaultMockFailedWithdraw.sol";
 import { SuperformFactory } from "src/SuperformFactory.sol";
@@ -580,7 +580,6 @@ contract SuperformERC4626FormTest is ProtocolActions {
     }
 
     function test_superformDirectWithdrawVaultImplementationFailed() public {
-
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
@@ -590,7 +589,8 @@ contract SuperformERC4626FormTest is ProtocolActions {
         address formImplementation = address(new ERC4626Form(superRegistry));
         uint32 formImplementationId = 0;
 
-        VaultMockFailedWithdraw vault = new VaultMockFailedWithdraw(IERC20(getContract(ETH, "DAI")), "Mock Vault", "Mock");
+        VaultMockFailedWithdraw vault =
+            new VaultMockFailedWithdraw(IERC20(getContract(ETH, "DAI")), "Mock Vault", "Mock");
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
@@ -606,7 +606,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         vm.startPrank(router);
         SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
         vm.stopPrank();
-        
+
         vm.startPrank(deployer);
         /// @dev superform data with 1e18 final amount
         SingleVaultSFData memory data = SingleVaultSFData(
@@ -689,7 +689,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             1e18,
             1e18,
             100,
-            LiqRequest(                
+            LiqRequest(
                 _buildDummyTxDataUnitTests(
                     BuildDummyTxDataUnitTestsVars(
                         1,
@@ -702,12 +702,13 @@ contract SuperformERC4626FormTest is ProtocolActions {
                         getContract(ETH, "CoreStateRegistry"),
                         false
                     )
-                ), 
-                address(0), 
-                address(0), 
-                1, 
-                ARBI, 
-                0),
+                ),
+                address(0),
+                address(0),
+                1,
+                ARBI,
+                0
+            ),
             false,
             false,
             receiverAddress,
@@ -720,7 +721,6 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         vm.stopPrank();
     }
-
 
     function test_superformXChainWithdrawal_NonExistentSuperform() public {
         /// @dev prank deposits (just mint super-shares)
@@ -1126,6 +1126,32 @@ contract SuperformERC4626FormTest is ProtocolActions {
         MockERC20(getContract(ETH, "DAI")).approve(router, daiAmount);
         vm.expectRevert(Error.BLACKLISTED_SELECTOR.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
+    }
+
+    function test_processXChainDeposit_InsufficientAllowance() public {
+        vm.selectFork(FORKS[ETH]);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
+
+        InitSingleVaultData memory data = InitSingleVaultData(
+            1,
+            superformId,
+            1e18,
+            1e18,
+            100,
+            LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ARBI, 0),
+            false,
+            false,
+            receiverAddress,
+            ""
+        );
+
+        vm.prank(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT.selector);
+        IBaseForm(superform).xChainDepositIntoVault(data, deployer, POLY);
     }
 
     /*///////////////////////////////////////////////////////////////
