@@ -305,6 +305,11 @@ contract SuperRBACTest is BaseSetup {
         superRBAC.setRoleAdmin(keccak256("NEW_ROLE"), keccak256("PROTOCOL_ADMIN_ROLE"));
     }
 
+    function test_revokeRoleWithoutBroadcast() public {
+        vm.startPrank(deployer);
+        superRBAC.revokeRoleSuperBroadcast(superRBAC.PAYMENT_ADMIN_ROLE(), "", superRegistry.PAYMENT_ADMIN());
+    }
+
     function test_revokeSuperBroadcast_CannotRevoke() public {
         vm.deal(deployer, 1 ether);
         vm.startPrank(deployer);

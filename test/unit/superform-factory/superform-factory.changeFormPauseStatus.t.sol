@@ -69,6 +69,28 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
         assertEq(status, true);
     }
 
+    function test_changeFormImplementationPauseStatusNoBroadcastRevertCase() public {
+        vm.startPrank(deployer);
+
+        vm.selectFork(FORKS[chainId]);
+
+        address superRegistry = getContract(chainId, "SuperRegistry");
+
+        /// @dev Deploying Forms
+        address formImplementation1 = address(new ERC4626Form(superRegistry));
+        uint32 formImplementationId = 0;
+
+        // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
+            formImplementation1, formImplementationId, 1
+        );
+
+        vm.expectRevert(Error.MSG_VALUE_NOT_ZERO.selector);
+        SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormImplementationPauseStatus{ value: 1 ether }(
+            formImplementationId, ISuperformFactory.PauseStatus.PAUSED, ""
+        );
+    }
+
     function test_revert_changeFormImplementationPauseStatus_INVALID_FORM_ID() public {
         vm.startPrank(deployer);
 
