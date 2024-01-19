@@ -42,6 +42,15 @@ contract LayerzeroImplementationUnitTest is BaseSetup {
         layerzeroImplementation.dispatchPayload(deployer, 420, bytes("hi test"), "");
     }
 
+    function test_layerzeroDispatchPayload_InvalidChainId2() public {
+        vm.prank(deployer);
+        layerzeroImplementation.setTrustedRemote(111, bytes(""));
+
+        vm.prank(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        layerzeroImplementation.dispatchPayload(deployer, 10, bytes("hi test"), "");
+    }
+
     function test_lzReceive_InvalidChainId() public {
         vm.prank(deployer);
         layerzeroImplementation.setTrustedRemote(0, bytes("test"));

@@ -631,6 +631,58 @@ contract SuperformERC4626FormTest is ProtocolActions {
         SuperformRouter(payable(router)).singleDirectSingleVaultWithdraw(req);
     }
 
+    function test_superformDirectWithdrawZeroCollateral() public {
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superRegistry = getContract(chainId, "SuperRegistry");
+
+        /// @dev Deploying Forms
+        address formImplementation = address(new ERC4626Form(superRegistry));
+        uint32 formImplementationId = 0;
+
+        VaultMockFailedWithdraw vault =
+            new VaultMockFailedWithdraw(IERC20(getContract(ETH, "DAI")), "Mock Vault", "Mock");
+
+        // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
+            formImplementation, formImplementationId, 1
+        );
+        /// @dev Creating superform using formImplementationId and failed deposit vault
+        (uint256 superformId,) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
+            formImplementationId, address(vault)
+        );
+
+        vm.stopPrank();
+        address router = getContract(ETH, "SuperformRouter");
+        vm.startPrank(router);
+        SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
+        vm.stopPrank();
+
+        vm.startPrank(deployer);
+        /// @dev superform data with 1e18 final amount
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            1,
+            1,
+            10_000,
+            LiqRequest("", getContract(ETH, "DAI"), address(0), 1, ETH, 0),
+            "",
+            false,
+            false,
+            receiverAddress,
+            receiverAddress,
+            ""
+        );
+
+        SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
+
+        SuperPositions(getContract(ETH, "SuperPositions")).setApprovalForAll(router, true);
+
+        vm.expectRevert(Error.WITHDRAW_ZERO_COLLATERAL.selector);
+        SuperformRouter(payable(router)).singleDirectSingleVaultWithdraw(req);
+    }
+
     function test_superformXChainWithdrawalWithoutUpdatingTxData() public {
         /// @dev prank deposits (just mint super-shares)
         _successfulDeposit(false);
