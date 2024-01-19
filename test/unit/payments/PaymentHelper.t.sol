@@ -303,6 +303,99 @@ contract PaymentHelperTest is ProtocolActions {
         assertGt(fees, 0);
     }
 
+    function test_estimateSingleXChainMultiVault_retain4626() public {
+        vm.prank(deployer);
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
+            2, ISuperformFactory.PauseStatus(1), ""
+        );
+
+        uint8[] memory ambIds = new uint8[](1);
+
+        ambIds[0] = 1;
+        ambIds[0] = 2;
+
+        bytes memory emptyBytes;
+        uint256[] memory superFormIds = new uint256[](1);
+        superFormIds[0] = _generateTimelockSuperformPackWithShift();
+
+        uint256[] memory uint256MemoryArray = new uint256[](1);
+        uint256MemoryArray[0] = 420;
+
+        LiqRequest[] memory liqRequestMemoryArray = new LiqRequest[](1);
+        liqRequestMemoryArray[0] = LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420);
+        bool[] memory retain4626 = new bool[](1);
+
+        retain4626[0] = true;
+
+        (,,, uint256 fees) = paymentHelper.estimateSingleXChainMultiVault(
+            SingleXChainMultiVaultStateReq(
+                ambIds,
+                ARBI,
+                MultiVaultSFData(
+                    superFormIds,
+                    /// timelock
+                    uint256MemoryArray,
+                    uint256MemoryArray,
+                    uint256MemoryArray,
+                    liqRequestMemoryArray,
+                    emptyBytes,
+                    new bool[](1),
+                    retain4626,
+                    receiverAddress,
+                    receiverAddress,
+                    emptyBytes
+                )
+            ),
+            false
+        );
+        assertGt(fees, 0);
+    }
+
+    function test_estimateSingleXChainMultiVault_sameDst() public {
+        vm.prank(deployer);
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
+            2, ISuperformFactory.PauseStatus(1), ""
+        );
+
+        uint8[] memory ambIds = new uint8[](1);
+
+        ambIds[0] = 1;
+        ambIds[0] = 2;
+
+        bytes memory emptyBytes;
+        uint256[] memory superFormIds = new uint256[](1);
+        superFormIds[0] = _generateTimelockSuperformPackWithShift();
+
+        uint256[] memory uint256MemoryArray = new uint256[](1);
+        uint256MemoryArray[0] = 420;
+
+        LiqRequest[] memory liqRequestMemoryArray = new LiqRequest[](1);
+        liqRequestMemoryArray[0] = LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420);
+
+        (,,, uint256 fees) = paymentHelper.estimateSingleXChainMultiVault(
+            SingleXChainMultiVaultStateReq(
+                ambIds,
+                ETH,
+                MultiVaultSFData(
+                    superFormIds,
+                    /// timelock
+                    uint256MemoryArray,
+                    uint256MemoryArray,
+                    uint256MemoryArray,
+                    liqRequestMemoryArray,
+                    emptyBytes,
+                    new bool[](1),
+                    new bool[](1),
+                    receiverAddress,
+                    receiverAddress,
+                    emptyBytes
+                )
+            ),
+            false
+        );
+        assertGt(fees, 0);
+    }
+
     function test_estimateMultiDstSingleVault_formImplPaused() public {
         vm.prank(deployer);
         SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
