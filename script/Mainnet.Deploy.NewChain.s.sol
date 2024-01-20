@@ -26,7 +26,7 @@ contract MainnetDeployNewChain is AbstractDeploySingle {
     uint64[] PREVIOUS_DEPLOYMENT = [BSC, AVAX, POLY, ARBI, OP, BASE];
 
     ///@dev ORIGINAL SALT
-    bytes32 constant salt = "NO_SLEEP_VIK";
+    bytes32 constant salt = "SunNeverSetsOnSuperformEmpire";
 
     /// @notice The main stage 1 script entrypoint
     function deployStage1(uint256 selectedChainIndex) external {

@@ -4,22 +4,24 @@
 source .env
 
 networks=(
-    56
-    43114
-    137
-    42161
-    10
-    8453
+    1
+    #56
+    #43114
+    #137
+    #42161
+    #10
+    #8453
     # add more networks here if needed
 )
 
 api_keys=(
-    $BSCSCAN_API
-    $SNOWTRACE_API
-    $POLYGONSCAN_API
-    $ARBISCAN_API
-    $OPSCAN_API
-    $BASESCAN_API
+    $ETHEREUM_API
+    #$BSCSCAN_API
+    #$SNOWTRACE_API
+    #$POLYGONSCAN_API
+    #$ARBISCAN_API
+    #$OPSCAN_API
+    #$BASESCAN_API
     # add more API keys here if needed
 )
 
