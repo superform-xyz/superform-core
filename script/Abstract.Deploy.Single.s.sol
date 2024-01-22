@@ -932,6 +932,7 @@ abstract contract AbstractDeploySingle is Script {
         SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
 
         vars.superRegistryC.setVaultLimitPerDestination(vars.dstChainId, 5);
+
         /*
         updateGasUsed Arb = 1M, others = 200k
 
@@ -939,6 +940,30 @@ abstract contract AbstractDeploySingle is Script {
 
         swapGasUsed Arb = 2M, others = 1M
         */
+
+        uint256 ackCost;
+
+        if (vars.chainId == vars.dstChainId) { // same chain is only minting cost
+            ackCost = 1_000_000;
+        } else {
+            uint256 baseAckCost = 30_000_000; // cheapest cross-chain ack cost
+            uint256 multiplier;
+
+            if (vars.dstChainId == ETH) {
+                multiplier = 150;
+            } else if (vars.dstChainId == BSC || vars.dstChainId == GNOSIS || vars.dstChainId == AVAX) {
+                multiplier = 2;
+            } else if (vars.dstChainId == OP || vars.dstChainId == BASE || vars.dstChainId == ARBI) {
+                multiplier = 4;
+            } else if (vars.dstChainId == POLY) {
+                multiplier = 1;
+            } else {
+                multiplier = 4; 
+            }
+
+            ackCost = baseAckCost * multiplier;
+        }
+
         PaymentHelper(payable(vars.paymentHelper)).addRemoteChain(
             vars.dstChainId,
             IPaymentHelper.PaymentHelperConfig(
@@ -951,7 +976,7 @@ abstract contract AbstractDeploySingle is Script {
                 nativePrices[vars.dstTrueIndex],
                 gasPrices[vars.dstTrueIndex],
                 750,
-                2_000_000,
+                ackCost,
                 /// @dev ackGasCost to move a msg from dst to source
                 10_000,
                 10_000
