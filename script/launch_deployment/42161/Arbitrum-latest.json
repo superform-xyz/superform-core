@@ -1,4 +1,5 @@
 {
+    "BroadcastRegistry": "0xdded3E0fc2472eF3F1f262dbEf5DBedF7Ba11Cd1",
     "CoreStateRegistry": "0x884C1Da625D7E70ca1B8fA4BF7Ab535b7297CcE0",
     "DstSwapper": "0xc80cdE90baA1bf7f1F53562d6Ae9B6dc5b748616",
     "ERC4626Form": "0x457724F3E7e303A831015B09286fF18Ca9F98313",
@@ -16,5 +17,6 @@
     "SuperformFactory": "0x9bc1de324709d8CA71eE78fa6859C50d96D4391c",
     "SuperformRouter": "0x5E4F382e713534703E4BeF3F538777e088a6410e",
     "VaultClaimer": "0xc01e503Bf896E45B6Add3095EBA7696d5a682388",
-    "WormholeARImplementation": "0x63567cb414A4Edf54A3a54D0f3D5DB3C2e07CB25"
+    "WormholeARImplementation": "0x63567cb414A4Edf54A3a54D0f3D5DB3C2e07CB25",
+    "WormholeSRImplementation": "0x99A4DB767Bd389Fbef3072a9ec7789F668de3fE3"
 }
