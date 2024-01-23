@@ -564,6 +564,32 @@ contract PaymentHelper is IPaymentHelper {
         return _estimateAMBFees(v.ackAmbIds, v.srcChainId, v.message);
     }
 
+    /// @dev helps estimate the acknowledgement costs for amb processing
+    function estimateAckCostDefault(
+        bool multi,
+        uint8[] memory ackAmbIds,
+        uint64 srcChainId
+    )
+        external
+        view
+        returns (uint256 totalFees)
+    {
+        bytes memory payloadBody;
+        if (multi) {
+            uint256 vaultLimitPerDst = superRegistry.getVaultLimitPerDestination(srcChainId);
+            uint256[] memory maxUints = new uint256[](vaultLimitPerDst);
+
+            for (uint256 i; i < vaultLimitPerDst; ++i) {
+                maxUints[i] = type(uint256).max;
+            }
+            payloadBody = abi.encode(ReturnMultiData(type(uint256).max, maxUints, maxUints));
+        } else {
+            payloadBody = abi.encode(ReturnSingleData(type(uint256).max, type(uint256).max, type(uint256).max));
+        }
+
+        return _estimateAMBFees(ackAmbIds, srcChainId, abi.encode(AMBMessage(type(uint256).max, payloadBody)));
+    }
+
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
