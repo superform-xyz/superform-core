@@ -497,7 +497,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(wormhole_chainIds[i]);
 
             /// @dev 6.5- deploy Wormhole Specialized Relayer Implementation
-            vars.wormholeSRImplementation = address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC));
+            vars.wormholeSRImplementation = address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC, 3));
             contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
 
             WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[i]);

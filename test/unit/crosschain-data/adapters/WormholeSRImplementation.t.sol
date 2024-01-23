@@ -71,7 +71,7 @@ contract WormholeSRImplementationTest is BaseSetup {
     function test_broadcastPayload_RelayerNotSet() public {
         vm.selectFork(FORKS[ETH]);
 
-        WormholeSRImplementation newImpl = new WormholeSRImplementation(superRegistry);
+        WormholeSRImplementation newImpl = new WormholeSRImplementation(superRegistry, 3);
         address wormholeCore_ = address(wormholeSRImpl.wormhole());
         vm.prank(deployer);
         newImpl.setWormholeCore(wormholeCore_);
@@ -100,7 +100,7 @@ contract WormholeSRImplementationTest is BaseSetup {
     function test_broadcastPayload_RelayerInvalid() public {
         vm.selectFork(FORKS[ETH]);
 
-        WormholeSRImplementation newImpl = new WormholeSRImplementation(superRegistry);
+        WormholeSRImplementation newImpl = new WormholeSRImplementation(superRegistry, 3);
         address wormholeCore_ = address(wormholeSRImpl.wormhole());
         address relayer_ = address(new FakeRelayer());
 

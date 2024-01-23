@@ -17,7 +17,6 @@ interface Target {
 /// @dev Helps core contracts communicate with multiple dst chains through supported AMBs
 /// @author ZeroPoint Labs
 contract BroadcastRegistry is IBroadcastRegistry {
-
     using ProofLib for bytes;
 
     //////////////////////////////////////////////////////////////
@@ -125,9 +124,11 @@ contract BroadcastRegistry is IBroadcastRegistry {
         onlyBroadcasterAMBImplementation
     {
         ++payloadsCount;
+        uint256 payloadId = payloadsCount;
+        payload[payloadId] = message_;
+        srcChainId[payloadId] = srcChainId_;
 
-        payload[payloadsCount] = message_;
-        srcChainId[payloadsCount] = srcChainId_;
+        emit PayloadReceived(payloadId, srcChainId_);
     }
 
     /// @inheritdoc IBroadcastRegistry

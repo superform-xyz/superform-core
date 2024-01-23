@@ -5,6 +5,12 @@ pragma solidity ^0.8.23;
 /// @dev Interface for BroadcastRegistry
 /// @author ZeroPoint Labs
 interface IBroadcastRegistry {
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL WRITE FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev emitted when a broadcast payload is received
+    event PayloadReceived(uint256 indexed payloadId, uint64 indexed srcChainId);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
