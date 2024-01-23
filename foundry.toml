@@ -16,7 +16,7 @@ verbosity = 0
 ffi = false
 libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./script/" }]
-remappings = ["solmate/=lib/ERC1155A/lib/solmate/src/"]
+remappings = ["solmate/=lib/ERC1155A/lib/solmate/src/","ERC1155A/=lib/ERC1155A/src/"]
 
 [profile.localdev]
 solc_version = "0.8.23" # Override for the solc version (setting this ignores `auto_detect_solc`)
@@ -30,7 +30,7 @@ verbosity = 0
 ffi = false
 libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./script/" }]
-remappings = ["solmate/=lib/ERC1155A/lib/solmate/src/"]
+remappings = ["solmate/=lib/ERC1155A/lib/solmate/src/","ERC1155A/=lib/ERC1155A/src/"]
 
 [profile.coverage]
 fuzz = { runs = 1, max_test_rejects = 350_000 }

@@ -119,7 +119,14 @@ contract SuperPositions is ISuperPositions, ERC1155A, Broadcastable {
 
     /// @param dynamicURI_  URL for external metadata of ERC1155 SuperPositions
     /// @param superRegistry_ the superform registry contract
-    constructor(string memory dynamicURI_, address superRegistry_) {
+    constructor(
+        string memory dynamicURI_,
+        address superRegistry_,
+        string memory name_,
+        string memory symbol_
+    )
+        ERC1155A(name_, symbol_)
+    {
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }
@@ -369,8 +376,8 @@ contract SuperPositions is ISuperPositions, ERC1155A, Broadcastable {
         }
         (address superform,,) = id.getSuperform();
 
-        string memory name = string.concat("SuperPositions AERC20 ", IBaseForm(superform).superformYieldTokenName());
-        string memory symbol = string.concat("aERC20-", IBaseForm(superform).superformYieldTokenSymbol());
+        string memory name = IBaseForm(superform).superformYieldTokenName();
+        string memory symbol = IBaseForm(superform).superformYieldTokenSymbol();
         uint8 decimal = uint8(IBaseForm(superform).getVaultDecimals());
         aErc20Token = address(new aERC20(name, symbol, decimal));
         /// @dev broadcast and deploy to the other destination chains
