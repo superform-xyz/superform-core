@@ -19,9 +19,9 @@ env:
   AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
   FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
   TENDERLY_ACCESS_KEY: ${{ secrets.TENDERLY_ACCESS_KEY }}
-  TENDERLY_PROJECT_SLUG: 'superform-v1-d5' # your project slug
-  TENDERLY_ACCOUNT_ID: 'superform' # your username or organization name
-  FOUNDRY_EXPORTS_OVERWRITE_LATEST: 'true'
+  TENDERLY_PROJECT_SLUG: "superform-v1-final" # your project slug
+  TENDERLY_ACCOUNT_ID: "superform" # your username or organization name
+  FOUNDRY_EXPORTS_OVERWRITE_LATEST: "true"
 
 jobs:
   build:
@@ -85,13 +85,13 @@ jobs:
           echo "FOUNDRY_FUZZ_SEED=$(echo $(($EPOCHSECONDS / 604800)))" >> $GITHUB_ENV
 
       - name: "Run all tests except invariant against the optimized build and produce gas reports"
-        run: "forge test --gas-report --no-match-path \"test/invariant/**/*.sol\""
+        run: 'forge test --gas-report --no-match-path "test/invariant/**/*.sol"'
 
       - name: "Add test summary"
         run: |
           echo "## Tests result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
-                  
+
   coverage:
     runs-on: SuperformCore2
     steps:
@@ -127,9 +127,9 @@ jobs:
           submodules: "recursive"
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
-      - name: 'Install Tenderly CLI'
+      - name: "Install Tenderly CLI"
         run: curl https://raw.githubusercontent.com/Tenderly/tenderly-cli/master/scripts/install-linux.sh | sudo sh
-      - name: 'Deploy to Tenderly Devnets'
+      - name: "Deploy to Tenderly Devnets"
         run: ./script/utils/run_script_tenderly.sh
         shell: bash
       - name: "Add devnet deployment summary"
