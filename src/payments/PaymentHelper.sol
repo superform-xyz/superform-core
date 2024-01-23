@@ -225,19 +225,8 @@ contract PaymentHelper is IPaymentHelper {
 
             /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
             /// @dev ensure that acknowledgement costs from dst to src are not double counted
-            bool noRetain4626;
-            for (uint256 j; j < v.superformIdsLen; ++j) {
-                if (!req_.superformsData[i].retain4626s[j]) {
-                    noRetain4626 = true;
-                    break;
-                }
-            }
-            if (noRetain4626 && xChain) {
-                v.totalDstGas += _estimateDstExecutionCost(isDeposit_, false, req_.dstChainIds[i], v.superformIdsLen);
-            } else {
-                v.totalDstGas +=
-                    xChain ? _estimateDstExecutionCost(isDeposit_, true, req_.dstChainIds[i], v.superformIdsLen) : 0;
-            }
+            v.totalDstGas +=
+                xChain ? _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], v.superformIdsLen) : 0;
 
             /// @dev step 8: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], v.totalDstGas);
@@ -302,8 +291,7 @@ contract PaymentHelper is IPaymentHelper {
 
             /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
             totalDstGas += xChain
-                ? _estimateDstExecutionCost(isDeposit_, req_.superformsData[i].retain4626, req_.dstChainIds[i], 1)
-                : 0;
+                ? _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], 1) : 0;
 
             /// @dev step 8: convert all dst gas estimates to src chain estimate
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
@@ -366,18 +354,7 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
         /// @dev ensure that acknowledgement costs from dst to src are not double counted
-        bool noRetain4626;
-        for (uint256 i; i < superformIdsLen; ++i) {
-            if (!req_.superformsData.retain4626s[i]) {
-                noRetain4626 = true;
-                break;
-            }
-        }
-        if (noRetain4626) {
-            totalDstGas += _estimateDstExecutionCost(isDeposit_, false, req_.dstChainId, superformIdsLen);
-        } else {
-            totalDstGas += _estimateDstExecutionCost(isDeposit_, true, req_.dstChainId, superformIdsLen);
-        }
+        totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, superformIdsLen);
 
         /// @dev step 8: convert all destination gas estimates to source chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
@@ -431,7 +408,7 @@ contract PaymentHelper is IPaymentHelper {
         }
 
         /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
-        totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.superformData.retain4626, req_.dstChainId, 1);
+        totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, 1);
 
         /// @dev step 8: convert all destination gas estimates to source chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
@@ -879,7 +856,6 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev assumes that withdrawals optimisically succeed
     function _estimateDstExecutionCost(
         bool isDeposit_,
-        bool retain4626_,
         uint64 dstChainId_,
         uint256 vaultsCount_
     )
@@ -889,11 +865,6 @@ contract PaymentHelper is IPaymentHelper {
     {
         uint256 executionGasPerVault = isDeposit_ ? depositGasUsed[dstChainId_] : withdrawGasUsed[dstChainId_];
         gasUsed = executionGasPerVault * vaultsCount_;
-
-        /// @dev add ackGasCost only if it's a deposit and retain4626 is false
-        if (isDeposit_ && !retain4626_) {
-            gasUsed += ackGasCost[dstChainId_];
-        }
     }
 
     /// @dev helps estimate the src chain processing fee
