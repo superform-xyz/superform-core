@@ -9,6 +9,9 @@ interface IBroadcastRegistry {
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
 
+    /// @dev emitted when a payload is sent
+    event PayloadSent(address indexed sender);
+
     /// @dev emitted when a broadcast payload is received
     event PayloadReceived(uint256 indexed payloadId, uint64 indexed srcChainId);
 
