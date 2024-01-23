@@ -673,7 +673,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.clearMockedCalls();
     }
 
-    function test_ackGasCost_paymentHelperComparison() public {
+    function test_ackGasCost_single_paymentHelperComparison() public {
         uint8[] memory ambIds_ = new uint8[](2);
         ambIds_[0] = 1;
         ambIds_[1] = 2;
@@ -690,7 +690,37 @@ contract CoreStateRegistryTest is ProtocolActions {
         console.log("defaultEstimate: %s", defaultEstimate);
         console.log("realEstimate: %s", realEstimate);
 
-        assertGe(realEstimate, defaultEstimate);
+        assertEq(realEstimate, defaultEstimate);
+
+        uint256 defaultEstimateNativeSrc =
+            PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCostDefaultNativeSource(false, ambIds_, ETH);
+
+        console.log("defaultEstimateNativeSrc: %s", defaultEstimateNativeSrc);
+    }
+
+    function test_ackGasCost_multi_paymentHelperComparison() public {
+        uint8[] memory ambIds_ = new uint8[](2);
+        ambIds_[0] = 1;
+        ambIds_[1] = 2;
+
+        _successfulMultiDeposit(ambIds_);
+
+        vm.selectFork(FORKS[AVAX]);
+
+        uint256 defaultEstimate =
+            PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCostDefault(true, ambIds_, ETH);
+
+        uint256 realEstimate = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
+
+        console.log("defaultEstimate: %s", defaultEstimate);
+        console.log("realEstimate: %s", realEstimate);
+
+        assertLe(realEstimate, defaultEstimate);
+
+        uint256 defaultEstimateNativeSrc =
+            PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCostDefaultNativeSource(true, ambIds_, ETH);
+
+        console.log("defaultEstimateNativeSrc: %s", defaultEstimateNativeSrc);
     }
 
     /*///////////////////////////////////////////////////////////////

@@ -195,6 +195,21 @@ interface IPaymentHelper {
         external
         view
         returns (uint256 totalFees);
+
+    /// @dev helps estimate the acknowledgement costs for amb processing without relying on payloadId (using max values)
+    /// with source native amounts
+    /// @param multi is the flag indicating if the payload is multi or single
+    /// @param ackAmbIds is the list of ambIds to be used for acknowledgement
+    /// @param srcChainId is the source chain identifier
+    /// @return totalFees is the total fees to be paid in native tokens
+    function estimateAckCostDefaultNativeSource(
+        bool multi,
+        uint8[] memory ackAmbIds,
+        uint64 srcChainId
+    )
+        external
+        view
+        returns (uint256 totalFees);
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////

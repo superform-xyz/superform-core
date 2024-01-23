@@ -225,8 +225,7 @@ contract PaymentHelper is IPaymentHelper {
 
             /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
             /// @dev ensure that acknowledgement costs from dst to src are not double counted
-            v.totalDstGas +=
-                xChain ? _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], v.superformIdsLen) : 0;
+            v.totalDstGas += xChain ? _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], v.superformIdsLen) : 0;
 
             /// @dev step 8: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], v.totalDstGas);
@@ -290,8 +289,7 @@ contract PaymentHelper is IPaymentHelper {
             }
 
             /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
-            totalDstGas += xChain
-                ? _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], 1) : 0;
+            totalDstGas += xChain ? _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], 1) : 0;
 
             /// @dev step 8: convert all dst gas estimates to src chain estimate
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
@@ -547,7 +545,7 @@ contract PaymentHelper is IPaymentHelper {
         uint8[] memory ackAmbIds,
         uint64 srcChainId
     )
-        external
+        public
         view
         override
         returns (uint256 totalFees)
@@ -566,6 +564,20 @@ contract PaymentHelper is IPaymentHelper {
         }
 
         return _estimateAMBFees(ackAmbIds, srcChainId, abi.encode(AMBMessage(type(uint256).max, payloadBody)));
+    }
+
+    /// @inheritdoc IPaymentHelper
+    function estimateAckCostDefaultNativeSource(
+        bool multi,
+        uint8[] memory ackAmbIds,
+        uint64 srcChainId
+    )
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return _convertToNativeFee(srcChainId, estimateAckCostDefault(multi, ackAmbIds, srcChainId));
     }
 
     //////////////////////////////////////////////////////////////
