@@ -112,6 +112,8 @@ contract BroadcastRegistry is IBroadcastRegistry {
                 revert Error.FAILED_TO_SEND_NATIVE();
             }
         }
+
+        emit PayloadSent(srcSender_);
     }
 
     /// @inheritdoc IBroadcastRegistry
