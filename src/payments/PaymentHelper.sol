@@ -106,14 +106,14 @@ contract PaymentHelper is IPaymentHelper {
     //////////////////////////////////////////////////////////////
 
     modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
+        if (!ISuperRBAC(_getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
         }
         _;
     }
 
     modifier onlyEmergencyAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasEmergencyAdminRole(msg.sender)) {
+        if (!ISuperRBAC(_getAddress(keccak256("SUPER_RBAC"))).hasEmergencyAdminRole(msg.sender)) {
             revert Error.NOT_EMERGENCY_ADMIN();
         }
         _;
@@ -176,7 +176,7 @@ contract PaymentHelper is IPaymentHelper {
         LocalEstimateVars memory v;
         v.len = req_.dstChainIds.length;
 
-        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+        ISuperformFactory factory = ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY")));
         for (uint256 i; i < v.len; ++i) {
             bool xChain = req_.dstChainIds[i] != CHAIN_ID;
 
@@ -225,19 +225,7 @@ contract PaymentHelper is IPaymentHelper {
 
             /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
             /// @dev ensure that acknowledgement costs from dst to src are not double counted
-            bool noRetain4626;
-            for (uint256 j; j < v.superformIdsLen; ++j) {
-                if (!req_.superformsData[i].retain4626s[j]) {
-                    noRetain4626 = true;
-                    break;
-                }
-            }
-            if (noRetain4626 && xChain) {
-                v.totalDstGas += _estimateDstExecutionCost(isDeposit_, false, req_.dstChainIds[i], v.superformIdsLen);
-            } else {
-                v.totalDstGas +=
-                    xChain ? _estimateDstExecutionCost(isDeposit_, true, req_.dstChainIds[i], v.superformIdsLen) : 0;
-            }
+            v.totalDstGas += xChain ? _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], v.superformIdsLen) : 0;
 
             /// @dev step 8: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], v.totalDstGas);
@@ -257,7 +245,7 @@ contract PaymentHelper is IPaymentHelper {
         returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
     {
         uint256 len = req_.dstChainIds.length;
-        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+        ISuperformFactory factory = ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY")));
 
         for (uint256 i; i < len; ++i) {
             bool xChain = req_.dstChainIds[i] != CHAIN_ID;
@@ -301,9 +289,7 @@ contract PaymentHelper is IPaymentHelper {
             }
 
             /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
-            totalDstGas += xChain
-                ? _estimateDstExecutionCost(isDeposit_, req_.superformsData[i].retain4626, req_.dstChainIds[i], 1)
-                : 0;
+            totalDstGas += xChain ? _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], 1) : 0;
 
             /// @dev step 8: convert all dst gas estimates to src chain estimate
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
@@ -325,7 +311,7 @@ contract PaymentHelper is IPaymentHelper {
         uint256 totalDstGas;
         uint256 superformIdsLen = req_.superformsData.superformIds.length;
 
-        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+        ISuperformFactory factory = ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY")));
 
         /// @dev step 1: estimate AMB costs
         uint256 ambFees =
@@ -366,18 +352,7 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
         /// @dev ensure that acknowledgement costs from dst to src are not double counted
-        bool noRetain4626;
-        for (uint256 i; i < superformIdsLen; ++i) {
-            if (!req_.superformsData.retain4626s[i]) {
-                noRetain4626 = true;
-                break;
-            }
-        }
-        if (noRetain4626) {
-            totalDstGas += _estimateDstExecutionCost(isDeposit_, false, req_.dstChainId, superformIdsLen);
-        } else {
-            totalDstGas += _estimateDstExecutionCost(isDeposit_, true, req_.dstChainId, superformIdsLen);
-        }
+        totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, superformIdsLen);
 
         /// @dev step 8: convert all destination gas estimates to source chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
@@ -396,7 +371,7 @@ contract PaymentHelper is IPaymentHelper {
         returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
     {
         uint256 totalDstGas;
-        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+        ISuperformFactory factory = ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY")));
 
         /// @dev step 1: estimate AMB costs
         uint256 ambFees =
@@ -431,7 +406,7 @@ contract PaymentHelper is IPaymentHelper {
         }
 
         /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
-        totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.superformData.retain4626, req_.dstChainId, 1);
+        totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, 1);
 
         /// @dev step 8: convert all destination gas estimates to source chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
@@ -449,7 +424,7 @@ contract PaymentHelper is IPaymentHelper {
         override
         returns (uint256 liqAmount, uint256 srcAmount, uint256 totalAmount)
     {
-        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+        ISuperformFactory factory = ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY")));
 
         if (!isDeposit_) {
             /// @dev only if timelock form withdrawal is involved
@@ -480,7 +455,7 @@ contract PaymentHelper is IPaymentHelper {
         override
         returns (uint256 liqAmount, uint256 srcAmount, uint256 totalAmount)
     {
-        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+        ISuperformFactory factory = ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY")));
 
         if (!isDeposit_) {
             uint256 len = req_.superformData.superformIds.length;
@@ -513,6 +488,7 @@ contract PaymentHelper is IPaymentHelper {
     )
         public
         view
+        override
         returns (uint256 totalFees, uint256[] memory)
     {
         uint256 len = ambIds_.length;
@@ -532,11 +508,10 @@ contract PaymentHelper is IPaymentHelper {
         return (totalFees, fees);
     }
 
-    /// @dev helps estimate the acknowledgement costs for amb processing
-    function estimateAckCost(uint256 payloadId_) external view returns (uint256 totalFees) {
+    /// @inheritdoc IPaymentHelper
+    function estimateAckCost(uint256 payloadId_) external view override returns (uint256 totalFees) {
         EstimateAckCostVars memory v;
-        IBaseStateRegistry coreStateRegistry =
-            IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
+        IBaseStateRegistry coreStateRegistry = IBaseStateRegistry(_getAddress(keccak256("CORE_STATE_REGISTRY")));
         v.currPayloadId = coreStateRegistry.payloadsCount();
 
         if (payloadId_ > v.currPayloadId) revert Error.INVALID_PAYLOAD_ID();
@@ -562,6 +537,47 @@ contract PaymentHelper is IPaymentHelper {
         v.message = abi.encode(AMBMessage(coreStateRegistry.payloadHeader(payloadId_), v.payloadBody));
 
         return _estimateAMBFees(v.ackAmbIds, v.srcChainId, v.message);
+    }
+
+    /// @inheritdoc IPaymentHelper
+    function estimateAckCostDefault(
+        bool multi,
+        uint8[] memory ackAmbIds,
+        uint64 srcChainId
+    )
+        public
+        view
+        override
+        returns (uint256 totalFees)
+    {
+        bytes memory payloadBody;
+        if (multi) {
+            uint256 vaultLimitPerDst = superRegistry.getVaultLimitPerDestination(srcChainId);
+            uint256[] memory maxUints = new uint256[](vaultLimitPerDst);
+
+            for (uint256 i; i < vaultLimitPerDst; ++i) {
+                maxUints[i] = type(uint256).max;
+            }
+            payloadBody = abi.encode(ReturnMultiData(type(uint256).max, maxUints, maxUints));
+        } else {
+            payloadBody = abi.encode(ReturnSingleData(type(uint256).max, type(uint256).max, type(uint256).max));
+        }
+
+        return _estimateAMBFees(ackAmbIds, srcChainId, abi.encode(AMBMessage(type(uint256).max, payloadBody)));
+    }
+
+    /// @inheritdoc IPaymentHelper
+    function estimateAckCostDefaultNativeSource(
+        bool multi,
+        uint8[] memory ackAmbIds,
+        uint64 srcChainId
+    )
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return _convertToNativeFee(srcChainId, estimateAckCostDefault(multi, ackAmbIds, srcChainId));
     }
 
     //////////////////////////////////////////////////////////////
@@ -852,7 +868,6 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev assumes that withdrawals optimisically succeed
     function _estimateDstExecutionCost(
         bool isDeposit_,
-        bool retain4626_,
         uint64 dstChainId_,
         uint256 vaultsCount_
     )
@@ -862,11 +877,6 @@ contract PaymentHelper is IPaymentHelper {
     {
         uint256 executionGasPerVault = isDeposit_ ? depositGasUsed[dstChainId_] : withdrawGasUsed[dstChainId_];
         gasUsed = executionGasPerVault * vaultsCount_;
-
-        /// @dev add ackGasCost only if it's a deposit and retain4626 is false
-        if (isDeposit_ && !retain4626_) {
-            gasUsed += ackGasCost[dstChainId_];
-        }
     }
 
     /// @dev helps estimate the src chain processing fee
@@ -953,7 +963,7 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev helps generate the new payload id
     /// @dev next payload id = current payload id + 1
     function _getNextPayloadId() internal view returns (uint256 nextPayloadId) {
-        nextPayloadId = ReadOnlyBaseRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY"))).payloadsCount();
+        nextPayloadId = ReadOnlyBaseRegistry(_getAddress(keccak256("CORE_STATE_REGISTRY"))).payloadsCount();
         ++nextPayloadId;
     }
 
@@ -993,5 +1003,10 @@ contract PaymentHelper is IPaymentHelper {
         }
 
         return nativePrice[chainId_];
+    }
+
+    /// @dev returns the address from super registry
+    function _getAddress(bytes32 id_) internal view returns (address) {
+        return superRegistry.getAddress(id_);
     }
 }
