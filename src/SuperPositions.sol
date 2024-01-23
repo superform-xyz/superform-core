@@ -376,8 +376,8 @@ contract SuperPositions is ISuperPositions, ERC1155A, Broadcastable {
         }
         (address superform,,) = id.getSuperform();
 
-        string memory name = string.concat("SuperPositions AERC20 ", IBaseForm(superform).superformYieldTokenName());
-        string memory symbol = string.concat("aERC20-", IBaseForm(superform).superformYieldTokenSymbol());
+        string memory name = IBaseForm(superform).superformYieldTokenName();
+        string memory symbol = IBaseForm(superform).superformYieldTokenSymbol();
         uint8 decimal = uint8(IBaseForm(superform).getVaultDecimals());
         aErc20Token = address(new aERC20(name, symbol, decimal));
         /// @dev broadcast and deploy to the other destination chains
