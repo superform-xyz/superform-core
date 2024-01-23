@@ -14,7 +14,6 @@ import "src/vendor/wormhole/Utils.sol";
 /// @dev Allows state registries to use Wormhole SR's for broadcasting
 /// @author Zeropoint Labs
 contract WormholeSRImplementation is IBroadcastAmbImplementation {
-    
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
@@ -22,7 +21,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
     //////////////////////////////////////////////////////////////
 
     /// @notice before deployment make sure the broadcast state registry id is updated accordingly
-    uint8 constant BROADCAST_REGISTRY_ID = 3;
+    uint8 immutable BROADCAST_REGISTRY_ID;
     ISuperRegistry public immutable superRegistry;
 
     //////////////////////////////////////////////////////////////
@@ -83,8 +82,10 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
     //////////////////////////////////////////////////////////////
 
     /// @param superRegistry_ is super registry address for respective chain
-    constructor(ISuperRegistry superRegistry_) {
+    /// @param broadcastRegistryId_ is the id of the broadcast registry
+    constructor(ISuperRegistry superRegistry_, uint8 broadcastRegistryId_) {
         superRegistry = superRegistry_;
+        BROADCAST_REGISTRY_ID = broadcastRegistryId_;
     }
 
     //////////////////////////////////////////////////////////////

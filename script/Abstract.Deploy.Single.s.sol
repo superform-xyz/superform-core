@@ -92,14 +92,14 @@ abstract contract AbstractDeploySingle is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[18] public contractNames = [
+    string[20] public contractNames = [
         "CoreStateRegistry",
         //"TimelockStateRegistry",
-        //"BroadcastRegistry",
+        "BroadcastRegistry",
         "LayerzeroImplementation",
         "HyperlaneImplementation",
         "WormholeARImplementation",
-        //"WormholeSRImplementation",
+        "WormholeSRImplementation",
         "LiFiValidator",
         "SocketValidator",
         //"SocketOneInchValidator",
@@ -164,9 +164,9 @@ abstract contract AbstractDeploySingle is Script {
     /// @notice id 1 is layerzero
     /// @notice id 2 is hyperlane
     /// @notice id 3 is wormhole AR
-    /// @notice FIXME 4 is wormhole SR - not added
-    uint8[] public ambIds = [uint8(1), 2, 3];
-    bool[] public broadcastAMB = [false, false, false];
+    /// @notice id 4 is wormhole SR
+    uint8[] public ambIds = [uint8(1), 2, 3, 4];
+    bool[] public broadcastAMB = [false, false, false, true];
 
     /*//////////////////////////////////////////////////////////////
                         AMB VARIABLES
@@ -398,10 +398,10 @@ abstract contract AbstractDeploySingle is Script {
                     tlProcessor: EMERGENCY_ADMIN,
                     /// @dev Temporary, as we are not using this processor in this release
                     brProcessor: EMERGENCY_ADMIN,
-                    /// @dev Temporary, as we are not using this processor in this release
+                    /// @dev FIXME who is broadcastProcessor
                     csrUpdater: 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f,
                     srcVaaRelayer: EMERGENCY_ADMIN,
-                    /// @dev Temporary, as we are not using this processor in this release
+                    /// @dev FIXME who is srcVaaRelayer
                     dstSwapper: 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C,
                     csrRescuer: 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5,
                     csrDisputer: 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a
@@ -440,23 +440,22 @@ abstract contract AbstractDeploySingle is Script {
         );
         */
 
-        /*
         /// @dev 3.3 - deploy Broadcast State Registry
         vars.broadcastRegistry = address(new BroadcastRegistry{ salt: salt }(vars.superRegistryC));
         contracts[vars.chainId][bytes32(bytes("BroadcastRegistry"))] = vars.broadcastRegistry;
 
-        vars.superRegistryC.setAddress(vars.superRegistryC.BROADCAST_REGISTRY(), vars.broadcastRegistry, vars.chainId);
-        */
+        /// @dev FIXME not setting this yet so that broadcast reverts
+        //vars.superRegistryC.setAddress(vars.superRegistryC.BROADCAST_REGISTRY(), vars.broadcastRegistry,
+        // vars.chainId);
 
-        address[] memory registryAddresses = new address[](1);
+        address[] memory registryAddresses = new address[](2);
         registryAddresses[0] = vars.coreStateRegistry;
-        //registryAddresses[1] = vars.timelockStateRegistry;
-        //registryAddresses[2] = vars.broadcastRegistry;
+        registryAddresses[1] = vars.broadcastRegistry;
 
-        uint8[] memory registryIds = new uint8[](1);
+        uint8 brRegistryId = 2;
+        uint8[] memory registryIds = new uint8[](2);
         registryIds[0] = 1;
-        //registryIds[1] = 2;
-        //registryIds[2] = 3;
+        registryIds[1] = brRegistryId;
 
         vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
 
@@ -487,20 +486,19 @@ abstract contract AbstractDeploySingle is Script {
         WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayerConfig);
         WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(wormhole_chainIds[trueIndex]);
 
-        /*
         /// @dev 6.5- deploy Wormhole Specialized Relayer Implementation
-        vars.wormholeSRImplementation = address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC));
+        vars.wormholeSRImplementation =
+            address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC, brRegistryId));
         contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
 
         WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[trueIndex]);
         /// @dev FIXME who is the wormhole relayer on mainnet?
         WormholeSRImplementation(vars.wormholeSRImplementation).setRelayer(ownerAddress);
-        */
 
         vars.ambAddresses[0] = vars.lzImplementation;
         vars.ambAddresses[1] = vars.hyperlaneImplementation;
         vars.ambAddresses[2] = vars.wormholeImplementation;
-        //vars.ambAddresses[3] = vars.wormholeSRImplementation;
+        vars.ambAddresses[3] = vars.wormholeSRImplementation;
 
         /// @dev 6- deploy liquidity validators
         vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
@@ -558,7 +556,7 @@ abstract contract AbstractDeploySingle is Script {
         /// @dev 9 - Add newly deployed form implementations to Factory, formImplementationId 1
         ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0], 1);
 
-        /// passing 2 cuz timelock state registry id is 2
+        /// passing 2 because timelock state registry id is 2
         //ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626TimelockForm, FORM_IMPLEMENTATION_IDS[1],
         // 2);
 
@@ -690,7 +688,6 @@ abstract contract AbstractDeploySingle is Script {
 
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 11, abi.encode(50_000));
 
-        /// @dev FIXME emergencyCost value
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 12, abi.encode(10_000));
 
         /// @dev 19 deploy vault claimer
@@ -727,8 +724,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.lzImplementation = _readContract(chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
         vars.hyperlaneImplementation = _readContract(chainNames[trueIndex], vars.chainId, "HyperlaneImplementation");
         vars.wormholeImplementation = _readContract(chainNames[trueIndex], vars.chainId, "WormholeARImplementation");
-        //vars.wormholeSRImplementation = _readContract(chainNames[trueIndex], vars.chainId,
-        // "WormholeSRImplementation");
+        vars.wormholeSRImplementation = _readContract(chainNames[trueIndex], vars.chainId, "WormholeSRImplementation");
         vars.superRegistry = _readContract(chainNames[trueIndex], vars.chainId, "SuperRegistry");
         vars.paymentHelper = _readContract(chainNames[trueIndex], vars.chainId, "PaymentHelper");
         vars.superRegistryC = SuperRegistry(vars.superRegistry);
@@ -813,8 +809,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.lzImplementation = _readContract(chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
         vars.hyperlaneImplementation = _readContract(chainNames[trueIndex], vars.chainId, "HyperlaneImplementation");
         vars.wormholeImplementation = _readContract(chainNames[trueIndex], vars.chainId, "WormholeARImplementation");
-        //vars.wormholeSRImplementation = _readContract(chainNames[trueIndex], vars.chainId,
-        // "WormholeSRImplementation");
+        vars.wormholeSRImplementation = _readContract(chainNames[trueIndex], vars.chainId, "WormholeSRImplementation");
         vars.superRegistry = _readContract(chainNames[trueIndex], vars.chainId, "SuperRegistry");
         vars.paymentHelper = _readContract(chainNames[trueIndex], vars.chainId, "PaymentHelper");
         vars.superRegistryC = SuperRegistry(payable(vars.superRegistry));
@@ -882,10 +877,10 @@ abstract contract AbstractDeploySingle is Script {
             _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "HyperlaneImplementation");
         vars.dstWormholeARImplementation =
             _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "WormholeARImplementation");
-        /*
+
         vars.dstWormholeSRImplementation =
             _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "WormholeSRImplementation");
-            */
+
         LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
             vars.dstLzChainId, abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
         );
@@ -921,7 +916,6 @@ abstract contract AbstractDeploySingle is Script {
             vars.dstChainId, vars.dstWormholeChainId
         );
 
-        /*
         WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setChainId(
             vars.dstChainId, vars.dstWormholeChainId
         );
@@ -930,19 +924,10 @@ abstract contract AbstractDeploySingle is Script {
             vars.dstWormholeChainId, vars.dstWormholeSRImplementation
         );
 
-        /// @dev FIXME missing attribution of WORMHOLE_VAA_RELAYER_ROLE 
-        */
-
         SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
 
         vars.superRegistryC.setVaultLimitPerDestination(vars.dstChainId, 5);
-        /*
-        updateGasUsed Arb = 1M, others = 200k
 
-        ackGasCost[CHAIN_ID], Arb = 500k, others = 150k -- i.e. ackGasCost on 42161 of ackGasCost[42161] = 500k
-
-        swapGasUsed Arb = 2M, others = 1M
-        */
         PaymentHelper(payable(vars.paymentHelper)).addRemoteChain(
             vars.dstChainId,
             IPaymentHelper.PaymentHelperConfig(
@@ -964,7 +949,8 @@ abstract contract AbstractDeploySingle is Script {
 
         PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(abi.encode(4, abi.encode(0, "")));
 
-        bytes32[] memory ids = new bytes32[](19);
+        /// @dev FIXME not setting BROADCAST_REGISTRY yet, which will result in all broadcast tentatives to fail
+        bytes32[] memory ids = new bytes32[](18);
         ids[0] = vars.superRegistryC.SUPERFORM_ROUTER();
         ids[1] = vars.superRegistryC.SUPERFORM_FACTORY();
         ids[2] = vars.superRegistryC.PAYMASTER();
@@ -979,13 +965,12 @@ abstract contract AbstractDeploySingle is Script {
         ids[11] = vars.superRegistryC.CORE_REGISTRY_PROCESSOR();
         ids[12] = vars.superRegistryC.CORE_REGISTRY_UPDATER();
         ids[13] = vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR();
-        ids[14] = vars.superRegistryC.TIMELOCK_REGISTRY_PROCESSOR();
-        ids[15] = vars.superRegistryC.CORE_REGISTRY_RESCUER();
-        ids[16] = vars.superRegistryC.CORE_REGISTRY_DISPUTER();
-        ids[17] = vars.superRegistryC.DST_SWAPPER_PROCESSOR();
-        ids[18] = vars.superRegistryC.SUPERFORM_RECEIVER();
+        ids[14] = vars.superRegistryC.CORE_REGISTRY_RESCUER();
+        ids[15] = vars.superRegistryC.CORE_REGISTRY_DISPUTER();
+        ids[16] = vars.superRegistryC.DST_SWAPPER_PROCESSOR();
+        ids[17] = vars.superRegistryC.SUPERFORM_RECEIVER();
 
-        address[] memory newAddresses = new address[](19);
+        address[] memory newAddresses = new address[](18);
         newAddresses[0] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperformRouter");
         newAddresses[1] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperformFactory");
         newAddresses[2] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "PayMaster");
@@ -1001,14 +986,12 @@ abstract contract AbstractDeploySingle is Script {
         newAddresses[12] = 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f;
         /// @dev FIXME setting this temporarily to EMERGENCY_ADMIN as we are not using it in this release
         newAddresses[13] = EMERGENCY_ADMIN;
-        /// @dev FIXME setting this temporarily to EMERGENCY_ADMIN as we are not using it in this release
-        newAddresses[14] = EMERGENCY_ADMIN;
-        newAddresses[15] = 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5;
-        newAddresses[16] = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
-        newAddresses[17] = 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C;
-        newAddresses[18] = 0x1a6805487322565202848f239C1B5bC32303C2FE;
+        newAddresses[14] = 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5;
+        newAddresses[15] = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
+        newAddresses[16] = 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C;
+        newAddresses[17] = 0x1a6805487322565202848f239C1B5bC32303C2FE;
 
-        uint64[] memory chainIdsSetAddresses = new uint64[](19);
+        uint64[] memory chainIdsSetAddresses = new uint64[](18);
         chainIdsSetAddresses[0] = vars.dstChainId;
         chainIdsSetAddresses[1] = vars.dstChainId;
         chainIdsSetAddresses[2] = vars.dstChainId;
@@ -1027,7 +1010,6 @@ abstract contract AbstractDeploySingle is Script {
         chainIdsSetAddresses[15] = vars.dstChainId;
         chainIdsSetAddresses[16] = vars.dstChainId;
         chainIdsSetAddresses[17] = vars.dstChainId;
-        chainIdsSetAddresses[18] = vars.dstChainId;
 
         vars.superRegistryC.batchSetAddress(ids, newAddresses, chainIdsSetAddresses);
 
@@ -1035,14 +1017,6 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRegistryC.setAddress(
             vars.superRegistryC.TIMELOCK_STATE_REGISTRY(),
             _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "TimelockStateRegistry"),
-            vars.dstChainId
-        );
-        */
-
-        /*
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.BROADCAST_REGISTRY(),
-            _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "BroadcastRegistry"),
             vars.dstChainId
         );
         */

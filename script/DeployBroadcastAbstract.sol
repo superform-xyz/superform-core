@@ -414,7 +414,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
 
         /// @dev 6.5- deploy Wormhole Specialized Relayer Implementation
-        vars.wormholeSRImplementation = address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC));
+        vars.wormholeSRImplementation = address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC, 2));
         contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
 
         WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[trueIndex]);
