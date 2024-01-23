@@ -86,7 +86,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         string memory symbol = ERC4626Form(payable(superformCreated)).superformYieldTokenSymbol();
 
-        assertEq(symbol, "SP-Mock");
+        assertEq(symbol, "sp-Mock");
     }
 
     function test_superformVaultSharesAmountToUnderlyingAmount() public {
@@ -357,7 +357,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         string memory tokenName = ERC4626Form(payable(superformCreated)).superformYieldTokenName();
 
-        assertEq(tokenName, "Superposition Mock Vault");
+        assertEq(tokenName, "Mock Vault SuperPosition");
     }
 
     function test_superformDirectDepositWithoutAllowance() public {
