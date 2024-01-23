@@ -106,14 +106,14 @@ contract PaymentHelper is IPaymentHelper {
     //////////////////////////////////////////////////////////////
 
     modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
+        if (!ISuperRBAC(_getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
         }
         _;
     }
 
     modifier onlyEmergencyAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasEmergencyAdminRole(msg.sender)) {
+        if (!ISuperRBAC(_getAddress(keccak256("SUPER_RBAC"))).hasEmergencyAdminRole(msg.sender)) {
             revert Error.NOT_EMERGENCY_ADMIN();
         }
         _;
@@ -176,7 +176,7 @@ contract PaymentHelper is IPaymentHelper {
         LocalEstimateVars memory v;
         v.len = req_.dstChainIds.length;
 
-        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+        ISuperformFactory factory = ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY")));
         for (uint256 i; i < v.len; ++i) {
             bool xChain = req_.dstChainIds[i] != CHAIN_ID;
 
@@ -257,7 +257,7 @@ contract PaymentHelper is IPaymentHelper {
         returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
     {
         uint256 len = req_.dstChainIds.length;
-        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+        ISuperformFactory factory = ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY")));
 
         for (uint256 i; i < len; ++i) {
             bool xChain = req_.dstChainIds[i] != CHAIN_ID;
@@ -325,7 +325,7 @@ contract PaymentHelper is IPaymentHelper {
         uint256 totalDstGas;
         uint256 superformIdsLen = req_.superformsData.superformIds.length;
 
-        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+        ISuperformFactory factory = ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY")));
 
         /// @dev step 1: estimate AMB costs
         uint256 ambFees =
@@ -396,7 +396,7 @@ contract PaymentHelper is IPaymentHelper {
         returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
     {
         uint256 totalDstGas;
-        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+        ISuperformFactory factory = ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY")));
 
         /// @dev step 1: estimate AMB costs
         uint256 ambFees =
@@ -449,7 +449,7 @@ contract PaymentHelper is IPaymentHelper {
         override
         returns (uint256 liqAmount, uint256 srcAmount, uint256 totalAmount)
     {
-        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+        ISuperformFactory factory = ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY")));
 
         if (!isDeposit_) {
             /// @dev only if timelock form withdrawal is involved
@@ -480,7 +480,7 @@ contract PaymentHelper is IPaymentHelper {
         override
         returns (uint256 liqAmount, uint256 srcAmount, uint256 totalAmount)
     {
-        ISuperformFactory factory = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+        ISuperformFactory factory = ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY")));
 
         if (!isDeposit_) {
             uint256 len = req_.superformData.superformIds.length;
@@ -513,6 +513,7 @@ contract PaymentHelper is IPaymentHelper {
     )
         public
         view
+        override
         returns (uint256 totalFees, uint256[] memory)
     {
         uint256 len = ambIds_.length;
@@ -532,11 +533,10 @@ contract PaymentHelper is IPaymentHelper {
         return (totalFees, fees);
     }
 
-    /// @dev helps estimate the acknowledgement costs for amb processing
-    function estimateAckCost(uint256 payloadId_) external view returns (uint256 totalFees) {
+    /// @inheritdoc IPaymentHelper
+    function estimateAckCost(uint256 payloadId_) external view override returns (uint256 totalFees) {
         EstimateAckCostVars memory v;
-        IBaseStateRegistry coreStateRegistry =
-            IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
+        IBaseStateRegistry coreStateRegistry = IBaseStateRegistry(_getAddress(keccak256("CORE_STATE_REGISTRY")));
         v.currPayloadId = coreStateRegistry.payloadsCount();
 
         if (payloadId_ > v.currPayloadId) revert Error.INVALID_PAYLOAD_ID();
@@ -564,7 +564,7 @@ contract PaymentHelper is IPaymentHelper {
         return _estimateAMBFees(v.ackAmbIds, v.srcChainId, v.message);
     }
 
-    /// @dev helps estimate the acknowledgement costs for amb processing
+    /// @inheritdoc IPaymentHelper
     function estimateAckCostDefault(
         bool multi,
         uint8[] memory ackAmbIds,
@@ -572,6 +572,7 @@ contract PaymentHelper is IPaymentHelper {
     )
         external
         view
+        override
         returns (uint256 totalFees)
     {
         bytes memory payloadBody;
@@ -979,7 +980,7 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev helps generate the new payload id
     /// @dev next payload id = current payload id + 1
     function _getNextPayloadId() internal view returns (uint256 nextPayloadId) {
-        nextPayloadId = ReadOnlyBaseRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY"))).payloadsCount();
+        nextPayloadId = ReadOnlyBaseRegistry(_getAddress(keccak256("CORE_STATE_REGISTRY"))).payloadsCount();
         ++nextPayloadId;
     }
 
@@ -1019,5 +1020,10 @@ contract PaymentHelper is IPaymentHelper {
         }
 
         return nativePrice[chainId_];
+    }
+
+    /// @dev returns the address from super registry
+    function _getAddress(bytes32 id_) internal view returns (address) {
+        return superRegistry.getAddress(id_);
     }
 }
