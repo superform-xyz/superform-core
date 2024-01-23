@@ -119,7 +119,14 @@ contract SuperPositions is ISuperPositions, ERC1155A, Broadcastable {
 
     /// @param dynamicURI_  URL for external metadata of ERC1155 SuperPositions
     /// @param superRegistry_ the superform registry contract
-    constructor(string memory dynamicURI_, address superRegistry_) {
+    constructor(
+        string memory dynamicURI_,
+        address superRegistry_,
+        string memory name_,
+        string memory symbol_
+    )
+        ERC1155A(name_, symbol_)
+    {
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }

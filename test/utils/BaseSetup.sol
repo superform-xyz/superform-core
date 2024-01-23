@@ -690,7 +690,9 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.superPositions = address(
                 new SuperPositions{ salt: salt }(
                     "https://ipfs-gateway.superform.xyz/ipns/k51qzi5uqu5dg90fqdo9j63m556wlddeux4mlgyythp30zousgh3huhyzouyq8/JSON/",
-                    vars.superRegistry
+                    vars.superRegistry,
+                    "SuperPositions",
+                    "SP"
                 )
             );
 

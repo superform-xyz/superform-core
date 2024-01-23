@@ -135,12 +135,12 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
     /// @inheritdoc BaseForm
     function superformYieldTokenName() external view virtual override returns (string memory) {
-        return string(abi.encodePacked("Superform ", IERC20Metadata(vault).name()));
+        return string(abi.encodePacked("Superposition ", IERC20Metadata(vault).name()));
     }
 
     /// @inheritdoc BaseForm
     function superformYieldTokenSymbol() external view virtual override returns (string memory) {
-        return string(abi.encodePacked("SUP-", IERC20Metadata(vault).symbol()));
+        return string(abi.encodePacked("SP-", IERC20Metadata(vault).symbol()));
     }
 
     /// @inheritdoc BaseForm
