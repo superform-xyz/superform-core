@@ -119,7 +119,7 @@ jobs:
           echo "FOUNDRY_FUZZ_SEED=$(echo $(($EPOCHSECONDS / 604800)))" >> $GITHUB_ENV
 
       - name: "Run Smoke tests"
-        run: 'forge test -vvvvv --match-contract SmokeTest"'
+        run: "forge test -vvvvv --match-contract SmokeTest"
 
       - name: "Add test summary"
         run: |
