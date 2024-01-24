@@ -17,11 +17,12 @@ env:
   ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
   POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
   AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
-  FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
+  BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
   TENDERLY_ACCESS_KEY: ${{ secrets.TENDERLY_ACCESS_KEY }}
   TENDERLY_PROJECT_SLUG: "v1" # your project slug
   TENDERLY_ACCOUNT_ID: "superform" # your username or organization name
   FOUNDRY_EXPORTS_OVERWRITE_LATEST: "true"
+  OWNER_ADDRESS: ${{ secrets.OWNER_ADDRESS }}
 
 jobs:
   build:
@@ -103,7 +104,7 @@ jobs:
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
 
-      - name: "Generate the coverage report using the unit and the integration tests"
+      - name: "Generate the coverage report using unit and integration tests"
         run: 'FOUNDRY_PROFILE=coverage forge coverage --match-path "test/**/*.sol" --report lcov'
 
       - name: "Upload coverage report to Codecov"
