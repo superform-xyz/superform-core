@@ -22,6 +22,7 @@ env:
   TENDERLY_PROJECT_SLUG: "v1" # your project slug
   TENDERLY_ACCOUNT_ID: "superform" # your username or organization name
   FOUNDRY_EXPORTS_OVERWRITE_LATEST: "true"
+  OWNER_ADDRESS: ${{ secrets.OWNER_ADDRESS }}
 
 jobs:
   build:
