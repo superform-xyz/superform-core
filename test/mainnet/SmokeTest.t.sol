@@ -237,4 +237,58 @@ contract SmokeTest is MainnetBaseSetup {
             }
         }
     }
+
+    function test_hyperlaneImplementation() public {
+        HyperlaneImplementation hyperlane;
+
+        /// @dev index should match the index of target chains
+        address[] memory mailboxes = new address[](TARGET_DEPLOYMENT_CHAINS.length);
+        mailboxes[0] = 0xc005dc82818d67AF737725bD4bf75435d065D239;
+        mailboxes[1] = 0x2971b9Aec44bE4eb673DF1B88cDB57b96eefe8a4;
+        mailboxes[2] = 0xFf06aFcaABaDDd1fb08371f9ccA15D73D51FeBD6;
+        mailboxes[3] = 0x5d934f4e2f797775e53561bB72aca21ba36B96BB;
+        mailboxes[4] = 0x979Ca5202784112f4738403dBec5D0F3B9daabB9;
+        mailboxes[5] = 0xd4C1905BB1D26BC93DAC913e13CaCC278CdCC80D;
+        mailboxes[6] = 0xeA87ae93Fa0019a82A727bfd3eBd1cFCa8f64f1D;
+
+        /// @dev index should match the index of target chains
+        address[] memory igps = new address[](TARGET_DEPLOYMENT_CHAINS.length);
+        igps[0] = 0x9e6B1022bE9BBF5aFd152483DAD9b88911bC8611;
+        igps[1] = 0x78E25e7f84416e69b9339B0A6336EB6EFfF6b451;
+        igps[2] = 0x95519ba800BBd0d34eeAE026fEc620AD978176C0;
+        igps[3] = 0x0071740Bf129b05C4684abfbBeD248D80971cce2;
+        igps[4] = 0x3b6044acd6767f017e99318AA6Ef93b7B06A5a22;
+        igps[5] = 0xD8A76C4D91fCbB7Cc8eA795DFDF870E48368995C;
+        igps[6] = 0xc3F23848Ed2e04C0c6d41bd7804fa8f89F940B94;
+
+        /// @dev index should match the index of target chains
+        uint32[] memory ambIds = new uint32[](TARGET_DEPLOYMENT_CHAINS.length);
+        ambIds[0] = uint32(1);
+        ambIds[1] = uint32(56);
+        ambIds[2] = uint32(43_114);
+        ambIds[3] = uint32(137);
+        ambIds[4] = uint32(42_161);
+        ambIds[5] = uint32(10);
+        ambIds[6] = uint32(8453);
+
+        for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
+            uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+            vm.selectFork(FORKS[chainId]);
+            hyperlane = HyperlaneImplementation(getContract(chainId, "HyperlaneImplementation"));
+
+            assertEq(address(hyperlane.mailbox()), mailboxes[i]);
+            assertEq(address(hyperlane.igp()), igps[i]);
+
+            for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
+                if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
+                    assertEq(
+                        hyperlane.authorizedImpl(ambIds[j]),
+                        getContract(TARGET_DEPLOYMENT_CHAINS[j], "HyperlaneImplementation")
+                    );
+                    assertEq(hyperlane.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds[j]);
+                    assertEq(hyperlane.superChainId(ambIds[j]), TARGET_DEPLOYMENT_CHAINS[j]);
+                }
+            }
+        }
+    }
 }
