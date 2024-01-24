@@ -103,7 +103,7 @@ jobs:
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
 
-      - name: "Generate the coverage report using the unit and the integration tests"
+      - name: "Generate the coverage report using unit and integration tests"
         run: 'FOUNDRY_PROFILE=coverage forge coverage --match-path "test/**/*.sol" --report lcov'
 
       - name: "Upload coverage report to Codecov"
