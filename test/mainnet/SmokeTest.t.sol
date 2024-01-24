@@ -291,4 +291,50 @@ contract SmokeTest is MainnetBaseSetup {
             }
         }
     }
+
+    function test_layerzeroImplementation() public {
+        LayerzeroImplementation layerzero;
+
+        /// @dev index should match the index of target chains
+        address[] memory endpoints = new address[](TARGET_DEPLOYMENT_CHAINS.length);
+        endpoints[0] = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
+        endpoints[1] = 0x3c2269811836af69497E5F486A85D7316753cf62;
+        endpoints[2] = 0x3c2269811836af69497E5F486A85D7316753cf62;
+        endpoints[3] = 0x3c2269811836af69497E5F486A85D7316753cf62;
+        endpoints[4] = 0x3c2269811836af69497E5F486A85D7316753cf62;
+        endpoints[5] = 0x3c2269811836af69497E5F486A85D7316753cf62;
+        endpoints[6] = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
+
+        /// @dev index should match the index of target chains
+        uint16[] memory ambIds = new uint16[](TARGET_DEPLOYMENT_CHAINS.length);
+        ambIds[0] = uint16(101);
+        ambIds[1] = uint16(102);
+        ambIds[2] = uint16(106);
+        ambIds[3] = uint16(109);
+        ambIds[4] = uint16(110);
+        ambIds[5] = uint16(111);
+        ambIds[6] = uint16(184);
+
+        for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
+            uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+            vm.selectFork(FORKS[chainId]);
+            layerzero = LayerzeroImplementation(getContract(chainId, "LayerzeroImplementation"));
+
+            assertEq(address(layerzero.lzEndpoint()), endpoints[i]);
+
+            for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
+                if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
+                    assertEq(
+                        layerzero.trustedRemoteLookup(ambIds[j]),
+                        abi.encodePacked(
+                            getContract(TARGET_DEPLOYMENT_CHAINS[j], "LayerzeroImplementation"),
+                            getContract(TARGET_DEPLOYMENT_CHAINS[i], "LayerzeroImplementation")
+                        )
+                    );
+                    assertEq(layerzero.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds[j]);
+                    assertEq(layerzero.superChainId(ambIds[j]), TARGET_DEPLOYMENT_CHAINS[j]);
+                }
+            }
+        }
+    }
 }
