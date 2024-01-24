@@ -10,6 +10,7 @@ The following contracts, behaviors, and findings are out of scope:
 - Prior findings in any audit report found in this directory
 - Exploits concerning the inappropriate behavior of keeper roles mentioned below
 - Superform allows for the permissionless addition of yield. We do not maintain the security of vaults added and funds bricked or lost by improper implementations
+- Our v1 was deployed on January 24th, 2024. Changes to the LiFi or Socket codebase after this point, implicitly used in LiFiValidator and SocketValidator, are monitored and validated off-chain and we will not consider errors specific to any added functionality 
 
 ## Off-chain Architecture
 
