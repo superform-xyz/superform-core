@@ -17,7 +17,7 @@ env:
   ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
   POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
   AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
-  FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
+  BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
   TENDERLY_ACCESS_KEY: ${{ secrets.TENDERLY_ACCESS_KEY }}
   TENDERLY_PROJECT_SLUG: "v1" # your project slug
   TENDERLY_ACCOUNT_ID: "superform" # your username or organization name
