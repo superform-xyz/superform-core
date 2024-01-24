@@ -381,4 +381,53 @@ contract SmokeTest is MainnetBaseSetup {
             }
         }
     }
+
+    function test_wormholeSRImplementation() public {
+        WormholeSRImplementation wormhole;
+
+        /// @dev index should match the index of target chains
+        address[] memory wormholeCore = new address[](TARGET_DEPLOYMENT_CHAINS.length);
+        wormholeCore[0] = 0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B;
+        wormholeCore[1] = 0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B;
+        wormholeCore[2] = 0x54a8e5f9c4CbA08F9943965859F6c34eAF03E26c;
+        wormholeCore[3] = 0x7A4B5a56256163F07b2C80A7cA55aBE66c4ec4d7;
+        wormholeCore[4] = 0xa5f208e072434bC67592E4C49C1B991BA79BCA46;
+        wormholeCore[5] = 0xEe91C335eab126dF5fDB3797EA9d6aD93aeC9722;
+        wormholeCore[6] = 0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6;
+
+        /// @dev index should match the index of target chains
+        uint16[] memory ambIds = new uint16[](TARGET_DEPLOYMENT_CHAINS.length);
+        ambIds[0] = uint16(2);
+        ambIds[1] = uint16(4);
+        ambIds[2] = uint16(6);
+        ambIds[3] = uint16(5);
+        ambIds[4] = uint16(23);
+        ambIds[5] = uint16(24);
+        ambIds[6] = uint16(30);
+
+        address relayer = 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92;
+
+        /// owner address for now
+
+        for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
+            uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+            vm.selectFork(FORKS[chainId]);
+            wormhole = WormholeSRImplementation(getContract(chainId, "WormholeSRImplementation"));
+
+            assertEq(address(wormhole.relayer()), relayer);
+            assertEq(address(wormhole.wormhole()), wormholeCore[i]);
+            assertEq(wormhole.broadcastFinality(), 0);
+
+            for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
+                if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
+                    assertEq(
+                        wormhole.authorizedImpl(ambIds[j]),
+                        getContract(TARGET_DEPLOYMENT_CHAINS[j], "WormholeSRImplementation")
+                    );
+                    assertEq(wormhole.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds[j]);
+                    assertEq(wormhole.superChainId(ambIds[j]), TARGET_DEPLOYMENT_CHAINS[j]);
+                }
+            }
+        }
+    }
 }
