@@ -577,7 +577,7 @@ contract PaymentHelper is IPaymentHelper {
         override
         returns (uint256)
     {
-        return _convertToNativeFee(srcChainId, estimateAckCostDefault(multi, ackAmbIds, srcChainId));
+        return _convertToSrcNativeAmount(srcChainId, estimateAckCostDefault(multi, ackAmbIds, srcChainId));
     }
 
     //////////////////////////////////////////////////////////////
@@ -958,6 +958,38 @@ contract PaymentHelper is IPaymentHelper {
         uint256 nativeTokenPrice = _getNativeTokenPrice(CHAIN_ID); // native token price - 8 decimal
         if (nativeTokenPrice == 0) revert Error.INVALID_NATIVE_TOKEN_PRICE();
         nativeFee = (dstUsdValue) / _getNativeTokenPrice(CHAIN_ID);
+    }
+
+    /// @dev helps convert a native token of one chain to another
+    /// @dev https://docs.soliditylang.org/en/v0.8.4/units-and-global-variables.html#ether-units
+    /// @dev all native tokens should be 18 decimals across all EVMs
+    function _convertToSrcNativeAmount(
+        uint64 srcChainId_,
+        uint256 dstAmount_
+    )
+        internal
+        view
+        returns (uint256 nativeFee)
+    {
+        if (dstAmount_ == 0) {
+            return 0;
+        }
+
+        /// @dev converts the native token value to usd value
+        /// @dev dstAmount_ is 18 decimal
+        /// @dev native token price is 8 decimal
+        uint256 dstUsdValue = dstAmount_ * _getNativeTokenPrice(CHAIN_ID);
+
+        if (dstUsdValue == 0) {
+            return 0;
+        }
+
+        /// @dev converts the usd value to source chain's native token
+        /// @dev native token price is 8 decimal which cancels the 8 decimal multiplied in previous step
+        uint256 nativeTokenPrice = _getNativeTokenPrice(srcChainId_);
+        if (nativeTokenPrice == 0) revert Error.INVALID_NATIVE_TOKEN_PRICE();
+
+        nativeFee = dstUsdValue / nativeTokenPrice;
     }
 
     /// @dev helps generate the new payload id
