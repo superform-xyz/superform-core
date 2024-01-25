@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import "test/utils/ProtocolActions.sol";
 import { AggregatorV3Interface } from "src/vendor/chainlink/AggregatorV3Interface.sol";
+import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
 
 contract AggregatorV3MockInvalidDecimals is AggregatorV3Interface {
     function decimals() external pure override returns (uint8) {
@@ -766,9 +767,78 @@ contract PaymentHelperTest is ProtocolActions {
         assertGt(fees, 0);
     }
 
+    function test_estimateWithNativeTokenPriceAsZero() public {
+        /// @dev setting native token price as zero
+        vm.prank(deployer);
+        paymentHelper.updateRemoteChain(1, 1, abi.encode(address(0)));
+
+        vm.prank(deployer);
+        paymentHelper.updateRemoteChain(1, 7, abi.encode(0));
+
+        bytes memory emptyBytes;
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            BuildDummyTxDataUnitTestsVars(
+                1, native, address(0), address(0), ETH, ETH, 1e18, getContract(ETH, "DstSwapper"), false
+            )
+        );
+
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+
+        vm.expectRevert(Error.INVALID_NATIVE_TOKEN_PRICE.selector);
+        paymentHelper.estimateSingleXChainSingleVault(
+            SingleXChainSingleVaultStateReq(
+                ambIds,
+                137,
+                SingleVaultSFData(
+                    _generateTimelockSuperformPackWithShift(),
+                    /// timelock
+                    420,
+                    420,
+                    420,
+                    LiqRequest(txData, address(0), address(0), 1, ETH, 420),
+                    emptyBytes,
+                    false,
+                    false,
+                    receiverAddress,
+                    receiverAddress,
+                    emptyBytes
+                )
+            ),
+            true
+        );
+    }
+
+    function test_estimateAckCostDefaultNativeSourceAsZero() public {
+        /// @dev setting native token price as zero
+        vm.prank(deployer);
+        paymentHelper.updateRemoteChain(137, 1, abi.encode(address(0)));
+
+        vm.prank(deployer);
+        paymentHelper.updateRemoteChain(137, 7, abi.encode(0));
+
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+
+        vm.expectRevert(Error.INVALID_NATIVE_TOKEN_PRICE.selector);
+        paymentHelper.estimateAckCostDefaultNativeSource(false, ambIds, 137);
+    }
+
+    function test_estimateAckCostDefaultNativeSourceForZeroDstAmount() public {
+        /// @dev setting native token price as zero
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+
+        address lzImpl = getContract(ETH, "LayerzeroImplementation");
+
+        vm.mockCall(lzImpl, abi.encodeWithSelector(IAmbImplementation(lzImpl).estimateFees.selector), abi.encode(0));
+
+        uint256 est = paymentHelper.estimateAckCostDefaultNativeSource(false, ambIds, 137);
+        assertEq(est, 0);
+    }
+
     function test_dstSwaps_swapFees() public {
         /// @dev scenario: when swap fees is set to 0
-
         vm.prank(deployer);
         paymentHelper.updateRemoteChain(1, 3, abi.encode(1e8));
 
