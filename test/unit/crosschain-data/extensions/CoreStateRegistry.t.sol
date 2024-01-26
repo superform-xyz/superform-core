@@ -698,6 +698,26 @@ contract CoreStateRegistryTest is ProtocolActions {
         console.log("defaultEstimateNativeSrc: %s", defaultEstimateNativeSrc);
     }
 
+    function test_estimateWithNativeTokenPriceAsZero() public {
+        uint8[] memory ambIds_ = new uint8[](2);
+        ambIds_[0] = 1;
+        ambIds_[1] = 2;
+
+        _successfulMultiDeposit(ambIds_);
+        vm.selectFork(FORKS[AVAX]);
+
+        /// @dev setting native token price as zero
+        vm.prank(deployer);
+        PaymentHelper(getContract(AVAX, "PaymentHelper")).updateRemoteChain(AVAX, 1, abi.encode(address(0)));
+
+        vm.prank(deployer);
+        PaymentHelper(getContract(AVAX, "PaymentHelper")).updateRemoteChain(AVAX, 7, abi.encode(0));
+
+        assertEq(
+            PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCostDefaultNativeSource(true, ambIds_, ETH), 0
+        );
+    }
+
     function test_ackGasCost_multi_paymentHelperComparison() public {
         uint8[] memory ambIds_ = new uint8[](2);
         ambIds_[0] = 1;

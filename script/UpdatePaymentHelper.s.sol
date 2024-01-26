@@ -8,7 +8,10 @@ contract UpdatePaymentHelper is AbstractUpdatePaymentHelper {
                         SELECT CHAIN IDS TO DEPLOY HERE
     //////////////////////////////////////////////////////////////*/
 
-    uint64[] TARGET_DEPLOYMENT_CHAINS = [BSC, POLY, AVAX];
+    uint64[] TARGET_DEPLOYMENT_CHAINS = [ETH, BSC, AVAX, POLY, ARBI, OP, BASE];
+
+    ///@dev ORIGINAL SALT
+    bytes32 constant salt = "SunNeverSetsOnSuperformRealm";
 
     function updatePaymentHelper(uint256 selectedChainIndex) external {
         uint256 trueIndex;
@@ -20,7 +23,7 @@ contract UpdatePaymentHelper is AbstractUpdatePaymentHelper {
         }
 
         _updatePaymentHelper(
-            selectedChainIndex, trueIndex, Cycle.Prod, TARGET_DEPLOYMENT_CHAINS, TARGET_DEPLOYMENT_CHAINS
+            selectedChainIndex, trueIndex, Cycle.Prod, TARGET_DEPLOYMENT_CHAINS, TARGET_DEPLOYMENT_CHAINS, salt
         );
     }
 }
