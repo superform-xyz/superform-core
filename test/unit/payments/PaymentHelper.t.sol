@@ -2,6 +2,41 @@
 pragma solidity ^0.8.23;
 
 import "test/utils/ProtocolActions.sol";
+import { AggregatorV3Interface } from "src/vendor/chainlink/AggregatorV3Interface.sol";
+import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+
+contract AggregatorV3MockInvalidDecimals is AggregatorV3Interface {
+    function decimals() external pure override returns (uint8) {
+        return 10;
+    }
+
+    // You need to implement the rest of the AggregatorV3Interface functions
+    function description() external pure override returns (string memory) {
+        return "Mock Aggregator";
+    }
+
+    function version() external pure override returns (uint256) {
+        return 1;
+    }
+
+    function getRoundData(uint80 _roundId)
+        external
+        pure
+        override
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
+    {
+        return (_roundId, 0, 0, 0, _roundId);
+    }
+
+    function latestRoundData()
+        external
+        pure
+        override
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
+    {
+        return (0, 0, 0, 0, 0);
+    }
+}
 
 contract MockGasPriceOracle {
     function latestRoundData()
@@ -119,6 +154,384 @@ contract PaymentHelperTest is ProtocolActions {
         );
 
         vm.clearMockedCalls();
+    }
+
+    function test_estimateSingleDirectSingleVault_formImplPaused() public {
+        vm.prank(deployer);
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
+            2, ISuperformFactory.PauseStatus(1), ""
+        );
+        /// @dev scenario: single vault withdrawal involving timelock with paused implementation
+        bytes memory emptyBytes;
+        (,, uint256 fees) = paymentHelper.estimateSingleDirectSingleVault(
+            SingleDirectSingleVaultStateReq(
+                SingleVaultSFData(
+                    _generateTimelockSuperformPackWithShift(),
+                    /// timelock
+                    420,
+                    420,
+                    420,
+                    LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420),
+                    emptyBytes,
+                    false,
+                    false,
+                    receiverAddress,
+                    receiverAddress,
+                    emptyBytes
+                )
+            ),
+            false
+        );
+        assertGt(fees, 0);
+    }
+
+    function test_estimateSingleDirectMultiVault_formImplPaused() public {
+        vm.prank(deployer);
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
+            2, ISuperformFactory.PauseStatus(1), ""
+        );
+        bytes memory emptyBytes;
+        uint256[] memory superFormIds = new uint256[](1);
+        superFormIds[0] = _generateTimelockSuperformPackWithShift();
+
+        uint256[] memory uint256MemoryArray = new uint256[](1);
+        uint256MemoryArray[0] = 420;
+
+        LiqRequest[] memory liqRequestMemoryArray = new LiqRequest[](1);
+        liqRequestMemoryArray[0] = LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420);
+
+        (,, uint256 fees) = paymentHelper.estimateSingleDirectMultiVault(
+            SingleDirectMultiVaultStateReq(
+                MultiVaultSFData(
+                    superFormIds,
+                    /// timelock
+                    uint256MemoryArray,
+                    uint256MemoryArray,
+                    uint256MemoryArray,
+                    liqRequestMemoryArray,
+                    emptyBytes,
+                    new bool[](1),
+                    new bool[](1),
+                    receiverAddress,
+                    receiverAddress,
+                    emptyBytes
+                )
+            ),
+            false
+        );
+        assertGt(fees, 0);
+    }
+
+    function test_estimateSingleXChainSingleVault_formImplPaused() public {
+        vm.prank(deployer);
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
+            2, ISuperformFactory.PauseStatus(1), ""
+        );
+
+        uint8[] memory ambIds = new uint8[](1);
+
+        ambIds[0] = 1;
+        ambIds[0] = 2;
+
+        /// @dev scenario: single vault withdrawal involving timelock with paused implementation
+        bytes memory emptyBytes;
+        (,,, uint256 fees) = paymentHelper.estimateSingleXChainSingleVault(
+            SingleXChainSingleVaultStateReq(
+                ambIds,
+                ARBI,
+                SingleVaultSFData(
+                    _generateTimelockSuperformPackWithShift(),
+                    /// timelock
+                    420,
+                    420,
+                    420,
+                    LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420),
+                    emptyBytes,
+                    false,
+                    false,
+                    receiverAddress,
+                    receiverAddress,
+                    emptyBytes
+                )
+            ),
+            false
+        );
+        assertGt(fees, 0);
+    }
+
+    function test_estimateSingleXChainMultiVault_formImplPaused() public {
+        vm.prank(deployer);
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
+            2, ISuperformFactory.PauseStatus(1), ""
+        );
+
+        uint8[] memory ambIds = new uint8[](1);
+
+        ambIds[0] = 1;
+        ambIds[0] = 2;
+
+        bytes memory emptyBytes;
+        uint256[] memory superFormIds = new uint256[](1);
+        superFormIds[0] = _generateTimelockSuperformPackWithShift();
+
+        uint256[] memory uint256MemoryArray = new uint256[](1);
+        uint256MemoryArray[0] = 420;
+
+        LiqRequest[] memory liqRequestMemoryArray = new LiqRequest[](1);
+        liqRequestMemoryArray[0] = LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420);
+
+        (,,, uint256 fees) = paymentHelper.estimateSingleXChainMultiVault(
+            SingleXChainMultiVaultStateReq(
+                ambIds,
+                ARBI,
+                MultiVaultSFData(
+                    superFormIds,
+                    /// timelock
+                    uint256MemoryArray,
+                    uint256MemoryArray,
+                    uint256MemoryArray,
+                    liqRequestMemoryArray,
+                    emptyBytes,
+                    new bool[](1),
+                    new bool[](1),
+                    receiverAddress,
+                    receiverAddress,
+                    emptyBytes
+                )
+            ),
+            false
+        );
+        assertGt(fees, 0);
+    }
+
+    function test_estimateSingleXChainMultiVault_retain4626() public {
+        uint8[] memory ambIds = new uint8[](1);
+
+        ambIds[0] = 1;
+        ambIds[0] = 2;
+
+        bytes memory emptyBytes;
+        uint256[] memory superFormIds = new uint256[](1);
+        superFormIds[0] = _generateTimelockSuperformPackWithShift();
+
+        uint256[] memory uint256MemoryArray = new uint256[](1);
+        uint256MemoryArray[0] = 420;
+
+        LiqRequest[] memory liqRequestMemoryArray = new LiqRequest[](1);
+        liqRequestMemoryArray[0] = LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420);
+        bool[] memory retain4626 = new bool[](1);
+
+        retain4626[0] = true;
+
+        (,,, uint256 fees) = paymentHelper.estimateSingleXChainMultiVault(
+            SingleXChainMultiVaultStateReq(
+                ambIds,
+                ARBI,
+                MultiVaultSFData(
+                    superFormIds,
+                    /// timelock
+                    uint256MemoryArray,
+                    uint256MemoryArray,
+                    uint256MemoryArray,
+                    liqRequestMemoryArray,
+                    emptyBytes,
+                    new bool[](1),
+                    retain4626,
+                    receiverAddress,
+                    receiverAddress,
+                    emptyBytes
+                )
+            ),
+            false
+        );
+        assertGt(fees, 0);
+    }
+
+    function test_estimateSingleXChainMultiVault_sameDst_deposit() public {
+        uint8[] memory ambIds = new uint8[](1);
+
+        ambIds[0] = 1;
+        ambIds[0] = 2;
+
+        bytes memory emptyBytes;
+        uint256[] memory superFormIds = new uint256[](1);
+        superFormIds[0] = _generateTimelockSuperformPackWithShift();
+
+        uint256[] memory uint256MemoryArray = new uint256[](1);
+        uint256MemoryArray[0] = 420;
+
+        LiqRequest[] memory liqRequestMemoryArray = new LiqRequest[](1);
+        liqRequestMemoryArray[0] = LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420);
+
+        (,,, uint256 fees) = paymentHelper.estimateSingleXChainMultiVault(
+            SingleXChainMultiVaultStateReq(
+                ambIds,
+                ETH,
+                MultiVaultSFData(
+                    superFormIds,
+                    /// timelock
+                    uint256MemoryArray,
+                    uint256MemoryArray,
+                    uint256MemoryArray,
+                    liqRequestMemoryArray,
+                    emptyBytes,
+                    new bool[](1),
+                    new bool[](1),
+                    receiverAddress,
+                    receiverAddress,
+                    emptyBytes
+                )
+            ),
+            true
+        );
+        assertGt(fees, 0);
+    }
+
+    function test_estimateMultiDstSingleVault_formImplPaused() public {
+        vm.prank(deployer);
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
+            2, ISuperformFactory.PauseStatus(1), ""
+        );
+        bytes memory emptyBytes;
+
+        uint64[] memory dstChainIds = new uint64[](1);
+        dstChainIds[0] = ARBI;
+        uint8[][] memory ambIdsMulti = new uint8[][](1);
+        uint8[] memory ambIds = new uint8[](2);
+
+        ambIds[0] = 1;
+        ambIds[1] = 2;
+
+        ambIdsMulti[0] = ambIds;
+
+        SingleVaultSFData[] memory superformsData = new SingleVaultSFData[](1);
+
+        superformsData[0] = SingleVaultSFData(
+            _generateTimelockSuperformPackWithShift(),
+            /// timelock
+            420,
+            420,
+            420,
+            LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420),
+            emptyBytes,
+            false,
+            false,
+            receiverAddress,
+            receiverAddress,
+            emptyBytes
+        );
+
+        /// @dev scenario: single vault withdrawal involving timelock with paused implementation
+        (,,, uint256 fees) = paymentHelper.estimateMultiDstSingleVault(
+            MultiDstSingleVaultStateReq(ambIdsMulti, dstChainIds, superformsData), false
+        );
+        assertGt(fees, 0);
+    }
+
+    function test_estimateMultiDstMultiVault_formImplPaused() public {
+        vm.prank(deployer);
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
+            2, ISuperformFactory.PauseStatus(1), ""
+        );
+        bytes memory emptyBytes;
+
+        uint64[] memory dstChainIds = new uint64[](1);
+        dstChainIds[0] = ARBI;
+        uint8[][] memory ambIdsMulti = new uint8[][](1);
+        uint8[] memory ambIds = new uint8[](2);
+
+        ambIds[0] = 1;
+        ambIds[1] = 2;
+
+        ambIdsMulti[0] = ambIds;
+        uint256[] memory superFormIds = new uint256[](1);
+        superFormIds[0] = _generateTimelockSuperformPackWithShift();
+
+        uint256[] memory uint256MemoryArray = new uint256[](1);
+        uint256MemoryArray[0] = 420;
+
+        LiqRequest[] memory liqRequestMemoryArray = new LiqRequest[](1);
+        liqRequestMemoryArray[0] = LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420);
+        MultiVaultSFData[] memory superformsData = new MultiVaultSFData[](1);
+
+        superformsData[0] = MultiVaultSFData(
+            superFormIds,
+            /// timelock
+            uint256MemoryArray,
+            uint256MemoryArray,
+            uint256MemoryArray,
+            liqRequestMemoryArray,
+            emptyBytes,
+            new bool[](1),
+            new bool[](1),
+            receiverAddress,
+            receiverAddress,
+            emptyBytes
+        );
+
+        /// @dev scenario: single vault withdrawal involving timelock with paused implementation
+        (,,, uint256 fees) = paymentHelper.estimateMultiDstMultiVault(
+            MultiDstMultiVaultStateReq(ambIdsMulti, dstChainIds, superformsData), false
+        );
+        assertGt(fees, 0);
+    }
+
+    function test_estimateSingleXChainSingleVault_sameDst() public {
+        vm.prank(deployer);
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
+            2, ISuperformFactory.PauseStatus(1), ""
+        );
+
+        uint8[] memory ambIds = new uint8[](1);
+
+        ambIds[0] = 1;
+        ambIds[0] = 2;
+
+        /// @dev scenario: single vault withdrawal involving timelock with paused implementation
+        bytes memory emptyBytes;
+        (,,, uint256 fees) = paymentHelper.estimateSingleXChainSingleVault(
+            SingleXChainSingleVaultStateReq(
+                ambIds,
+                ETH,
+                SingleVaultSFData(
+                    _generateTimelockSuperformPackWithShift(),
+                    /// timelock
+                    420,
+                    420,
+                    420,
+                    LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420),
+                    emptyBytes,
+                    false,
+                    false,
+                    receiverAddress,
+                    receiverAddress,
+                    emptyBytes
+                )
+            ),
+            false
+        );
+        assertGt(fees, 0);
+    }
+
+    function test_estimateAMBFees_differentChainId() public {
+        // Define ambIds_, dstChainId_, message_, and extraData_
+        uint8[] memory ambIds_ = new uint8[](2);
+        ambIds_[0] = 1;
+        ambIds_[1] = 2;
+
+        uint64 dstChainId_ = ARBI; // Different than CHAIN_ID
+
+        bytes memory message_ = abi.encode(1);
+
+        bytes[] memory extraData_ = new bytes[](2);
+        extraData_[0] = "";
+        extraData_[1] = abi.encode("0");
+
+        // Call estimateAMBFees
+        (uint256 totalFees,) = paymentHelper.estimateAMBFees(ambIds_, dstChainId_, message_, extraData_);
+
+        // Verify totalFees is greater than 0
+        assertGt(totalFees, 0);
     }
 
     function test_estimateSingleDirectSingleVault() public {
@@ -354,9 +767,78 @@ contract PaymentHelperTest is ProtocolActions {
         assertGt(fees, 0);
     }
 
+    function test_estimateWithNativeTokenPriceAsZero() public {
+        /// @dev setting native token price as zero
+        vm.prank(deployer);
+        paymentHelper.updateRemoteChain(1, 1, abi.encode(address(0)));
+
+        vm.prank(deployer);
+        paymentHelper.updateRemoteChain(1, 7, abi.encode(0));
+
+        bytes memory emptyBytes;
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            BuildDummyTxDataUnitTestsVars(
+                1, native, address(0), address(0), ETH, ETH, 1e18, getContract(ETH, "DstSwapper"), false
+            )
+        );
+
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+
+        vm.expectRevert(Error.INVALID_NATIVE_TOKEN_PRICE.selector);
+        paymentHelper.estimateSingleXChainSingleVault(
+            SingleXChainSingleVaultStateReq(
+                ambIds,
+                137,
+                SingleVaultSFData(
+                    _generateTimelockSuperformPackWithShift(),
+                    /// timelock
+                    420,
+                    420,
+                    420,
+                    LiqRequest(txData, address(0), address(0), 1, ETH, 420),
+                    emptyBytes,
+                    false,
+                    false,
+                    receiverAddress,
+                    receiverAddress,
+                    emptyBytes
+                )
+            ),
+            true
+        );
+    }
+
+    function test_estimateAckCostDefaultNativeSourceAsZero() public {
+        /// @dev setting native token price as zero
+        vm.prank(deployer);
+        paymentHelper.updateRemoteChain(137, 1, abi.encode(address(0)));
+
+        vm.prank(deployer);
+        paymentHelper.updateRemoteChain(137, 7, abi.encode(0));
+
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+
+        vm.expectRevert(Error.INVALID_NATIVE_TOKEN_PRICE.selector);
+        paymentHelper.estimateAckCostDefaultNativeSource(false, ambIds, 137);
+    }
+
+    function test_estimateAckCostDefaultNativeSourceForZeroDstAmount() public {
+        /// @dev setting native token price as zero
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+
+        address lzImpl = getContract(ETH, "LayerzeroImplementation");
+
+        vm.mockCall(lzImpl, abi.encodeWithSelector(IAmbImplementation(lzImpl).estimateFees.selector), abi.encode(0));
+
+        uint256 est = paymentHelper.estimateAckCostDefaultNativeSource(false, ambIds, 137);
+        assertEq(est, 0);
+    }
+
     function test_dstSwaps_swapFees() public {
         /// @dev scenario: when swap fees is set to 0
-
         vm.prank(deployer);
         paymentHelper.updateRemoteChain(1, 3, abi.encode(1e8));
 
@@ -587,8 +1069,13 @@ contract PaymentHelperTest is ProtocolActions {
         vm.prank(deployer);
         paymentHelper.updateRemoteChain(1, 1, abi.encode(address(mockGasPriceOracle)));
 
+        address mockInvalidDecimals = address(new AggregatorV3MockInvalidDecimals());
         address result1 = address(paymentHelper.nativeFeedOracle(1));
         assertEq(result1, address(mockGasPriceOracle));
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.CHAINLINK_UNSUPPORTED_DECIMAL.selector);
+        paymentHelper.updateRemoteChain(1, 1, abi.encode(mockInvalidDecimals));
 
         /// set config type: 2
         vm.prank(deployer);
@@ -596,6 +1083,10 @@ contract PaymentHelperTest is ProtocolActions {
 
         address result2 = address(paymentHelper.gasPriceOracle(1));
         assertEq(result2, address(mockGasPriceOracle));
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.CHAINLINK_UNSUPPORTED_DECIMAL.selector);
+        paymentHelper.updateRemoteChain(1, 2, abi.encode(mockInvalidDecimals));
 
         /// set config type: 3
         vm.prank(deployer);
@@ -662,11 +1153,49 @@ contract PaymentHelperTest is ProtocolActions {
     }
 
     function test_addRemoteChain() public {
-        vm.prank(deployer);
+        vm.startPrank(deployer);
         paymentHelper.addRemoteChain(
             420,
             IPaymentHelper.PaymentHelperConfig(address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431)
         );
+
+        paymentHelper.addRemoteChain(
+            421,
+            IPaymentHelper.PaymentHelperConfig(
+                0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
+                0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
+                422,
+                423,
+                424,
+                425,
+                426,
+                427,
+                428,
+                429,
+                430,
+                431
+            )
+        );
+
+        address mock = address(new AggregatorV3MockInvalidDecimals());
+
+        vm.expectRevert(Error.CHAINLINK_UNSUPPORTED_DECIMAL.selector);
+        paymentHelper.addRemoteChain(
+            421,
+            IPaymentHelper.PaymentHelperConfig(
+                mock, 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431
+            )
+        );
+
+        vm.expectRevert(Error.CHAINLINK_UNSUPPORTED_DECIMAL.selector);
+        paymentHelper.addRemoteChain(
+            421,
+            IPaymentHelper.PaymentHelperConfig(
+                0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, mock, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431
+            )
+        );
+
+        vm.stopPrank();
     }
 
     function test_updateRemoteChain() public {

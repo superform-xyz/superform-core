@@ -16,7 +16,6 @@ import { PayloadState, AMBMessage, AMBExtraData } from "src/types/DataTypes.sol"
 /// mechanisms.
 /// @author Zeropoint Labs
 abstract contract BaseStateRegistry is IBaseStateRegistry {
-    
     using ProofLib for AMBMessage;
     using ProofLib for bytes;
 
@@ -117,7 +116,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             bytes32 proofHash = abi.decode(data.params, (bytes32));
             ++messageQuorum[proofHash];
 
-            emit ProofReceived(data.params);
+            emit ProofReceived(proofHash);
         } else {
             /// @dev if message, store header and body of it
             ++payloadsCount;

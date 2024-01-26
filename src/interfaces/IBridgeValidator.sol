@@ -5,7 +5,6 @@ pragma solidity ^0.8.23;
 /// @dev Interface all Bridge Validators must follow
 /// @author Zeropoint Labs
 interface IBridgeValidator {
-
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
     //////////////////////////////////////////////////////////////
@@ -30,7 +29,7 @@ interface IBridgeValidator {
     /// @param txData_ is the txData of the cross chain deposit
     /// @param receiver_ is the address of the receiver to validate
     /// @return valid_ if the address is valid
-    function validateReceiver(bytes calldata txData_, address receiver_) external pure returns (bool valid_);
+    function validateReceiver(bytes calldata txData_, address receiver_) external view returns (bool valid_);
 
     /// @dev validates the txData of a cross chain deposit
     /// @param args_ the txData arguments to validate in txData
@@ -46,7 +45,7 @@ interface IBridgeValidator {
         bool genericSwapDisallowed_
     )
         external
-        pure
+        view
         returns (uint256 amount_);
 
     /// @dev decodes neccesary information for processing swaps on the destination chain

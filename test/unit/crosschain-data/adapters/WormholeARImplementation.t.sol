@@ -211,4 +211,37 @@ contract WormholeARImplementationTest is BaseSetup {
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         wormholeARImpl.estimateFees(111, "", abi.encode(1, 1));
     }
+
+    function test_wormholeRetryPayload_InvalidRetryFee() public {
+        VaaKey memory vaaKey = VaaKey(1, keccak256("test"), 1);
+
+        bytes memory data = abi.encode(vaaKey, 5, 3, 4, deployer);
+
+        vm.mockCall(
+            address(wormholeARImpl.relayer()),
+            abi.encodeWithSelector(
+                IWormholeRelayer(wormholeARImpl.relayer()).resendToEvm.selector, vaaKey, 5, 3, 4, deployer
+            ),
+            abi.encode("")
+        );
+
+        uint256 fee = wormholeARImpl.estimateFees(uint64(137), bytes(""), abi.encode(uint256(0), uint256(4)));
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.INVALID_RETRY_FEE.selector);
+        wormholeARImpl.retryPayload{ value: fee - 100 wei }(data);
+
+        vm.clearMockedCalls();
+    }
+
+    function test_receiveWormholeMessages_InvalidChainId() public {
+        vm.prank(address(wormholeARImpl.relayer()));
+        AMBMessage memory ambMessage;
+        ambMessage.txInfo = DataLib.packTxInfo(0, 0, 0, 1, address(0), 0);
+
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        wormholeARImpl.receiveWormholeMessages(
+            abi.encode(ambMessage), new bytes[](0), bytes32(uint256(uint160(address(0)))), 0, bytes32(0)
+        );
+    }
 }

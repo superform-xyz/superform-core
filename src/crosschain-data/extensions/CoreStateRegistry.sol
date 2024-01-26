@@ -434,10 +434,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 revert Error.ZERO_AMOUNT();
             }
 
-            if (_getVaultAsset(_getSuperform(multiVaultData.superformIds[i])) != finalToken_[i]) {
-                revert Error.INVALID_UPDATE_FINAL_TOKEN();
-            }
-
             /// @dev observe not consuming the second return value
             (multiVaultData.amounts[i],, validLen) = _updateAmount(
                 IDstSwapper(_getAddress(keccak256("DST_SWAPPER"))),
@@ -445,10 +441,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 payloadId_,
                 i,
                 finalAmounts_[i],
+                finalToken_[i],
                 multiVaultData.superformIds[i],
                 multiVaultData.amounts[i],
                 multiVaultData.maxSlippages[i],
-                finalState_,
                 validLen
             );
         }
@@ -508,10 +504,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             revert Error.ZERO_AMOUNT();
         }
 
-        if (_getVaultAsset(_getSuperform(singleVaultData.superformId)) != finalToken_) {
-            revert Error.INVALID_UPDATE_FINAL_TOKEN();
-        }
-
         /// @dev observe not consuming the third return value
         (singleVaultData.amount, finalState_,) = _updateAmount(
             IDstSwapper(_getAddress(keccak256("DST_SWAPPER"))),
@@ -519,10 +511,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             payloadId_,
             0,
             finalAmount_,
+            finalToken_,
             singleVaultData.superformId,
             singleVaultData.amount,
             singleVaultData.maxSlippage,
-            finalState_,
             0
         );
 
@@ -535,15 +527,19 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         uint256 payloadId_,
         uint256 index_,
         uint256 finalAmount_,
+        address finalToken_,
         uint256 superformId_,
         uint256 amount_,
         uint256 maxSlippage_,
-        PayloadState finalState_,
         uint256 validLen_
     )
         internal
-        returns (uint256, PayloadState, uint256)
+        returns (uint256, PayloadState finalState_, uint256)
     {
+        if (finalToken_ == address(0)) {
+            revert Error.ZERO_FINAL_TOKEN();
+        }
+
         bool failedSwapQueued;
         if (hasDstSwap_) {
             if (dstSwapper.swappedAmount(payloadId_, index_) != finalAmount_) {
@@ -552,16 +548,20 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
                 if (amount != finalAmount_) {
                     revert Error.INVALID_DST_SWAP_AMOUNT();
-                } else {
-                    failedSwapQueued = true;
-                    failedDeposits[payloadId_].superformIds.push(superformId_);
-                    failedDeposits[payloadId_].settlementToken.push(interimToken);
-                    failedDeposits[payloadId_].settleFromDstSwapper.push(true);
-
-                    /// @dev sets amount to zero and will mark the payload as PROCESSED
-                    amount_ = 0;
-                    finalState_ = PayloadState.PROCESSED;
                 }
+
+                if (interimToken != finalToken_) {
+                    revert Error.INVALID_UPDATE_FINAL_TOKEN();
+                }
+
+                failedSwapQueued = true;
+                failedDeposits[payloadId_].superformIds.push(superformId_);
+                failedDeposits[payloadId_].settlementToken.push(interimToken);
+                failedDeposits[payloadId_].settleFromDstSwapper.push(true);
+
+                /// @dev sets amount to zero and will mark the payload as PROCESSED
+                amount_ = 0;
+                finalState_ = PayloadState.PROCESSED;
             }
         }
 
@@ -592,12 +592,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             if (!(_isSuperform(superformId_) && finalState_ == PayloadState.UPDATED)) {
                 failedDeposits[payloadId_].superformIds.push(superformId_);
 
-                address asset;
-                try IBaseForm(_getSuperform(superformId_)).getVaultAsset() returns (address asset_) {
-                    asset = asset_;
-                } catch {
-                    /// @dev if its error, we just consider asset as zero address
-                }
+                address asset = _fetchAndValidateFinalToken(superformId_, finalToken_, true);
+
                 /// @dev if superform is invalid, try catch will fail and asset pushed is address (0)
                 /// @notice this means that if a user tries to game the protocol with an invalid superformId, the funds
                 /// bridged over that failed will be stuck here
@@ -610,6 +606,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 amount_ = 0;
                 finalState_ = PayloadState.PROCESSED;
             } else {
+                _fetchAndValidateFinalToken(superformId_, finalToken_, false);
                 ++validLen_;
             }
         }
@@ -792,9 +789,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         bool fulfilment;
         bool errors;
         for (uint256 i; i < numberOfVaults; ++i) {
-            /// @dev if updating the deposit payload fails because of slippage, multiVaultData.amounts[i] is set to 0
-            /// @dev this means that this amount was already added to the failedDeposits state variable and should not
-            /// be re-added (or processed here)
+            /// @dev it is not possible in theory to have multiVaultData.amounts to be 0 at this point
+            /// @dev this is due to the fact that 0 values are moved in updateDeposit which must always run prior to
+            /// processing the payload
+            /// @dev this check is added here only for sanity purposes and full coverage of the line is not possible
             if (multiVaultData.amounts[i] != 0) {
                 underlying = IERC20(_getVaultAsset(superforms[i]));
 
@@ -1036,5 +1034,31 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         payloadTracking[payloadId_] = finalState;
 
         emit PayloadUpdated(payloadId_);
+    }
+
+    /// @dev fetch vault asset and valid it against the final token
+    function _fetchAndValidateFinalToken(
+        uint256 superformId_,
+        address finalToken_,
+        bool validateInsideTry_
+    )
+        internal
+        view
+        returns (address vaultAsset_)
+    {
+        try IBaseForm(_getSuperform(superformId_)).getVaultAsset() returns (address asset_) {
+            if (validateInsideTry_ && asset_ != finalToken_) {
+                revert Error.INVALID_UPDATE_FINAL_TOKEN();
+            }
+
+            vaultAsset_ = asset_;
+        } catch {
+            /// @dev if its error, we just consider asset as zero address
+        }
+
+        /// @dev vaultAsset_ will be address(0) if it does not enter the loop
+        if (!validateInsideTry_ && vaultAsset_ != finalToken_) {
+            revert Error.INVALID_UPDATE_FINAL_TOKEN();
+        }
     }
 }

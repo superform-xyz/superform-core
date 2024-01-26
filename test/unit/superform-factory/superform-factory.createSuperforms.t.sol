@@ -197,6 +197,28 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         SuperformFactory(getContract(chainId, "SuperformFactory")).getSuperform(superformId);
     }
 
+    function test_getAllSuperformsFromVault() public {
+        vm.startPrank(deployer);
+        vm.selectFork(FORKS[chainId]);
+        address superRegistry = getContract(chainId, "SuperRegistry");
+        /// @dev Deploying Forms
+        address formImplementation = address(new ERC4626Form(superRegistry));
+        address formImplementation2 = address(new ERC4626Form(superRegistry));
+
+        // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
+            formImplementation, 420, 1
+        );
+
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
+            formImplementation2, 69, 1
+        );
+
+        SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(420, vault);
+        SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(69, vault);
+        SuperformFactory(getContract(chainId, "SuperformFactory")).getAllSuperformsFromVault(vault);
+    }
+
     function test_initializeWithZeroAddressAsset() public {
         vm.selectFork(FORKS[chainId]);
         address zeroAssetVault = address(new ZeroAssetVault());

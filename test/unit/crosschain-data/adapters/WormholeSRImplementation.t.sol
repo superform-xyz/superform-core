@@ -71,7 +71,7 @@ contract WormholeSRImplementationTest is BaseSetup {
     function test_broadcastPayload_RelayerNotSet() public {
         vm.selectFork(FORKS[ETH]);
 
-        WormholeSRImplementation newImpl = new WormholeSRImplementation(superRegistry);
+        WormholeSRImplementation newImpl = new WormholeSRImplementation(superRegistry, 3);
         address wormholeCore_ = address(wormholeSRImpl.wormhole());
         vm.prank(deployer);
         newImpl.setWormholeCore(wormholeCore_);
@@ -100,7 +100,7 @@ contract WormholeSRImplementationTest is BaseSetup {
     function test_broadcastPayload_RelayerInvalid() public {
         vm.selectFork(FORKS[ETH]);
 
-        WormholeSRImplementation newImpl = new WormholeSRImplementation(superRegistry);
+        WormholeSRImplementation newImpl = new WormholeSRImplementation(superRegistry, 3);
         address wormholeCore_ = address(wormholeSRImpl.wormhole());
         address relayer_ = address(new FakeRelayer());
 
@@ -236,5 +236,26 @@ contract WormholeSRImplementationTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
 
         wormholeSRImpl.estimateFees("", "");
+    }
+
+    function test_receiveMessage_InvalidChainId() public {
+        vm.selectFork(FORKS[ETH]);
+
+        IWormhole.Signature[] memory signatures = new IWormhole.Signature[](1);
+        signatures[0] = IWormhole.Signature(keccak256("1"), keccak256("1"), 1, 1);
+
+        IWormhole.VM memory wormholeMessage =
+            IWormhole.VM(1, 1, 1, 0, bytes32(uint256(uint160(address(0)))), 1, 1, "", 1, signatures, keccak256("1"));
+        vm.mockCall(
+            address(wormholeSRImpl.wormhole()),
+            abi.encodeWithSelector(wormholeSRImpl.wormhole().parseAndVerifyVM.selector, ""),
+            abi.encode(wormholeMessage, true, "")
+        );
+
+        vm.prank(getContract(ETH, "WormholeBroadcastHelper"));
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        wormholeSRImpl.receiveMessage("");
+
+        vm.clearMockedCalls();
     }
 }

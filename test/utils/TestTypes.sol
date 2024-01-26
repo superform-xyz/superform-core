@@ -142,6 +142,7 @@ struct SetupVars {
     address socketOneInch;
     address liFiMockRugpull;
     address liFiMockBlacklisted;
+    address liFiMockSwapToAttacker;
     address erc4626Form;
     address erc4626TimelockForm;
     address kycDao4626Form;

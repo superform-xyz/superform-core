@@ -182,4 +182,30 @@ contract HyperlaneImplementationTest is CommonProtocolActions {
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         hyperlaneImplementation.estimateFees(100, "", "");
     }
+
+    function test_dispatchPayload_InvalidChainId() public {
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        vm.prank(getContract(ETH, "CoreStateRegistry"));
+        hyperlaneImplementation.dispatchPayload(deployer, 420, bytes("hi test"), "");
+    }
+
+    function test_retryPayload_InvalidRetryFee() public {
+        uint32 destination = 10;
+        bytes32 messageId = 0x024a45f20750393b28c9aac33aafc694857b6d09e9da4a8ed9f2b0e144685348;
+
+        vm.prank(deployer);
+        /// @dev note these values don't make sense, should be estimated properly
+        uint256 fees = hyperlaneImplementation.igp().quoteGasPayment(destination, 1_500_000);
+        vm.expectRevert(Error.INVALID_RETRY_FEE.selector);
+        hyperlaneImplementation.retryPayload{ value: fees - 100 wei }(abi.encode(messageId, destination, 1_500_000));
+    }
+
+    function test_handle_InvalidChainId() public {
+        vm.prank(address(hyperlaneImplementation.mailbox()));
+        AMBMessage memory ambMessage;
+        ambMessage.txInfo = DataLib.packTxInfo(0, 0, 0, 1, address(0), 0);
+
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        hyperlaneImplementation.handle(0, bytes32(uint256(uint160(address(0)))), abi.encode(ambMessage));
+    }
 }

@@ -79,6 +79,31 @@ contract DstSwapperTest is ProtocolActions {
         }
     }
 
+    function test_process_tx_invalidSwapOutpu_swapToAttacker() public {
+        address payable dstSwapper = payable(getContract(ETH, "DstSwapper"));
+        address payable coreStateRegistry = payable(getContract(ETH, "CoreStateRegistry"));
+
+        vm.selectFork(FORKS[ETH]);
+        address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+        _simulateSingleVaultExistingPayload(coreStateRegistry, native);
+
+        vm.startPrank(deployer);
+
+        (bool success,) = payable(dstSwapper).call{ value: 1e18 }("");
+
+        if (success) {
+            /// @dev using LiFiMockSwapToAttacker - bridge id 6
+            bytes memory txData =
+                _buildLiqBridgeTxDataDstSwap(6, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
+
+            vm.expectRevert(Error.INVALID_SWAP_OUTPUT.selector);
+            DstSwapper(dstSwapper).processTx(1, 6, txData);
+        } else {
+            revert();
+        }
+    }
+
     function test_failed_non_native_process_tx() public {
         address payable dstSwapper = payable(getContract(ETH, "DstSwapper"));
         address payable coreStateRegistry = payable(getContract(ETH, "CoreStateRegistry"));
@@ -173,6 +198,67 @@ contract DstSwapperTest is ProtocolActions {
         txDataArr[0] = txData;
 
         DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeIds, txDataArr);
+    }
+
+    function test_procesTx_invalidPayloadType() public {
+        address payable dstSwapper = payable(getContract(OP, "DstSwapper"));
+        address payable coreStateRegistry = payable(getContract(OP, "CoreStateRegistry"));
+
+        vm.selectFork(FORKS[OP]);
+        address weth = getContract(OP, "WETH");
+
+        _simulateMultiVaultExistingPayloadOnOP(coreStateRegistry, weth);
+
+        vm.expectRevert(Error.INVALID_PAYLOAD_TYPE.selector);
+        vm.prank(deployer);
+        DstSwapper(dstSwapper).processTx(1, 1, "");
+    }
+
+    function test_batchProcesTx_invalidPayloadType_zeroInputValue_arrayLenMismatch() public {
+        address payable dstSwapper = payable(getContract(OP, "DstSwapper"));
+        address payable coreStateRegistry = payable(getContract(OP, "CoreStateRegistry"));
+
+        vm.selectFork(FORKS[OP]);
+        address weth = getContract(OP, "WETH");
+
+        _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry, weth);
+        uint256[] memory indices = new uint256[](1);
+        indices[0] = 1;
+
+        uint8[] memory bridgeIds = new uint8[](1);
+        bridgeIds[0] = 1;
+
+        bytes[] memory txDataArr = new bytes[](1);
+        txDataArr[0] = "";
+
+        vm.expectRevert(Error.INVALID_PAYLOAD_TYPE.selector);
+        vm.prank(deployer);
+        DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeIds, txDataArr);
+
+        _simulateMultiVaultExistingPayloadOnOP(coreStateRegistry, weth);
+
+        txDataArr = new bytes[](0);
+
+        vm.expectRevert(Error.ZERO_INPUT_VALUE.selector);
+        vm.prank(deployer);
+        DstSwapper(dstSwapper).batchProcessTx(2, indices, bridgeIds, txDataArr);
+
+        txDataArr = new bytes[](1);
+        txDataArr[0] = "";
+
+        bridgeIds = new uint8[](0);
+
+        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
+        vm.prank(deployer);
+        DstSwapper(dstSwapper).batchProcessTx(2, indices, bridgeIds, txDataArr);
+
+        bridgeIds = new uint8[](1);
+
+        indices = new uint256[](0);
+
+        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
+        vm.prank(deployer);
+        DstSwapper(dstSwapper).batchProcessTx(2, indices, bridgeIds, txDataArr);
     }
 
     function test_single_non_native_updateFailedTx() public {
@@ -324,8 +410,11 @@ contract DstSwapperTest is ProtocolActions {
         finalAmounts[0] = 1e18;
 
         address[] memory bridgedTokens = new address[](1);
-        bridgedTokens[0] = getContract(OP, "WETH");
+        bridgedTokens[0] = address(420);
+        vm.expectRevert(Error.INVALID_UPDATE_FINAL_TOKEN.selector);
+        CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, bridgedTokens, finalAmounts);
 
+        bridgedTokens[0] = native;
         CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, bridgedTokens, finalAmounts);
 
         vm.stopPrank();
@@ -396,6 +485,25 @@ contract DstSwapperTest is ProtocolActions {
 
         vm.expectRevert(Error.DUPLICATE_INDEX.selector);
         DstSwapper(dstSwapper).batchUpdateFailedTx(1, indices, interimTokens, amounts);
+
+        amounts = new uint256[](1);
+        amounts[0] = 1e18;
+
+        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
+        DstSwapper(dstSwapper).batchUpdateFailedTx(1, indices, interimTokens, amounts);
+
+        amounts = new uint256[](2);
+        amounts[0] = 1e18;
+        amounts[1] = 1e18;
+
+        interimTokens = new address[](1);
+        interimTokens[0] = interimToken;
+
+        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
+        DstSwapper(dstSwapper).batchUpdateFailedTx(1, indices, interimTokens, amounts);
+        interimTokens = new address[](2);
+        interimTokens[0] = interimToken;
+        interimTokens[1] = interimToken;
 
         indices[0] = 0;
         indices[1] = 1;
@@ -477,11 +585,7 @@ contract DstSwapperTest is ProtocolActions {
         /// @dev set quorum to 0 for simplicity in testing setup
         SuperRegistry(getContract(OP, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
-        address[] memory bridgedTokens = new address[](2);
-        bridgedTokens[0] = getContract(OP, "WETH");
-        bridgedTokens[1] = getContract(OP, "WETH");
-
-        CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, bridgedTokens, amounts);
+        CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, interimTokens, amounts);
 
         vm.stopPrank();
 
@@ -577,6 +681,34 @@ contract DstSwapperTest is ProtocolActions {
         /// @dev no funds in multi-tx processor at this point; should revert
         vm.expectRevert(Error.INSUFFICIENT_BALANCE.selector);
         DstSwapper(dstSwapper).batchProcessTx(2, indices, bridgeId, txData);
+    }
+
+    function test_failed_batch_process_tx_invalidIndex() public {
+        address payable dstSwapper = payable(getContract(ETH, "DstSwapper"));
+        address payable coreStateRegistry = payable(getContract(ETH, "CoreStateRegistry"));
+
+        vm.selectFork(FORKS[ETH]);
+        _simulateMultiVaultExistingPayloadWithASingleSuperform(coreStateRegistry);
+
+        vm.startPrank(deployer);
+        (bool success,) = payable(dstSwapper).call{ value: 3e18 }("");
+        if (!success) revert();
+        address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+        uint8[] memory bridgeId = new uint8[](2);
+        bridgeId[0] = 1;
+        bridgeId[1] = 1;
+
+        bytes[] memory txData = new bytes[](2);
+        txData[0] = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
+        txData[1] = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
+
+        uint256[] memory indices = new uint256[](2);
+        indices[0] = 0;
+        indices[1] = 1;
+
+        vm.expectRevert(Error.INVALID_INDEX.selector);
+        DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData);
     }
 
     function test_failed_batch_process_tx_INVALID_PAYLOAD_STATUS() public {
@@ -971,6 +1103,61 @@ contract DstSwapperTest is ProtocolActions {
             liq,
             hasDstSwaps,
             new bool[](2),
+            receiverAddress,
+            bytes("")
+        );
+
+        bytes memory encodedData = abi.encode(
+            AMBMessage(
+                DataLib.packTxInfo(1, 0, 1, 1, address(420), uint64(137)),
+                abi.encode(ambIds_, abi.encode(initMultiVaultData))
+            )
+        );
+
+        vm.prank(getContract(ETH, "LayerzeroImplementation"));
+        CoreStateRegistry(coreStateRegistry).receivePayload(POLY, encodedData);
+    }
+
+    function _simulateMultiVaultExistingPayloadWithASingleSuperform(address payable coreStateRegistry) internal {
+        /// simulate an existing payload in csr
+        address superform = getContract(ETH, string.concat("DAI", "VaultMock", "Superform", "1"));
+        uint256 superformId = DataLib.packSuperform(superform, 1, ETH);
+
+        uint256[] memory superformIds = new uint256[](1);
+        superformIds[0] = superformId;
+
+        (, int256 USDPerSendingTokenDst,,,) = AggregatorV3Interface(tokenPriceFeeds[ETH][NATIVE]).latestRoundData();
+        (, int256 USDPerReceivingTokenDst,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[ETH][getContract(ETH, "DAI")]).latestRoundData();
+
+        uint256 amount = (1e18 * uint256(USDPerSendingTokenDst)) / uint256(USDPerReceivingTokenDst);
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = amount;
+
+        uint256[] memory outputAmounts = new uint256[](1);
+        outputAmounts[0] = amount;
+
+        bool[] memory hasDstSwaps = new bool[](1);
+        hasDstSwaps[0] = true;
+
+        LiqRequest[] memory liq = new LiqRequest[](2);
+
+        liq[0].interimToken = NATIVE;
+        liq[1].interimToken = NATIVE;
+
+        uint8[] memory ambIds_ = new uint8[](1);
+        ambIds_[0] = 1;
+
+        InitMultiVaultData memory initMultiVaultData = InitMultiVaultData(
+            1,
+            superformIds,
+            amounts,
+            outputAmounts,
+            new uint256[](1),
+            liq,
+            hasDstSwaps,
+            new bool[](1),
             receiverAddress,
             bytes("")
         );

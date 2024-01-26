@@ -99,6 +99,12 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.prank(deployer);
         vm.expectRevert(Error.BRIDGE_TOKENS_PENDING.selector);
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: nativeValue }(1);
+
+        vm.prank(deployer);
+        MockERC20(getContract(AVAX, "DAI")).transfer(getContract(AVAX, "CoreStateRegistry"), 838);
+
+        vm.prank(deployer);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: nativeValue }(1);
     }
 
     /// @dev this test ensures that if a superform update failed because of slippage in 2 of 4 vaults
@@ -248,6 +254,28 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.prank(deployer);
         vm.expectRevert(Error.PAYLOAD_NOT_UPDATED.selector);
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload(1);
+    }
+
+    /// @dev test updateDepositPayload with zero final token input
+    function test_updateDepositPayloadWithZeroFinalToken() public {
+        uint8[] memory ambIds_ = new uint8[](2);
+        ambIds_[0] = 1;
+        ambIds_[1] = 2;
+
+        _successfulSingleDeposit(ambIds_);
+
+        vm.selectFork(FORKS[AVAX]);
+        vm.prank(deployer);
+        SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 10_000;
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.ZERO_FINAL_TOKEN.selector);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(
+            1, new address[](1), amounts
+        );
     }
 
     /// @dev test processPayload without updating deposit payload
@@ -643,6 +671,76 @@ contract CoreStateRegistryTest is ProtocolActions {
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload(1);
 
         vm.clearMockedCalls();
+    }
+
+    function test_ackGasCost_single_paymentHelperComparison() public {
+        uint8[] memory ambIds_ = new uint8[](2);
+        ambIds_[0] = 1;
+        ambIds_[1] = 2;
+
+        _successfulSingleDeposit(ambIds_);
+
+        vm.selectFork(FORKS[AVAX]);
+
+        uint256 defaultEstimate =
+            PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCostDefault(false, ambIds_, ETH);
+
+        uint256 realEstimate = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
+
+        console.log("defaultEstimate: %s", defaultEstimate);
+        console.log("realEstimate: %s", realEstimate);
+
+        assertEq(realEstimate, defaultEstimate);
+
+        uint256 defaultEstimateNativeSrc =
+            PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCostDefaultNativeSource(false, ambIds_, ETH);
+
+        console.log("defaultEstimateNativeSrc: %s", defaultEstimateNativeSrc);
+    }
+
+    function test_estimateWithNativeTokenPriceAsZero() public {
+        uint8[] memory ambIds_ = new uint8[](2);
+        ambIds_[0] = 1;
+        ambIds_[1] = 2;
+
+        _successfulMultiDeposit(ambIds_);
+        vm.selectFork(FORKS[AVAX]);
+
+        /// @dev setting native token price as zero
+        vm.prank(deployer);
+        PaymentHelper(getContract(AVAX, "PaymentHelper")).updateRemoteChain(AVAX, 1, abi.encode(address(0)));
+
+        vm.prank(deployer);
+        PaymentHelper(getContract(AVAX, "PaymentHelper")).updateRemoteChain(AVAX, 7, abi.encode(0));
+
+        assertEq(
+            PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCostDefaultNativeSource(true, ambIds_, ETH), 0
+        );
+    }
+
+    function test_ackGasCost_multi_paymentHelperComparison() public {
+        uint8[] memory ambIds_ = new uint8[](2);
+        ambIds_[0] = 1;
+        ambIds_[1] = 2;
+
+        _successfulMultiDeposit(ambIds_);
+
+        vm.selectFork(FORKS[AVAX]);
+
+        uint256 defaultEstimate =
+            PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCostDefault(true, ambIds_, ETH);
+
+        uint256 realEstimate = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
+
+        console.log("defaultEstimate: %s", defaultEstimate);
+        console.log("realEstimate: %s", realEstimate);
+
+        assertLe(realEstimate, defaultEstimate);
+
+        uint256 defaultEstimateNativeSrc =
+            PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCostDefaultNativeSource(true, ambIds_, ETH);
+
+        console.log("defaultEstimateNativeSrc: %s", defaultEstimateNativeSrc);
     }
 
     /*///////////////////////////////////////////////////////////////

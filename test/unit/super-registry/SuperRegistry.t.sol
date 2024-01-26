@@ -143,13 +143,13 @@ contract SuperRegistryTest is BaseSetup {
         address[] memory bridgeAddress = new address[](3);
         address[] memory bridgeValidator = new address[](3);
 
-        bridgeId[0] = 8;
+        bridgeId[0] = 20;
         bridgeAddress[0] = address(0x1);
         bridgeValidator[0] = address(0x2);
-        bridgeId[1] = 6;
+        bridgeId[1] = 30;
         bridgeAddress[1] = address(0x3);
         bridgeValidator[1] = address(0x4);
-        bridgeId[2] = 7;
+        bridgeId[2] = 40;
         bridgeAddress[2] = address(0x5);
         bridgeValidator[2] = address(0x6);
 
@@ -161,11 +161,39 @@ contract SuperRegistryTest is BaseSetup {
         superRegistry.setBridgeAddresses(bridgeId, bridgeAddress, bridgeValidator);
         vm.prank(deployer);
 
-        assertEq(superRegistry.getBridgeAddress(6), address(0x3));
-        assertEq(superRegistry.getBridgeValidator(7), address(0x6));
+        assertEq(superRegistry.getBridgeAddress(30), address(0x3));
+        assertEq(superRegistry.getBridgeValidator(40), address(0x6));
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(bond);
+        superRegistry.setBridgeAddresses(bridgeId, bridgeAddress, bridgeValidator);
+    }
+
+    function test_setBridgeAddresses_and_revertZeroValues() public {
+        uint8[] memory bridgeId = new uint8[](1);
+        address[] memory bridgeAddress = new address[](1);
+        address[] memory bridgeValidator = new address[](1);
+
+        bridgeId[0] = 20;
+        bridgeAddress[0] = address(0);
+        bridgeValidator[0] = address(0x2);
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        superRegistry.setBridgeAddresses(bridgeId, bridgeAddress, bridgeValidator);
+
+        bridgeAddress[0] = address(0x2);
+        bridgeId[0] = 0;
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.ZERO_INPUT_VALUE.selector);
+        superRegistry.setBridgeAddresses(bridgeId, bridgeAddress, bridgeValidator);
+
+        bridgeId[0] = 20;
+        bridgeValidator[0] = address(0);
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
         superRegistry.setBridgeAddresses(bridgeId, bridgeAddress, bridgeValidator);
     }
 
@@ -346,7 +374,7 @@ contract SuperRegistryTest is BaseSetup {
         superRegistry.setRequiredMessagingQuorum(OP, 5);
     }
 
-    function test_set_delay() public {
+    function test_setDelay() public {
         vm.prank(deployer);
         vm.expectRevert(Error.INVALID_TIMELOCK_DELAY.selector);
         superRegistry.setDelay(5 minutes);
@@ -357,6 +385,12 @@ contract SuperRegistryTest is BaseSetup {
 
         vm.prank(deployer);
         superRegistry.setDelay(11 hours);
+    }
+
+    function test_setQuorum_invalid_chainId() public {
+        vm.prank(deployer);
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        superRegistry.setRequiredMessagingQuorum(0, 2);
     }
 
     function test_getAmbId() public {
@@ -427,5 +461,51 @@ contract SuperRegistryTest is BaseSetup {
                 if (!success_) revert();
             }
         }
+    }
+
+    function test_batchSetAddress_twoNewAddresses() public {
+        vm.selectFork(FORKS[ETH]);
+
+        // Define ids, newAddresses, and chainIds
+        bytes32[] memory ids = new bytes32[](2);
+        ids[0] = keccak256(abi.encodePacked("id1"));
+        ids[1] = keccak256(abi.encodePacked("id2"));
+
+        address[] memory newAddresses = new address[](2);
+        newAddresses[0] = address(0x123);
+        newAddresses[1] = address(0x456);
+
+        uint64[] memory chainIds = new uint64[](2);
+        chainIds[0] = 1;
+        chainIds[1] = 1;
+
+        // Call batchSetAddress
+        vm.prank(deployer);
+        superRegistry.batchSetAddress(ids, newAddresses, chainIds);
+
+        // Verify the addresses were set correctly
+        assertEq(superRegistry.getAddress(ids[0]), newAddresses[0]);
+        assertEq(superRegistry.getAddress(ids[1]), newAddresses[1]);
+    }
+
+    function test_batchSetAddress_ArrayLengthMismatch() public {
+        vm.selectFork(FORKS[ETH]);
+
+        // Define ids, newAddresses, and chainIds
+        bytes32[] memory ids = new bytes32[](2);
+        ids[0] = keccak256(abi.encodePacked("id1"));
+        ids[1] = keccak256(abi.encodePacked("id2"));
+
+        address[] memory newAddresses = new address[](1);
+        newAddresses[0] = address(0x123);
+
+        uint64[] memory chainIds = new uint64[](2);
+        chainIds[0] = 1;
+        chainIds[1] = 1;
+
+        // Call batchSetAddress
+        vm.prank(deployer);
+        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
+        superRegistry.batchSetAddress(ids, newAddresses, chainIds);
     }
 }

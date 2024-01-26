@@ -41,6 +41,33 @@ contract SocketValidatorTest is ProtocolActions {
         );
     }
 
+    function test_socket_validator_blacklistedRouteId() public {
+        ISocketRegistry.BridgeRequest memory bridgeRequest;
+        ISocketRegistry.MiddlewareRequest memory middlewareRequest;
+
+        bridgeRequest = ISocketRegistry.BridgeRequest(
+            18,
+            /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
+            0,
+            /// @dev unused in tests
+            address(0),
+            /// @dev initial token to extract will be externalToken in args, which is the actual
+            /// underlyingTokenDst for withdraws (check how the call is made in
+            /// _buildSingleVaultWithdrawCallData )
+            ""
+        );
+
+        bytes memory txData = abi.encodeWithSelector(
+            SocketMock.outboundTransferTo.selector,
+            ISocketRegistry.UserRequest(address(0), 1, 1, middlewareRequest, bridgeRequest)
+        );
+
+        vm.expectRevert(Error.BLACKLISTED_ROUTE_ID.selector);
+        SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, BSC, BSC, true, address(0), deployer, address(0), NATIVE)
+        );
+    }
+
     function test_socket_validator_invalidInterimToken() public {
         vm.expectRevert(Error.INVALID_INTERIM_TOKEN.selector);
 
@@ -233,5 +260,22 @@ contract SocketValidatorTest is ProtocolActions {
     function test_decodeSwapOutputToken() public {
         vm.expectRevert(Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN.selector);
         SocketValidator(getContract(ETH, "SocketValidator")).decodeSwapOutputToken("");
+    }
+
+    function test_addRemoveFromBlacklist() public {
+        vm.startPrank(deployer);
+
+        SocketValidator socketValidator = SocketValidator(getContract(ETH, "SocketValidator"));
+        socketValidator.addToBlacklist(20);
+        assertTrue(socketValidator.isRouteBlacklisted(20));
+
+        vm.expectRevert(Error.BLACKLISTED_ROUTE_ID.selector);
+        socketValidator.addToBlacklist(20);
+
+        socketValidator.removeFromBlacklist(20);
+        assertFalse(socketValidator.isRouteBlacklisted(20));
+
+        vm.expectRevert(Error.NOT_BLACKLISTED_ROUTE_ID.selector);
+        socketValidator.removeFromBlacklist(20);
     }
 }

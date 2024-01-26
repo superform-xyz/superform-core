@@ -14,7 +14,6 @@ import {
 /// @dev Interface for PaymentHelper
 /// @author ZeroPoint Labs
 interface IPaymentHelper {
-
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                         //
     //////////////////////////////////////////////////////////////
@@ -28,7 +27,7 @@ interface IPaymentHelper {
     /// @param defaultNativePrice is the native price on the specified chain
     /// @param defaultGasPrice is the gas price on the specified chain
     /// @param dstGasPerByte is the gas per size of data on the specified chain
-    /// @param ackGasCost is the gas cost for processing acknowledgements on src chain
+    /// @param ackGasCost is the gas cost for sending and processing from dst->src
     /// @param timelockCost is the extra cost for processing timelocked payloads
     /// @param emergencyCost is the extra cost for processing emergency payloads
     struct PaymentHelperConfig {
@@ -50,7 +49,7 @@ interface IPaymentHelper {
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
 
-    event ChainConfigUpdated(uint64 indexed chainId_, uint256 indexed configType_, bytes indexed config_);
+    event ChainConfigUpdated(uint64 indexed chainId_, uint256 indexed configType_, bytes config_);
     event ChainConfigAdded(uint64 chainId_, PaymentHelperConfig config_);
 
     //////////////////////////////////////////////////////////////
@@ -73,22 +72,6 @@ interface IPaymentHelper {
     /// @dev returns the amb overrides & gas to be used
     /// @return extraData the amb specific override information
     function getRegisterTransmuterAMBData() external view returns (bytes memory extraData);
-
-    /// @dev returns the gas fees estimation in native tokens if we send message through a combination of AMBs
-    /// @param ambIds_ is the identifier of different AMBs
-    /// @param dstChainId_ is the identifier of the destination chain
-    /// @param message_ is the cross-chain message
-    /// @param extraData_ is any amb-specific information
-    /// @return ambFees is the native_tokens to be sent along the transaction for all the ambIds_ included
-    function estimateAMBFees(
-        uint8[] memory ambIds_,
-        uint64 dstChainId_,
-        bytes memory message_,
-        bytes[] memory extraData_
-    )
-        external
-        view
-        returns (uint256 ambFees, uint256[] memory);
 
     /// @dev estimates the gas fees for multiple destination and multi vault operation
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
@@ -178,6 +161,55 @@ interface IPaymentHelper {
         view
         returns (uint256 liqAmount, uint256 srcAmount, uint256 totalAmount);
 
+    /// @dev returns the gas fees estimation in native tokens if we send message through a combination of AMBs
+    /// @param ambIds_ is the identifier of different AMBs
+    /// @param dstChainId_ is the identifier of the destination chain
+    /// @param message_ is the cross-chain message
+    /// @param extraData_ is any amb-specific information
+    /// @return ambFees is the native_tokens to be sent along the transaction for all the ambIds_ included
+    function estimateAMBFees(
+        uint8[] memory ambIds_,
+        uint64 dstChainId_,
+        bytes memory message_,
+        bytes[] memory extraData_
+    )
+        external
+        view
+        returns (uint256 ambFees, uint256[] memory);
+
+    /// @dev helps estimate the acknowledgement costs for amb processing
+    /// @param payloadId_ is the payload identifier
+    /// @return totalFees is the total fees to be paid in native tokens
+    function estimateAckCost(uint256 payloadId_) external view returns (uint256 totalFees);
+
+    /// @dev helps estimate the acknowledgement costs for amb processing without relying on payloadId (using max values)
+    /// @param multi is the flag indicating if the payload is multi or single
+    /// @param ackAmbIds is the list of ambIds to be used for acknowledgement
+    /// @param srcChainId is the source chain identifier
+    /// @return totalFees is the total fees to be paid in native tokens
+    function estimateAckCostDefault(
+        bool multi,
+        uint8[] memory ackAmbIds,
+        uint64 srcChainId
+    )
+        external
+        view
+        returns (uint256 totalFees);
+
+    /// @dev helps estimate the acknowledgement costs for amb processing without relying on payloadId (using max values)
+    /// with source native amounts
+    /// @param multi is the flag indicating if the payload is multi or single
+    /// @param ackAmbIds is the list of ambIds to be used for acknowledgement
+    /// @param srcChainId is the source chain identifier
+    /// @return totalFees is the total fees to be paid in native tokens
+    function estimateAckCostDefaultNativeSource(
+        bool multi,
+        uint8[] memory ackAmbIds,
+        uint64 srcChainId
+    )
+        external
+        view
+        returns (uint256 totalFees);
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////

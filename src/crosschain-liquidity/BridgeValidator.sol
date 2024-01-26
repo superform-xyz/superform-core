@@ -9,7 +9,6 @@ import { Error } from "src/libraries/Error.sol";
 /// @dev Inherited by specific bridge handlers to verify the calldata being sent
 /// @author Zeropoint Labs
 abstract contract BridgeValidator is IBridgeValidator {
-
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
@@ -38,7 +37,7 @@ abstract contract BridgeValidator is IBridgeValidator {
         address receiver_
     )
         external
-        pure
+        view
         virtual
         override
         returns (bool valid_);
@@ -57,7 +56,7 @@ abstract contract BridgeValidator is IBridgeValidator {
         bool genericSwapDisallowed_
     )
         external
-        pure
+        view
         virtual
         override
         returns (uint256 amount_);
