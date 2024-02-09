@@ -119,34 +119,30 @@ contract SmokeTest is MainnetBaseSetup {
     function test_roles() public {
         SuperRBAC srbac;
 
-        uint256 len = 11;
+        uint256 len = 9;
 
         bytes32[] memory ids = new bytes32[](len);
 
-        ids[0] = keccak256("PROTOCOL_ADMIN_ROLE");
-        ids[1] = keccak256("EMERGENCY_ADMIN_ROLE");
-        ids[2] = keccak256("PAYMENT_ADMIN_ROLE");
-        ids[3] = keccak256("CORE_STATE_REGISTRY_PROCESSOR_ROLE");
-        ids[4] = keccak256("TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE");
-        ids[5] = keccak256("BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE");
-        ids[6] = keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE");
-        ids[7] = keccak256("DST_SWAPPER_ROLE");
-        ids[8] = keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE");
-        ids[9] = keccak256("CORE_STATE_REGISTRY_DISPUTER_ROLE");
-        ids[10] = keccak256("WORMHOLE_VAA_RELAYER_ROLE");
+        ids[0] = keccak256("PAYMENT_ADMIN_ROLE");
+        ids[1] = keccak256("CORE_STATE_REGISTRY_PROCESSOR_ROLE");
+        ids[2] = keccak256("TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE");
+        ids[3] = keccak256("BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE");
+        ids[4] = keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE");
+        ids[5] = keccak256("DST_SWAPPER_ROLE");
+        ids[6] = keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE");
+        ids[7] = keccak256("CORE_STATE_REGISTRY_DISPUTER_ROLE");
+        ids[8] = keccak256("WORMHOLE_VAA_RELAYER_ROLE");
 
         address[] memory newAddresses = new address[](len);
-        newAddresses[0] = 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92;
-        newAddresses[1] = 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92;
-        newAddresses[2] = 0xD911673eAF0D3e15fe662D58De15511c5509bAbB;
-        newAddresses[3] = 0x23c658FE050B4eAeB9401768bF5911D11621629c;
-        newAddresses[4] = EMERGENCY_ADMIN;
-        newAddresses[5] = EMERGENCY_ADMIN;
-        newAddresses[6] = 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f;
-        newAddresses[7] = 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C;
-        newAddresses[8] = 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5;
-        newAddresses[9] = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
-        newAddresses[10] = EMERGENCY_ADMIN;
+        newAddresses[0] = 0xD911673eAF0D3e15fe662D58De15511c5509bAbB;
+        newAddresses[1] = 0x23c658FE050B4eAeB9401768bF5911D11621629c;
+        newAddresses[2] = EMERGENCY_ADMIN;
+        newAddresses[3] = EMERGENCY_ADMIN;
+        newAddresses[4] = 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f;
+        newAddresses[5] = 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C;
+        newAddresses[6] = 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5;
+        newAddresses[7] = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
+        newAddresses[8] = EMERGENCY_ADMIN;
 
         for (uint256 i = 0; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             vm.selectFork(FORKS[TARGET_DEPLOYMENT_CHAINS[i]]);
@@ -157,6 +153,8 @@ contract SmokeTest is MainnetBaseSetup {
             }
             assert(srbac.hasRole(keccak256("PROTOCOL_ADMIN_ROLE"), PROTOCOL_ADMINS[i]));
             assert(srbac.hasRole(keccak256("EMERGENCY_ADMIN_ROLE"), EMERGENCY_ADMIN));
+            assertEq(srbac.getRoleMemberCount(keccak256("PROTOCOL_ADMIN_ROLE")), 1);
+            assertEq(srbac.getRoleMemberCount(keccak256("EMERGENCY_ADMIN_ROLE")), 1);
         }
     }
 
