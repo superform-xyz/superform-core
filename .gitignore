@@ -8,7 +8,6 @@ typechain
 cache
 artifacts
 
-
 # Ignore all vscode settings
 .vscode/
 
@@ -32,3 +31,5 @@ bin/
 lcov.info
 
 report/
+
+script/output/

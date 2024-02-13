@@ -149,6 +149,7 @@ abstract contract AbstractDeploySingle is Script {
     /*//////////////////////////////////////////////////////////////
                         PROTOCOL VARIABLES
     //////////////////////////////////////////////////////////////*/
+    string public SUPER_POSITIONS_NAME;
 
     /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm
     uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(2), uint32(3)];
@@ -581,7 +582,7 @@ abstract contract AbstractDeploySingle is Script {
             new SuperPositions{ salt: salt }(
                 "https://ipfs-gateway.superform.xyz/ipns/k51qzi5uqu5dg90fqdo9j63m556wlddeux4mlgyythp30zousgh3huhyzouyq8/JSON/",
                 vars.superRegistry,
-                "StagingSuperPositions",
+                SUPER_POSITIONS_NAME,
                 "SP"
             )
         );

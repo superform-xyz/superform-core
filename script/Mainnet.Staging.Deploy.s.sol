@@ -22,6 +22,7 @@ contract MainnetStagingDeploy is AbstractDeploySingle {
         CSR_DISPUTER = 0xe9F074d003b377A197D336B8a1c86EdaA6cC4dEF;
         SUPERFORM_RECEIVER = 0x46F15EDC21f7eed6D1eb01e5Abe993Dc6c6A78BB;
         EMERGENCY_ADMIN = 0x6A5DD913fE3CB5193E09D1810a3b9ff1C0f9c0D6;
+        SUPER_POSITIONS_NAME = "StagingSuperPositions";
     
         _preDeploymentSetup();
         

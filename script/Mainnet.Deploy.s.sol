@@ -22,7 +22,8 @@ contract MainnetDeploy is AbstractDeploySingle {
         CSR_DISPUTER = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
         SUPERFORM_RECEIVER = 0x1a6805487322565202848f239C1B5bC32303C2FE;
         EMERGENCY_ADMIN = 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490;
-
+        SUPER_POSITIONS_NAME = "SuperPositions";
+        
         _preDeploymentSetup();
 
 
