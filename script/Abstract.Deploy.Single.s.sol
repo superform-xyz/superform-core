@@ -772,7 +772,8 @@ abstract contract AbstractDeploySingle is Script {
         uint256 i,
         uint256 trueIndex,
         Cycle cycle,
-        uint64[] memory s_superFormChainIds
+        uint64[] memory s_superFormChainIds,
+        bool grantProtocolAdmin
     )
         internal
         setEnvDeploy(cycle)
@@ -787,7 +788,8 @@ abstract contract AbstractDeploySingle is Script {
         bytes32 protocolAdminRole = srbac.PROTOCOL_ADMIN_ROLE();
         bytes32 emergencyAdminRole = srbac.EMERGENCY_ADMIN_ROLE();
 
-        srbac.grantRole(protocolAdminRole, PROTOCOL_ADMINS[trueIndex]);
+        if (grantProtocolAdmin) srbac.grantRole(protocolAdminRole, PROTOCOL_ADMINS[trueIndex]);
+        
         srbac.grantRole(emergencyAdminRole, EMERGENCY_ADMIN);
 
         //srbac.revokeRole(emergencyAdminRole, ownerAddress);
