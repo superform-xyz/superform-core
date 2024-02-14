@@ -32,4 +32,5 @@ lcov.info
 
 report/
 
-script/output
+/script/output/**
+!/script/output/**/
