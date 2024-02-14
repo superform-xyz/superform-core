@@ -70,7 +70,7 @@ contract MainnetDeployNewChain is AbstractDeploySingle {
             }
         }
 
-        _deployStage3(selectedChainIndex, trueIndex, Cycle.Prod, TARGET_DEPLOYMENT_CHAINS);
+        _deployStage3(selectedChainIndex, trueIndex, Cycle.Prod, TARGET_DEPLOYMENT_CHAINS, true);
     }
 
     /// @dev configures stage 2 for previous chains for the newly added chain

@@ -254,7 +254,7 @@ abstract contract MainnetBaseSetup is DSTest, StdInvariant, Test {
 
     address public ownerAddress;
 
-    address constant EMERGENCY_ADMIN = 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490;
+    address public EMERGENCY_ADMIN = 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490;
 
     address[] public PROTOCOL_ADMINS = [
         0xd26b38a64C812403fD3F87717624C80852cD6D61,

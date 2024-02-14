@@ -3,33 +3,32 @@ pragma solidity ^0.8.23;
 
 import { AbstractDeploySingle } from "./Abstract.Deploy.Single.s.sol";
 
-contract MainnetDeploy is AbstractDeploySingle {
+contract MainnetStagingDeploy is AbstractDeploySingle {
     /*//////////////////////////////////////////////////////////////
                         SELECT CHAIN IDS TO DEPLOY HERE
     //////////////////////////////////////////////////////////////*/
-    uint64[] TARGET_DEPLOYMENT_CHAINS = [ETH, BSC, AVAX, POLY, ARBI, OP, BASE];
+    uint64[] TARGET_DEPLOYMENT_CHAINS = [BSC, ARBI, OP, BASE];
 
     ///@dev ORIGINAL SALT
-    bytes32 constant salt = "SunNeverSetsOnSuperformRealm";
+    bytes32 constant salt = "StagingV1_0";
 
     constructor () {
-        PAYMENT_ADMIN = 0xD911673eAF0D3e15fe662D58De15511c5509bAbB;
-        CSR_PROCESSOR = 0x23c658FE050B4eAeB9401768bF5911D11621629c;
-        CSR_UPDATER = 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f;
-        DST_SWAPPER = 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C;
-        CSR_RESCUER = 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5;
-        CSR_DISPUTER = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
-        SUPERFORM_RECEIVER = 0x1a6805487322565202848f239C1B5bC32303C2FE;
-        EMERGENCY_ADMIN = 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490;
-        SUPER_POSITIONS_NAME = "SuperPositions";
+        PAYMENT_ADMIN = 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3;
+        CSR_PROCESSOR = 0x2759142A9e3cBbcCc1E3d5F76490eEE4007B8943;
+        CSR_UPDATER = 0xF1c73958118F22Fc3A3947f405DcEBF08a1E68f7;
+        DST_SWAPPER = 0x3ea519270248BdEE4a939df20049E02290bf9CaF;
+        CSR_RESCUER = 0xe1A61d90554131314cB30dB55B8AD4F4b6e21C3a;
+        CSR_DISPUTER = 0xe9F074d003b377A197D336B8a1c86EdaA6cC4dEF;
+        SUPERFORM_RECEIVER = 0x46F15EDC21f7eed6D1eb01e5Abe993Dc6c6A78BB;
+        EMERGENCY_ADMIN = 0x6A5DD913fE3CB5193E09D1810a3b9ff1C0f9c0D6;
+        SUPER_POSITIONS_NAME = "StagingSuperPositions";
     }
-    
+
     /// @notice The main stage 1 script entrypoint
     function deployStage1(uint256 selectedChainIndex) external {
-        
+
         _preDeploymentSetup();
-
-
+        
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {
             if (TARGET_DEPLOYMENT_CHAINS[selectedChainIndex] == chainIds[i]) {
@@ -57,7 +56,7 @@ contract MainnetDeploy is AbstractDeploySingle {
         _deployStage2(selectedChainIndex, trueIndex, Cycle.Prod, TARGET_DEPLOYMENT_CHAINS, TARGET_DEPLOYMENT_CHAINS);
     }
 
-    /// @dev stage 3 must be called only after stage 1 is complete for all chains!
+        /// @dev stage 3 must be called only after stage 1 is complete for all chains!
     function deployStage3(uint256 selectedChainIndex) external {
         _preDeploymentSetup();
 
@@ -69,6 +68,6 @@ contract MainnetDeploy is AbstractDeploySingle {
             }
         }
 
-        _deployStage3(selectedChainIndex, trueIndex, Cycle.Prod, TARGET_DEPLOYMENT_CHAINS, true);
+        _deployStage3(selectedChainIndex, trueIndex, Cycle.Prod, TARGET_DEPLOYMENT_CHAINS, false);
     }
 }

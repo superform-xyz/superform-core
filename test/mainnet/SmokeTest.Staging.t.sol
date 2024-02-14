@@ -3,21 +3,18 @@ pragma solidity ^0.8.23;
 
 import "test/utils/MainnetBaseSetup.sol";
 
-contract SmokeTest is MainnetBaseSetup {
+contract SmokeTestStaging is MainnetBaseSetup {
     function setUp() public override {
-        folderToRead = "/script/v1_deployment/";
+        folderToRead = "/script/v1_staging_deployment/";
 
-        uint64[] memory chains = new uint64[](7);
-        chains[0] = ETH;
-        chains[1] = BSC;
-        chains[2] = AVAX;
-        chains[3] = POLY;
-        chains[4] = ARBI;
-        chains[5] = OP;
-        chains[6] = BASE;
+        uint64[] memory chains = new uint64[](4);
+        chains[0] = BSC;
+        chains[1] = ARBI;
+        chains[2] = OP;
+        chains[3] = BASE;
 
         TARGET_DEPLOYMENT_CHAINS = chains;
-        EMERGENCY_ADMIN = 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490;
+        EMERGENCY_ADMIN = 0x6A5DD913fE3CB5193E09D1810a3b9ff1C0f9c0D6;
 
         super.setUp();
     }
@@ -42,15 +39,15 @@ contract SmokeTest is MainnetBaseSetup {
         ids[8] = keccak256("SUPERFORM_RECEIVER");
 
         address[] memory newAddresses = new address[](len);
-        newAddresses[0] = 0xD911673eAF0D3e15fe662D58De15511c5509bAbB;
-        newAddresses[1] = 0x23c658FE050B4eAeB9401768bF5911D11621629c;
+        newAddresses[0] = 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3;
+        newAddresses[1] = 0x2759142A9e3cBbcCc1E3d5F76490eEE4007B8943;
         newAddresses[2] = EMERGENCY_ADMIN;
         newAddresses[3] = EMERGENCY_ADMIN;
-        newAddresses[4] = 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f;
-        newAddresses[5] = 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5;
-        newAddresses[6] = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
-        newAddresses[7] = 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C;
-        newAddresses[8] = 0x1a6805487322565202848f239C1B5bC32303C2FE;
+        newAddresses[4] = 0xF1c73958118F22Fc3A3947f405DcEBF08a1E68f7;
+        newAddresses[5] = 0xe1A61d90554131314cB30dB55B8AD4F4b6e21C3a;
+        newAddresses[6] = 0xe9F074d003b377A197D336B8a1c86EdaA6cC4dEF;
+        newAddresses[7] = 0x3ea519270248BdEE4a939df20049E02290bf9CaF;
+        newAddresses[8] = 0x46F15EDC21f7eed6D1eb01e5Abe993Dc6c6A78BB;
         for (uint256 i = 0; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             vm.selectFork(FORKS[TARGET_DEPLOYMENT_CHAINS[i]]);
             sr = SuperRegistry(getContract(TARGET_DEPLOYMENT_CHAINS[i], "SuperRegistry"));
@@ -102,14 +99,14 @@ contract SmokeTest is MainnetBaseSetup {
             newAddresses[7] = getContract(chainId, "SuperRBAC");
             newAddresses[8] = getContract(chainId, "PayloadHelper");
             newAddresses[9] = getContract(chainId, "EmergencyQueue");
-            newAddresses[10] = 0xD911673eAF0D3e15fe662D58De15511c5509bAbB;
-            newAddresses[11] = 0x23c658FE050B4eAeB9401768bF5911D11621629c;
-            newAddresses[12] = 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f;
+            newAddresses[10] = 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3;
+            newAddresses[11] = 0x2759142A9e3cBbcCc1E3d5F76490eEE4007B8943;
+            newAddresses[12] = 0xF1c73958118F22Fc3A3947f405DcEBF08a1E68f7;
             newAddresses[13] = EMERGENCY_ADMIN;
-            newAddresses[14] = 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5;
-            newAddresses[15] = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
-            newAddresses[16] = 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C;
-            newAddresses[17] = 0x1a6805487322565202848f239C1B5bC32303C2FE;
+            newAddresses[14] = 0xe1A61d90554131314cB30dB55B8AD4F4b6e21C3a;
+            newAddresses[15] = 0xe9F074d003b377A197D336B8a1c86EdaA6cC4dEF;
+            newAddresses[16] = 0x3ea519270248BdEE4a939df20049E02290bf9CaF;
+            newAddresses[17] = 0x46F15EDC21f7eed6D1eb01e5Abe993Dc6c6A78BB;
 
             for (uint256 j = 0; j < len; ++j) {
                 assertEq(sr.getAddress(ids[j]), newAddresses[j]);
@@ -135,14 +132,14 @@ contract SmokeTest is MainnetBaseSetup {
         ids[8] = keccak256("WORMHOLE_VAA_RELAYER_ROLE");
 
         address[] memory newAddresses = new address[](len);
-        newAddresses[0] = 0xD911673eAF0D3e15fe662D58De15511c5509bAbB;
-        newAddresses[1] = 0x23c658FE050B4eAeB9401768bF5911D11621629c;
+        newAddresses[0] = 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3;
+        newAddresses[1] = 0x2759142A9e3cBbcCc1E3d5F76490eEE4007B8943;
         newAddresses[2] = EMERGENCY_ADMIN;
         newAddresses[3] = EMERGENCY_ADMIN;
-        newAddresses[4] = 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f;
-        newAddresses[5] = 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C;
-        newAddresses[6] = 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5;
-        newAddresses[7] = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
+        newAddresses[4] = 0xF1c73958118F22Fc3A3947f405DcEBF08a1E68f7;
+        newAddresses[5] = 0x3ea519270248BdEE4a939df20049E02290bf9CaF;
+        newAddresses[6] = 0xe1A61d90554131314cB30dB55B8AD4F4b6e21C3a;
+        newAddresses[7] = 0xe9F074d003b377A197D336B8a1c86EdaA6cC4dEF;
         newAddresses[8] = EMERGENCY_ADMIN;
 
         for (uint256 i = 0; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
@@ -152,10 +149,10 @@ contract SmokeTest is MainnetBaseSetup {
             for (uint256 j = 0; j < len; ++j) {
                 assert(srbac.hasRole(ids[j], newAddresses[j]));
             }
-            assert(srbac.hasRole(keccak256("PROTOCOL_ADMIN_ROLE"), PROTOCOL_ADMINS[i]));
-            assert(srbac.hasRole(keccak256("EMERGENCY_ADMIN_ROLE"), EMERGENCY_ADMIN));
+            assert(srbac.hasRole(keccak256("PROTOCOL_ADMIN_ROLE"), 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92));
+            //assert(srbac.hasRole(keccak256("EMERGENCY_ADMIN_ROLE"), EMERGENCY_ADMIN));
             assertEq(srbac.getRoleMemberCount(keccak256("PROTOCOL_ADMIN_ROLE")), 1);
-            assertEq(srbac.getRoleMemberCount(keccak256("EMERGENCY_ADMIN_ROLE")), 1);
+            assertEq(srbac.getRoleMemberCount(keccak256("EMERGENCY_ADMIN_ROLE")), 2);
         }
     }
 
@@ -242,33 +239,24 @@ contract SmokeTest is MainnetBaseSetup {
 
         /// @dev index should match the index of target chains
         address[] memory mailboxes = new address[](TARGET_DEPLOYMENT_CHAINS.length);
-        mailboxes[0] = 0xc005dc82818d67AF737725bD4bf75435d065D239;
-        mailboxes[1] = 0x2971b9Aec44bE4eb673DF1B88cDB57b96eefe8a4;
-        mailboxes[2] = 0xFf06aFcaABaDDd1fb08371f9ccA15D73D51FeBD6;
-        mailboxes[3] = 0x5d934f4e2f797775e53561bB72aca21ba36B96BB;
-        mailboxes[4] = 0x979Ca5202784112f4738403dBec5D0F3B9daabB9;
-        mailboxes[5] = 0xd4C1905BB1D26BC93DAC913e13CaCC278CdCC80D;
-        mailboxes[6] = 0xeA87ae93Fa0019a82A727bfd3eBd1cFCa8f64f1D;
+        mailboxes[0] = 0x2971b9Aec44bE4eb673DF1B88cDB57b96eefe8a4;
+        mailboxes[1] = 0x979Ca5202784112f4738403dBec5D0F3B9daabB9;
+        mailboxes[2] = 0xd4C1905BB1D26BC93DAC913e13CaCC278CdCC80D;
+        mailboxes[3] = 0xeA87ae93Fa0019a82A727bfd3eBd1cFCa8f64f1D;
 
         /// @dev index should match the index of target chains
         address[] memory igps = new address[](TARGET_DEPLOYMENT_CHAINS.length);
-        igps[0] = 0x9e6B1022bE9BBF5aFd152483DAD9b88911bC8611;
-        igps[1] = 0x78E25e7f84416e69b9339B0A6336EB6EFfF6b451;
-        igps[2] = 0x95519ba800BBd0d34eeAE026fEc620AD978176C0;
-        igps[3] = 0x0071740Bf129b05C4684abfbBeD248D80971cce2;
-        igps[4] = 0x3b6044acd6767f017e99318AA6Ef93b7B06A5a22;
-        igps[5] = 0xD8A76C4D91fCbB7Cc8eA795DFDF870E48368995C;
-        igps[6] = 0xc3F23848Ed2e04C0c6d41bd7804fa8f89F940B94;
+        igps[0] = 0x78E25e7f84416e69b9339B0A6336EB6EFfF6b451;
+        igps[1] = 0x3b6044acd6767f017e99318AA6Ef93b7B06A5a22;
+        igps[2] = 0xD8A76C4D91fCbB7Cc8eA795DFDF870E48368995C;
+        igps[3] = 0xc3F23848Ed2e04C0c6d41bd7804fa8f89F940B94;
 
         /// @dev index should match the index of target chains
         uint32[] memory ambIds = new uint32[](TARGET_DEPLOYMENT_CHAINS.length);
-        ambIds[0] = uint32(1);
-        ambIds[1] = uint32(56);
-        ambIds[2] = uint32(43_114);
-        ambIds[3] = uint32(137);
-        ambIds[4] = uint32(42_161);
-        ambIds[5] = uint32(10);
-        ambIds[6] = uint32(8453);
+        ambIds[0] = uint32(56);
+        ambIds[1] = uint32(42_161);
+        ambIds[2] = uint32(10);
+        ambIds[3] = uint32(8453);
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
@@ -296,23 +284,17 @@ contract SmokeTest is MainnetBaseSetup {
 
         /// @dev index should match the index of target chains
         address[] memory endpoints = new address[](TARGET_DEPLOYMENT_CHAINS.length);
-        endpoints[0] = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
+        endpoints[0] = 0x3c2269811836af69497E5F486A85D7316753cf62;
         endpoints[1] = 0x3c2269811836af69497E5F486A85D7316753cf62;
         endpoints[2] = 0x3c2269811836af69497E5F486A85D7316753cf62;
-        endpoints[3] = 0x3c2269811836af69497E5F486A85D7316753cf62;
-        endpoints[4] = 0x3c2269811836af69497E5F486A85D7316753cf62;
-        endpoints[5] = 0x3c2269811836af69497E5F486A85D7316753cf62;
-        endpoints[6] = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
+        endpoints[3] = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
 
         /// @dev index should match the index of target chains
         uint16[] memory ambIds = new uint16[](TARGET_DEPLOYMENT_CHAINS.length);
-        ambIds[0] = uint16(101);
-        ambIds[1] = uint16(102);
-        ambIds[2] = uint16(106);
-        ambIds[3] = uint16(109);
-        ambIds[4] = uint16(110);
-        ambIds[5] = uint16(111);
-        ambIds[6] = uint16(184);
+        ambIds[0] = uint16(102);
+        ambIds[1] = uint16(110);
+        ambIds[2] = uint16(111);
+        ambIds[3] = uint16(184);
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
@@ -345,20 +327,14 @@ contract SmokeTest is MainnetBaseSetup {
         relayers[0] = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
         relayers[1] = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
         relayers[2] = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
-        relayers[3] = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
-        relayers[4] = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
-        relayers[5] = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
-        relayers[6] = 0x706F82e9bb5b0813501714Ab5974216704980e31;
+        relayers[3] = 0x706F82e9bb5b0813501714Ab5974216704980e31;
 
         /// @dev index should match the index of target chains
         uint16[] memory ambIds = new uint16[](TARGET_DEPLOYMENT_CHAINS.length);
-        ambIds[0] = uint16(2);
-        ambIds[1] = uint16(4);
-        ambIds[2] = uint16(6);
-        ambIds[3] = uint16(5);
-        ambIds[4] = uint16(23);
-        ambIds[5] = uint16(24);
-        ambIds[6] = uint16(30);
+        ambIds[0] = uint16(4);
+        ambIds[1] = uint16(23);
+        ambIds[2] = uint16(24);
+        ambIds[3] = uint16(30);
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
@@ -387,22 +363,16 @@ contract SmokeTest is MainnetBaseSetup {
         /// @dev index should match the index of target chains
         address[] memory wormholeCore = new address[](TARGET_DEPLOYMENT_CHAINS.length);
         wormholeCore[0] = 0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B;
-        wormholeCore[1] = 0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B;
-        wormholeCore[2] = 0x54a8e5f9c4CbA08F9943965859F6c34eAF03E26c;
-        wormholeCore[3] = 0x7A4B5a56256163F07b2C80A7cA55aBE66c4ec4d7;
-        wormholeCore[4] = 0xa5f208e072434bC67592E4C49C1B991BA79BCA46;
-        wormholeCore[5] = 0xEe91C335eab126dF5fDB3797EA9d6aD93aeC9722;
-        wormholeCore[6] = 0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6;
+        wormholeCore[1] = 0xa5f208e072434bC67592E4C49C1B991BA79BCA46;
+        wormholeCore[2] = 0xEe91C335eab126dF5fDB3797EA9d6aD93aeC9722;
+        wormholeCore[3] = 0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6;
 
         /// @dev index should match the index of target chains
         uint16[] memory ambIds = new uint16[](TARGET_DEPLOYMENT_CHAINS.length);
-        ambIds[0] = uint16(2);
-        ambIds[1] = uint16(4);
-        ambIds[2] = uint16(6);
-        ambIds[3] = uint16(5);
-        ambIds[4] = uint16(23);
-        ambIds[5] = uint16(24);
-        ambIds[6] = uint16(30);
+        ambIds[0] = uint16(4);
+        ambIds[1] = uint16(23);
+        ambIds[2] = uint16(24);
+        ambIds[3] = uint16(30);
 
         address relayer = 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92;
 

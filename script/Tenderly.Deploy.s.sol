@@ -52,6 +52,6 @@ contract TenderlyDeploy is AbstractDeploySingle {
             }
         }
 
-        _deployStage3(selectedChainIndex, trueIndex, Cycle.Dev, TARGET_DEPLOYMENT_CHAINS);
+        _deployStage3(selectedChainIndex, trueIndex, Cycle.Dev, TARGET_DEPLOYMENT_CHAINS, true);
     }
 }
