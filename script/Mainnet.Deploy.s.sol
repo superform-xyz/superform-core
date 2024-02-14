@@ -12,8 +12,7 @@ contract MainnetDeploy is AbstractDeploySingle {
     ///@dev ORIGINAL SALT
     bytes32 constant salt = "SunNeverSetsOnSuperformRealm";
 
-    /// @notice The main stage 1 script entrypoint
-    function deployStage1(uint256 selectedChainIndex) external {
+    constructor () {
         PAYMENT_ADMIN = 0xD911673eAF0D3e15fe662D58De15511c5509bAbB;
         CSR_PROCESSOR = 0x23c658FE050B4eAeB9401768bF5911D11621629c;
         CSR_UPDATER = 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f;
@@ -23,6 +22,10 @@ contract MainnetDeploy is AbstractDeploySingle {
         SUPERFORM_RECEIVER = 0x1a6805487322565202848f239C1B5bC32303C2FE;
         EMERGENCY_ADMIN = 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490;
         SUPER_POSITIONS_NAME = "SuperPositions";
+    }
+    
+    /// @notice The main stage 1 script entrypoint
+    function deployStage1(uint256 selectedChainIndex) external {
         
         _preDeploymentSetup();
 

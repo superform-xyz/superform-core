@@ -7,21 +7,21 @@ source .env
 # Run the script
 echo Running Stage 1: ...
 
-#FOUNDRY_PROFILE=default forge script script/Mainnet.Staging.Deploy.s.sol:MainnetStagingDeploy --sig "deployStage1(uint256)" 0 --rpc-url $BSC_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=default forge script script/Mainnet.Staging.Deploy.s.sol:MainnetStagingDeploy --sig "deployStage1(uint256)" 0 --rpc-url $BSC_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
-#wait
+wait
 
-#FOUNDRY_PROFILE=default forge script script/Mainnet.Staging.Deploy.s.sol:MainnetStagingDeploy --sig "deployStage1(uint256)" 1 --rpc-url $ARBITRUM_RPC_URL --broadcast --slow --legacy --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=default forge script script/Mainnet.Staging.Deploy.s.sol:MainnetStagingDeploy --sig "deployStage1(uint256)" 1 --rpc-url $ARBITRUM_RPC_URL --broadcast --slow --legacy --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
-#wait
+wait
 
-#FOUNDRY_PROFILE=default forge script script/Mainnet.Staging.Deploy.s.sol:MainnetStagingDeploy --sig "deployStage1(uint256)" 2 --rpc-url $OPTIMISM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=default forge script script/Mainnet.Staging.Deploy.s.sol:MainnetStagingDeploy --sig "deployStage1(uint256)" 2 --rpc-url $OPTIMISM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
-#wait
+wait
 
-#FOUNDRY_PROFILE=default forge script script/Mainnet.Staging.Deploy.s.sol:MainnetStagingDeploy --sig "deployStage1(uint256)" 3 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=default forge script script/Mainnet.Staging.Deploy.s.sol:MainnetStagingDeploy --sig "deployStage1(uint256)" 3 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
-#wait
+wait
 
 echo Running Stage 2: ...
 

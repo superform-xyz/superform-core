@@ -12,8 +12,7 @@ contract MainnetStagingDeploy is AbstractDeploySingle {
     ///@dev ORIGINAL SALT
     bytes32 constant salt = "StagingV1_0";
 
-    /// @notice The main stage 1 script entrypoint
-    function deployStage1(uint256 selectedChainIndex) external {
+    constructor () {
         PAYMENT_ADMIN = 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3;
         CSR_PROCESSOR = 0x2759142A9e3cBbcCc1E3d5F76490eEE4007B8943;
         CSR_UPDATER = 0xF1c73958118F22Fc3A3947f405DcEBF08a1E68f7;
@@ -23,7 +22,11 @@ contract MainnetStagingDeploy is AbstractDeploySingle {
         SUPERFORM_RECEIVER = 0x46F15EDC21f7eed6D1eb01e5Abe993Dc6c6A78BB;
         EMERGENCY_ADMIN = 0x6A5DD913fE3CB5193E09D1810a3b9ff1C0f9c0D6;
         SUPER_POSITIONS_NAME = "StagingSuperPositions";
-    
+    }
+
+    /// @notice The main stage 1 script entrypoint
+    function deployStage1(uint256 selectedChainIndex) external {
+
         _preDeploymentSetup();
         
         uint256 trueIndex;
