@@ -149,6 +149,7 @@ abstract contract AbstractDeploySingle is Script {
     /*//////////////////////////////////////////////////////////////
                         PROTOCOL VARIABLES
     //////////////////////////////////////////////////////////////*/
+    string public SUPER_POSITIONS_NAME;
 
     /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm
     uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(2), uint32(3)];
@@ -307,7 +308,15 @@ abstract contract AbstractDeploySingle is Script {
 
     address public ownerAddress;
 
-    address constant EMERGENCY_ADMIN = 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490;
+    address public PAYMENT_ADMIN;
+    address public CSR_PROCESSOR;
+    address public CSR_UPDATER;
+    address public DST_SWAPPER;
+    address public CSR_RESCUER;
+    address public CSR_DISPUTER;
+    address public SUPERFORM_RECEIVER;
+
+    address public EMERGENCY_ADMIN;
 
     address[] public PROTOCOL_ADMINS = [
         0xd26b38a64C812403fD3F87717624C80852cD6D61,
@@ -393,18 +402,18 @@ abstract contract AbstractDeploySingle is Script {
                 ISuperRBAC.InitialRoleSetup({
                     admin: ownerAddress,
                     emergencyAdmin: ownerAddress,
-                    paymentAdmin: 0xD911673eAF0D3e15fe662D58De15511c5509bAbB,
-                    csrProcessor: 0x23c658FE050B4eAeB9401768bF5911D11621629c,
+                    paymentAdmin: PAYMENT_ADMIN,
+                    csrProcessor: CSR_PROCESSOR,
                     tlProcessor: EMERGENCY_ADMIN,
                     /// @dev Temporary, as we are not using this processor in this release
                     brProcessor: EMERGENCY_ADMIN,
                     /// @dev FIXME who is broadcastProcessor
-                    csrUpdater: 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f,
+                    csrUpdater: CSR_UPDATER,
                     srcVaaRelayer: EMERGENCY_ADMIN,
                     /// @dev FIXME who is srcVaaRelayer
-                    dstSwapper: 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C,
-                    csrRescuer: 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5,
-                    csrDisputer: 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a
+                    dstSwapper: DST_SWAPPER,
+                    csrRescuer: CSR_RESCUER,
+                    csrDisputer: CSR_DISPUTER
                 })
             )
         );
@@ -573,7 +582,7 @@ abstract contract AbstractDeploySingle is Script {
             new SuperPositions{ salt: salt }(
                 "https://ipfs-gateway.superform.xyz/ipns/k51qzi5uqu5dg90fqdo9j63m556wlddeux4mlgyythp30zousgh3huhyzouyq8/JSON/",
                 vars.superRegistry,
-                "SuperPositions",
+                SUPER_POSITIONS_NAME,
                 "SP"
             )
         );
@@ -638,15 +647,15 @@ abstract contract AbstractDeploySingle is Script {
         vars.ids[8] = vars.superRegistryC.SUPERFORM_RECEIVER();
 
         vars.newAddresses = new address[](9);
-        vars.newAddresses[0] = 0xD911673eAF0D3e15fe662D58De15511c5509bAbB;
-        vars.newAddresses[1] = 0x23c658FE050B4eAeB9401768bF5911D11621629c;
+        vars.newAddresses[0] = PAYMENT_ADMIN;
+        vars.newAddresses[1] = CSR_PROCESSOR;
         vars.newAddresses[2] = EMERGENCY_ADMIN;
         vars.newAddresses[3] = EMERGENCY_ADMIN;
-        vars.newAddresses[4] = 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f;
-        vars.newAddresses[5] = 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5;
-        vars.newAddresses[6] = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
-        vars.newAddresses[7] = 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C;
-        vars.newAddresses[8] = 0x1a6805487322565202848f239C1B5bC32303C2FE;
+        vars.newAddresses[4] = CSR_UPDATER;
+        vars.newAddresses[5] = CSR_RESCUER;
+        vars.newAddresses[6] = CSR_DISPUTER;
+        vars.newAddresses[7] = DST_SWAPPER;
+        vars.newAddresses[8] = SUPERFORM_RECEIVER;
 
         vars.chainIdsSetAddresses = new uint64[](9);
         vars.chainIdsSetAddresses[0] = vars.chainId;
@@ -763,7 +772,8 @@ abstract contract AbstractDeploySingle is Script {
         uint256 i,
         uint256 trueIndex,
         Cycle cycle,
-        uint64[] memory s_superFormChainIds
+        uint64[] memory s_superFormChainIds,
+        bool grantProtocolAdmin
     )
         internal
         setEnvDeploy(cycle)
@@ -778,7 +788,8 @@ abstract contract AbstractDeploySingle is Script {
         bytes32 protocolAdminRole = srbac.PROTOCOL_ADMIN_ROLE();
         bytes32 emergencyAdminRole = srbac.EMERGENCY_ADMIN_ROLE();
 
-        srbac.grantRole(protocolAdminRole, PROTOCOL_ADMINS[trueIndex]);
+        if (grantProtocolAdmin) srbac.grantRole(protocolAdminRole, PROTOCOL_ADMINS[trueIndex]);
+        
         srbac.grantRole(emergencyAdminRole, EMERGENCY_ADMIN);
 
         //srbac.revokeRole(emergencyAdminRole, ownerAddress);
@@ -981,15 +992,15 @@ abstract contract AbstractDeploySingle is Script {
         newAddresses[7] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperRBAC");
         newAddresses[8] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "PayloadHelper");
         newAddresses[9] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "EmergencyQueue");
-        newAddresses[10] = 0xD911673eAF0D3e15fe662D58De15511c5509bAbB;
-        newAddresses[11] = 0x23c658FE050B4eAeB9401768bF5911D11621629c;
-        newAddresses[12] = 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f;
+        newAddresses[10] = PAYMENT_ADMIN;
+        newAddresses[11] = CSR_PROCESSOR;
+        newAddresses[12] = CSR_UPDATER;
         /// @dev FIXME setting this temporarily to EMERGENCY_ADMIN as we are not using it in this release
         newAddresses[13] = EMERGENCY_ADMIN;
-        newAddresses[14] = 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5;
-        newAddresses[15] = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
-        newAddresses[16] = 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C;
-        newAddresses[17] = 0x1a6805487322565202848f239C1B5bC32303C2FE;
+        newAddresses[14] = CSR_RESCUER;
+        newAddresses[15] = CSR_DISPUTER;
+        newAddresses[16] = DST_SWAPPER;
+        newAddresses[17] = SUPERFORM_RECEIVER;
 
         uint64[] memory chainIdsSetAddresses = new uint64[](18);
         chainIdsSetAddresses[0] = vars.dstChainId;
