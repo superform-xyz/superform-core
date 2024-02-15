@@ -789,7 +789,7 @@ abstract contract AbstractDeploySingle is Script {
         bytes32 emergencyAdminRole = srbac.EMERGENCY_ADMIN_ROLE();
 
         if (grantProtocolAdmin) srbac.grantRole(protocolAdminRole, PROTOCOL_ADMINS[trueIndex]);
-        
+
         srbac.grantRole(emergencyAdminRole, EMERGENCY_ADMIN);
 
         //srbac.revokeRole(emergencyAdminRole, ownerAddress);
@@ -1171,15 +1171,7 @@ abstract contract AbstractDeploySingle is Script {
         }
     }
 
-    function _readContract(
-        string memory name,
-        uint64 chainId,
-        string memory contractName
-    )
-        internal
-        view
-        returns (address)
-    {
+    function _readContract(string memory name, uint64 chainId, string memory contractName) internal returns (address) {
         string memory json;
         string memory root = vm.projectRoot();
         json =
