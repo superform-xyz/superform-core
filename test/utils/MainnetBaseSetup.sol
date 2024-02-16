@@ -536,7 +536,15 @@ abstract contract MainnetBaseSetup is DSTest, StdInvariant, Test {
         priceFeeds[GNOSIS][ARBI] = 0xa767f745331D267c7751297D982b050c93985627;
     }
 
-    function _readContract(string memory name, uint64 chainId, string memory contractName) internal returns (address) {
+    function _readContract(
+        string memory name,
+        uint64 chainId,
+        string memory contractName
+    )
+        internal
+        view
+        returns (address)
+    {
         string memory json;
         string memory root = vm.projectRoot();
         json = string(abi.encodePacked(root, folderToRead, vm.toString(uint256(chainId)), "/", name, "-latest.json"));
