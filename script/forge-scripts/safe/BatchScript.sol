@@ -67,10 +67,12 @@ abstract contract BatchScript is Script, DelegatePrank {
     // Wallet information
     bytes32 private walletType;
     uint256 private mnemonicIndex;
+    string private keystoreName;
     bytes32 private privateKey;
 
     bytes32 private constant LOCAL = keccak256("local");
     bytes32 private constant LEDGER = keccak256("ledger");
+    bytes32 private constant KEYSTORE = keccak256("keystore");
 
     enum Operation {
         CALL,
@@ -115,8 +117,8 @@ abstract contract BatchScript is Script, DelegatePrank {
 
     // Simulate then send the batch to the Safe API. If `send_` is `false`, the
     // batch will only be simulated.
-    function executeBatch(address safe_, bool send_) public {
-        _initialize();
+    function executeBatch(uint256 chainId_, address safe_, bool send_) public {
+        _initialize(chainId_);
         Batch memory batch = _createBatch(safe_);
         _simulateBatch(safe_, batch);
         if (send_) {
@@ -126,9 +128,9 @@ abstract contract BatchScript is Script, DelegatePrank {
     }
 
     // Internal functions
-    function _initialize() private {
+    function _initialize(uint256 chainId_) private {
         // Set the chain ID
-        Chain memory chain = getChain(vm.envString("CHAIN"));
+        Chain memory chain = getChain(chainId_);
         chainId = chain.chainId;
 
         // Set the Safe API base URL and multisend address based on chain
@@ -145,16 +147,16 @@ abstract contract BatchScript is Script, DelegatePrank {
             SAFE_API_BASE_URL = "https://safe-transaction-avalanche.safe.global/api/v1/safes/";
             SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
         } else if (chainId == 10) {
-            SAFE_API_BASE_URL = "https://safe-transaction-optimism.safe.global";
+            SAFE_API_BASE_URL = "https://safe-transaction-optimism.safe.global/api/v1/safes/";
             SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
         } else if (chainId == 137) {
-            SAFE_API_BASE_URL = "https://safe-transaction-polygon.safe.global";
+            SAFE_API_BASE_URL = "https://safe-transaction-polygon.safe.global/api/v1/safes/";
             SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
         } else if (chainId == 56) {
-            SAFE_API_BASE_URL = "https://safe-transaction-bsc.safe.global";
+            SAFE_API_BASE_URL = "https://safe-transaction-bsc.safe.global/api/v1/safes/";
             SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
         } else if (chainId == 8453) {
-            SAFE_API_BASE_URL = "https://safe-transaction-base.safe.global";
+            SAFE_API_BASE_URL = "https://safe-transaction-base.safe.global/api/v1/safes/";
             SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
         } else {
             revert("Unsupported chain");
@@ -166,6 +168,8 @@ abstract contract BatchScript is Script, DelegatePrank {
             privateKey = vm.envBytes32("PRIVATE_KEY");
         } else if (walletType == LEDGER) {
             mnemonicIndex = vm.envUint("MNEMONIC_INDEX");
+        } else if (walletType == KEYSTORE) {
+            keystoreName = "defaultKey";
         } else {
             revert("Unsupported wallet type");
         }
@@ -206,6 +210,8 @@ abstract contract BatchScript is Script, DelegatePrank {
             wallet = string.concat("--private-key ", vm.toString(privateKey), " ");
         } else if (walletType == LEDGER) {
             wallet = string.concat("--ledger --mnemonic-index ", vm.toString(mnemonicIndex), " ");
+        } else if (walletType == KEYSTORE) {
+            wallet = string.concat("--account ", keystoreName, " ");
         } else {
             revert("Unsupported wallet type");
         }

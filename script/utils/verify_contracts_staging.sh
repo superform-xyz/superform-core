@@ -18,7 +18,7 @@ networks=(
 
 api_keys=(
     $BSCSCAN_API_KEY
-    $SNOWTRACE_API_KEY
+    $ARBISCAN_API_KEY
     $OPSCAN_API_KEY
     $BASESCAN_API_KEY
     # add more API keys here if needed
@@ -53,6 +53,7 @@ file_names=(
     "src/VaultClaimer.sol"
     "src/crosschain-data/BroadcastRegistry.sol"
     "src/crosschain-data/adapters/wormhole/specialized-relayer/WormholeSRImplementation.sol"
+    "src/crosschain-liquidity/socket/SocketOneInchValidator.sol"
     # Add more file names here if needed
 )
 
@@ -77,6 +78,7 @@ contract_names=(
     "VaultClaimer"
     "BroadcastRegistry"
     "WormholeSRImplementation"
+    "SocketOneInchValidator"
     # Add more contract names here if needed
 )
 
@@ -101,6 +103,7 @@ contract_addresses=(
     0xf1930eD240cF9c4F1840aDB689E5d231687922C5
     0x5767897fc69A77AC68a75001a56fcA6c421adc6f
     0x44b451Ca87267a62A0C853ECFbaaC1C3E528a82C
+    0xde882a104F265497782d421b3fDAC589b420289e
     # Add more addresses here if needed
 )
 
@@ -125,6 +128,7 @@ constructor_args=(
     $empty_constructor_arg
     $super_constructor_arg
     $wormhole_sr_arg
+    $super_constructor_arg
 )
 
 # loop through networks
