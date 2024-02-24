@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { AbstractDeploySingle } from "./Abstract.Deploy.Single.s.sol";
+import { AbstractDeploySingle } from "../Abstract.Deploy.Single.s.sol";
 
 contract MainnetDeployNewChain is AbstractDeploySingle {
     /*//////////////////////////////////////////////////////////////
