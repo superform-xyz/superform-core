@@ -45,18 +45,4 @@ contract MainnetDeploy1inch is AbstractDeploySocket1inch {
 
         _configureSuperRegistry(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
     }
-
-    function test(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
-
-        uint256 trueIndex;
-        for (uint256 i = 0; i < chainIds.length; i++) {
-            if (TARGET_CHAINS[selectedChainIndex] == chainIds[i]) {
-                trueIndex = i;
-                break;
-            }
-        }
-
-        _test(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
-    }
 }
