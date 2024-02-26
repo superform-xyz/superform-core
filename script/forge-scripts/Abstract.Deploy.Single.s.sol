@@ -92,7 +92,7 @@ abstract contract AbstractDeploySingle is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[20] public contractNames = [
+    string[21] public contractNames = [
         "CoreStateRegistry",
         //"TimelockStateRegistry",
         "BroadcastRegistry",
@@ -102,7 +102,7 @@ abstract contract AbstractDeploySingle is Script {
         "WormholeSRImplementation",
         "LiFiValidator",
         "SocketValidator",
-        //"SocketOneInchValidator",
+        "SocketOneInchValidator",
         "DstSwapper",
         "SuperformFactory",
         "ERC4626Form",
@@ -335,6 +335,17 @@ abstract contract AbstractDeploySingle is Script {
         /// @dev BASE https://app.onchainden.com/safes/base:0x2f973806f8863e860a553d4f2e7c2ab4a9f3b87c
         address(0)
         /// @dev GNOSIS FIXME - PROTOCOL ADMIN NOT SET FOR GNOSIS
+    ];
+
+    address[] public PROTOCOL_ADMINS_STAGING = [
+        0xBbb23AE2e3816a178f8bd405fb101D064C5071d9,
+        /// @dev BSC https://app.onchainden.com/safes/bnb:0xBbb23AE2e3816a178f8bd405fb101D064C5071d9
+        0xBbb23AE2e3816a178f8bd405fb101D064C5071d9,
+        /// @dev ARBI https://app.onchainden.com/safes/arb1:0xBbb23AE2e3816a178f8bd405fb101D064C5071d9
+        0xfe3A0C3c4980Eef00C2Ec73D8770a2D9A489fdE5,
+        /// @dev OP https://app.onchainden.com/safes/oeth:0xfe3A0C3c4980Eef00C2Ec73D8770a2D9A489fdE5
+        0xbd1F951F52FC7616E2F743F976295fDc5276Cfb9
+        /// @dev BASE https://app.onchainden.com/safes/base:0xbd1F951F52FC7616E2F743F976295fDc5276Cfb9
     ];
 
     /// @dev environment variable setup for upgrade

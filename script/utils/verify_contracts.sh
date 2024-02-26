@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 
-# Read the RPC URL
-source .env
+export ETHERSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/ETHERSCAN_API_KEY/credential)
+export BSCSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BSCSCAN_API_KEY/credential)
+export SNOWTRACE_API_KEY=verifyContract
+export POLYGONSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/POLYGONSCAN_API_KEY/credential)
+export ARBISCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/ARBISCAN_API_KEY/credential)
+export OPSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/OPSCAN_API_KEY/credential)
+export BASESCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BASESCAN_API_KEY/credential)
 
 networks=(
     1
@@ -15,13 +20,13 @@ networks=(
 )
 
 api_keys=(
-    $ETHEREUM_API
-    $BSCSCAN_API
-    $SNOWTRACE_API
-    $POLYGONSCAN_API
-    $ARBISCAN_API
-    $OPSCAN_API
-    $BASESCAN_API
+    $ETHERSCAN_API_KEY
+    $BSCSCAN_API_KEY
+    $SNOWTRACE_API_KEY
+    $POLYGONSCAN_API_KEY
+    $ARBISCAN_API_KEY
+    $OPSCAN_API_KEY
+    $BASESCAN_API_KEY
     # add more API keys here if needed
 )
 

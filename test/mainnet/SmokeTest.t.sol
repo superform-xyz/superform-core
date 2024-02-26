@@ -5,7 +5,7 @@ import "test/utils/MainnetBaseSetup.sol";
 
 contract SmokeTest is MainnetBaseSetup {
     function setUp() public override {
-        folderToRead = "/script/v1_deployment/";
+        folderToRead = "/script/deployments/v1_deployment/";
 
         uint64[] memory chains = new uint64[](7);
         chains[0] = ETH;
