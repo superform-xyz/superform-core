@@ -59,6 +59,7 @@ file_names=(
     "src/VaultClaimer.sol"
     "src/crosschain-data/BroadcastRegistry.sol"
     "src/crosschain-data/adapters/wormhole/specialized-relayer/WormholeSRImplementation.sol"
+    "src/crosschain-liquidity/socket/SocketOneInchValidator.sol"
     # Add more file names here if needed
 )
 
@@ -83,6 +84,7 @@ contract_names=(
     "VaultClaimer"
     "BroadcastRegistry"
     "WormholeSRImplementation"
+    "SocketOneInchValidator"
     # Add more contract names here if needed
 )
 
@@ -107,6 +109,7 @@ contract_addresses=(
     0xC4A234A40aC13b02096Dd4aae1b8221541Dc5d5A
     0x856ddF6348fFF6B774566cD63f2e8db3796a0965
     0x2827eFf89affacf9E80D671bca6DeCf7dbdcCaCa
+    0x9B1dE8d1Fbf77Ca949f944F718D93fdC48f218C8
     # Add more addresses here if needed
 )
 
@@ -131,6 +134,7 @@ constructor_args=(
     $empty_constructor_arg
     $super_constructor_arg
     $wormhole_sr_arg
+    $super_constructor_arg
 )
 
 # loop through networks

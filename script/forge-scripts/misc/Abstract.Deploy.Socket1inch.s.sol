@@ -45,6 +45,10 @@ abstract contract AbstractDeploySocket1inch is BatchScript, EnvironmentUtils {
         bridgeAddresses[OP] = [0xbDf50eAe568ECef74796ed6022a0d453e8432410];
 
         address superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
+        address expectedSr =
+            env == 0 ? 0x17A332dC7B40aE701485023b219E9D6f493a2514 : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
+        assert(superRegistry == expectedSr);
+
         vars.socketOneInchValidator = address(new SocketOneInchValidator{ salt: salt }(superRegistry));
         contracts[vars.chainId][bytes32(bytes("SocketOneInchValidator"))] = vars.socketOneInchValidator;
 
@@ -97,8 +101,6 @@ abstract contract AbstractDeploySocket1inch is BatchScript, EnvironmentUtils {
 
         vars.chainId = s_superFormChainIds[i];
 
-        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
-
         mapping(uint64 chainId => address[] bridgeAddresses) storage bridgeAddresses = NEW_BRIDGE_ADDRESSES;
 
         bridgeAddresses[ETH] = [0x2ddf16BA6d0180e5357d5e170eF1917a01b41fc0];
@@ -118,8 +120,9 @@ abstract contract AbstractDeploySocket1inch is BatchScript, EnvironmentUtils {
 
         vars.superRegistryC =
             SuperRegistry(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry")));
-
-        assert(address(vars.superRegistryC) == 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47);
+        address expectedSr =
+            env == 0 ? 0x17A332dC7B40aE701485023b219E9D6f493a2514 : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
+        assert(address(vars.superRegistryC) == expectedSr);
         bytes memory txn = abi.encodeWithSelector(
             SuperRegistry.setBridgeAddresses.selector,
             newBridgeids,
@@ -130,8 +133,6 @@ abstract contract AbstractDeploySocket1inch is BatchScript, EnvironmentUtils {
         addToBatch(address(vars.superRegistryC), 0, txn);
 
         /// Send to Safe to sign
-        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], false);
-
-        vm.stopBroadcast();
+        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], true);
     }
 }
