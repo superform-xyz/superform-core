@@ -135,4 +135,33 @@ abstract contract AbstractDeploySocket1inch is BatchScript, EnvironmentUtils {
         /// Send to Safe to sign
         executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], true);
     }
+
+    /// requires protocol admin
+    function _test(
+        uint256 env,
+        uint256 i,
+        uint256 trueIndex,
+        Cycle cycle,
+        uint64[] memory s_superFormChainIds
+    )
+        internal
+        setEnvDeploy(cycle)
+    {
+        assert(salt.length > 0);
+        SetupVars memory vars;
+
+        vars.chainId = s_superFormChainIds[i];
+
+        vars.superRegistryC =
+            SuperRegistry(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry")));
+        address expectedSr =
+            env == 0 ? 0x17A332dC7B40aE701485023b219E9D6f493a2514 : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
+        assert(address(vars.superRegistryC) == expectedSr);
+        bytes memory txn = abi.encodeWithSelector(SuperRegistry.setDelay.selector, 14_400);
+
+        addToBatch(address(vars.superRegistryC), 0, txn);
+
+        /// Send to Safe to sign
+        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], true);
+    }
 }
