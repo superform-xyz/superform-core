@@ -275,6 +275,17 @@ abstract contract MainnetBaseSetup is DSTest, StdInvariant, Test {
         /// @dev GNOSIS FIXME - PROTOCOL ADMIN NOT SET FOR GNOSIS
     ];
 
+    address[] public PROTOCOL_ADMINS_STAGING = [
+        0xBbb23AE2e3816a178f8bd405fb101D064C5071d9,
+        /// @dev BSC https://app.onchainden.com/safes/bnb:0xBbb23AE2e3816a178f8bd405fb101D064C5071d9
+        0xBbb23AE2e3816a178f8bd405fb101D064C5071d9,
+        /// @dev ARBI https://app.onchainden.com/safes/arb1:0xBbb23AE2e3816a178f8bd405fb101D064C5071d9
+        0xfe3A0C3c4980Eef00C2Ec73D8770a2D9A489fdE5,
+        /// @dev OP https://app.onchainden.com/safes/oeth:0xfe3A0C3c4980Eef00C2Ec73D8770a2D9A489fdE5
+        0xbd1F951F52FC7616E2F743F976295fDc5276Cfb9
+        /// @dev BASE https://app.onchainden.com/safes/base:0xbd1F951F52FC7616E2F743F976295fDc5276Cfb9
+    ];
+
     /// @dev environment variable setup for upgrade
     /// @param cycle deployment cycle (dev, prod)
     modifier setEnvDeploy(Cycle cycle) {

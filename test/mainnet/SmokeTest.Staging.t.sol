@@ -5,7 +5,7 @@ import "test/utils/MainnetBaseSetup.sol";
 
 contract SmokeTestStaging is MainnetBaseSetup {
     function setUp() public override {
-        folderToRead = "/script/v1_staging_deployment/";
+        folderToRead = "/script/deployments/v1_staging_deployment/";
 
         uint64[] memory chains = new uint64[](4);
         chains[0] = BSC;
@@ -150,8 +150,10 @@ contract SmokeTestStaging is MainnetBaseSetup {
                 assert(srbac.hasRole(ids[j], newAddresses[j]));
             }
             assert(srbac.hasRole(keccak256("PROTOCOL_ADMIN_ROLE"), 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92));
+            assert(srbac.hasRole(keccak256("PROTOCOL_ADMIN_ROLE"), PROTOCOL_ADMINS_STAGING[i]));
+
             //assert(srbac.hasRole(keccak256("EMERGENCY_ADMIN_ROLE"), EMERGENCY_ADMIN));
-            assertEq(srbac.getRoleMemberCount(keccak256("PROTOCOL_ADMIN_ROLE")), 1);
+            assertEq(srbac.getRoleMemberCount(keccak256("PROTOCOL_ADMIN_ROLE")), 2);
             assertEq(srbac.getRoleMemberCount(keccak256("EMERGENCY_ADMIN_ROLE")), 2);
         }
     }
