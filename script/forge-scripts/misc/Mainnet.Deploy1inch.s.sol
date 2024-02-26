@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import { AbstractDeploySocket1inch } from "./Abstract.Deploy.Socket1inch.s.sol";
 
-contract MainnetDeploy1inchStaging is AbstractDeploySocket1inch {
+contract MainnetDeploy1inch is AbstractDeploySocket1inch {
     function deploy1inch(uint256 env, uint256 selectedChainIndex) external {
         _setEnvironment(env);
 
