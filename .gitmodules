@@ -13,3 +13,6 @@
 [submodule "lib/super-vaults"]
 	path = lib/super-vaults
 	url = https://github.com/superform-xyz/super-vaults
+[submodule "lib/surl"]
+	path = lib/surl
+	url = https://github.com/memester-xyz/surl
