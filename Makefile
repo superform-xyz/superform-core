@@ -15,8 +15,8 @@ install:; forge install
 update:; forge update
 
 # Build & test
-build mak :; forge build
-forge-test   :; forge test
+build :; forge build
+ftest   :; forge test
 smoke-test   :; forge test --match-contract SmokeTest
 clean  :; forge clean
 snapshot :; forge snapshot
