@@ -15,6 +15,8 @@ contract MainnetEnableBroadcasting is AbstractEnableBroadcasting {
             }
         }
 
-        _enableBroadcasting(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
+        env == 1
+            ? _enableBroadcasting(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS)
+            : _enableBroadcastingProd(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
     }
 }

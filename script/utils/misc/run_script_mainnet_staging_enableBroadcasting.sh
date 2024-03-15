@@ -20,3 +20,6 @@ wait
 
 FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.EnableBroadcasting.s.sol:MainnetEnableBroadcasting --sig "enableBroadcasting(uint256,uint256)" 1 2 --rpc-url $OPTIMISM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 wait
+
+FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.EnableBroadcasting.s.sol:MainnetEnableBroadcasting --sig "enableBroadcasting(uint256,uint256)" 1 3 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+wait
