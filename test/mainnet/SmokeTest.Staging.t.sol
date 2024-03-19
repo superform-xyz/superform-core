@@ -186,7 +186,7 @@ contract SmokeTestStaging is MainnetBaseSetup {
 
             vm.selectFork(FORKS[chainId]);
             sr = SuperRegistry(getContract(chainId, "SuperRegistry"));
-            assertEq(sr.delay(), 14_400);
+            assertEq(sr.delay(), 900);
         }
     }
 
