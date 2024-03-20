@@ -145,4 +145,78 @@ abstract contract AbstractEnableBroadcasting is BatchScript, EnvironmentUtils {
         /// Send to Safe to sign
         executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], true);
     }
+
+    function _revokeRole(
+        uint256 env,
+        uint256 i,
+        uint256 trueIndex,
+        Cycle cycle,
+        uint64[] memory targetDeploymentChains
+    )
+        internal
+        setEnvDeploy(cycle)
+    {
+        UpdateVars memory vars;
+
+        vars.chainId = targetDeploymentChains[i];
+        vm.startBroadcast();
+        vars.superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
+        vars.superRegistryC = SuperRegistry(vars.superRegistry);
+        vars.superRBAC = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRBAC");
+        vars.superRBACC = SuperRBAC(vars.superRBAC);
+
+        vars.broadcastRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "BroadcastRegistry");
+
+        if (vars.superRegistry == address(0) || vars.broadcastRegistry == address(0) || vars.superRBAC == address(0)) {
+            revert();
+        }
+        /// revoke addresses in super rbac
+        vars.superRBACC.revokeRole(vars.superRBACC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), EMERGENCY_ADMIN);
+
+        vars.superRBACC.revokeRole(vars.superRBACC.WORMHOLE_VAA_RELAYER_ROLE(), EMERGENCY_ADMIN);
+
+        vm.stopBroadcast();
+    }
+
+    function _revokeRoleProd(
+        uint256 env,
+        uint256 i,
+        uint256 trueIndex,
+        Cycle cycle,
+        uint64[] memory targetDeploymentChains
+    )
+        internal
+        setEnvDeploy(cycle)
+    {
+        UpdateVars memory vars;
+
+        vars.chainId = targetDeploymentChains[i];
+        vars.superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
+        vars.superRegistryC = SuperRegistry(vars.superRegistry);
+        vars.superRBAC = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRBAC");
+        vars.superRBACC = SuperRBAC(vars.superRBAC);
+
+        vars.broadcastRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "BroadcastRegistry");
+
+        if (vars.superRegistry == address(0) || vars.broadcastRegistry == address(0) || vars.superRBAC == address(0)) {
+            revert();
+        }
+
+        bytes memory txn = abi.encodeWithSelector(
+            vars.superRBACC.revokeRole.selector,
+            vars.superRBACC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(),
+            EMERGENCY_ADMIN
+        );
+
+        addToBatch(address(vars.superRBACC), 0, txn);
+
+        txn = abi.encodeWithSelector(
+            vars.superRBACC.revokeRole.selector, vars.superRBACC.WORMHOLE_VAA_RELAYER_ROLE(), EMERGENCY_ADMIN
+        );
+
+        addToBatch(address(vars.superRBACC), 0, txn);
+
+        /// Send to Safe to sign
+        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], true);
+    }
 }
