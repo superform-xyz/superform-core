@@ -44,7 +44,7 @@ contract SmokeTest is MainnetBaseSetup {
         address[] memory newAddresses = new address[](len);
         newAddresses[0] = 0xD911673eAF0D3e15fe662D58De15511c5509bAbB;
         newAddresses[1] = 0x23c658FE050B4eAeB9401768bF5911D11621629c;
-        newAddresses[2] = EMERGENCY_ADMIN;
+        newAddresses[2] = 0x98616F52063d2A301be71386D381F43176A04F0f;
         newAddresses[3] = EMERGENCY_ADMIN;
         newAddresses[4] = 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f;
         newAddresses[5] = 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5;
@@ -105,7 +105,7 @@ contract SmokeTest is MainnetBaseSetup {
             newAddresses[10] = 0xD911673eAF0D3e15fe662D58De15511c5509bAbB;
             newAddresses[11] = 0x23c658FE050B4eAeB9401768bF5911D11621629c;
             newAddresses[12] = 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f;
-            newAddresses[13] = EMERGENCY_ADMIN;
+            newAddresses[13] = 0x98616F52063d2A301be71386D381F43176A04F0f;
             newAddresses[14] = 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5;
             newAddresses[15] = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
             newAddresses[16] = 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C;
@@ -138,12 +138,12 @@ contract SmokeTest is MainnetBaseSetup {
         newAddresses[0] = 0xD911673eAF0D3e15fe662D58De15511c5509bAbB;
         newAddresses[1] = 0x23c658FE050B4eAeB9401768bF5911D11621629c;
         newAddresses[2] = EMERGENCY_ADMIN;
-        newAddresses[3] = EMERGENCY_ADMIN;
+        newAddresses[3] = 0x98616F52063d2A301be71386D381F43176A04F0f;
         newAddresses[4] = 0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f;
         newAddresses[5] = 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C;
         newAddresses[6] = 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5;
         newAddresses[7] = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
-        newAddresses[8] = EMERGENCY_ADMIN;
+        newAddresses[8] = 0x1A86b5c1467331A3A52572663FDBf037A9e29719;
 
         for (uint256 i = 0; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             vm.selectFork(FORKS[TARGET_DEPLOYMENT_CHAINS[i]]);
@@ -151,6 +151,8 @@ contract SmokeTest is MainnetBaseSetup {
 
             for (uint256 j = 0; j < len; ++j) {
                 assert(srbac.hasRole(ids[j], newAddresses[j]));
+                /// @dev each role should have a single member
+                assertEq(srbac.getRoleMemberCount(ids[j]), 1);
             }
             assert(srbac.hasRole(keccak256("PROTOCOL_ADMIN_ROLE"), PROTOCOL_ADMINS[i]));
             assert(srbac.hasRole(keccak256("EMERGENCY_ADMIN_ROLE"), EMERGENCY_ADMIN));
