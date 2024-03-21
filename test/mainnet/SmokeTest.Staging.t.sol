@@ -41,7 +41,7 @@ contract SmokeTestStaging is MainnetBaseSetup {
         address[] memory newAddresses = new address[](len);
         newAddresses[0] = 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3;
         newAddresses[1] = 0x2759142A9e3cBbcCc1E3d5F76490eEE4007B8943;
-        newAddresses[2] = EMERGENCY_ADMIN;
+        newAddresses[2] = 0x65c2d7e8d31C845894491ABe5789Ba1e5d4382fC;
         newAddresses[3] = EMERGENCY_ADMIN;
         newAddresses[4] = 0xF1c73958118F22Fc3A3947f405DcEBF08a1E68f7;
         newAddresses[5] = 0xe1A61d90554131314cB30dB55B8AD4F4b6e21C3a;
@@ -102,7 +102,7 @@ contract SmokeTestStaging is MainnetBaseSetup {
             newAddresses[10] = 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3;
             newAddresses[11] = 0x2759142A9e3cBbcCc1E3d5F76490eEE4007B8943;
             newAddresses[12] = 0xF1c73958118F22Fc3A3947f405DcEBF08a1E68f7;
-            newAddresses[13] = EMERGENCY_ADMIN;
+            newAddresses[13] = 0x65c2d7e8d31C845894491ABe5789Ba1e5d4382fC;
             newAddresses[14] = 0xe1A61d90554131314cB30dB55B8AD4F4b6e21C3a;
             newAddresses[15] = 0xe9F074d003b377A197D336B8a1c86EdaA6cC4dEF;
             newAddresses[16] = 0x3ea519270248BdEE4a939df20049E02290bf9CaF;
@@ -135,12 +135,12 @@ contract SmokeTestStaging is MainnetBaseSetup {
         newAddresses[0] = 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3;
         newAddresses[1] = 0x2759142A9e3cBbcCc1E3d5F76490eEE4007B8943;
         newAddresses[2] = EMERGENCY_ADMIN;
-        newAddresses[3] = EMERGENCY_ADMIN;
+        newAddresses[3] = 0x65c2d7e8d31C845894491ABe5789Ba1e5d4382fC;
         newAddresses[4] = 0xF1c73958118F22Fc3A3947f405DcEBF08a1E68f7;
         newAddresses[5] = 0x3ea519270248BdEE4a939df20049E02290bf9CaF;
         newAddresses[6] = 0xe1A61d90554131314cB30dB55B8AD4F4b6e21C3a;
         newAddresses[7] = 0xe9F074d003b377A197D336B8a1c86EdaA6cC4dEF;
-        newAddresses[8] = EMERGENCY_ADMIN;
+        newAddresses[8] = 0xaD1bF3301971Ecd9E6219423129e360774ABEA68;
 
         for (uint256 i = 0; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             vm.selectFork(FORKS[TARGET_DEPLOYMENT_CHAINS[i]]);
@@ -148,6 +148,8 @@ contract SmokeTestStaging is MainnetBaseSetup {
 
             for (uint256 j = 0; j < len; ++j) {
                 assert(srbac.hasRole(ids[j], newAddresses[j]));
+                /// @dev each role should have a single member
+                assertEq(srbac.getRoleMemberCount(ids[j]), 1);
             }
             assert(srbac.hasRole(keccak256("PROTOCOL_ADMIN_ROLE"), 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92));
             assert(srbac.hasRole(keccak256("PROTOCOL_ADMIN_ROLE"), PROTOCOL_ADMINS_STAGING[i]));
@@ -186,7 +188,7 @@ contract SmokeTestStaging is MainnetBaseSetup {
 
             vm.selectFork(FORKS[chainId]);
             sr = SuperRegistry(getContract(chainId, "SuperRegistry"));
-            assertEq(sr.delay(), 14_400);
+            assertEq(sr.delay(), 900);
         }
     }
 

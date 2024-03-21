@@ -5,9 +5,12 @@ import "./Abstract.Deploy.Single.s.sol";
 
 abstract contract EnvironmentUtils is AbstractDeploySingle {
     uint64[] TARGET_CHAINS;
-
     ///@dev ORIGINAL SALT
     bytes32 salt;
+
+    /// new keeper addresses
+    address BROADCAST_REGISTRY_PROCESSOR;
+    address WORMHOLE_VAA_RELAYER;
 
     function _readContractsV1(
         uint256 env,
@@ -69,5 +72,12 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
         EMERGENCY_ADMIN =
             env == 0 ? 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490 : 0x6A5DD913fE3CB5193E09D1810a3b9ff1C0f9c0D6;
         SUPER_POSITIONS_NAME = env == 0 ? "SuperPositions" : "StagingSuperPositions";
+
+        // BROADCASTING
+        BROADCAST_REGISTRY_PROCESSOR =
+            env == 0 ? 0x98616F52063d2A301be71386D381F43176A04F0f : 0x65c2d7e8d31C845894491ABe5789Ba1e5d4382fC;
+
+        WORMHOLE_VAA_RELAYER =
+            env == 0 ? 0x1A86b5c1467331A3A52572663FDBf037A9e29719 : 0xaD1bF3301971Ecd9E6219423129e360774ABEA68;
     }
 }
