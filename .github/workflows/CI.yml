@@ -59,7 +59,7 @@ jobs:
           echo "## Build result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
-  test-gas-report:
+  test:
     needs: ["build"]
     runs-on: SuperformCore2
     steps:
@@ -85,8 +85,8 @@ jobs:
         run: |
           echo "FOUNDRY_FUZZ_SEED=$(echo $(($EPOCHSECONDS / 604800)))" >> $GITHUB_ENV
 
-      - name: "Run all tests except invariant against the optimized build and produce gas reports"
-        run: 'forge test --gas-report --no-match-path "test/invariant/**/*.sol"'
+      - name: "Run all tests except invariant against the optimized build"
+        run: 'forge test --no-match-path "test/invariant/**/*.sol"'
 
       - name: "Add test summary"
         run: |
