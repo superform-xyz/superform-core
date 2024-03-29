@@ -159,10 +159,21 @@ contract LiFiValidator is ILiFiValidator, BridgeValidator, LiFiTxDataExtractor {
 
     /// @inheritdoc BridgeValidator
     function validateReceiver(bytes calldata txData_, address receiver_) external view override returns (bool valid_) {
+        bytes4 selector = _extractSelector(txData_);
+        address receiver;
         /// @dev check if it is a blacklisted selector
-        if (isSelectorBlacklisted(_extractSelector(txData_))) revert Error.BLACKLISTED_SELECTOR();
+        if (isSelectorBlacklisted(selector)) revert Error.BLACKLISTED_SELECTOR();
 
-        (, address receiver) = _extractBridgeData(txData_);
+        /// @dev 2 - check if it is a swapTokensGeneric call (match via selector)
+        if (selector == GenericSwapFacet.swapTokensGeneric.selector) {
+            /// @dev GenericSwapFacet
+
+            (,, receiver,,) = extractGenericSwapParameters(txData_);
+        } else {
+            /// @dev 3 - proceed with normal extraction
+            (,, receiver,,,,,) = extractMainParameters(txData_);
+        }
+
         return receiver == receiver_;
     }
 

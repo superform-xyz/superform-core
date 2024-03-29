@@ -21,3 +21,4 @@ smoke-test   :; forge test --match-contract SmokeTest
 clean  :; forge clean
 snapshot :; forge snapshot
 fmt    :; forge fmt && forge fmt test/
+ityfuzz :; ityfuzz evm -m -- forge test
