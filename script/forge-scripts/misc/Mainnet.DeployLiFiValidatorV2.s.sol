@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { AbstractDeployLiFiValidatorV2 } from "./Abstract.Deploy.LiFiValidatorv2.s.sol";
+import { AbstractDeployLiFiValidatorV2 } from "./Abstract.Deploy.LiFiValidatorV2.s.sol";
 
 contract MainnetDeployLiFiValidatorV2 is AbstractDeployLiFiValidatorV2 {
     function deployLiFiValidatorV2(uint256 env, uint256 selectedChainIndex) external {
