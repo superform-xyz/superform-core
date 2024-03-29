@@ -16,7 +16,6 @@ import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/Sa
 /// @dev Manages cross-chain payments and rebalancing of funds
 /// @author ZeroPoint Labs
 contract PayMaster is IPayMaster, LiquidityHandler {
-    
     using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////////////
@@ -166,7 +165,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
             superRegistry.getBridgeAddress(liqRequest_.bridgeId),
             liqRequest_.txData,
             liqRequest_.token,
-            IBridgeValidator(bridgeValidator).decodeAmountIn(liqRequest_.txData, true),
+            IBridgeValidator(bridgeValidator).decodeAmountIn(liqRequest_.txData, false),
             liqRequest_.nativeAmount
         );
     }
