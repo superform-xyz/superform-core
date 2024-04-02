@@ -170,7 +170,7 @@ contract LiFiValidator is ILiFiValidator, BridgeValidator, LiFiTxDataExtractor {
             (,, receiver,,) = extractGenericSwapParameters(txData_);
         } else {
             /// @dev 3 - proceed with normal extraction
-            (,, receiver,,,,,) = extractMainParameters(txData_);
+            (, receiver) = _extractBridgeData(data_);
         }
 
         return receiver == receiver_;
