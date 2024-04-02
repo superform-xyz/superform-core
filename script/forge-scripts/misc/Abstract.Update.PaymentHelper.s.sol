@@ -14,7 +14,36 @@ struct UpdateVars {
 }
 
 abstract contract AbstractUpdatePaymentHelper is BatchScript, EnvironmentUtils {
-    mapping(uint64 chainId => address[] bridgeAddresses) public NEW_BRIDGE_ADDRESSES;
+    mapping(uint64 => mapping(uint256 => bytes)) public GAS_USED;
+
+    function _setGasUsed() internal {
+        mapping(uint64 => mapping(uint256 => bytes)) storage gasUsed = GAS_USED;
+
+        // swapGasUsed = 3
+        gasUsed[ETH][3] = abi.encode(1_000_000);
+        gasUsed[BSC][3] = abi.encode(1_000_000);
+        gasUsed[AVAX][3] = abi.encode(1_000_000);
+        gasUsed[POLY][3] = abi.encode(1_000_000);
+        gasUsed[OP][3] = abi.encode(1_000_000);
+        gasUsed[ARBI][3] = abi.encode(2_000_000);
+        gasUsed[BASE][3] = abi.encode(1_000_000);
+
+        // updateGasUsed == 4
+        gasUsed[BSC][4] = abi.encode(200_000);
+        gasUsed[AVAX][4] = abi.encode(200_000);
+        gasUsed[POLY][4] = abi.encode(200_000);
+        gasUsed[OP][4] = abi.encode(200_000);
+        gasUsed[ARBI][4] = abi.encode(1_000_000);
+        gasUsed[BASE][4] = abi.encode(200_000);
+
+        // withdrawGasUsed == 6
+        gasUsed[BSC][6] = abi.encode(150_000);
+        gasUsed[AVAX][6] = abi.encode(150_000);
+        gasUsed[POLY][6] = abi.encode(150_000);
+        gasUsed[OP][6] = abi.encode(150_000);
+        gasUsed[ARBI][6] = abi.encode(750_000);
+        gasUsed[BASE][6] = abi.encode(150_000);
+    }
 
     function _updatePaymentHelper(
         uint256 env,
@@ -26,6 +55,7 @@ abstract contract AbstractUpdatePaymentHelper is BatchScript, EnvironmentUtils {
         internal
         setEnvDeploy(cycle)
     {
+        _setGasUsed();
         assert(salt.length > 0);
         UpdateVars memory vars;
 
@@ -39,7 +69,7 @@ abstract contract AbstractUpdatePaymentHelper is BatchScript, EnvironmentUtils {
 
         /// AVAX
         /// @dev warning - this is missing still
-        priceFeeds[AVAX][BSC] = address(0);
+        //priceFeeds[AVAX][BSC] = address(0);
         priceFeeds[AVAX][POLY] = 0x1db18D41E4AD2403d9f52b5624031a2D9932Fd73;
 
         /// POLYGON
@@ -56,9 +86,9 @@ abstract contract AbstractUpdatePaymentHelper is BatchScript, EnvironmentUtils {
 
         /// BASE
         /// @dev warning - all these three missing still
-        priceFeeds[BASE][POLY] = address(0);
-        priceFeeds[BASE][AVAX] = address(0);
-        priceFeeds[BASE][BSC] = address(0);
+        //priceFeeds[BASE][POLY] = address(0);
+        //priceFeeds[BASE][AVAX] = address(0);
+        //priceFeeds[BASE][BSC] = address(0);
 
         cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
 
@@ -85,9 +115,34 @@ abstract contract AbstractUpdatePaymentHelper is BatchScript, EnvironmentUtils {
                 }
                 if (PRICE_FEEDS[vars.chainId][vars.dstChainId] != address(0)) {
                     IPaymentHelper(payable(paymentHelper)).updateRemoteChain(
-                        vars.chainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.dstChainId])
+                        vars.dstChainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.dstChainId])
                     );
                     countFeeds++;
+                }
+                if (GAS_USED[vars.dstChainId][3].length != 0) {
+                    console.log("Updating gas used for destination ", vars.dstChainId);
+
+                    console.log("New gas used", abi.decode(GAS_USED[vars.dstChainId][3], (uint256)));
+                    IPaymentHelper(payable(paymentHelper)).updateRemoteChain(
+                        vars.dstChainId, 3, GAS_USED[vars.dstChainId][3]
+                    );
+                }
+                if (GAS_USED[vars.dstChainId][4].length != 0) {
+                    console.log("Updating gas used for destination ", vars.dstChainId);
+
+                    console.log("New gas used", abi.decode(GAS_USED[vars.dstChainId][4], (uint256)));
+
+                    IPaymentHelper(payable(paymentHelper)).updateRemoteChain(
+                        vars.dstChainId, 4, GAS_USED[vars.dstChainId][4]
+                    );
+                }
+                if (GAS_USED[vars.dstChainId][6].length != 0) {
+                    console.log("Updating gas used for destination ", vars.dstChainId);
+
+                    console.log("New gas used", abi.decode(GAS_USED[vars.dstChainId][6], (uint256)));
+                    IPaymentHelper(payable(paymentHelper)).updateRemoteChain(
+                        vars.dstChainId, 6, GAS_USED[vars.dstChainId][6]
+                    );
                 }
             }
         }
