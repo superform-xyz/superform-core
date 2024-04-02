@@ -167,7 +167,6 @@ contract LiFiValidator is ILiFiValidator, BridgeValidator, LiFiTxDataExtractor {
         /// @dev 2 - check if it is a swapTokensGeneric call (match via selector)
         if (selector == GenericSwapFacet.swapTokensGeneric.selector) {
             /// @dev GenericSwapFacet
-
             (,, receiver,,) = extractGenericSwapParameters(txData_);
         } else {
             /// @dev 3 - proceed with normal extraction
