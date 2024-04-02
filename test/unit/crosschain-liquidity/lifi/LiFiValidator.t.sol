@@ -335,6 +335,19 @@ contract LiFiValidatorTest is ProtocolActions {
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateReceiver(txData, address(0));
     }
 
+    function test_validate_receiver_genericLifiSwap() public {
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            BuildDummyTxDataUnitTestsVars(
+                1, address(0), address(0), deployer, ETH, BSC, uint256(100), getContract(BSC, "CoreStateRegistry"), true
+            )
+        );
+        assertTrue(
+            LiFiValidator(getContract(BSC, "LiFiValidator")).validateReceiver(
+                txData, getContract(BSC, "CoreStateRegistry")
+            )
+        );
+    }
+
     function test_lifi_validator_decodeAmountIn_blacklistedSelector() public {
         vm.prank(deployer);
         LiFiValidator(getContract(ETH, "LiFiValidator")).addToBlacklist(bytes4(keccak256("blacklistedFunction()")));
