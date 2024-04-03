@@ -148,7 +148,7 @@ abstract contract AbstractDeployPaymasterV2 is BatchScript, EnvironmentUtils {
         }
 
         /// Send to Safe to sign
-        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], false);
+        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], true);
 
         vm.stopBroadcast();
     }

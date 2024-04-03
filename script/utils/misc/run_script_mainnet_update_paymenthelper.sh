@@ -26,33 +26,33 @@ export FIREBLOCKS_VAULT_ACCOUNT_IDS=6 #Emergency admin prod
 # Run the script
 echo Running Update PaymentHelper: ...
 
-export FIREBLOCKS_CHAIN_ID=1
+#export FIREBLOCKS_CHAIN_ID=1
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.UpdatePaymentHelper.s.sol:MainnetUpdatePaymentHelper --sig "updatePaymentHelper(uint256,uint256)" 0 0 \
-    --rpc-url {} --sender 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490 --broadcast --unlocked --slow
+#fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.UpdatePaymentHelper.s.sol:MainnetUpdatePaymentHelper --sig "updatePaymentHelper(uint256,uint256)" 0 0 \
+#    --rpc-url {} --sender 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490 --broadcast --unlocked --slow
 
-wait
+#wait
 
-export FIREBLOCKS_CHAIN_ID=56
+#export FIREBLOCKS_CHAIN_ID=56
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.UpdatePaymentHelper.s.sol:MainnetUpdatePaymentHelper --sig "updatePaymentHelper(uint256,uint256)" 0 1 \
-    --rpc-url {} --sender 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490 --broadcast --unlocked --slow
+#fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.UpdatePaymentHelper.s.sol:MainnetUpdatePaymentHelper --sig "updatePaymentHelper(uint256,uint256)" 0 1 \
+#   --rpc-url {} --sender 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490 --broadcast --unlocked --slow
 
-wait
+#wait
 
-export FIREBLOCKS_CHAIN_ID=43114
+#export FIREBLOCKS_CHAIN_ID=43114 -> not working
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.UpdatePaymentHelper.s.sol:MainnetUpdatePaymentHelper --sig "updatePaymentHelper(uint256,uint256)" 0 2 \
-    --rpc-url {} --sender 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490 --broadcast --unlocked --slow
+#fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.UpdatePaymentHelper.s.sol:MainnetUpdatePaymentHelper --sig "updatePaymentHelper(uint256,uint256)" 0 2 \
+#    --rpc-url {} --sender 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490 --broadcast --unlocked --slow
 
-wait
+#wait
 
-export FIREBLOCKS_CHAIN_ID=137
+#export FIREBLOCKS_CHAIN_ID=137  -> not working
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.UpdatePaymentHelper.s.sol:MainnetUpdatePaymentHelper --sig "updatePaymentHelper(uint256,uint256)" 0 3 \
-    --rpc-url {} --sender 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490 --broadcast --unlocked --slow
+#fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.UpdatePaymentHelper.s.sol:MainnetUpdatePaymentHelper --sig "updatePaymentHelper(uint256,uint256)" 0 3 \
+#    --rpc-url {} --sender 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490 --broadcast --unlocked --slow
 
-wait
+#wait
 
 export FIREBLOCKS_CHAIN_ID=42161
 
@@ -68,7 +68,7 @@ fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Upd
 
 wait
 
-export FIREBLOCKS_CHAIN_ID=8453
+#export FIREBLOCKS_CHAIN_ID=8453
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.UpdatePaymentHelper.s.sol:MainnetUpdatePaymentHelper --sig "updatePaymentHelper(uint256,uint256)" 0 6 \
-    --rpc-url {} --sender 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490 --broadcast --unlocked --slow
+#fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.UpdatePaymentHelper.s.sol:MainnetUpdatePaymentHelper --sig "updatePaymentHelper(uint256,uint256)" 0 6 \
+#    --rpc-url {} --sender 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490 --broadcast --unlocked --slow
