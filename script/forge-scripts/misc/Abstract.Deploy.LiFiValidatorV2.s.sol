@@ -127,7 +127,7 @@ abstract contract AbstractDeployLiFiValidatorV2 is BatchScript, EnvironmentUtils
         uint8[] memory newBridgeids = new uint8[](1);
 
         bridgeValidators[0] = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "LiFiValidator");
-        newBridgeids[0] = 4;
+        newBridgeids[0] = 101;
 
         assert(NEW_BRIDGE_ADDRESSES[vars.chainId][0] != address(0));
 
