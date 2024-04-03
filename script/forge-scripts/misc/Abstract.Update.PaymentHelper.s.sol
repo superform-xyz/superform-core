@@ -20,29 +20,31 @@ abstract contract AbstractUpdatePaymentHelper is BatchScript, EnvironmentUtils {
         mapping(uint64 => mapping(uint256 => bytes)) storage gasUsed = GAS_USED;
 
         // swapGasUsed = 3
-        gasUsed[ETH][3] = abi.encode(1_000_000);
-        gasUsed[BSC][3] = abi.encode(1_000_000);
-        gasUsed[AVAX][3] = abi.encode(1_000_000);
+        gasUsed[ETH][3] = abi.encode(600_000);
+        gasUsed[BSC][3] = abi.encode(950_000);
+        gasUsed[AVAX][3] = abi.encode(1_250_000);
         gasUsed[POLY][3] = abi.encode(1_000_000);
-        gasUsed[OP][3] = abi.encode(1_000_000);
-        gasUsed[ARBI][3] = abi.encode(2_000_000);
-        gasUsed[BASE][3] = abi.encode(1_000_000);
+        gasUsed[OP][3] = abi.encode(800_000);
+        gasUsed[ARBI][3] = abi.encode(3_500_000);
+        gasUsed[BASE][3] = abi.encode(850_000);
 
-        // updateGasUsed == 4
-        gasUsed[BSC][4] = abi.encode(200_000);
+        // updateGasUsed == 4 (only used on deposits for now)
+        gasUsed[ETH][4] = abi.encode(225_000);
+        gasUsed[BSC][4] = abi.encode(225_000);
         gasUsed[AVAX][4] = abi.encode(200_000);
         gasUsed[POLY][4] = abi.encode(200_000);
         gasUsed[OP][4] = abi.encode(200_000);
-        gasUsed[ARBI][4] = abi.encode(1_000_000);
+        gasUsed[ARBI][4] = abi.encode(1_400_000);
         gasUsed[BASE][4] = abi.encode(200_000);
 
-        // withdrawGasUsed == 6
-        gasUsed[BSC][6] = abi.encode(150_000);
-        gasUsed[AVAX][6] = abi.encode(150_000);
-        gasUsed[POLY][6] = abi.encode(150_000);
-        gasUsed[OP][6] = abi.encode(150_000);
-        gasUsed[ARBI][6] = abi.encode(750_000);
-        gasUsed[BASE][6] = abi.encode(150_000);
+        // withdrawGasUsed == 6 (incl. cost to update)
+        gasUsed[ETH][6] = abi.encode(600_000);
+        gasUsed[BSC][6] = abi.encode(1_500_000);
+        gasUsed[AVAX][6] = abi.encode(1_000_000);
+        gasUsed[POLY][6] = abi.encode(1_000_000);
+        gasUsed[OP][6] = abi.encode(1_000_000);
+        gasUsed[ARBI][6] = abi.encode(2_500_000);
+        gasUsed[BASE][6] = abi.encode(1_500_000);
     }
 
     function _updatePaymentHelper(
