@@ -20,13 +20,13 @@ abstract contract AbstractUpdatePaymentHelper is BatchScript, EnvironmentUtils {
         mapping(uint64 => mapping(uint256 => bytes)) storage gasUsed = GAS_USED;
 
         // swapGasUsed = 3
-        gasUsed[ETH][3] = abi.encode(600_000);
-        gasUsed[BSC][3] = abi.encode(950_000);
-        gasUsed[AVAX][3] = abi.encode(1_250_000);
-        gasUsed[POLY][3] = abi.encode(1_000_000);
-        gasUsed[OP][3] = abi.encode(800_000);
-        gasUsed[ARBI][3] = abi.encode(3_500_000);
-        gasUsed[BASE][3] = abi.encode(850_000);
+        gasUsed[ETH][3] = abi.encode(400_000);
+        gasUsed[BSC][3] = abi.encode(650_000);
+        gasUsed[AVAX][3] = abi.encode(850_000);
+        gasUsed[POLY][3] = abi.encode(700_000);
+        gasUsed[OP][3] = abi.encode(550_000);
+        gasUsed[ARBI][3] = abi.encode(2_500_000);
+        gasUsed[BASE][3] = abi.encode(600_000);
 
         // updateGasUsed == 4 (only used on deposits for now)
         gasUsed[ETH][4] = abi.encode(225_000);
