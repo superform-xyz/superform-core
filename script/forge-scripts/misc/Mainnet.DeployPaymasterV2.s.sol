@@ -28,12 +28,8 @@ contract MainnetDeployPaymasterV2 is AbstractDeployPaymasterV2 {
                 break;
             }
         }
-        if (env == 1) {
-            _addPaymasterV2ToSuperRegistryStaging(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
-        } else if (env == 0) {
-            _addPaymasterV2ToSuperRegistryProd(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
-        } else {
-            revert("Invalid env");
-        }
+        assert(env == 1);
+
+        _addPaymasterV2ToSuperRegistryStaging(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
     }
 }

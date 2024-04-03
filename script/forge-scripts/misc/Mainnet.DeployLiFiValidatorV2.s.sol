@@ -28,12 +28,9 @@ contract MainnetDeployLiFiValidatorV2 is AbstractDeployLiFiValidatorV2 {
                 break;
             }
         }
-        if (env == 1) {
-            _addLiFiValidatorV2ToSuperRegistryStaging(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
-        } else if (env == 0) {
-            _addLiFiValidatorV2ToSuperRegistryProd(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
-        } else {
-            revert("Invalid env");
-        }
+
+        assert(env == 1);
+
+        _addLiFiValidatorV2ToSuperRegistryStaging(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
     }
 }

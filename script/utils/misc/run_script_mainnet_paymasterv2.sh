@@ -12,53 +12,25 @@ export BASE_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BASE_RPC_URL/crede
 # Run the script
 echo Deploying paymaster v2: ...
 
-#FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "deployPaymasterV2(uint256,uint256)" 0 0 --rpc-url $ETHEREUM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-#wait
+FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "deployPaymasterV2(uint256,uint256)" 0 0 --rpc-url $ETHEREUM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+wait
 
-#FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "deployPaymasterV2(uint256,uint256)" 0 1 --rpc-url $BSC_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-#wait
+FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "deployPaymasterV2(uint256,uint256)" 0 1 --rpc-url $BSC_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+wait
 
-#FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "deployPaymasterV2(uint256,uint256)" 0 2 --rpc-url $AVALANCHE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-#wait
+FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "deployPaymasterV2(uint256,uint256)" 0 2 --rpc-url $AVALANCHE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+wait
 
-#FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "deployPaymasterV2(uint256,uint256)" 0 3 --rpc-url $POLYGON_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-#wait
+FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "deployPaymasterV2(uint256,uint256)" 0 3 --rpc-url $POLYGON_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+wait
 
-#FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "deployPaymasterV2(uint256,uint256)" 0 4 --rpc-url $ARBITRUM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
-#wait
+FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "deployPaymasterV2(uint256,uint256)" 0 4 --rpc-url $ARBITRUM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+wait
 
-#FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "deployPaymasterV2(uint256,uint256)" 0 5 --rpc-url $OPTIMISM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
-
-#wait
-
-#FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "deployPaymasterV2(uint256,uint256)" 0 6 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
-
-#wait
-
-echo Adding paymaster to super registry ...
-
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "configureSuperRegistry(uint256,uint256)" 0 0 --rpc-url $ETHEREUM_RPC_URL --slow --sender 0xFbcE385e2B8b7d6CeA52B4b971E31Af509e9B05A
+FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "deployPaymasterV2(uint256,uint256)" 0 5 --rpc-url $OPTIMISM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 
 wait
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "configureSuperRegistry(uint256,uint256)" 0 1 --rpc-url $BSC_RPC_URL --slow --sender 0xFbcE385e2B8b7d6CeA52B4b971E31Af509e9B05A
+FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "deployPaymasterV2(uint256,uint256)" 0 6 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 
 wait
-
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "configureSuperRegistry(uint256,uint256)" 0 2 --rpc-url $AVALANCHE_RPC_URL --slow --sender 0xFbcE385e2B8b7d6CeA52B4b971E31Af509e9B05A
-
-wait
-
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "configureSuperRegistry(uint256,uint256)" 0 3 --rpc-url $POLYGON_RPC_URL --slow --sender 0xFbcE385e2B8b7d6CeA52B4b971E31Af509e9B05A
-
-wait
-
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "configureSuperRegistry(uint256,uint256)" 0 4 --rpc-url $ARBITRUM_RPC_URL --slow --sender 0xFbcE385e2B8b7d6CeA52B4b971E31Af509e9B05A --legacy
-
-wait
-
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "configureSuperRegistry(uint256,uint256)" 0 5 --rpc-url $OPTIMISM_RPC_URL --slow --sender 0xFbcE385e2B8b7d6CeA52B4b971E31Af509e9B05A
-
-wait
-
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.DeployPaymasterV2.s.sol:MainnetDeployPaymasterV2 --sig "configureSuperRegistry(uint256,uint256)" 0 6 --rpc-url $BASE_RPC_URL --slow --sender 0xFbcE385e2B8b7d6CeA52B4b971E31Af509e9B05A
