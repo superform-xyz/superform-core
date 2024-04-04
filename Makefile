@@ -17,7 +17,7 @@ update:; forge update
 # Build & test
 build :; forge build
 ftest   :; forge test
-smoke-test   :; forge test --match-contract SmokeTest
+smoke-test   :; forge test --match-contract SmokeTest -vvv
 clean  :; forge clean
 snapshot :; forge snapshot
 fmt    :; forge fmt && forge fmt test/

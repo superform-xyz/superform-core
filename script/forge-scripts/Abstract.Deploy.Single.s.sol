@@ -1056,29 +1056,53 @@ abstract contract AbstractDeploySingle is Script {
         lzEndpointsStorage[GNOSIS] = GNOSIS_lzEndpoint;
 
         mapping(uint64 chainId => address[] bridgeAddresses) storage bridgeAddresses = BRIDGE_ADDRESSES;
-        bridgeAddresses[ETH] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE, 0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0
-        //0x2ddf16BA6d0180e5357d5e170eF1917a01b41fc0
+        bridgeAddresses[ETH] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
+            0x2ddf16BA6d0180e5357d5e170eF1917a01b41fc0,
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
         ];
-        bridgeAddresses[BSC] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE, 0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0
-        //0xd286595d2e3D879596FAB51f83A702D10a6db27b
+        bridgeAddresses[BSC] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
+            0xd286595d2e3D879596FAB51f83A702D10a6db27b,
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
         ];
-        bridgeAddresses[AVAX] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE, 0x2b42AFFD4b7C14d9B7C2579229495c052672Ccd3
-        //0xbDf50eAe568ECef74796ed6022a0d453e8432410
+        bridgeAddresses[AVAX] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            0x2b42AFFD4b7C14d9B7C2579229495c052672Ccd3,
+            0xbDf50eAe568ECef74796ed6022a0d453e8432410,
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
         ];
-        bridgeAddresses[POLY] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE, 0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0
-        //0x2ddf16BA6d0180e5357d5e170eF1917a01b41fc0
+        bridgeAddresses[POLY] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
+            0x2ddf16BA6d0180e5357d5e170eF1917a01b41fc0,
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
         ];
-        bridgeAddresses[ARBI] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE, 0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0
-        //0xaa3d9fA3aB930aE635b001d00C612aa5b14d750e
+        bridgeAddresses[ARBI] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
+            0xaa3d9fA3aB930aE635b001d00C612aa5b14d750e,
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
         ];
-        bridgeAddresses[OP] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE, 0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0
-        //0xbDf50eAe568ECef74796ed6022a0d453e8432410
+        bridgeAddresses[OP] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
+            0xbDf50eAe568ECef74796ed6022a0d453e8432410,
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
         ];
-        bridgeAddresses[BASE] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE, address(0)];
+        bridgeAddresses[BASE] = [
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
+            address(0),
+            0xbDf50eAe568ECef74796ed6022a0d453e8432410,
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
+        ];
         bridgeAddresses[GNOSIS] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
-            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0
-            //0x565810cbfa3Cf1390963E5aFa2fB953795686339
+            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
+            0x565810cbfa3Cf1390963E5aFa2fB953795686339,
+            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
         ];
 
         /// price feeds on all chains
@@ -1097,7 +1121,7 @@ abstract contract AbstractDeploySingle is Script {
         /// BSC
         priceFeeds[BSC][BSC] = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
         priceFeeds[BSC][ETH] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
-        priceFeeds[BSC][AVAX] = address(0);
+        priceFeeds[BSC][AVAX] = 0x5974855ce31EE8E1fff2e76591CbF83D7110F151;
         priceFeeds[BSC][POLY] = 0x7CA57b0cA6367191c94C8914d7Df09A57655905f;
         priceFeeds[BSC][OP] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
         priceFeeds[BSC][ARBI] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
@@ -1108,7 +1132,7 @@ abstract contract AbstractDeploySingle is Script {
         priceFeeds[AVAX][AVAX] = 0x0A77230d17318075983913bC2145DB16C7366156;
         priceFeeds[AVAX][BSC] = address(0);
         priceFeeds[AVAX][ETH] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
-        priceFeeds[AVAX][POLY] = address(0);
+        priceFeeds[AVAX][POLY] = 0x1db18D41E4AD2403d9f52b5624031a2D9932Fd73;
         priceFeeds[AVAX][OP] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
         priceFeeds[AVAX][ARBI] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
         priceFeeds[AVAX][BASE] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
@@ -1116,7 +1140,7 @@ abstract contract AbstractDeploySingle is Script {
 
         /// POLYGON
         priceFeeds[POLY][POLY] = 0xAB594600376Ec9fD91F8e885dADF0CE036862dE0;
-        priceFeeds[POLY][AVAX] = address(0);
+        priceFeeds[POLY][AVAX] = 0xe01eA2fbd8D76ee323FbEd03eB9a8625EC981A10;
         priceFeeds[POLY][BSC] = 0x82a6c4AF830caa6c97bb504425f6A66165C2c26e;
         priceFeeds[POLY][ETH] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][OP] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
@@ -1126,9 +1150,9 @@ abstract contract AbstractDeploySingle is Script {
 
         /// OPTIMISM
         priceFeeds[OP][OP] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
-        priceFeeds[OP][POLY] = address(0);
-        priceFeeds[OP][AVAX] = address(0);
-        priceFeeds[OP][BSC] = address(0);
+        priceFeeds[OP][POLY] = 0x0ded608AFc23724f614B76955bbd9dFe7dDdc828;
+        priceFeeds[OP][AVAX] = 0x5087Dc69Fd3907a016BD42B38022F7f024140727;
+        priceFeeds[OP][BSC] = 0xD38579f7cBD14c22cF1997575eA8eF7bfe62ca2c;
         priceFeeds[OP][ETH] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         priceFeeds[OP][ARBI] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         priceFeeds[OP][BASE] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
@@ -1138,8 +1162,8 @@ abstract contract AbstractDeploySingle is Script {
         priceFeeds[ARBI][ARBI] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         priceFeeds[ARBI][OP] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         priceFeeds[ARBI][POLY] = 0x52099D4523531f678Dfc568a7B1e5038aadcE1d6;
-        priceFeeds[ARBI][AVAX] = address(0);
-        priceFeeds[ARBI][BSC] = address(0);
+        priceFeeds[ARBI][AVAX] = 0x8bf61728eeDCE2F32c456454d87B5d6eD6150208;
+        priceFeeds[ARBI][BSC] = 0x6970460aabF80C5BE983C6b74e5D06dEDCA95D4A;
         priceFeeds[ARBI][ETH] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         priceFeeds[ARBI][BASE] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         priceFeeds[ARBI][GNOSIS] = 0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB;
