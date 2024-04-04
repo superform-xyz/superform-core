@@ -34,7 +34,6 @@ import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
 import { EmergencyQueue } from "src/EmergencyQueue.sol";
 import { VaultClaimer } from "src/VaultClaimer.sol";
-import { generateBroadcastParams } from "test/utils/AmbParams.sol";
 
 struct SetupVars {
     uint64 chainId;
