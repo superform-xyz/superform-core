@@ -3,13 +3,13 @@ pragma solidity ^0.8.23;
 
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
 import { Error } from "src/libraries/Error.sol";
-import { IQuote } from "src/vendor/hashflow/IQuote.sol";
-import { IHashflowRouter } from "src/vendor/hashflow/IHashflowRouter.sol";
+import { IDlnSource } from "src/vendor/deBridge/IDlnSource.sol";
+import { DlnOrderLib } from "src/vendor/deBridge/DlnOrderLib.sol";
 
-/// @title HashflowValidator
-/// @dev Asserts if Hashflow input txData is valid
+/// @title DeBridgeValidator
+/// @dev Asserts if De-Bridge input txData is valid
 /// @author Zeropoint Labs
-contract HashflowValidator is BridgeValidator {
+contract DeBridgeValidator is BridgeValidator {
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
@@ -22,34 +22,41 @@ contract HashflowValidator is BridgeValidator {
 
     /// @inheritdoc BridgeValidator
     function validateReceiver(bytes calldata txData_, address receiver) external pure override returns (bool) {
-        (IQuote.XChainRFQTQuote memory hashflowQuote,,) = _decodeTxData(txData_);
+        DlnOrderLib.OrderCreation memory deBridgeQuote = _decodeTxData(txData_);
 
-        return (receiver == _castToAddress(hashflowQuote.dstTrader));
+        return (receiver == _castToAddress(deBridgeQuote.receiverDst));
     }
 
-    /// NOTE: check other parameters including: `srcExternalAccount`, `xChainMessenger `and `dstExternalAccount`
+    /// NOTE: check other parameters including: `givePatchAuthoritySrc`
     /// @inheritdoc BridgeValidator
     function validateTxData(ValidateTxDataArgs calldata args_) external view override returns (bool hasDstSwap) {
-        (IQuote.XChainRFQTQuote memory hashflowQuote, bytes32 dstContract, bytes memory dstCallData) =
-            _decodeTxData(args_.txData);
+        DlnOrderLib.OrderCreation memory deBridgeQuote = _decodeTxData(args_.txData);
 
         /// FIXME: add explicit revert messages
-        if (dstContract != bytes32(0) || dstCallData.length > 0) revert();
+        if (deBridgeQuote.externalCall.length > 0) revert();
+
+        /// FIXME: set the new role and add explicit revert message
+        if (
+            superRegistry.getAddressByChainId(keccak256("DEBRIDGE_AUTHORITY"), args_.dstChainId)
+                != _castToAddress(deBridgeQuote.orderAuthorityAddressDst)
+        ) revert();
+
+        /// FIXME: add explicity revert message
+        if (deBridgeQuote.allowedCancelBeneficiarySrc.length > 0) revert();
 
         /// @dev 1. chain id calidation
         /// FIXME: check if this cast is right
         /// FIXME: check upstream if the srcChain in this context is the block.chainid
         if (
-            uint64(hashflowQuote.dstChainId) != args_.liqDstChainId
-                || uint64(hashflowQuote.srcChainId) != args_.srcChainId
-                || args_.liqDataToken != _castToAddress(hashflowQuote.quoteToken)
+            uint64(deBridgeQuote.takeChainId) != args_.liqDstChainId
+                || args_.liqDataToken != deBridgeQuote.giveTokenAddress
         ) revert Error.INVALID_TXDATA_CHAIN_ID();
 
         /// @dev 2. receiver address validation
         /// @dev allows dst swaps by coupling hashflow with other bridges
 
         /// FIXME: check if this cast is right
-        address receiver = _castToAddress(hashflowQuote.dstTrader);
+        address receiver = _castToAddress(deBridgeQuote.receiverDst);
         if (args_.deposit) {
             hasDstSwap = receiver == superRegistry.getAddressByChainId(keccak256("DST_SWAPPER"), args_.dstChainId);
 
@@ -64,7 +71,7 @@ contract HashflowValidator is BridgeValidator {
             }
 
             /// @dev if there is a dst swap then the interim token should be the quote of hashflow
-            if (hasDstSwap && (args_.liqDataInterimToken != _castToAddress(hashflowQuote.quoteToken))) {
+            if (hasDstSwap && (args_.liqDataInterimToken != _castToAddress(deBridgeQuote.takeTokenAddress))) {
                 revert Error.INVALID_INTERIM_TOKEN();
             }
         } else {
@@ -83,8 +90,8 @@ contract HashflowValidator is BridgeValidator {
         override
         returns (uint256 amount_)
     {
-        (IQuote.XChainRFQTQuote memory xChainQuote,,) = _decodeTxData(txData_);
-        amount_ = xChainQuote.baseTokenAmount;
+        DlnOrderLib.OrderCreation memory deBridgeQuote = _decodeTxData(txData_);
+        amount_ = deBridgeQuote.giveAmount;
     }
 
     /// @inheritdoc BridgeValidator
@@ -94,13 +101,13 @@ contract HashflowValidator is BridgeValidator {
         override
         returns (address, /*token_*/ uint256 /*amount_*/ )
     {
-        /// @dev hashflow cannot be used for just swaps
+        /// @dev debridge cannot be used for just swaps
         revert Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
     }
 
     /// @inheritdoc BridgeValidator
     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
-        /// @dev hashflow cannot be used for same chain swaps
+        /// @dev debridge cannot be used for same chain swaps
         revert Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
     }
 
@@ -112,24 +119,38 @@ contract HashflowValidator is BridgeValidator {
     function _decodeTxData(bytes calldata txData_)
         internal
         pure
-        returns (IQuote.XChainRFQTQuote memory xChainQuote, bytes32 dstContract, bytes memory dstCallData)
+        returns (DlnOrderLib.OrderCreation memory deBridgeQuote)
     {
-        /// FIXME: we support only one function identifier for now
+        /// @dev supports both the allowed order types by debridge
         bytes4 selector = bytes4(txData_[0:3]);
-        if (selector != IHashflowRouter.tradeRFQT.selector) revert Error.BLACKLISTED_ROUTE_ID();
 
-        (xChainQuote, dstContract, dstCallData) =
-            abi.decode(_parseCallData(txData_), (IQuote.XChainRFQTQuote, bytes32, bytes));
+        /// @dev we don't support permit envelope
+        bytes memory permitEnvelope;
+
+        if (selector == IDlnSource.createOrder.selector) {
+            (deBridgeQuote,,, permitEnvelope) =
+                abi.decode(_parseCallData(txData_), (DlnOrderLib.OrderCreation, bytes, uint32, bytes));
+        } else if (selector == IDlnSource.createSaltedOrder.selector) {
+            (deBridgeQuote,,,, permitEnvelope,) =
+                abi.decode(_parseCallData(txData_), (DlnOrderLib.OrderCreation, uint64, bytes, uint32, bytes, bytes));
+        } else {
+            revert Error.BLACKLISTED_ROUTE_ID();
+        }
+
+        /// FIXME: add error message
+        if (permitEnvelope.length > 0) {
+            revert();
+        }
     }
 
-    /// @dev helps parsing hashflow calldata and return the input parameters
+    /// @dev helps parsing debridge calldata and return the input parameters
     function _parseCallData(bytes calldata callData) internal pure returns (bytes calldata) {
         return callData[4:];
     }
 
-    /// @dev helps cast bytes32 to address
-    function _castToAddress(bytes32 address_) internal pure returns (address) {
+    /// @dev helps cast bytes to address
+    function _castToAddress(bytes memory address_) internal pure returns (address) {
         /// FIXME: check if address(uint160(uint256(b))) could be true ??
-        return address(uint160(bytes20(address_)));
+        return abi.decode(address_, (address));
     }
 }
