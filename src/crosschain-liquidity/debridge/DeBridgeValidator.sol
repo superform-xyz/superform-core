@@ -122,7 +122,7 @@ contract DeBridgeValidator is BridgeValidator {
         returns (DlnOrderLib.OrderCreation memory deBridgeQuote)
     {
         /// @dev supports both the allowed order types by debridge
-        bytes4 selector = bytes4(txData_[0:3]);
+        bytes4 selector = bytes4(txData_[:4]);
 
         /// @dev we don't support permit envelope
         bytes memory permitEnvelope;

@@ -115,7 +115,7 @@ contract HashflowValidator is BridgeValidator {
         returns (IQuote.XChainRFQTQuote memory xChainQuote, bytes32 dstContract, bytes memory dstCallData)
     {
         /// FIXME: we support only one function identifier for now
-        bytes4 selector = bytes4(txData_[0:3]);
+        bytes4 selector = bytes4(txData_[:4]);
         if (selector != IHashflowRouter.tradeRFQT.selector) revert Error.BLACKLISTED_ROUTE_ID();
 
         (xChainQuote, dstContract, dstCallData) =
