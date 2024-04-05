@@ -14,8 +14,6 @@ struct UpdateVars {
 }
 
 abstract contract AbstractUpdatePaymentHelper is BatchScript, EnvironmentUtils {
-    mapping(uint64 => mapping(uint256 => bytes)) public GAS_USED;
-
     function _setGasUsed() internal {
         mapping(uint64 => mapping(uint256 => bytes)) storage gasUsed = GAS_USED;
 

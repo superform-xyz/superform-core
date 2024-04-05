@@ -8,10 +8,6 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
     ///@dev ORIGINAL SALT
     bytes32 salt;
 
-    /// new keeper addresses
-    address BROADCAST_REGISTRY_PROCESSOR;
-    address WORMHOLE_VAA_RELAYER;
-
     function _readContractsV1(
         uint256 env,
         string memory name,

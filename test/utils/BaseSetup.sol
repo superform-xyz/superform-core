@@ -202,6 +202,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     address public constant ARBI_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
     address public constant OP_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
     address public constant BASE_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
+    address public constant FANTOM_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
 
     address[] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
@@ -210,6 +211,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         0x3c2269811836af69497E5F486A85D7316753cf62,
         0x3c2269811836af69497E5F486A85D7316753cf62,
         0x3c2269811836af69497E5F486A85D7316753cf62,
+        0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7,
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7
     ];
 
@@ -220,7 +222,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         0x5d934f4e2f797775e53561bB72aca21ba36B96BB,
         0x979Ca5202784112f4738403dBec5D0F3B9daabB9,
         0xd4C1905BB1D26BC93DAC913e13CaCC278CdCC80D,
-        0xeA87ae93Fa0019a82A727bfd3eBd1cFCa8f64f1D
+        0xeA87ae93Fa0019a82A727bfd3eBd1cFCa8f64f1D,
+        address(0)
     ];
 
     address[] public hyperlanePaymasters = [
@@ -230,7 +233,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         0x0071740Bf129b05C4684abfbBeD248D80971cce2,
         0x3b6044acd6767f017e99318AA6Ef93b7B06A5a22,
         0xD8A76C4D91fCbB7Cc8eA795DFDF870E48368995C,
-        0xc3F23848Ed2e04C0c6d41bd7804fa8f89F940B94
+        0xc3F23848Ed2e04C0c6d41bd7804fa8f89F940B94,
+        address(0)
     ];
 
     address[] public wormholeCore = [
@@ -240,21 +244,16 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         0x7A4B5a56256163F07b2C80A7cA55aBE66c4ec4d7,
         0xa5f208e072434bC67592E4C49C1B991BA79BCA46,
         0xEe91C335eab126dF5fDB3797EA9d6aD93aeC9722,
-        0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6
+        0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6,
+        0x126783A6Cb203a3E35344528B26ca3a0489a1485
     ];
 
     /*//////////////////////////////////////////////////////////////
                         WORMHOLE VARIABLES
     //////////////////////////////////////////////////////////////*/
-    address public ETH_wormholeCore = 0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B;
-    address public ARBI_wormholeCore = 0xa5f208e072434bC67592E4C49C1B991BA79BCA46;
-    address public AVAX_wormholeCore = 0x54a8e5f9c4CbA08F9943965859F6c34eAF03E26c;
-    address public BSC_wormholeCore = 0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B;
-    address public OP_wormholeCore = 0xEe91C335eab126dF5fDB3797EA9d6aD93aeC9722;
-    address public POLY_wormholeCore = 0x7A4B5a56256163F07b2C80A7cA55aBE66c4ec4d7;
-
     /// @dev uses CREATE2
     address public wormholeRelayer = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
+    address public wormholeBaseRelayer = 0x706F82e9bb5b0813501714Ab5974216704980e31;
 
     /*//////////////////////////////////////////////////////////////
                         HYPERLANE VARIABLES
@@ -266,9 +265,9 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     uint64 public constant ARBI = 42_161;
     uint64 public constant OP = 10;
     uint64 public constant BASE = 8453;
-    uint64 public constant GNOSIS = 100;
+    uint64 public constant FANTOM = 250;
 
-    uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453];
+    uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
 
     /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
     uint16 public constant LZ_ETH = 101;
@@ -278,10 +277,11 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     uint16 public constant LZ_ARBI = 110;
     uint16 public constant LZ_OP = 111;
     uint16 public constant LZ_BASE = 184;
+    uint16 public constant LZ_FANTOM = 112;
 
-    uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111, 184];
-    uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453];
-    uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30];
+    uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111, 184, 112];
+    uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
+    uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30, 10];
 
     /// @dev minting enough tokens to be able to fuzz with bigger amounts (DAI's 3.6B supply etc)
     uint256 public constant hundredBilly = 100 * 1e9 * 1e18;
@@ -316,6 +316,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     string public ARBITRUM_RPC_URL = vm.envString("ARBITRUM_RPC_URL"); // Native token: ETH
     string public OPTIMISM_RPC_URL = vm.envString("OPTIMISM_RPC_URL"); // Native token: ETH
     string public BASE_RPC_URL = vm.envString("BASE_RPC_URL"); // Native token: BASE
+    string public FANTOM_RPC_URL = vm.envString("FANTOM_RPC_URL"); // Native token: BASE
 
     /*//////////////////////////////////////////////////////////////
                         KYC DAO VALIDITY VARIABLES
@@ -1050,6 +1051,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
         tokenPriceFeeds[ARBI][getContract(ARBI, "WETH")] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         tokenPriceFeeds[ARBI][NATIVE_TOKEN] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+
+        /// FANTOM - missing ftm price feed
     }
 
     function _preDeploymentSetup() internal virtual {
@@ -1062,6 +1065,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         forks[ARBI] = vm.createFork(ARBITRUM_RPC_URL, 143_659_807);
         forks[OP] = vm.createFork(OPTIMISM_RPC_URL, 111_390_769);
         forks[BASE] = vm.createFork(BASE_RPC_URL);
+        forks[FANTOM] = vm.createFork(FANTOM_RPC_URL);
 
         mapping(uint64 => string) storage rpcURLs = RPC_URLS;
         rpcURLs[ETH] = ETHEREUM_RPC_URL;
@@ -1071,6 +1075,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         rpcURLs[ARBI] = ARBITRUM_RPC_URL;
         rpcURLs[OP] = OPTIMISM_RPC_URL;
         rpcURLs[BASE] = BASE_RPC_URL;
+        rpcURLs[FANTOM] = FANTOM_RPC_URL;
 
         mapping(uint64 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
         lzEndpointsStorage[ETH] = ETH_lzEndpoint;
@@ -1080,6 +1085,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         lzEndpointsStorage[ARBI] = ARBI_lzEndpoint;
         lzEndpointsStorage[OP] = OP_lzEndpoint;
         lzEndpointsStorage[BASE] = BASE_lzEndpoint;
+        lzEndpointsStorage[FANTOM] = FANTOM_lzEndpoint;
 
         mapping(uint64 => address) storage hyperlaneMailboxesStorage = HYPERLANE_MAILBOXES;
         hyperlaneMailboxesStorage[ETH] = hyperlaneMailboxes[0];
@@ -1089,6 +1095,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         hyperlaneMailboxesStorage[ARBI] = hyperlaneMailboxes[4];
         hyperlaneMailboxesStorage[OP] = hyperlaneMailboxes[5];
         hyperlaneMailboxesStorage[BASE] = hyperlaneMailboxes[6];
+        hyperlaneMailboxesStorage[FANTOM] = hyperlaneMailboxes[7];
 
         mapping(uint64 => uint16) storage wormholeChainIdsStorage = WORMHOLE_CHAIN_IDS;
 
@@ -1107,51 +1114,57 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         priceFeeds[ETH][OP] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][ARBI] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][BASE] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        priceFeeds[ETH][FANTOM] = 0x2DE7E4a9488488e0058B95854CC2f7955B35dC9b;
 
         /// BSC
         priceFeeds[BSC][BSC] = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
         priceFeeds[BSC][ETH] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
-        priceFeeds[BSC][AVAX] = address(0);
+        priceFeeds[BSC][AVAX] = 0x5974855ce31EE8E1fff2e76591CbF83D7110F151;
         priceFeeds[BSC][POLY] = 0x7CA57b0cA6367191c94C8914d7Df09A57655905f;
         priceFeeds[BSC][OP] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
         priceFeeds[BSC][ARBI] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
         priceFeeds[BSC][BASE] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+        priceFeeds[BSC][FANTOM] = 0xe2A47e87C0f4134c8D06A41975F6860468b2F925;
 
         /// AVAX
         priceFeeds[AVAX][AVAX] = 0x0A77230d17318075983913bC2145DB16C7366156;
         priceFeeds[AVAX][BSC] = address(0);
         priceFeeds[AVAX][ETH] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
-        priceFeeds[AVAX][POLY] = address(0);
+        priceFeeds[AVAX][POLY] = 0x1db18D41E4AD2403d9f52b5624031a2D9932Fd73;
         priceFeeds[AVAX][OP] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
         priceFeeds[AVAX][ARBI] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
         priceFeeds[AVAX][BASE] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+        priceFeeds[AVAX][FANTOM] = 0x2dD517B2f9ba49CedB0573131FD97a5AC19ff648;
 
         /// POLYGON
         priceFeeds[POLY][POLY] = 0xAB594600376Ec9fD91F8e885dADF0CE036862dE0;
-        priceFeeds[POLY][AVAX] = address(0);
+        priceFeeds[POLY][AVAX] = 0xe01eA2fbd8D76ee323FbEd03eB9a8625EC981A10;
         priceFeeds[POLY][BSC] = 0x82a6c4AF830caa6c97bb504425f6A66165C2c26e;
         priceFeeds[POLY][ETH] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][OP] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][ARBI] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][BASE] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+        priceFeeds[POLY][FANTOM] = 0x58326c0F831b2Dbf7234A4204F28Bba79AA06d5f;
 
         /// OPTIMISM
         priceFeeds[OP][OP] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
-        priceFeeds[OP][POLY] = address(0);
-        priceFeeds[OP][AVAX] = address(0);
-        priceFeeds[OP][BSC] = address(0);
+        priceFeeds[OP][POLY] = 0x0ded608AFc23724f614B76955bbd9dFe7dDdc828;
+        priceFeeds[OP][AVAX] = 0x5087Dc69Fd3907a016BD42B38022F7f024140727;
+        priceFeeds[OP][BSC] = 0xD38579f7cBD14c22cF1997575eA8eF7bfe62ca2c;
         priceFeeds[OP][ETH] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         priceFeeds[OP][ARBI] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         priceFeeds[OP][BASE] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+        priceFeeds[OP][FANTOM] = 0xc19d58652d6BfC6Db6FB3691eDA6Aa7f3379E4E9;
 
         /// ARBITRUM
         priceFeeds[ARBI][ARBI] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         priceFeeds[ARBI][OP] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         priceFeeds[ARBI][POLY] = 0x52099D4523531f678Dfc568a7B1e5038aadcE1d6;
-        priceFeeds[ARBI][AVAX] = address(0);
-        priceFeeds[ARBI][BSC] = address(0);
+        priceFeeds[ARBI][AVAX] = 0x8bf61728eeDCE2F32c456454d87B5d6eD6150208;
+        priceFeeds[ARBI][BSC] = 0x6970460aabF80C5BE983C6b74e5D06dEDCA95D4A;
         priceFeeds[ARBI][ETH] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         priceFeeds[ARBI][BASE] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+        priceFeeds[ARBI][FANTOM] = 0xFeaC1A3936514746e70170c0f539e70b23d36F19;
 
         /// BASE
         priceFeeds[BASE][BASE] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
@@ -1161,6 +1174,17 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         priceFeeds[BASE][BSC] = address(0);
         priceFeeds[BASE][ETH] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
         priceFeeds[BASE][ARBI] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
+        priceFeeds[BASE][FANTOM] = address(0);
+
+        /// FANTOM
+        priceFeeds[FANTOM][FANTOM] = 0xf4766552D15AE4d256Ad41B6cf2933482B0680dc;
+        priceFeeds[FANTOM][OP] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+        priceFeeds[FANTOM][POLY] = address(0);
+        priceFeeds[FANTOM][AVAX] = address(0);
+        priceFeeds[FANTOM][BSC] = 0x6dE70f4791C4151E00aD02e969bD900DC961f92a;
+        priceFeeds[FANTOM][ETH] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+        priceFeeds[FANTOM][BASE] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+        priceFeeds[FANTOM][ARBI] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
 
         /// @dev setup bridges.
         /// 1 is lifi
@@ -1251,6 +1275,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         existingTokens[8453]["DAI"] = 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb;
         existingTokens[8453]["USDC"] = address(0);
         existingTokens[8453]["WETH"] = address(0);
+
+        /// @dev warning - missing fantom here
         mapping(
             uint64 chainId
                 => mapping(
@@ -1286,6 +1312,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         existingVaults[8453][1]["DAI"][0] = 0x88510ced6F82eFd3ddc4599B72ad8ac2fF172043;
         existingVaults[8453][1]["USDC"][0] = address(0);
         existingVaults[8453][1]["WETH"][0] = address(0);
+
+        /// @dev warning - missing fantom here
     }
 
     function _fundNativeTokens() internal {
