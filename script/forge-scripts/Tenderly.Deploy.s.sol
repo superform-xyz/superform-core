@@ -8,7 +8,7 @@ contract TenderlyDeploy is AbstractDeploySingle {
                         SELECT CHAIN IDS TO DEPLOY HERE
     //////////////////////////////////////////////////////////////*/
 
-    uint64[] TARGET_DEPLOYMENT_CHAINS = [ETH, OP, ARBI, FANTOM];
+    uint64[] TARGET_DEPLOYMENT_CHAINS = [ETH, OP, ARBI];
 
     ///@dev ORIGINAL SALT
     bytes32 constant salt = "TenderlyTest";

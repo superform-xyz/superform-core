@@ -489,11 +489,13 @@ abstract contract AbstractDeploySingle is Script {
         LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[trueIndex]);
 
         /// @dev 5.2- deploy Hyperlane Implementation
-        vars.hyperlaneImplementation = address(new HyperlaneImplementation{ salt: salt }(vars.superRegistryC));
-        HyperlaneImplementation(vars.hyperlaneImplementation).setHyperlaneConfig(
-            IMailbox(hyperlaneMailboxes[trueIndex]), IInterchainGasPaymaster(hyperlanePaymasters[trueIndex])
-        );
-        contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
+        if (vars.chainId != FANTOM) {
+            vars.hyperlaneImplementation = address(new HyperlaneImplementation{ salt: salt }(vars.superRegistryC));
+            HyperlaneImplementation(vars.hyperlaneImplementation).setHyperlaneConfig(
+                IMailbox(hyperlaneMailboxes[trueIndex]), IInterchainGasPaymaster(hyperlanePaymasters[trueIndex])
+            );
+            contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
+        }
 
         /// @dev 5.3- deploy Wormhole Automatic Relayer Implementation
         vars.wormholeImplementation = address(new WormholeARImplementation{ salt: salt }(vars.superRegistryC));
@@ -637,10 +639,32 @@ abstract contract AbstractDeploySingle is Script {
             vars.superRegistryC.setBridgeAddresses(bridgeIds, BRIDGE_ADDRESSES[vars.chainId], bridgeValidators);
         }
 
-        /// @dev configures lzImplementation and hyperlane to super registry
-        SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(
-            ambIds, vars.ambAddresses, broadcastAMB
-        );
+        if (vars.chainId == FANTOM) {
+            uint8[] memory ambIdsFantom = new uint8[](3);
+            ambIdsFantom[0] = 1;
+            ambIdsFantom[1] = 3;
+            ambIdsFantom[2] = 4;
+
+            address[] memory ambAddressesFantom = new address[](3);
+            ambAddressesFantom[0] = vars.lzImplementation;
+            ambAddressesFantom[1] = vars.wormholeImplementation;
+            ambAddressesFantom[2] = vars.wormholeSRImplementation;
+
+            bool[] memory broadcastAMBFantom = new bool[](3);
+            broadcastAMBFantom[0] = false;
+            broadcastAMBFantom[1] = false;
+            broadcastAMBFantom[2] = true;
+
+            /// @dev configures lzImplementation and hyperlane to super registry
+            SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(
+                ambIdsFantom, ambAddressesFantom, broadcastAMBFantom
+            );
+        } else {
+            /// @dev configures lzImplementation and hyperlane to super registry
+            SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(
+                ambIds, vars.ambAddresses, broadcastAMB
+            );
+        }
 
         /// @dev 16 setup setup srcChain keepers
         vars.ids = new bytes32[](10);
@@ -924,12 +948,15 @@ abstract contract AbstractDeploySingle is Script {
         //         abi.encode(CHAINLINK_lzOracle)
         //     );
         // }
+        if (!(vars.chainId == FANTOM || vars.dstChainId == FANTOM)) {
+            HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setReceiver(
+                vars.dstHypChainId, vars.dstHyperlaneImplementation
+            );
 
-        HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setReceiver(
-            vars.dstHypChainId, vars.dstHyperlaneImplementation
-        );
-
-        HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setChainId(vars.dstChainId, vars.dstHypChainId);
+            HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setChainId(
+                vars.dstChainId, vars.dstHypChainId
+            );
+        }
 
         WormholeARImplementation(payable(vars.wormholeImplementation)).setReceiver(
             vars.dstWormholeChainId, vars.dstWormholeARImplementation
@@ -1059,6 +1086,7 @@ abstract contract AbstractDeploySingle is Script {
         gasUsed[OP][3] = abi.encode(550_000);
         gasUsed[ARBI][3] = abi.encode(2_500_000);
         gasUsed[BASE][3] = abi.encode(600_000);
+        gasUsed[FANTOM][3] = abi.encode(600_000);
 
         // updateGasUsed == 4 (only used on deposits for now)
         gasUsed[ETH][4] = abi.encode(225_000);
@@ -1068,6 +1096,7 @@ abstract contract AbstractDeploySingle is Script {
         gasUsed[OP][4] = abi.encode(200_000);
         gasUsed[ARBI][4] = abi.encode(1_400_000);
         gasUsed[BASE][4] = abi.encode(200_000);
+        gasUsed[FANTOM][4] = abi.encode(200_000);
 
         // withdrawGasUsed == 6 (incl. cost to update)
         gasUsed[ETH][6] = abi.encode(600_000);
@@ -1077,6 +1106,7 @@ abstract contract AbstractDeploySingle is Script {
         gasUsed[OP][6] = abi.encode(1_000_000);
         gasUsed[ARBI][6] = abi.encode(2_500_000);
         gasUsed[BASE][6] = abi.encode(1_500_000);
+        gasUsed[FANTOM][6] = abi.encode(1_500_000);
 
         mapping(uint64 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
         lzEndpointsStorage[ETH] = ETH_lzEndpoint;
@@ -1137,7 +1167,7 @@ abstract contract AbstractDeploySingle is Script {
         priceFeeds[ETH][OP] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][ARBI] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][BASE] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-        priceFeeds[ETH][FANTOM] = 0x2DE7E4a9488488e0058B95854CC2f7955B35dC9b;
+        priceFeeds[ETH][FANTOM] = address(0);
 
         /// BSC
         priceFeeds[BSC][BSC] = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;

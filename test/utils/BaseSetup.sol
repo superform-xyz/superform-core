@@ -1114,7 +1114,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         priceFeeds[ETH][OP] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][ARBI] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][BASE] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-        priceFeeds[ETH][FANTOM] = 0x2DE7E4a9488488e0058B95854CC2f7955B35dC9b;
+        priceFeeds[ETH][FANTOM] = address(0);
 
         /// BSC
         priceFeeds[BSC][BSC] = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
