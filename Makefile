@@ -9,15 +9,18 @@ export POLYGON_RPC_URL := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/POLYGO
 export ARBITRUM_RPC_URL := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/ARBITRUM_RPC_URL/credential)
 export OPTIMISM_RPC_URL := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/OPTIMISM_RPC_URL/credential)
 export BASE_RPC_URL := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/BASE_RPC_URL/credential)
+export FANTOM_RPC_URL := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/FANTOM_RPC_URL/credential)
 
 # deps
 install:; forge install
 update:; forge update
 
 # Build & test
-build :; forge build
+build :; FOUNDRY_PROFILE=default forge build
+test-vvv   :; forge test -vvvvv --match-contract SDMVW0000TokenInputNoSlippageAMB13Fantom
 ftest   :; forge test
-smoke-test   :; forge test --match-contract SmokeTest
+smoke-test   :; forge test --match-contract SmokeTest -vvv
+invariant   :; forge test --match-test invariant_vaultShares -vvv
 clean  :; forge clean
 snapshot :; forge snapshot
 fmt    :; forge fmt && forge fmt test/

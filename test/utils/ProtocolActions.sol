@@ -132,7 +132,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vm.selectFork(FORKS[CHAIN_0]);
         address token;
         /// @dev assumption here is DAI has total supply of TOTAL_SUPPLY_DAI on all chains
-        /// and similarly for USDT, WETH and ETH
+        /// and similarly for USDC, WETH and ETH
         if (action.externalToken == 3) {
             deal(users[action.user], TOTAL_SUPPLY_ETH);
         } else {
@@ -177,6 +177,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         /// @dev builds superformRouter request data
         (multiSuperformsData, singleSuperformsData, vars) = _stage1_buildReqData(action, act);
         console.log("Stage 1 complete");
+        console.log(2);
 
         uint256[][] memory spAmountSummed = new uint256[][](vars.nDestinations);
         uint256[] memory spAmountBeforeWithdrawPerDst;
@@ -361,6 +362,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             singleSuperformsData = new SingleVaultSFData[](vars.nDestinations);
         }
 
+        console.log(2);
         /// @dev in each destination we want to build our request data
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
             for (uint256 j = 0; j < chainIds.length; ++j) {
@@ -1692,9 +1694,11 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 AggregatorV3Interface(tokenPriceFeeds[args.toChainId][args.underlyingTokenDst]).latestRoundData();
         } else {
             v.decimal2 = args.underlyingTokenDst != NATIVE_TOKEN ? MockERC20(args.underlyingTokenDst).decimals() : 18;
-
+            console.log("here1");
             (, v.USDPerUnderlyingOrInterimTokenDst,,,) =
                 AggregatorV3Interface(tokenPriceFeeds[args.toChainId][args.underlyingTokenDst]).latestRoundData();
+
+            console.log("herw");
         }
 
         vm.selectFork(FORKS[args.srcChainId]);
