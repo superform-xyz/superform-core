@@ -385,7 +385,6 @@ abstract contract AbstractDeploySingle is Script {
         internal
         setEnvDeploy(cycle)
     {
-        console.logBytes32(salt);
         SetupVars memory vars;
         /// @dev liquidity validator addresses
         address[] memory bridgeValidators = new address[](bridgeIds.length);
@@ -415,7 +414,6 @@ abstract contract AbstractDeploySingle is Script {
                 })
             )
         );
-        console.log("rbac", vars.superRBAC);
         contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars.superRBAC;
         vars.superRBACC = SuperRBAC(vars.superRBAC);
 
