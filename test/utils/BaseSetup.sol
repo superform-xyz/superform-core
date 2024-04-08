@@ -485,12 +485,14 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[i]);
 
             /// @dev 6.2 - deploy Hyperlane Implementation
-            vars.hyperlaneImplementation =
-                address(new HyperlaneImplementation{ salt: salt }(SuperRegistry(vars.superRegistry)));
-            HyperlaneImplementation(vars.hyperlaneImplementation).setHyperlaneConfig(
-                IMailbox(hyperlaneMailboxes[i]), IInterchainGasPaymaster(hyperlanePaymasters[i])
-            );
-            contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
+            if (vars.chainId != FANTOM) {
+                vars.hyperlaneImplementation =
+                    address(new HyperlaneImplementation{ salt: salt }(SuperRegistry(vars.superRegistry)));
+                HyperlaneImplementation(vars.hyperlaneImplementation).setHyperlaneConfig(
+                    IMailbox(hyperlaneMailboxes[i]), IInterchainGasPaymaster(hyperlanePaymasters[i])
+                );
+                contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
+            }
 
             /// @dev 6.3- deploy Wormhole Automatic Relayer Implementation
             vars.wormholeImplementation = address(new WormholeARImplementation{ salt: salt }(vars.superRegistryC));
@@ -724,10 +726,54 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.superRegistryC.setAddress(vars.superRegistryC.DST_SWAPPER(), vars.dstSwapper, vars.chainId);
 
             /// @dev 17 - Super Registry extra setters
-            SuperRegistry(vars.superRegistry).setBridgeAddresses(bridgeIds, bridgeAddresses, bridgeValidators);
+            /// @dev BASE does not have SocketV1 available
+            if (vars.chainId == BASE) {
+                uint8[] memory bridgeIdsBase = new uint8[](4);
+                bridgeIdsBase[0] = bridgeIds[0];
+                bridgeIdsBase[1] = bridgeIds[3];
+                bridgeIdsBase[2] = bridgeIds[4];
+                bridgeIdsBase[3] = bridgeIds[5];
 
-            /// @dev configures lzImplementation and hyperlane to super registry
-            vars.superRegistryC.setAmbAddress(ambIds, vars.ambAddresses, isBroadcastAMB);
+                address[] memory bridgeAddressesBase = new address[](4);
+                bridgeAddressesBase[0] = bridgeAddresses[0];
+                bridgeAddressesBase[1] = bridgeAddresses[3];
+                bridgeAddressesBase[2] = bridgeAddresses[4];
+                bridgeAddressesBase[3] = bridgeAddresses[5];
+
+                address[] memory bridgeValidatorsBase = new address[](4);
+                bridgeValidatorsBase[0] = bridgeValidators[0];
+                bridgeValidatorsBase[1] = bridgeValidators[3];
+                bridgeValidatorsBase[2] = bridgeValidators[4];
+                bridgeValidatorsBase[3] = bridgeValidators[5];
+
+                vars.superRegistryC.setBridgeAddresses(bridgeIdsBase, bridgeAddressesBase, bridgeValidatorsBase);
+            } else {
+                SuperRegistry(vars.superRegistry).setBridgeAddresses(bridgeIds, bridgeAddresses, bridgeValidators);
+            }
+
+            /// @dev configures ambImpkementations to super registry
+            if (vars.chainId == FANTOM) {
+                uint8[] memory ambIdsFantom = new uint8[](3);
+                ambIdsFantom[0] = 1;
+                ambIdsFantom[1] = 3;
+                ambIdsFantom[2] = 4;
+
+                address[] memory ambAddressesFantom = new address[](3);
+                ambAddressesFantom[0] = vars.lzImplementation;
+                ambAddressesFantom[1] = vars.wormholeImplementation;
+                ambAddressesFantom[2] = vars.wormholeSRImplementation;
+
+                bool[] memory broadcastAMBFantom = new bool[](3);
+                broadcastAMBFantom[0] = false;
+                broadcastAMBFantom[1] = false;
+                broadcastAMBFantom[2] = true;
+
+                SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(
+                    ambIdsFantom, ambAddressesFantom, broadcastAMBFantom
+                );
+            } else {
+                vars.superRegistryC.setAmbAddress(ambIds, vars.ambAddresses, isBroadcastAMB);
+            }
 
             /// @dev 18 setup setup srcChain keepers
             vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), deployer, vars.chainId);
@@ -790,13 +836,15 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                         vars.dstChainId, vars.dstLzChainId
                     );
 
-                    HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setReceiver(
-                        vars.dstHypChainId, vars.dstHyperlaneImplementation
-                    );
+                    if (!(vars.chainId == FANTOM || vars.dstChainId == FANTOM)) {
+                        HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setReceiver(
+                            vars.dstHypChainId, vars.dstHyperlaneImplementation
+                        );
 
-                    HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setChainId(
-                        vars.dstChainId, vars.dstHypChainId
-                    );
+                        HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setChainId(
+                            vars.dstChainId, vars.dstHypChainId
+                        );
+                    }
 
                     WormholeARImplementation(payable(vars.wormholeImplementation)).setReceiver(
                         vars.dstWormholeChainId, vars.dstWormholeARImplementation
@@ -999,7 +1047,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[1]);
             KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[2]);
         }
-
         _setTokenPriceFeeds();
 
         vm.stopPrank();
@@ -1052,7 +1099,19 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         tokenPriceFeeds[ARBI][getContract(ARBI, "WETH")] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         tokenPriceFeeds[ARBI][NATIVE_TOKEN] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
 
-        /// FANTOM - missing ftm price feed
+        /// BASE
+        tokenPriceFeeds[BASE][getContract(BASE, "DAI")] = 0x591e79239a7d679378eC8c847e5038150364C78F;
+        tokenPriceFeeds[BASE][getContract(BASE, "USDC")] = 0x7e860098F58bBFC8648a4311b374B1D669a2bc6B;
+        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
+        tokenPriceFeeds[BASE][getContract(BASE, "WETH")] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
+        tokenPriceFeeds[BASE][NATIVE_TOKEN] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
+
+        /// FANTOM
+        tokenPriceFeeds[FANTOM][getContract(FANTOM, "DAI")] = 0x91d5DEFAFfE2854C7D02F50c80FA1fdc8A721e52;
+        tokenPriceFeeds[FANTOM][getContract(FANTOM, "USDC")] = 0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c;
+        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
+        tokenPriceFeeds[FANTOM][getContract(FANTOM, "WETH")] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+        tokenPriceFeeds[FANTOM][NATIVE_TOKEN] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
     }
 
     function _preDeploymentSetup() internal virtual {
@@ -1065,7 +1124,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         forks[ARBI] = vm.createFork(ARBITRUM_RPC_URL, 143_659_807);
         forks[OP] = vm.createFork(OPTIMISM_RPC_URL, 111_390_769);
         forks[BASE] = vm.createFork(BASE_RPC_URL);
-        forks[FANTOM] = vm.createFork(FANTOM_RPC_URL);
+        forks[FANTOM] = vm.createFork(FANTOM_RPC_URL, 78_945_396);
 
         mapping(uint64 => string) storage rpcURLs = RPC_URLS;
         rpcURLs[ETH] = ETHEREUM_RPC_URL;
@@ -1185,7 +1244,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         priceFeeds[FANTOM][ETH] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
         priceFeeds[FANTOM][BASE] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
         priceFeeds[FANTOM][ARBI] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
-
         /// @dev setup bridges.
         /// 1 is lifi
         /// 2 is socket
@@ -1276,7 +1334,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         existingTokens[8453]["USDC"] = address(0);
         existingTokens[8453]["WETH"] = address(0);
 
-        /// @dev warning - missing fantom here
+        existingTokens[250]["DAI"] = 0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E;
+        existingTokens[250]["USDC"] = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
+        existingTokens[250]["WETH"] = address(0);
+
         mapping(
             uint64 chainId
                 => mapping(
@@ -1313,7 +1374,9 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         existingVaults[8453][1]["USDC"][0] = address(0);
         existingVaults[8453][1]["WETH"][0] = address(0);
 
-        /// @dev warning - missing fantom here
+        existingVaults[250][1]["DAI"][0] = address(0);
+        existingVaults[250][1]["USDC"][0] = 0xd55C59Da5872DE866e39b1e3Af2065330ea8Acd6;
+        existingVaults[250][1]["WETH"][0] = address(0);
     }
 
     function _fundNativeTokens() internal {

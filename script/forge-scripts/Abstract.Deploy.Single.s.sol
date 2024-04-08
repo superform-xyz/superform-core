@@ -36,6 +36,8 @@ import { EmergencyQueue } from "src/EmergencyQueue.sol";
 import { VaultClaimer } from "src/VaultClaimer.sol";
 import { generateBroadcastParams } from "test/utils/AmbParams.sol";
 
+import "forge-std/console.sol";
+
 struct SetupVars {
     uint64 chainId;
     uint64 dstChainId;
@@ -127,15 +129,7 @@ abstract contract AbstractDeploySingle is Script {
         Arbitrum,
         Optimism,
         Base,
-        Fantom,
-        Ethereum_Fork,
-        Polygon_Fork,
-        Bsc_Fork,
-        Avalanche_Fork,
-        Arbitrum_Fork,
-        Optimism_Fork,
-        Base_Fork,
-        Fantom_Fork
+        Fantom
     }
 
     enum Cycle {
@@ -374,16 +368,6 @@ abstract contract AbstractDeploySingle is Script {
         forks[Chains.Optimism] = "optimism";
         forks[Chains.Base] = "base";
         forks[Chains.Fantom] = "fantom";
-
-        // Mainnet Forks
-        forks[Chains.Ethereum_Fork] = "ethereum_fork";
-        forks[Chains.Polygon_Fork] = "polygon_fork";
-        forks[Chains.Bsc_Fork] = "bsc_fork";
-        forks[Chains.Avalanche_Fork] = "avalanche_fork";
-        forks[Chains.Arbitrum_Fork] = "arbitrum_fork";
-        forks[Chains.Optimism_Fork] = "optimism_fork";
-        forks[Chains.Base_Fork] = "base_fork";
-        forks[Chains.Fantom_Fork] = "fantom_fork";
     }
 
     function getContract(uint64 chainId, string memory _name) public view returns (address) {
@@ -391,6 +375,7 @@ abstract contract AbstractDeploySingle is Script {
     }
 
     function _deployStage1(
+        uint256 env,
         uint256 i,
         uint256 trueIndex,
         Cycle cycle,
@@ -400,6 +385,7 @@ abstract contract AbstractDeploySingle is Script {
         internal
         setEnvDeploy(cycle)
     {
+        console.logBytes32(salt);
         SetupVars memory vars;
         /// @dev liquidity validator addresses
         address[] memory bridgeValidators = new address[](bridgeIds.length);
@@ -429,7 +415,7 @@ abstract contract AbstractDeploySingle is Script {
                 })
             )
         );
-
+        console.log("rbac", vars.superRBAC);
         contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars.superRBAC;
         vars.superRBACC = SuperRBAC(vars.superRBAC);
 
@@ -621,6 +607,7 @@ abstract contract AbstractDeploySingle is Script {
 
         vars.superRegistryC.setAddress(vars.superRegistryC.DST_SWAPPER(), vars.dstSwapper, vars.chainId);
 
+        /// @dev 15 - Super Registry extra setters
         /// @dev BASE does not have SocketV1 available
         if (vars.chainId == BASE) {
             uint8[] memory bridgeIdsBase = new uint8[](1);
@@ -632,13 +619,12 @@ abstract contract AbstractDeploySingle is Script {
 
             address[] memory bridgeValidatorsBase = new address[](1);
             bridgeValidatorsBase[0] = bridgeValidators[0];
-            /// @dev 15 - Super Registry extra setters
             vars.superRegistryC.setBridgeAddresses(bridgeIdsBase, bridgeAddressesBase, bridgeValidatorsBase);
         } else {
-            /// @dev 15 - Super Registry extra setters
             vars.superRegistryC.setBridgeAddresses(bridgeIds, BRIDGE_ADDRESSES[vars.chainId], bridgeValidators);
         }
 
+        /// @dev configures ambImpkementations to super registry
         if (vars.chainId == FANTOM) {
             uint8[] memory ambIdsFantom = new uint8[](3);
             ambIdsFantom[0] = 1;
@@ -655,12 +641,10 @@ abstract contract AbstractDeploySingle is Script {
             broadcastAMBFantom[1] = false;
             broadcastAMBFantom[2] = true;
 
-            /// @dev configures lzImplementation and hyperlane to super registry
             SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(
                 ambIdsFantom, ambAddressesFantom, broadcastAMBFantom
             );
         } else {
-            /// @dev configures lzImplementation and hyperlane to super registry
             SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(
                 ambIds, vars.ambAddresses, broadcastAMB
             );
@@ -742,14 +726,15 @@ abstract contract AbstractDeploySingle is Script {
 
         /// @dev Exports
         for (uint256 j = 0; j < contractNames.length; j++) {
-            _exportContract(
-                chainNames[trueIndex], contractNames[j], getContract(vars.chainId, contractNames[j]), vars.chainId
+            _exportContractsV1(
+                env, chainNames[trueIndex], contractNames[j], getContract(vars.chainId, contractNames[j]), vars.chainId
             );
         }
     }
 
     /// @dev stage 2 must be called only after stage 1 is complete for all chains!
     function _deployStage2(
+        uint256 env,
         uint256 i,
         uint256 trueIndex,
         Cycle cycle,
@@ -766,18 +751,22 @@ abstract contract AbstractDeploySingle is Script {
 
         cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
 
-        vars.lzImplementation = _readContract(chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
-        vars.hyperlaneImplementation = _readContract(chainNames[trueIndex], vars.chainId, "HyperlaneImplementation");
-        vars.wormholeImplementation = _readContract(chainNames[trueIndex], vars.chainId, "WormholeARImplementation");
-        vars.wormholeSRImplementation = _readContract(chainNames[trueIndex], vars.chainId, "WormholeSRImplementation");
-        vars.superRegistry = _readContract(chainNames[trueIndex], vars.chainId, "SuperRegistry");
-        vars.paymentHelper = _readContract(chainNames[trueIndex], vars.chainId, "PaymentHelper");
+        vars.lzImplementation = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
+        vars.hyperlaneImplementation =
+            _readContractsV1(env, chainNames[trueIndex], vars.chainId, "HyperlaneImplementation");
+        vars.wormholeImplementation =
+            _readContractsV1(env, chainNames[trueIndex], vars.chainId, "WormholeARImplementation");
+        vars.wormholeSRImplementation =
+            _readContractsV1(env, chainNames[trueIndex], vars.chainId, "WormholeSRImplementation");
+        vars.superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
+        vars.paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
         vars.superRegistryC = SuperRegistry(vars.superRegistry);
 
         /// @dev Set all trusted remotes for each chain & configure amb chains ids
         for (uint256 j = 0; j < finalDeployedChains.length; j++) {
             if (j != i) {
                 _configureCurrentChainBasedOnTargetDestinations(
+                    env,
                     CurrentChainBasedOnDstvars(
                         vars.chainId,
                         finalDeployedChains[j],
@@ -805,6 +794,7 @@ abstract contract AbstractDeploySingle is Script {
 
     /// @dev pass roles from burner wallets to multi sigs
     function _deployStage3(
+        uint256 env,
         uint256 i,
         uint256 trueIndex,
         Cycle cycle,
@@ -820,7 +810,7 @@ abstract contract AbstractDeploySingle is Script {
 
         cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
 
-        SuperRBAC srbac = SuperRBAC(payable(_readContract(chainNames[trueIndex], vars.chainId, "SuperRBAC")));
+        SuperRBAC srbac = SuperRBAC(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRBAC")));
         bytes32 protocolAdminRole = srbac.PROTOCOL_ADMIN_ROLE();
         bytes32 emergencyAdminRole = srbac.EMERGENCY_ADMIN_ROLE();
 
@@ -836,6 +826,7 @@ abstract contract AbstractDeploySingle is Script {
 
     /// @dev changes the settings in the already deployed chains with the new chain information
     function _configurePreviouslyDeployedChainsWithNewChain(
+        uint256 env,
         uint256 i,
         /// 0, 1, 2
         uint256 trueIndex,
@@ -853,15 +844,19 @@ abstract contract AbstractDeploySingle is Script {
 
         cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
 
-        vars.lzImplementation = _readContract(chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
-        vars.hyperlaneImplementation = _readContract(chainNames[trueIndex], vars.chainId, "HyperlaneImplementation");
-        vars.wormholeImplementation = _readContract(chainNames[trueIndex], vars.chainId, "WormholeARImplementation");
-        vars.wormholeSRImplementation = _readContract(chainNames[trueIndex], vars.chainId, "WormholeSRImplementation");
-        vars.superRegistry = _readContract(chainNames[trueIndex], vars.chainId, "SuperRegistry");
-        vars.paymentHelper = _readContract(chainNames[trueIndex], vars.chainId, "PaymentHelper");
+        vars.lzImplementation = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
+        vars.hyperlaneImplementation =
+            _readContractsV1(env, chainNames[trueIndex], vars.chainId, "HyperlaneImplementation");
+        vars.wormholeImplementation =
+            _readContractsV1(env, chainNames[trueIndex], vars.chainId, "WormholeARImplementation");
+        vars.wormholeSRImplementation =
+            _readContractsV1(env, chainNames[trueIndex], vars.chainId, "WormholeSRImplementation");
+        vars.superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
+        vars.paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
         vars.superRegistryC = SuperRegistry(payable(vars.superRegistry));
 
         _configureCurrentChainBasedOnTargetDestinations(
+            env,
             CurrentChainBasedOnDstvars(
                 vars.chainId,
                 newChainId,
@@ -906,7 +901,12 @@ abstract contract AbstractDeploySingle is Script {
         SuperRegistry superRegistryC;
     }
 
-    function _configureCurrentChainBasedOnTargetDestinations(CurrentChainBasedOnDstvars memory vars) internal {
+    function _configureCurrentChainBasedOnTargetDestinations(
+        uint256 env,
+        CurrentChainBasedOnDstvars memory vars
+    )
+        internal
+    {
         for (uint256 k = 0; k < chainIds.length; k++) {
             if (vars.dstChainId == chainIds[k]) {
                 vars.dstTrueIndex = k;
@@ -919,14 +919,14 @@ abstract contract AbstractDeploySingle is Script {
         vars.dstWormholeChainId = wormhole_chainIds[vars.dstTrueIndex];
 
         vars.dstLzImplementation =
-            _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "LayerzeroImplementation");
+            _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "LayerzeroImplementation");
         vars.dstHyperlaneImplementation =
-            _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "HyperlaneImplementation");
+            _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "HyperlaneImplementation");
         vars.dstWormholeARImplementation =
-            _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "WormholeARImplementation");
+            _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "WormholeARImplementation");
 
         vars.dstWormholeSRImplementation =
-            _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "WormholeSRImplementation");
+            _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "WormholeSRImplementation");
 
         LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
             vars.dstLzChainId, abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
@@ -1025,16 +1025,16 @@ abstract contract AbstractDeploySingle is Script {
         ids[17] = vars.superRegistryC.SUPERFORM_RECEIVER();
 
         address[] memory newAddresses = new address[](18);
-        newAddresses[0] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperformRouter");
-        newAddresses[1] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperformFactory");
-        newAddresses[2] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "PayMaster");
-        newAddresses[3] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "PaymentHelper");
-        newAddresses[4] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "CoreStateRegistry");
-        newAddresses[5] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "DstSwapper");
-        newAddresses[6] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperPositions");
-        newAddresses[7] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperRBAC");
-        newAddresses[8] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "PayloadHelper");
-        newAddresses[9] = _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "EmergencyQueue");
+        newAddresses[0] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperformRouter");
+        newAddresses[1] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperformFactory");
+        newAddresses[2] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "PayMaster");
+        newAddresses[3] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "PaymentHelper");
+        newAddresses[4] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "CoreStateRegistry");
+        newAddresses[5] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "DstSwapper");
+        newAddresses[6] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperPositions");
+        newAddresses[7] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperRBAC");
+        newAddresses[8] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "PayloadHelper");
+        newAddresses[9] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "EmergencyQueue");
         newAddresses[10] = PAYMENT_ADMIN;
         newAddresses[11] = CSR_PROCESSOR;
         newAddresses[12] = CSR_UPDATER;
@@ -1069,7 +1069,7 @@ abstract contract AbstractDeploySingle is Script {
         /*
         vars.superRegistryC.setAddress(
             vars.superRegistryC.TIMELOCK_STATE_REGISTRY(),
-            _readContract(chainNames[vars.dstTrueIndex], vars.dstChainId, "TimelockStateRegistry"),
+            _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "TimelockStateRegistry"),
             vars.dstChainId
         );
         */
@@ -1240,6 +1240,43 @@ abstract contract AbstractDeploySingle is Script {
         priceFeeds[FANTOM][ARBI] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
     }
 
+    /// @dev use this function for full deployments
+    function _exportContractsV1(
+        uint256 env,
+        string memory name,
+        string memory label,
+        address addr,
+        uint64 chainId
+    )
+        internal
+    {
+        string memory json = vm.serializeAddress("EXPORTS", label, addr);
+        string memory root = vm.projectRoot();
+        string memory chainOutputFolder;
+        if (env == 0) {
+            chainOutputFolder =
+                string(abi.encodePacked("/script/deployments/v1_", "deployment/", vm.toString(uint256(chainId)), "/"));
+        } else if (env == 1) {
+            chainOutputFolder = string(
+                abi.encodePacked("/script/deployments/v1_", "staging_deployment/", vm.toString(uint256(chainId)), "/")
+            );
+        } else if (env == 2) {
+            chainOutputFolder = string(abi.encodePacked("/script/output/", vm.toString(uint256(chainId)), "/"));
+        } else {
+            revert("Invalid Env");
+        }
+
+        if (vm.envOr("FOUNDRY_EXPORTS_OVERWRITE_LATEST", false)) {
+            vm.writeJson(json, string(abi.encodePacked(root, chainOutputFolder, name, "-latest.json")));
+        } else {
+            vm.writeJson(
+                json,
+                string(abi.encodePacked(root, chainOutputFolder, name, "-", vm.toString(block.timestamp), ".json"))
+            );
+        }
+    }
+
+    /// @dev use this function for single file deployments and config changes (one off)
     function _exportContract(string memory name, string memory label, address addr, uint64 chainId) internal {
         string memory json = vm.serializeAddress("EXPORTS", label, addr);
         string memory root = vm.projectRoot();
@@ -1257,7 +1294,8 @@ abstract contract AbstractDeploySingle is Script {
         }
     }
 
-    function _readContract(
+    function _readContractsV1(
+        uint256 env,
         string memory name,
         uint64 chainId,
         string memory contractName
@@ -1268,8 +1306,38 @@ abstract contract AbstractDeploySingle is Script {
     {
         string memory json;
         string memory root = vm.projectRoot();
-        json =
-            string(abi.encodePacked(root, "/script/output/", vm.toString(uint256(chainId)), "/", name, "-latest.json"));
+        if (env == 0) {
+            json = string(
+                abi.encodePacked(
+                    root,
+                    "/script/deployments/v1_",
+                    "deployment/",
+                    vm.toString(uint256(chainId)),
+                    "/",
+                    name,
+                    "-latest.json"
+                )
+            );
+        } else if (env == 1) {
+            json = string(
+                abi.encodePacked(
+                    root,
+                    "/script/deployments/v1_",
+                    "staging_deployment/",
+                    vm.toString(uint256(chainId)),
+                    "/",
+                    name,
+                    "-latest.json"
+                )
+            );
+        } else if (env == 2) {
+            json = string(
+                abi.encodePacked(root, "/script/output/", vm.toString(uint256(chainId)), "/", name, "-latest.json")
+            );
+        } else {
+            revert("Invalid Env");
+        }
+
         string memory file = vm.readFile(json);
         return vm.parseJsonAddress(file, string(abi.encodePacked(".", contractName)));
     }
