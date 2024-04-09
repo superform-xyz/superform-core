@@ -357,7 +357,6 @@ contract VaultSharesHandler is InvariantProtocolActions {
                 }
             }
         }
-
         _setTokenPriceFeeds();
     }
 
@@ -371,6 +370,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
         rpcURLs[ARBI] = ARBITRUM_RPC_URL;
         rpcURLs[OP] = OPTIMISM_RPC_URL;
         rpcURLs[BASE] = BASE_RPC_URL;
+        rpcURLs[FANTOM] = FANTOM_RPC_URL;
 
         mapping(uint64 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
         lzEndpointsStorage[ETH] = ETH_lzEndpoint;
@@ -379,7 +379,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
         lzEndpointsStorage[POLY] = POLY_lzEndpoint;
         lzEndpointsStorage[ARBI] = ARBI_lzEndpoint;
         lzEndpointsStorage[OP] = OP_lzEndpoint;
-        lzEndpointsStorage[BASE] = BASE_lzEndpoint;
+        lzEndpointsStorage[FANTOM] = FANTOM_lzEndpoint;
 
         mapping(uint64 => address) storage hyperlaneMailboxesStorage = HYPERLANE_MAILBOXES;
         hyperlaneMailboxesStorage[ETH] = hyperlaneMailboxes[0];
@@ -389,6 +389,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
         hyperlaneMailboxesStorage[ARBI] = hyperlaneMailboxes[4];
         hyperlaneMailboxesStorage[OP] = hyperlaneMailboxes[5];
         hyperlaneMailboxesStorage[BASE] = hyperlaneMailboxes[6];
+        hyperlaneMailboxesStorage[FANTOM] = hyperlaneMailboxes[7];
 
         mapping(uint64 => uint16) storage wormholeChainIdsStorage = WORMHOLE_CHAIN_IDS;
 
@@ -407,42 +408,47 @@ contract VaultSharesHandler is InvariantProtocolActions {
         priceFeeds[ETH][OP] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][ARBI] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][BASE] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        priceFeeds[ETH][FANTOM] = address(0);
 
         /// BSC
         priceFeeds[BSC][BSC] = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
         priceFeeds[BSC][ETH] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
-        priceFeeds[BSC][AVAX] = address(0);
+        priceFeeds[BSC][AVAX] = 0x5974855ce31EE8E1fff2e76591CbF83D7110F151;
         priceFeeds[BSC][POLY] = 0x7CA57b0cA6367191c94C8914d7Df09A57655905f;
         priceFeeds[BSC][OP] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
         priceFeeds[BSC][ARBI] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
         priceFeeds[BSC][BASE] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+        priceFeeds[BSC][FANTOM] = 0xe2A47e87C0f4134c8D06A41975F6860468b2F925;
 
         /// AVAX
         priceFeeds[AVAX][AVAX] = 0x0A77230d17318075983913bC2145DB16C7366156;
         priceFeeds[AVAX][BSC] = address(0);
         priceFeeds[AVAX][ETH] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
-        priceFeeds[AVAX][POLY] = address(0);
+        priceFeeds[AVAX][POLY] = 0x1db18D41E4AD2403d9f52b5624031a2D9932Fd73;
         priceFeeds[AVAX][OP] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
         priceFeeds[AVAX][ARBI] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
         priceFeeds[AVAX][BASE] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+        priceFeeds[AVAX][FANTOM] = 0x2dD517B2f9ba49CedB0573131FD97a5AC19ff648;
 
         /// POLYGON
         priceFeeds[POLY][POLY] = 0xAB594600376Ec9fD91F8e885dADF0CE036862dE0;
-        priceFeeds[POLY][AVAX] = address(0);
+        priceFeeds[POLY][AVAX] = 0xe01eA2fbd8D76ee323FbEd03eB9a8625EC981A10;
         priceFeeds[POLY][BSC] = 0x82a6c4AF830caa6c97bb504425f6A66165C2c26e;
         priceFeeds[POLY][ETH] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][OP] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][ARBI] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][BASE] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+        priceFeeds[POLY][FANTOM] = 0x58326c0F831b2Dbf7234A4204F28Bba79AA06d5f;
 
         /// OPTIMISM
         priceFeeds[OP][OP] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
-        priceFeeds[OP][POLY] = address(0);
-        priceFeeds[OP][AVAX] = address(0);
-        priceFeeds[OP][BSC] = address(0);
+        priceFeeds[OP][POLY] = 0x0ded608AFc23724f614B76955bbd9dFe7dDdc828;
+        priceFeeds[OP][AVAX] = 0x5087Dc69Fd3907a016BD42B38022F7f024140727;
+        priceFeeds[OP][BSC] = 0xD38579f7cBD14c22cF1997575eA8eF7bfe62ca2c;
         priceFeeds[OP][ETH] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         priceFeeds[OP][ARBI] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         priceFeeds[OP][BASE] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+        priceFeeds[OP][FANTOM] = 0xc19d58652d6BfC6Db6FB3691eDA6Aa7f3379E4E9;
 
         /// ARBITRUM
         priceFeeds[ARBI][ARBI] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
@@ -452,6 +458,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
         priceFeeds[ARBI][BSC] = address(0);
         priceFeeds[ARBI][ETH] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         priceFeeds[ARBI][BASE] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+        priceFeeds[ARBI][FANTOM] = 0xFeaC1A3936514746e70170c0f539e70b23d36F19;
 
         /// BASE
         priceFeeds[BASE][BASE] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
@@ -461,6 +468,17 @@ contract VaultSharesHandler is InvariantProtocolActions {
         priceFeeds[BASE][BSC] = address(0);
         priceFeeds[BASE][ETH] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
         priceFeeds[BASE][ARBI] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
+        priceFeeds[BASE][FANTOM] = address(0);
+
+        /// FANTOM
+        priceFeeds[FANTOM][FANTOM] = 0xf4766552D15AE4d256Ad41B6cf2933482B0680dc;
+        priceFeeds[FANTOM][OP] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+        priceFeeds[FANTOM][POLY] = address(0);
+        priceFeeds[FANTOM][AVAX] = address(0);
+        priceFeeds[FANTOM][BSC] = 0x6dE70f4791C4151E00aD02e969bD900DC961f92a;
+        priceFeeds[FANTOM][ETH] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+        priceFeeds[FANTOM][BASE] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+        priceFeeds[FANTOM][ARBI] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
 
         /// @dev setup bridges. 1 is lifi
         bridgeIds.push(1);
@@ -540,6 +558,10 @@ contract VaultSharesHandler is InvariantProtocolActions {
         existingTokens[8453]["USDC"] = address(0);
         existingTokens[8453]["WETH"] = address(0);
 
+        existingTokens[250]["DAI"] = 0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E;
+        existingTokens[250]["USDC"] = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
+        existingTokens[250]["WETH"] = address(0);
+
         mapping(
             uint64 chainId
                 => mapping(
@@ -573,8 +595,12 @@ contract VaultSharesHandler is InvariantProtocolActions {
         existingVaults[56][1]["WETH"][0] = address(0);
 
         existingVaults[8453][1]["DAI"][0] = 0x88510ced6F82eFd3ddc4599B72ad8ac2fF172043;
-        existingVaults[8453][1]["USDC"][0] = 0x6fCe2756794128B1771324caA860965801DCbCdB;
-        existingVaults[8453][1]["WETH"][0] = 0x468973e3264F2aEba0417A8f2cD0Ec397E738898;
+        existingVaults[8453][1]["USDC"][0] = address(0);
+        existingVaults[8453][1]["WETH"][0] = address(0);
+
+        existingVaults[250][1]["DAI"][0] = 0xd0b072360aDB8318467CD9686a71e361096273Ed;
+        existingVaults[250][1]["USDC"][0] = 0x469DcDD58F6Eda8Cc0e909220Cea57F61088F79a;
+        existingVaults[250][1]["WETH"][0] = address(0);
     }
 
     function _getSuperpositionsForDstChainFromSrcChain(

@@ -5,7 +5,6 @@ import "../EnvironmentUtils.s.sol";
 
 import { BatchScript } from "../safe/BatchScript.sol";
 
-import "forge-std/console.sol";
 
 struct UpdateVars {
     uint64 chainId;
@@ -54,6 +53,7 @@ abstract contract AbstractDeploySocket1inch is BatchScript, EnvironmentUtils {
 
         vm.stopBroadcast();
 
+        /// @dev we use normal export contract to not override v1 contracts
         for (uint256 j = 0; j < contractNames.length; j++) {
             _exportContract(
                 chainNames[trueIndex], contractNames[j], getContract(vars.chainId, contractNames[j]), vars.chainId
@@ -77,7 +77,6 @@ abstract contract AbstractDeploySocket1inch is BatchScript, EnvironmentUtils {
         cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
 
         SuperRBAC srbac = SuperRBAC(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRBAC")));
-        console.log(address(srbac));
 
         bytes32 protocolAdminRole = srbac.PROTOCOL_ADMIN_ROLE();
         srbac.grantRole(protocolAdminRole, PROTOCOL_ADMINS_STAGING[i]);

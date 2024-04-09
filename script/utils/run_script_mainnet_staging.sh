@@ -9,52 +9,53 @@ export POLYGON_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/POLYGON_RPC_URL
 export ARBITRUM_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/ARBITRUM_RPC_URL/credential)
 export OPTIMISM_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/OPTIMISM_RPC_URL/credential)
 export BASE_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BASE_RPC_URL/credential)
+export FANTOM_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/FANTOM_RPC_URL/credential)
 
 # Run the script
 echo Running Stage 1: ...
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Staging.Deploy.s.sol:MainnetStagingDeploy --sig "deployStage1(uint256)" 0 --rpc-url $BSC_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Deploy.s.sol:MainnetDeploy --sig "deployStage1(uint256,uint256)" 1 1 --rpc-url $BSC_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
 wait
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Staging.Deploy.s.sol:MainnetStagingDeploy --sig "deployStage1(uint256)" 1 --rpc-url $ARBITRUM_RPC_URL --broadcast --slow --legacy --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Deploy.s.sol:MainnetDeploy --sig "deployStage1(uint256,uint256)" 1 4 --rpc-url $ARBITRUM_RPC_URL --broadcast --slow --legacy --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
 wait
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Staging.Deploy.s.sol:MainnetStagingDeploy --sig "deployStage1(uint256)" 2 --rpc-url $OPTIMISM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Deploy.s.sol:MainnetDeploy --sig "deployStage1(uint256,uint256)" 1 5 --rpc-url $OPTIMISM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
 wait
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Staging.Deploy.s.sol:MainnetStagingDeploy --sig "deployStage1(uint256)" 3 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Deploy.s.sol:MainnetDeploy --sig "deployStage1(uint256,uint256)" 1 6 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
 wait
 
 echo Running Stage 2: ...
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Staging.Deploy.s.sol:MainnetStagingDeploy --sig "deployStage2(uint256)" 0 --rpc-url $BSC_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Deploy.s.sol:MainnetDeploy --sig "deployStage2(uint256,uint256)" 1 1 --rpc-url $BSC_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
 wait
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Staging.Deploy.s.sol:MainnetStagingDeploy --sig "deployStage2(uint256)" 1 --rpc-url $ARBITRUM_RPC_URL --broadcast --slow --legacy --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Deploy.s.sol:MainnetDeploy --sig "deployStage2(uint256,uint256)" 1 4 --rpc-url $ARBITRUM_RPC_URL --broadcast --slow --legacy --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
 wait
-FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Staging.Deploy.s.sol:MainnetStagingDeploy --sig "deployStage2(uint256)" 2 --rpc-url $OPTIMISM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Deploy.s.sol:MainnetDeploy --sig "deployStage2(uint256,uint256)" 1 5 --rpc-url $OPTIMISM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
 wait
-FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Staging.Deploy.s.sol:MainnetStagingDeploy --sig "deployStage2(uint256)" 3 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Deploy.s.sol:MainnetDeploy --sig "deployStage2(uint256,uint256)" 1 6 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
 wait
 
 echo Running Stage 3: ...
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Staging.Deploy.s.sol:MainnetStagingDeploy --sig "deployStage3(uint256)" 0 --rpc-url $BSC_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Deploy.s.sol:MainnetDeploy --sig "deployStage3(uint256,uint256)" 1 1 --rpc-url $BSC_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
 wait
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Staging.Deploy.s.sol:MainnetStagingDeploy --sig "deployStage3(uint256)" 1 --rpc-url $ARBITRUM_RPC_URL --broadcast --slow --legacy --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Deploy.s.sol:MainnetDeploy --sig "deployStage3(uint256,uint256)" 1 4 --rpc-url $ARBITRUM_RPC_URL --broadcast --slow --legacy --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
 wait
-FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Staging.Deploy.s.sol:MainnetStagingDeploy --sig "deployStage3(uint256)" 2 --rpc-url $OPTIMISM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Deploy.s.sol:MainnetDeploy --sig "deployStage3(uint256,uint256)" 1 5 --rpc-url $OPTIMISM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
 wait
-FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Staging.Deploy.s.sol:MainnetStagingDeploy --sig "deployStage3(uint256)" 3 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=default forge script script/forge-scripts/Mainnet.Deploy.s.sol:MainnetDeploy --sig "deployStage3(uint256,uint256)" 1 6 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92

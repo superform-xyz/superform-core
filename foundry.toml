@@ -1,7 +1,6 @@
 [profile.default]
 solc_version = "0.8.23" # Override for the solc version (setting this ignores `auto_detect_solc`)
-evm_version = "paris"   # to prevent usage of PUSH0, which is not supported on all chains
-
+evm_version = "paris" # to prevent usage of PUSH0, which is not supported on all chains
 gas_reports = [
   "SuperformRouter",
   "BaseForm",
@@ -20,27 +19,27 @@ remappings = [
   "solmate/=lib/ERC1155A/lib/solmate/src/",
   "ERC1155A/=lib/ERC1155A/src/",
 ]
+out = "out"
+script = "script"
+src = "src"
+test = "test"
 
 [profile.localdev]
-solc_version = "0.8.23" # Override for the solc version (setting this ignores `auto_detect_solc`)
-evm_version = "paris"   # to prevent usage of PUSH0, which is not supported on all chains
-
-gas_reports = ["SuperformRouter"]
-libraries = []
 optimizer = false
-optimizer_runs = 200
-verbosity = 0
-ffi = true
-libs = ["lib"]
-fs_permissions = [{ access = "read-write", path = "./script/" }]
-remappings = [
-  "solmate/=lib/ERC1155A/lib/solmate/src/",
-  "ERC1155A/=lib/ERC1155A/src/",
-]
+out = 'localdev'
 
 [profile.coverage]
 fuzz = { runs = 1, max_test_rejects = 350_000 }
 invariant = { runs = 5_000 }
+src = 'src'
+test = 'test'
+script = 'src'
+
+[profile.production]
+out = 'out'       # separates optimized build folder (default profile) from localdev folder. Faster to build and deploy
+src = 'src'
+test = 'src'
+script = 'script'
 
 [rpc_endpoints]
 ethereum = "${ETHEREUM_RPC_URL}"
@@ -50,15 +49,7 @@ avalanche = "${AVALANCHE_RPC_URL}"
 arbitrum = "${ARBITRUM_RPC_URL}"
 optimism = "${OPTIMISM_RPC_URL}"
 base = "${BASE_RPC_URL}"
-gnosis = "${GNOSIS_RPC_URL}"
-ethereum_fork = "${ETHEREUM_LOCAL_URL}"
-polygon_fork = "${POLYGON_LOCAL_URL}"
-bsc_fork = "${BSC_LOCAL_URL}"
-avalanche_fork = "${AVALANCHE_LOCAL_URL}"
-arbitrum_fork = "${ARBITRUM_LOCAL_URL}"
-optimism_fork = "${OPTIMISM_LOCAL_URL}"
-base_fork = "${BASE_LOCAL_URL}"
-gnosis_fork = "${GNOSIS_LOCAL_URL}"
+fantom = "${FANTOM_RPC_URL}"
 
 [fuzz]
 max_test_rejects = 1_000_000 # Number of times `vm.assume` can fail
