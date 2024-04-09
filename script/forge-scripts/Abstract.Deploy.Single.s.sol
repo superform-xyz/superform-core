@@ -341,8 +341,10 @@ abstract contract AbstractDeploySingle is Script {
         /// @dev ARBI https://app.onchainden.com/safes/arb1:0xBbb23AE2e3816a178f8bd405fb101D064C5071d9
         0xfe3A0C3c4980Eef00C2Ec73D8770a2D9A489fdE5,
         /// @dev OP https://app.onchainden.com/safes/oeth:0xfe3A0C3c4980Eef00C2Ec73D8770a2D9A489fdE5
-        0xbd1F951F52FC7616E2F743F976295fDc5276Cfb9
+        0xbd1F951F52FC7616E2F743F976295fDc5276Cfb9,
         /// @dev BASE https://app.onchainden.com/safes/base:0xbd1F951F52FC7616E2F743F976295fDc5276Cfb9
+        0xdc337f59a90B1F6a016c02851559AdbE81f0B889
+        /// @dev FANTOM https://safe.fantom.network/home?safe=ftm:0xdc337f59a90B1F6a016c02851559AdbE81f0B889
     ];
 
     /// @dev environment variable setup for upgrade
@@ -812,7 +814,11 @@ abstract contract AbstractDeploySingle is Script {
         bytes32 protocolAdminRole = srbac.PROTOCOL_ADMIN_ROLE();
         bytes32 emergencyAdminRole = srbac.EMERGENCY_ADMIN_ROLE();
 
-        if (grantProtocolAdmin) srbac.grantRole(protocolAdminRole, PROTOCOL_ADMINS[trueIndex]);
+        if (grantProtocolAdmin) {
+            srbac.grantRole(
+                protocolAdminRole, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[trueIndex]
+            );
+        }
 
         srbac.grantRole(emergencyAdminRole, EMERGENCY_ADMIN);
 
