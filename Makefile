@@ -21,6 +21,7 @@ update:; forge update
 # Build & test
 build :; FOUNDRY_PROFILE=production forge build
 build-unoptimized :; FOUNDRY_PROFILE=localdev forge build
+build-sizes :; FOUNDRY_PROFILE=default forge build --sizes
 test-vvv   :; forge test -vvvvv --match-contract SDMVW0000TokenInputNoSlippageAMB13Fantom
 ftest   :; forge test
 test-ci :; forge test --no-match-path "test/invariant/**/*.sol"
