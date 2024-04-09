@@ -19,24 +19,27 @@ remappings = [
   "solmate/=lib/ERC1155A/lib/solmate/src/",
   "ERC1155A/=lib/ERC1155A/src/",
 ]
+out = "out"
+script = "script"
+src = "src"
+test = "test"
+
+[profile.localdev]
+optimizer = false
+out = 'localdev'
+
+[profile.coverage]
+fuzz = { runs = 1, max_test_rejects = 350_000 }
+invariant = { runs = 5_000 }
+src = 'src'
+test = 'test'
+script = 'src'
 
 [profile.production]
 out = 'out'       # separates optimized build folder (default profile) from localdev folder. Faster to build and deploy
 src = 'src'
 test = 'src'
 script = 'script'
-
-
-[profile.localdev]
-optimizer = false
-out = 'localdev'
-src = 'src'
-test = 'test'
-script = 'script'
-
-[profile.coverage]
-fuzz = { runs = 1, max_test_rejects = 350_000 }
-invariant = { runs = 5_000 }
 
 [rpc_endpoints]
 ethereum = "${ETHEREUM_RPC_URL}"

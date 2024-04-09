@@ -18,6 +18,7 @@ env:
   POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
   AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
   BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
+  FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
   TENDERLY_ACCESS_KEY: ${{ secrets.TENDERLY_ACCESS_KEY }}
   TENDERLY_PROJECT_SLUG: "v1" # your project slug
   TENDERLY_ACCOUNT_ID: "superform" # your username or organization name
@@ -52,7 +53,7 @@ jobs:
           path: |
             cache
             out
-            out-optimized
+            localdev
 
       - name: "Add build summary"
         run: |
@@ -79,14 +80,14 @@ jobs:
           path: |
             cache
             out
-            out-optimized
+            localdev
 
       - name: "Generate fuzz seed that changes weekly to avoid burning through RPC allowance"
         run: |
           echo "FOUNDRY_FUZZ_SEED=$(echo $(($EPOCHSECONDS / 604800)))" >> $GITHUB_ENV
 
       - name: "Run all tests except invariant against the optimized build"
-        run: 'forge test --no-match-path "test/invariant/**/*.sol"'
+        run: 'make test-ci'
 
       - name: "Add test summary"
         run: |
@@ -105,7 +106,7 @@ jobs:
         uses: "foundry-rs/foundry-toolchain@v1"
 
       - name: "Generate the coverage report using unit and integration tests"
-        run: 'FOUNDRY_PROFILE=coverage forge coverage --match-path "test/**/*.sol" --report lcov'
+        run: 'make coverage'
 
       - name: "Upload coverage report to Codecov"
         uses: "codecov/codecov-action@v4.0.0-beta.3"
