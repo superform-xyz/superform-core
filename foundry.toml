@@ -19,26 +19,17 @@ remappings = [
   "solmate/=lib/ERC1155A/lib/solmate/src/",
   "ERC1155A/=lib/ERC1155A/src/",
 ]
-out = 'out' # separates optimized build folder (default profile) from localdev folder. Faster to build and deploy
+
+[profile.production]
+out = 'out'       # separates optimized build folder (default profile) from localdev folder. Faster to build and deploy
 src = 'src'
 test = 'src'
 script = 'script'
 
+
 [profile.localdev]
-solc_version = "0.8.23" # Override for the solc version (setting this ignores `auto_detect_solc`)
-evm_version = "paris" # to prevent usage of PUSH0, which is not supported on all chains
-gas_reports = ["SuperformRouter"]
-libraries = []
 optimizer = false
-verbosity = 0
-ffi = true
-libs = ["lib"]
-fs_permissions = [{ access = "read-write", path = "./script/" }]
-remappings = [
-  "solmate/=lib/ERC1155A/lib/solmate/src/",
-  "ERC1155A/=lib/ERC1155A/src/",
-]
-out = 'localdev' 
+out = 'localdev'
 src = 'src'
 test = 'test'
 script = 'script'

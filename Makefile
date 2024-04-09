@@ -16,7 +16,7 @@ install:; forge install
 update:; forge update
 
 # Build & test
-build :; FOUNDRY_PROFILE=default forge build
+build :; FOUNDRY_PROFILE=production forge build
 test-vvv   :; forge test -vvvvv --match-contract SDMVW0000TokenInputNoSlippageAMB13Fantom
 ftest   :; forge test
 smoke-test   :; forge test --match-contract SmokeTest -vvv
