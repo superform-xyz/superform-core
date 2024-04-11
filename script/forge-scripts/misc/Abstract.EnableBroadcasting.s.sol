@@ -2,7 +2,6 @@
 pragma solidity ^0.8.23;
 
 import "../EnvironmentUtils.s.sol";
-import "forge-std/console.sol";
 import { BatchScript } from "../safe/BatchScript.sol";
 
 struct UpdateVars {
