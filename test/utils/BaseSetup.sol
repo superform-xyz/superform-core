@@ -53,6 +53,9 @@ import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
 import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
 import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator.sol";
+import { DeBridgeValidator } from "src/crosschain-liquidity/deBridge/DeBridgeValidator.sol";
+import { HashflowValidator } from "src/crosschain-liquidity/hashflow/HashflowValidator.sol";
+
 import { SocketOneInchValidator } from "src/crosschain-liquidity/socket/SocketOneInchValidator.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
@@ -102,7 +105,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[30] public contractNames = [
+    string[32] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -132,7 +135,9 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         "KYCDAOMock",
         "CanonicalPermit2",
         "EmergencyQueue",
-        "SocketOneInchValidator"
+        "SocketOneInchValidator",
+        "DeBridgeValidator",
+        "HashflowValidator"
     ];
 
     /*//////////////////////////////////////////////////////////////
@@ -573,6 +578,14 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             /// @dev 7.2.3- deploy socket one inch validator
             vars.socketOneInchValidator = address(new SocketOneInchValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("SocketOneInchValidator"))] = vars.socketOneInchValidator;
+
+            /// @dev 7.2.4- deploy deBridge validator
+            vars.debridgeValidator = address(new DeBridgeValidator{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("DeBridgeValidator"))] = vars.debridgeValidator;
+
+            /// @dev 7.2.5- deploy hashflow validator
+            vars.hashflowValidator = address(new HashflowValidator{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("HashflowValidator"))] = vars.hashflowValidator;
 
             /// @dev 7.3- kycDAO NFT used to test kycDAO vaults
             vars.kycDAOMock = address(new KYCDaoNFTMock{ salt: salt }());

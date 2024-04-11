@@ -5,9 +5,11 @@ import "./BaseSetup.sol";
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
+import { DlnOrderLib } from "src/vendor/deBridge/DlnOrderLib.sol";
 import { AggregatorV3Interface } from "../../src/vendor/chainlink/AggregatorV3Interface.sol";
 import { LiFiMock } from "../mocks/LiFiMock.sol";
 import { SocketMock } from "../mocks/SocketMock.sol";
+import { DeBridgeMock } from "../mocks/DeBridgeMock.sol";
 import { SocketOneInchMock } from "../mocks/SocketOneInchMock.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
@@ -544,6 +546,34 @@ abstract contract CommonProtocolActions is BaseSetup {
                 v.receiver_,
                 v.amount_,
                 abi.encode(v.from_, USDPerUnderlyingToken, USDPerUnderlyingTokenDst)
+            );
+        } else if (v.liqBridgeKind_ == 4) {
+            txData = abi.encodeWithSelector(
+                DeBridgeMock.createSaltedOrder.selector,
+                DlnOrderLib.OrderCreation(
+                    v.underlyingToken_,
+                    v.amount_,
+                    abi.encode(v.underlyingTokenDst_),
+                    /// take amount
+                    (v.amount_ * uint256(USDPerUnderlyingToken)) / uint256(USDPerUnderlyingTokenDst),
+                    v.toChainId_,
+                    abi.encode(v.receiver_),
+                    address(0),
+                    bytes(""),
+                    bytes(""),
+                    bytes(""),
+                    bytes("")
+                ),
+                /// random salt
+                uint64(block.timestamp),
+                /// affliate fee
+                bytes(""),
+                /// referral code
+                uint32(0),
+                /// permit envelope
+                bytes(""),
+                /// metadata
+                bytes("")
             );
         }
     }

@@ -6,6 +6,8 @@ import { Error } from "src/libraries/Error.sol";
 import { IDlnSource } from "src/vendor/deBridge/IDlnSource.sol";
 import { DlnOrderLib } from "src/vendor/deBridge/DlnOrderLib.sol";
 
+import "forge-std/console.sol";
+
 /// @title DeBridgeValidator
 /// @dev Asserts if De-Bridge input txData is valid
 /// @author Zeropoint Labs

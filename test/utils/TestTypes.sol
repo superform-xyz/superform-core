@@ -168,6 +168,8 @@ struct SetupVars {
     address lifiValidator;
     address socketValidator;
     address socketOneInchValidator;
+    address debridgeValidator;
+    address hashflowValidator;
     Vm.Log[] logs;
     address superPositions;
     address kycDAOMock;
