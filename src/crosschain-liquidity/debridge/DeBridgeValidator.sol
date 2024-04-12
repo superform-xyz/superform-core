@@ -33,11 +33,14 @@ contract DeBridgeValidator is BridgeValidator {
     /// @inheritdoc BridgeValidator
     function validateTxData(ValidateTxDataArgs calldata args_) external view override returns (bool hasDstSwap) {
         DlnOrderLib.OrderCreation memory deBridgeQuote = _decodeTxData(args_.txData);
+        console.log(deBridgeQuote.externalCall.length);
 
         /// FIXME: add explicit revert messages
         if (deBridgeQuote.externalCall.length > 0) revert();
 
         /// FIXME: set the new role and add explicit revert message
+        console.log(_castToAddress(deBridgeQuote.orderAuthorityAddressDst));
+        console.log(superRegistry.getAddressByChainId(keccak256("DEBRIDGE_AUTHORITY"), args_.dstChainId));
         if (
             superRegistry.getAddressByChainId(keccak256("DEBRIDGE_AUTHORITY"), args_.dstChainId)
                 != _castToAddress(deBridgeQuote.orderAuthorityAddressDst)

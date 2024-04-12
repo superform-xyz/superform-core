@@ -559,7 +559,7 @@ abstract contract CommonProtocolActions is BaseSetup {
                     v.toChainId_,
                     abi.encode(v.receiver_),
                     address(0),
-                    bytes(""),
+                    abi.encode(mockDebridgeAuth),
                     bytes(""),
                     bytes(""),
                     bytes("")

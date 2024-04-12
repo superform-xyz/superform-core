@@ -15,6 +15,10 @@ contract DeBridgeMock is Test {
 
     receive() external payable { }
 
+    function globalFixedNativeFee() external returns (uint88) {
+        return type(uint88).max;
+    }
+
     function createSaltedOrder(
         DlnOrderLib.OrderCreation calldata _orderCreation,
         uint64 _salt,

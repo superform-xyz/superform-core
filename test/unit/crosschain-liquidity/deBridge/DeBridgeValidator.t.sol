@@ -41,4 +41,15 @@ contract DeBridgeValidatorTest is ProtocolActions {
             )
         );
     }
+
+    function test_deBridge_blacklistedSelector() public {
+        bytes memory txDataWithNonAllowedSelector = abi.encodeWithSelector(DeBridgeMock.globalFixedNativeFee.selector);
+
+        vm.expectRevert(Error.BLACKLISTED_ROUTE_ID.selector);
+        DeBridgeValidator(getContract(ETH, "DeBridgeValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                txDataWithNonAllowedSelector, ETH, BSC, BSC, true, address(0), deployer, NATIVE, NATIVE
+            )
+        );
+    }
 }
