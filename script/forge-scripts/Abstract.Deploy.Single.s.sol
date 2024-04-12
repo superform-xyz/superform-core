@@ -35,7 +35,8 @@ import { PayMaster } from "src/payments/PayMaster.sol";
 import { EmergencyQueue } from "src/EmergencyQueue.sol";
 import { VaultClaimer } from "src/VaultClaimer.sol";
 import { generateBroadcastParams } from "test/utils/AmbParams.sol";
-
+import { AcrossFacetPacked } from "./misc/blacklistedFacets/AcrossFacetPacked.sol";
+import { AmarokFacetPacked } from "./misc/blacklistedFacets/AmarokFacetPacked.sol";
 import "forge-std/console.sol";
 
 struct SetupVars {
@@ -45,6 +46,7 @@ struct SetupVars {
     uint32 dstHypChainId;
     uint16 dstWormholeChainId;
     string fork;
+    bytes4[] selectorsToBlacklist;
     address[] ambAddresses;
     address superForm;
     address factory;
@@ -81,6 +83,7 @@ struct SetupVars {
     address emergencyQueue;
     SuperRegistry superRegistryC;
     SuperRBAC superRBACC;
+    LiFiValidator lv;
     bytes32[] ids;
     address[] newAddresses;
     uint64[] chainIdsSetAddresses;
@@ -507,6 +510,24 @@ abstract contract AbstractDeploySingle is Script {
 
         /// @dev 6- deploy liquidity validators
         vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
+        vars.lv = LiFiValidator(vars.lifiValidator);
+
+        vars.selectorsToBlacklist = new bytes4[](8);
+
+        /// @dev add selectors that need to be blacklisted post LiFiValidator deployment here
+        vars.selectorsToBlacklist[0] = AcrossFacetPacked.startBridgeTokensViaAcrossNativePacked.selector;
+        vars.selectorsToBlacklist[1] = AcrossFacetPacked.startBridgeTokensViaAcrossNativeMin.selector;
+        vars.selectorsToBlacklist[2] = AcrossFacetPacked.startBridgeTokensViaAcrossERC20Packed.selector;
+        vars.selectorsToBlacklist[3] = AcrossFacetPacked.startBridgeTokensViaAcrossERC20Min.selector;
+        vars.selectorsToBlacklist[4] = AmarokFacetPacked.startBridgeTokensViaAmarokERC20PackedPayFeeWithAsset.selector;
+        vars.selectorsToBlacklist[5] = AmarokFacetPacked.startBridgeTokensViaAmarokERC20PackedPayFeeWithNative.selector;
+        vars.selectorsToBlacklist[6] = AmarokFacetPacked.startBridgeTokensViaAmarokERC20MinPayFeeWithAsset.selector;
+        vars.selectorsToBlacklist[7] = AmarokFacetPacked.startBridgeTokensViaAmarokERC20MinPayFeeWithNative.selector;
+
+        for (uint256 j = 0; j < vars.selectorsToBlacklist.length; ++j) {
+            vars.lv.addToBlacklist(vars.selectorsToBlacklist[j]);
+            assert(vars.lv.isSelectorBlacklisted(vars.selectorsToBlacklist[j]));
+        }
         contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
 
         vars.socketValidator = address(new SocketValidator{ salt: salt }(vars.superRegistry));
