@@ -32,3 +32,5 @@ bin/
 lcov.info
 
 report/
+
+package-lock.json

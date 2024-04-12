@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "merkle": "node test/fuzz/rewardsDistributor/merkle-js/generateMerkleTree.js",
+    "test": "node test/fuzz/rewardsDistributor/merkle-js/generateMerkleTree.js && FOUNDRY_PROFILE=test forge test"
+  },
+  "dependencies": {
+    "@openzeppelin/merkle-tree": "^1.0.5"
+  }
+}
