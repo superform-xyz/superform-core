@@ -36,22 +36,20 @@ abstract contract MerkleReader is PRBTest, StdCheats {
 
     /// @dev read the merkle root and proof from js generated tree
     function _generateMerkleTree(
-        uint256 editionId_,
-        address claimer_,
-        uint256 periodId_
+        uint256 periodId_,
+        address claimer_
     )
         internal
         view
         returns (bytes32 root, bytes32[] memory proofsForIndex)
     {
-        string memory editionStr = Strings.toString(editionId_);
-        string memory rootJson = vm.readFile(string.concat(vm.projectRoot(), basePathForRoot, editionStr, ".json"));
+        string memory periodStr = Strings.toString(periodId_);
+        string memory rootJson = vm.readFile(string.concat(vm.projectRoot(), basePathForRoot, periodStr, ".json"));
         bytes memory encodedRoot = vm.parseJson(rootJson, ".root");
         root = abi.decode(encodedRoot, (bytes32));
 
         if (claimer_ != address(0)) {
-            string memory proofJson =
-                vm.readFile(string.concat(vm.projectRoot(), basePathForProof, editionStr, ".json"));
+            string memory proofJson = vm.readFile(string.concat(vm.projectRoot(), basePathForProof, periodStr, ".json"));
 
             /// get the total elements to find out the right proof
             bytes memory encodedValuesJson = vm.parseJson(proofJson, ".values[*]");
@@ -59,13 +57,13 @@ abstract contract MerkleReader is PRBTest, StdCheats {
             uint256 valuesArrLen = valuesArr.length;
 
             for (uint256 i; i < valuesArrLen; ++i) {
-                bytes memory encodedUser =
+                bytes memory encodedClaimer =
                     vm.parseJson(proofJson, string.concat(claimerQueryPrepend, Strings.toString(i), claimerQueryAppend));
                 bytes memory encodedPeriod = vm.parseJson(
                     proofJson, string.concat(periodIdQueryPrepend, Strings.toString(i), periodIdQueryAppend)
                 );
 
-                address claimer = abi.decode(encodedUser, (address));
+                address claimer = abi.decode(encodedClaimer, (address));
                 uint256 periodId = abi.decode(encodedTier, (uint256));
 
                 if (claimer == claimer_ && periodId == periodId_) {
