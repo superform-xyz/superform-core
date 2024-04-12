@@ -16,6 +16,3 @@
 [submodule "lib/surl"]
 	path = lib/surl
 	url = https://github.com/memester-xyz/surl
-[submodule "lib/prb-test"]
-	path = lib/prb-test
-	url = https://github.com/PaulRBerg/prb-test

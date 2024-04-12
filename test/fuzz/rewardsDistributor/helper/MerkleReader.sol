@@ -2,11 +2,12 @@
 pragma solidity ^0.8.23;
 
 import "forge-std/StdJson.sol";
-import { PRBTest } from "@prb/test/PRBTest.sol";
+import "../../../utils/BaseSetup.sol";
+
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
-abstract contract MerkleReader is PRBTest, StdCheats {
+abstract contract MerkleReader is StdCheats, BaseSetup {
     using stdJson for string;
 
     string private basePathForRoot = "/test/fuzz/rewardsDistributor/target/jsGeneratedRoot";
@@ -64,7 +65,7 @@ abstract contract MerkleReader is PRBTest, StdCheats {
                 );
 
                 address claimer = abi.decode(encodedClaimer, (address));
-                uint256 periodId = abi.decode(encodedTier, (uint256));
+                uint256 periodId = abi.decode(encodedPeriod, (uint256));
 
                 if (claimer == claimer_ && periodId == periodId_) {
                     bytes memory encodedProof =

@@ -14,7 +14,7 @@ optimizer_runs = 200
 verbosity = 0
 ffi = true
 libs = ["lib"]
-fs_permissions = [{ access = "read-write", path = "./script/" }]
+fs_permissions = [{ access = "read-write", path = "./" }]
 remappings = [
   "solmate/=lib/ERC1155A/lib/solmate/src/",
   "ERC1155A/=lib/ERC1155A/src/",

@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.23;
 
-import "../../../utils/BaseSetup.sol";
-
 import { RewardsDistributor } from "src/RewardsDistributor.sol";
-import { MerkleReader } from "../helper/MerkleReader.sol";
+import { MerkleReader } from "./helper/MerkleReader.sol";
+import { SuperRBAC } from "src/settings/SuperRBAC.sol";
 
-contract RewardsDistributorFuzzTest is MerkleReader, BaseSetup {
+contract RewardsDistributorFuzzTest is MerkleReader {
     uint256[] public claimedSeeds;
 
     uint256 seedState;
@@ -14,18 +13,21 @@ contract RewardsDistributorFuzzTest is MerkleReader, BaseSetup {
 
     RewardsDistributor public rewards;
 
-    function setUp() public virtual {
+    function setUp() public override {
+        super.setUp();
+
         vm.selectFork(FORKS[OP]);
         vm.startPrank(deployer);
 
-        rewards = new RewardsDistributor(getContract(OP, "SuperRegistry"));
+        rewards = RewardsDistributor(getContract(OP, "RewardsDistributor"));
 
         (bytes32 root,) = _generateMerkleTree(0, address(0));
-
         rewards.setPeriodicRewards(root);
 
         vm.stopPrank();
     }
+
+    function test() public { }
     /*
     function testFuzz_claim(uint256 seed) public {
         if (seed > 29) {
