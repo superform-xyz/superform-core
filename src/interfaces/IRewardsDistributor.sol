@@ -20,10 +20,6 @@ interface IRewardsDistributor {
 
     error MERKLE_ROOT_NOT_SET();
 
-    error MERKLE_ROOT_ALREADY_SET();
-
-    error PREVIOUS_MONTHID_NOT_SET();
-
     error ZERO_ARR_LENGTH();
 
     //////////////////////////////////////////////////////////////
@@ -34,33 +30,32 @@ interface IRewardsDistributor {
     event RewardsClaimed(
         address indexed claimer,
         address indexed receiver,
-        uint256 monthId,
+        uint256 periodId,
         address[] rewardTokens_,
         uint256[] amountsClaimed_
     );
 
-    /// @dev Emitted when new monthly rewards are set.
-    event MonthSet(uint256 indexed monthId, bytes32 merkleRoot);
+    /// @dev Emitted when new periodic rewards are set.
+    event PeriodicRewardsSet(uint256 indexed periodId, bytes32 merkleRoot);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
 
-    /// @notice allows owner to set the merkle root for the monthly rewards
-    /// @param monthId_ is the month identifier
-    /// @param root_ is the merkle root for that month generated offchain
+    /// @notice allows owner to set the merkle root for the current period rewards
+    /// @param root_ is the merkle root for that period generated offchain
     /// @dev [gas-opt]: function is payable to avoid msg.value checks
-    function setMonthlyRewards(uint256 monthId_, bytes32 root_) external payable;
+    function setPeriodicRewards(bytes32 root_) external payable;
 
     /// @notice lets an account claim a given quantity of reward tokens.
     /// @param receiver_ is the receiver of the tokens to claim.
-    /// @param monthId_ is the specific month to claim
-    /// @param rewardTokens_ are the address of the rewards token to claim on the specific month
+    /// @param periodId_ is the specific period to claim
+    /// @param rewardTokens_ are the address of the rewards token to claim on the specific period
     /// @param amountsClaimed_ adre the amount of tokens to claim for each reward token
     /// @param proof_ the merkle proof
     function claim(
         address receiver_,
-        uint256 monthId_,
+        uint256 periodId_,
         address[] calldata rewardTokens_,
         uint256[] calldata amountsClaimed_,
         bytes32[] calldata proof_
@@ -70,7 +65,7 @@ interface IRewardsDistributor {
     /// @notice is a batching version of claim()
     function batchClaim(
         address receiver_,
-        uint256[] calldata monthIds_,
+        uint256[] calldata periodIds_,
         address[][] calldata rewardTokens_,
         uint256[][] calldata amountsClaimed_,
         bytes32[][] calldata proofs_
@@ -83,14 +78,14 @@ interface IRewardsDistributor {
 
     /// @notice helps validate if the claim is valid
     /// @param claimer_ is the address of the claiming wallet
-    /// @param monthId_ is the month identifier
-    /// @param rewardTokens_ are the address of the rewards token to claim on the specific month
+    /// @param periodId_ is the period identifier
+    /// @param rewardTokens_ are the address of the rewards token to claim on the specific period
     /// @param amountsClaimed_ adre the amount of tokens to claim for each reward token
     /// @param proof_ is the merkle proof
-    /// @dev returns false even if proof is valid and user already claimed their monthly rewards
+    /// @dev returns false even if proof is valid and user already claimed their periodic rewards
     function verifyClaim(
         address claimer_,
-        uint256 monthId_,
+        uint256 periodId_,
         address[] calldata rewardTokens_,
         uint256[] calldata amountsClaimed_,
         bytes32[] calldata proof_

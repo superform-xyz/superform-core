@@ -31,11 +31,13 @@ contract RewardsDistributor is IRewardsDistributor {
     //                      STATE VARIABLES                     //
     //////////////////////////////////////////////////////////////
 
-    /// @dev maps the monthly rewards id to its corresponding merkle root
-    mapping(uint256 monthId => bytes32 merkleRoot) public monthMerkleRoot;
+    uint256 public currentPeriodId;
 
-    /// @dev mapping from monthId to claimer address to claimed status
-    mapping(uint256 monthId => mapping(address claimerAddress => bool claimed)) public monthlyRewardsClaimed;
+    /// @dev maps the periodic rewards id to its corresponding merkle root
+    mapping(uint256 periodId => bytes32 merkleRoot) public periodicRewardsMerkleRoot;
+
+    /// @dev mapping from periodId to claimer address to claimed status
+    mapping(uint256 periodId => mapping(address claimerAddress => bool claimed)) public periodicRewardsClaimed;
 
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
@@ -75,20 +77,21 @@ contract RewardsDistributor is IRewardsDistributor {
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IRewardsDistributor
-    function setMonthlyRewards(uint256 monthId_, bytes32 root_) external payable override onlyRewardsAdmin {
+    function setPeriodicRewards(bytes32 root_) external payable override onlyRewardsAdmin {
         if (root_ == ZERO_BYTES32) revert INVALID_MERKLE_ROOT();
-        if (monthMerkleRoot[monthId_] != ZERO_BYTES32) revert MERKLE_ROOT_ALREADY_SET();
-        if (monthId_ != 0 && monthMerkleRoot[monthId_ - 1] == ZERO_BYTES32) revert PREVIOUS_MONTHID_NOT_SET();
 
-        monthMerkleRoot[monthId_] = root_;
+        uint256 periodId = currentPeriodId;
 
-        emit MonthSet(monthId_, root_);
+        periodicRewardsMerkleRoot[periodId] = root_;
+
+        ++currentPeriodId;
+        emit PeriodicRewardsSet(periodId, root_);
     }
 
     /// @inheritdoc IRewardsDistributor
     function claim(
         address receiver_,
-        uint256 monthId_,
+        uint256 periodId_,
         address[] calldata rewardTokens_,
         uint256[] calldata amountsClaimed_,
         bytes32[] calldata proof_
@@ -103,15 +106,15 @@ contract RewardsDistributor is IRewardsDistributor {
         if (tokensToClaim == 0) revert ZERO_ARR_LENGTH();
         if (tokensToClaim != amountsClaimed_.length) revert INVALID_BATCH_REQ();
 
-        _claim(receiver_, monthId_, rewardTokens_, amountsClaimed_, tokensToClaim, proof_);
+        _claim(receiver_, periodId_, rewardTokens_, amountsClaimed_, tokensToClaim, proof_);
 
-        emit RewardsClaimed(msg.sender, receiver_, monthId_, rewardTokens_, amountsClaimed_);
+        emit RewardsClaimed(msg.sender, receiver_, periodId_, rewardTokens_, amountsClaimed_);
     }
 
     /// @inheritdoc IRewardsDistributor
     function batchClaim(
         address receiver_,
-        uint256[] calldata monthIds_,
+        uint256[] calldata periodIds_,
         address[][] calldata rewardTokens_,
         uint256[][] calldata amountsClaimed_,
         bytes32[][] calldata proofs_
@@ -121,7 +124,7 @@ contract RewardsDistributor is IRewardsDistributor {
     {
         if (receiver_ == address(0)) revert INVALID_RECEIVER();
 
-        uint256 len = monthIds_.length;
+        uint256 len = periodIds_.length;
 
         if (len == 0) revert ZERO_ARR_LENGTH();
         if (len != proofs_.length) revert INVALID_BATCH_REQ();
@@ -132,9 +135,9 @@ contract RewardsDistributor is IRewardsDistributor {
             if (tokensToClaim == 0) revert ZERO_ARR_LENGTH();
             if (tokensToClaim != amountsClaimed_[i].length) revert INVALID_BATCH_REQ();
 
-            _claim(receiver_, monthIds_[i], rewardTokens_[i], amountsClaimed_[i], tokensToClaim, proofs_[i]);
+            _claim(receiver_, periodIds_[i], rewardTokens_[i], amountsClaimed_[i], tokensToClaim, proofs_[i]);
 
-            emit RewardsClaimed(msg.sender, receiver_, monthIds_[i], rewardTokens_[i], amountsClaimed_[i]);
+            emit RewardsClaimed(msg.sender, receiver_, periodIds_[i], rewardTokens_[i], amountsClaimed_[i]);
         }
     }
 
@@ -145,7 +148,7 @@ contract RewardsDistributor is IRewardsDistributor {
     /// @inheritdoc IRewardsDistributor
     function verifyClaim(
         address claimer_,
-        uint256 monthId_,
+        uint256 periodId_,
         address[] calldata rewardTokens_,
         uint256[] calldata amountsClaimed_,
         bytes32[] calldata proof_
@@ -155,14 +158,15 @@ contract RewardsDistributor is IRewardsDistributor {
         override
         returns (bool valid)
     {
-        bytes32 root = monthMerkleRoot[monthId_];
+        bytes32 root = periodicRewardsMerkleRoot[periodId_];
         if (root == ZERO_BYTES32) revert MERKLE_ROOT_NOT_SET();
 
-        /// @dev user cannot claim a monthly reward twice
-        if (monthlyRewardsClaimed[monthId_][claimer_]) return false;
+        /// @dev user cannot claim a periodic reward twice
+        if (periodicRewardsClaimed[periodId_][claimer_]) return false;
 
-        bytes32 leaf =
-            keccak256(bytes.concat(keccak256(abi.encode(claimer_, monthId_, rewardTokens_, amountsClaimed_))));
+        bytes32 leaf = keccak256(
+            bytes.concat(keccak256(abi.encode(claimer_, periodId_, rewardTokens_, amountsClaimed_, CHAIN_ID)))
+        );
         return MerkleProof.verify(proof_, root, leaf);
     }
 
@@ -173,7 +177,7 @@ contract RewardsDistributor is IRewardsDistributor {
     /// @notice helper function for processing claim
     function _claim(
         address receiver_,
-        uint256 monthId_,
+        uint256 periodId_,
         address[] calldata rewardTokens_,
         uint256[] calldata amountsClaimed_,
         uint256 tokensToClaim_,
@@ -181,9 +185,9 @@ contract RewardsDistributor is IRewardsDistributor {
     )
         internal
     {
-        if (!verifyClaim(msg.sender, monthId_, rewardTokens_, amountsClaimed_, proof_)) revert INVALID_CLAIM();
+        if (!verifyClaim(msg.sender, periodId_, rewardTokens_, amountsClaimed_, proof_)) revert INVALID_CLAIM();
 
-        monthlyRewardsClaimed[monthId_][receiver_] = true;
+        periodicRewardsClaimed[periodId_][receiver_] = true;
 
         _transferRewards(receiver_, rewardTokens_, amountsClaimed_, tokensToClaim_);
     }
@@ -197,7 +201,7 @@ contract RewardsDistributor is IRewardsDistributor {
     )
         internal
     {
-        for (uint256 i = 0; i < tokensToClaim_; ++i) {
+        for (uint256 i; i < tokensToClaim_; ++i) {
             IERC20(rewardTokens_[i]).safeTransfer(to_, amountsClaimed_[i]);
         }
     }
