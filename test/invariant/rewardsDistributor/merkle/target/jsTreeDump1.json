@@ -1,0 +1,469 @@
+{
+    "format": "standard-v1",
+    "tree": [
+        "0x277d5b6658653a916ad55a11dd7f091a13dc0bacc980ae25b87ab7e7d4ccf2df",
+        "0xd33c8b06368de269246c33d4c281e5241ec5f8cbe8b9f43d728700c8d29c4436",
+        "0xab6e6313e5fbe825dcb014875538b19f9a978f17050e43521b56b9df389280d3",
+        "0x7148f6594d54756675060e98fe9104bacf750a38ddb5e25b2ae8e48b561921a2",
+        "0xc43ed9939280ddb943aad5d8f2d36282481ca73b25bd782a81e1001a2af2cdf8",
+        "0x51c5de7242498a28be7795771cc57b2bcdf756a8c0462c6d29c90a1f9c55a5fc",
+        "0x1c7c15269a4cdf5788bb443217a78515f17df4d8191c5f61824432eb60fd24ab",
+        "0x1fc8ef84080442e0044367f01ca14d0845d24511387e504f8f8932cc5482b524",
+        "0x0983abefe8a9db95a117c2fb8ebc4f0365cda942afd48c54be8496c3401b7e73",
+        "0x806fcdc6abfd181da4249ad92f8b00769e3370e708f61d74358439166feae7b5",
+        "0x8e93b4561a466737174871670c4dbebb7b0070cdbd0b4bf4713dc584a7dbdfcb",
+        "0x1fd9d8343c24b9536dfe4479804c146a16bb287d88d01922b19f43402097ddaa",
+        "0x39fc9b22e62db17e72f5394554f73729b6783979856614180977312567f28652",
+        "0xec518eff39d003189ffd7597cb3e4ab31350122c292df371f6abf1f628a2600f",
+        "0xeb0ca25b44040aeb9de4e2f9cecd9b5aa4cf6108436a1323775896d40a2911fd",
+        "0xcd088120c23b24b2f97a5f3d6d02aafd75d5f9fc48f0e3e5c2717fd63e89827a",
+        "0xc25e1eb9e83c6f6aece3bb98eaf9f03354dca3bf270c7e3e838b2c43087ed1a4",
+        "0xab224786611469aa8beb36efd79e6eefca4e05719b5d35cd9c7c33ebd54f5993",
+        "0x8514a0b6ae933cf8ea2e4709f7b6528462888e7734b1ebc0d82fbc5a17015672",
+        "0x84d7918f10039264730383e9772d6a1334edfdb06db2c8b6601143a376cdecfd",
+        "0x82e5867b94c236f13f080e9293dc6f8e8eed867bf29db788a9661badfceaedce",
+        "0x72c458152008b5c10d586e469127c4138fd8cbc6ea2f7919181f4b358889bc0a",
+        "0x69992e3382b0388f0e28dac22918680f4557eb241327919f5992c3e6f842150f",
+        "0x541c95f81dd24ec940cc826e49c42fb9c1f3659bf3546dc05cec06f0783974b3",
+        "0x42493e6cf28b8de16840c8d0fb89ab8321c9d400de84329c682a48f77a538172",
+        "0x26a549ed79e300f02013a38426ea72e0ef59938705cd7507142972a36d2cfcce",
+        "0x18da770deb0c81fe8aee1cb3e37784672499457d659671933b525c474b21457b"
+    ],
+    "values": [
+        {
+            "value": [
+                "0x0000000000000000000000000000000000000001",
+                "0",
+                [
+                    "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+                ],
+                [
+                    161
+                ],
+                "10"
+            ],
+            "treeIndex": 16,
+            "claimer": "0x0000000000000000000000000000000000000001",
+            "periodId": 0,
+            "rewardTokens": [
+                "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+            ],
+            "amountsClaimed": [
+                161
+            ],
+            "chainId": 10,
+            "proof": [
+                "0xcd088120c23b24b2f97a5f3d6d02aafd75d5f9fc48f0e3e5c2717fd63e89827a",
+                "0x0983abefe8a9db95a117c2fb8ebc4f0365cda942afd48c54be8496c3401b7e73",
+                "0xc43ed9939280ddb943aad5d8f2d36282481ca73b25bd782a81e1001a2af2cdf8",
+                "0xab6e6313e5fbe825dcb014875538b19f9a978f17050e43521b56b9df389280d3"
+            ]
+        },
+        {
+            "value": [
+                "0x0000000000000000000000000000000000000002",
+                "0",
+                [
+                    "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+                    "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+                ],
+                [
+                    864,
+                    511
+                ],
+                "10"
+            ],
+            "treeIndex": 21,
+            "claimer": "0x0000000000000000000000000000000000000002",
+            "periodId": 0,
+            "rewardTokens": [
+                "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+                "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+            ],
+            "amountsClaimed": [
+                864,
+                511
+            ],
+            "chainId": 10,
+            "proof": [
+                "0x69992e3382b0388f0e28dac22918680f4557eb241327919f5992c3e6f842150f",
+                "0x806fcdc6abfd181da4249ad92f8b00769e3370e708f61d74358439166feae7b5",
+                "0x7148f6594d54756675060e98fe9104bacf750a38ddb5e25b2ae8e48b561921a2",
+                "0xab6e6313e5fbe825dcb014875538b19f9a978f17050e43521b56b9df389280d3"
+            ]
+        },
+        {
+            "value": [
+                "0x0000000000000000000000000000000000000003",
+                "0",
+                [
+                    "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+                ],
+                [
+                    99
+                ],
+                "10"
+            ],
+            "treeIndex": 26,
+            "claimer": "0x0000000000000000000000000000000000000003",
+            "periodId": 0,
+            "rewardTokens": [
+                "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+            ],
+            "amountsClaimed": [
+                99
+            ],
+            "chainId": 10,
+            "proof": [
+                "0x26a549ed79e300f02013a38426ea72e0ef59938705cd7507142972a36d2cfcce",
+                "0x1fd9d8343c24b9536dfe4479804c146a16bb287d88d01922b19f43402097ddaa",
+                "0x1c7c15269a4cdf5788bb443217a78515f17df4d8191c5f61824432eb60fd24ab",
+                "0xd33c8b06368de269246c33d4c281e5241ec5f8cbe8b9f43d728700c8d29c4436"
+            ]
+        },
+        {
+            "value": [
+                "0x0000000000000000000000000000000000000004",
+                "0",
+                [
+                    "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+                    "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+                ],
+                [
+                    300,
+                    16
+                ],
+                "10"
+            ],
+            "treeIndex": 19,
+            "claimer": "0x0000000000000000000000000000000000000004",
+            "periodId": 0,
+            "rewardTokens": [
+                "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+                "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+            ],
+            "amountsClaimed": [
+                300,
+                16
+            ],
+            "chainId": 10,
+            "proof": [
+                "0x82e5867b94c236f13f080e9293dc6f8e8eed867bf29db788a9661badfceaedce",
+                "0x8e93b4561a466737174871670c4dbebb7b0070cdbd0b4bf4713dc584a7dbdfcb",
+                "0x7148f6594d54756675060e98fe9104bacf750a38ddb5e25b2ae8e48b561921a2",
+                "0xab6e6313e5fbe825dcb014875538b19f9a978f17050e43521b56b9df389280d3"
+            ]
+        },
+        {
+            "value": [
+                "0x0000000000000000000000000000000000000005",
+                "0",
+                [
+                    "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+                ],
+                [
+                    509
+                ],
+                "10"
+            ],
+            "treeIndex": 22,
+            "claimer": "0x0000000000000000000000000000000000000005",
+            "periodId": 0,
+            "rewardTokens": [
+                "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+            ],
+            "amountsClaimed": [
+                509
+            ],
+            "chainId": 10,
+            "proof": [
+                "0x72c458152008b5c10d586e469127c4138fd8cbc6ea2f7919181f4b358889bc0a",
+                "0x806fcdc6abfd181da4249ad92f8b00769e3370e708f61d74358439166feae7b5",
+                "0x7148f6594d54756675060e98fe9104bacf750a38ddb5e25b2ae8e48b561921a2",
+                "0xab6e6313e5fbe825dcb014875538b19f9a978f17050e43521b56b9df389280d3"
+            ]
+        },
+        {
+            "value": [
+                "0x0000000000000000000000000000000000000006",
+                "0",
+                [
+                    "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+                    "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+                ],
+                [
+                    733,
+                    760
+                ],
+                "10"
+            ],
+            "treeIndex": 25,
+            "claimer": "0x0000000000000000000000000000000000000006",
+            "periodId": 0,
+            "rewardTokens": [
+                "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+                "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+            ],
+            "amountsClaimed": [
+                733,
+                760
+            ],
+            "chainId": 10,
+            "proof": [
+                "0x18da770deb0c81fe8aee1cb3e37784672499457d659671933b525c474b21457b",
+                "0x1fd9d8343c24b9536dfe4479804c146a16bb287d88d01922b19f43402097ddaa",
+                "0x1c7c15269a4cdf5788bb443217a78515f17df4d8191c5f61824432eb60fd24ab",
+                "0xd33c8b06368de269246c33d4c281e5241ec5f8cbe8b9f43d728700c8d29c4436"
+            ]
+        },
+        {
+            "value": [
+                "0x0000000000000000000000000000000000000007",
+                "0",
+                [
+                    "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+                ],
+                [
+                    911
+                ],
+                "10"
+            ],
+            "treeIndex": 24,
+            "claimer": "0x0000000000000000000000000000000000000007",
+            "periodId": 0,
+            "rewardTokens": [
+                "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+            ],
+            "amountsClaimed": [
+                911
+            ],
+            "chainId": 10,
+            "proof": [
+                "0x541c95f81dd24ec940cc826e49c42fb9c1f3659bf3546dc05cec06f0783974b3",
+                "0x39fc9b22e62db17e72f5394554f73729b6783979856614180977312567f28652",
+                "0x1c7c15269a4cdf5788bb443217a78515f17df4d8191c5f61824432eb60fd24ab",
+                "0xd33c8b06368de269246c33d4c281e5241ec5f8cbe8b9f43d728700c8d29c4436"
+            ]
+        },
+        {
+            "value": [
+                "0x0000000000000000000000000000000000000008",
+                "0",
+                [
+                    "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+                    "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+                ],
+                [
+                    406,
+                    65
+                ],
+                "10"
+            ],
+            "treeIndex": 13,
+            "claimer": "0x0000000000000000000000000000000000000008",
+            "periodId": 0,
+            "rewardTokens": [
+                "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+                "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+            ],
+            "amountsClaimed": [
+                406,
+                65
+            ],
+            "chainId": 10,
+            "proof": [
+                "0xeb0ca25b44040aeb9de4e2f9cecd9b5aa4cf6108436a1323775896d40a2911fd",
+                "0x51c5de7242498a28be7795771cc57b2bcdf756a8c0462c6d29c90a1f9c55a5fc",
+                "0xd33c8b06368de269246c33d4c281e5241ec5f8cbe8b9f43d728700c8d29c4436"
+            ]
+        },
+        {
+            "value": [
+                "0x0000000000000000000000000000000000000009",
+                "0",
+                [
+                    "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+                    "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+                ],
+                [
+                    613,
+                    281
+                ],
+                "10"
+            ],
+            "treeIndex": 18,
+            "claimer": "0x0000000000000000000000000000000000000009",
+            "periodId": 0,
+            "rewardTokens": [
+                "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+                "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+            ],
+            "amountsClaimed": [
+                613,
+                281
+            ],
+            "chainId": 10,
+            "proof": [
+                "0xab224786611469aa8beb36efd79e6eefca4e05719b5d35cd9c7c33ebd54f5993",
+                "0x1fc8ef84080442e0044367f01ca14d0845d24511387e504f8f8932cc5482b524",
+                "0xc43ed9939280ddb943aad5d8f2d36282481ca73b25bd782a81e1001a2af2cdf8",
+                "0xab6e6313e5fbe825dcb014875538b19f9a978f17050e43521b56b9df389280d3"
+            ]
+        },
+        {
+            "value": [
+                "0x0000000000000000000000000000000000000010",
+                "0",
+                [
+                    "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+                    "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+                ],
+                [
+                    315,
+                    540
+                ],
+                "10"
+            ],
+            "treeIndex": 17,
+            "claimer": "0x0000000000000000000000000000000000000010",
+            "periodId": 0,
+            "rewardTokens": [
+                "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+                "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+            ],
+            "amountsClaimed": [
+                315,
+                540
+            ],
+            "chainId": 10,
+            "proof": [
+                "0x8514a0b6ae933cf8ea2e4709f7b6528462888e7734b1ebc0d82fbc5a17015672",
+                "0x1fc8ef84080442e0044367f01ca14d0845d24511387e504f8f8932cc5482b524",
+                "0xc43ed9939280ddb943aad5d8f2d36282481ca73b25bd782a81e1001a2af2cdf8",
+                "0xab6e6313e5fbe825dcb014875538b19f9a978f17050e43521b56b9df389280d3"
+            ]
+        },
+        {
+            "value": [
+                "0x0000000000000000000000000000000000000011",
+                "0",
+                [
+                    "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85"
+                ],
+                [
+                    641
+                ],
+                "10"
+            ],
+            "treeIndex": 15,
+            "claimer": "0x0000000000000000000000000000000000000011",
+            "periodId": 0,
+            "rewardTokens": [
+                "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85"
+            ],
+            "amountsClaimed": [
+                641
+            ],
+            "chainId": 10,
+            "proof": [
+                "0xc25e1eb9e83c6f6aece3bb98eaf9f03354dca3bf270c7e3e838b2c43087ed1a4",
+                "0x0983abefe8a9db95a117c2fb8ebc4f0365cda942afd48c54be8496c3401b7e73",
+                "0xc43ed9939280ddb943aad5d8f2d36282481ca73b25bd782a81e1001a2af2cdf8",
+                "0xab6e6313e5fbe825dcb014875538b19f9a978f17050e43521b56b9df389280d3"
+            ]
+        },
+        {
+            "value": [
+                "0x0000000000000000000000000000000000000012",
+                "0",
+                [
+                    "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85"
+                ],
+                [
+                    67
+                ],
+                "10"
+            ],
+            "treeIndex": 23,
+            "claimer": "0x0000000000000000000000000000000000000012",
+            "periodId": 0,
+            "rewardTokens": [
+                "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85"
+            ],
+            "amountsClaimed": [
+                67
+            ],
+            "chainId": 10,
+            "proof": [
+                "0x42493e6cf28b8de16840c8d0fb89ab8321c9d400de84329c682a48f77a538172",
+                "0x39fc9b22e62db17e72f5394554f73729b6783979856614180977312567f28652",
+                "0x1c7c15269a4cdf5788bb443217a78515f17df4d8191c5f61824432eb60fd24ab",
+                "0xd33c8b06368de269246c33d4c281e5241ec5f8cbe8b9f43d728700c8d29c4436"
+            ]
+        },
+        {
+            "value": [
+                "0x0000000000000000000000000000000000000013",
+                "0",
+                [
+                    "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85"
+                ],
+                [
+                    100
+                ],
+                "10"
+            ],
+            "treeIndex": 20,
+            "claimer": "0x0000000000000000000000000000000000000013",
+            "periodId": 0,
+            "rewardTokens": [
+                "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85"
+            ],
+            "amountsClaimed": [
+                100
+            ],
+            "chainId": 10,
+            "proof": [
+                "0x84d7918f10039264730383e9772d6a1334edfdb06db2c8b6601143a376cdecfd",
+                "0x8e93b4561a466737174871670c4dbebb7b0070cdbd0b4bf4713dc584a7dbdfcb",
+                "0x7148f6594d54756675060e98fe9104bacf750a38ddb5e25b2ae8e48b561921a2",
+                "0xab6e6313e5fbe825dcb014875538b19f9a978f17050e43521b56b9df389280d3"
+            ]
+        },
+        {
+            "value": [
+                "0x0000000000000000000000000000000000000014",
+                "0",
+                [
+                    "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85"
+                ],
+                [
+                    93
+                ],
+                "10"
+            ],
+            "treeIndex": 14,
+            "claimer": "0x0000000000000000000000000000000000000014",
+            "periodId": 0,
+            "rewardTokens": [
+                "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85"
+            ],
+            "amountsClaimed": [
+                93
+            ],
+            "chainId": 10,
+            "proof": [
+                "0xec518eff39d003189ffd7597cb3e4ab31350122c292df371f6abf1f628a2600f",
+                "0x51c5de7242498a28be7795771cc57b2bcdf756a8c0462c6d29c90a1f9c55a5fc",
+                "0xd33c8b06368de269246c33d4c281e5241ec5f8cbe8b9f43d728700c8d29c4436"
+            ]
+        }
+    ],
+    "leafEncoding": [
+        "address",
+        "uint256",
+        "address[]",
+        "uint256[]",
+        "uint256"
+    ]
+}

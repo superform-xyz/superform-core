@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import "test/utils/InvariantProtocolActions.sol";
 import { VaultSharesStore } from "../stores/VaultSharesStore.sol";
-import { TimestampStore } from "../stores/TimestampStore.sol";
+import { TimestampStore } from "../../common/TimestampStore.sol";
 
 contract VaultSharesHandler is InvariantProtocolActions {
     VaultSharesStore public vaultSharesStore;

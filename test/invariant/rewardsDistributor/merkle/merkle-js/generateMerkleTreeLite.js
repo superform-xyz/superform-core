@@ -3,8 +3,6 @@ const fs = require("fs");
 let constructedData = {
     types: ["address", "uint256", "address[]", "uint256[]", "uint256"],
     count: 0,
-    totalAmountUSDC: 0,
-    totalAmountDAI: 0,
     values: {},
 };
 
@@ -26,7 +24,6 @@ for (let i = 0; ; ++i) {
         claimer = `0x00000000000000000000000000000000000000${(i + 1)}`
     }
 
-    claimers.push(claimer);
 
     /// number of token types to receive
     const randomNumberOfTokenTypes = Math.floor(Math.random() * maxRewardTokenTypes) + 1;
@@ -51,6 +48,8 @@ for (let i = 0; ; ++i) {
         } else {
             break;
         }
+        claimers.push(claimer);
+
         continue;
     } else if (randomNumberOfTokenTypes === 2) {
         if (usdc > 0 && dai > 0) {
@@ -66,6 +65,8 @@ for (let i = 0; ; ++i) {
         } else {
             break;
         }
+        claimers.push(claimer);
+
         continue;
     }
 }
@@ -73,10 +74,9 @@ console.log(`Total amount USDC: ${totalAmountUSDC}`);
 console.log(`Total amount DAI: ${totalAmountDAI}`);
 console.log(`Number of claimers: ${claimers.length}`)
 
-constructedData.totalAmountUSDC = totalAmountUSDC;
-constructedData.totalAmountDAI = totalAmountDAI;
+
 constructedData.count = claimers.length;
 
-fs.writeFileSync(`test/fuzz/rewardsDistributor/target/input1.json`, JSON.stringify(constructedData));
+fs.writeFileSync(`test/invariant/rewardsDistributor/merkle/target/input1.json`, JSON.stringify(constructedData));
 return;
 

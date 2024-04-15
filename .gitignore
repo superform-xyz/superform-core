@@ -34,3 +34,5 @@ lcov.info
 report/
 
 package-lock.json
+
+output.txt

@@ -3,12 +3,13 @@ const fs = require("fs");
 
 
 /// read all the files in target folder
-let files = fs.readdirSync('test/fuzz/rewardsDistributor/target/');
+let files = fs.readdirSync('test/invariant/rewardsDistributor/merkle/target/');
 let filteredFiles = files.filter(file => file.startsWith("input"))
 let constructedData = [];
 
 for (let i = 0; i < filteredFiles.length; ++i) {
   const jsonTreeData = require(`../target/${filteredFiles[i]}`);
+  console.log(`Processing file: ${filteredFiles[i]}`);
   for (let j = 0; j < jsonTreeData.count; ++j) {
     if (jsonTreeData.values[j][2].length != jsonTreeData.values[j][3].length) {
       throw new Error("Invalid input data");
@@ -33,10 +34,13 @@ for (let i = 0; i < filteredFiles.length; ++i) {
     treeDump.values[i].rewardTokens = treeDump.values[i].value[2].map((value) => value.toString());
     treeDump.values[i].amountsClaimed = treeDump.values[i].value[3].map((value) => parseInt(value));
     treeDump.values[i].chainId = parseInt(treeDump.values[i].value[4]);
+    treeDump.values[i].proof = proof;
+
   }
 
   /// step 4: write the tree and root for further use
-  fs.writeFileSync(`test/fuzz/rewardsDistributor/target/jsGeneratedRoot${i}.json`, JSON.stringify({ "root": root }));
-  fs.writeFileSync(`test/fuzz/rewardsDistributor/target/jsTreeDump${i}.json`, JSON.stringify(treeDump));
+  fs.writeFileSync(`test/invariant/rewardsDistributor/merkle/target/jsGeneratedRoot${i}.json`, JSON.stringify({ "root": root }));
+  fs.writeFileSync(`test/invariant/rewardsDistributor/merkle/target/jsTreeDump${i}.json`, JSON.stringify(treeDump));
   constructedData = [];
+  console.log(' Processed ')
 }
