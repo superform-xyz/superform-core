@@ -13,6 +13,43 @@ contract RewardsDistributorFuzzTest is MerkleReader {
 
     RewardsDistributor public rewards;
 
+    mapping(address => bool) public isUserSelected;
+
+    address[] public testUsers;
+    address[] public selectedUsers;
+    address[30] public defaultUsers = [
+        0x0000000000000000000000000000000000000001,
+        0x0000000000000000000000000000000000000002,
+        0x0000000000000000000000000000000000000003,
+        0x0000000000000000000000000000000000000004,
+        0x0000000000000000000000000000000000000005,
+        0x0000000000000000000000000000000000000006,
+        0x0000000000000000000000000000000000000007,
+        0x0000000000000000000000000000000000000008,
+        0x0000000000000000000000000000000000000009,
+        0x0000000000000000000000000000000000000010,
+        0x0000000000000000000000000000000000000011,
+        0x0000000000000000000000000000000000000012,
+        0x0000000000000000000000000000000000000013,
+        0x0000000000000000000000000000000000000014,
+        0x0000000000000000000000000000000000000015,
+        0x0000000000000000000000000000000000000016,
+        0x0000000000000000000000000000000000000017,
+        0x0000000000000000000000000000000000000018,
+        0x0000000000000000000000000000000000000019,
+        0x0000000000000000000000000000000000000020,
+        0x0000000000000000000000000000000000000021,
+        0x0000000000000000000000000000000000000022,
+        0x0000000000000000000000000000000000000023,
+        0x0000000000000000000000000000000000000024,
+        0x0000000000000000000000000000000000000025,
+        0x0000000000000000000000000000000000000026,
+        0x0000000000000000000000000000000000000027,
+        0x0000000000000000000000000000000000000028,
+        0x0000000000000000000000000000000000000029,
+        0x0000000000000000000000000000000000000030
+    ];
+
     function setUp() public override {
         super.setUp();
 
@@ -21,89 +58,39 @@ contract RewardsDistributorFuzzTest is MerkleReader {
 
         rewards = RewardsDistributor(getContract(OP, "RewardsDistributor"));
 
-        (bytes32 root,) = _generateMerkleTree(0, address(0));
+        (bytes32 root,) = _generateMerkleTree(0, address(0), OP);
         rewards.setPeriodicRewards(root);
+
+        /// @dev add max amount of users here
+        for (uint256 i; i < 15; i++) {
+            testUsers.push(defaultUsers[i]);
+        }
 
         vm.stopPrank();
     }
 
     function test() public { }
-    /*
+
     function testFuzz_claim(uint256 seed) public {
-        if (seed > 29) {
-            if (!limitRchd) {
-                seed = ++seedState;
-
-                if (seed >= 29) {
-                    limitRchd = !limitRchd;
-                }
-            } else {
-                seed = --seedState;
-
-                if (seed <= 1) {
-                    limitRchd = !limitRchd;
-                }
-            }
-        }
-
-        address[30] memory users = [
-            0x0000000000000000000000000000000000000001,
-            0x0000000000000000000000000000000000000002,
-            0x0000000000000000000000000000000000000003,
-            0x0000000000000000000000000000000000000004,
-            0x0000000000000000000000000000000000000005,
-            0x0000000000000000000000000000000000000006,
-            0x0000000000000000000000000000000000000007,
-            0x0000000000000000000000000000000000000008,
-            0x0000000000000000000000000000000000000009,
-            0x0000000000000000000000000000000000000010,
-            0x0000000000000000000000000000000000000011,
-            0x0000000000000000000000000000000000000012,
-            0x0000000000000000000000000000000000000013,
-            0x0000000000000000000000000000000000000014,
-            0x0000000000000000000000000000000000000015,
-            0x0000000000000000000000000000000000000016,
-            0x0000000000000000000000000000000000000017,
-            0x0000000000000000000000000000000000000018,
-            0x0000000000000000000000000000000000000019,
-            0x0000000000000000000000000000000000000020,
-            0x0000000000000000000000000000000000000021,
-            0x0000000000000000000000000000000000000022,
-            0x0000000000000000000000000000000000000023,
-            0x0000000000000000000000000000000000000024,
-            0x0000000000000000000000000000000000000025,
-            0x0000000000000000000000000000000000000026,
-            0x0000000000000000000000000000000000000027,
-            0x0000000000000000000000000000000000000028,
-            0x0000000000000000000000000000000000000029,
-            0x0000000000000000000000000000000000000030
-        ];
-
-        for (uint256 i; i < seed; i++) {
-            uint256 tierId;
-            if (i < 1) {
-                tierId = 0;
-            } else if (i < 2) {
-                tierId = 1;
-            } else if (i < 3) {
-                tierId = 2;
-            } else if (i < 5) {
-                tierId = 3;
-            } else if (i < 10) {
-                tierId = 4;
-            } else if (i < 20) {
-                tierId = 5;
-            } else {
-                tierId = 6;
-            }
-
-            _assertAndClaimLite(users[i], tierId, forger, _contains(i));
-            _checkAndForge(tierId);
-
-            claimedSeeds.push(i);
-        }
+        /// bound seed to max number of users
+        /// randomly select a user
+        /// claim funds for that user
     }
 
+    function testFuzz_claim(uint256 seed) public {
+        vm.assume(seed < 20);
+
+        address selectedUser = testUsers[seed];
+
+        require(!isUserSelected[selectedUser], "User has already been selected");
+
+        // Mark the user as selected
+        isUserSelected[selectedUser] = true;
+        selectedUsers.push(selectedUser);
+
+        // claim funds for that user
+    }
+    /*
     function _contains(uint256 seed) internal view returns (bool) {
         for (uint256 i; i < claimedSeeds.length; i++) {
             if (claimedSeeds[i] == seed) {

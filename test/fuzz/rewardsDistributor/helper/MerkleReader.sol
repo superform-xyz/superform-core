@@ -12,33 +12,40 @@ abstract contract MerkleReader is StdCheats, BaseSetup {
 
     string private basePathForRoot = "/test/fuzz/rewardsDistributor/target/jsGeneratedRoot";
     string private basePathForProof = "/test/fuzz/rewardsDistributor/target/jsTreeDump";
-    string private claimerQueryPrepend = ".values[";
+
+    string private prepend = ".values[";
+
     string private claimerQueryAppend = "].claimer";
 
-    string private periodIdQueryPrepend = ".values[";
     string private periodIdQueryAppend = "].periodId";
 
-    string private rewardTokensQueryPrepend = ".values[";
     string private rewardTokensQueryAppend = "].rewardTokens";
 
-    string private amountsClaimedQueryPrepend = ".values[";
     string private amountsClaimedQueryAppend = "].amountsClaimed";
 
-    string private chainIdQueryPrepend = ".values[";
     string private chainIdQueryAppend = "].chainId";
 
-    string private proofQueryPrepend = ".values[";
     string private proofQueryAppend = "].proof";
 
-    struct Value {
+    struct LocalVars {
+        bytes encodedClaimer;
+        bytes encodedPeriod;
+        bytes encodedRewardTokens;
+        bytes encodedAmountsClaimed;
+        bytes encodedChainId;
+        bytes encodedProof;
         address claimer;
         uint256 periodId;
+        address[] rewardTokens;
+        uint256[] amountsClaimed;
+        uint256 chainId;
     }
 
     /// @dev read the merkle root and proof from js generated tree
     function _generateMerkleTree(
         uint256 periodId_,
-        address claimer_
+        address claimer_,
+        uint256 chainId_
     )
         internal
         view
@@ -48,8 +55,9 @@ abstract contract MerkleReader is StdCheats, BaseSetup {
         string memory rootJson = vm.readFile(string.concat(vm.projectRoot(), basePathForRoot, periodStr, ".json"));
         bytes memory encodedRoot = vm.parseJson(rootJson, ".root");
         root = abi.decode(encodedRoot, (bytes32));
-
         if (claimer_ != address(0)) {
+            LocalVars memory v;
+
             string memory proofJson = vm.readFile(string.concat(vm.projectRoot(), basePathForProof, periodStr, ".json"));
 
             /// get the total elements to find out the right proof
@@ -58,19 +66,27 @@ abstract contract MerkleReader is StdCheats, BaseSetup {
             uint256 valuesArrLen = valuesArr.length;
 
             for (uint256 i; i < valuesArrLen; ++i) {
-                bytes memory encodedClaimer =
-                    vm.parseJson(proofJson, string.concat(claimerQueryPrepend, Strings.toString(i), claimerQueryAppend));
-                bytes memory encodedPeriod = vm.parseJson(
-                    proofJson, string.concat(periodIdQueryPrepend, Strings.toString(i), periodIdQueryAppend)
-                );
+                v.encodedClaimer =
+                    vm.parseJson(proofJson, string.concat(prepend, Strings.toString(i), claimerQueryAppend));
+                v.encodedPeriod =
+                    vm.parseJson(proofJson, string.concat(prepend, Strings.toString(i), periodIdQueryAppend));
+                v.encodedRewardTokens =
+                    vm.parseJson(proofJson, string.concat(prepend, Strings.toString(i), rewardTokensQueryAppend));
+                v.encodedAmountsClaimed =
+                    vm.parseJson(proofJson, string.concat(prepend, Strings.toString(i), amountsClaimedQueryAppend));
+                v.encodedChainId =
+                    vm.parseJson(proofJson, string.concat(prepend, Strings.toString(i), chainIdQueryAppend));
 
-                address claimer = abi.decode(encodedClaimer, (address));
-                uint256 periodId = abi.decode(encodedPeriod, (uint256));
+                v.claimer = abi.decode(v.encodedClaimer, (address));
+                v.periodId = abi.decode(v.encodedPeriod, (uint256));
+                v.rewardTokens = abi.decode(v.encodedRewardTokens, (address[]));
+                v.amountsClaimed = abi.decode(v.encodedAmountsClaimed, (uint256[]));
+                v.chainId = abi.decode(v.encodedChainId, (uint256));
 
-                if (claimer == claimer_ && periodId == periodId_) {
-                    bytes memory encodedProof =
-                        vm.parseJson(proofJson, string.concat(proofQueryPrepend, Strings.toString(i), proofQueryAppend));
-                    proofsForIndex = abi.decode(encodedProof, (bytes32[]));
+                if (v.claimer == claimer_ && v.periodId == periodId_ && v.chainId == chainId_) {
+                    v.encodedProof =
+                        vm.parseJson(proofJson, string.concat(prepend, Strings.toString(i), proofQueryAppend));
+                    proofsForIndex = abi.decode(v.encodedProof, (bytes32[]));
                     break;
                 }
             }

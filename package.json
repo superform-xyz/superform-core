@@ -1,6 +1,7 @@
 {
   "scripts": {
     "merkle": "node test/fuzz/rewardsDistributor/merkle-js/generateMerkleTree.js",
+    "merkle-lite": "node test/fuzz/rewardsDistributor/merkle-js/generateMerkleTreeLite.js",
     "test": "node test/fuzz/rewardsDistributor/merkle-js/generateMerkleTree.js && FOUNDRY_PROFILE=test forge test"
   },
   "dependencies": {
