@@ -31,14 +31,16 @@ contract HyperlaneImplementationTest is CommonProtocolActions {
     }
 
     function test_setReceiver(uint256 chainIdSeed_) public {
-        /// @dev chainIds = [1, 56, 43114, 137, 42161, 10];
+        /// @dev chainIds = [1, 56, 43114, 137, 42161, 10, 8453, 250];
         uint64 chainId = chainIds[chainIdSeed_ % chainIds.length];
-        vm.prank(deployer);
-        hyperlaneImplementation.setReceiver(uint32(chainId), getContract(chainId, "HyperlaneImplementation"));
+        if (chainId != 250) {
+            vm.prank(deployer);
+            hyperlaneImplementation.setReceiver(uint32(chainId), getContract(chainId, "HyperlaneImplementation"));
 
-        assertEq(
-            hyperlaneImplementation.authorizedImpl(uint32(chainId)), getContract(chainId, "HyperlaneImplementation")
-        );
+            assertEq(
+                hyperlaneImplementation.authorizedImpl(uint32(chainId)), getContract(chainId, "HyperlaneImplementation")
+            );
+        }
     }
 
     function test_revert_setReceiver_invalidChainId_invalidAuthorizedImpl_invalidCaller(

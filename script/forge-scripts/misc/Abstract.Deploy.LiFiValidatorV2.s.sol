@@ -5,7 +5,6 @@ import "../EnvironmentUtils.s.sol";
 
 import { BatchScript } from "../safe/BatchScript.sol";
 
-import "forge-std/console.sol";
 
 struct UpdateVars {
     uint64 chainId;
@@ -45,6 +44,7 @@ abstract contract AbstractDeployLiFiValidatorV2 is BatchScript, EnvironmentUtils
 
         vm.stopBroadcast();
 
+        /// @dev we use normal export contract to not override v1 contracts
         for (uint256 j = 0; j < contractNames.length; j++) {
             _exportContract(
                 chainNames[trueIndex], contractNames[j], getContract(vars.chainId, contractNames[j]), vars.chainId

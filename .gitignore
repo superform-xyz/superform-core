@@ -23,6 +23,7 @@ broadcast
 # foundry
 forge-cache/
 out/
+localdev/
 artifacts_forge
 bin/
 

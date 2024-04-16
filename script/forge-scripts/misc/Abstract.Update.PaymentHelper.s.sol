@@ -5,7 +5,6 @@ import "../EnvironmentUtils.s.sol";
 
 import { BatchScript } from "../safe/BatchScript.sol";
 
-import "forge-std/console.sol";
 
 struct UpdateVars {
     uint64 chainId;
@@ -14,8 +13,6 @@ struct UpdateVars {
 }
 
 abstract contract AbstractUpdatePaymentHelper is BatchScript, EnvironmentUtils {
-    mapping(uint64 => mapping(uint256 => bytes)) public GAS_USED;
-
     function _setGasUsed() internal {
         mapping(uint64 => mapping(uint256 => bytes)) storage gasUsed = GAS_USED;
 
