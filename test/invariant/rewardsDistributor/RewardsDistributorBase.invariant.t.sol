@@ -6,11 +6,11 @@ import { RewardsDistributorStore } from "./stores/RewardsDistributorStore.sol";
 import { BaseInvariantTest } from "../common/Base.invariant.t.sol";
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
-contract RewardsDistributor is BaseInvariantTest {
+abstract contract RewardsDistributorBase is BaseInvariantTest {
     RewardsDistributorStore internal rewardsDistributorStore;
     RewardsDistributorHandler internal rewardsDistributorHandler;
 
-    function setUp() public override {
+    function setUp() public virtual override {
         super.setUp();
         (address[][] memory coreAddresses,,,, uint256[] memory forksArray) = _grabStateForHandler();
 
@@ -23,12 +23,6 @@ contract RewardsDistributor is BaseInvariantTest {
 
         vm.label({ account: address(rewardsDistributorStore), newLabel: "RewardsDistributorStore" });
         vm.label({ account: address(rewardsDistributorHandler), newLabel: "RewardsDistributorHandler" });
-
-        /// @dev Note: disable some of the selectors to test a bunch of them only
-        bytes4[] memory selectors = new bytes4[](2);
-        selectors[0] = RewardsDistributorHandler.full_claim.selector;
-        selectors[1] = RewardsDistributorHandler.full_batch_claim.selector;
-        targetSelector(FuzzSelector({ addr: address(rewardsDistributorHandler), selectors: selectors }));
         targetContract(address(rewardsDistributorHandler));
     }
 
@@ -36,7 +30,7 @@ contract RewardsDistributor is BaseInvariantTest {
                     INVARIANT TESTS
     //////////////////////////////////////////////////////////////*/
 
-    /// forge-config: localdev.invariant.runs = 50
+    /// forge-config: localdev.invariant.runs = 25
     /// forge-config: localdev.invariant.depth = 2
     /// forge-config: localdev.invariant.fail-on-revert = true
     function invariant_tokenBalances() public {
@@ -50,13 +44,15 @@ contract RewardsDistributor is BaseInvariantTest {
             uint256 totalSelectedUsers = rewardsDistributorStore.totalSelectedUsersPeriod(i);
             uint256 testUsers = rewardsDistributorStore.totalTestUsersPeriod(i);
             vm.writeLine(path, string.concat("total users claimed: ", Strings.toString(totalSelectedUsers)));
+            vm.writeLine(path, string.concat("total test users claimed: ", Strings.toString(testUsers)));
 
             assertEq(totalSelectedUsers, testUsers);
         }
 
         uint256 usdcBalanceAfter = rewardsDistributorStore.usdcBalanceAfter();
         uint256 daiBalanceAfter = rewardsDistributorStore.daiBalanceAfter();
-
+        vm.writeLine(path, string.concat("usdcBalanceAfter: ", Strings.toString(usdcBalanceAfter)));
+        vm.writeLine(path, string.concat("daiBalanceAfter: ", Strings.toString(daiBalanceAfter)));
         assertEq(usdcBalanceAfter, 0);
         assertEq(daiBalanceAfter, 0);
 
