@@ -29,6 +29,8 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
     //                     STATE VARIABLES                      //
     //////////////////////////////////////////////////////////////
     IAxelarGateway public gateway;
+
+    /// @dev gas service is the gas estimator
     IAxelarGasService public gasService;
     IInterchainGasEstimation public gasEstimator;
 
@@ -75,28 +77,33 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
     //                         CONFIG                            //
     //////////////////////////////////////////////////////////////
 
-    /// @dev allows protocol admin to configure axelar gateway, axelar gas service and axelar gas estimator
+    /// @dev allows protocol admin to configure axelar gateway
+    /// @dev this allows only one-time configuration for immutability
     /// @param gateway_ is the address of axelar gateway
+    function setAxelarConfig(IAxelarGateway gateway_) external onlyProtocolAdmin {
+        if (address(gateway_) == address(0)) revert Error.ZERO_ADDRESS();
+        if (address(gateway) == address(0)) {
+            gateway = gateway_;
+
+            emit GatewayAdded(address(gateway_));
+        }
+    }
+
+    /// @dev allows protocol admin to configure axelar gas service and gas estimator
     /// @param gasService_ is the address of axelar gas service
-    /// @param gasEstimator_ is the address of axelar onchain gas estimation service
-    function setAxelarConfig(
-        IAxelarGateway gateway_,
+    /// @param gasEstimator_ is the address of axelar gas estimator
+    function setAxelarGasService(
         IAxelarGasService gasService_,
         IInterchainGasEstimation gasEstimator_
     )
         external
         onlyProtocolAdmin
     {
-        if (
-            address(gateway_) == address(0) || address(gasService_) == address(0)
-                || address(gasEstimator_) == address(0)
-        ) revert Error.ZERO_ADDRESS();
+        if (address(gasService_) == address(0) || address(gasEstimator_) == address(0)) revert Error.ZERO_ADDRESS();
 
-        gateway = gateway_;
         gasService = gasService_;
         gasEstimator = gasEstimator_;
 
-        emit GatewayAdded(address(gateway_));
         emit GasServiceAdded(address(gasService_));
         emit GasEstimatorAdded(address(gasEstimator_));
     }
@@ -139,7 +146,7 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
         address srcSender_,
         uint64 dstChainId_,
         bytes memory message_,
-        bytes memory /*e xtraData_ */
+        bytes memory /*extraData_ */
     )
         external
         payable
@@ -155,14 +162,17 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
         }
 
         gateway.callContract(axelarChainId, axelerDstImpl, message_);
-        /// FIXME: should the sender be the state registry / address(this) ??
         gasService.payNativeGasForContractCall{ value: msg.value }(
             msg.sender, axelarChainId, axelerDstImpl, message_, srcSender_
         );
     }
 
     /// @inheritdoc IAmbImplementation
-    function retryPayload(bytes memory data_) external payable override { }
+    function retryPayload(bytes memory data_) external payable override {
+        (bytes32 txHash, uint256 logIndex) = abi.decode(data_, (bytes32, uint256));
+        /// @dev refunds are sent to the msg.sender
+        gasService.addNativeGas{ value: msg.value }(txHash, logIndex, msg.sender);
+    }
 
     /// @inheritdoc IAxelarExecutable
     function execute(
@@ -177,15 +187,14 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
-
-        /// FIXME: if this string equality check is safe
         if (keccak256(bytes(sourceAddress)) != keccak256(bytes(authorizedImpl[sourceChain].toString()))) {
             revert Error.INVALID_SRC_SENDER();
         }
 
-        /// FIXME: add custom error message
+        /// @dev axelar has native replay protection, still adding our own internal replay protections
+        /// using msgId
         if (!gateway.validateContractCall(commandId, sourceChain, sourceAddress, keccak256(payload))) {
-            revert();
+            revert Error.INVALID_CONTRACT_CALL();
         }
 
         /// @dev validateContractCall has native replay protection, this is additional

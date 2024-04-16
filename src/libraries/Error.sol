@@ -487,4 +487,10 @@ library Error {
 
     /// @dev thrown if tx history is not found while state sync
     error TX_HISTORY_NOT_FOUND();
+
+    /// MISC ERRORS
+    /// ---------------------------------------------------------
+
+    /// @dev thrown if the incoming request is an invalid contract call
+    error INVALID_CONTRACT_CALL();
 }
