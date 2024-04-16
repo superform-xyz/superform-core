@@ -21,6 +21,7 @@ import { SocketOneInchMock } from "../mocks/SocketOneInchMock.sol";
 import { LiFiMockRugpull } from "../mocks/LiFiMockRugpull.sol";
 import { LiFiMockBlacklisted } from "../mocks/LiFiMockBlacklisted.sol";
 import { LiFiMockSwapToAttacker } from "../mocks/LiFiMockSwapToAttacker.sol";
+import { DeBridgeMock } from "../mocks/DeBridgeMock.sol";
 
 import { MockERC20 } from "../mocks/MockERC20.sol";
 import { VaultMock } from "../mocks/VaultMock.sol";
@@ -107,7 +108,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[32] public contractNames = [
+    string[33] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -134,6 +135,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         "WormholeHelper",
         "WormholeBroadcastHelper",
         "LiFiMock",
+        "DeBridgeMock",
         "KYCDAOMock",
         "CanonicalPermit2",
         "EmergencyQueue",
@@ -552,6 +554,11 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             contracts[vars.chainId][bytes32(bytes("LiFiMockBlacklisted"))] = vars.liFiMockSwapToAttacker;
             vm.allowCheatcodes(vars.liFiMockSwapToAttacker);
 
+            /// @dev 7.1.7 deploy DeBridgeMock. This mocks tests the behavior of debridge
+            vars.deBridgeMock = address(new DeBridgeMock{ salt: salt }());
+            contracts[vars.chainId][bytes32(bytes("DeBridgeMock"))] = vars.deBridgeMock;
+            vm.allowCheatcodes(vars.deBridgeMock);
+
             /// @dev 7.2.1- deploy  lifi validator
             vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
@@ -599,6 +606,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             bridgeAddresses.push(vars.liFiMockRugpull);
             bridgeAddresses.push(vars.liFiMockBlacklisted);
             bridgeAddresses.push(vars.liFiMockSwapToAttacker);
+            bridgeAddresses.push(vars.deBridgeMock);
 
             bridgeValidators.push(vars.lifiValidator);
             bridgeValidators.push(vars.socketValidator);
@@ -606,6 +614,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             bridgeValidators.push(vars.lifiValidator);
             bridgeValidators.push(vars.lifiValidator);
             bridgeValidators.push(vars.lifiValidator);
+            bridgeValidators.push(vars.debridgeValidator);
 
             /// @dev 8.1 - Deploy UNDERLYING_TOKENS and VAULTS
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; ++j) {
@@ -1185,6 +1194,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// 4 is lifi rugpull
         /// 5 is lifi blacklist
         /// 6 is lifi swap to attacker
+        /// 7 is debridge
 
         bridgeIds.push(1);
         bridgeIds.push(2);
@@ -1192,6 +1202,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         bridgeIds.push(4);
         bridgeIds.push(5);
         bridgeIds.push(6);
+        bridgeIds.push(7);
 
         /// @dev setup users
         userKeys.push(1);

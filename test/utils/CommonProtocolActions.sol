@@ -264,6 +264,34 @@ abstract contract CommonProtocolActions is BaseSetup {
                 args.amount,
                 abi.encode(args.from, args.USDPerExternalToken, args.USDPerUnderlyingToken)
             );
+        } else if (args.liqBridgeKind == 7) {
+            txData = abi.encodeWithSelector(
+                DeBridgeMock.createSaltedOrder.selector,
+                DlnOrderLib.OrderCreation(
+                    args.externalToken,
+                    args.amount,
+                    abi.encode(args.underlyingTokenDst),
+                    /// take amount
+                    (args.amount * uint256(args.USDPerUnderlyingToken)) / uint256(args.USDPerUnderlyingTokenDst),
+                    uint256(args.toChainId),
+                    abi.encode(getContract(args.toChainId, "CoreStateRegistry")),
+                    address(0),
+                    abi.encode(mockDebridgeAuth),
+                    bytes(""),
+                    bytes(""),
+                    bytes("")
+                ),
+                /// random salt
+                uint64(block.timestamp),
+                /// affliate fee
+                bytes(""),
+                /// referral code
+                uint32(0),
+                /// permit envelope
+                bytes(""),
+                /// metadata
+                abi.encode(args.from, FORKS[args.srcChainId], FORKS[args.liqDstChainId])
+            );
         }
     }
 
@@ -547,7 +575,7 @@ abstract contract CommonProtocolActions is BaseSetup {
                 v.amount_,
                 abi.encode(v.from_, USDPerUnderlyingToken, USDPerUnderlyingTokenDst)
             );
-        } else if (v.liqBridgeKind_ == 4) {
+        } else if (v.liqBridgeKind_ == 7) {
             txData = abi.encodeWithSelector(
                 DeBridgeMock.createSaltedOrder.selector,
                 DlnOrderLib.OrderCreation(
@@ -573,7 +601,7 @@ abstract contract CommonProtocolActions is BaseSetup {
                 /// permit envelope
                 bytes(""),
                 /// metadata
-                bytes("")
+                abi.encode(v.from_, FORKS[v.srcChainId_], FORKS[v.toChainId_])
             );
         }
     }

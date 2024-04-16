@@ -21,16 +21,31 @@ contract DeBridgeMock is Test {
 
     function createSaltedOrder(
         DlnOrderLib.OrderCreation calldata _orderCreation,
-        uint64 _salt,
-        bytes calldata _affiliateFee,
-        uint32 _referralCode,
-        bytes calldata _permitEnvelope,
+        uint64,
+        bytes calldata,
+        uint32,
+        bytes calldata,
         bytes calldata _metadata
     )
         external
         payable
         returns (bytes32)
     {
-        return keccak256(abi.encode(""));
+        (address from, uint256 fromChainId, uint256 toChainId) = abi.decode(_metadata, (address, uint256, uint256));
+
+        // vm.selectFork(fromChainId);
+        // MockERC20(_orderCreation.giveTokenAddress).transferFrom(from, address(this), _orderCreation.giveAmount);
+
+        vm.selectFork(toChainId);
+        deal(
+            abi.decode(_orderCreation.takeTokenAddress, (address)),
+            abi.decode(_orderCreation.receiverDst, (address)),
+            _orderCreation.takeAmount
+        );
+
+        vm.selectFork(fromChainId);
+
+        /// just returning a random key here
+        return keccak256(abi.encode(_orderCreation));
     }
 }

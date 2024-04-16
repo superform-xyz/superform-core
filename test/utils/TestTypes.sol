@@ -138,6 +138,7 @@ struct SetupVars {
     address wormholeSRImplementation;
     address dstSwapper;
     address lifiRouter;
+    address deBridgeMock;
     address socketRouter;
     address socketOneInch;
     address liFiMockRugpull;

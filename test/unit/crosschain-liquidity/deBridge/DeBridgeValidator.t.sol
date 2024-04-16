@@ -19,7 +19,7 @@ contract DeBridgeValidatorTest is ProtocolActions {
             IBridgeValidator.ValidateTxDataArgs(
                 _buildDummyTxDataUnitTests(
                     BuildDummyTxDataUnitTestsVars(
-                        4,
+                        7,
                         address(0),
                         address(0),
                         deployer,
@@ -49,6 +49,35 @@ contract DeBridgeValidatorTest is ProtocolActions {
         DeBridgeValidator(getContract(ETH, "DeBridgeValidator")).validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
                 txDataWithNonAllowedSelector, ETH, BSC, BSC, true, address(0), deployer, NATIVE, NATIVE
+            )
+        );
+    }
+
+    function test_validateTxData_sameSrcDstChainId() public {
+        vm.expectRevert(Error.INVALID_ACTION.selector);
+        LiFiValidator(getContract(ETH, "DeBridgeValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                _buildDummyTxDataUnitTests(
+                    BuildDummyTxDataUnitTestsVars(
+                        7,
+                        address(0),
+                        address(0),
+                        deployer,
+                        ETH,
+                        ETH, // srcChainId is the same as dstChainId
+                        uint256(100),
+                        getContract(ETH, "CoreStateRegistry"),
+                        false
+                    )
+                ),
+                ETH,
+                ETH, // srcChainId is the same as dstChainId
+                ETH,
+                true,
+                address(0),
+                deployer,
+                NATIVE,
+                NATIVE
             )
         );
     }

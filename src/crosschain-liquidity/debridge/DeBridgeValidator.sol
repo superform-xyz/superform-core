@@ -39,8 +39,6 @@ contract DeBridgeValidator is BridgeValidator {
         if (deBridgeQuote.externalCall.length > 0) revert();
 
         /// FIXME: set the new role and add explicit revert message
-        console.log(_castToAddress(deBridgeQuote.orderAuthorityAddressDst));
-        console.log(superRegistry.getAddressByChainId(keccak256("DEBRIDGE_AUTHORITY"), args_.dstChainId));
         if (
             superRegistry.getAddressByChainId(keccak256("DEBRIDGE_AUTHORITY"), args_.dstChainId)
                 != _castToAddress(deBridgeQuote.orderAuthorityAddressDst)
@@ -52,6 +50,8 @@ contract DeBridgeValidator is BridgeValidator {
         /// @dev 1. chain id calidation
         /// FIXME: check if this cast is right
         /// FIXME: check upstream if the srcChain in this context is the block.chainid
+        console.log(args_.liqDataToken);
+        console.log(deBridgeQuote.giveTokenAddress);
         if (
             uint64(deBridgeQuote.takeChainId) != args_.liqDstChainId
                 || args_.liqDataToken != deBridgeQuote.giveTokenAddress
@@ -63,6 +63,10 @@ contract DeBridgeValidator is BridgeValidator {
         /// FIXME: check if this cast is right
         address receiver = _castToAddress(deBridgeQuote.receiverDst);
         if (args_.deposit) {
+            if (args_.srcChainId == args_.dstChainId) {
+                revert Error.INVALID_ACTION();
+            }
+
             hasDstSwap = receiver == superRegistry.getAddressByChainId(keccak256("DST_SWAPPER"), args_.dstChainId);
 
             /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry (or) Dst Swapper

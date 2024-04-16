@@ -107,6 +107,16 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         _dispatchPayload(srcSender_, ambIds_, dstChainId_, message_, extraData_);
     }
 
+    /**
+     * WormholeARImplementation -> attacker address (with a valid payload)
+     * attacker will call retryPayload() -> overrides the sender with a valid sender
+     * writes a payload into CSR
+     *
+     * repeats but now the payload -> proof of the payload
+     * attacker will call retryPayload()
+     */
+    
+
     /// @inheritdoc IBaseStateRegistry
     function receivePayload(uint64 srcChainId_, bytes memory message_) external override onlyValidAmbImplementation {
         AMBMessage memory data = abi.decode(message_, (AMBMessage));
