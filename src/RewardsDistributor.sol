@@ -104,7 +104,7 @@ contract RewardsDistributor is IRewardsDistributor {
         uint256 tokensToClaim = rewardTokens_.length;
 
         if (tokensToClaim == 0) revert ZERO_ARR_LENGTH();
-        if (tokensToClaim != amountsClaimed_.length) revert INVALID_BATCH_REQ();
+        if (tokensToClaim != amountsClaimed_.length) revert INVALID_REQ_TOKENS_AMOUNTS();
 
         _claim(receiver_, periodId_, rewardTokens_, amountsClaimed_, tokensToClaim, proof_);
 
@@ -127,13 +127,15 @@ contract RewardsDistributor is IRewardsDistributor {
         uint256 len = periodIds_.length;
 
         if (len == 0) revert ZERO_ARR_LENGTH();
-        if (len != proofs_.length) revert INVALID_BATCH_REQ();
 
+        if (!(len == proofs_.length && len == rewardTokens_.length && len == amountsClaimed_.length)) {
+            revert INVALID_BATCH_REQ();
+        }
         for (uint256 i; i < len; ++i) {
-            uint256 tokensToClaim = rewardTokens_.length;
+            uint256 tokensToClaim = rewardTokens_[i].length;
 
             if (tokensToClaim == 0) revert ZERO_ARR_LENGTH();
-            if (tokensToClaim != amountsClaimed_[i].length) revert INVALID_BATCH_REQ();
+            if (tokensToClaim != amountsClaimed_[i].length) revert INVALID_BATCH_REQ_TOKENS_AMOUNTS();
 
             _claim(receiver_, periodIds_[i], rewardTokens_[i], amountsClaimed_[i], tokensToClaim, proofs_[i]);
 
@@ -160,7 +162,7 @@ contract RewardsDistributor is IRewardsDistributor {
     {
         bytes32 root = periodicRewardsMerkleRoot[periodId_];
         if (root == ZERO_BYTES32) revert MERKLE_ROOT_NOT_SET();
-
+        
         /// @dev user cannot claim a periodic reward twice
         if (periodicRewardsClaimed[periodId_][claimer_]) return false;
 

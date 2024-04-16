@@ -19,6 +19,8 @@ contract RewardsDistributorHandler is StdInvariant, MerkleReader {
 
     mapping(uint256 => bool) private isPeriodSelected;
     mapping(address => bool) private isUserSelected;
+    mapping(address => mapping(uint256 periodId => bool selected)) private isUserSelectedBatch;
+
     string path = "output.txt";
 
     uint256 totalSelectedUsers;
@@ -109,11 +111,6 @@ contract RewardsDistributorHandler is StdInvariant, MerkleReader {
         sum DAI: 15211
         */
 
-        vm.writeLine(
-            path, string.concat("USDC Balance id: ", Strings.toString(IERC20(USDC).balanceOf(address(rewards))))
-        );
-        vm.writeLine(path, string.concat("DAI Balance id: ", Strings.toString(IERC20(DAI).balanceOf(address(rewards)))));
-
         vm.stopPrank();
         address[][] memory testUsersMem = new address[][](3);
 
@@ -127,17 +124,7 @@ contract RewardsDistributorHandler is StdInvariant, MerkleReader {
             testUsersMem[i] = testUsersMem2;
         }
         testUsers = testUsersMem;
-        /*
-        for (uint256 i = 0; i < 3; i++) {
-            vm.writeLine(path, string.concat("line : ", "1"));
 
-            for (uint256 j = 0; j < totalTestUsers[i]; j++) {
-                console.log("User: ", j, " : ", testUsers[i][j]);
-
-                vm.writeLine(path, string.concat("users : ", Strings.toString(uint160(testUsers[i][j]))));
-            }
-        }
-        */
         console.log("Handler setup done!");
     }
 
@@ -155,7 +142,7 @@ contract RewardsDistributorHandler is StdInvariant, MerkleReader {
 
     function full_claim(uint256 seed) public {
         vm.selectFork(FORKS[OP]);
-        vm.writeLine(path, string.concat("Run id: ", Strings.toString(seed)));
+        vm.writeLine(path, string.concat("Normal Run id: ", Strings.toString(seed)));
 
         for (uint256 i; i < 100; i++) {
             uint256 periodId = randomPeriod(seed, i);
@@ -163,12 +150,9 @@ contract RewardsDistributorHandler is StdInvariant, MerkleReader {
             if (isPeriodSelected[periodId]) {
                 continue;
             } else {
-                vm.writeLine(path, string.concat("periodId id: ", Strings.toString(periodId)));
                 isPeriodSelected[periodId] = true;
                 store.setTotalPeriodsSelected(store.totalPeriodsSelected() + 1);
                 store.setTotalTestUsers(periodId, totalTestUsers[periodId]);
-
-                vm.writeLine(path, string.concat("Test users len: ", Strings.toString(testUsers[periodId].length)));
 
                 for (uint256 j; j < 1000; j++) {
                     uint256 userIndex = randomUserIndex(seed, j, periodId);
@@ -203,7 +187,6 @@ contract RewardsDistributorHandler is StdInvariant, MerkleReader {
 
                 if (store.totalPeriodsSelected() == 3) {
                     /// fully claimed
-                    vm.writeLine(path, string.concat("all periods fully claimed"));
 
                     uint256 usdcBalanceAfter = IERC20(USDC).balanceOf(address(rewards));
                     uint256 daiBalanceAfter = IERC20(DAI).balanceOf(address(rewards));
@@ -213,6 +196,103 @@ contract RewardsDistributorHandler is StdInvariant, MerkleReader {
 
                     break;
                 }
+            }
+        }
+    }
+
+    function full_batch_claim(uint256 seed) public {
+        vm.selectFork(FORKS[OP]);
+        vm.writeLine(path, string.concat("Batch Run id: ", Strings.toString(seed)));
+
+        // determine highest number of test users & period
+        uint256 highestNumberOfTestUsers = 0;
+        uint256 periodWithHighestNumberOfTestUsers = 0;
+        for (uint256 k; k < 3; k++) {
+            if (totalTestUsers[k] > highestNumberOfTestUsers) {
+                highestNumberOfTestUsers = totalTestUsers[k];
+                periodWithHighestNumberOfTestUsers = k;
+            }
+            store.setTotalTestUsers(k, totalTestUsers[k]);
+        }
+
+        vm.writeLine(path, string.concat("highestNumberOfTestUsers: ", Strings.toString(highestNumberOfTestUsers)));
+
+        vm.writeLine(
+            path,
+            string.concat("periodWithHighestNumberOfTestUsers: ", Strings.toString(periodWithHighestNumberOfTestUsers))
+        );
+
+        for (uint256 j; j < 1000; j++) {
+            // select a user index
+            uint256 userIndex = randomUserIndex(seed, j, periodWithHighestNumberOfTestUsers);
+
+            // find the periods in which the selected user index is  lower to the number of test users of the
+            // period
+            uint256[] memory periodsWithUserPresentTemp = new uint256[](3);
+            uint256 nPeriodsForUser;
+
+            for (uint256 k; k < 3; k++) {
+                if (userIndex < totalTestUsers[k]) {
+                    periodsWithUserPresentTemp[nPeriodsForUser] = k;
+                    ++nPeriodsForUser;
+                }
+            }
+            assert(nPeriodsForUser > 0);
+
+            uint256[] memory periodsWithUserPresent = new uint256[](nPeriodsForUser);
+
+            for (uint256 k; k < nPeriodsForUser; k++) {
+                periodsWithUserPresent[k] = periodsWithUserPresentTemp[k];
+            }
+
+            bytes32[][] memory batchProofs = new bytes32[][](nPeriodsForUser);
+            address[][] memory batchTokensToClaim = new address[][](nPeriodsForUser);
+            uint256[][] memory batchAmountsToClaim = new uint256[][](nPeriodsForUser);
+
+            // address will be the same among periodsWithUserPresent
+            address selectedUser = testUsers[periodsWithUserPresent[0]][userIndex];
+            if (isUserSelected[selectedUser]) {
+                continue;
+            } else {
+                vm.writeLine(path, string.concat("selectedUser: ", Strings.toHexString(selectedUser)));
+                vm.writeLine(path, string.concat("nPeriodsForUser: ", Strings.toString(nPeriodsForUser)));
+
+                // Mark the user as selected
+                isUserSelected[selectedUser] = true;
+                for (uint256 k; k < nPeriodsForUser; k++) {
+                    store.setTotalSelectedUsers(k, store.totalSelectedUsersPeriod(k) + 1);
+
+                    // generate batch proofs for user
+
+                    (,,,, bytes32[] memory proof_, address[] memory tokensToClaim, uint256[] memory amountsToClaim) =
+                        _generateMerkleTree(MerkleReader.MerkleArgs(k, selectedUser, OP));
+
+                    batchProofs[k] = proof_;
+                    batchTokensToClaim[k] = tokensToClaim;
+                    batchAmountsToClaim[k] = amountsToClaim;
+                }
+
+                vm.prank(selectedUser);
+                rewards.batchClaim(
+                    selectedUser, periodsWithUserPresent, batchTokensToClaim, batchAmountsToClaim, batchProofs
+                );
+            }
+
+            /// when a user is selected, all the periods for it are fully claimed
+            /// condition ends when all users in all periods are done
+            bool allUsersAllPeriodsDone = true;
+            for (uint256 k; k < 3; k++) {
+                if (store.totalSelectedUsersPeriod(k) != totalTestUsers[k]) {
+                    allUsersAllPeriodsDone = false;
+                }
+            }
+            if (allUsersAllPeriodsDone) {
+                uint256 usdcBalanceAfter = IERC20(USDC).balanceOf(address(rewards));
+                uint256 daiBalanceAfter = IERC20(DAI).balanceOf(address(rewards));
+
+                store.setUSDCBalanceAfter(usdcBalanceAfter);
+                store.setDAIBalanceAfter(daiBalanceAfter);
+                break;
             }
         }
     }
