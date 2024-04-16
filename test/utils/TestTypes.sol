@@ -133,9 +133,11 @@ struct SetupVars {
     address hyperlaneHelper;
     address hyperlaneImplementation;
     address wormholeHelper;
+    address axelarHelper;
     address wormholeBroadcastHelper;
     address wormholeImplementation;
     address wormholeSRImplementation;
+    address axelarImplementation;
     address dstSwapper;
     address lifiRouter;
     address socketRouter;
@@ -160,6 +162,7 @@ struct SetupVars {
     address dstWormholeARImplementation;
     address dstWormholeSRImplementation;
     address dstwormholeBroadcastHelper;
+    address dstAxelarImplementation;
     address payMaster;
     address superRegistry;
     address emergencyQueue;

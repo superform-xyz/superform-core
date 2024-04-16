@@ -323,43 +323,44 @@ contract SmokeTestStaging is MainnetBaseSetup {
         }
     }
 
-    function test_wormholeARImplementation() public {
-        WormholeARImplementation wormhole;
+    /// @dev commented out as ar implementation is paused for now
+    // function test_wormholeARImplementation() public {
+    //     WormholeARImplementation wormhole;
 
-        /// @dev index should match the index of target chains
-        address[] memory relayers = new address[](TARGET_DEPLOYMENT_CHAINS.length);
-        relayers[0] = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
-        relayers[1] = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
-        relayers[2] = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
-        relayers[3] = 0x706F82e9bb5b0813501714Ab5974216704980e31;
+    //     /// @dev index should match the index of target chains
+    //     address[] memory relayers = new address[](TARGET_DEPLOYMENT_CHAINS.length);
+    //     relayers[0] = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
+    //     relayers[1] = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
+    //     relayers[2] = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
+    //     relayers[3] = 0x706F82e9bb5b0813501714Ab5974216704980e31;
 
-        /// @dev index should match the index of target chains
-        uint16[] memory ambIds = new uint16[](TARGET_DEPLOYMENT_CHAINS.length);
-        ambIds[0] = uint16(4);
-        ambIds[1] = uint16(23);
-        ambIds[2] = uint16(24);
-        ambIds[3] = uint16(30);
+    //     /// @dev index should match the index of target chains
+    //     uint16[] memory ambIds = new uint16[](TARGET_DEPLOYMENT_CHAINS.length);
+    //     ambIds[0] = uint16(4);
+    //     ambIds[1] = uint16(23);
+    //     ambIds[2] = uint16(24);
+    //     ambIds[3] = uint16(30);
 
-        for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
-            uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
-            vm.selectFork(FORKS[chainId]);
-            wormhole = WormholeARImplementation(getContract(chainId, "WormholeARImplementation"));
+    //     for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
+    //         uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+    //         vm.selectFork(FORKS[chainId]);
+    //         wormhole = WormholeARImplementation(getContract(chainId, "WormholeARImplementation"));
 
-            assertEq(address(wormhole.relayer()), relayers[i]);
-            assertEq(wormhole.refundChainId(), ambIds[i]);
+    //         assertEq(address(wormhole.relayer()), relayers[i]);
+    //         assertEq(wormhole.refundChainId(), ambIds[i]);
 
-            for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
-                if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
-                    assertEq(
-                        wormhole.authorizedImpl(ambIds[j]),
-                        getContract(TARGET_DEPLOYMENT_CHAINS[j], "WormholeARImplementation")
-                    );
-                    assertEq(wormhole.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds[j]);
-                    assertEq(wormhole.superChainId(ambIds[j]), TARGET_DEPLOYMENT_CHAINS[j]);
-                }
-            }
-        }
-    }
+    //         for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
+    //             if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
+    //                 assertEq(
+    //                     wormhole.authorizedImpl(ambIds[j]),
+    //                     getContract(TARGET_DEPLOYMENT_CHAINS[j], "WormholeARImplementation")
+    //                 );
+    //                 assertEq(wormhole.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds[j]);
+    //                 assertEq(wormhole.superChainId(ambIds[j]), TARGET_DEPLOYMENT_CHAINS[j]);
+    //             }
+    //         }
+    //     }
+    // }
 
     function test_wormholeSRImplementation() public {
         WormholeSRImplementation wormhole;

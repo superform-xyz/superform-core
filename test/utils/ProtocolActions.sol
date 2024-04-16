@@ -847,6 +847,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     vars.logs
                 );
             }
+
+            if (AMBs[index] == 4) {
+                AxelarHelper(getContract(CHAIN_0, "AxelarHelper")).help();
+            }
         }
 
         MessagingAssertVars[] memory aV = new MessagingAssertVars[](vars.nDestinations);

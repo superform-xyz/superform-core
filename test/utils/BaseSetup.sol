@@ -8,7 +8,7 @@ import { StdInvariant } from "forge-std/StdInvariant.sol";
 
 import { LayerZeroHelper } from "pigeon/layerzero/LayerZeroHelper.sol";
 import { HyperlaneHelper } from "pigeon/hyperlane/HyperlaneHelper.sol";
-
+import { AxelarHelper } from "pigeon/axelar/AxelarHelper.sol";
 import { WormholeHelper } from "pigeon/wormhole/automatic-relayer/WormholeHelper.sol";
 import "pigeon/wormhole/specialized-relayer/WormholeHelper.sol" as WormholeBroadcastHelper;
 
@@ -60,6 +60,12 @@ import { WormholeARImplementation } from
     "src/crosschain-data/adapters/wormhole/automatic-relayer/WormholeARImplementation.sol";
 import { WormholeSRImplementation } from
     "src/crosschain-data/adapters/wormhole/specialized-relayer/WormholeSRImplementation.sol";
+import {
+    AxelarImplementation,
+    IAxelarGateway,
+    IAxelarGasService,
+    IInterchainGasEstimation
+} from "src/crosschain-data/adapters/axelar/AxelarImplementation.sol";
 import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
 import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
 import ".././utils/AmbParams.sol";
@@ -102,7 +108,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[30] public contractNames = [
+    string[32] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -110,6 +116,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         "HyperlaneImplementation",
         "WormholeARImplementation",
         "WormholeSRImplementation",
+        "AxelarImplementation",
         "LiFiValidator",
         "SocketValidator",
         "DstSwapper",
@@ -127,6 +134,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         "LayerZeroHelper",
         "HyperlaneHelper",
         "WormholeHelper",
+        "AxelarHelper",
         "WormholeBroadcastHelper",
         "LiFiMock",
         "KYCDAOMock",
@@ -183,9 +191,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     /// @notice id 2 is hyperlane
     /// @notice id 3 is wormhole (Automatic Relayer)
     /// @notice id 4 is wormhole (Specialized Relayer)
+    /// @notice id 5 is axelar
 
-    uint8[] public ambIds = [uint8(1), 2, 3, 4];
-    bool[] public isBroadcastAMB = [false, false, false, true];
+    uint8[] public ambIds = [uint8(1), uint8(2), uint8(3), uint8(4), uint8(5)];
+    bool[] public isBroadcastAMB = [false, false, false, true, false];
 
     /*//////////////////////////////////////////////////////////////
                         AMB VARIABLES
@@ -248,6 +257,28 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         0x126783A6Cb203a3E35344528B26ca3a0489a1485
     ];
 
+    address[] public axelarGateway = [
+        0x4F4495243837681061C4743b74B3eEdf548D56A5,
+        0x304acf330bbE08d1e512eefaa92F6a57871fD895,
+        0x5029C0EFf6C34351a0CEc334542cDb22c7928f78,
+        0x6f015F16De9fC8791b234eF68D486d2bF203FBA8,
+        0xe432150cce91c13a887f7D836923d5597adD8E31,
+        0xe432150cce91c13a887f7D836923d5597adD8E31,
+        0xe432150cce91c13a887f7D836923d5597adD8E31,
+        0x304acf330bbE08d1e512eefaa92F6a57871fD895
+    ];
+
+    address[] public axelarGasService = [
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712
+    ];
+
     /*//////////////////////////////////////////////////////////////
                         WORMHOLE VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -282,6 +313,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111, 184, 112];
     uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
     uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30, 10];
+    string[] public axelar_chainIds =
+        ["Ethereum", "binance", "Avalanche", "Polygon", "arbitrum", "optimism", "base", "Fantom"];
 
     /// @dev minting enough tokens to be able to fuzz with bigger amounts (DAI's 3.6B supply etc)
     uint256 public constant hundredBilly = 100 * 1e9 * 1e18;
@@ -401,6 +434,12 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
             contracts[vars.chainId][bytes32(bytes("WormholeBroadcastHelper"))] = vars.wormholeBroadcastHelper;
 
+            /// @dev 1.5- deploy axelar from Pigeon
+            vars.axelarHelper = address(new AxelarHelper{ salt: salt }());
+            vm.allowCheatcodes(vars.axelarHelper);
+
+            contracts[vars.chainId][bytes32(bytes("AxelarHelper"))] = vars.axelarHelper;
+
             /// @dev 2 - Deploy SuperRBAC
             vars.superRBAC = address(
                 new SuperRBAC{ salt: salt }(
@@ -502,17 +541,27 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             /// set refund chain id to wormhole chain id
             WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(wormhole_chainIds[i]);
 
-            /// @dev 6.5- deploy Wormhole Specialized Relayer Implementation
+            /// @dev 6.4- deploy Wormhole Specialized Relayer Implementation
             vars.wormholeSRImplementation = address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC, 3));
             contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
 
             WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[i]);
             WormholeSRImplementation(vars.wormholeSRImplementation).setRelayer(deployer);
 
+            /// @dev 6.5- deploy Axelar Implementation
+            vars.axelarImplementation = address(new AxelarImplementation{ salt: salt }(vars.superRegistryC));
+            contracts[vars.chainId][bytes32(bytes("AxelarImplementation"))] = vars.axelarImplementation;
+
+            AxelarImplementation(vars.axelarImplementation).setAxelarConfig(IAxelarGateway(axelarGateway[i]));
+            AxelarImplementation(vars.axelarImplementation).setAxelarGasService(
+                IAxelarGasService(axelarGasService[i]), IInterchainGasEstimation(axelarGasService[i])
+            );
+
             vars.ambAddresses[0] = vars.lzImplementation;
             vars.ambAddresses[1] = vars.hyperlaneImplementation;
             vars.ambAddresses[2] = vars.wormholeImplementation;
             vars.ambAddresses[3] = vars.wormholeSRImplementation;
+            vars.ambAddresses[4] = vars.axelarImplementation;
 
             /// @dev 7.1.1 deploy  LiFiRouterMock. This mock is a very minimal versions to allow
             /// liquidity bridge testing
@@ -805,6 +854,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
             vars.wormholeImplementation = getContract(vars.chainId, "WormholeARImplementation");
             vars.wormholeSRImplementation = getContract(vars.chainId, "WormholeSRImplementation");
+            vars.axelarImplementation = getContract(vars.chainId, "AxelarImplementation");
             vars.superRBAC = getContract(vars.chainId, "SuperRBAC");
 
             vars.superRegistry = getContract(vars.chainId, "SuperRegistry");
@@ -828,6 +878,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                     vars.dstWormholeARImplementation = getContract(vars.dstChainId, "WormholeARImplementation");
                     vars.dstWormholeSRImplementation = getContract(vars.dstChainId, "WormholeSRImplementation");
                     vars.dstwormholeBroadcastHelper = getContract(vars.dstChainId, "WormholeBroadcastHelper");
+                    vars.dstAxelarImplementation = getContract(vars.dstChainId, "AxelarImplementation");
 
                     LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
                         vars.dstLzChainId, abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
@@ -852,6 +903,14 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
                     WormholeARImplementation(payable(vars.wormholeImplementation)).setChainId(
                         vars.dstChainId, vars.dstWormholeChainId
+                    );
+
+                    AxelarImplementation(payable(vars.axelarImplementation)).setChainId(
+                        vars.dstChainId, axelar_chainIds[j]
+                    );
+
+                    AxelarImplementation(payable(vars.axelarImplementation)).setReceiver(
+                        axelar_chainIds[j], vars.dstAxelarImplementation
                     );
 
                     WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setChainId(
