@@ -25,9 +25,16 @@ abstract contract MerkleReader is StdCheats, BaseSetup {
     string private chainIdQueryAppend = "].chainId";
 
     string private proofQueryAppend = "].proof";
-    address[] tokenTypes = [0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85, 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1];
+
+    address USDC = 0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85;
+    address DAI = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
+
+    address[] tokenTypes = [USDC, DAI];
 
     struct LocalVars {
+        string rootJson;
+        bytes encodedRoot;
+        string treeJson;
         bytes encodedClaimer;
         bytes encodedPeriod;
         bytes encodedRewardTokens;
@@ -42,7 +49,6 @@ abstract contract MerkleReader is StdCheats, BaseSetup {
     }
 
     struct MerkleArgs {
-        string fuzz_;
         uint256 periodId_;
         address claimer_;
         uint256 chainId_;
@@ -62,25 +68,28 @@ abstract contract MerkleReader is StdCheats, BaseSetup {
             uint256[] memory amountsForIndex
         )
     {
-        string memory rootJson = vm.readFile(string.concat(vm.projectRoot(), basePathForRoot, a.fuzz_, ".json"));
-        bytes memory encodedRoot = vm.parseJson(rootJson, ".root");
-        root = abi.decode(encodedRoot, (bytes32));
         LocalVars memory v;
 
-        string memory treeJson = vm.readFile(string.concat(vm.projectRoot(), basePathForTreeDump, a.fuzz_, ".json"));
+        v.rootJson =
+            vm.readFile(string.concat(vm.projectRoot(), basePathForRoot, Strings.toString(a.periodId_), ".json"));
+        v.encodedRoot = vm.parseJson(v.rootJson, ".root");
+        root = abi.decode(v.encodedRoot, (bytes32));
+
+        v.treeJson =
+            vm.readFile(string.concat(vm.projectRoot(), basePathForTreeDump, Strings.toString(a.periodId_), ".json"));
 
         /// get the total elements to find out the right proof
-        bytes memory encodedValuesJson = vm.parseJson(treeJson, ".values[*]");
+        bytes memory encodedValuesJson = vm.parseJson(v.treeJson, ".values[*]");
         string[] memory valuesArr = abi.decode(encodedValuesJson, (string[]));
         claimers = valuesArr.length;
         for (uint256 i; i < claimers; ++i) {
-            v.encodedClaimer = vm.parseJson(treeJson, string.concat(prepend, Strings.toString(i), claimerQueryAppend));
-            v.encodedPeriod = vm.parseJson(treeJson, string.concat(prepend, Strings.toString(i), periodIdQueryAppend));
+            v.encodedClaimer = vm.parseJson(v.treeJson, string.concat(prepend, Strings.toString(i), claimerQueryAppend));
+            v.encodedPeriod = vm.parseJson(v.treeJson, string.concat(prepend, Strings.toString(i), periodIdQueryAppend));
             v.encodedRewardTokens =
-                vm.parseJson(treeJson, string.concat(prepend, Strings.toString(i), rewardTokensQueryAppend));
+                vm.parseJson(v.treeJson, string.concat(prepend, Strings.toString(i), rewardTokensQueryAppend));
             v.encodedAmountsClaimed =
-                vm.parseJson(treeJson, string.concat(prepend, Strings.toString(i), amountsClaimedQueryAppend));
-            v.encodedChainId = vm.parseJson(treeJson, string.concat(prepend, Strings.toString(i), chainIdQueryAppend));
+                vm.parseJson(v.treeJson, string.concat(prepend, Strings.toString(i), amountsClaimedQueryAppend));
+            v.encodedChainId = vm.parseJson(v.treeJson, string.concat(prepend, Strings.toString(i), chainIdQueryAppend));
 
             v.claimer = abi.decode(v.encodedClaimer, (address));
             v.periodId = abi.decode(v.encodedPeriod, (uint256));
@@ -100,7 +109,7 @@ abstract contract MerkleReader is StdCheats, BaseSetup {
                 a.claimer_ != address(0) && v.claimer == a.claimer_ && v.periodId == a.periodId_
                     && v.chainId == a.chainId_
             ) {
-                v.encodedProof = vm.parseJson(treeJson, string.concat(prepend, Strings.toString(i), proofQueryAppend));
+                v.encodedProof = vm.parseJson(v.treeJson, string.concat(prepend, Strings.toString(i), proofQueryAppend));
                 proofsForIndex = abi.decode(v.encodedProof, (bytes32[]));
 
                 tokensForIndex = v.rewardTokens;

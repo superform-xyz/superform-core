@@ -37,21 +37,30 @@ contract RewardsDistributor is BaseInvariantTest {
 
     /// forge-config: localdev.invariant.runs = 25
     /// forge-config: localdev.invariant.depth = 1
-    /// forge-config: localdev.invariant.fail-on-revert = false
+    /// forge-config: localdev.invariant.fail-on-revert = true
     function invariant_tokenBalances() public {
         string memory path = "output.txt";
-        vm.writeLine(path, string.concat("--Run end--"));
+        vm.writeLine(path, string.concat("--Invariant asserts--"));
 
         vm.selectFork(FORKS[OP]);
+        for (uint256 i; i < 3; i++) {
+            vm.writeLine(path, string.concat("Stats for period id: ", Strings.toString(i)));
+
+            uint256 totalSelectedUsers = rewardsDistributorStore.totalSelectedUsersPeriod(i);
+            uint256 testUsers = rewardsDistributorStore.totalTestUsersPeriod(i);
+            vm.writeLine(path, string.concat("total users claimed: ", Strings.toString(totalSelectedUsers)));
+
+            assertEq(totalSelectedUsers, testUsers);
+        }
+
         uint256 usdcBalanceAfter = rewardsDistributorStore.usdcBalanceAfter();
         uint256 daiBalanceAfter = rewardsDistributorStore.daiBalanceAfter();
-        uint256 totalSelectedUsers = rewardsDistributorStore.totalSelectedUsers();
-        uint256 testUsers = rewardsDistributorStore.totalTestUsers();
-        vm.writeLine(path, string.concat("stored total users: ", Strings.toString(totalSelectedUsers)));
-        vm.writeLine(path, string.concat("usdc balance: ", Strings.toString(usdcBalanceAfter)));
-        vm.writeLine(path, string.concat("dai balance: ", Strings.toString(daiBalanceAfter)));
+        vm.writeLine(path, string.concat("usdc balance assert: ", Strings.toString(usdcBalanceAfter)));
+        vm.writeLine(path, string.concat("dai balance assert: ", Strings.toString(daiBalanceAfter)));
+
         assertEq(usdcBalanceAfter, 0);
         assertEq(daiBalanceAfter, 0);
-        assertEq(totalSelectedUsers, testUsers);
+
+        vm.writeLine(path, string.concat("--Run end--"));
     }
 }

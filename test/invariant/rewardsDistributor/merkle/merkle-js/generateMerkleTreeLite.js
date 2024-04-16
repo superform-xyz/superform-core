@@ -36,14 +36,14 @@ for (let i = 0; ; ++i) {
             /// USDC
             usdc--;
             const randomAmountToken1 = Math.floor(Math.random() * 1000) + 1;
-            constructedData.values[i] = { "0": claimer, "1": "0", "2": [tokenTypes[randomTokenType - 1]], "3": [randomAmountToken1], "4": "10" };
+            constructedData.values[i] = { "0": claimer, "1": "2", "2": [tokenTypes[randomTokenType - 1]], "3": [randomAmountToken1], "4": "10" };
             totalAmountUSDC += randomAmountToken1;
 
         } else if (randomTokenType === 2 && dai > 0) {
             /// DAI
             dai--;
             const randomAmountToken2 = Math.floor(Math.random() * 1000) + 1;
-            constructedData.values[i] = { "0": claimer, "1": "0", "2": [tokenTypes[randomTokenType - 1]], "3": [randomAmountToken2], "4": "10" };
+            constructedData.values[i] = { "0": claimer, "1": "2", "2": [tokenTypes[randomTokenType - 1]], "3": [randomAmountToken2], "4": "10" };
             totalAmountDAI += randomAmountToken2;
         } else {
             break;
@@ -57,7 +57,7 @@ for (let i = 0; ; ++i) {
             const randomAmountToken1 = Math.floor(Math.random() * 1000) + 1;
             /// DAI
             const randomAmountToken2 = Math.floor(Math.random() * 1000) + 1;
-            constructedData.values[i] = { "0": claimer, "1": "0", "2": [tokenTypes[0], tokenTypes[1]], "3": [randomAmountToken1, randomAmountToken2], "4": "10" };
+            constructedData.values[i] = { "0": claimer, "1": "2", "2": [tokenTypes[0], tokenTypes[1]], "3": [randomAmountToken1, randomAmountToken2], "4": "10" };
             totalAmountUSDC += randomAmountToken1;
             totalAmountDAI += randomAmountToken2;
             usdc--;
@@ -77,6 +77,6 @@ console.log(`Number of claimers: ${claimers.length}`)
 
 constructedData.count = claimers.length;
 
-fs.writeFileSync(`test/invariant/rewardsDistributor/merkle/target/input1.json`, JSON.stringify(constructedData));
+fs.writeFileSync(`test/invariant/rewardsDistributor/merkle/target/input2.json`, JSON.stringify(constructedData));
 return;
 

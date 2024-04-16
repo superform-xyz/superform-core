@@ -6,15 +6,13 @@ contract RewardsDistributorStore {
     /*//////////////////////////////////////////////////////////////////////////
                                      VARIABLES
     //////////////////////////////////////////////////////////////////////////*/
-
     uint256 public usdcBalanceAfter;
     uint256 public daiBalanceAfter;
 
-    uint256 public usdcBalanceBeforeWithChange;
-    uint256 public daiBalanceBeforeWithChange;
+    mapping(uint256 => uint256) public totalSelectedUsersPeriod;
+    mapping(uint256 => uint256) public totalTestUsersPeriod;
 
-    uint256 public totalSelectedUsers;
-    uint256 public totalTestUsers;
+    uint256 public totalPeriodsSelected;
 
     /*//////////////////////////////////////////////////////////////////////////
                                       HELPERS
@@ -28,19 +26,15 @@ contract RewardsDistributorStore {
         daiBalanceAfter = _daiBalanceAfter;
     }
 
-    function setUSDCBalanceBeforeWithChange(uint256 _usdcBalanceBeforeWithChange) external {
-        usdcBalanceBeforeWithChange = _usdcBalanceBeforeWithChange;
+    function setTotalSelectedUsers(uint256 periodId, uint256 _totalSelectedUsers) external {
+        totalSelectedUsersPeriod[periodId] = _totalSelectedUsers;
     }
 
-    function setDAIBalanceBeforeWithChange(uint256 _daiBalanceBeforeWithChange) external {
-        daiBalanceBeforeWithChange = _daiBalanceBeforeWithChange;
+    function setTotalTestUsers(uint256 periodId, uint256 _totalTestUsers) external {
+        totalTestUsersPeriod[periodId] = _totalTestUsers;
     }
 
-    function setTotalSelectedUsers(uint256 _totalSelectedUsers) external {
-        totalSelectedUsers = _totalSelectedUsers;
-    }
-
-    function setTotalTestUsers(uint256 _totalTestUsers) external {
-        totalTestUsers = _totalTestUsers;
+    function setTotalPeriodsSelected(uint256 _totalPeriodsSelected) external {
+        totalPeriodsSelected = _totalPeriodsSelected;
     }
 }
