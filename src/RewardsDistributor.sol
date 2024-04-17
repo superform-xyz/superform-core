@@ -12,6 +12,8 @@ import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { IRewardsDistributor } from "src/interfaces/IRewardsDistributor.sol";
 
+import "forge-std/console.sol";
+
 /// @title SuperFrens
 /// @author Zeropoint Labs
 /// @notice This will be SUPERFORM_RECEIVER in SuperRegistry. Also, requires a new REWARDS_ADMIN_ROLE (a fireblocks
@@ -162,13 +164,15 @@ contract RewardsDistributor is IRewardsDistributor {
     {
         bytes32 root = periodicRewardsMerkleRoot[periodId_];
         if (root == ZERO_BYTES32) revert MERKLE_ROOT_NOT_SET();
-        
+
         /// @dev user cannot claim a periodic reward twice
-        if (periodicRewardsClaimed[periodId_][claimer_]) return false;
+        if (periodicRewardsClaimed[periodId_][claimer_]) revert ALREADY_CLAIMED();
 
         bytes32 leaf = keccak256(
             bytes.concat(keccak256(abi.encode(claimer_, periodId_, rewardTokens_, amountsClaimed_, CHAIN_ID)))
         );
+
+        console.log("merkle proof", MerkleProof.verify(proof_, root, leaf));
         return MerkleProof.verify(proof_, root, leaf);
     }
 

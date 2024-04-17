@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import { RewardsDistributor } from "src/RewardsDistributor.sol";
-import { MerkleReader } from "../merkle/helper/MerkleReader.sol";
+import { MerkleReader } from "test/utils/merkle/helper/MerkleReader.sol";
 import { SuperRBAC } from "src/settings/SuperRBAC.sol";
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";

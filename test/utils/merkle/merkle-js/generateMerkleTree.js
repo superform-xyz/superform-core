@@ -3,7 +3,7 @@ const fs = require("fs");
 
 
 /// read all the files in target folder
-let files = fs.readdirSync('test/invariant/rewardsDistributor/merkle/target/');
+let files = fs.readdirSync('test/utils/merkle/target/');
 let filteredFiles = files.filter(file => file.startsWith("input"))
 let constructedData = [];
 
@@ -39,8 +39,8 @@ for (let i = 0; i < filteredFiles.length; ++i) {
   }
 
   /// step 4: write the tree and root for further use
-  fs.writeFileSync(`test/invariant/rewardsDistributor/merkle/target/jsGeneratedRoot${i}.json`, JSON.stringify({ "root": root }));
-  fs.writeFileSync(`test/invariant/rewardsDistributor/merkle/target/jsTreeDump${i}.json`, JSON.stringify(treeDump));
+  fs.writeFileSync(`test/utils/merkle/target/jsGeneratedRoot${i}.json`, JSON.stringify({ "root": root }));
+  fs.writeFileSync(`test/utils/merkle/target/jsTreeDump${i}.json`, JSON.stringify(treeDump));
   constructedData = [];
   console.log(' Processed ')
 }

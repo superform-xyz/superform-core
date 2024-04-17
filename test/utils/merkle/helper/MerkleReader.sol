@@ -4,13 +4,13 @@ pragma solidity ^0.8.23;
 import "forge-std/StdJson.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
-import "../../../../utils/BaseSetup.sol";
+import "../../BaseSetup.sol";
 
 abstract contract MerkleReader is StdCheats, BaseSetup {
     using stdJson for string;
 
-    string private basePathForRoot = "/test/invariant/rewardsDistributor/merkle/target/jsGeneratedRoot";
-    string private basePathForTreeDump = "/test/invariant/rewardsDistributor/merkle/target/jsTreeDump";
+    string private basePathForRoot = "/test/utils/merkle/target/jsGeneratedRoot";
+    string private basePathForTreeDump = "/test/utils/merkle/target/jsTreeDump";
 
     string private prepend = ".values[";
 

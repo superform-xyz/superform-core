@@ -77,6 +77,6 @@ console.log(`Number of claimers: ${claimers.length}`)
 
 constructedData.count = claimers.length;
 
-fs.writeFileSync(`test/invariant/rewardsDistributor/merkle/target/input2.json`, JSON.stringify(constructedData));
+fs.writeFileSync(`test/utils/merkle/target/input2.json`, JSON.stringify(constructedData));
 return;
 

@@ -36,6 +36,9 @@ interface IRewardsDistributor {
     /// @dev error message for when the array length is zero
     error ZERO_ARR_LENGTH();
 
+    /// @dev error message for when the claimer has already claimed their rewards
+    error ALREADY_CLAIMED();
+
     //////////////////////////////////////////////////////////////
     //                      EVENTS                              //
     //////////////////////////////////////////////////////////////
