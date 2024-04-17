@@ -372,6 +372,38 @@ contract VaultSharesHandler is InvariantProtocolActions {
         rpcURLs[BASE] = BASE_RPC_URL;
         rpcURLs[FANTOM] = FANTOM_RPC_URL;
 
+        mapping(uint64 => mapping(uint256 => bytes)) storage gasUsed = GAS_USED;
+
+        // swapGasUsed = 3
+        gasUsed[ETH][3] = abi.encode(400_000);
+        gasUsed[BSC][3] = abi.encode(650_000);
+        gasUsed[AVAX][3] = abi.encode(850_000);
+        gasUsed[POLY][3] = abi.encode(700_000);
+        gasUsed[OP][3] = abi.encode(550_000);
+        gasUsed[ARBI][3] = abi.encode(2_500_000);
+        gasUsed[BASE][3] = abi.encode(600_000);
+        gasUsed[FANTOM][3] = abi.encode(600_000);
+
+        // updateDepositGasUsed == 4 (only used on deposits for now)
+        gasUsed[ETH][4] = abi.encode(225_000);
+        gasUsed[BSC][4] = abi.encode(225_000);
+        gasUsed[AVAX][4] = abi.encode(200_000);
+        gasUsed[POLY][4] = abi.encode(200_000);
+        gasUsed[OP][4] = abi.encode(200_000);
+        gasUsed[ARBI][4] = abi.encode(1_400_000);
+        gasUsed[BASE][4] = abi.encode(200_000);
+        gasUsed[FANTOM][4] = abi.encode(200_000);
+
+        // withdrawGasUsed == 6 (incl. cost to update)
+        gasUsed[ETH][6] = abi.encode(600_000);
+        gasUsed[BSC][6] = abi.encode(1_500_000);
+        gasUsed[AVAX][6] = abi.encode(1_000_000);
+        gasUsed[POLY][6] = abi.encode(1_000_000);
+        gasUsed[OP][6] = abi.encode(1_000_000);
+        gasUsed[ARBI][6] = abi.encode(2_500_000);
+        gasUsed[BASE][6] = abi.encode(1_500_000);
+        gasUsed[FANTOM][6] = abi.encode(1_500_000);
+
         mapping(uint64 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
         lzEndpointsStorage[ETH] = ETH_lzEndpoint;
         lzEndpointsStorage[BSC] = BSC_lzEndpoint;

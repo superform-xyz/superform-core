@@ -286,6 +286,34 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     /// @dev minting enough tokens to be able to fuzz with bigger amounts (DAI's 3.6B supply etc)
     uint256 public constant hundredBilly = 100 * 1e9 * 1e18;
 
+    mapping(uint64 => mapping(uint256 => bytes)) public GAS_USED;
+
+    /// @dev !WARNING: update these for Fantom
+    /// @dev check https://api-utils.superform.xyz/docs#/Utils/get_gas_prices_gwei_gas_get
+    uint256[] public gasPrices = [
+        50_000_000_000, // ETH
+        3_000_000_000, // BSC
+        25_000_000_000, // AVAX
+        50_000_000_000, // POLY
+        100_000_000, // ARBI
+        4_000_000, // OP
+        1_000_000, // BASE
+        4 * 10e9 // FANTOM
+    ];
+
+    /// @dev !WARNING: update these for Fantom
+    /// @dev check https://api-utils.superform.xyz/docs#/Utils/get_native_prices_chainlink_native_get
+    uint256[] public nativePrices = [
+        253_400_000_000, // ETH
+        31_439_000_000, // BSC
+        3_529_999_999, // AVAX
+        81_216_600, // POLY
+        253_400_000_000, // ARBI
+        253_400_000_000, // OP
+        253_400_000_000, // BASE
+        4 * 10e9 // FANTOM
+    ];
+
     /*//////////////////////////////////////////////////////////////
                         CHAINLINK VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -880,19 +908,21 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                         IPaymentHelper.PaymentHelperConfig(
                             PRICE_FEEDS[vars.chainId][vars.dstChainId],
                             address(0),
-                            50_000,
-                            40_000,
-                            70_000,
-                            80_000,
-                            12e8,
-                            /// 12 usd
-                            28 gwei,
+                            abi.decode(GAS_USED[vars.dstChainId][3], (uint256)),
+                            abi.decode(GAS_USED[vars.dstChainId][4], (uint256)),
+                            vars.dstChainId == ARBI ? 1_000_000 : 200_000,
+                            abi.decode(GAS_USED[vars.dstChainId][6], (uint256)),
+                            nativePrices[j],
+                            gasPrices[j],
                             750,
+                            2_000_000,
+                            /// @dev ackGasCost to move a msg from dst to source
                             10_000,
                             10_000,
-                            10_000
+                            200_000
                         )
                     );
+                    /// @dev !WARNING - Default value for updateWithdrawGas for now
                     /// @dev 0.01 ether is just a mock value. Wormhole fees are currently 0 on mainnet
                     PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(
                         generateBroadcastParams(0.01 ether)
@@ -996,12 +1026,24 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                     PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
                         vars.chainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
                     );
-                    PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 10, abi.encode(40_000));
-                    PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 11, abi.encode(50_000));
-                    PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 12, abi.encode(10_000));
                     PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
-                        vars.chainId, 8, abi.encode(50 * 10 ** 9 wei)
+                        vars.chainId, 7, abi.encode(nativePrices[j])
                     );
+                    PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
+                        vars.chainId, 8, abi.encode(gasPrices[j])
+                    );
+
+                    /// @dev gas per byte
+                    PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 9, abi.encode(750));
+
+                    /// @dev ackGasCost to mint superPositions
+                    PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
+                        vars.chainId, 10, abi.encode(vars.chainId == ARBI ? 500_000 : 150_000)
+                    );
+
+                    PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 11, abi.encode(50_000));
+
+                    PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 12, abi.encode(10_000));
                 }
             }
         }
@@ -1135,6 +1177,38 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         rpcURLs[OP] = OPTIMISM_RPC_URL;
         rpcURLs[BASE] = BASE_RPC_URL;
         rpcURLs[FANTOM] = FANTOM_RPC_URL;
+
+        mapping(uint64 => mapping(uint256 => bytes)) storage gasUsed = GAS_USED;
+
+        // swapGasUsed = 3
+        gasUsed[ETH][3] = abi.encode(400_000);
+        gasUsed[BSC][3] = abi.encode(650_000);
+        gasUsed[AVAX][3] = abi.encode(850_000);
+        gasUsed[POLY][3] = abi.encode(700_000);
+        gasUsed[OP][3] = abi.encode(550_000);
+        gasUsed[ARBI][3] = abi.encode(2_500_000);
+        gasUsed[BASE][3] = abi.encode(600_000);
+        gasUsed[FANTOM][3] = abi.encode(600_000);
+
+        // updateDepositGasUsed == 4 (only used on deposits for now)
+        gasUsed[ETH][4] = abi.encode(225_000);
+        gasUsed[BSC][4] = abi.encode(225_000);
+        gasUsed[AVAX][4] = abi.encode(200_000);
+        gasUsed[POLY][4] = abi.encode(200_000);
+        gasUsed[OP][4] = abi.encode(200_000);
+        gasUsed[ARBI][4] = abi.encode(1_400_000);
+        gasUsed[BASE][4] = abi.encode(200_000);
+        gasUsed[FANTOM][4] = abi.encode(200_000);
+
+        // withdrawGasUsed == 6 (incl. cost to update)
+        gasUsed[ETH][6] = abi.encode(600_000);
+        gasUsed[BSC][6] = abi.encode(1_500_000);
+        gasUsed[AVAX][6] = abi.encode(1_000_000);
+        gasUsed[POLY][6] = abi.encode(1_000_000);
+        gasUsed[OP][6] = abi.encode(1_000_000);
+        gasUsed[ARBI][6] = abi.encode(2_500_000);
+        gasUsed[BASE][6] = abi.encode(1_500_000);
+        gasUsed[FANTOM][6] = abi.encode(1_500_000);
 
         mapping(uint64 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
         lzEndpointsStorage[ETH] = ETH_lzEndpoint;

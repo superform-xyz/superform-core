@@ -1099,7 +1099,7 @@ contract PaymentHelperTest is ProtocolActions {
         vm.prank(deployer);
         paymentHelper.updateRemoteChain(1, 4, abi.encode(423));
 
-        uint256 result4 = paymentHelper.updateGasUsed(1);
+        uint256 result4 = paymentHelper.updateDepositGasUsed(1);
         assertEq(result4, 423);
 
         /// set config type: 5
@@ -1156,7 +1156,9 @@ contract PaymentHelperTest is ProtocolActions {
         vm.startPrank(deployer);
         paymentHelper.addRemoteChain(
             420,
-            IPaymentHelper.PaymentHelperConfig(address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431)
+            IPaymentHelper.PaymentHelperConfig(
+                address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
+            )
         );
 
         paymentHelper.addRemoteChain(
@@ -1173,7 +1175,8 @@ contract PaymentHelperTest is ProtocolActions {
                 428,
                 429,
                 430,
-                431
+                431,
+                432
             )
         );
 
@@ -1183,7 +1186,7 @@ contract PaymentHelperTest is ProtocolActions {
         paymentHelper.addRemoteChain(
             421,
             IPaymentHelper.PaymentHelperConfig(
-                mock, 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431
+                mock, 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
             )
         );
 
@@ -1191,7 +1194,7 @@ contract PaymentHelperTest is ProtocolActions {
         paymentHelper.addRemoteChain(
             421,
             IPaymentHelper.PaymentHelperConfig(
-                0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, mock, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431
+                0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, mock, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
             )
         );
 
@@ -1226,7 +1229,7 @@ contract PaymentHelperTest is ProtocolActions {
         vm.prank(deployer);
         paymentHelper.updateRemoteChain(420, 4, abi.encode(423));
 
-        uint256 result4 = paymentHelper.updateGasUsed(420);
+        uint256 result4 = paymentHelper.updateDepositGasUsed(420);
         assertEq(result4, 423);
 
         /// set config type: 5

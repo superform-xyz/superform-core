@@ -1022,9 +1022,11 @@ abstract contract AbstractDeploySingle is Script {
                 2_000_000,
                 /// @dev ackGasCost to move a msg from dst to source
                 10_000,
-                10_000
+                10_000,
+                200_000
             )
         );
+        /// @dev !WARNING - Default value for updateWithdrawGas for now
 
         PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(abi.encode(4, abi.encode(0, "")));
 
@@ -1113,7 +1115,7 @@ abstract contract AbstractDeploySingle is Script {
         gasUsed[BASE][3] = abi.encode(600_000);
         gasUsed[FANTOM][3] = abi.encode(600_000);
 
-        // updateGasUsed == 4 (only used on deposits for now)
+        // updateDepositGasUsed == 4 (only used on deposits for now)
         gasUsed[ETH][4] = abi.encode(225_000);
         gasUsed[BSC][4] = abi.encode(225_000);
         gasUsed[AVAX][4] = abi.encode(200_000);
@@ -1183,6 +1185,7 @@ abstract contract AbstractDeploySingle is Script {
 
         /// price feeds on all chains
         mapping(uint64 => mapping(uint64 => address)) storage priceFeeds = PRICE_FEEDS;
+        /// https://docs.chain.link/data-feeds/price-feeds/addresses?network=ethereum&page=1
 
         /// ETH
         priceFeeds[ETH][ETH] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
@@ -1192,7 +1195,7 @@ abstract contract AbstractDeploySingle is Script {
         priceFeeds[ETH][OP] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][ARBI] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][BASE] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-        priceFeeds[ETH][FANTOM] = address(0);
+        priceFeeds[ETH][FANTOM] = 0x2DE7E4a9488488e0058B95854CC2f7955B35dC9b;
 
         /// BSC
         priceFeeds[BSC][BSC] = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
