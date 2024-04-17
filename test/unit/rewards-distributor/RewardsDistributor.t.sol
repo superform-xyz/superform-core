@@ -156,11 +156,197 @@ contract RewardsDistributorTests is MerkleReader {
         (,,,, bytes32[] memory proof_, address[] memory tokensToClaim, uint256[] memory amountsToClaim) =
             _generateMerkleTree(MerkleReader.MerkleArgs(periodId, user, OP));
 
-        console.log(rewards.verifyClaim(user, periodId, tokensToClaim, amountsToClaim, proof_));
+        vm.prank(user);
         rewards.claim(user, periodId, tokensToClaim, amountsToClaim, proof_);
-        /*
-        vm.expectRevert(IRewardsDistributor.INVALID_CLAIM.selector);
+
+        vm.expectRevert(IRewardsDistributor.ALREADY_CLAIMED.selector);
+        vm.prank(user);
         rewards.claim(user, periodId, tokensToClaim, amountsToClaim, proof_);
-        */
+    }
+
+    function test_batchclaim_invalidReceiver() public {
+        _addRoot();
+        // common user
+        address user = testUsers[0][1];
+
+        uint256[] memory periodIds = new uint256[](2);
+        periodIds[0] = 0;
+        periodIds[1] = 1;
+
+        bytes32[][] memory proofs = new bytes32[][](2);
+
+        address[][] memory tokensToClaim = new address[][](2);
+
+        uint256[][] memory amountsToClaim = new uint256[][](2);
+        for (uint256 periodId = 0; periodId < 2; periodId++) {
+            (,,,, bytes32[] memory proof_, address[] memory tokensToClaim_, uint256[] memory amountsToClaim_) =
+                _generateMerkleTree(MerkleReader.MerkleArgs(periodId, user, OP));
+
+            proofs[periodId] = proof_;
+            tokensToClaim[periodId] = tokensToClaim_;
+            amountsToClaim[periodId] = amountsToClaim_;
+        }
+
+        vm.expectRevert(IRewardsDistributor.INVALID_RECEIVER.selector);
+        rewards.batchClaim(address(0), periodIds, tokensToClaim, amountsToClaim, proofs);
+    }
+
+    function test_batchclaim_noPeriods() public {
+        _addRoot();
+        // common user
+        address user = testUsers[0][1];
+
+        uint256[] memory periodIds;
+
+        bytes32[][] memory proofs = new bytes32[][](2);
+
+        address[][] memory tokensToClaim = new address[][](2);
+
+        uint256[][] memory amountsToClaim = new uint256[][](2);
+        for (uint256 periodId = 0; periodId < 2; periodId++) {
+            (,,,, bytes32[] memory proof_, address[] memory tokensToClaim_, uint256[] memory amountsToClaim_) =
+                _generateMerkleTree(MerkleReader.MerkleArgs(periodId, user, OP));
+
+            proofs[periodId] = proof_;
+            tokensToClaim[periodId] = tokensToClaim_;
+            amountsToClaim[periodId] = amountsToClaim_;
+        }
+
+        vm.expectRevert(IRewardsDistributor.ZERO_ARR_LENGTH.selector);
+        rewards.batchClaim(user, periodIds, tokensToClaim, amountsToClaim, proofs);
+    }
+
+    function test_batchclaim_invalidArraysLen() public {
+        _addRoot();
+        // common user
+        address user = testUsers[0][1];
+
+        uint256[] memory periodIds = new uint256[](2);
+        periodIds[0] = 0;
+        periodIds[1] = 1;
+
+        bytes32[][] memory proofs = new bytes32[][](2);
+
+        address[][] memory tokensToClaim = new address[][](3);
+
+        uint256[][] memory amountsToClaim = new uint256[][](2);
+        for (uint256 periodId = 0; periodId < 2; periodId++) {
+            (,,,, bytes32[] memory proof_, address[] memory tokensToClaim_, uint256[] memory amountsToClaim_) =
+                _generateMerkleTree(MerkleReader.MerkleArgs(periodId, user, OP));
+
+            proofs[periodId] = proof_;
+            tokensToClaim[periodId] = tokensToClaim_;
+            amountsToClaim[periodId] = amountsToClaim_;
+        }
+
+        vm.expectRevert(IRewardsDistributor.INVALID_BATCH_REQ.selector);
+        rewards.batchClaim(user, periodIds, tokensToClaim, amountsToClaim, proofs);
+    }
+
+    function test_batchclaim_noTokensToClaimInAPeriod() public {
+        _addRoot();
+        // common user
+        address user = testUsers[0][1];
+
+        uint256[] memory periodIds = new uint256[](2);
+        periodIds[0] = 0;
+        periodIds[1] = 1;
+
+        bytes32[][] memory proofs = new bytes32[][](2);
+
+        address[][] memory tokensToClaim = new address[][](2);
+
+        uint256[][] memory amountsToClaim = new uint256[][](2);
+        for (uint256 periodId = 0; periodId < 2; periodId++) {
+            (,,,, bytes32[] memory proof_, address[] memory tokensToClaim_, uint256[] memory amountsToClaim_) =
+                _generateMerkleTree(MerkleReader.MerkleArgs(periodId, user, OP));
+
+            proofs[periodId] = proof_;
+            tokensToClaim[periodId] = tokensToClaim_;
+            if (periodId == 0) {
+                tokensToClaim_ = new address[](0);
+                tokensToClaim[periodId] = tokensToClaim_;
+            }
+            amountsToClaim[periodId] = amountsToClaim_;
+        }
+
+        vm.expectRevert(IRewardsDistributor.ZERO_ARR_LENGTH.selector);
+        rewards.batchClaim(user, periodIds, tokensToClaim, amountsToClaim, proofs);
+    }
+
+    function test_batchclaim_invalidArraysLenInAPeriod() public {
+        _addRoot();
+        // common user
+        address user = testUsers[0][1];
+
+        uint256[] memory periodIds = new uint256[](2);
+        periodIds[0] = 0;
+        periodIds[1] = 1;
+
+        bytes32[][] memory proofs = new bytes32[][](2);
+
+        address[][] memory tokensToClaim = new address[][](2);
+
+        uint256[][] memory amountsToClaim = new uint256[][](2);
+        for (uint256 periodId = 0; periodId < 2; periodId++) {
+            (,,,, bytes32[] memory proof_, address[] memory tokensToClaim_,) =
+                _generateMerkleTree(MerkleReader.MerkleArgs(periodId, user, OP));
+
+            proofs[periodId] = proof_;
+            tokensToClaim[periodId] = tokensToClaim_;
+
+            amountsToClaim[periodId] = new uint256[](10);
+        }
+
+        vm.expectRevert(IRewardsDistributor.INVALID_BATCH_REQ_TOKENS_AMOUNTS.selector);
+        rewards.batchClaim(user, periodIds, tokensToClaim, amountsToClaim, proofs);
+    }
+
+    function test_batchclaim_claimAndAlreadyClaimed() public {
+        _addRoot();
+        // common user
+        address user = testUsers[0][1];
+
+        uint256[] memory periodIds = new uint256[](2);
+        periodIds[0] = 0;
+        periodIds[1] = 1;
+
+        bytes32[][] memory proofs = new bytes32[][](2);
+
+        address[][] memory tokensToClaim = new address[][](2);
+
+        uint256[][] memory amountsToClaim = new uint256[][](2);
+        for (uint256 periodId = 0; periodId < 2; periodId++) {
+            (,,,, bytes32[] memory proof_, address[] memory tokensToClaim_, uint256[] memory amountsToClaim_) =
+                _generateMerkleTree(MerkleReader.MerkleArgs(periodId, user, OP));
+
+            proofs[periodId] = proof_;
+            tokensToClaim[periodId] = tokensToClaim_;
+            amountsToClaim[periodId] = amountsToClaim_;
+        }
+
+        vm.prank(user);
+        rewards.batchClaim(user, periodIds, tokensToClaim, amountsToClaim, proofs);
+
+        vm.expectRevert(IRewardsDistributor.ALREADY_CLAIMED.selector);
+        vm.prank(user);
+        rewards.batchClaim(user, periodIds, tokensToClaim, amountsToClaim, proofs);
+    }
+
+    function _addRoot() internal {
+        bytes32 root;
+        uint256 usdcToDeposit;
+        uint256 daiToDeposit;
+        uint256 periodId = rewards.currentPeriodId();
+        (root,, usdcToDeposit, daiToDeposit,,,) = _generateMerkleTree(MerkleReader.MerkleArgs(periodId, address(0), OP));
+
+        vm.startPrank(deployer);
+        rewards.setPeriodicRewards(root);
+        totalUSDCToDeposit += usdcToDeposit;
+        totalDAIToDeposit += daiToDeposit;
+
+        deal(USDC, address(rewards), totalUSDCToDeposit);
+        deal(DAI, address(rewards), totalDAIToDeposit);
+        vm.stopPrank();
     }
 }

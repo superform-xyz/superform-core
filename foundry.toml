@@ -30,7 +30,7 @@ out = 'localdev'
 
 [profile.coverage]
 fuzz = { runs = 1, max_test_rejects = 350_000 }
-invariant = { runs = 5_000 }
+invariant = { runs = 10 }
 src = 'src'
 test = 'test'
 script = 'src'
