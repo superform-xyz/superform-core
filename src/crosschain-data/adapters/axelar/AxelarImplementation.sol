@@ -40,6 +40,16 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
     mapping(bytes32 => bool) public processedMessages;
 
     //////////////////////////////////////////////////////////////
+    //                      CUSTOM  ERRORS                      //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev when gateway is already configured.
+    error GATEWAY_EXISTS();
+
+    /// @dev thrown if the incoming request is an invalid contract call
+    error INVALID_CONTRACT_CALL();
+
+    //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
 
@@ -82,11 +92,10 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
     /// @param gateway_ is the address of axelar gateway
     function setAxelarConfig(IAxelarGateway gateway_) external onlyProtocolAdmin {
         if (address(gateway_) == address(0)) revert Error.ZERO_ADDRESS();
-        if (address(gateway) == address(0)) {
-            gateway = gateway_;
+        if (address(gateway) != address(0)) revert GATEWAY_EXISTS();
 
-            emit GatewayAdded(address(gateway_));
-        }
+        gateway = gateway_;
+        emit GatewayAdded(address(gateway_));
     }
 
     /// @dev allows protocol admin to configure axelar gas service and gas estimator
@@ -124,6 +133,11 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
         returns (uint256 fees)
     {
         string memory axelarChainId = ambChainId[dstChainId_];
+
+        if (keccak256(bytes(axelarChainId)) == keccak256(bytes(""))) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
         /// @dev the destinationAddress is not used in the upstream axelar contract; hence passing in zero address
         /// @dev the params is also not used; hence passing in bytes(0)
         // return gasEstimator.estimateGasFee(
@@ -195,7 +209,7 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
         /// @dev axelar has native replay protection, still adding our own internal replay protections
         /// using msgId
         if (!gateway.validateContractCall(commandId, sourceChain, sourceAddress, keccak256(payload))) {
-            revert Error.INVALID_CONTRACT_CALL();
+            revert INVALID_CONTRACT_CALL();
         }
 
         /// @dev validateContractCall has native replay protection, this is additional
@@ -210,7 +224,7 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
         /// @dev decoding payload
         AMBMessage memory decoded = abi.decode(payload, (AMBMessage));
 
-        /// NOTE: experimental split of registry contracts
+        /// @dev routes message to respective state registry
         (,,, uint8 registryId,,) = decoded.txInfo.decodeTxInfo();
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(superRegistry.getStateRegistry(registryId));
 

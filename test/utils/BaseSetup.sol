@@ -193,7 +193,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     /// @notice id 4 is wormhole (Specialized Relayer)
     /// @notice id 5 is axelar
 
-    uint8[] public ambIds = [uint8(1), uint8(2), uint8(3), uint8(4), uint8(5)];
+    uint8[] public ambIds = [uint8(1), 2, 3, 4, 5];
     bool[] public isBroadcastAMB = [false, false, false, true, false];
 
     /*//////////////////////////////////////////////////////////////
