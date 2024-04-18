@@ -72,10 +72,72 @@ contract AxelarImplementationTest is BaseSetup {
         axelarImpl.setChainId(1, "");
     }
 
+    function test_setChainId_NonProtocolAdmin() public {
+        vm.prank(address(0x5678));
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        axelarImpl.setChainId(1, "chain1");
+    }
+
+    function test_setReceiver_NonProtocolAdmin() public {
+        vm.prank(address(0x5678));
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        axelarImpl.setReceiver("chain1", address(0x1234));
+    }
+
+    function test_dispatchPayload_NonValidStateRegistry() public {
+        vm.prank(address(0x5678));
+        vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
+        axelarImpl.dispatchPayload(address(this), 1, bytes("testmessage"), abi.encode(1, 500_000));
+    }
+
     function test_setReceiver_ZeroAddress() public {
         vm.prank(protocolAdmin);
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         axelarImpl.setReceiver("chain1", address(0));
+    }
+
+    function test_execute_InvalidPayload() public {
+        bytes32 commandId = keccak256("test");
+        string memory sourceChain = "Polygon";
+        string memory sourceAddress = _toString(getContract(POLY, "AxelarImplementation"));
+
+        bytes memory payload = abi.encode(bytes32(0), sourceChain, sourceAddress, bytes(""));
+
+        vm.prank(address(gateway));
+        vm.expectRevert(AxelarImplementation.INVALID_CONTRACT_CALL.selector);
+        axelarImpl.execute(commandId, sourceChain, sourceAddress, payload);
+    }
+
+    function test_execute_InvalidChainId() public {
+        vm.prank(protocolAdmin);
+        axelarImpl.setReceiver("invalid-chain", address(420));
+
+        bytes32 commandId = keccak256("test");
+        string memory sourceChain = "invalid-chain";
+        string memory sourceAddress = _toString(address(420));
+
+        AMBMessage memory ambMessage = AMBMessage(
+            DataLib.packTxInfo(uint8(TransactionType.DEPOSIT), uint8(CallbackType.INIT), 0, 1, address(this), POLY),
+            abi.encode(new uint8[](0), "")
+        );
+
+        bytes memory payload = abi.encode(ambMessage);
+
+        vm.mockCall(
+            address(axelarImpl.gateway()),
+            abi.encodeWithSelector(
+                IAxelarGateway(axelarImpl.gateway()).validateContractCall.selector,
+                commandId,
+                sourceChain,
+                sourceAddress,
+                keccak256(payload)
+            ),
+            abi.encode(true)
+        );
+
+        vm.prank(address(gateway));
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        axelarImpl.execute(commandId, sourceChain, sourceAddress, payload);
     }
 
     function test_estimateFees_InvalidChainId() public {
