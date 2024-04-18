@@ -203,6 +203,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     mapping(uint64 => address) public LZ_ENDPOINTS;
     mapping(uint64 => uint16) public WORMHOLE_CHAIN_IDS;
     mapping(uint64 => address) public HYPERLANE_MAILBOXES;
+    mapping(uint64 => string) public AXELAR_CHAIN_IDS;
+    mapping(uint64 => address) public AXELAR_GATEWAYS;
 
     address public constant ETH_lzEndpoint = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
     address public constant BSC_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
@@ -1219,6 +1221,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
         for (uint256 i = 0; i < chainIds.length; ++i) {
             wormholeChainIdsStorage[chainIds[i]] = wormhole_chainIds[i];
+            AXELAR_GATEWAYS[chainIds[i]] = axelarGateway[i];
+            AXELAR_CHAIN_IDS[chainIds[i]] = axelar_chainIds[i];
         }
 
         /// price feeds on all chains, for paymentHelper: chain => asset => priceFeed (against USD)
