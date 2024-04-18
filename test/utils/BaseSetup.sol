@@ -1201,13 +1201,13 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         gasUsed[FANTOM][4] = abi.encode(200_000);
 
         // withdrawGasUsed == 6 (incl. cost to update)
-        gasUsed[ETH][6] = abi.encode(600_000);
-        gasUsed[BSC][6] = abi.encode(1_500_000);
-        gasUsed[AVAX][6] = abi.encode(1_000_000);
-        gasUsed[POLY][6] = abi.encode(1_000_000);
-        gasUsed[OP][6] = abi.encode(1_000_000);
-        gasUsed[ARBI][6] = abi.encode(2_500_000);
-        gasUsed[BASE][6] = abi.encode(1_500_000);
+        gasUsed[ETH][6] = abi.encode(1_272_330);
+        gasUsed[BSC][6] = abi.encode(837_167);
+        gasUsed[AVAX][6] = abi.encode(1_494_028);
+        gasUsed[POLY][6] = abi.encode(1_119_242);
+        gasUsed[OP][6] = abi.encode(1_716_146);
+        gasUsed[ARBI][6] = abi.encode(1_654_955);
+        gasUsed[BASE][6] = abi.encode(1_178_778);
         gasUsed[FANTOM][6] = abi.encode(1_500_000);
 
         mapping(uint64 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;

@@ -766,6 +766,8 @@ contract PaymentHelper is IPaymentHelper {
     {
         uint256 len = configTypes_.length;
 
+        if (len == 0) revert Error.ZERO_INPUT_VALUE();
+
         if (len != configs_.length) revert Error.ARRAY_LENGTH_MISMATCH();
 
         for (uint256 i; i < len; ++i) {
@@ -784,6 +786,8 @@ contract PaymentHelper is IPaymentHelper {
         onlyEmergencyAdmin
     {
         uint256 len = chainIds_.length;
+
+        if (len == 0) revert Error.ZERO_INPUT_VALUE();
 
         if (!(len == configTypes_.length && len == configs_.length)) revert Error.ARRAY_LENGTH_MISMATCH();
 
@@ -957,10 +961,10 @@ contract PaymentHelper is IPaymentHelper {
         uint256 len = liqRequests_.length;
         for (uint256 i; i < len; i++) {
             /// @dev liqRequests[i].token on withdraws is the desired token
-            /// @dev however if this function is called on source chain we have no way to verify if
-            /// @dev this token is equal to the vault asset. Therefore, summing up the gas for all
-            /// @dev cases where txData is null (requires a destination update)
-            if (liqRequests_[i].txData.length == 0) {
+            /// @dev if token is address(0) -> user wants settlement without any liq data
+            /// @dev this means that if no txData is present and token is different than address(0) an update is
+            /// required in destination
+            if (liqRequests_[i].txData.length == 0 && liqRequests_[i].token != address(0)) {
                 gasUsed += updateWithdrawGasUsed[dstChainId_];
             }
         }

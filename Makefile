@@ -22,7 +22,7 @@ update:; forge update
 build :; FOUNDRY_PROFILE=production forge build
 build-unoptimized :; FOUNDRY_PROFILE=localdev forge build
 build-sizes :; FOUNDRY_PROFILE=default forge build --sizes
-test-vvv   :; forge test -vvvvv --match-contract SDMVW0000TokenInputNoSlippageAMB13Fantom
+test-vvv   :; forge test --match-contract PaymentHelperTest
 ftest   :; forge test
 test-ci :; forge test --no-match-path "test/invariant/**/*.sol"
 coverage :; FOUNDRY_PROFILE=coverage forge coverage --match-path "test/**/*.sol" --report lcov
