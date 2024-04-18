@@ -113,9 +113,13 @@ contract PaymentHelper is IPaymentHelper {
         _;
     }
 
-    modifier onlyEmergencyAdmin() {
-        if (!ISuperRBAC(_getAddress(keccak256("SUPER_RBAC"))).hasEmergencyAdminRole(msg.sender)) {
-            revert Error.NOT_EMERGENCY_ADMIN();
+    modifier onlyPaymentAdmin() {
+        if (
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
+                keccak256("PAYMENT_ADMIN_ROLE"), msg.sender
+            )
+        ) {
+            revert Error.NOT_PAYMENT_ADMIN();
         }
         _;
     }
@@ -664,7 +668,7 @@ contract PaymentHelper is IPaymentHelper {
     )
         public
         override
-        onlyEmergencyAdmin
+        onlyPaymentAdmin
     {
         /// @dev Type 1: DST TOKEN PRICE FEED ORACLE
         if (configType_ == 1) {
@@ -762,7 +766,7 @@ contract PaymentHelper is IPaymentHelper {
     )
         public
         override
-        onlyEmergencyAdmin
+        onlyPaymentAdmin
     {
         uint256 len = configTypes_.length;
 
@@ -783,7 +787,7 @@ contract PaymentHelper is IPaymentHelper {
     )
         external
         override
-        onlyEmergencyAdmin
+        onlyPaymentAdmin
     {
         uint256 len = chainIds_.length;
 
@@ -797,7 +801,7 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @inheritdoc IPaymentHelper
-    function updateRegisterAERC20Params(bytes memory extraDataForTransmuter_) external onlyEmergencyAdmin {
+    function updateRegisterAERC20Params(bytes memory extraDataForTransmuter_) external onlyPaymentAdmin {
         extraDataForTransmuter = extraDataForTransmuter_;
     }
 
