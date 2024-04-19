@@ -217,6 +217,12 @@ contract AxelarImplementationTest is BaseSetup {
         axelarImpl.setReceiver("invalid-chain-id", address(320));
     }
 
+    function test_setReceiver_zeroAddress() public {
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        vm.prank(address(deployer));
+        axelarImpl.setReceiver("Polygon", address(0));
+    }
+
     function test_setChainId_forExistingChain() public {
         vm.prank(deployer);
         axelarImpl.setChainId(137, "Polygon");
