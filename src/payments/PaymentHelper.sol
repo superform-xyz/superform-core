@@ -65,7 +65,8 @@ contract PaymentHelper is IPaymentHelper {
     mapping(uint64 chainId => AggregatorV3Interface) public nativeFeedOracle;
     mapping(uint64 chainId => AggregatorV3Interface) public gasPriceOracle;
     mapping(uint64 chainId => uint256 gasForSwap) public swapGasUsed;
-    mapping(uint64 chainId => uint256 gasForUpdate) public updateGasUsed;
+    mapping(uint64 chainId => uint256 gasForUpdateDeposit) public updateDepositGasUsed;
+    mapping(uint64 chainId => uint256 gasForUpdateWithdraw) public updateWithdrawGasUsed;
     mapping(uint64 chainId => uint256 gasForDeposit) public depositGasUsed;
     mapping(uint64 chainId => uint256 gasForWithdraw) public withdrawGasUsed;
     mapping(uint64 chainId => uint256 defaultNativePrice) public nativePrice;
@@ -112,9 +113,13 @@ contract PaymentHelper is IPaymentHelper {
         _;
     }
 
-    modifier onlyEmergencyAdmin() {
-        if (!ISuperRBAC(_getAddress(keccak256("SUPER_RBAC"))).hasEmergencyAdminRole(msg.sender)) {
-            revert Error.NOT_EMERGENCY_ADMIN();
+    modifier onlyPaymentAdmin() {
+        if (
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
+                keccak256("PAYMENT_ADMIN_ROLE"), msg.sender
+            )
+        ) {
+            revert Error.NOT_PAYMENT_ADMIN();
         }
         _;
     }
@@ -197,7 +202,7 @@ contract PaymentHelper is IPaymentHelper {
 
                 if (xChain) {
                     /// @dev step 3: estimate update cost (only for deposit)
-                    v.totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], v.superformIdsLen);
+                    v.totalDstGas += _estimateUpdateDepositCost(req_.dstChainIds[i], v.superformIdsLen);
 
                     uint256 ackLen;
                     for (uint256 j; j < v.superformIdsLen; ++j) {
@@ -220,6 +225,12 @@ contract PaymentHelper is IPaymentHelper {
                     } else if (v.paused) {
                         v.totalDstGas += emergencyCost[req_.dstChainIds[i]];
                     }
+                }
+
+                if (xChain) {
+                    /// @dev step 7: estimate update withdraw cost if no txData is present
+                    v.totalDstGas +=
+                        _estimateUpdateWithdrawCost(req_.dstChainIds[i], req_.superformsData[i].liqRequests);
                 }
             }
 
@@ -264,7 +275,7 @@ contract PaymentHelper is IPaymentHelper {
 
                 if (xChain) {
                     /// @dev step 3: estimate update cost (only for deposit)
-                    totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], 1);
+                    totalDstGas += _estimateUpdateDepositCost(req_.dstChainIds[i], 1);
 
                     /// @dev step 4: estimation execution cost of acknowledgement on source
                     if (!req_.superformsData[i].retain4626) {
@@ -286,12 +297,19 @@ contract PaymentHelper is IPaymentHelper {
                 } else if (paused) {
                     totalDstGas += emergencyCost[req_.dstChainIds[i]];
                 }
+
+                if (xChain) {
+                    LiqRequest[] memory liqRequests = new LiqRequest[](1);
+                    liqRequests[0] = req_.superformsData[i].liqRequest;
+                    /// @dev step 7: estimate update withdraw cost if no txData is present
+                    totalDstGas += _estimateUpdateWithdrawCost(req_.dstChainIds[i], liqRequests);
+                }
             }
 
-            /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
+            /// @dev step 8: estimate execution costs in destination including sending acknowledgement to source
             totalDstGas += xChain ? _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], 1) : 0;
 
-            /// @dev step 8: convert all dst gas estimates to src chain estimate
+            /// @dev step 9: convert all dst gas estimates to src chain estimate
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
         }
 
@@ -323,7 +341,7 @@ contract PaymentHelper is IPaymentHelper {
             liqAmount += _estimateLiqAmount(req_.superformsData.liqRequests);
 
             /// @dev step 3: estimate update cost (only for deposit)
-            totalDstGas += _estimateUpdateCost(req_.dstChainId, superformIdsLen);
+            totalDstGas += _estimateUpdateDepositCost(req_.dstChainId, superformIdsLen);
 
             uint256 ackLen;
             for (uint256 i; i < superformIdsLen; ++i) {
@@ -348,13 +366,16 @@ contract PaymentHelper is IPaymentHelper {
                     totalDstGas += emergencyCost[req_.dstChainId];
                 }
             }
+
+            /// @dev step 7: estimate update withdraw cost if no txData is present
+            totalDstGas += _estimateUpdateWithdrawCost(req_.dstChainId, req_.superformsData.liqRequests);
         }
 
-        /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
+        /// @dev step 8: estimate execution costs in destination including sending acknowledgement to source
         /// @dev ensure that acknowledgement costs from dst to src are not double counted
         totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, superformIdsLen);
 
-        /// @dev step 8: convert all destination gas estimates to source chain estimate
+        /// @dev step 9: convert all destination gas estimates to source chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
 
         totalAmount = srcAmount + dstAmount + liqAmount;
@@ -382,8 +403,8 @@ contract PaymentHelper is IPaymentHelper {
             /// @dev step 2: estimate the liqAmount
             liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
 
-            /// @dev step 3: estimate update cost (only for deposit)
-            totalDstGas += _estimateUpdateCost(req_.dstChainId, 1);
+            /// @dev step 3: estimate update deposit cost
+            totalDstGas += _estimateUpdateDepositCost(req_.dstChainId, 1);
 
             /// @dev step 4: estimation execution cost of acknowledgement on source
             if (!req_.superformData.retain4626) {
@@ -395,7 +416,6 @@ contract PaymentHelper is IPaymentHelper {
         } else {
             /// @dev step 6: process non-deposit logic for timelock form processing costs
             (, uint32 formId,) = req_.superformData.superformId.getSuperform();
-
             bool paused = factory.isFormImplementationPaused(formId);
 
             if (!paused && formId == TIMELOCK_FORM_ID) {
@@ -403,12 +423,16 @@ contract PaymentHelper is IPaymentHelper {
             } else if (paused) {
                 totalDstGas += emergencyCost[req_.dstChainId];
             }
+            LiqRequest[] memory liqRequests = new LiqRequest[](1);
+            liqRequests[0] = req_.superformData.liqRequest;
+            /// @dev step 7: estimate update withdraw cost if no txData is present
+            totalDstGas += _estimateUpdateWithdrawCost(req_.dstChainId, liqRequests);
         }
 
-        /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
+        /// @dev step 8: estimate execution costs in destination including sending acknowledgement to source
         totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, 1);
 
-        /// @dev step 8: convert all destination gas estimates to source chain estimate
+        /// @dev step 9: convert all destination gas estimates to source chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
 
         totalAmount = srcAmount + dstAmount + liqAmount;
@@ -585,14 +609,88 @@ contract PaymentHelper is IPaymentHelper {
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IPaymentHelper
-    function addRemoteChain(
-        uint64 chainId_,
-        PaymentHelperConfig calldata config_
+    function addRemoteChain(uint64 chainId_, PaymentHelperConfig calldata config_) public override onlyProtocolAdmin {
+        _addRemoteChain(chainId_, config_);
+    }
+
+    /// @inheritdoc IPaymentHelper
+    function addRemoteChains(
+        uint64[] calldata chainIds_,
+        PaymentHelperConfig[] calldata configs_
     )
         external
         override
         onlyProtocolAdmin
     {
+        uint256 len = chainIds_.length;
+
+        if (len == 0) revert Error.ZERO_INPUT_VALUE();
+
+        if (len != configs_.length) revert Error.ARRAY_LENGTH_MISMATCH();
+
+        for (uint256 i; i < len; ++i) {
+            _addRemoteChain(chainIds_[i], configs_[i]);
+        }
+    }
+
+    /// @inheritdoc IPaymentHelper
+    function updateRemoteChain(
+        uint64 chainId_,
+        uint256 configType_,
+        bytes memory config_
+    )
+        public
+        override
+        onlyPaymentAdmin
+    {
+        _updateRemoteChain(chainId_, configType_, config_);
+    }
+
+    /// @inheritdoc IPaymentHelper
+    function batchUpdateRemoteChain(
+        uint64 chainId_,
+        uint256[] calldata configTypes_,
+        bytes[] calldata configs_
+    )
+        public
+        override
+        onlyPaymentAdmin
+    {
+        _batchUpdateRemoteChain(chainId_, configTypes_, configs_);
+    }
+
+    /// @inheritdoc IPaymentHelper
+    function batchUpdateRemoteChains(
+        uint64[] calldata chainIds_,
+        uint256[][] calldata configTypes_,
+        bytes[][] calldata configs_
+    )
+        external
+        override
+        onlyPaymentAdmin
+    {
+        uint256 len = chainIds_.length;
+
+        if (len == 0) revert Error.ZERO_INPUT_VALUE();
+
+        if (!(len == configTypes_.length && len == configs_.length)) revert Error.ARRAY_LENGTH_MISMATCH();
+
+        for (uint256 i; i < len; ++i) {
+            _batchUpdateRemoteChain(chainIds_[i], configTypes_[i], configs_[i]);
+        }
+    }
+
+    /// @inheritdoc IPaymentHelper
+    function updateRegisterAERC20Params(bytes memory extraDataForTransmuter_) external onlyPaymentAdmin {
+        extraDataForTransmuter = extraDataForTransmuter_;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev PROTOCOL_ADMIN can perform the configuration of a remote chain for the first time
+    function _addRemoteChain(uint64 chainId_, PaymentHelperConfig calldata config_) internal {
         if (config_.nativeFeedOracle != address(0)) {
             AggregatorV3Interface nativeFeedOracleContract = AggregatorV3Interface(config_.nativeFeedOracle);
             if (nativeFeedOracleContract.decimals() != SUPPORTED_FEED_PRECISION) {
@@ -612,7 +710,7 @@ contract PaymentHelper is IPaymentHelper {
         }
 
         swapGasUsed[chainId_] = config_.swapGasUsed;
-        updateGasUsed[chainId_] = config_.updateGasUsed;
+        updateDepositGasUsed[chainId_] = config_.updateDepositGasUsed;
         depositGasUsed[chainId_] = config_.depositGasUsed;
         withdrawGasUsed[chainId_] = config_.withdrawGasUsed;
         nativePrice[chainId_] = config_.defaultNativePrice;
@@ -621,20 +719,13 @@ contract PaymentHelper is IPaymentHelper {
         ackGasCost[chainId_] = config_.ackGasCost;
         timelockCost[chainId_] = config_.timelockCost;
         emergencyCost[chainId_] = config_.emergencyCost;
+        updateWithdrawGasUsed[chainId_] = config_.updateWithdrawGasUsed;
 
         emit ChainConfigAdded(chainId_, config_);
     }
 
-    /// @inheritdoc IPaymentHelper
-    function updateRemoteChain(
-        uint64 chainId_,
-        uint256 configType_,
-        bytes memory config_
-    )
-        external
-        override
-        onlyEmergencyAdmin
-    {
+    /// @dev PAYMENT_ADMIN can update the configuration of a remote chain on a need basis
+    function _updateRemoteChain(uint64 chainId_, uint256 configType_, bytes memory config_) internal {
         /// @dev Type 1: DST TOKEN PRICE FEED ORACLE
         if (configType_ == 1) {
             AggregatorV3Interface nativeFeedOracleContract = AggregatorV3Interface(abi.decode(config_, (address)));
@@ -670,9 +761,9 @@ contract PaymentHelper is IPaymentHelper {
             swapGasUsed[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 4: PAYLOAD UPDATE GAS COST PER TX FOR DEPOSIT
+        /// @dev Type 4: PAYLOAD UPDATE DEPOSIT GAS COST PER TX
         if (configType_ == 4) {
-            updateGasUsed[chainId_] = abi.decode(config_, (uint256));
+            updateDepositGasUsed[chainId_] = abi.decode(config_, (uint256));
         }
 
         /// @dev Type 5: DEPOSIT GAS COST PER TX
@@ -715,17 +806,32 @@ contract PaymentHelper is IPaymentHelper {
             emergencyCost[chainId_] = abi.decode(config_, (uint256));
         }
 
+        /// @dev Type 13: PAYLOAD UPDATE WITHDRAW GAS COST PER TX
+        if (configType_ == 13) {
+            updateWithdrawGasUsed[chainId_] = abi.decode(config_, (uint256));
+        }
+
         emit ChainConfigUpdated(chainId_, configType_, config_);
     }
 
-    /// @inheritdoc IPaymentHelper
-    function updateRegisterAERC20Params(bytes memory extraDataForTransmuter_) external onlyEmergencyAdmin {
-        extraDataForTransmuter = extraDataForTransmuter_;
-    }
+    /// @dev batch updates the configuration of a remote chain. Performed by PAYMENT_ADMIN
+    function _batchUpdateRemoteChain(
+        uint64 chainId_,
+        uint256[] calldata configTypes_,
+        bytes[] calldata configs_
+    )
+        internal
+    {
+        uint256 len = configTypes_.length;
 
-    //////////////////////////////////////////////////////////////
-    //                  INTERNAL FUNCTIONS                      //
-    //////////////////////////////////////////////////////////////
+        if (len == 0) revert Error.ZERO_INPUT_VALUE();
+
+        if (len != configs_.length) revert Error.ARRAY_LENGTH_MISMATCH();
+
+        for (uint256 i; i < len; ++i) {
+            _updateRemoteChain(chainId_, configTypes_[i], configs_[i]);
+        }
+    }
 
     /// @dev helps generate extra data per amb
     function _generateExtraData(
@@ -860,8 +966,36 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @dev helps estimate the dst chain update payload gas limit
-    function _estimateUpdateCost(uint64 dstChainId_, uint256 vaultsCount_) internal view returns (uint256 gasUsed) {
-        return vaultsCount_ * updateGasUsed[dstChainId_];
+    function _estimateUpdateDepositCost(
+        uint64 dstChainId_,
+        uint256 vaultsCount_
+    )
+        internal
+        view
+        returns (uint256 gasUsed)
+    {
+        return vaultsCount_ * updateDepositGasUsed[dstChainId_];
+    }
+
+    /// @dev helps estimate the dst chain update payload gas limit
+    function _estimateUpdateWithdrawCost(
+        uint64 dstChainId_,
+        LiqRequest[] memory liqRequests_
+    )
+        internal
+        view
+        returns (uint256 gasUsed)
+    {
+        uint256 len = liqRequests_.length;
+        for (uint256 i; i < len; i++) {
+            /// @dev liqRequests[i].token on withdraws is the desired token
+            /// @dev if token is address(0) -> user wants settlement without any liq data
+            /// @dev this means that if no txData is present and token is different than address(0) an update is
+            /// required in destination
+            if (liqRequests_[i].txData.length == 0 && liqRequests_[i].token != address(0)) {
+                gasUsed += updateWithdrawGasUsed[dstChainId_];
+            }
+        }
     }
 
     /// @dev helps estimate the dst chain processing cost including the dst->src message cost
