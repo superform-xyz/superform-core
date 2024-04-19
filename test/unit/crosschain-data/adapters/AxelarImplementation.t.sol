@@ -211,6 +211,21 @@ contract AxelarImplementationTest is BaseSetup {
         vm.clearMockedCalls();
     }
 
+    function test_setReceiver_invalidChainId() public {
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        vm.prank(address(deployer));
+        axelarImpl.setReceiver("invalid-chain-id", address(320));
+    }
+
+    function test_setChainId_forExistingChain() public {
+        vm.prank(deployer);
+        axelarImpl.setChainId(137, "Polygon");
+    }
+
+    function test_retryPayload() public {
+        axelarImpl.retryPayload{ value: 1 ether }(abi.encode(bytes32("hello"), 1));
+    }
+
     function _toString(address addr) internal pure returns (string memory) {
         bytes memory addressBytes = abi.encodePacked(addr);
         uint256 length = addressBytes.length;

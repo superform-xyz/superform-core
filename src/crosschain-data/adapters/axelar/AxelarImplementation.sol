@@ -269,7 +269,7 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
     /// @param authorizedImpl_ is the implementation of the axelar message bridge on the specified destination
     /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
     function setReceiver(string memory ambChainId_, address authorizedImpl_) external onlyProtocolAdmin {
-        if (bytes(ambChainId_).length == 0) {
+        if (superChainId[ambChainId_] == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
 
