@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import { Error } from "src/libraries/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
+import { ProofLib } from "src/libraries/ProofLib.sol";
 import { AMBMessage } from "src/types/DataTypes.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
@@ -16,6 +17,7 @@ import { StringAddressConversion } from "src/vendor/axelar/StringAddressConversi
 
 contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
     using DataLib for uint256;
+    using ProofLib for AMBMessage;
     using StringAddressConversion for address;
     using StringAddressConversion for string;
 
@@ -39,6 +41,8 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
     mapping(string => address) public authorizedImpl;
     mapping(bytes32 => bool) public processedMessages;
 
+    mapping(bytes32 => bool) public ambProtect;
+
     //////////////////////////////////////////////////////////////
     //                      CUSTOM  ERRORS                      //
     //////////////////////////////////////////////////////////////
@@ -48,6 +52,9 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
 
     /// @dev thrown if the incoming request is an invalid contract call
     error INVALID_CONTRACT_CALL();
+
+    /// @dev thrown if same amb tries to deliver a payload and proof
+    error MALICIOUS_DELIVERY();
 
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
@@ -234,6 +241,7 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
             revert Error.INVALID_CHAIN_ID();
         }
 
+        _ambProtect(decoded);
         targetRegistry.receivePayload(origin, payload);
     }
 
@@ -280,5 +288,26 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
         authorizedImpl[ambChainId_] = authorizedImpl_;
 
         emit AuthorizedImplAdded(superChainId[ambChainId_], authorizedImpl_);
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              INTERNAL HELPER FUNCTIONS                   //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev prevents the same AMB from delivery a payload and its proof
+    /// @dev is an additional protection against malicious ambs
+    function _ambProtect(AMBMessage memory _message) internal {
+        bytes32 proof;
+
+        /// @dev amb protect
+        if (_message.params.length != 32) {
+            (, bytes memory payloadBody) = abi.decode(_message.params, (uint8[], bytes));
+            proof = AMBMessage(_message.txInfo, payloadBody).computeProof();
+        } else {
+            proof = abi.decode(_message.params, (bytes32));
+        }
+
+        if (ambProtect[proof]) revert MALICIOUS_DELIVERY();
+        ambProtect[proof] = true;
     }
 }

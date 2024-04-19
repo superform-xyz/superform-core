@@ -8,6 +8,7 @@ import { IAxelarGasService } from "src/vendor/axelar/IAxelarGasService.sol";
 import { IInterchainGasEstimation } from "src/vendor/axelar/IInterchainGasEstimation.sol";
 import { Error } from "src/libraries/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
+import { ProofLib } from "src/libraries/ProofLib.sol";
 
 contract InvalidReceiver {
     receive() external payable {
@@ -16,6 +17,8 @@ contract InvalidReceiver {
 }
 
 contract AxelarImplementationTest is BaseSetup {
+    using ProofLib for bytes;
+
     AxelarImplementation public axelarImpl;
     ISuperRegistry public superRegistry;
     IAxelarGateway public gateway;
@@ -230,6 +233,57 @@ contract AxelarImplementationTest is BaseSetup {
 
     function test_retryPayload() public {
         axelarImpl.retryPayload{ value: 1 ether }(abi.encode(bytes32("hello"), 1));
+    }
+
+    function test_delivery_maliciousPayload() public {
+        bytes32 commandId = keccak256("test");
+        string memory sourceChain = "Polygon";
+        string memory sourceAddress = _toString(address(getContract(POLY, "AxelarImplementation")));
+
+        AMBMessage memory ambMessage = AMBMessage(
+            DataLib.packTxInfo(uint8(TransactionType.DEPOSIT), uint8(CallbackType.INIT), 0, 1, address(this), POLY),
+            abi.encode(new uint8[](0), "")
+        );
+
+        bytes memory payload = abi.encode(ambMessage);
+
+        vm.mockCall(
+            address(axelarImpl.gateway()),
+            abi.encodeWithSelector(
+                IAxelarGateway(axelarImpl.gateway()).validateContractCall.selector,
+                commandId,
+                sourceChain,
+                sourceAddress,
+                keccak256(payload)
+            ),
+            abi.encode(true)
+        );
+
+        vm.prank(address(gateway));
+        axelarImpl.execute(commandId, sourceChain, sourceAddress, payload);
+
+        AMBMessage memory ambMessageProof = AMBMessage(
+            DataLib.packTxInfo(uint8(TransactionType.DEPOSIT), uint8(CallbackType.INIT), 0, 1, address(this), POLY), ""
+        );
+
+        ambMessageProof.params = abi.encode(ambMessageProof).computeProofBytes();
+        payload = abi.encode(ambMessageProof);
+
+        vm.mockCall(
+            address(axelarImpl.gateway()),
+            abi.encodeWithSelector(
+                IAxelarGateway(axelarImpl.gateway()).validateContractCall.selector,
+                commandId,
+                sourceChain,
+                sourceAddress,
+                keccak256(payload)
+            ),
+            abi.encode(true)
+        );
+
+        vm.expectRevert(AxelarImplementation.MALICIOUS_DELIVERY.selector);
+        vm.prank(address(gateway));
+        axelarImpl.execute(commandId, sourceChain, sourceAddress, payload);
     }
 
     function _toString(address addr) internal pure returns (string memory) {
