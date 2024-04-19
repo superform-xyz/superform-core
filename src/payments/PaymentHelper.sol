@@ -610,6 +610,87 @@ contract PaymentHelper is IPaymentHelper {
 
     /// @inheritdoc IPaymentHelper
     function addRemoteChain(uint64 chainId_, PaymentHelperConfig calldata config_) public override onlyProtocolAdmin {
+        _addRemoteChain(chainId_, config_);
+    }
+
+    /// @inheritdoc IPaymentHelper
+    function addRemoteChains(
+        uint64[] calldata chainIds_,
+        PaymentHelperConfig[] calldata configs_
+    )
+        external
+        override
+        onlyProtocolAdmin
+    {
+        uint256 len = chainIds_.length;
+
+        if (len == 0) revert Error.ZERO_INPUT_VALUE();
+
+        if (len != configs_.length) revert Error.ARRAY_LENGTH_MISMATCH();
+
+        for (uint256 i; i < len; ++i) {
+            _addRemoteChain(chainIds_[i], configs_[i]);
+        }
+    }
+
+    /// @inheritdoc IPaymentHelper
+    function updateRemoteChain(
+        uint64 chainId_,
+        uint256 configType_,
+        bytes memory config_
+    )
+        public
+        override
+        onlyPaymentAdmin
+    {
+        _updateRemoteChain(chainId_, configType_, config_);
+    }
+
+    /// @inheritdoc IPaymentHelper
+    function batchUpdateRemoteChain(
+        uint64 chainId_,
+        uint256[] calldata configTypes_,
+        bytes[] calldata configs_
+    )
+        public
+        override
+        onlyPaymentAdmin
+    {
+        _batchUpdateRemoteChain(chainId_, configTypes_, configs_);
+    }
+
+    /// @inheritdoc IPaymentHelper
+    function batchUpdateRemoteChains(
+        uint64[] calldata chainIds_,
+        uint256[][] calldata configTypes_,
+        bytes[][] calldata configs_
+    )
+        external
+        override
+        onlyPaymentAdmin
+    {
+        uint256 len = chainIds_.length;
+
+        if (len == 0) revert Error.ZERO_INPUT_VALUE();
+
+        if (!(len == configTypes_.length && len == configs_.length)) revert Error.ARRAY_LENGTH_MISMATCH();
+
+        for (uint256 i; i < len; ++i) {
+            _batchUpdateRemoteChain(chainIds_[i], configTypes_[i], configs_[i]);
+        }
+    }
+
+    /// @inheritdoc IPaymentHelper
+    function updateRegisterAERC20Params(bytes memory extraDataForTransmuter_) external onlyPaymentAdmin {
+        extraDataForTransmuter = extraDataForTransmuter_;
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev PROTOCOL_ADMIN can perform the configuration of a remote chain for the first time
+    function _addRemoteChain(uint64 chainId_, PaymentHelperConfig calldata config_) internal {
         if (config_.nativeFeedOracle != address(0)) {
             AggregatorV3Interface nativeFeedOracleContract = AggregatorV3Interface(config_.nativeFeedOracle);
             if (nativeFeedOracleContract.decimals() != SUPPORTED_FEED_PRECISION) {
@@ -643,33 +724,8 @@ contract PaymentHelper is IPaymentHelper {
         emit ChainConfigAdded(chainId_, config_);
     }
 
-    /// @inheritdoc IPaymentHelper
-    function addRemoteChains(
-        uint64[] calldata chainIds_,
-        PaymentHelperConfig[] calldata configs_
-    )
-        external
-        override
-        onlyProtocolAdmin
-    {
-        uint256 len = chainIds_.length;
-        if (len != configs_.length) revert Error.ARRAY_LENGTH_MISMATCH();
-
-        for (uint256 i; i < len; ++i) {
-            addRemoteChain(chainIds_[i], configs_[i]);
-        }
-    }
-
-    /// @inheritdoc IPaymentHelper
-    function updateRemoteChain(
-        uint64 chainId_,
-        uint256 configType_,
-        bytes memory config_
-    )
-        public
-        override
-        onlyPaymentAdmin
-    {
+    /// @dev PAYMENT_ADMIN can update the configuration of a remote chain on a need basis
+    function _updateRemoteChain(uint64 chainId_, uint256 configType_, bytes memory config_) internal {
         /// @dev Type 1: DST TOKEN PRICE FEED ORACLE
         if (configType_ == 1) {
             AggregatorV3Interface nativeFeedOracleContract = AggregatorV3Interface(abi.decode(config_, (address)));
@@ -758,15 +814,13 @@ contract PaymentHelper is IPaymentHelper {
         emit ChainConfigUpdated(chainId_, configType_, config_);
     }
 
-    /// @inheritdoc IPaymentHelper
-    function batchUpdateRemoteChain(
+    /// @dev batch updates the configuration of a remote chain. Performed by PAYMENT_ADMIN
+    function _batchUpdateRemoteChain(
         uint64 chainId_,
         uint256[] calldata configTypes_,
         bytes[] calldata configs_
     )
-        public
-        override
-        onlyPaymentAdmin
+        internal
     {
         uint256 len = configTypes_.length;
 
@@ -775,39 +829,9 @@ contract PaymentHelper is IPaymentHelper {
         if (len != configs_.length) revert Error.ARRAY_LENGTH_MISMATCH();
 
         for (uint256 i; i < len; ++i) {
-            updateRemoteChain(chainId_, configTypes_[i], configs_[i]);
+            _updateRemoteChain(chainId_, configTypes_[i], configs_[i]);
         }
     }
-
-    /// @inheritdoc IPaymentHelper
-    function batchUpdateRemoteChains(
-        uint64[] calldata chainIds_,
-        uint256[][] calldata configTypes_,
-        bytes[][] calldata configs_
-    )
-        external
-        override
-        onlyPaymentAdmin
-    {
-        uint256 len = chainIds_.length;
-
-        if (len == 0) revert Error.ZERO_INPUT_VALUE();
-
-        if (!(len == configTypes_.length && len == configs_.length)) revert Error.ARRAY_LENGTH_MISMATCH();
-
-        for (uint256 i; i < len; ++i) {
-            batchUpdateRemoteChain(chainIds_[i], configTypes_[i], configs_[i]);
-        }
-    }
-
-    /// @inheritdoc IPaymentHelper
-    function updateRegisterAERC20Params(bytes memory extraDataForTransmuter_) external onlyPaymentAdmin {
-        extraDataForTransmuter = extraDataForTransmuter_;
-    }
-
-    //////////////////////////////////////////////////////////////
-    //                  INTERNAL FUNCTIONS                      //
-    //////////////////////////////////////////////////////////////
 
     /// @dev helps generate extra data per amb
     function _generateExtraData(

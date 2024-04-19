@@ -1262,6 +1262,36 @@ contract PaymentHelperTest is ProtocolActions {
         vm.stopPrank();
     }
 
+    function test_addRemoteChains_zeroInputLen() public {
+        vm.startPrank(deployer);
+        uint64[] memory chainIds;
+
+        IPaymentHelper.PaymentHelperConfig[] memory configs = new IPaymentHelper.PaymentHelperConfig[](2);
+        configs[0] = IPaymentHelper.PaymentHelperConfig(
+            address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
+        );
+        configs[1] = IPaymentHelper.PaymentHelperConfig(
+            0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
+            0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
+            422,
+            423,
+            424,
+            425,
+            426,
+            427,
+            428,
+            429,
+            430,
+            431,
+            432
+        );
+
+        vm.expectRevert(Error.ZERO_INPUT_VALUE.selector);
+        paymentHelper.addRemoteChains(chainIds, configs);
+
+        vm.stopPrank();
+    }
+
     function test_updateRemoteChain() public {
         /// chain id used: 420
 
