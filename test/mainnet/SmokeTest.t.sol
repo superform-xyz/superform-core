@@ -452,7 +452,7 @@ contract SmokeTest is MainnetBaseSetup {
                         abi.decode(GAS_USED[TARGET_DEPLOYMENT_CHAINS[j]][3], (uint256))
                     );
                     assertEq(
-                        paymentHelper.updateGasUsed(TARGET_DEPLOYMENT_CHAINS[j]),
+                        paymentHelper.updateDepositGasUsed(TARGET_DEPLOYMENT_CHAINS[j]),
                         abi.decode(GAS_USED[TARGET_DEPLOYMENT_CHAINS[j]][4], (uint256))
                     );
 

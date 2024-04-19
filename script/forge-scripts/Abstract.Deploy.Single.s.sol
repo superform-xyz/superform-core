@@ -1022,9 +1022,11 @@ abstract contract AbstractDeploySingle is Script {
                 2_000_000,
                 /// @dev ackGasCost to move a msg from dst to source
                 10_000,
-                10_000
+                10_000,
+                200_000
             )
         );
+        /// @dev !WARNING - Default value for updateWithdrawGas for now
 
         PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(abi.encode(4, abi.encode(0, "")));
 
@@ -1113,7 +1115,7 @@ abstract contract AbstractDeploySingle is Script {
         gasUsed[BASE][3] = abi.encode(600_000);
         gasUsed[FANTOM][3] = abi.encode(600_000);
 
-        // updateGasUsed == 4 (only used on deposits for now)
+        // updateDepositGasUsed == 4 (only used on deposits for now)
         gasUsed[ETH][4] = abi.encode(225_000);
         gasUsed[BSC][4] = abi.encode(225_000);
         gasUsed[AVAX][4] = abi.encode(200_000);
@@ -1123,14 +1125,38 @@ abstract contract AbstractDeploySingle is Script {
         gasUsed[BASE][4] = abi.encode(200_000);
         gasUsed[FANTOM][4] = abi.encode(200_000);
 
-        // withdrawGasUsed == 6 (incl. cost to update)
-        gasUsed[ETH][6] = abi.encode(600_000);
-        gasUsed[BSC][6] = abi.encode(1_500_000);
-        gasUsed[AVAX][6] = abi.encode(1_000_000);
-        gasUsed[POLY][6] = abi.encode(1_000_000);
-        gasUsed[OP][6] = abi.encode(1_000_000);
-        gasUsed[ARBI][6] = abi.encode(2_500_000);
-        gasUsed[BASE][6] = abi.encode(1_500_000);
+        // withdrawGasUsed == 6
+        /* Based on
+         these are the values for withdrawal processing gas
+        Arbitrum Median: 2095936.0
+        Arbitrum Mean: 2482432.604688763
+        Arbitrum Mean divided by 1.5: 1654955.0697925087
+        Matic Median: 1250149.0
+        Matic Mean: 1678863.4611848826
+        Matic Mean divided by 1.5: 1119242.3074565884
+        BSC Median: 1115388.5
+        BSC Mean: 1255750.8333333333
+        BSC Mean divided by 1.5: 837167.2222222222
+        Mainnet Median: 1550764.0
+        Mainnet Mean: 1908495.0
+        Mainnet Mean divided by 1.5: 1272330.0
+        Optimism Median: 2116207.0
+        Optimism Mean: 2574219.05440613
+        Optimism Mean divided by 1.5: 1716146.0362707534
+        Avalanche Median: 1212435.0
+        Avalanche Mean: 2241043.0
+        Avalanche Mean divided by 1.5: 1494028.6666666667
+        Base Median: 1238921.0
+        Base Mean: 1768168.27314578
+        Base Mean divided by 1.5: 1178778.8487638533
+        */
+        gasUsed[ETH][6] = abi.encode(1_272_330);
+        gasUsed[BSC][6] = abi.encode(837_167);
+        gasUsed[AVAX][6] = abi.encode(1_494_028);
+        gasUsed[POLY][6] = abi.encode(1_119_242);
+        gasUsed[OP][6] = abi.encode(1_716_146);
+        gasUsed[ARBI][6] = abi.encode(1_654_955);
+        gasUsed[BASE][6] = abi.encode(1_178_778);
         gasUsed[FANTOM][6] = abi.encode(1_500_000);
 
         mapping(uint64 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
@@ -1183,6 +1209,7 @@ abstract contract AbstractDeploySingle is Script {
 
         /// price feeds on all chains
         mapping(uint64 => mapping(uint64 => address)) storage priceFeeds = PRICE_FEEDS;
+        /// https://docs.chain.link/data-feeds/price-feeds/addresses?network=ethereum&page=1
 
         /// ETH
         priceFeeds[ETH][ETH] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
@@ -1192,7 +1219,7 @@ abstract contract AbstractDeploySingle is Script {
         priceFeeds[ETH][OP] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][ARBI] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][BASE] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-        priceFeeds[ETH][FANTOM] = address(0);
+        priceFeeds[ETH][FANTOM] = 0x2DE7E4a9488488e0058B95854CC2f7955B35dC9b;
 
         /// BSC
         priceFeeds[BSC][BSC] = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
