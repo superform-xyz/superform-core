@@ -3,15 +3,26 @@ pragma solidity ^0.8.23;
 
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
 import { Error } from "src/libraries/Error.sol";
-import { IDlnSource } from "src/vendor/deBridge/IDlnSource.sol";
-import { DlnOrderLib } from "src/vendor/deBridge/DlnOrderLib.sol";
-
-import "forge-std/console.sol";
+import { IDlnSource } from "src/vendor/debridge/IDlnSource.sol";
+import { DlnOrderLib } from "src/vendor/debridge/DlnOrderLib.sol";
 
 /// @title DeBridgeValidator
 /// @dev Asserts if De-Bridge input txData is valid
 /// @author Zeropoint Labs
 contract DeBridgeValidator is BridgeValidator {
+    //////////////////////////////////////////////////////////////
+    //                        ERRORS                            //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev if permit envelop length is greater than zero
+    error INVALID_PERMIT_ENVELOP();
+
+    /// @dev if authority address is invalid
+    error INVALID_DEBRIDGE_AUTHORITY();
+
+    /// @dev if external call is allowed
+    error INVALID_EXTRA_CALL_DATA();
+
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
@@ -33,16 +44,13 @@ contract DeBridgeValidator is BridgeValidator {
     /// @inheritdoc BridgeValidator
     function validateTxData(ValidateTxDataArgs calldata args_) external view override returns (bool hasDstSwap) {
         DlnOrderLib.OrderCreation memory deBridgeQuote = _decodeTxData(args_.txData);
-        console.log(deBridgeQuote.externalCall.length);
 
-        /// FIXME: add explicit revert messages
-        if (deBridgeQuote.externalCall.length > 0) revert();
+        if (deBridgeQuote.externalCall.length > 0) revert INVALID_EXTRA_CALL_DATA();
 
-        /// FIXME: set the new role and add explicit revert message
         if (
             superRegistry.getAddressByChainId(keccak256("DEBRIDGE_AUTHORITY"), args_.dstChainId)
                 != _castToAddress(deBridgeQuote.orderAuthorityAddressDst)
-        ) revert();
+        ) revert INVALID_DEBRIDGE_AUTHORITY();
 
         /// FIXME: add explicity revert message
         if (deBridgeQuote.allowedCancelBeneficiarySrc.length > 0) revert();
@@ -50,11 +58,6 @@ contract DeBridgeValidator is BridgeValidator {
         /// @dev 1. chain id calidation
         /// FIXME: check if this cast is right
         /// FIXME: check upstream if the srcChain in this context is the block.chainid
-        console.log(args_.liqDataToken);
-        console.log(deBridgeQuote.giveTokenAddress);
-
-        console.log(args_.liqDstChainId);
-        console.log(uint64(deBridgeQuote.takeChainId));
         if (
             uint64(deBridgeQuote.takeChainId) != args_.liqDstChainId
                 || args_.liqDataToken != deBridgeQuote.giveTokenAddress
@@ -72,7 +75,6 @@ contract DeBridgeValidator is BridgeValidator {
 
             hasDstSwap = receiver == superRegistry.getAddressByChainId(keccak256("DST_SWAPPER"), args_.dstChainId);
 
-            console.log(hasDstSwap, "hasDstSwap");
             /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry (or) Dst Swapper
             if (
                 !(
@@ -150,9 +152,8 @@ contract DeBridgeValidator is BridgeValidator {
             revert Error.BLACKLISTED_ROUTE_ID();
         }
 
-        /// FIXME: add error message
         if (permitEnvelope.length > 0) {
-            revert();
+            revert INVALID_PERMIT_ENVELOP();
         }
     }
 

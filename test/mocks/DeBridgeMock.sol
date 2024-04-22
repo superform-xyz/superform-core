@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import "forge-std/Test.sol";
 
 /// Types Imports
-import "src/vendor/deBridge/IDlnSource.sol";
+import "src/vendor/debridge/IDlnSource.sol";
 import "./MockERC20.sol";
 
 /// @title DeBridge Dln Source Mock

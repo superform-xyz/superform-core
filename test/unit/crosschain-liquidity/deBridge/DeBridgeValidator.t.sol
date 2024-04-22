@@ -4,8 +4,9 @@ pragma solidity ^0.8.23;
 import { Error } from "src/libraries/Error.sol";
 import "test/utils/ProtocolActions.sol";
 import "src/interfaces/IBridgeValidator.sol";
-import { DeBridgeValidator } from "src/crosschain-liquidity/deBridge/DeBridgeValidator.sol";
-import { DlnOrderLib } from "src/vendor/deBridge/DlnOrderLib.sol";
+import { DeBridgeValidator } from "src/crosschain-liquidity/debridge/DeBridgeValidator.sol";
+import { DlnOrderLib } from "src/vendor/debridge/DlnOrderLib.sol";
+import { IDlnSource } from "src/vendor/debridge/IDlnSource.sol";
 
 contract DeBridgeValidatorTest is ProtocolActions {
     address constant NATIVE = address(0); // native for de-bridge is address(0)
@@ -13,6 +14,26 @@ contract DeBridgeValidatorTest is ProtocolActions {
     function setUp() public override {
         super.setUp();
         vm.selectFork(FORKS[ETH]);
+    }
+
+    function test_validateReceiver() public {
+        vm.selectFork(ETH);
+        DeBridgeValidator(getContract(ETH, "DeBridgeValidator")).validateReceiver(
+            _buildDummyTxDataUnitTests(
+                BuildDummyTxDataUnitTestsVars(
+                    7,
+                    address(0),
+                    address(0),
+                    deployer,
+                    ETH,
+                    BSC,
+                    uint256(100),
+                    getContract(BSC, "CoreStateRegistry"),
+                    false
+                )
+            ),
+            getContract(BSC, "CoreStateRegistry")
+        );
     }
 
     function test_deBridge_validator() public {
@@ -229,5 +250,106 @@ contract DeBridgeValidatorTest is ProtocolActions {
     function test_decodeSwapOutputToken() public {
         vm.expectRevert(Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN.selector);
         DeBridgeValidator(getContract(ETH, "DeBridgeValidator")).decodeSwapOutputToken(new bytes(0));
+    }
+
+    function test_validateTxData_invalidExtraCallData() public {
+        bytes memory txDataWithInvalidAuthority = abi.encodeWithSelector(
+            IDlnSource.createOrder.selector,
+            DlnOrderLib.OrderCreation({
+                giveAmount: 100,
+                giveTokenAddress: address(0),
+                takeAmount: 200,
+                takeTokenAddress: abi.encode(address(1)),
+                receiverDst: abi.encode(address(0)),
+                orderAuthorityAddressDst: abi.encode(address(1)), // Invalid authority address
+                externalCall: bytes("invalid-call-data"),
+                allowedCancelBeneficiarySrc: abi.encode(address(321)),
+                takeChainId: 1,
+                givePatchAuthoritySrc: address(0),
+                allowedTakerDst: abi.encode(address(420))
+            }),
+            bytes(""),
+            uint32(1),
+            bytes("")
+        );
+
+        vm.expectRevert(DeBridgeValidator.INVALID_EXTRA_CALL_DATA.selector);
+        DeBridgeValidator(getContract(ETH, "DeBridgeValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                txDataWithInvalidAuthority,
+                uint64(1),
+                uint64(56),
+                uint64(56),
+                false,
+                address(1),
+                address(420),
+                address(421),
+                address(422)
+            )
+        );
+    }
+
+    function test_validateTxData_invalidDeBridgeAuthority() public {
+        bytes memory txDataWithInvalidAuthority = abi.encodeWithSelector(
+            IDlnSource.createOrder.selector,
+            DlnOrderLib.OrderCreation({
+                giveAmount: 100,
+                giveTokenAddress: address(0),
+                takeAmount: 200,
+                takeTokenAddress: abi.encode(address(1)),
+                receiverDst: abi.encode(address(0)),
+                orderAuthorityAddressDst: abi.encode(address(1)), // Invalid authority address
+                externalCall: new bytes(0),
+                allowedCancelBeneficiarySrc: abi.encode(address(321)),
+                takeChainId: 1,
+                givePatchAuthoritySrc: address(0),
+                allowedTakerDst: abi.encode(address(420))
+            }),
+            bytes(""),
+            uint32(1),
+            bytes("")
+        );
+
+        vm.expectRevert(DeBridgeValidator.INVALID_DEBRIDGE_AUTHORITY.selector);
+        DeBridgeValidator(getContract(ETH, "DeBridgeValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                txDataWithInvalidAuthority,
+                uint64(1),
+                uint64(56),
+                uint64(56),
+                false,
+                address(1),
+                address(420),
+                address(421),
+                address(422)
+            )
+        );
+    }
+
+    function test_decodeTxData_invalidPermitEnvelope() public {
+        bytes memory txDataWithInvalidPermitEnvelope = abi.encodeWithSelector(
+            IDlnSource.createOrder.selector,
+            DlnOrderLib.OrderCreation({
+                giveAmount: 100,
+                giveTokenAddress: address(0),
+                takeAmount: 200,
+                takeTokenAddress: abi.encode(address(1)),
+                receiverDst: abi.encode(address(0)),
+                orderAuthorityAddressDst: abi.encode(address(1)), // Invalid authority address
+                externalCall: new bytes(0),
+                allowedCancelBeneficiarySrc: abi.encode(address(321)),
+                takeChainId: 1,
+                givePatchAuthoritySrc: address(0),
+                allowedTakerDst: abi.encode(address(420))
+            }),
+            bytes(""),
+            uint32(1),
+            bytes("hello")
+        );
+
+        vm.expectRevert(DeBridgeValidator.INVALID_PERMIT_ENVELOP.selector);
+        DeBridgeValidator(getContract(ETH, "DeBridgeValidator")).validateReceiver(
+            txDataWithInvalidPermitEnvelope, address(420)
+        );
     }
 }
