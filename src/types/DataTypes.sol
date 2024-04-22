@@ -62,7 +62,7 @@ struct MultiVaultSFData {
 
 /// @dev main struct that holds required single vault data for an action
 struct SingleVaultSFData {
-    // superformi   ds must have same destination. Can have different underlyings
+    // superformids must have same destination. Can have different underlyings
     uint256 superformId;
     uint256 amount;
     uint256 outputAmount; // on deposits, amount of shares to receive, on withdrawals, amount of assets to receive
