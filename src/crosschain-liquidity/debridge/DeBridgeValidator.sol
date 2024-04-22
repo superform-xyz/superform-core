@@ -52,6 +52,9 @@ contract DeBridgeValidator is BridgeValidator {
         /// FIXME: check upstream if the srcChain in this context is the block.chainid
         console.log(args_.liqDataToken);
         console.log(deBridgeQuote.giveTokenAddress);
+
+        console.log(args_.liqDstChainId);
+        console.log(uint64(deBridgeQuote.takeChainId));
         if (
             uint64(deBridgeQuote.takeChainId) != args_.liqDstChainId
                 || args_.liqDataToken != deBridgeQuote.giveTokenAddress
@@ -69,6 +72,7 @@ contract DeBridgeValidator is BridgeValidator {
 
             hasDstSwap = receiver == superRegistry.getAddressByChainId(keccak256("DST_SWAPPER"), args_.dstChainId);
 
+            console.log(hasDstSwap, "hasDstSwap");
             /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry (or) Dst Swapper
             if (
                 !(
