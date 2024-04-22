@@ -13,13 +13,13 @@ import { IAxelarGasService } from "src/vendor/axelar/IAxelarGasService.sol";
 import { IAxelarGateway } from "src/vendor/axelar/IAxelarGateway.sol";
 import { IInterchainGasEstimation } from "src/vendor/axelar/IInterchainGasEstimation.sol";
 import { IAxelarExecutable } from "src/vendor/axelar/IAxelarExecutable.sol";
-import { StringAddressConversion } from "src/vendor/axelar/StringAddressConversion.sol";
+import { StringToAddress, AddressToString } from "src/vendor/axelar/StringAddressConversion.sol";
 
 contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
     using DataLib for uint256;
     using ProofLib for AMBMessage;
-    using StringAddressConversion for address;
-    using StringAddressConversion for string;
+    using AddressToString for address;
+    using StringToAddress for string;
 
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
@@ -140,8 +140,9 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
         returns (uint256 fees)
     {
         string memory axelarChainId = ambChainId[dstChainId_];
+        bytes memory axelarChainIdBytes = bytes(axelarChainId);
 
-        if (keccak256(bytes(axelarChainId)) == keccak256(bytes(""))) {
+        if (keccak256(axelarChainIdBytes) == keccak256(bytes("")) || axelarChainIdBytes.length == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
 
@@ -177,11 +178,11 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
         onlyValidStateRegistry
     {
         string memory axelarChainId = ambChainId[dstChainId_];
-        string memory axelerDstImpl = authorizedImpl[axelarChainId].toString();
-
         if (bytes(axelarChainId).length == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
+
+        string memory axelerDstImpl = authorizedImpl[axelarChainId].toString();
 
         gateway.callContract(axelarChainId, axelerDstImpl, message_);
         gasService.payNativeGasForContractCall{ value: msg.value }(
@@ -237,6 +238,7 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
 
         uint64 origin = superChainId[sourceChain];
 
+        /// @dev unreacheable code, added for defensive checks
         if (origin == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
@@ -277,7 +279,7 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
     /// @param authorizedImpl_ is the implementation of the axelar message bridge on the specified destination
     /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
     function setReceiver(string memory ambChainId_, address authorizedImpl_) external onlyProtocolAdmin {
-        if (superChainId[ambChainId_] == 0) {
+        if (superChainId[ambChainId_] == 0 || bytes(ambChainId_).length == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
 
