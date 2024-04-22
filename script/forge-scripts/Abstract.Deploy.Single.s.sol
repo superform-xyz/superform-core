@@ -740,6 +740,9 @@ abstract contract AbstractDeploySingle is Script {
 
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 12, abi.encode(10_000));
 
+        /// @dev !WARNING - Default value for updateWithdrawGas for now
+        PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(abi.encode(4, abi.encode(0, "")));
+
         /// @dev 19 deploy vault claimer
         contracts[vars.chainId][bytes32(bytes("VaultClaimer"))] = address(new VaultClaimer{ salt: salt }());
 
@@ -1006,6 +1009,7 @@ abstract contract AbstractDeploySingle is Script {
         assert(abi.decode(GAS_USED[vars.dstChainId][3], (uint256)) > 0);
         assert(abi.decode(GAS_USED[vars.dstChainId][4], (uint256)) > 0);
         assert(abi.decode(GAS_USED[vars.dstChainId][6], (uint256)) > 0);
+        assert(abi.decode(GAS_USED[vars.dstChainId][13], (uint256)) > 0);
 
         PaymentHelper(payable(vars.paymentHelper)).addRemoteChain(
             vars.dstChainId,
@@ -1023,12 +1027,9 @@ abstract contract AbstractDeploySingle is Script {
                 /// @dev ackGasCost to move a msg from dst to source
                 10_000,
                 10_000,
-                200_000
+                abi.decode(GAS_USED[vars.dstChainId][13], (uint256))
             )
         );
-        /// @dev !WARNING - Default value for updateWithdrawGas for now
-
-        PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(abi.encode(4, abi.encode(0, "")));
 
         /// @dev FIXME not setting BROADCAST_REGISTRY yet, which will result in all broadcast tentatives to fail
         bytes32[] memory ids = new bytes32[](18);
@@ -1126,30 +1127,6 @@ abstract contract AbstractDeploySingle is Script {
         gasUsed[FANTOM][4] = abi.encode(200_000);
 
         // withdrawGasUsed == 6
-        /* Based on
-         these are the values for withdrawal processing gas
-        Arbitrum Median: 2095936.0
-        Arbitrum Mean: 2482432.604688763
-        Arbitrum Mean divided by 1.5: 1654955.0697925087
-        Matic Median: 1250149.0
-        Matic Mean: 1678863.4611848826
-        Matic Mean divided by 1.5: 1119242.3074565884
-        BSC Median: 1115388.5
-        BSC Mean: 1255750.8333333333
-        BSC Mean divided by 1.5: 837167.2222222222
-        Mainnet Median: 1550764.0
-        Mainnet Mean: 1908495.0
-        Mainnet Mean divided by 1.5: 1272330.0
-        Optimism Median: 2116207.0
-        Optimism Mean: 2574219.05440613
-        Optimism Mean divided by 1.5: 1716146.0362707534
-        Avalanche Median: 1212435.0
-        Avalanche Mean: 2241043.0
-        Avalanche Mean divided by 1.5: 1494028.6666666667
-        Base Median: 1238921.0
-        Base Mean: 1768168.27314578
-        Base Mean divided by 1.5: 1178778.8487638533
-        */
         gasUsed[ETH][6] = abi.encode(1_272_330);
         gasUsed[BSC][6] = abi.encode(837_167);
         gasUsed[AVAX][6] = abi.encode(1_494_028);
@@ -1158,6 +1135,26 @@ abstract contract AbstractDeploySingle is Script {
         gasUsed[ARBI][6] = abi.encode(1_654_955);
         gasUsed[BASE][6] = abi.encode(1_178_778);
         gasUsed[FANTOM][6] = abi.encode(1_500_000);
+
+        // updateWithdrawGasUsed == 13
+        /*
+        2049183 / 1.5 = 1366122 ARB
+        535243 / 1.5 = 356828  MAINNET
+        973861 / 1.5 = 649240 OP
+        901119  / 1.5 = 600746 AVAX
+        896967 / 1.5 = 597978 MATIC
+        1350127 / 1.5 = 900085 BSC
+        1379199 / 1.5 = 919466 BASE
+        */
+
+        gasUsed[ETH][13] = abi.encode(356_828);
+        gasUsed[BSC][13] = abi.encode(900_085);
+        gasUsed[AVAX][13] = abi.encode(600_746);
+        gasUsed[POLY][13] = abi.encode(597_978);
+        gasUsed[OP][13] = abi.encode(649_240);
+        gasUsed[ARBI][13] = abi.encode(1_366_122);
+        gasUsed[BASE][13] = abi.encode(919_466);
+        gasUsed[FANTOM][13] = abi.encode(600_000);
 
         mapping(uint64 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
         lzEndpointsStorage[ETH] = ETH_lzEndpoint;
