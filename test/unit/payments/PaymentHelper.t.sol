@@ -1099,7 +1099,7 @@ contract PaymentHelperTest is ProtocolActions {
         vm.prank(deployer);
         paymentHelper.updateRemoteChain(1, 4, abi.encode(423));
 
-        uint256 result4 = paymentHelper.updateGasUsed(1);
+        uint256 result4 = paymentHelper.updateDepositGasUsed(1);
         assertEq(result4, 423);
 
         /// set config type: 5
@@ -1156,7 +1156,9 @@ contract PaymentHelperTest is ProtocolActions {
         vm.startPrank(deployer);
         paymentHelper.addRemoteChain(
             420,
-            IPaymentHelper.PaymentHelperConfig(address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431)
+            IPaymentHelper.PaymentHelperConfig(
+                address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
+            )
         );
 
         paymentHelper.addRemoteChain(
@@ -1173,7 +1175,8 @@ contract PaymentHelperTest is ProtocolActions {
                 428,
                 429,
                 430,
-                431
+                431,
+                432
             )
         );
 
@@ -1183,7 +1186,7 @@ contract PaymentHelperTest is ProtocolActions {
         paymentHelper.addRemoteChain(
             421,
             IPaymentHelper.PaymentHelperConfig(
-                mock, 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431
+                mock, 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
             )
         );
 
@@ -1191,9 +1194,100 @@ contract PaymentHelperTest is ProtocolActions {
         paymentHelper.addRemoteChain(
             421,
             IPaymentHelper.PaymentHelperConfig(
-                0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, mock, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431
+                0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, mock, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
             )
         );
+
+        vm.stopPrank();
+    }
+
+    function test_addRemoteChains() public {
+        vm.startPrank(deployer);
+        uint64[] memory chainIds = new uint64[](2);
+        chainIds[0] = 422;
+        chainIds[1] = 423;
+
+        IPaymentHelper.PaymentHelperConfig[] memory configs = new IPaymentHelper.PaymentHelperConfig[](2);
+        configs[0] = IPaymentHelper.PaymentHelperConfig(
+            address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
+        );
+        configs[1] = IPaymentHelper.PaymentHelperConfig(
+            0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
+            0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
+            422,
+            423,
+            424,
+            425,
+            426,
+            427,
+            428,
+            429,
+            430,
+            431,
+            432
+        );
+        paymentHelper.addRemoteChains(chainIds, configs);
+
+        vm.stopPrank();
+    }
+
+    function test_addRemoteChains_differentLen() public {
+        vm.startPrank(deployer);
+        uint64[] memory chainIds = new uint64[](1);
+        chainIds[0] = 422;
+
+        IPaymentHelper.PaymentHelperConfig[] memory configs = new IPaymentHelper.PaymentHelperConfig[](2);
+        configs[0] = IPaymentHelper.PaymentHelperConfig(
+            address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
+        );
+        configs[1] = IPaymentHelper.PaymentHelperConfig(
+            0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
+            0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
+            422,
+            423,
+            424,
+            425,
+            426,
+            427,
+            428,
+            429,
+            430,
+            431,
+            432
+        );
+
+        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
+        paymentHelper.addRemoteChains(chainIds, configs);
+
+        vm.stopPrank();
+    }
+
+    function test_addRemoteChains_zeroInputLen() public {
+        vm.startPrank(deployer);
+        uint64[] memory chainIds;
+
+        IPaymentHelper.PaymentHelperConfig[] memory configs = new IPaymentHelper.PaymentHelperConfig[](2);
+        configs[0] = IPaymentHelper.PaymentHelperConfig(
+            address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
+        );
+        configs[1] = IPaymentHelper.PaymentHelperConfig(
+            0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
+            0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
+            422,
+            423,
+            424,
+            425,
+            426,
+            427,
+            428,
+            429,
+            430,
+            431,
+            432
+        );
+
+        vm.expectRevert(Error.ZERO_INPUT_VALUE.selector);
+        paymentHelper.addRemoteChains(chainIds, configs);
 
         vm.stopPrank();
     }
@@ -1226,7 +1320,7 @@ contract PaymentHelperTest is ProtocolActions {
         vm.prank(deployer);
         paymentHelper.updateRemoteChain(420, 4, abi.encode(423));
 
-        uint256 result4 = paymentHelper.updateGasUsed(420);
+        uint256 result4 = paymentHelper.updateDepositGasUsed(420);
         assertEq(result4, 423);
 
         /// set config type: 5
@@ -1284,6 +1378,308 @@ contract PaymentHelperTest is ProtocolActions {
 
         uint256 result12 = paymentHelper.emergencyCost(1);
         assertEq(result12, 431);
+
+        /// set config type: 13
+        vm.prank(deployer);
+        paymentHelper.updateRemoteChain(1, 13, abi.encode(431));
+
+        uint256 result13 = paymentHelper.updateWithdrawGasUsed(1);
+        assertEq(result13, 431);
+    }
+
+    function test_batchUpdateRemoteChain() public {
+        /// chain id used: 420
+        uint256[] memory configTypes = new uint256[](13);
+        configTypes[0] = 1;
+        configTypes[1] = 2;
+        configTypes[2] = 3;
+        configTypes[3] = 4;
+        configTypes[4] = 5;
+        configTypes[5] = 6;
+        configTypes[6] = 7;
+        configTypes[7] = 8;
+        configTypes[8] = 9;
+        configTypes[9] = 10;
+        configTypes[10] = 11;
+        configTypes[11] = 12;
+        configTypes[12] = 13;
+
+        bytes[] memory configs = new bytes[](13);
+        configs[0] = abi.encode(address(mockGasPriceOracle));
+        configs[1] = abi.encode(address(mockGasPriceOracle));
+        configs[2] = abi.encode(422);
+        configs[3] = abi.encode(423);
+        configs[4] = abi.encode(424);
+        configs[5] = abi.encode(425);
+        configs[6] = abi.encode(426);
+        configs[7] = abi.encode(427);
+        configs[8] = abi.encode(428);
+        configs[9] = abi.encode(429);
+        configs[10] = abi.encode(430);
+        configs[11] = abi.encode(431);
+        configs[12] = abi.encode(432);
+
+        vm.prank(deployer);
+        paymentHelper.batchUpdateRemoteChain(420, configTypes, configs);
+
+        address result1 = address(paymentHelper.nativeFeedOracle(420));
+        assertEq(result1, address(mockGasPriceOracle));
+
+        address result2 = address(paymentHelper.gasPriceOracle(420));
+        assertEq(result2, address(mockGasPriceOracle));
+
+        uint256 result3 = paymentHelper.swapGasUsed(420);
+        assertEq(result3, 422);
+
+        uint256 result4 = paymentHelper.updateDepositGasUsed(420);
+        assertEq(result4, 423);
+
+        uint256 result5 = paymentHelper.depositGasUsed(420);
+        assertEq(result5, 424);
+
+        uint256 result6 = paymentHelper.withdrawGasUsed(420);
+        assertEq(result6, 425);
+
+        uint256 result7 = paymentHelper.nativePrice(420);
+        assertEq(result7, 426);
+
+        uint256 result8 = paymentHelper.gasPrice(420);
+        assertEq(result8, 427);
+
+        uint256 result9 = paymentHelper.gasPerByte(420);
+        assertEq(result9, 428);
+
+        uint256 result10 = paymentHelper.ackGasCost(420);
+        assertEq(result10, 429);
+
+        uint256 result11 = paymentHelper.timelockCost(420);
+        assertEq(result11, 430);
+
+        uint256 result12 = paymentHelper.emergencyCost(420);
+        assertEq(result12, 431);
+
+        uint256 result13 = paymentHelper.updateWithdrawGasUsed(420);
+        assertEq(result13, 432);
+    }
+
+    function test_batchUpdateRemoteChain_zeroLen() public {
+        /// chain id used: 420
+        uint256[] memory configTypes;
+        bytes[] memory configs;
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.ZERO_INPUT_VALUE.selector);
+        paymentHelper.batchUpdateRemoteChain(420, configTypes, configs);
+    }
+
+    function test_batchUpdateRemoteChain_invalidLen() public {
+        /// chain id used: 420
+        uint256[] memory configTypes = new uint256[](12);
+        configTypes[0] = 1;
+        configTypes[1] = 2;
+        configTypes[2] = 3;
+        configTypes[3] = 4;
+        configTypes[4] = 5;
+        configTypes[5] = 6;
+        configTypes[6] = 7;
+        configTypes[7] = 8;
+        configTypes[8] = 9;
+        configTypes[9] = 10;
+        configTypes[10] = 11;
+        configTypes[11] = 12;
+
+        bytes[] memory configs = new bytes[](13);
+        configs[0] = abi.encode(address(mockGasPriceOracle));
+        configs[1] = abi.encode(address(mockGasPriceOracle));
+        configs[2] = abi.encode(422);
+        configs[3] = abi.encode(423);
+        configs[4] = abi.encode(424);
+        configs[5] = abi.encode(425);
+        configs[6] = abi.encode(426);
+        configs[7] = abi.encode(427);
+        configs[8] = abi.encode(428);
+        configs[9] = abi.encode(429);
+        configs[10] = abi.encode(430);
+        configs[11] = abi.encode(431);
+        configs[12] = abi.encode(432);
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
+        paymentHelper.batchUpdateRemoteChain(420, configTypes, configs);
+    }
+
+    function test_batchUpdateRemoteChains() public {
+        uint64[] memory chainIds = new uint64[](2);
+        chainIds[0] = 422;
+        chainIds[1] = 423;
+
+        uint256[][] memory configTypes = new uint256[][](2);
+
+        /// chain id used: 420
+        uint256[] memory configTypesTemp = new uint256[](13);
+        configTypesTemp[0] = 1;
+        configTypesTemp[1] = 2;
+        configTypesTemp[2] = 3;
+        configTypesTemp[3] = 4;
+        configTypesTemp[4] = 5;
+        configTypesTemp[5] = 6;
+        configTypesTemp[6] = 7;
+        configTypesTemp[7] = 8;
+        configTypesTemp[8] = 9;
+        configTypesTemp[9] = 10;
+        configTypesTemp[10] = 11;
+        configTypesTemp[11] = 12;
+        configTypesTemp[12] = 13;
+
+        configTypes[0] = configTypesTemp;
+        configTypes[1] = configTypesTemp;
+
+        bytes[][] memory configs = new bytes[][](2);
+        bytes[] memory configsTemp = new bytes[](13);
+        configsTemp[0] = abi.encode(address(mockGasPriceOracle));
+        configsTemp[1] = abi.encode(address(mockGasPriceOracle));
+        configsTemp[2] = abi.encode(422);
+        configsTemp[3] = abi.encode(423);
+        configsTemp[4] = abi.encode(424);
+        configsTemp[5] = abi.encode(425);
+        configsTemp[6] = abi.encode(426);
+        configsTemp[7] = abi.encode(427);
+        configsTemp[8] = abi.encode(428);
+        configsTemp[9] = abi.encode(429);
+        configsTemp[10] = abi.encode(430);
+        configsTemp[11] = abi.encode(431);
+        configsTemp[12] = abi.encode(432);
+
+        configs[0] = configsTemp;
+        configs[1] = configsTemp;
+
+        vm.prank(deployer);
+        paymentHelper.batchUpdateRemoteChains(chainIds, configTypes, configs);
+
+        address result1 = address(paymentHelper.nativeFeedOracle(422));
+        assertEq(result1, address(mockGasPriceOracle));
+        result1 = address(paymentHelper.nativeFeedOracle(423));
+        assertEq(result1, address(mockGasPriceOracle));
+
+        address result2 = address(paymentHelper.gasPriceOracle(422));
+        assertEq(result2, address(mockGasPriceOracle));
+        result2 = address(paymentHelper.gasPriceOracle(423));
+        assertEq(result2, address(mockGasPriceOracle));
+
+        uint256 result3 = paymentHelper.swapGasUsed(422);
+        assertEq(result3, 422);
+        result3 = paymentHelper.swapGasUsed(423);
+        assertEq(result3, 422);
+
+        uint256 result4 = paymentHelper.updateDepositGasUsed(422);
+        assertEq(result4, 423);
+        result4 = paymentHelper.updateDepositGasUsed(423);
+        assertEq(result4, 423);
+
+        uint256 result5 = paymentHelper.depositGasUsed(422);
+        assertEq(result5, 424);
+        result5 = paymentHelper.depositGasUsed(423);
+        assertEq(result5, 424);
+
+        uint256 result6 = paymentHelper.withdrawGasUsed(422);
+        assertEq(result6, 425);
+        result6 = paymentHelper.withdrawGasUsed(423);
+        assertEq(result6, 425);
+
+        uint256 result7 = paymentHelper.nativePrice(422);
+        assertEq(result7, 426);
+        result7 = paymentHelper.nativePrice(423);
+        assertEq(result7, 426);
+
+        uint256 result8 = paymentHelper.gasPrice(422);
+        assertEq(result8, 427);
+        result8 = paymentHelper.gasPrice(423);
+        assertEq(result8, 427);
+
+        uint256 result9 = paymentHelper.gasPerByte(422);
+        assertEq(result9, 428);
+        result9 = paymentHelper.gasPerByte(423);
+        assertEq(result9, 428);
+
+        uint256 result10 = paymentHelper.ackGasCost(422);
+        assertEq(result10, 429);
+        result10 = paymentHelper.ackGasCost(423);
+        assertEq(result10, 429);
+
+        uint256 result11 = paymentHelper.timelockCost(422);
+        assertEq(result11, 430);
+        result11 = paymentHelper.timelockCost(423);
+        assertEq(result11, 430);
+
+        uint256 result12 = paymentHelper.emergencyCost(422);
+        assertEq(result12, 431);
+        result12 = paymentHelper.emergencyCost(423);
+        assertEq(result12, 431);
+
+        uint256 result13 = paymentHelper.updateWithdrawGasUsed(422);
+        assertEq(result13, 432);
+        result13 = paymentHelper.updateWithdrawGasUsed(423);
+        assertEq(result13, 432);
+    }
+
+    function test_batchUpdateRemoteChains_invalidLen() public {
+        uint64[] memory chainIds = new uint64[](2);
+        chainIds[0] = 422;
+        chainIds[1] = 423;
+
+        uint256[][] memory configTypes = new uint256[][](2);
+
+        /// chain id used: 420
+        uint256[] memory configTypesTemp = new uint256[](13);
+        configTypesTemp[0] = 1;
+        configTypesTemp[1] = 2;
+        configTypesTemp[2] = 3;
+        configTypesTemp[3] = 4;
+        configTypesTemp[4] = 5;
+        configTypesTemp[5] = 6;
+        configTypesTemp[6] = 7;
+        configTypesTemp[7] = 8;
+        configTypesTemp[8] = 9;
+        configTypesTemp[9] = 10;
+        configTypesTemp[10] = 11;
+        configTypesTemp[11] = 12;
+        configTypesTemp[12] = 13;
+
+        configTypes[0] = configTypesTemp;
+        configTypes[1] = configTypesTemp;
+
+        bytes[][] memory configs = new bytes[][](1);
+        bytes[] memory configsTemp = new bytes[](13);
+        configsTemp[0] = abi.encode(address(mockGasPriceOracle));
+        configsTemp[1] = abi.encode(address(mockGasPriceOracle));
+        configsTemp[2] = abi.encode(422);
+        configsTemp[3] = abi.encode(423);
+        configsTemp[4] = abi.encode(424);
+        configsTemp[5] = abi.encode(425);
+        configsTemp[6] = abi.encode(426);
+        configsTemp[7] = abi.encode(427);
+        configsTemp[8] = abi.encode(428);
+        configsTemp[9] = abi.encode(429);
+        configsTemp[10] = abi.encode(430);
+        configsTemp[11] = abi.encode(431);
+        configsTemp[12] = abi.encode(432);
+
+        configs[0] = configsTemp;
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
+        paymentHelper.batchUpdateRemoteChains(chainIds, configTypes, configs);
+    }
+
+    function test_batchUpdateRemoteChains_zeroLen() public {
+        uint64[] memory chainIds;
+        uint256[][] memory configTypes = new uint256[][](2);
+
+        bytes[][] memory configs = new bytes[][](2);
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.ZERO_INPUT_VALUE.selector);
+        paymentHelper.batchUpdateRemoteChains(chainIds, configTypes, configs);
     }
 
     function _generateTimelockSuperformPackWithShift() internal pure returns (uint256 superformId_) {

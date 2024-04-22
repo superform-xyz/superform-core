@@ -18,6 +18,7 @@ env:
   POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
   AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
   BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
+  FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
   TENDERLY_ACCESS_KEY: ${{ secrets.TENDERLY_ACCESS_KEY }}
   TENDERLY_PROJECT_SLUG: "v1" # your project slug
   TENDERLY_ACCOUNT_ID: "superform" # your username or organization name
@@ -40,10 +41,10 @@ jobs:
         run: "forge config"
 
       - name: "Perform mainnet size checks"
-        run: forge build --sizes
+        run: "make build-sizes"
 
       - name: "Cache unoptimized build"
-        run: "FOUNDRY_PROFILE=localdev forge build"
+        run: "make build-unoptimized"
 
       - name: "Cache the build so that it can be re-used by the other jobs"
         uses: "actions/cache/save@v4"
@@ -52,12 +53,38 @@ jobs:
           path: |
             cache
             out
-            out-optimized
+            localdev
 
       - name: "Add build summary"
         run: |
           echo "## Build result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+
+  coverage:
+    runs-on: SuperformCore2
+    steps:
+      - name: "Check out the repo"
+        uses: "actions/checkout@v4"
+        with:
+          submodules: "recursive"
+
+      - name: "Install Foundry"
+        uses: "foundry-rs/foundry-toolchain@v1"
+
+      - name: "Generate the coverage report using unit and integration tests"
+        run: "make coverage"
+
+      - name: "Upload coverage report to Codecov"
+        uses: "codecov/codecov-action@v4.0.0-beta.3"
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          files: "./lcov.info"
+
+      - name: "Add coverage summary"
+        run: |
+          echo "## Coverage result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Uploaded to Codecov" >> $GITHUB_STEP_SUMMARY
 
   test:
     needs: ["build"]
@@ -79,47 +106,22 @@ jobs:
           path: |
             cache
             out
-            out-optimized
+            localdev
 
       - name: "Generate fuzz seed that changes weekly to avoid burning through RPC allowance"
         run: |
           echo "FOUNDRY_FUZZ_SEED=$(echo $(($EPOCHSECONDS / 604800)))" >> $GITHUB_ENV
 
       - name: "Run all tests except invariant against the optimized build"
-        run: 'forge test --no-match-path "test/invariant/**/*.sol"'
+        run: "make test-ci"
 
       - name: "Add test summary"
         run: |
           echo "## Tests result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
-  coverage:
-    runs-on: SuperformCore2
-    steps:
-      - name: "Check out the repo"
-        uses: "actions/checkout@v4"
-        with:
-          submodules: "recursive"
-
-      - name: "Install Foundry"
-        uses: "foundry-rs/foundry-toolchain@v1"
-
-      - name: "Generate the coverage report using unit and integration tests"
-        run: 'FOUNDRY_PROFILE=coverage forge coverage --match-path "test/**/*.sol" --report lcov'
-
-      - name: "Upload coverage report to Codecov"
-        uses: "codecov/codecov-action@v4.0.0-beta.3"
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-        with:
-          files: "./lcov.info"
-
-      - name: "Add coverage summary"
-        run: |
-          echo "## Coverage result" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Uploaded to Codecov" >> $GITHUB_STEP_SUMMARY
-
   deploy-tenderly-devnets:
+    needs: ["build"]
     runs-on: SuperformCore2
     steps:
       - name: "Check out the repo"
@@ -128,11 +130,24 @@ jobs:
           submodules: "recursive"
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
+
+      - name: "Restore the cached build"
+        uses: "actions/cache/restore@v4"
+        with:
+          fail-on-cache-miss: true
+          key: "foundry-build-${{ github.sha }}"
+          path: |
+            cache
+            out
+            localdev
+
       - name: "Install Tenderly CLI"
         run: curl https://raw.githubusercontent.com/Tenderly/tenderly-cli/master/scripts/install-linux.sh | sudo sh
+
       - name: "Deploy to Tenderly Devnets"
         run: ./script/utils/run_script_tenderly.sh
         shell: bash
+
       - name: "Add devnet deployment summary"
         run: |
           echo "## Devnet deployment result" >> $GITHUB_STEP_SUMMARY

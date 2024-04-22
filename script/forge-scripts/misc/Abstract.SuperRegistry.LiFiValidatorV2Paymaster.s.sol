@@ -5,7 +5,6 @@ import "../EnvironmentUtils.s.sol";
 
 import { BatchScript } from "../safe/BatchScript.sol";
 
-import "forge-std/console.sol";
 
 struct UpdateVars {
     uint64 chainId;

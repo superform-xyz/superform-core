@@ -5,7 +5,6 @@ import "../EnvironmentUtils.s.sol";
 
 import { BatchScript } from "../safe/BatchScript.sol";
 
-import "forge-std/console.sol";
 
 struct UpdateVars {
     uint64 chainId;
@@ -14,8 +13,6 @@ struct UpdateVars {
 }
 
 abstract contract AbstractUpdatePaymentHelper is BatchScript, EnvironmentUtils {
-    mapping(uint64 => mapping(uint256 => bytes)) public GAS_USED;
-
     function _setGasUsed() internal {
         mapping(uint64 => mapping(uint256 => bytes)) storage gasUsed = GAS_USED;
 
@@ -28,7 +25,7 @@ abstract contract AbstractUpdatePaymentHelper is BatchScript, EnvironmentUtils {
         gasUsed[ARBI][3] = abi.encode(2_500_000);
         gasUsed[BASE][3] = abi.encode(600_000);
 
-        // updateGasUsed == 4 (only used on deposits for now)
+        // updateDepositGasUsed == 4 (only used on deposits for now)
         gasUsed[ETH][4] = abi.encode(225_000);
         gasUsed[BSC][4] = abi.encode(225_000);
         gasUsed[AVAX][4] = abi.encode(200_000);

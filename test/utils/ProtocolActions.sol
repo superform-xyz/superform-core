@@ -132,7 +132,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vm.selectFork(FORKS[CHAIN_0]);
         address token;
         /// @dev assumption here is DAI has total supply of TOTAL_SUPPLY_DAI on all chains
-        /// and similarly for USDT, WETH and ETH
+        /// and similarly for USDC, WETH and ETH
         if (action.externalToken == 3) {
             deal(users[action.user], TOTAL_SUPPLY_ETH);
         } else {
@@ -1692,7 +1692,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 AggregatorV3Interface(tokenPriceFeeds[args.toChainId][args.underlyingTokenDst]).latestRoundData();
         } else {
             v.decimal2 = args.underlyingTokenDst != NATIVE_TOKEN ? MockERC20(args.underlyingTokenDst).decimals() : 18;
-
             (, v.USDPerUnderlyingOrInterimTokenDst,,,) =
                 AggregatorV3Interface(tokenPriceFeeds[args.toChainId][args.underlyingTokenDst]).latestRoundData();
         }
