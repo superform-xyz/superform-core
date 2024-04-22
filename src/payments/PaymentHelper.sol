@@ -97,7 +97,7 @@ contract PaymentHelper is IPaymentHelper {
     struct LocalEstimateVars {
         uint256 len;
         uint256 superformIdsLen;
-        uint256 totalDstGas;
+        uint256 totalGas;
         uint256 ambFees;
         bool paused;
     }
@@ -296,23 +296,24 @@ contract PaymentHelper is IPaymentHelper {
         external
         view
         override
-        returns (uint256 liqAmount, uint256 srcAmount, uint256 totalAmount)
+        returns (uint256 liqAmount, uint256 dstOrSameChainAmt, uint256 totalAmount)
     {
         ISuperformFactory factory = ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY")));
 
-        if (!isDeposit_) {
-            uint256 timelockPrice = timelockCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
-            uint256 emergencyPrice = emergencyCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
+        uint64[] memory dstChainIds = new uint64[](1);
+        dstChainIds[0] = CHAIN_ID;
 
-            srcAmount += _calculateSrcAmountTimelockEmergencyDirect(
-                req_.superformData.superformId, timelockPrice, emergencyPrice, factory
-            );
-        } else {
-            liqAmount = _estimateLiqAmount(req_.superformData.liqRequest.castLiqRequestToArray());
-        }
+        SingleVaultSFData[] memory sfData = new SingleVaultSFData[](1);
+        sfData[0] = req_.superformData;
 
-        /// @dev not adding dstAmount to save some GAS
-        totalAmount = liqAmount + srcAmount;
+        MultiVaultSFData[] memory temp;
+
+        uint8[] memory ambIds;
+
+        (liqAmount,, dstOrSameChainAmt) =
+            _calculateAmounts(CalculateAmountsReq(0, dstChainIds, ambIds, temp, sfData, factory, isDeposit_));
+
+        totalAmount = liqAmount + dstOrSameChainAmt;
     }
 
     /// @inheritdoc IPaymentHelper
@@ -323,25 +324,24 @@ contract PaymentHelper is IPaymentHelper {
         external
         view
         override
-        returns (uint256 liqAmount, uint256 srcAmount, uint256 totalAmount)
+        returns (uint256 liqAmount, uint256 dstOrSameChainAmt, uint256 totalAmount)
     {
         ISuperformFactory factory = ISuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY")));
 
-        if (!isDeposit_) {
-            uint256 len = req_.superformData.superformIds.length;
-            uint256 timelockPrice = timelockCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
-            uint256 emergencyPrice = emergencyCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
-            for (uint256 i; i < len; ++i) {
-                srcAmount += _calculateSrcAmountTimelockEmergencyDirect(
-                    req_.superformData.superformIds[i], timelockPrice, emergencyPrice, factory
-                );
-            }
-        } else {
-            liqAmount += _estimateLiqAmount(req_.superformData.liqRequests);
-        }
+        uint64[] memory dstChainIds = new uint64[](1);
+        dstChainIds[0] = CHAIN_ID;
 
-        /// @dev not adding dstAmount to save some GAS
-        totalAmount = liqAmount + srcAmount;
+        SingleVaultSFData[] memory temp;
+
+        MultiVaultSFData[] memory sfData = new MultiVaultSFData[](1);
+        sfData[0] = req_.superformData;
+
+        uint8[] memory ambIds;
+
+        (liqAmount,, dstOrSameChainAmt) =
+            _calculateAmounts(CalculateAmountsReq(0, dstChainIds, ambIds, sfData, temp, factory, isDeposit_));
+
+        totalAmount = liqAmount + dstOrSameChainAmt;
     }
 
     /// @inheritdoc IPaymentHelper
@@ -914,7 +914,15 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev helps convert the dst gas fee into src chain native fee
     /// @dev https://docs.soliditylang.org/en/v0.8.4/units-and-global-variables.html#ether-units
     /// @dev all native tokens should be 18 decimals across all EVMs
-    function _convertToNativeFee(uint64 dstChainId_, uint256 dstGas_) internal view returns (uint256 nativeFee) {
+    function _convertToNativeFee(
+        uint64 dstChainId_,
+        uint256 dstGas_,
+        bool xChain_
+    )
+        internal
+        view
+        returns (uint256 nativeFee)
+    {
         /// @dev gas fee * gas price (to get the gas amounts in dst chain's native token)
         /// @dev gas price is 9 decimal (in gwei)
         /// @dev assumption: all evm native tokens are 18 decimals
@@ -922,6 +930,9 @@ contract PaymentHelper is IPaymentHelper {
 
         if (dstNativeFee == 0) {
             return 0;
+        }
+        if (!xChain_) {
+            return dstNativeFee;
         }
 
         /// @dev converts the gas to pay in terms of native token to usd value
@@ -1025,13 +1036,15 @@ contract PaymentHelper is IPaymentHelper {
     function _calculateAmounts(CalculateAmountsReq memory req_)
         internal
         view
-        returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount)
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 dstOrSameChainAmt)
     {
         LocalEstimateVars memory v;
 
         bool xChain = req_.dstChainIds[req_.i] != CHAIN_ID;
 
-        v.totalDstGas = 0;
+        /// @dev in xChain this is gas on the destination chain and in !xChain this is gas on the same chain
+        v.totalGas = 0;
+
         bool multiVaults = req_.superformsData.length > 0;
         bytes memory message = multiVaults
             ? _generateMultiVaultMessage(req_.superformsData[req_.i])
@@ -1053,7 +1066,7 @@ contract PaymentHelper is IPaymentHelper {
 
             if (xChain) {
                 /// @dev step 3: estimate update cost (only for deposit)
-                v.totalDstGas += _estimateUpdateDepositCost(req_.dstChainIds[req_.i], v.superformIdsLen);
+                v.totalGas += _estimateUpdateDepositCost(req_.dstChainIds[req_.i], v.superformIdsLen);
 
                 uint256 ackLen;
                 if (multiVaults) {
@@ -1070,34 +1083,34 @@ contract PaymentHelper is IPaymentHelper {
                     ? req_.superformsData[req_.i].hasDstSwaps
                     : req_.superformData[req_.i].hasDstSwap.castBoolToArray();
                 /// @dev step 5: estimate dst swap cost if it exists
-                v.totalDstGas += _estimateSwapFees(req_.dstChainIds[req_.i], hasDstSwaps);
+                v.totalGas += _estimateSwapFees(req_.dstChainIds[req_.i], hasDstSwaps);
             }
         } else {
             if (multiVaults) {
                 /// @dev step 6: estimate if timelock form processing costs are involved
                 for (uint256 j; j < v.superformIdsLen; ++j) {
-                    v.totalDstGas += _calculateTotalDstGasTimelockEmergency(
+                    v.totalGas += _calculateTotalDstGasTimelockEmergency(
                         req_.superformsData[req_.i].superformIds[j], req_.dstChainIds[req_.i], req_.factory
                     );
                 }
             } else {
-                v.totalDstGas += _calculateTotalDstGasTimelockEmergency(
+                v.totalGas += _calculateTotalDstGasTimelockEmergency(
                     req_.superformData[req_.i].superformId, req_.dstChainIds[req_.i], req_.factory
                 );
             }
             if (xChain) {
                 /// @dev step 7: estimate update withdraw cost if no txData is present
-                v.totalDstGas += _estimateUpdateWithdrawCost(req_.dstChainIds[req_.i], liqRequests);
+                v.totalGas += _estimateUpdateWithdrawCost(req_.dstChainIds[req_.i], liqRequests);
             }
         }
 
         /// @dev step 7: estimate execution costs in destination including sending acknowledgement to source
         /// @dev ensure that acknowledgement costs from dst to src are not double counted
-        v.totalDstGas +=
+        v.totalGas +=
             xChain ? _estimateDstExecutionCost(req_.isDeposit, req_.dstChainIds[req_.i], v.superformIdsLen) : 0;
 
-        /// @dev step 8: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
-        dstAmount += _convertToNativeFee(req_.dstChainIds[req_.i], v.totalDstGas);
+        /// @dev step 8: convert all dst/same chain gas estimates to src chain estimate  (withdraw / deposit)
+        dstOrSameChainAmt += _convertToNativeFee(req_.dstChainIds[req_.i], v.totalGas, xChain);
     }
 
     /// @dev calculates the srcAmount cost for single direct withdrawal
@@ -1117,29 +1130,6 @@ contract PaymentHelper is IPaymentHelper {
             totalDstGas += timelockCost[dstChainId_];
         } else if (paused) {
             totalDstGas += emergencyCost[dstChainId_];
-        }
-    }
-
-    /// @dev calculates the srcAmount cost for single direct withdrawal
-    function _calculateSrcAmountTimelockEmergencyDirect(
-        uint256 superformId_,
-        uint256 timelockPrice_,
-        uint256 emergencyPrice_,
-        ISuperformFactory factory_
-    )
-        internal
-        view
-        returns (uint256 srcAmount)
-    {
-        /// @dev only if timelock form withdrawal is involved
-        (, uint32 formId,) = superformId_.getSuperform();
-
-        bool paused = factory_.isFormImplementationPaused(formId);
-
-        if (!paused && formId == TIMELOCK_FORM_ID) {
-            srcAmount += timelockPrice_;
-        } else if (paused) {
-            srcAmount += emergencyPrice_;
         }
     }
 }
