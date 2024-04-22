@@ -11,7 +11,8 @@ export BASE_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BASE_RPC_URL/crede
 export FIREBLOCKS_API_KEY=$(op read op://zry2qwhqux2w6qtjitg44xb7b4/FB_STAGING_TOOLBOX_ACTION/credential)
 export FIREBLOCKS_API_PRIVATE_KEY_PATH=$(op read op://zry2qwhqux2w6qtjitg44xb7b4/FB_STAGING_TOOLBOX_SECRET_SSH/private_key)
 export FOUNDRY_PROFILE=default
-export FIREBLOCKS_VAULT_ACCOUNT_IDS=15 #PaymentAdmin Staging
+export FIREBLOCKS_VAULT_ACCOUNT_IDS=13 #PaymentAdmin Staging
+#export FIREBLOCKS_VAULT_ACCOUNT_IDS=5 #PaymentAdmin Prod
 
 # Run the script
 echo Deploying paymentHelper v2: ...
