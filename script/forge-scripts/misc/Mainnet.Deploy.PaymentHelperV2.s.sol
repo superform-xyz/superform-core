@@ -3,8 +3,8 @@ pragma solidity ^0.8.23;
 
 import { AbstractDeployPaymentHelperV2 } from "./Abstract.Deploy.PaymentHelperV2.s.sol";
 
-contract MainnetDeployLiFiValidatorV2 is AbstractDeployPaymentHelperV2 {
-    function deployLiFiValidatorV2(uint256 env, uint256 selectedChainIndex) external {
+contract MainnetDeployPaymentHelperV2 is AbstractDeployPaymentHelperV2 {
+    function deployPaymentHelper(uint256 env, uint256 selectedChainIndex) external {
         _setEnvironment(env);
 
         uint256 trueIndex;

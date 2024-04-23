@@ -46,6 +46,7 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
             CSR_DISPUTER = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
             SUPERFORM_RECEIVER = 0x1a6805487322565202848f239C1B5bC32303C2FE;
             EMERGENCY_ADMIN = 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490;
+            REWARDS_ADMIN = address(0);
             SUPER_POSITIONS_NAME = "SuperPositions";
 
             // BROADCASTING
@@ -68,6 +69,7 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
             CSR_DISPUTER = 0xe9F074d003b377A197D336B8a1c86EdaA6cC4dEF;
             SUPERFORM_RECEIVER = 0x46F15EDC21f7eed6D1eb01e5Abe993Dc6c6A78BB;
             EMERGENCY_ADMIN = 0x6A5DD913fE3CB5193E09D1810a3b9ff1C0f9c0D6;
+            REWARDS_ADMIN = address(0);
             SUPER_POSITIONS_NAME = "StagingSuperPositions";
 
             // BROADCASTING

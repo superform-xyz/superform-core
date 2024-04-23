@@ -37,6 +37,8 @@ import { VaultClaimer } from "src/VaultClaimer.sol";
 import { generateBroadcastParams } from "test/utils/AmbParams.sol";
 import { AcrossFacetPacked } from "./misc/blacklistedFacets/AcrossFacetPacked.sol";
 import { AmarokFacetPacked } from "./misc/blacklistedFacets/AmarokFacetPacked.sol";
+
+import { RewardsDistributor } from "src/RewardsDistributor.sol";
 import "forge-std/console.sol";
 
 struct SetupVars {
@@ -97,7 +99,7 @@ abstract contract AbstractDeploySingle is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[21] public contractNames = [
+    string[22] public contractNames = [
         "CoreStateRegistry",
         //"TimelockStateRegistry",
         "BroadcastRegistry",
@@ -121,7 +123,8 @@ abstract contract AbstractDeploySingle is Script {
         "PaymentHelper",
         "PayMaster",
         "EmergencyQueue",
-        "VaultClaimer"
+        "VaultClaimer",
+        "RewardsDistributor"
     ];
 
     enum Chains {

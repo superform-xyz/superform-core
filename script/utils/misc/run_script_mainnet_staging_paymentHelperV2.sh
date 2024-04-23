@@ -15,62 +15,79 @@ export FIREBLOCKS_VAULT_ACCOUNT_IDS=13 #PaymentAdmin Staging
 #export FIREBLOCKS_VAULT_ACCOUNT_IDS=5 #PaymentAdmin Prod
 
 # Run the script
+# WARNING - ADD FANTOM TO LIST OF CHAINS FIRST - ALSO ENSURE FIREBLOCKS HAS ALL KEEPERS CONFIGURED FOR FANTOM
 echo Deploying paymentHelper v2: ...
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployLiFiValidatorV2 --sig "deployLiFiValidatorV2(uint256,uint256)" 1 0 --rpc-url $BSC_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "deployPaymentHelper(uint256,uint256)" 1 0 --rpc-url $BSC_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 wait
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployLiFiValidatorV2 --sig "deployLiFiValidatorV2(uint256,uint256)" 1 1 --rpc-url $ARBITRUM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "deployPaymentHelper(uint256,uint256)" 1 1 --rpc-url $ARBITRUM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 wait
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployLiFiValidatorV2 --sig "deployLiFiValidatorV2(uint256,uint256)" 1 2 --rpc-url $OPTIMISM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "deployPaymentHelper(uint256,uint256)" 1 2 --rpc-url $OPTIMISM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+
 wait
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployLiFiValidatorV2 --sig "deployLiFiValidatorV2(uint256,uint256)" 1 3 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "deployPaymentHelper(uint256,uint256)" 1 3 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+
+wait
+
+FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "deployPaymentHelper(uint256,uint256)" 1 4 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
 wait
 
 echo Configuring paymentHelper v2
 #0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3 is the payment admin on staging -has to execute this
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployLiFiValidatorV2 --sig "configurePaymentHelper(uint256,uint256)" 1 0 \
+fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "configurePaymentHelper(uint256,uint256)" 1 0 \
     --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3 --broadcast --unlocked --slow
 
 wait
 
 export FIREBLOCKS_CHAIN_ID=42161
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployLiFiValidatorV2 --sig "configurePaymentHelper(uint256,uint256)" 1 1 \
+fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "configurePaymentHelper(uint256,uint256)" 1 1 \
     --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3 --broadcast --unlocked --slow
 
 wait
 
 export FIREBLOCKS_CHAIN_ID=10
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployLiFiValidatorV2 --sig "configurePaymentHelper(uint256,uint256)" 1 2 \
+fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "configurePaymentHelper(uint256,uint256)" 1 2 \
     --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3 --broadcast --unlocked --slow
 
 wait
 
 export FIREBLOCKS_CHAIN_ID=8453
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployLiFiValidatorV2 --sig "configurePaymentHelper(uint256,uint256)" 1 3 \
+fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "configurePaymentHelper(uint256,uint256)" 1 3 \
+    --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3 --broadcast --unlocked --slow
+
+wait
+
+export FIREBLOCKS_CHAIN_ID=250
+
+fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "configurePaymentHelper(uint256,uint256)" 1 4 \
     --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3 --broadcast --unlocked --slow
 
 wait
 
 echo Configuring paymentHelper v2 on super registry ...
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployLiFiValidatorV2 --sig "configureSuperRegistry(uint256,uint256)" 1 0 --rpc-url $BSC_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "configureSuperRegistry(uint256,uint256)" 1 0 --rpc-url $BSC_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
 wait
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployLiFiValidatorV2 --sig "configureSuperRegistry(uint256,uint256)" 1 1 --rpc-url $ARBITRUM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "configureSuperRegistry(uint256,uint256)" 1 1 --rpc-url $ARBITRUM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 
 wait
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployLiFiValidatorV2 --sig "configureSuperRegistry(uint256,uint256)" 1 2 --rpc-url $OPTIMISM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "configureSuperRegistry(uint256,uint256)" 1 2 --rpc-url $OPTIMISM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 
 wait
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployLiFiValidatorV2 --sig "configureSuperRegistry(uint256,uint256)" 1 3 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "configureSuperRegistry(uint256,uint256)" 1 3 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+
+wait
+
+FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "configureSuperRegistry(uint256,uint256)" 1 4 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
