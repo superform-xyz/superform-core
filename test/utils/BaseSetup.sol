@@ -354,7 +354,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         [address(0), address(0), address(0), 0x205E10d3c4C87E26eB66B1B270b71b7708494dB9, address(0), address(0)];
 
     function setUp() public virtual {
-        _preDeploymentSetup();
+        _preDeploymentSetup(true, false);
 
         _fundNativeTokens();
 
@@ -1157,17 +1157,19 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         tokenPriceFeeds[FANTOM][NATIVE_TOKEN] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
     }
 
-    function _preDeploymentSetup() internal virtual {
+    function _preDeploymentSetup(bool pinnedBlock, bool invariant) internal {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
-        forks[ETH] = vm.createFork(ETHEREUM_RPC_URL, 18_432_589);
-        forks[BSC] = vm.createFork(BSC_RPC_URL, 32_899_049);
-        forks[AVAX] = vm.createFork(AVALANCHE_RPC_URL, 36_974_720);
-        forks[POLY] = vm.createFork(POLYGON_RPC_URL, 49_118_079);
-        forks[ARBI] = vm.createFork(ARBITRUM_RPC_URL, 143_659_807);
-        forks[OP] = vm.createFork(OPTIMISM_RPC_URL, 111_390_769);
-        forks[BASE] = vm.createFork(BASE_RPC_URL);
-        forks[FANTOM] = vm.createFork(FANTOM_RPC_URL, 78_945_396);
+        if (!invariant) {
+            forks[ETH] = pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 18_432_589) : vm.createFork(ETHEREUM_RPC_URL);
+            forks[BSC] = pinnedBlock ? vm.createFork(BSC_RPC_URL, 32_899_049) : vm.createFork(BSC_RPC_URL);
+            forks[AVAX] = pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 36_974_720) : vm.createFork(AVALANCHE_RPC_URL);
+            forks[POLY] = pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 49_118_079) : vm.createFork(POLYGON_RPC_URL);
+            forks[ARBI] = pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 143_659_807) : vm.createFork(ARBITRUM_RPC_URL);
+            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 111_390_769) : vm.createFork(OPTIMISM_RPC_URL);
+            forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL);
+            forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 78_945_396) : vm.createFork(FANTOM_RPC_URL);
+        }
 
         mapping(uint64 => string) storage rpcURLs = RPC_URLS;
         rpcURLs[ETH] = ETHEREUM_RPC_URL;
