@@ -24,7 +24,6 @@ import {
 /// @dev Helps decode payload data for off-chain purposes
 /// @author ZeroPoint Labs
 contract PayloadHelper is IPayloadHelper {
-
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////

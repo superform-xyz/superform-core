@@ -8,7 +8,6 @@ import { AMBMessage } from "../types/DataTypes.sol";
 /// @dev Interface for SuperPositions
 /// @author Zeropoint Labs
 interface ISuperPositions is IERC1155A {
-
     //////////////////////////////////////////////////////////////
     //                          STRUCTS                         //
     //////////////////////////////////////////////////////////////
@@ -17,7 +16,7 @@ interface ISuperPositions is IERC1155A {
         uint256 txInfo;
         address receiverAddressSP;
     }
-    
+
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
