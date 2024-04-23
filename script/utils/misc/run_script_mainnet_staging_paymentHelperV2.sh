@@ -8,6 +8,7 @@ export POLYGON_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/POLYGON_RPC_URL
 export ARBITRUM_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/ARBITRUM_RPC_URL/credential)
 export OPTIMISM_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/OPTIMISM_RPC_URL/credential)
 export BASE_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BASE_RPC_URL/credential)
+export FANTOM_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/FANTOM_RPC_URL/credential)
 export FIREBLOCKS_API_KEY=$(op read op://zry2qwhqux2w6qtjitg44xb7b4/FB_STAGING_TOOLBOX_ACTION/credential)
 export FIREBLOCKS_API_PRIVATE_KEY_PATH=$(op read op://zry2qwhqux2w6qtjitg44xb7b4/FB_STAGING_TOOLBOX_SECRET_SSH/private_key)
 export FOUNDRY_PROFILE=default
@@ -32,7 +33,7 @@ FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.Pa
 
 wait
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "deployPaymentHelper(uint256,uint256)" 1 4 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "deployPaymentHelper(uint256,uint256)" 1 4 --rpc-url $FANTOM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
 wait
 
@@ -90,4 +91,4 @@ FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.Pa
 
 wait
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "configureSuperRegistry(uint256,uint256)" 1 4 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "configureSuperRegistry(uint256,uint256)" 1 4 --rpc-url $FANTOM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92

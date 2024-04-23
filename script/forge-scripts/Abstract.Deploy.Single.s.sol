@@ -37,9 +37,9 @@ import { VaultClaimer } from "src/VaultClaimer.sol";
 import { generateBroadcastParams } from "test/utils/AmbParams.sol";
 import { AcrossFacetPacked } from "./misc/blacklistedFacets/AcrossFacetPacked.sol";
 import { AmarokFacetPacked } from "./misc/blacklistedFacets/AmarokFacetPacked.sol";
-
 import { RewardsDistributor } from "src/RewardsDistributor.sol";
 import "forge-std/console.sol";
+import { BatchScript } from "./safe/BatchScript.sol";
 
 struct SetupVars {
     uint64 chainId;
@@ -91,7 +91,7 @@ struct SetupVars {
     uint64[] chainIdsSetAddresses;
 }
 
-abstract contract AbstractDeploySingle is Script {
+abstract contract AbstractDeploySingle is BatchScript {
     /*//////////////////////////////////////////////////////////////
                         GENERAL VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -320,6 +320,7 @@ abstract contract AbstractDeploySingle is Script {
     address public EMERGENCY_ADMIN;
     address public BROADCAST_REGISTRY_PROCESSOR;
     address public WORMHOLE_VAA_RELAYER;
+    address public REWARDS_ADMIN;
 
     address[] public PROTOCOL_ADMINS = [
         0xd26b38a64C812403fD3F87717624C80852cD6D61,
@@ -750,8 +751,16 @@ abstract contract AbstractDeploySingle is Script {
         contracts[vars.chainId][bytes32(bytes("VaultClaimer"))] = address(new VaultClaimer{ salt: salt }());
 
         /// @dev 19 deploy rewards distributor
-        contracts[vars.chainId][bytes32(bytes("RewardsDistributor"))] =
-            address(new RewardsDistributor{ salt: salt }(vars.superRegistry));
+        vars.rewardDistributor = address(new RewardsDistributor{ salt: salt }(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("RewardsDistributor"))] = vars.rewardDistributor;
+
+        bytes32 rewardsId = keccak256("REWARDS_DISTRIBUTOR");
+
+        vars.superRegistryC.setAddress(rewardsId, vars.rewardDistributor, vars.chainId);
+
+        bytes32 role = keccak256("REWARDS_ADMIN_ROLE");
+        assert(REWARDS_ADMIN != address(0));
+        vars.superRBACC.grantRole(role, REWARDS_ADMIN);
 
         vm.stopBroadcast();
 
@@ -826,7 +835,8 @@ abstract contract AbstractDeploySingle is Script {
                         address(0),
                         address(0),
                         vars.superRegistryC
-                    )
+                    ),
+                    false
                 );
             }
         }
@@ -881,7 +891,8 @@ abstract contract AbstractDeploySingle is Script {
         /// 0, 1, 2, 3, 4, 5
         Cycle cycle,
         uint64[] memory previousDeploymentChains,
-        uint64 newChainId
+        uint64 newChainId,
+        bool execute
     )
         internal
         setEnvDeploy(cycle)
@@ -889,8 +900,6 @@ abstract contract AbstractDeploySingle is Script {
         SetupVars memory vars;
 
         vars.chainId = previousDeploymentChains[i];
-
-        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
 
         vars.lzImplementation = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
         vars.hyperlaneImplementation =
@@ -923,11 +932,13 @@ abstract contract AbstractDeploySingle is Script {
                 address(0),
                 address(0),
                 vars.superRegistryC
-            )
+            ),
+            env == 0 ? true : false
         );
         PaymentHelper(payable(vars.paymentHelper)).addRemoteChain(newChainId, addRemoteConfig);
 
-        vm.stopBroadcast();
+        /// Send to Safe to sign
+        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], execute);
     }
 
     struct CurrentChainBasedOnDstvars {
@@ -952,7 +963,8 @@ abstract contract AbstractDeploySingle is Script {
 
     function _configureCurrentChainBasedOnTargetDestinations(
         uint256 env,
-        CurrentChainBasedOnDstvars memory vars
+        CurrentChainBasedOnDstvars memory vars,
+        bool safeExecution
     )
         internal
         returns (IPaymentHelper.PaymentHelperConfig memory addRemoteConfig)
@@ -974,59 +986,8 @@ abstract contract AbstractDeploySingle is Script {
             _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "HyperlaneImplementation");
         vars.dstWormholeARImplementation =
             _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "WormholeARImplementation");
-
         vars.dstWormholeSRImplementation =
             _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "WormholeSRImplementation");
-
-        LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
-            vars.dstLzChainId, abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
-        );
-
-        LayerzeroImplementation(payable(vars.lzImplementation)).setChainId(vars.dstChainId, vars.dstLzChainId);
-
-        /// @dev for mainnet
-        /// @dev do not override default oracle with chainlink for BASE
-
-        /// NOTE: since chainlink oracle is not on BASE, we use the default oracle
-        // if (vars.chainId != BASE) {
-        //     LayerzeroImplementation(payable(vars.lzImplementation)).setConfig(
-        //         0,
-        //         /// Defaults To Zero
-        //         vars.dstLzChainId,
-        //         6,
-        //         /// For Oracle Config
-        //         abi.encode(CHAINLINK_lzOracle)
-        //     );
-        // }
-        if (!(vars.chainId == FANTOM || vars.dstChainId == FANTOM)) {
-            HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setReceiver(
-                vars.dstHypChainId, vars.dstHyperlaneImplementation
-            );
-
-            HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setChainId(
-                vars.dstChainId, vars.dstHypChainId
-            );
-        }
-
-        WormholeARImplementation(payable(vars.wormholeImplementation)).setReceiver(
-            vars.dstWormholeChainId, vars.dstWormholeARImplementation
-        );
-
-        WormholeARImplementation(payable(vars.wormholeImplementation)).setChainId(
-            vars.dstChainId, vars.dstWormholeChainId
-        );
-
-        WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setChainId(
-            vars.dstChainId, vars.dstWormholeChainId
-        );
-
-        WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setReceiver(
-            vars.dstWormholeChainId, vars.dstWormholeSRImplementation
-        );
-
-        SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
-
-        vars.superRegistryC.setVaultLimitPerDestination(vars.dstChainId, 5);
 
         assert(abi.decode(GAS_USED[vars.dstChainId][3], (uint256)) > 0);
         assert(abi.decode(GAS_USED[vars.dstChainId][4], (uint256)) > 0);
@@ -1051,7 +1012,7 @@ abstract contract AbstractDeploySingle is Script {
         );
 
         /// @dev FIXME not setting BROADCAST_REGISTRY yet, which will result in all broadcast tentatives to fail
-        bytes32[] memory ids = new bytes32[](18);
+        bytes32[] memory ids = new bytes32[](19);
         ids[0] = vars.superRegistryC.SUPERFORM_ROUTER();
         ids[1] = vars.superRegistryC.SUPERFORM_FACTORY();
         ids[2] = vars.superRegistryC.PAYMASTER();
@@ -1070,8 +1031,9 @@ abstract contract AbstractDeploySingle is Script {
         ids[15] = vars.superRegistryC.CORE_REGISTRY_DISPUTER();
         ids[16] = vars.superRegistryC.DST_SWAPPER_PROCESSOR();
         ids[17] = vars.superRegistryC.SUPERFORM_RECEIVER();
+        ids[18] = keccak256("REWARDS_ADMIN_ROLE");
 
-        address[] memory newAddresses = new address[](18);
+        address[] memory newAddresses = new address[](19);
         newAddresses[0] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperformRouter");
         newAddresses[1] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperformFactory");
         newAddresses[2] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "PayMaster");
@@ -1090,8 +1052,9 @@ abstract contract AbstractDeploySingle is Script {
         newAddresses[15] = CSR_DISPUTER;
         newAddresses[16] = DST_SWAPPER;
         newAddresses[17] = SUPERFORM_RECEIVER;
+        newAddresses[18] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "RewardsDistributor");
 
-        uint64[] memory chainIdsSetAddresses = new uint64[](18);
+        uint64[] memory chainIdsSetAddresses = new uint64[](19);
         chainIdsSetAddresses[0] = vars.dstChainId;
         chainIdsSetAddresses[1] = vars.dstChainId;
         chainIdsSetAddresses[2] = vars.dstChainId;
@@ -1110,8 +1073,129 @@ abstract contract AbstractDeploySingle is Script {
         chainIdsSetAddresses[15] = vars.dstChainId;
         chainIdsSetAddresses[16] = vars.dstChainId;
         chainIdsSetAddresses[17] = vars.dstChainId;
+        chainIdsSetAddresses[18] = vars.dstChainId;
 
-        vars.superRegistryC.batchSetAddress(ids, newAddresses, chainIdsSetAddresses);
+        if (!safeExecution) {
+            LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
+                vars.dstLzChainId, abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
+            );
+
+            LayerzeroImplementation(payable(vars.lzImplementation)).setChainId(vars.dstChainId, vars.dstLzChainId);
+
+            /// @dev for mainnet
+            /// @dev do not override default oracle with chainlink for BASE
+
+            /// NOTE: since chainlink oracle is not on BASE, we use the default oracle
+            // if (vars.chainId != BASE) {
+            //     LayerzeroImplementation(payable(vars.lzImplementation)).setConfig(
+            //         0,
+            //         /// Defaults To Zero
+            //         vars.dstLzChainId,
+            //         6,
+            //         /// For Oracle Config
+            //         abi.encode(CHAINLINK_lzOracle)
+            //     );
+            // }
+            if (!(vars.chainId == FANTOM || vars.dstChainId == FANTOM)) {
+                HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setReceiver(
+                    vars.dstHypChainId, vars.dstHyperlaneImplementation
+                );
+
+                HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setChainId(
+                    vars.dstChainId, vars.dstHypChainId
+                );
+            }
+
+            WormholeARImplementation(payable(vars.wormholeImplementation)).setReceiver(
+                vars.dstWormholeChainId, vars.dstWormholeARImplementation
+            );
+
+            WormholeARImplementation(payable(vars.wormholeImplementation)).setChainId(
+                vars.dstChainId, vars.dstWormholeChainId
+            );
+
+            WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setChainId(
+                vars.dstChainId, vars.dstWormholeChainId
+            );
+
+            WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setReceiver(
+                vars.dstWormholeChainId, vars.dstWormholeSRImplementation
+            );
+
+            SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
+
+            vars.superRegistryC.setVaultLimitPerDestination(vars.dstChainId, 5);
+
+            vars.superRegistryC.batchSetAddress(ids, newAddresses, chainIdsSetAddresses);
+        } else {
+            bytes memory txn = abi.encodeWithSelector(
+                LayerzeroImplementation.setTrustedRemote.selector,
+                vars.dstLzChainId,
+                abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
+            );
+            addToBatch(vars.lzImplementation, 0, txn);
+
+            txn =
+                abi.encodeWithSelector(LayerzeroImplementation.setChainId.selector, vars.dstChainId, vars.dstLzChainId);
+            addToBatch(vars.lzImplementation, 0, txn);
+
+            /// @dev for mainnet
+            /// @dev do not override default oracle with chainlink for BASE
+
+            /// NOTE: since chainlink oracle is not on BASE, we use the default oracle
+            // if (vars.chainId != BASE) {
+            //     LayerzeroImplementation(payable(vars.lzImplementation)).setConfig(
+            //         0,
+            //         /// Defaults To Zero
+            //         vars.dstLzChainId,
+            //         6,
+            //         /// For Oracle Config
+            //         abi.encode(CHAINLINK_lzOracle)
+            //     );
+            // }
+            if (!(vars.chainId == FANTOM || vars.dstChainId == FANTOM)) {
+                txn = abi.encodeWithSelector(
+                    HyperlaneImplementation.setReceiver.selector, vars.dstHypChainId, vars.dstHyperlaneImplementation
+                );
+                addToBatch(vars.hyperlaneImplementation, 0, txn);
+
+                txn = abi.encodeWithSelector(
+                    HyperlaneImplementation.setChainId.selector, vars.dstChainId, vars.dstHypChainId
+                );
+                addToBatch(vars.hyperlaneImplementation, 0, txn);
+            }
+
+            txn = abi.encodeWithSelector(
+                WormholeARImplementation.setReceiver.selector, vars.dstWormholeChainId, vars.dstWormholeARImplementation
+            );
+            addToBatch(vars.wormholeImplementation, 0, txn);
+
+            txn = abi.encodeWithSelector(
+                WormholeARImplementation.setChainId.selector, vars.dstChainId, vars.dstWormholeChainId
+            );
+            addToBatch(vars.wormholeImplementation, 0, txn);
+
+            txn = abi.encodeWithSelector(
+                WormholeSRImplementation.setChainId.selector, vars.dstChainId, vars.dstWormholeChainId
+            );
+            addToBatch(vars.wormholeSRImplementation, 0, txn);
+
+            txn = abi.encodeWithSelector(
+                WormholeSRImplementation.setReceiver.selector, vars.dstWormholeChainId, vars.dstWormholeSRImplementation
+            );
+            addToBatch(vars.wormholeSRImplementation, 0, txn);
+
+            txn = abi.encodeWithSelector(SuperRegistry.setRequiredMessagingQuorum.selector, vars.dstChainId, 1);
+            addToBatch(vars.superRegistry, 0, txn);
+
+            txn = abi.encodeWithSelector(vars.superRegistryC.setVaultLimitPerDestination.selector, vars.dstChainId, 5);
+            addToBatch(vars.superRegistry, 0, txn);
+
+            txn = abi.encodeWithSelector(
+                vars.superRegistryC.batchSetAddress.selector, ids, newAddresses, chainIdsSetAddresses
+            );
+            addToBatch(vars.superRegistry, 0, txn);
+        }
 
         /*
         vars.superRegistryC.setAddress(

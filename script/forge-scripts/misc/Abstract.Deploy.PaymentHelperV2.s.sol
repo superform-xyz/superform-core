@@ -3,8 +3,6 @@ pragma solidity ^0.8.23;
 
 import "../EnvironmentUtils.s.sol";
 
-import { BatchScript } from "../safe/BatchScript.sol";
-
 struct UpdateVars {
     uint64 chainId;
     uint64 dstChainId;
@@ -12,7 +10,7 @@ struct UpdateVars {
     SuperRegistry superRegistryC;
 }
 
-abstract contract AbstractDeployPaymentHelperV2 is BatchScript, EnvironmentUtils {
+abstract contract AbstractDeployPaymentHelperV2 is EnvironmentUtils {
     function _deployPaymentHelper(
         uint256 env,
         uint256 i,
