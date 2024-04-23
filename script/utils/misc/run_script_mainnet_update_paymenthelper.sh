@@ -20,7 +20,7 @@ source .env
 # Setup Fireblocks
 export FIREBLOCKS_API_KEY=$(op read op://zry2qwhqux2w6qtjitg44xb7b4/V1_EMERGENCY_ACTION_KEY/credential)
 export FIREBLOCKS_API_PRIVATE_KEY_PATH=$(op read op://zry2qwhqux2w6qtjitg44xb7b4/V1_EMERGENCY_ACTION_SECRET_SSH/private_key)
-export FOUNDRY_PROFILE=default
+export FOUNDRY_PROFILE=production
 export FIREBLOCKS_VAULT_ACCOUNT_IDS=6 #Emergency admin prod
 
 # Run the script

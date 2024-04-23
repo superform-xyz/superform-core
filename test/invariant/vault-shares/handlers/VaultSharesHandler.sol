@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import "test/utils/InvariantProtocolActions.sol";
 import { VaultSharesStore } from "../stores/VaultSharesStore.sol";
-import { TimestampStore } from "../stores/TimestampStore.sol";
+import { TimestampStore } from "../../common/TimestampStore.sol";
 
 contract VaultSharesHandler is InvariantProtocolActions {
     VaultSharesStore public vaultSharesStore;
@@ -27,7 +27,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
 
     constructor(
         uint64[] memory chainIds_,
-        string[30] memory contractNames_,
+        string[31] memory contractNames_,
         address[][] memory coreContracts,
         address[][] memory underlyingAddresses,
         address[][][] memory vaultAddresses,
@@ -309,7 +309,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
 
     struct InitHandlerSetupVars {
         uint64[] chainIds;
-        string[30] contractNames;
+        string[31] contractNames;
         address[][] coreContracts;
         address[][] underlyingAddresses;
         address[][][] vaultAddresses;

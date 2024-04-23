@@ -71,6 +71,7 @@ import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { Error } from "src/libraries/Error.sol";
+import { RewardsDistributor } from "src/RewardsDistributor.sol";
 import "src/types/DataTypes.sol";
 import "./TestTypes.sol";
 
@@ -102,7 +103,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[30] public contractNames = [
+    string[31] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -132,7 +133,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         "KYCDAOMock",
         "CanonicalPermit2",
         "EmergencyQueue",
-        "SocketOneInchValidator"
+        "SocketOneInchValidator",
+        "RewardsDistributor"
     ];
 
     /*//////////////////////////////////////////////////////////////
@@ -821,6 +823,12 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.superRegistryC.setAddress(vars.superRegistryC.EMERGENCY_QUEUE(), vars.emergencyQueue, vars.chainId);
             delete bridgeAddresses;
             delete bridgeValidators;
+
+            /// @dev 18 deploy Rewards Distributor
+            vars.rewardsDistributor = address(new RewardsDistributor{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("RewardsDistributor"))] = vars.rewardsDistributor;
+            vars.superRBACC.setRoleAdmin(keccak256("REWARDS_ADMIN_ROLE"), vars.superRBACC.PROTOCOL_ADMIN_ROLE());
+            vars.superRBACC.grantRole(keccak256("REWARDS_ADMIN_ROLE"), deployer);
         }
 
         for (uint256 i = 0; i < chainIds.length; ++i) {

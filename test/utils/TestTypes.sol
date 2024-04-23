@@ -168,6 +168,7 @@ struct SetupVars {
     address lifiValidator;
     address socketValidator;
     address socketOneInchValidator;
+    address rewardsDistributor;
     Vm.Log[] logs;
     address superPositions;
     address kycDAOMock;
