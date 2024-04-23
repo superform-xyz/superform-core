@@ -749,6 +749,10 @@ abstract contract AbstractDeploySingle is Script {
         /// @dev 19 deploy vault claimer
         contracts[vars.chainId][bytes32(bytes("VaultClaimer"))] = address(new VaultClaimer{ salt: salt }());
 
+        /// @dev 19 deploy rewards distributor
+        contracts[vars.chainId][bytes32(bytes("RewardsDistributor"))] =
+            address(new RewardsDistributor{ salt: salt }(vars.superRegistry));
+
         vm.stopBroadcast();
 
         /// @dev Exports
@@ -789,10 +793,20 @@ abstract contract AbstractDeploySingle is Script {
         vars.paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
         vars.superRegistryC = SuperRegistry(vars.superRegistry);
 
+        uint64[] memory remoteChainIds = new uint64[](finalDeployedChains.length - 1);
+        for (uint256 j = 0; j < finalDeployedChains.length; j++) {
+            if (j != i) {
+                remoteChainIds[j] = finalDeployedChains[j];
+            }
+        }
+
+        IPaymentHelper.PaymentHelperConfig[] memory addRemoteConfigs =
+            new IPaymentHelper.PaymentHelperConfig[](remoteChainIds.length);
+
         /// @dev Set all trusted remotes for each chain & configure amb chains ids
         for (uint256 j = 0; j < finalDeployedChains.length; j++) {
             if (j != i) {
-                _configureCurrentChainBasedOnTargetDestinations(
+                addRemoteConfigs[j] = _configureCurrentChainBasedOnTargetDestinations(
                     env,
                     CurrentChainBasedOnDstvars(
                         vars.chainId,
@@ -816,6 +830,9 @@ abstract contract AbstractDeploySingle is Script {
                 );
             }
         }
+
+        PaymentHelper(payable(vars.paymentHelper)).addRemoteChains(remoteChainIds, addRemoteConfigs);
+
         vm.stopBroadcast();
     }
 
@@ -886,7 +903,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
         vars.superRegistryC = SuperRegistry(payable(vars.superRegistry));
 
-        _configureCurrentChainBasedOnTargetDestinations(
+        IPaymentHelper.PaymentHelperConfig memory addRemoteConfig = _configureCurrentChainBasedOnTargetDestinations(
             env,
             CurrentChainBasedOnDstvars(
                 vars.chainId,
@@ -908,6 +925,7 @@ abstract contract AbstractDeploySingle is Script {
                 vars.superRegistryC
             )
         );
+        PaymentHelper(payable(vars.paymentHelper)).addRemoteChain(newChainId, addRemoteConfig);
 
         vm.stopBroadcast();
     }
@@ -937,6 +955,7 @@ abstract contract AbstractDeploySingle is Script {
         CurrentChainBasedOnDstvars memory vars
     )
         internal
+        returns (IPaymentHelper.PaymentHelperConfig memory addRemoteConfig)
     {
         for (uint256 k = 0; k < chainIds.length; k++) {
             if (vars.dstChainId == chainIds[k]) {
@@ -1014,24 +1033,21 @@ abstract contract AbstractDeploySingle is Script {
         assert(abi.decode(GAS_USED[vars.dstChainId][6], (uint256)) > 0);
         assert(abi.decode(GAS_USED[vars.dstChainId][13], (uint256)) > 0);
 
-        PaymentHelper(payable(vars.paymentHelper)).addRemoteChain(
-            vars.dstChainId,
-            IPaymentHelper.PaymentHelperConfig(
-                PRICE_FEEDS[vars.chainId][vars.dstChainId],
-                address(0),
-                abi.decode(GAS_USED[vars.dstChainId][3], (uint256)),
-                abi.decode(GAS_USED[vars.dstChainId][4], (uint256)),
-                vars.dstChainId == ARBI ? 1_000_000 : 200_000,
-                abi.decode(GAS_USED[vars.dstChainId][6], (uint256)),
-                nativePrices[vars.dstTrueIndex],
-                gasPrices[vars.dstTrueIndex],
-                750,
-                2_000_000,
-                /// @dev ackGasCost to move a msg from dst to source
-                10_000,
-                10_000,
-                abi.decode(GAS_USED[vars.dstChainId][13], (uint256))
-            )
+        addRemoteConfig = IPaymentHelper.PaymentHelperConfig(
+            PRICE_FEEDS[vars.chainId][vars.dstChainId],
+            address(0),
+            abi.decode(GAS_USED[vars.dstChainId][3], (uint256)),
+            abi.decode(GAS_USED[vars.dstChainId][4], (uint256)),
+            vars.dstChainId == ARBI ? 1_000_000 : 200_000,
+            abi.decode(GAS_USED[vars.dstChainId][6], (uint256)),
+            nativePrices[vars.dstTrueIndex],
+            gasPrices[vars.dstTrueIndex],
+            750,
+            2_000_000,
+            /// @dev ackGasCost to move a msg from dst to source
+            10_000,
+            10_000,
+            abi.decode(GAS_USED[vars.dstChainId][13], (uint256))
         );
 
         /// @dev FIXME not setting BROADCAST_REGISTRY yet, which will result in all broadcast tentatives to fail

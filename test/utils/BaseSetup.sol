@@ -817,14 +817,14 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_RECEIVER(), deployer, vars.chainId);
 
             vars.superRegistryC.setDelay(86_400);
-            /// @dev 17 deploy emergency queue
+            /// @dev 19 deploy emergency queue
             vars.emergencyQueue = address(new EmergencyQueue{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("EmergencyQueue"))] = vars.emergencyQueue;
             vars.superRegistryC.setAddress(vars.superRegistryC.EMERGENCY_QUEUE(), vars.emergencyQueue, vars.chainId);
             delete bridgeAddresses;
             delete bridgeValidators;
 
-            /// @dev 18 deploy Rewards Distributor
+            /// @dev 20 deploy Rewards Distributor
             vars.rewardsDistributor = address(new RewardsDistributor{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("RewardsDistributor"))] = vars.rewardsDistributor;
             vars.superRBACC.setRoleAdmin(keccak256("REWARDS_ADMIN_ROLE"), vars.superRBACC.PROTOCOL_ADMIN_ROLE());

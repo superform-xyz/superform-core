@@ -103,7 +103,7 @@ abstract contract AbstractDeployPaymentHelperV2 is BatchScript, EnvironmentUtils
             }
         }
 
-        IPaymentHelper.PaymentHelperConfig[] memory addRemoteConfig =
+        IPaymentHelper.PaymentHelperConfig[] memory addRemoteConfigs =
             new IPaymentHelper.PaymentHelperConfig[](remoteChainIds.length);
 
         for (uint256 j = 0; j < remoteChainIds.length; j++) {
@@ -121,7 +121,7 @@ abstract contract AbstractDeployPaymentHelperV2 is BatchScript, EnvironmentUtils
             assert(abi.decode(GAS_USED[remoteChainIds[j]][6], (uint256)) > 0);
             assert(abi.decode(GAS_USED[remoteChainIds[j]][13], (uint256)) > 0);
 
-            addRemoteConfig[j] = IPaymentHelper.PaymentHelperConfig(
+            addRemoteConfigs[j] = IPaymentHelper.PaymentHelperConfig(
                 PRICE_FEEDS[vars.chainId][remoteChainIds[j]],
                 address(0),
                 abi.decode(GAS_USED[remoteChainIds[j]][3], (uint256)),
@@ -139,7 +139,7 @@ abstract contract AbstractDeployPaymentHelperV2 is BatchScript, EnvironmentUtils
             );
         }
 
-        PaymentHelper(payable(paymentHelper)).addRemoteChains(remoteChainIds, addRemoteConfig);
+        PaymentHelper(payable(paymentHelper)).addRemoteChains(remoteChainIds, addRemoteConfigs);
 
         vm.stopBroadcast();
     }
