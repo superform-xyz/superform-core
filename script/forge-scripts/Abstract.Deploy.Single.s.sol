@@ -83,6 +83,7 @@ struct SetupVars {
     address paymentHelper;
     address payMaster;
     address emergencyQueue;
+    address rewardsDistributor;
     SuperRegistry superRegistryC;
     SuperRBAC superRBACC;
     LiFiValidator lv;
@@ -167,6 +168,10 @@ abstract contract AbstractDeploySingle is BatchScript {
     /// @notice id 4 is wormhole SR
     uint8[] public ambIds = [uint8(1), 2, 3, 4];
     bool[] public broadcastAMB = [false, false, false, true];
+
+    /// @dev new settings ids
+    bytes32 rewardsDistributorId = keccak256("REWARDS_DISTRIBUTOR");
+    bytes32 rewardsAdminRole = keccak256("REWARDS_ADMIN_ROLE");
 
     /*//////////////////////////////////////////////////////////////
                         AMB VARIABLES
@@ -722,6 +727,44 @@ abstract contract AbstractDeploySingle is BatchScript {
         contracts[vars.chainId][bytes32(bytes("EmergencyQueue"))] = vars.emergencyQueue;
         vars.superRegistryC.setAddress(vars.superRegistryC.EMERGENCY_QUEUE(), vars.emergencyQueue, vars.chainId);
 
+        /// @dev 18 deploy vault claimer
+        contracts[vars.chainId][bytes32(bytes("VaultClaimer"))] = address(new VaultClaimer{ salt: salt }());
+
+        /// @dev 19 deploy rewards distributor
+        vars.rewardsDistributor = address(new RewardsDistributor{ salt: salt }(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("RewardsDistributor"))] = vars.rewardsDistributor;
+
+        vars.superRegistryC.setAddress(rewardsDistributorId, vars.rewardsDistributor, vars.chainId);
+
+        assert(REWARDS_ADMIN != address(0));
+
+        vars.superRBACC.setRoleAdmin(rewardsAdminRole, vars.superRBACC.PROTOCOL_ADMIN_ROLE());
+        vars.superRBACC.grantRole(rewardsAdminRole, REWARDS_ADMIN);
+
+        vm.stopBroadcast();
+
+        /// @dev Exports
+        for (uint256 j = 0; j < contractNames.length; j++) {
+            _exportContractsV1(
+                env, chainNames[trueIndex], contractNames[j], getContract(vars.chainId, contractNames[j]), vars.chainId
+            );
+        }
+    }
+
+    /// @dev to allow PaymentAdmin to perform configurations
+    function _fireblocksPaymentAdminConfigurations(
+        uint256 env,
+        uint256 trueIndex,
+        Cycle cycle
+    )
+        internal
+        setEnvDeploy(cycle)
+    {
+        SetupVars memory vars;
+        vars.paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
+
+        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
+
         /// @dev 18 configure payment helper
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
             vars.chainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
@@ -747,29 +790,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// @dev !WARNING - Default value for updateWithdrawGas for now
         PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(abi.encode(4, abi.encode(0, "")));
 
-        /// @dev 19 deploy vault claimer
-        contracts[vars.chainId][bytes32(bytes("VaultClaimer"))] = address(new VaultClaimer{ salt: salt }());
-
-        /// @dev 19 deploy rewards distributor
-        vars.rewardDistributor = address(new RewardsDistributor{ salt: salt }(vars.superRegistry));
-        contracts[vars.chainId][bytes32(bytes("RewardsDistributor"))] = vars.rewardDistributor;
-
-        bytes32 rewardsId = keccak256("REWARDS_DISTRIBUTOR");
-
-        vars.superRegistryC.setAddress(rewardsId, vars.rewardDistributor, vars.chainId);
-
-        bytes32 role = keccak256("REWARDS_ADMIN_ROLE");
-        assert(REWARDS_ADMIN != address(0));
-        vars.superRBACC.grantRole(role, REWARDS_ADMIN);
-
         vm.stopBroadcast();
-
-        /// @dev Exports
-        for (uint256 j = 0; j < contractNames.length; j++) {
-            _exportContractsV1(
-                env, chainNames[trueIndex], contractNames[j], getContract(vars.chainId, contractNames[j]), vars.chainId
-            );
-        }
     }
 
     /// @dev stage 2 must be called only after stage 1 is complete for all chains!
@@ -803,9 +824,12 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.superRegistryC = SuperRegistry(vars.superRegistry);
 
         uint64[] memory remoteChainIds = new uint64[](finalDeployedChains.length - 1);
+        uint256 remoteChains;
+
         for (uint256 j = 0; j < finalDeployedChains.length; j++) {
             if (j != i) {
-                remoteChainIds[j] = finalDeployedChains[j];
+                remoteChainIds[remoteChains] = finalDeployedChains[j];
+                ++remoteChains;
             }
         }
 
@@ -1031,7 +1055,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         ids[15] = vars.superRegistryC.CORE_REGISTRY_DISPUTER();
         ids[16] = vars.superRegistryC.DST_SWAPPER_PROCESSOR();
         ids[17] = vars.superRegistryC.SUPERFORM_RECEIVER();
-        ids[18] = keccak256("REWARDS_ADMIN_ROLE");
+        ids[18] = rewardsDistributorId;
 
         address[] memory newAddresses = new address[](19);
         newAddresses[0] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperformRouter");
