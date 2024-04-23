@@ -164,6 +164,19 @@ contract RewardsDistributorTests is MerkleReader {
         rewards.claim(user, periodId, tokensToClaim, amountsToClaim, proof_);
     }
 
+    function test_claim_deadlineHasPassed() public {
+        _addRoot();
+
+        uint256 periodId = 1;
+        address user = testUsers[periodId][0];
+        (,,,, bytes32[] memory proof_, address[] memory tokensToClaim, uint256[] memory amountsToClaim) =
+            _generateMerkleTree(MerkleReader.MerkleArgs(periodId, user, OP));
+        vm.warp(block.timestamp + 53 weeks);
+        vm.prank(user);
+        vm.expectRevert(IRewardsDistributor.CLAIM_DEADLINE_PASSED.selector);
+        rewards.claim(user, periodId, tokensToClaim, amountsToClaim, proof_);
+    }
+
     function test_batchclaim_invalidReceiver() public {
         _addRoot();
         // common user
@@ -302,7 +315,7 @@ contract RewardsDistributorTests is MerkleReader {
         rewards.batchClaim(user, periodIds, tokensToClaim, amountsToClaim, proofs);
     }
 
-    function test_batchclaim_claimAndAlreadyClaimed() public {
+    function test_batchclaim_randomClaimer_claimAndAlreadyClaimed() public {
         _addRoot();
         // common user
         address user = testUsers[0][1];
@@ -325,7 +338,8 @@ contract RewardsDistributorTests is MerkleReader {
             amountsToClaim[periodId] = amountsToClaim_;
         }
 
-        vm.prank(user);
+        /// @dev tests a claim initiated by a random user on behalf of user
+        vm.prank(address(0x777));
         rewards.batchClaim(user, periodIds, tokensToClaim, amountsToClaim, proofs);
 
         vm.expectRevert(IRewardsDistributor.ALREADY_CLAIMED.selector);

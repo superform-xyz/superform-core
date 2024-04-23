@@ -39,6 +39,9 @@ interface IRewardsDistributor {
     /// @dev error message for when the claimer has already claimed their rewards
     error ALREADY_CLAIMED();
 
+    /// @dev error message for when the claim deadline has passed
+    error CLAIM_DEADLINE_PASSED();
+
     //////////////////////////////////////////////////////////////
     //                      EVENTS                              //
     //////////////////////////////////////////////////////////////
@@ -53,7 +56,16 @@ interface IRewardsDistributor {
     );
 
     /// @dev Emitted when new periodic rewards are set.
-    event PeriodicRewardsSet(uint256 indexed periodId, bytes32 merkleRoot);
+    event PeriodicRewardsSet(uint256 indexed periodId, bytes32 merkleRoot, uint256 deadline);
+
+    //////////////////////////////////////////////////////////////
+    //                      STRUCTS                             //
+    //////////////////////////////////////////////////////////////
+
+    struct PeriodicRewardsData {
+        uint256 deadline;
+        bytes32 merkleRoot;
+    }
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
