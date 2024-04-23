@@ -433,14 +433,25 @@ abstract contract MainnetBaseSetup is DSTest, StdInvariant, Test {
         gasUsed[ARBI][4] = abi.encode(1_400_000);
         gasUsed[BASE][4] = abi.encode(200_000);
 
-        // withdrawGasUsed == 6 (incl. cost to update)
-        gasUsed[ETH][6] = abi.encode(600_000);
-        gasUsed[BSC][6] = abi.encode(1_500_000);
-        gasUsed[AVAX][6] = abi.encode(1_000_000);
-        gasUsed[POLY][6] = abi.encode(1_000_000);
-        gasUsed[OP][6] = abi.encode(1_000_000);
-        gasUsed[ARBI][6] = abi.encode(2_500_000);
-        gasUsed[BASE][6] = abi.encode(1_500_000);
+        // withdrawGasUsed == 6
+        gasUsed[ETH][6] = abi.encode(1_272_330);
+        gasUsed[BSC][6] = abi.encode(837_167);
+        gasUsed[AVAX][6] = abi.encode(1_494_028);
+        gasUsed[POLY][6] = abi.encode(1_119_242);
+        gasUsed[OP][6] = abi.encode(1_716_146);
+        gasUsed[ARBI][6] = abi.encode(1_654_955);
+        gasUsed[BASE][6] = abi.encode(1_178_778);
+        gasUsed[FANTOM][6] = abi.encode(1_500_000);
+
+        // updateWithdrawGasUsed == 13
+        gasUsed[ETH][13] = abi.encode(356_828);
+        gasUsed[BSC][13] = abi.encode(900_085);
+        gasUsed[AVAX][13] = abi.encode(600_746);
+        gasUsed[POLY][13] = abi.encode(597_978);
+        gasUsed[OP][13] = abi.encode(649_240);
+        gasUsed[ARBI][13] = abi.encode(1_366_122);
+        gasUsed[BASE][13] = abi.encode(919_466);
+        gasUsed[FANTOM][13] = abi.encode(600_000);
 
         mapping(uint64 => uint256) storage forks = FORKS;
         forks[ETH] = vm.createFork(ETHEREUM_RPC_URL);

@@ -404,6 +404,16 @@ contract VaultSharesHandler is InvariantProtocolActions {
         gasUsed[BASE][6] = abi.encode(1_178_778);
         gasUsed[FANTOM][6] = abi.encode(1_500_000);
 
+        // updateWithdrawGasUsed == 13
+        gasUsed[ETH][13] = abi.encode(356_828);
+        gasUsed[BSC][13] = abi.encode(900_085);
+        gasUsed[AVAX][13] = abi.encode(600_746);
+        gasUsed[POLY][13] = abi.encode(597_978);
+        gasUsed[OP][13] = abi.encode(649_240);
+        gasUsed[ARBI][13] = abi.encode(1_366_122);
+        gasUsed[BASE][13] = abi.encode(919_466);
+        gasUsed[FANTOM][13] = abi.encode(600_000);
+
         mapping(uint64 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
         lzEndpointsStorage[ETH] = ETH_lzEndpoint;
         lzEndpointsStorage[BSC] = BSC_lzEndpoint;

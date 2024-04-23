@@ -919,13 +919,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                             /// @dev ackGasCost to move a msg from dst to source
                             10_000,
                             10_000,
-                            200_000
+                            abi.decode(GAS_USED[vars.dstChainId][13], (uint256))
                         )
-                    );
-                    /// @dev !WARNING - Default value for updateWithdrawGas for now
-                    /// @dev 0.01 ether is just a mock value. Wormhole fees are currently 0 on mainnet
-                    PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(
-                        generateBroadcastParams(0.01 ether)
                     );
 
                     vars.superRegistryC.setAddress(
@@ -1044,6 +1039,12 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                     PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 11, abi.encode(50_000));
 
                     PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 12, abi.encode(10_000));
+
+                    /// @dev !WARNING - Default value for updateWithdrawGas for now
+                    /// @dev 0.01 ether is just a mock value. Wormhole fees are currently 0 on mainnet
+                    PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(
+                        generateBroadcastParams(0.01 ether)
+                    );
                 }
             }
         }
@@ -1200,7 +1201,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         gasUsed[BASE][4] = abi.encode(200_000);
         gasUsed[FANTOM][4] = abi.encode(200_000);
 
-        // withdrawGasUsed == 6 (incl. cost to update)
+        // withdrawGasUsed == 6
         gasUsed[ETH][6] = abi.encode(1_272_330);
         gasUsed[BSC][6] = abi.encode(837_167);
         gasUsed[AVAX][6] = abi.encode(1_494_028);
@@ -1209,6 +1210,16 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         gasUsed[ARBI][6] = abi.encode(1_654_955);
         gasUsed[BASE][6] = abi.encode(1_178_778);
         gasUsed[FANTOM][6] = abi.encode(1_500_000);
+
+        // updateWithdrawGasUsed == 13
+        gasUsed[ETH][13] = abi.encode(356_828);
+        gasUsed[BSC][13] = abi.encode(900_085);
+        gasUsed[AVAX][13] = abi.encode(600_746);
+        gasUsed[POLY][13] = abi.encode(597_978);
+        gasUsed[OP][13] = abi.encode(649_240);
+        gasUsed[ARBI][13] = abi.encode(1_366_122);
+        gasUsed[BASE][13] = abi.encode(919_466);
+        gasUsed[FANTOM][13] = abi.encode(600_000);
 
         mapping(uint64 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
         lzEndpointsStorage[ETH] = ETH_lzEndpoint;
