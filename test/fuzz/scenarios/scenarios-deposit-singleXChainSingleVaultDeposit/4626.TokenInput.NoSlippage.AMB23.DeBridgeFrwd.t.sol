@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract SXSVDNormal4626MultiTokenInputNoSlippageDeBridgeAMB23 is ProtocolActions {
+contract SXSVDNormal4626MultiTokenInputNoSlippageDeBridgeFrwdAMB23 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -26,7 +26,7 @@ contract SXSVDNormal4626MultiTokenInputNoSlippageDeBridgeAMB23 is ProtocolAction
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[OP][0] = [7];
+        LIQ_BRIDGES[OP][0] = [8];
 
         RECEIVE_4626[OP][0] = [false];
 

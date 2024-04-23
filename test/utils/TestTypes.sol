@@ -141,6 +141,7 @@ struct SetupVars {
     address deBridgeMock;
     address socketRouter;
     address socketOneInch;
+    address debridgeForwarderMock;
     address liFiMockRugpull;
     address liFiMockBlacklisted;
     address liFiMockSwapToAttacker;
@@ -170,6 +171,7 @@ struct SetupVars {
     address socketValidator;
     address socketOneInchValidator;
     address debridgeValidator;
+    address debridgeForwarderValidator;
     address hashflowValidator;
     Vm.Log[] logs;
     address superPositions;

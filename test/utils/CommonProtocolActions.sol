@@ -292,6 +292,52 @@ abstract contract CommonProtocolActions is BaseSetup {
                 /// metadata
                 abi.encode(args.from, FORKS[args.srcChainId], FORKS[args.liqDstChainId])
             );
+        } else if (args.liqBridgeKind == 8) {
+            bytes memory targetTxData = abi.encodeWithSelector(
+                DeBridgeMock.createSaltedOrder.selector,
+                DlnOrderLib.OrderCreation(
+                    args.externalToken,
+                    args.amount,
+                    abi.encode(args.underlyingTokenDst),
+                    /// take amount
+                    (args.amount * uint256(args.USDPerUnderlyingToken)) / uint256(args.USDPerUnderlyingTokenDst),
+                    uint256(args.toChainId),
+                    abi.encode(getContract(args.toChainId, "CoreStateRegistry")),
+                    address(0),
+                    abi.encode(mockDebridgeAuth),
+                    bytes(""),
+                    bytes(""),
+                    bytes("")
+                ),
+                /// random salt
+                uint64(block.timestamp),
+                /// affliate fee
+                bytes(""),
+                /// referral code
+                uint32(0),
+                /// permit envelope
+                bytes(""),
+                /// metadata
+                abi.encode(args.from, FORKS[args.srcChainId], FORKS[args.liqDstChainId])
+            );
+
+            txData = abi.encodeWithSelector(
+                DeBridgeForwarderMock.strictlySwapAndCall.selector,
+                args.externalToken,
+                args.amount,
+                bytes(""),
+                // src swap router
+                address(0),
+                /// src swap calldata
+                bytes(""),
+                /// src token expected amount
+                args.amount,
+                /// src token refund recipient
+                args.from,
+                /// de bridge target
+                0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
+                targetTxData
+            );
         }
     }
 

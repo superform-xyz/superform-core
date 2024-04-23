@@ -128,7 +128,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         returns (uint256 amount_)
     {
         DecodedQuote memory deBridgeQuote = _decodeTxData(txData_);
-        amount_ = deBridgeQuote.outputAmount;
+        amount_ = deBridgeQuote.inputAmount;
     }
 
     /// @inheritdoc BridgeValidator
