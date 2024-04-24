@@ -63,7 +63,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc BridgeValidator
-    function validateReceiver(bytes calldata txData_, address receiver) external pure override returns (bool) {
+    function validateReceiver(bytes calldata txData_, address receiver) external view override returns (bool) {
         DecodedQuote memory deBridgeQuote = _decodeTxData(txData_);
 
         return (receiver == deBridgeQuote.finalReceiver);
@@ -123,7 +123,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         bool /*genericSwapDisallowed_*/
     )
         external
-        pure
+        view
         override
         returns (uint256 amount_)
     {
@@ -157,12 +157,13 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         address swapOutputToken;
         address swapRefundAddress;
         address bridgeTarget;
-        bytes bytesMemSlot;
+        bytes bridgeTxData;
+        bytes permitEnvelope;
         DlnOrderLib.OrderCreation xChainQuote;
     }
 
     /// NOTE: we should only allow the `tradeXChainRFQT` identifier
-    function _decodeTxData(bytes calldata txData_) internal pure returns (DecodedQuote memory deBridgeQuote) {
+    function _decodeTxData(bytes calldata txData_) internal view returns (DecodedQuote memory deBridgeQuote) {
         InternalVars memory v;
 
         /// @dev supports both the allowed order types by debridge
@@ -170,7 +171,6 @@ contract DeBridgeForwarderValidator is BridgeValidator {
 
         if (v.selector == ICrossChainForwarder.strictlySwapAndCall.selector) {
             /// @decode the input txdata
-            /// @dev bytesMemSlot at this instance in bridgeTxData
             (
                 deBridgeQuote.inputToken,
                 deBridgeQuote.inputAmount,
@@ -181,9 +181,9 @@ contract DeBridgeForwarderValidator is BridgeValidator {
                 ,
                 v.swapRefundAddress,
                 v.bridgeTarget,
-                v.bytesMemSlot
+                v.bridgeTxData
             ) = abi.decode(
-                _parseCallData(txData_),
+                parseCallData(txData_),
                 (address, uint256, bytes, address, bytes, address, uint256, address, address, bytes)
             );
         } else {
@@ -191,17 +191,16 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         }
 
         /// bridge tx data shouldn't be empty
-        if (v.bytesMemSlot.length == 0 || v.bridgeTarget != DE_BRIDGE_SOURCE) revert INVALID_BRIDGE_DATA();
+        if (v.bridgeTxData.length == 0 || v.bridgeTarget != DE_BRIDGE_SOURCE) revert INVALID_BRIDGE_DATA();
 
         /// now decoding the bridge data
-        /// bytesMemSlot at this point is permitEnvelope
-        v.selector = _parseSelectorMem(v.bytesMemSlot);
+        v.selector = _parseSelectorMem(v.bridgeTxData);
         if (v.selector == IDlnSource.createOrder.selector) {
-            (v.xChainQuote,,, v.bytesMemSlot) =
-                abi.decode(_parseCallDataMem(v.bytesMemSlot), (DlnOrderLib.OrderCreation, bytes, uint32, bytes));
+            (v.xChainQuote,,, v.permitEnvelope) =
+                abi.decode(this.parseCallData(v.bridgeTxData), (DlnOrderLib.OrderCreation, bytes, uint32, bytes));
         } else if (v.selector == IDlnSource.createSaltedOrder.selector) {
-            (v.xChainQuote,,,, v.bytesMemSlot,) = abi.decode(
-                _parseCallDataMem(v.bytesMemSlot), (DlnOrderLib.OrderCreation, uint64, bytes, uint32, bytes, bytes)
+            abi.decode(
+                this.parseCallData(v.bridgeTxData), (DlnOrderLib.OrderCreation, uint64, bytes, uint32, bytes, bytes)
             );
         } else {
             revert Error.BLACKLISTED_ROUTE_ID();
@@ -213,7 +212,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
             revert INVALID_SRC_DEBRIDGE_AUTHORITY();
         }
 
-        if (v.bytesMemSlot.length > 0) {
+        if (v.permitEnvelope.length > 0) {
             revert INVALID_PERMIT_ENVELOP();
         }
 
@@ -228,23 +227,16 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         deBridgeQuote.orderAuthorityAddressDst = _castToAddress(v.xChainQuote.orderAuthorityAddressDst);
     }
 
+    /// @dev helps parsing debridge calldata and return the input parameters
+    function parseCallData(bytes calldata callData) public pure returns (bytes calldata) {
+        return callData[4:];
+    }
+
     /// @dev helps parse bytes memory selector
     function _parseSelectorMem(bytes memory data) internal pure returns (bytes4 selector) {
         assembly {
             selector := mload(data)
         }
-    }
-
-    /// @dev helps parse bytes memory selector
-    function _parseCallDataMem(bytes memory data) internal pure returns (bytes memory calldata_) {
-        assembly {
-            calldata_ := add(data, 0x04)
-        }
-    }
-
-    /// @dev helps parsing debridge calldata and return the input parameters
-    function _parseCallData(bytes calldata callData) internal pure returns (bytes calldata) {
-        return callData[4:];
     }
 
     /// @dev helps cast bytes to address
