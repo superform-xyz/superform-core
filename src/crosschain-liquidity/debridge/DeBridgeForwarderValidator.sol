@@ -199,7 +199,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
             (v.xChainQuote,,, v.permitEnvelope) =
                 abi.decode(this.parseCallData(v.bridgeTxData), (DlnOrderLib.OrderCreation, bytes, uint32, bytes));
         } else if (v.selector == IDlnSource.createSaltedOrder.selector) {
-            abi.decode(
+            (v.xChainQuote,,,, v.permitEnvelope,) = abi.decode(
                 this.parseCallData(v.bridgeTxData), (DlnOrderLib.OrderCreation, uint64, bytes, uint32, bytes, bytes)
             );
         } else {
@@ -235,7 +235,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
     /// @dev helps parse bytes memory selector
     function _parseSelectorMem(bytes memory data) internal pure returns (bytes4 selector) {
         assembly {
-            selector := mload(data)
+            selector := mload(add(data, 0x20))
         }
     }
 
