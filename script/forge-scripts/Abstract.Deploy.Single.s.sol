@@ -872,7 +872,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         SuperRBAC srbac = SuperRBAC(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRBAC")));
         bytes32 protocolAdminRole = srbac.PROTOCOL_ADMIN_ROLE();
         bytes32 emergencyAdminRole = srbac.EMERGENCY_ADMIN_ROLE();
-        bytes32 paymentAdminRole = srbac.PAYMENT_ADMIN__ROLE();
+        bytes32 paymentAdminRole = srbac.PAYMENT_ADMIN_ROLE();
 
         if (grantProtocolAdmin) {
             srbac.grantRole(
