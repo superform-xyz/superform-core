@@ -159,7 +159,7 @@ abstract contract BatchScript is Script, DelegatePrank {
             SAFE_API_BASE_URL = "https://safe-transaction-base.safe.global/api/v1/safes/";
             SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
         } else if (chainId == 250) {
-            SAFE_API_BASE_URL = "https://safe-transaction-fantom.safe.global/api/v1/safes/";
+            SAFE_API_BASE_URL = "https://safe-txservice.fantom.network/api/v1/safes/";
             SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
         } else {
             revert("Unsupported chain");
