@@ -13,18 +13,18 @@ export BASE_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BASE_RPC_URL/crede
 
 echo Running Update PaymentHelper: ...
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.UpdatePaymentHelper.s.sol:MainnetUpdatePaymentHelper --sig "updatePaymentHelper(uint256,uint256)" 1 0 --rpc-url $BSC_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.UpdatePaymentHelper.s.sol:MainnetUpdatePaymentHelper --sig "updatePaymentHelper(uint256,uint256)" 1 0 --rpc-url $BSC_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
 wait
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.UpdatePaymentHelper.s.sol:MainnetUpdatePaymentHelper --sig "updatePaymentHelper(uint256,uint256)" 1 1 --rpc-url $ARBITRUM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.UpdatePaymentHelper.s.sol:MainnetUpdatePaymentHelper --sig "updatePaymentHelper(uint256,uint256)" 1 1 --rpc-url $ARBITRUM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 
 wait
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.UpdatePaymentHelper.s.sol:MainnetUpdatePaymentHelper --sig "updatePaymentHelper(uint256,uint256)" 1 2 --rpc-url $OPTIMISM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.UpdatePaymentHelper.s.sol:MainnetUpdatePaymentHelper --sig "updatePaymentHelper(uint256,uint256)" 1 2 --rpc-url $OPTIMISM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
 wait
 
-FOUNDRY_PROFILE=default forge script script/forge-scripts/misc/Mainnet.UpdatePaymentHelper.s.sol:MainnetUpdatePaymentHelper --sig "updatePaymentHelper(uint256,uint256)" 1 3 --rpc-url $BASE_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.UpdatePaymentHelper.s.sol:MainnetUpdatePaymentHelper --sig "updatePaymentHelper(uint256,uint256)" 1 3 --rpc-url $BASE_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
 wait

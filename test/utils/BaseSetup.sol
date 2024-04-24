@@ -76,6 +76,7 @@ import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { Error } from "src/libraries/Error.sol";
+import { RewardsDistributor } from "src/RewardsDistributor.sol";
 import "src/types/DataTypes.sol";
 import "./TestTypes.sol";
 
@@ -109,7 +110,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[34] public contractNames = [
+    string[35] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -143,7 +144,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         "EmergencyQueue",
         "SocketOneInchValidator",
         "DeBridgeValidator",
-        "DeBridgeForwarderValidator"
+        "DeBridgeForwarderValidator" "RewardsDistributor"
     ];
 
     /*//////////////////////////////////////////////////////////////
@@ -365,7 +366,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         [address(0), address(0), address(0), 0x205E10d3c4C87E26eB66B1B270b71b7708494dB9, address(0), address(0)];
 
     function setUp() public virtual {
-        _preDeploymentSetup();
+        _preDeploymentSetup(true, false);
 
         _fundNativeTokens();
 
@@ -851,12 +852,21 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_RECEIVER(), deployer, vars.chainId);
 
             vars.superRegistryC.setDelay(86_400);
-            /// @dev 17 deploy emergency queue
+            /// @dev 19 deploy emergency queue
             vars.emergencyQueue = address(new EmergencyQueue{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("EmergencyQueue"))] = vars.emergencyQueue;
             vars.superRegistryC.setAddress(vars.superRegistryC.EMERGENCY_QUEUE(), vars.emergencyQueue, vars.chainId);
             delete bridgeAddresses;
             delete bridgeValidators;
+
+            /// @dev 20 deploy Rewards Distributor
+            vars.rewardsDistributor = address(new RewardsDistributor{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("RewardsDistributor"))] = vars.rewardsDistributor;
+
+            bytes32 rewardsId = keccak256("REWARDS_DISTRIBUTOR");
+            vars.superRegistryC.setAddress(rewardsId, vars.rewardsDistributor, vars.chainId);
+            vars.superRBACC.setRoleAdmin(keccak256("REWARDS_ADMIN_ROLE"), vars.superRBACC.PROTOCOL_ADMIN_ROLE());
+            vars.superRBACC.grantRole(keccak256("REWARDS_ADMIN_ROLE"), deployer);
         }
 
         for (uint256 i = 0; i < chainIds.length; ++i) {
@@ -956,13 +966,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                             /// @dev ackGasCost to move a msg from dst to source
                             10_000,
                             10_000,
-                            200_000
+                            abi.decode(GAS_USED[vars.dstChainId][13], (uint256))
                         )
-                    );
-                    /// @dev !WARNING - Default value for updateWithdrawGas for now
-                    /// @dev 0.01 ether is just a mock value. Wormhole fees are currently 0 on mainnet
-                    PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(
-                        generateBroadcastParams(0.01 ether)
                     );
 
                     vars.superRegistryC.setAddress(
@@ -1031,7 +1036,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                         vars.dstChainId
                     );
 
-                    /// @dev FIXME - in mainnet who is this?
                     vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), deployer, vars.dstChainId);
                     vars.superRegistryC.setAddress(
                         vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), deployer, vars.dstChainId
@@ -1056,6 +1060,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                         vars.superRegistryC.DST_SWAPPER_PROCESSOR(), deployer, vars.dstChainId
                     );
                     vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_RECEIVER(), deployer, vars.dstChainId);
+
+                    vars.superRegistryC.setAddress(keccak256("REWARDS_DISTRIBUTOR"), deployer, vars.dstChainId);
                 } else {
                     /// ack gas cost: 40000
                     /// timelock step form cost: 50000
@@ -1081,6 +1087,12 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                     PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 11, abi.encode(50_000));
 
                     PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 12, abi.encode(10_000));
+
+                    /// @dev !WARNING - Default value for updateWithdrawGas for now
+                    /// @dev 0.01 ether is just a mock value. Wormhole fees are currently 0 on mainnet
+                    PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(
+                        generateBroadcastParams(0.01 ether)
+                    );
                 }
             }
         }
@@ -1193,17 +1205,19 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         tokenPriceFeeds[FANTOM][NATIVE_TOKEN] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
     }
 
-    function _preDeploymentSetup() internal virtual {
+    function _preDeploymentSetup(bool pinnedBlock, bool invariant) internal {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
-        forks[ETH] = vm.createFork(ETHEREUM_RPC_URL, 18_432_589);
-        forks[BSC] = vm.createFork(BSC_RPC_URL, 32_899_049);
-        forks[AVAX] = vm.createFork(AVALANCHE_RPC_URL, 36_974_720);
-        forks[POLY] = vm.createFork(POLYGON_RPC_URL, 49_118_079);
-        forks[ARBI] = vm.createFork(ARBITRUM_RPC_URL, 143_659_807);
-        forks[OP] = vm.createFork(OPTIMISM_RPC_URL, 111_390_769);
-        forks[BASE] = vm.createFork(BASE_RPC_URL);
-        forks[FANTOM] = vm.createFork(FANTOM_RPC_URL, 78_945_396);
+        if (!invariant) {
+            forks[ETH] = pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 18_432_589) : vm.createFork(ETHEREUM_RPC_URL);
+            forks[BSC] = pinnedBlock ? vm.createFork(BSC_RPC_URL, 32_899_049) : vm.createFork(BSC_RPC_URL);
+            forks[AVAX] = pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 36_974_720) : vm.createFork(AVALANCHE_RPC_URL);
+            forks[POLY] = pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 49_118_079) : vm.createFork(POLYGON_RPC_URL);
+            forks[ARBI] = pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 143_659_807) : vm.createFork(ARBITRUM_RPC_URL);
+            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 111_390_769) : vm.createFork(OPTIMISM_RPC_URL);
+            forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL);
+            forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 78_945_396) : vm.createFork(FANTOM_RPC_URL);
+        }
 
         mapping(uint64 => string) storage rpcURLs = RPC_URLS;
         rpcURLs[ETH] = ETHEREUM_RPC_URL;
@@ -1237,7 +1251,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         gasUsed[BASE][4] = abi.encode(200_000);
         gasUsed[FANTOM][4] = abi.encode(200_000);
 
-        // withdrawGasUsed == 6 (incl. cost to update)
+        // withdrawGasUsed == 6
         gasUsed[ETH][6] = abi.encode(1_272_330);
         gasUsed[BSC][6] = abi.encode(837_167);
         gasUsed[AVAX][6] = abi.encode(1_494_028);
@@ -1246,6 +1260,16 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         gasUsed[ARBI][6] = abi.encode(1_654_955);
         gasUsed[BASE][6] = abi.encode(1_178_778);
         gasUsed[FANTOM][6] = abi.encode(1_500_000);
+
+        // updateWithdrawGasUsed == 13
+        gasUsed[ETH][13] = abi.encode(356_828);
+        gasUsed[BSC][13] = abi.encode(900_085);
+        gasUsed[AVAX][13] = abi.encode(600_746);
+        gasUsed[POLY][13] = abi.encode(597_978);
+        gasUsed[OP][13] = abi.encode(649_240);
+        gasUsed[ARBI][13] = abi.encode(1_366_122);
+        gasUsed[BASE][13] = abi.encode(919_466);
+        gasUsed[FANTOM][13] = abi.encode(600_000);
 
         mapping(uint64 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
         lzEndpointsStorage[ETH] = ETH_lzEndpoint;
@@ -1460,7 +1484,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                     uint32 formImplementationId
                         => mapping(string underlying => mapping(uint256 vaultKindIndex => address realVault))
                 )
-            ) storage existingVaults = REAL_VAULT_ADDRESS;
+        ) storage existingVaults = REAL_VAULT_ADDRESS;
 
         existingVaults[43_114][1]["DAI"][0] = 0x75A8cFB425f366e424259b114CaeE5f634C07124;
         existingVaults[43_114][1]["USDC"][0] = 0xB4001622c02F1354A3CfF995b7DaA15b1d47B0fe;

@@ -173,6 +173,7 @@ struct SetupVars {
     address debridgeValidator;
     address debridgeForwarderValidator;
     address hashflowValidator;
+    address rewardsDistributor;
     Vm.Log[] logs;
     address superPositions;
     address kycDAOMock;

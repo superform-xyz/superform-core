@@ -3,16 +3,13 @@ pragma solidity ^0.8.23;
 
 import "../EnvironmentUtils.s.sol";
 
-import { BatchScript } from "../safe/BatchScript.sol";
-
-
 struct UpdateVars {
     uint64 chainId;
     uint64 dstChainId;
     uint256 dstTrueIndex;
 }
 
-abstract contract AbstractUpdatePaymentHelper is BatchScript, EnvironmentUtils {
+abstract contract AbstractUpdatePaymentHelper is EnvironmentUtils {
     function _setGasUsed() internal {
         mapping(uint64 => mapping(uint256 => bytes)) storage gasUsed = GAS_USED;
 

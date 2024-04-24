@@ -2,7 +2,6 @@
 pragma solidity ^0.8.23;
 
 import "../EnvironmentUtils.s.sol";
-import { BatchScript } from "../safe/BatchScript.sol";
 
 struct UpdateVars {
     uint64 chainId;
@@ -18,7 +17,7 @@ struct UpdateVars {
     SuperRBAC superRBACC;
 }
 
-abstract contract AbstractEnableBroadcasting is BatchScript, EnvironmentUtils {
+abstract contract AbstractEnableBroadcasting is EnvironmentUtils {
     function _enableBroadcasting(
         uint256 env,
         uint256 i,

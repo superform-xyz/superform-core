@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "merkle": "node test/utils/merkle/merkle-js/generateMerkleTree.js",
+    "merkle-randomInput": "node test/utils/merkle/merkle-js/generateMerkleTreeLite.js"
+  },
+  "dependencies": {
+    "@openzeppelin/merkle-tree": "^1.0.5"
+  }
+}
