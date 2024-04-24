@@ -23,6 +23,7 @@ out = "out"
 script = "script"
 src = "src"
 test = "test"
+memory_limit = 1000000000
 
 [profile.localdev]
 optimizer = false

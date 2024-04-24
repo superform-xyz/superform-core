@@ -330,6 +330,7 @@ abstract contract CommonProtocolActions is BaseSetup {
                 address(0),
                 /// src swap calldata
                 bytes(""),
+                args.externalToken,
                 /// src token expected amount
                 args.amount,
                 /// src token refund recipient

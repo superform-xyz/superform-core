@@ -54,6 +54,8 @@ contract DeBridgeForwarderMock is Test {
             abi.decode(v.quote.receiverDst, (address)),
             v.quote.takeAmount
         );
+
+        vm.selectFork(v.fromChainId);
     }
 
     /// @dev helps parse bytes memory selector
