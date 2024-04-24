@@ -76,7 +76,7 @@ abstract contract AbstractDeployRewardsDistributor is EnvironmentUtils {
 
         bytes32 rewardsId = keccak256("REWARDS_DISTRIBUTOR");
 
-        //vars.superRegistryC.setAddress(rewardsId, rewards, vars.chainId);
+        vars.superRegistryC.setAddress(rewardsId, rewards, vars.chainId);
 
         vars.superRBACC = SuperRBAC(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRBAC")));
 
@@ -88,8 +88,8 @@ abstract contract AbstractDeployRewardsDistributor is EnvironmentUtils {
         bytes32 role = keccak256("REWARDS_ADMIN_ROLE");
         assert(REWARDS_ADMIN != address(0));
 
-        //vars.superRBACC.setRoleAdmin(role, vars.superRBACC.PROTOCOL_ADMIN_ROLE());
-        //vars.superRBACC.grantRole(role, REWARDS_ADMIN);
+        vars.superRBACC.setRoleAdmin(role, vars.superRBACC.PROTOCOL_ADMIN_ROLE());
+        vars.superRBACC.grantRole(role, REWARDS_ADMIN);
 
         /// @dev configure remotes based on source chain
         for (uint256 j = 0; j < finalDeployedChains.length; j++) {

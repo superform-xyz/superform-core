@@ -415,7 +415,7 @@ abstract contract AbstractDeploySingle is BatchScript {
                 ISuperRBAC.InitialRoleSetup({
                     admin: ownerAddress,
                     emergencyAdmin: ownerAddress,
-                    paymentAdmin: PAYMENT_ADMIN,
+                    paymentAdmin: ownerAddress,
                     csrProcessor: CSR_PROCESSOR,
                     tlProcessor: EMERGENCY_ADMIN,
                     /// @dev Temporary, as we are not using this processor in this release
@@ -730,42 +730,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// @dev 18 deploy vault claimer
         contracts[vars.chainId][bytes32(bytes("VaultClaimer"))] = address(new VaultClaimer{ salt: salt }());
 
-        /// @dev 19 deploy rewards distributor
-        vars.rewardsDistributor = address(new RewardsDistributor{ salt: salt }(vars.superRegistry));
-        contracts[vars.chainId][bytes32(bytes("RewardsDistributor"))] = vars.rewardsDistributor;
-
-        vars.superRegistryC.setAddress(rewardsDistributorId, vars.rewardsDistributor, vars.chainId);
-
-        assert(REWARDS_ADMIN != address(0));
-
-        vars.superRBACC.setRoleAdmin(rewardsAdminRole, vars.superRBACC.PROTOCOL_ADMIN_ROLE());
-        vars.superRBACC.grantRole(rewardsAdminRole, REWARDS_ADMIN);
-
-        vm.stopBroadcast();
-
-        /// @dev Exports
-        for (uint256 j = 0; j < contractNames.length; j++) {
-            _exportContractsV1(
-                env, chainNames[trueIndex], contractNames[j], getContract(vars.chainId, contractNames[j]), vars.chainId
-            );
-        }
-    }
-
-    /// @dev to allow PaymentAdmin to perform configurations
-    function _fireblocksPaymentAdminConfigurations(
-        uint256 env,
-        uint256 trueIndex,
-        Cycle cycle
-    )
-        internal
-        setEnvDeploy(cycle)
-    {
-        SetupVars memory vars;
-        vars.paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
-
-        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
-
-        /// @dev 18 configure payment helper
+        /// @dev 19 configure payment helper
         PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
             vars.chainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
         );
@@ -790,7 +755,25 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// @dev !WARNING - Default value for updateWithdrawGas for now
         PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(abi.encode(4, abi.encode(0, "")));
 
+        /// @dev 20 deploy rewards distributor
+        vars.rewardsDistributor = address(new RewardsDistributor{ salt: salt }(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("RewardsDistributor"))] = vars.rewardsDistributor;
+
+        vars.superRegistryC.setAddress(rewardsDistributorId, vars.rewardsDistributor, vars.chainId);
+
+        assert(REWARDS_ADMIN != address(0));
+
+        vars.superRBACC.setRoleAdmin(rewardsAdminRole, vars.superRBACC.PROTOCOL_ADMIN_ROLE());
+        vars.superRBACC.grantRole(rewardsAdminRole, REWARDS_ADMIN);
+
         vm.stopBroadcast();
+
+        /// @dev Exports
+        for (uint256 j = 0; j < contractNames.length; j++) {
+            _exportContractsV1(
+                env, chainNames[trueIndex], contractNames[j], getContract(vars.chainId, contractNames[j]), vars.chainId
+            );
+        }
     }
 
     /// @dev stage 2 must be called only after stage 1 is complete for all chains!
@@ -837,32 +820,30 @@ abstract contract AbstractDeploySingle is BatchScript {
             new IPaymentHelper.PaymentHelperConfig[](remoteChainIds.length);
 
         /// @dev Set all trusted remotes for each chain & configure amb chains ids
-        for (uint256 j = 0; j < finalDeployedChains.length; j++) {
-            if (j != i) {
-                addRemoteConfigs[j] = _configureCurrentChainBasedOnTargetDestinations(
-                    env,
-                    CurrentChainBasedOnDstvars(
-                        vars.chainId,
-                        finalDeployedChains[j],
-                        0,
-                        0,
-                        0,
-                        0,
-                        vars.lzImplementation,
-                        vars.hyperlaneImplementation,
-                        vars.wormholeImplementation,
-                        vars.wormholeSRImplementation,
-                        vars.superRegistry,
-                        vars.paymentHelper,
-                        address(0),
-                        address(0),
-                        address(0),
-                        address(0),
-                        vars.superRegistryC
-                    ),
-                    false
-                );
-            }
+        for (uint256 j = 0; j < remoteChainIds.length; j++) {
+            addRemoteConfigs[j] = _configureCurrentChainBasedOnTargetDestinations(
+                env,
+                CurrentChainBasedOnDstvars(
+                    vars.chainId,
+                    remoteChainIds[j],
+                    0,
+                    0,
+                    0,
+                    0,
+                    vars.lzImplementation,
+                    vars.hyperlaneImplementation,
+                    vars.wormholeImplementation,
+                    vars.wormholeSRImplementation,
+                    vars.superRegistry,
+                    vars.paymentHelper,
+                    address(0),
+                    address(0),
+                    address(0),
+                    address(0),
+                    vars.superRegistryC
+                ),
+                false
+            );
         }
 
         PaymentHelper(payable(vars.paymentHelper)).addRemoteChains(remoteChainIds, addRemoteConfigs);
@@ -891,6 +872,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         SuperRBAC srbac = SuperRBAC(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRBAC")));
         bytes32 protocolAdminRole = srbac.PROTOCOL_ADMIN_ROLE();
         bytes32 emergencyAdminRole = srbac.EMERGENCY_ADMIN_ROLE();
+        bytes32 paymentAdminRole = srbac.PAYMENT_ADMIN__ROLE();
 
         if (grantProtocolAdmin) {
             srbac.grantRole(
@@ -899,8 +881,10 @@ abstract contract AbstractDeploySingle is BatchScript {
         }
 
         srbac.grantRole(emergencyAdminRole, EMERGENCY_ADMIN);
+        srbac.grantRole(paymentAdminRole, PAYMENT_ADMIN);
 
         srbac.revokeRole(emergencyAdminRole, ownerAddress);
+        srbac.revokeRole(paymentAdminRole, ownerAddress);
         srbac.revokeRole(protocolAdminRole, ownerAddress);
 
         vm.stopBroadcast();

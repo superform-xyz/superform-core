@@ -17,15 +17,6 @@ FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy
 
 wait
 
-echo Running Stage 1 Fireblocks PaymentAdmin configurations: ...
-
-export FIREBLOCKS_CHAIN_ID=250
-
-fireblocks-json-rpc --http -- forge script cript/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "stage1FireblocksPaymentAdmin(uint256,uint256)" 1 0 \
-    --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3 --broadcast --unlocked --slow
-
-wait
-
 echo Running Stage 2: ...
 
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "deployStage2(uint256,uint256)" 1 0 --rpc-url $FANTOM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
