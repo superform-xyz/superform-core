@@ -3,8 +3,6 @@ pragma solidity ^0.8.23;
 
 import "../EnvironmentUtils.s.sol";
 
-import { BatchScript } from "../safe/BatchScript.sol";
-
 struct UpdateVars {
     uint64 chainId;
     uint64 dstChainId;
@@ -12,7 +10,7 @@ struct UpdateVars {
     SuperRegistry superRegistryC;
 }
 
-abstract contract AbstractDeployPaymentHelperV2 is BatchScript, EnvironmentUtils {
+abstract contract AbstractDeployPaymentHelperV2 is EnvironmentUtils {
     function _deployPaymentHelper(
         uint256 env,
         uint256 i,
@@ -58,21 +56,15 @@ abstract contract AbstractDeployPaymentHelperV2 is BatchScript, EnvironmentUtils
         internal
         setEnvDeploy(cycle)
     {
+        _preDeploymentSetup();
         assert(salt.length > 0);
         UpdateVars memory vars;
 
         vars.chainId = finalDeployedChains[i];
 
         cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
-        vars.superRegistryC =
-            SuperRegistry(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry")));
-        address expectedSr =
-            env == 0 ? 0x17A332dC7B40aE701485023b219E9D6f493a2514 : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
-        assert(address(vars.superRegistryC) == expectedSr);
 
         address paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
-
-        vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_HELPER(), paymentHelper, vars.chainId);
 
         uint256[] memory configTypes = new uint256[](7);
         configTypes[0] = 1;
@@ -96,14 +88,46 @@ abstract contract AbstractDeployPaymentHelperV2 is BatchScript, EnvironmentUtils
 
         PaymentHelper(payable(paymentHelper)).updateRegisterAERC20Params(abi.encode(4, abi.encode(0, "")));
 
+        vm.stopBroadcast();
+    }
+
+    function _protocolAdminConfigsStaging(
+        uint256 env,
+        uint256 i,
+        uint256 trueIndex,
+        Cycle cycle,
+        uint64[] memory finalDeployedChains
+    )
+        internal
+        setEnvDeploy(cycle)
+    {
+        _preDeploymentSetup();
+
+        assert(salt.length > 0);
+        UpdateVars memory vars;
+
+        vars.chainId = finalDeployedChains[i];
+
+        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
+
+        vars.superRegistryC =
+            SuperRegistry(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry")));
+        address expectedSr =
+            env == 0 ? 0x17A332dC7B40aE701485023b219E9D6f493a2514 : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
+        assert(address(vars.superRegistryC) == expectedSr);
+
+        address paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
+
         uint64[] memory remoteChainIds = new uint64[](finalDeployedChains.length - 1);
+        uint256 remoteChains;
         for (uint256 j = 0; j < finalDeployedChains.length; j++) {
             if (j != i) {
-                remoteChainIds[j] = finalDeployedChains[j];
+                remoteChainIds[remoteChains] = finalDeployedChains[j];
+                ++remoteChains;
             }
         }
 
-        IPaymentHelper.PaymentHelperConfig[] memory addRemoteConfig =
+        IPaymentHelper.PaymentHelperConfig[] memory addRemoteConfigs =
             new IPaymentHelper.PaymentHelperConfig[](remoteChainIds.length);
 
         for (uint256 j = 0; j < remoteChainIds.length; j++) {
@@ -115,13 +139,12 @@ abstract contract AbstractDeployPaymentHelperV2 is BatchScript, EnvironmentUtils
                 }
             }
 
-            assert(PRICE_FEEDS[vars.chainId][remoteChainIds[j]] != address(0));
             assert(abi.decode(GAS_USED[remoteChainIds[j]][3], (uint256)) > 0);
             assert(abi.decode(GAS_USED[remoteChainIds[j]][4], (uint256)) > 0);
             assert(abi.decode(GAS_USED[remoteChainIds[j]][6], (uint256)) > 0);
             assert(abi.decode(GAS_USED[remoteChainIds[j]][13], (uint256)) > 0);
 
-            addRemoteConfig[j] = IPaymentHelper.PaymentHelperConfig(
+            addRemoteConfigs[j] = IPaymentHelper.PaymentHelperConfig(
                 PRICE_FEEDS[vars.chainId][remoteChainIds[j]],
                 address(0),
                 abi.decode(GAS_USED[remoteChainIds[j]][3], (uint256)),
@@ -139,35 +162,7 @@ abstract contract AbstractDeployPaymentHelperV2 is BatchScript, EnvironmentUtils
             );
         }
 
-        PaymentHelper(payable(paymentHelper)).addRemoteChains(remoteChainIds, addRemoteConfig);
-
-        vm.stopBroadcast();
-    }
-
-    function _configureSuperRegistryStaging(
-        uint256 env,
-        uint256 i,
-        uint256 trueIndex,
-        Cycle cycle,
-        uint64[] memory finalDeployedChains
-    )
-        internal
-        setEnvDeploy(cycle)
-    {
-        assert(salt.length > 0);
-        UpdateVars memory vars;
-
-        vars.chainId = finalDeployedChains[i];
-
-        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
-
-        vars.superRegistryC =
-            SuperRegistry(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry")));
-        address expectedSr =
-            env == 0 ? 0x17A332dC7B40aE701485023b219E9D6f493a2514 : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
-        assert(address(vars.superRegistryC) == expectedSr);
-
-        address paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
+        PaymentHelper(payable(paymentHelper)).addRemoteChains(remoteChainIds, addRemoteConfigs);
 
         vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_HELPER(), paymentHelper, vars.chainId);
 
@@ -190,7 +185,7 @@ abstract contract AbstractDeployPaymentHelperV2 is BatchScript, EnvironmentUtils
         vm.stopBroadcast();
     }
 
-    function _configureSuperRegistryProd(
+    function _protocolAdminConfigsProd(
         uint256 env,
         uint256 i,
         uint256 trueIndex,
@@ -200,6 +195,8 @@ abstract contract AbstractDeployPaymentHelperV2 is BatchScript, EnvironmentUtils
         internal
         setEnvDeploy(cycle)
     {
+        _preDeploymentSetup();
+
         assert(salt.length > 0);
         UpdateVars memory vars;
 
@@ -213,7 +210,56 @@ abstract contract AbstractDeployPaymentHelperV2 is BatchScript, EnvironmentUtils
 
         address paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
 
-        bytes memory txn = abi.encodeWithSelector(
+        uint64[] memory remoteChainIds = new uint64[](finalDeployedChains.length - 1);
+        uint256 remoteChains;
+        for (uint256 j = 0; j < finalDeployedChains.length; j++) {
+            if (j != i) {
+                remoteChainIds[remoteChains] = finalDeployedChains[j];
+                ++remoteChains;
+            }
+        }
+
+        IPaymentHelper.PaymentHelperConfig[] memory addRemoteConfigs =
+            new IPaymentHelper.PaymentHelperConfig[](remoteChainIds.length);
+
+        for (uint256 j = 0; j < remoteChainIds.length; j++) {
+            for (uint256 k = 0; k < chainIds.length; k++) {
+                if (remoteChainIds[j] == chainIds[k]) {
+                    vars.dstTrueIndex = k;
+
+                    break;
+                }
+            }
+
+            assert(PRICE_FEEDS[vars.chainId][remoteChainIds[j]] != address(0));
+            assert(abi.decode(GAS_USED[remoteChainIds[j]][3], (uint256)) > 0);
+            assert(abi.decode(GAS_USED[remoteChainIds[j]][4], (uint256)) > 0);
+            assert(abi.decode(GAS_USED[remoteChainIds[j]][6], (uint256)) > 0);
+            assert(abi.decode(GAS_USED[remoteChainIds[j]][13], (uint256)) > 0);
+
+            addRemoteConfigs[j] = IPaymentHelper.PaymentHelperConfig(
+                PRICE_FEEDS[vars.chainId][remoteChainIds[j]],
+                address(0),
+                abi.decode(GAS_USED[remoteChainIds[j]][3], (uint256)),
+                abi.decode(GAS_USED[remoteChainIds[j]][4], (uint256)),
+                remoteChainIds[j] == ARBI ? 1_000_000 : 200_000,
+                abi.decode(GAS_USED[remoteChainIds[j]][6], (uint256)),
+                nativePrices[vars.dstTrueIndex],
+                gasPrices[vars.dstTrueIndex],
+                750,
+                2_000_000,
+                /// @dev ackGasCost to move a msg from dst to source
+                10_000,
+                10_000,
+                abi.decode(GAS_USED[remoteChainIds[j]][13], (uint256))
+            );
+        }
+
+        bytes memory txn =
+            abi.encodeWithSelector(PaymentHelper.addRemoteChains.selector, remoteChainIds, addRemoteConfigs);
+        addToBatch(paymentHelper, 0, txn);
+
+        txn = abi.encodeWithSelector(
             vars.superRegistryC.setAddress.selector, vars.superRegistryC.PAYMENT_HELPER(), paymentHelper, vars.chainId
         );
         addToBatch(address(vars.superRegistryC), 0, txn);

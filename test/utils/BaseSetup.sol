@@ -817,16 +817,19 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_RECEIVER(), deployer, vars.chainId);
 
             vars.superRegistryC.setDelay(86_400);
-            /// @dev 17 deploy emergency queue
+            /// @dev 19 deploy emergency queue
             vars.emergencyQueue = address(new EmergencyQueue{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("EmergencyQueue"))] = vars.emergencyQueue;
             vars.superRegistryC.setAddress(vars.superRegistryC.EMERGENCY_QUEUE(), vars.emergencyQueue, vars.chainId);
             delete bridgeAddresses;
             delete bridgeValidators;
 
-            /// @dev 18 deploy Rewards Distributor
+            /// @dev 20 deploy Rewards Distributor
             vars.rewardsDistributor = address(new RewardsDistributor{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("RewardsDistributor"))] = vars.rewardsDistributor;
+
+            bytes32 rewardsId = keccak256("REWARDS_DISTRIBUTOR");
+            vars.superRegistryC.setAddress(rewardsId, vars.rewardsDistributor, vars.chainId);
             vars.superRBACC.setRoleAdmin(keccak256("REWARDS_ADMIN_ROLE"), vars.superRBACC.PROTOCOL_ADMIN_ROLE());
             vars.superRBACC.grantRole(keccak256("REWARDS_ADMIN_ROLE"), deployer);
         }
@@ -997,7 +1000,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                         vars.dstChainId
                     );
 
-                    /// @dev FIXME - in mainnet who is this?
                     vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), deployer, vars.dstChainId);
                     vars.superRegistryC.setAddress(
                         vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), deployer, vars.dstChainId
@@ -1022,6 +1024,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                         vars.superRegistryC.DST_SWAPPER_PROCESSOR(), deployer, vars.dstChainId
                     );
                     vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_RECEIVER(), deployer, vars.dstChainId);
+
+                    vars.superRegistryC.setAddress(keccak256("REWARDS_DISTRIBUTOR"), deployer, vars.dstChainId);
                 } else {
                     /// ack gas cost: 40000
                     /// timelock step form cost: 50000
@@ -1439,7 +1443,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                     uint32 formImplementationId
                         => mapping(string underlying => mapping(uint256 vaultKindIndex => address realVault))
                 )
-            ) storage existingVaults = REAL_VAULT_ADDRESS;
+        ) storage existingVaults = REAL_VAULT_ADDRESS;
 
         existingVaults[43_114][1]["DAI"][0] = 0x75A8cFB425f366e424259b114CaeE5f634C07124;
         existingVaults[43_114][1]["USDC"][0] = 0xB4001622c02F1354A3CfF995b7DaA15b1d47B0fe;

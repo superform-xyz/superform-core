@@ -25,6 +25,23 @@ contract MainnetDeployNewChain is EnvironmentUtils {
         _deployStage1(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_DEPLOYMENT_CHAINS, salt);
     }
 
+    /// @dev to be performed by fireblocks keepers on the new chain
+    function stage1FireblocksPaymentAdmin(uint256 env, uint256 selectedChainIndex) external {
+        _setEnvironment(env);
+
+        _preDeploymentSetup();
+
+        uint256 trueIndex;
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            if (TARGET_DEPLOYMENT_CHAINS[selectedChainIndex] == chainIds[i]) {
+                trueIndex = i;
+                break;
+            }
+        }
+
+        _fireblocksPaymentAdminConfigurations(env, trueIndex, Cycle.Prod);
+    }
+
     /// @dev stage 2 must be called only after stage 1 is complete for all chains!
     function deployStage2(uint256 env, uint256 selectedChainIndex) external {
         _setEnvironment(env);
@@ -73,8 +90,9 @@ contract MainnetDeployNewChain is EnvironmentUtils {
             }
         }
 
+        /// @dev set execute to true to not simulate
         _configurePreviouslyDeployedChainsWithNewChain(
-            env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS, TARGET_DEPLOYMENT_CHAINS[0]
+            env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS, TARGET_DEPLOYMENT_CHAINS[0], false
         );
     }
 }

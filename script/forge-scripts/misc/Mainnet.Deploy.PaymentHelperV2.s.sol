@@ -44,9 +44,9 @@ contract MainnetDeployPaymentHelperV2 is AbstractDeployPaymentHelperV2 {
         }
 
         if (env == 0) {
-            _configureSuperRegistryProd(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
+            _protocolAdminConfigsProd(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
         } else if (env == 1) {
-            _configureSuperRegistryStaging(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
+            _protocolAdminConfigsStaging(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
         }
     }
 }

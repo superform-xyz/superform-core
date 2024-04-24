@@ -54,6 +54,7 @@ file_names=(
     "src/crosschain-data/BroadcastRegistry.sol"
     "src/crosschain-data/adapters/wormhole/specialized-relayer/WormholeSRImplementation.sol"
     "src/crosschain-liquidity/socket/SocketOneInchValidator.sol"
+    "src/RewardsDistributor.sol"
     # Add more file names here if needed
 )
 
@@ -79,6 +80,7 @@ contract_names=(
     "BroadcastRegistry"
     "WormholeSRImplementation"
     "SocketOneInchValidator"
+    "RewardsDistributor"
     # Add more contract names here if needed
 )
 
@@ -92,7 +94,7 @@ contract_addresses=(
     0x2BDC6F9607dcf7FA5b9fe0eE03334772A80Ba03C
     0xAe398C54A5B3c8736c1382C44867d41B12938Cc4
     0x5Ae08549F266a9B4cC95Ad8aac57bE6Af236b647
-    0xfbdCa870c9878d71e6a3A0a312220De153404eA2
+    0xF377FB5737a095f5373c18A631A79DAE7beD98B2
     0x71060c588Aa01e61253EE4ac231Ac1a2bC672Bb8
     0x9CA4480B65E5F3d57cFb942ac44A0A6Ab0B2C843
     0x21b69aC55e3B620aCF74b4362D34d5E51a8187b8
@@ -104,6 +106,7 @@ contract_addresses=(
     0x5767897fc69A77AC68a75001a56fcA6c421adc6f
     0x44b451Ca87267a62A0C853ECFbaaC1C3E528a82C
     0xde882a104F265497782d421b3fDAC589b420289e
+    0xF6ed11A6CDAd581b58a7f60A3cdccf8c17807728
     # Add more addresses here if needed
 )
 
@@ -128,6 +131,7 @@ constructor_args=(
     $empty_constructor_arg
     $super_constructor_arg
     $wormhole_sr_arg
+    $super_constructor_arg
     $super_constructor_arg
 )
 

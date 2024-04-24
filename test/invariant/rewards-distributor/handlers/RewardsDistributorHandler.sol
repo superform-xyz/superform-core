@@ -314,19 +314,12 @@ contract RewardsDistributorHandler is StdInvariant, MerkleReader {
         for (uint256 i = 0; i < vars.chainIds.length; ++i) {
             forks[vars.chainIds[i]] = vars.forksArray[i];
         }
-        _preDeploymentSetup();
+        _preDeploymentSetup(false, true);
 
         for (uint256 i = 0; i < vars.chainIds.length; ++i) {
             for (uint256 j = 0; j < vars.contractNames.length; ++j) {
                 contracts[vars.chainIds[i]][bytes32(bytes(vars.contractNames[j]))] = vars.coreContracts[i][j];
             }
         }
-    }
-
-    /// @dev overrides basesetup _preDeploymentSetup so that forks are not created again
-    function _preDeploymentSetup() internal override {
-        mapping(uint64 => string) storage rpcURLs = RPC_URLS;
-
-        rpcURLs[OP] = OPTIMISM_RPC_URL;
     }
 }

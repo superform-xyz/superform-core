@@ -3,8 +3,6 @@ pragma solidity ^0.8.23;
 
 import "../EnvironmentUtils.s.sol";
 
-import { BatchScript } from "../safe/BatchScript.sol";
-
 struct UpdateVars {
     uint64 chainId;
     uint64 dstChainId;
@@ -13,7 +11,7 @@ struct UpdateVars {
     SuperRBAC superRBACC;
 }
 
-abstract contract AbstractDeployRewardsDistributor is BatchScript, EnvironmentUtils {
+abstract contract AbstractDeployRewardsDistributor is EnvironmentUtils {
     function _deployRewardsDistributor(
         uint256 env,
         uint256 i,
@@ -59,6 +57,8 @@ abstract contract AbstractDeployRewardsDistributor is BatchScript, EnvironmentUt
         internal
         setEnvDeploy(cycle)
     {
+        _preDeploymentSetup();
+
         assert(salt.length > 0);
         UpdateVars memory vars;
 
@@ -76,7 +76,7 @@ abstract contract AbstractDeployRewardsDistributor is BatchScript, EnvironmentUt
 
         bytes32 rewardsId = keccak256("REWARDS_DISTRIBUTOR");
 
-        vars.superRegistryC.setAddress(rewardsId, rewards, vars.chainId);
+        //vars.superRegistryC.setAddress(rewardsId, rewards, vars.chainId);
 
         vars.superRBACC = SuperRBAC(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRBAC")));
 
@@ -87,7 +87,9 @@ abstract contract AbstractDeployRewardsDistributor is BatchScript, EnvironmentUt
 
         bytes32 role = keccak256("REWARDS_ADMIN_ROLE");
         assert(REWARDS_ADMIN != address(0));
-        vars.superRBACC.grantRole(role, REWARDS_ADMIN);
+
+        //vars.superRBACC.setRoleAdmin(role, vars.superRBACC.PROTOCOL_ADMIN_ROLE());
+        //vars.superRBACC.grantRole(role, REWARDS_ADMIN);
 
         /// @dev configure remotes based on source chain
         for (uint256 j = 0; j < finalDeployedChains.length; j++) {
@@ -118,6 +120,8 @@ abstract contract AbstractDeployRewardsDistributor is BatchScript, EnvironmentUt
         internal
         setEnvDeploy(cycle)
     {
+        _preDeploymentSetup();
+
         assert(salt.length > 0);
         UpdateVars memory vars;
 
@@ -145,6 +149,11 @@ abstract contract AbstractDeployRewardsDistributor is BatchScript, EnvironmentUt
 
         bytes32 role = keccak256("REWARDS_ADMIN_ROLE");
         assert(REWARDS_ADMIN != address(0));
+
+        txn = abi.encodeWithSelector(vars.superRBACC.setRoleAdmin.selector, role, vars.superRBACC.PROTOCOL_ADMIN_ROLE());
+
+        addToBatch(address(vars.superRBACC), 0, txn);
+
         txn = abi.encodeWithSelector(vars.superRBACC.grantRole.selector, role, REWARDS_ADMIN);
 
         addToBatch(address(vars.superRBACC), 0, txn);
