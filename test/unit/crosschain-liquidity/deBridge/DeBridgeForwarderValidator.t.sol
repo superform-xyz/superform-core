@@ -214,12 +214,12 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
     }
 
     function test_decodeDstSwap() public {
-        vm.expectRevert(Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN.selector);
+        vm.expectRevert(DeBridgeForwarderValidator.ONLY_SWAPS_DISALLOWED.selector);
         validator.decodeDstSwap(new bytes(0));
     }
 
     function test_decodeSwapOutputToken() public {
-        vm.expectRevert(Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN.selector);
+        vm.expectRevert(DeBridgeForwarderValidator.ONLY_SWAPS_DISALLOWED.selector);
         validator.decodeSwapOutputToken(new bytes(0));
     }
 
@@ -316,6 +316,83 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
 
         vm.expectRevert(DeBridgeForwarderValidator.INVALID_PERMIT_ENVELOP.selector);
         validator.validateReceiver(txDataWithInvalidPermitEnvelope, address(420));
+    }
+
+    function test_decodeTxData_blacklistRoute() public {
+        bytes memory txDataWithInvalidSelector =
+            abi.encodeWithSelector(DeBridgeForwarderValidator.validateTxData.selector, address(420));
+        /// permit envelope for bridge
+
+        vm.expectRevert(Error.BLACKLISTED_ROUTE_ID.selector);
+        validator.validateReceiver(txDataWithInvalidSelector, address(420));
+    }
+
+    function test_decodeTxData_bridgeTxData_blacklistRoute() public {
+        bytes memory txDataWithInvalidSelector = _buildDummyDeBridgeTxData(
+            address(0),
+            100,
+            getContract(BSC, "CoreStateRegistry"),
+            address(0),
+            ETH,
+            BSC,
+            bytes(""),
+            abi.encodeWithSelector(
+                DeBridgeForwarderMock.strictlySwapAndCall.selector,
+                DlnOrderLib.OrderCreation({
+                    giveAmount: 100,
+                    giveTokenAddress: address(0),
+                    takeAmount: 200,
+                    takeTokenAddress: abi.encode(address(1)),
+                    receiverDst: abi.encode(address(0)),
+                    orderAuthorityAddressDst: abi.encode(address(1)), // Invalid authority address
+                    externalCall: new bytes(0),
+                    allowedCancelBeneficiarySrc: bytes(""),
+                    takeChainId: 1,
+                    givePatchAuthoritySrc: address(0),
+                    allowedTakerDst: abi.encode(address(420))
+                }),
+                bytes(""),
+                uint32(1),
+                bytes("")
+            )
+        );
+
+        vm.expectRevert(Error.BLACKLISTED_ROUTE_ID.selector);
+        validator.validateReceiver(txDataWithInvalidSelector, address(420));
+    }
+
+    function test_decodeTxData_bridgeTxData_srcDeBridgeAuthority() public {
+        bytes memory txDataWithInvalidSelector = _buildDummyDeBridgeTxData(
+            address(0),
+            100,
+            getContract(BSC, "CoreStateRegistry"),
+            address(0),
+            ETH,
+            BSC,
+            bytes(""),
+            abi.encodeWithSelector(
+                IDlnSource.createOrder.selector,
+                DlnOrderLib.OrderCreation({
+                    giveAmount: 100,
+                    giveTokenAddress: address(0),
+                    takeAmount: 200,
+                    takeTokenAddress: abi.encode(address(1)),
+                    receiverDst: abi.encode(address(0)),
+                    orderAuthorityAddressDst: abi.encode(address(1)), // Invalid authority address
+                    externalCall: new bytes(0),
+                    allowedCancelBeneficiarySrc: bytes(""),
+                    takeChainId: 1,
+                    givePatchAuthoritySrc: address(321),
+                    allowedTakerDst: abi.encode(address(420))
+                }),
+                bytes(""),
+                uint32(1),
+                bytes("")
+            )
+        );
+
+        vm.expectRevert(DeBridgeForwarderValidator.INVALID_SRC_DEBRIDGE_AUTHORITY.selector);
+        validator.validateReceiver(txDataWithInvalidSelector, address(420));
     }
 
     function _buildDummyDeBridgeTxData(

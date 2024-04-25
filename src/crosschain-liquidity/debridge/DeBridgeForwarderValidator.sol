@@ -83,8 +83,6 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         ) revert INVALID_DEBRIDGE_AUTHORITY();
 
         /// @dev 1. chain id calidation
-        /// FIXME: check if this cast is right
-        /// FIXME: check upstream if the srcChain in this context is the block.chainid
         if (uint64(deBridgeQuote.dstChainId) != args_.liqDstChainId || args_.liqDataToken != deBridgeQuote.inputToken) {
             revert Error.INVALID_TXDATA_CHAIN_ID();
         }
