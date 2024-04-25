@@ -52,6 +52,9 @@ contract DeBridgeForwarderValidator is BridgeValidator {
     /// @dev if source authority address is invalid
     error INVALID_SRC_DEBRIDGE_AUTHORITY();
 
+    /// @dev debridge don't allow same chain swaps
+    error ONLY_SWAPS_DISALLOWED();
+
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
@@ -69,7 +72,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         return (receiver == deBridgeQuote.finalReceiver);
     }
 
-    /// NOTE: check other parameters including: `givePatchAuthoritySrc`
+    /// @notice check other parameters including: `givePatchAuthoritySrc`
     /// @inheritdoc BridgeValidator
     function validateTxData(ValidateTxDataArgs calldata args_) external view override returns (bool hasDstSwap) {
         DecodedQuote memory deBridgeQuote = _decodeTxData(args_.txData);
@@ -87,7 +90,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         }
 
         /// @dev 2. receiver address validation
-        /// @dev allows dst swaps by coupling hashflow with other bridges
+        /// @dev allows dst swaps by coupling debridge with other bridges
         if (args_.deposit) {
             if (args_.srcChainId == args_.dstChainId) {
                 revert Error.INVALID_ACTION();
@@ -107,7 +110,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
                 revert Error.INVALID_TXDATA_RECEIVER();
             }
 
-            /// @dev if there is a dst swap then the interim token should be the quote of hashflow
+            /// @dev if there is a dst swap then the interim token should be the quote of debridge
             if (hasDstSwap && (args_.liqDataInterimToken != deBridgeQuote.outputToken)) {
                 revert Error.INVALID_INTERIM_TOKEN();
             }
@@ -139,13 +142,13 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         returns (address, /*token_*/ uint256 /*amount_*/ )
     {
         /// @dev debridge cannot be used for just swaps
-        revert Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
+        revert ONLY_SWAPS_DISALLOWED();
     }
 
     /// @inheritdoc BridgeValidator
     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
         /// @dev debridge cannot be used for same chain swaps
-        revert Error.CANNOT_DECODE_FINAL_SWAP_OUTPUT_TOKEN();
+        revert ONLY_SWAPS_DISALLOWED();
     }
 
     //////////////////////////////////////////////////////////////
@@ -162,7 +165,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         DlnOrderLib.OrderCreation xChainQuote;
     }
 
-    /// NOTE: we should only allow the `tradeXChainRFQT` identifier
+    /// @notice we should only allow the `tradeXChainRFQT` identifier
     function _decodeTxData(bytes calldata txData_) internal view returns (DecodedQuote memory deBridgeQuote) {
         InternalVars memory v;
 
@@ -241,7 +244,6 @@ contract DeBridgeForwarderValidator is BridgeValidator {
 
     /// @dev helps cast bytes to address
     function _castToAddress(bytes memory address_) internal pure returns (address) {
-        /// FIXME: check if address(uint160(uint256(b))) could be true ??
         return abi.decode(address_, (address));
     }
 }
