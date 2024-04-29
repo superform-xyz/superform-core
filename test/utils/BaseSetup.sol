@@ -593,7 +593,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             contracts[vars.chainId][bytes32(bytes("DeBridgeMock"))] = vars.deBridgeMock;
             vm.allowCheatcodes(vars.deBridgeMock);
 
-            /// @dev 7.1.7 deploy DeBridgeMock. This mocks tests the behavior of debridge
+            /// @dev 7.1.7 deploy DeBridgeForwarderMock. This mocks tests the behavior of debridge forwarder
             vars.debridgeForwarderMock = address(new DeBridgeForwarderMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderMock"))] = vars.debridgeForwarderMock;
             vm.allowCheatcodes(vars.debridgeForwarderMock);
