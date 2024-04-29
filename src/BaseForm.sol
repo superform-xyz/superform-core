@@ -254,7 +254,7 @@ abstract contract BaseForm is IBaseForm, Initializable, ERC165 {
     }
 
     /// @dev Checks if the Form implementation has the appropriate interface support
-    /// @param interfaceId_ is the interfaceId to check 
+    /// @param interfaceId_ is the interfaceId to check  
     function supportsInterface(bytes4 interfaceId_) public view virtual override(ERC165, IERC165) returns (bool) {
         return interfaceId_ == type(IBaseForm).interfaceId || super.supportsInterface(interfaceId_);
     }
