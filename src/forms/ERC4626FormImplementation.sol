@@ -16,6 +16,7 @@ import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.s
 /// @dev Has common ERC4626 internal functions that can be re-used by implementations
 /// @author Zeropoint Labs
 abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
+
     using SafeERC20 for IERC20;
     using SafeERC20 for IERC4626;
     using DataLib for uint256;
@@ -228,7 +229,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// superform data
         if (
             vars.assetDifference * ENTIRE_SLIPPAGE
-                < singleVaultData_.amount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)
+            < singleVaultData_.amount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)
         ) {
             revert Error.DIRECT_DEPOSIT_SWAP_FAILED();
         }
