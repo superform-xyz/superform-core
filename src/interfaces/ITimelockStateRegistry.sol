@@ -7,6 +7,7 @@ import { InitSingleVaultData, TimelockPayload } from "src/types/DataTypes.sol";
 /// @dev Interface for TimelockStateRegistry
 /// @author ZeroPoint Labs
 interface ITimelockStateRegistry {
+    
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
