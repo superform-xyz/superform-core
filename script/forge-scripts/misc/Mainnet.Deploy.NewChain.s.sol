@@ -73,7 +73,7 @@ contract MainnetDeployNewChain is EnvironmentUtils {
             }
         }
 
-        /// @dev set execute to true to not simulate
+        /// @dev set execute to false to not simulate
         _configurePreviouslyDeployedChainsWithNewChain(
             env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS, TARGET_DEPLOYMENT_CHAINS[0], false
         );
