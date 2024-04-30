@@ -3,6 +3,8 @@ pragma solidity ^0.8.23;
 
 import { EnvironmentUtils } from "../EnvironmentUtils.s.sol";
 
+import "forge-std/console.sol";
+
 contract MainnetDeployNewChain is EnvironmentUtils {
     /*//////////////////////////////////////////////////////////////
                         SELECT CHAIN IDS TO DEPLOY HERE
@@ -38,7 +40,6 @@ contract MainnetDeployNewChain is EnvironmentUtils {
                 break;
             }
         }
-
         _deployStage2(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_DEPLOYMENT_CHAINS, FINAL_DEPLOYED_CHAINS);
     }
 
@@ -49,6 +50,7 @@ contract MainnetDeployNewChain is EnvironmentUtils {
         _preDeploymentSetup();
 
         uint256 trueIndex;
+
         for (uint256 i = 0; i < chainIds.length; i++) {
             if (TARGET_DEPLOYMENT_CHAINS[selectedChainIndex] == chainIds[i]) {
                 trueIndex = i;

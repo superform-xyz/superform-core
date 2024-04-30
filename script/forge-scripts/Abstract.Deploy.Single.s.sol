@@ -347,8 +347,11 @@ abstract contract AbstractDeploySingle is BatchScript {
     ];
 
     address[] public PROTOCOL_ADMINS_STAGING = [
+        address(0),
         0xBbb23AE2e3816a178f8bd405fb101D064C5071d9,
         /// @dev BSC https://app.onchainden.com/safes/bnb:0xBbb23AE2e3816a178f8bd405fb101D064C5071d9
+        address(0),
+        address(0),
         0xBbb23AE2e3816a178f8bd405fb101D064C5071d9,
         /// @dev ARBI https://app.onchainden.com/safes/arb1:0xBbb23AE2e3816a178f8bd405fb101D064C5071d9
         0xfe3A0C3c4980Eef00C2Ec73D8770a2D9A489fdE5,
@@ -883,9 +886,11 @@ abstract contract AbstractDeploySingle is BatchScript {
         srbac.grantRole(emergencyAdminRole, EMERGENCY_ADMIN);
         srbac.grantRole(paymentAdminRole, PAYMENT_ADMIN);
 
-        srbac.revokeRole(emergencyAdminRole, ownerAddress);
-        srbac.revokeRole(paymentAdminRole, ownerAddress);
-        srbac.revokeRole(protocolAdminRole, ownerAddress);
+        if (env == 0) {
+            srbac.revokeRole(emergencyAdminRole, ownerAddress);
+            srbac.revokeRole(paymentAdminRole, ownerAddress);
+            srbac.revokeRole(protocolAdminRole, ownerAddress);
+        }
 
         vm.stopBroadcast();
     }
@@ -908,6 +913,11 @@ abstract contract AbstractDeploySingle is BatchScript {
         SetupVars memory vars;
 
         vars.chainId = previousDeploymentChains[i];
+        bool safeExecution = env == 0 ? true : false;
+
+        if (!safeExecution) {
+            cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
+        }
 
         vars.lzImplementation = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
         vars.hyperlaneImplementation =
@@ -919,7 +929,6 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
         vars.paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
         vars.superRegistryC = SuperRegistry(payable(vars.superRegistry));
-        bool safeExecution = env == 0 ? true : false;
         IPaymentHelper.PaymentHelperConfig memory addRemoteConfig = _configureCurrentChainBasedOnTargetDestinations(
             env,
             CurrentChainBasedOnDstvars(
@@ -945,6 +954,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         );
         if (!safeExecution) {
             PaymentHelper(payable(vars.paymentHelper)).addRemoteChain(newChainId, addRemoteConfig);
+            vm.stopBroadcast();
         } else {
             bytes memory txn =
                 abi.encodeWithSelector(PaymentHelper.addRemoteChain.selector, newChainId, addRemoteConfig);
