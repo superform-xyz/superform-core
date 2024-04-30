@@ -654,7 +654,7 @@ abstract contract AbstractDeploySingle is BatchScript {
             vars.superRegistryC.setBridgeAddresses(bridgeIds, BRIDGE_ADDRESSES[vars.chainId], bridgeValidators);
         }
 
-        /// @dev configures ambImpkementations to super registry
+        /// @dev configures ambImplementations to super registry
         if (vars.chainId == FANTOM) {
             uint8[] memory ambIdsFantom = new uint8[](3);
             ambIdsFantom[0] = 1;
@@ -919,7 +919,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
         vars.paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
         vars.superRegistryC = SuperRegistry(payable(vars.superRegistry));
-
+        bool safeExecution = env == 0 ? true : false;
         IPaymentHelper.PaymentHelperConfig memory addRemoteConfig = _configureCurrentChainBasedOnTargetDestinations(
             env,
             CurrentChainBasedOnDstvars(
@@ -941,12 +941,18 @@ abstract contract AbstractDeploySingle is BatchScript {
                 address(0),
                 vars.superRegistryC
             ),
-            env == 0 ? true : false
+            safeExecution
         );
-        PaymentHelper(payable(vars.paymentHelper)).addRemoteChain(newChainId, addRemoteConfig);
+        if (!safeExecution) {
+            PaymentHelper(payable(vars.paymentHelper)).addRemoteChain(newChainId, addRemoteConfig);
+        } else {
+            bytes memory txn =
+                abi.encodeWithSelector(PaymentHelper.addRemoteChain.selector, newChainId, addRemoteConfig);
+            addToBatch(vars.paymentHelper, 0, txn);
 
-        /// Send to Safe to sign
-        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], execute);
+            /// Send to Safe to sign
+            executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], execute);
+        }
     }
 
     struct CurrentChainBasedOnDstvars {
