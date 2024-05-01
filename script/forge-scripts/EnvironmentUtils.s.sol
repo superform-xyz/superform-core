@@ -104,8 +104,8 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
 
         FINAL_DEPLOYED_CHAINS = TARGET_DEPLOYMENT_CHAINS;
 
-        for (uint256 i = 0; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
-            FINAL_DEPLOYED_CHAINS.push(TARGET_DEPLOYMENT_CHAINS[i]);
+        for (uint256 i = 0; i < TARGET_CHAINS.length; ++i) {
+            FINAL_DEPLOYED_CHAINS.push(TARGET_CHAINS[i]);
         }
     }
 }
