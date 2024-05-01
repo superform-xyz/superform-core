@@ -11,7 +11,7 @@ import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
 import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
-import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
+import { IPaymentHelperV2 as IPaymentHelper } from "src/interfaces/IPaymentHelperV2.sol";
 import { IERC4626TimelockForm } from "src/forms/interfaces/IERC4626TimelockForm.sol";
 import { Error } from "src/libraries/Error.sol";
 import { ProofLib } from "src/libraries/ProofLib.sol";
