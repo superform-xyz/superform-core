@@ -29,7 +29,7 @@ import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaym
 import { TimelockStateRegistry } from "src/crosschain-data/extensions/TimelockStateRegistry.sol";
 import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
 import { PaymentHelper } from "src/payments/PaymentHelper.sol";
-import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
+import { IPaymentHelperV2 as IPaymentHelper } from "src/interfaces/IPaymentHelperV2.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
 import { EmergencyQueue } from "src/EmergencyQueue.sol";
