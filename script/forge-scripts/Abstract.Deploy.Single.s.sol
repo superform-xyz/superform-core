@@ -39,7 +39,6 @@ import { AcrossFacetPacked } from "./misc/blacklistedFacets/AcrossFacetPacked.so
 import { AmarokFacetPacked } from "./misc/blacklistedFacets/AmarokFacetPacked.sol";
 import { RewardsDistributor } from "src/RewardsDistributor.sol";
 import "forge-std/console.sol";
-import { BatchScript } from "./safe/BatchScript.sol";
 
 struct SetupVars {
     uint64 chainId;
@@ -92,7 +91,7 @@ struct SetupVars {
     uint64[] chainIdsSetAddresses;
 }
 
-abstract contract AbstractDeploySingle is BatchScript {
+abstract contract AbstractDeploySingle is Script {
     /*//////////////////////////////////////////////////////////////
                         GENERAL VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -412,19 +411,29 @@ abstract contract AbstractDeploySingle is BatchScript {
 
         cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
 
+        console.logBytes32(salt);
+        console.log(ownerAddress);
+        console.log(PAYMENT_ADMIN);
+        console.log(CSR_PROCESSOR);
+        console.log(EMERGENCY_ADMIN);
+        console.log(CSR_UPDATER);
+        console.log(DST_SWAPPER);
+        console.log(CSR_RESCUER);
+        console.log(CSR_DISPUTER);
+
         /// @dev 1 - Deploy SuperRBAC
+        /// @dev WARNING - MUST KEEP THESE ADDRESSES INTACT TO PRESERVE CREATE2 ADDRESS
         vars.superRBAC = address(
             new SuperRBAC{ salt: salt }(
                 ISuperRBAC.InitialRoleSetup({
                     admin: ownerAddress,
                     emergencyAdmin: ownerAddress,
-                    paymentAdmin: ownerAddress,
+                    paymentAdmin: PAYMENT_ADMIN,
                     csrProcessor: CSR_PROCESSOR,
                     tlProcessor: EMERGENCY_ADMIN,
-                    /// @dev Temporary, as we are not using this processor in this release
-                    brProcessor: BROADCAST_REGISTRY_PROCESSOR,
+                    brProcessor: EMERGENCY_ADMIN,
                     csrUpdater: CSR_UPDATER,
-                    srcVaaRelayer: WORMHOLE_VAA_RELAYER,
+                    srcVaaRelayer: EMERGENCY_ADMIN,
                     dstSwapper: DST_SWAPPER,
                     csrRescuer: CSR_RESCUER,
                     csrDisputer: CSR_DISPUTER
@@ -433,6 +442,18 @@ abstract contract AbstractDeploySingle is BatchScript {
         );
         contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars.superRBAC;
         vars.superRBACC = SuperRBAC(vars.superRBAC);
+
+        /// @dev 1.1 temporary setting of payment admin to owneraddress for updateRemoteChain at the end of this
+        /// function
+        vars.superRBACC.grantRole(vars.superRBACC.PAYMENT_ADMIN_ROLE(), ownerAddress);
+        /// @dev 1.2 new setting of BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE
+        vars.superRBACC.grantRole(
+            vars.superRBACC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), BROADCAST_REGISTRY_PROCESSOR
+        );
+        vars.superRBACC.revokeRole(vars.superRBACC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), EMERGENCY_ADMIN);
+        /// @dev 1.3 new setting of WORMHOLE_VAA_RELAYER_ROLE
+        vars.superRBACC.grantRole(vars.superRBACC.WORMHOLE_VAA_RELAYER_ROLE(), WORMHOLE_VAA_RELAYER);
+        vars.superRBACC.revokeRole(vars.superRBACC.WORMHOLE_VAA_RELAYER_ROLE(), EMERGENCY_ADMIN);
 
         /// @dev 2 - Deploy SuperRegistry
         vars.superRegistry = address(new SuperRegistry{ salt: salt }(vars.superRBAC));
@@ -779,81 +800,6 @@ abstract contract AbstractDeploySingle is BatchScript {
         }
     }
 
-    /// @dev stage 2 must be called only after stage 1 is complete for all chains!
-    function _deployStage2(
-        uint256 env,
-        uint256 i,
-        uint256 trueIndex,
-        Cycle cycle,
-        uint64[] memory targetDeploymentChains,
-        uint64[] memory finalDeployedChains
-    )
-        internal
-        setEnvDeploy(cycle)
-    {
-        SetupVars memory vars;
-        // j = 0
-        //
-        vars.chainId = targetDeploymentChains[i];
-
-        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
-
-        vars.lzImplementation = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
-        vars.hyperlaneImplementation =
-            _readContractsV1(env, chainNames[trueIndex], vars.chainId, "HyperlaneImplementation");
-        vars.wormholeImplementation =
-            _readContractsV1(env, chainNames[trueIndex], vars.chainId, "WormholeARImplementation");
-        vars.wormholeSRImplementation =
-            _readContractsV1(env, chainNames[trueIndex], vars.chainId, "WormholeSRImplementation");
-        vars.superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
-        vars.paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
-        vars.superRegistryC = SuperRegistry(vars.superRegistry);
-
-        uint64[] memory remoteChainIds = new uint64[](finalDeployedChains.length - 1);
-        uint256 remoteChains;
-
-        for (uint256 j = 0; j < finalDeployedChains.length; j++) {
-            if (j != i) {
-                remoteChainIds[remoteChains] = finalDeployedChains[j];
-                ++remoteChains;
-            }
-        }
-
-        IPaymentHelper.PaymentHelperConfig[] memory addRemoteConfigs =
-            new IPaymentHelper.PaymentHelperConfig[](remoteChainIds.length);
-
-        /// @dev Set all trusted remotes for each chain & configure amb chains ids
-        for (uint256 j = 0; j < remoteChainIds.length; j++) {
-            addRemoteConfigs[j] = _configureCurrentChainBasedOnTargetDestinations(
-                env,
-                CurrentChainBasedOnDstvars(
-                    vars.chainId,
-                    remoteChainIds[j],
-                    0,
-                    0,
-                    0,
-                    0,
-                    vars.lzImplementation,
-                    vars.hyperlaneImplementation,
-                    vars.wormholeImplementation,
-                    vars.wormholeSRImplementation,
-                    vars.superRegistry,
-                    vars.paymentHelper,
-                    address(0),
-                    address(0),
-                    address(0),
-                    address(0),
-                    vars.superRegistryC
-                ),
-                false
-            );
-        }
-
-        PaymentHelper(payable(vars.paymentHelper)).addRemoteChains(remoteChainIds, addRemoteConfigs);
-
-        vm.stopBroadcast();
-    }
-
     /// @dev pass roles from burner wallets to multi sigs
     function _deployStage3(
         uint256 env,
@@ -893,341 +839,6 @@ abstract contract AbstractDeploySingle is BatchScript {
         }
 
         vm.stopBroadcast();
-    }
-
-    /// @dev changes the settings in the already deployed chains with the new chain information
-    function _configurePreviouslyDeployedChainsWithNewChain(
-        uint256 env,
-        uint256 i,
-        /// 0, 1, 2
-        uint256 trueIndex,
-        /// 0, 1, 2, 3, 4, 5
-        Cycle cycle,
-        uint64[] memory previousDeploymentChains,
-        uint64 newChainId,
-        bool execute
-    )
-        internal
-        setEnvDeploy(cycle)
-    {
-        SetupVars memory vars;
-
-        vars.chainId = previousDeploymentChains[i];
-        bool safeExecution = env == 0 ? true : false;
-
-        if (!safeExecution) {
-            cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
-        }
-
-        vars.lzImplementation = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
-        vars.hyperlaneImplementation =
-            _readContractsV1(env, chainNames[trueIndex], vars.chainId, "HyperlaneImplementation");
-        vars.wormholeImplementation =
-            _readContractsV1(env, chainNames[trueIndex], vars.chainId, "WormholeARImplementation");
-        vars.wormholeSRImplementation =
-            _readContractsV1(env, chainNames[trueIndex], vars.chainId, "WormholeSRImplementation");
-        vars.superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
-        vars.paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
-        vars.superRegistryC = SuperRegistry(payable(vars.superRegistry));
-        IPaymentHelper.PaymentHelperConfig memory addRemoteConfig = _configureCurrentChainBasedOnTargetDestinations(
-            env,
-            CurrentChainBasedOnDstvars(
-                vars.chainId,
-                newChainId,
-                0,
-                0,
-                0,
-                0,
-                vars.lzImplementation,
-                vars.hyperlaneImplementation,
-                vars.wormholeImplementation,
-                vars.wormholeSRImplementation,
-                vars.superRegistry,
-                vars.paymentHelper,
-                address(0),
-                address(0),
-                address(0),
-                address(0),
-                vars.superRegistryC
-            ),
-            safeExecution
-        );
-        if (!safeExecution) {
-            PaymentHelper(payable(vars.paymentHelper)).addRemoteChain(newChainId, addRemoteConfig);
-            vm.stopBroadcast();
-        } else {
-            bytes memory txn =
-                abi.encodeWithSelector(PaymentHelper.addRemoteChain.selector, newChainId, addRemoteConfig);
-            addToBatch(vars.paymentHelper, 0, txn);
-
-            /// Send to Safe to sign
-            executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], execute);
-        }
-    }
-
-    struct CurrentChainBasedOnDstvars {
-        uint64 chainId;
-        uint64 dstChainId;
-        uint256 dstTrueIndex;
-        uint16 dstLzChainId;
-        uint32 dstHypChainId;
-        uint16 dstWormholeChainId;
-        address lzImplementation;
-        address hyperlaneImplementation;
-        address wormholeImplementation;
-        address wormholeSRImplementation;
-        address superRegistry;
-        address paymentHelper;
-        address dstLzImplementation;
-        address dstHyperlaneImplementation;
-        address dstWormholeARImplementation;
-        address dstWormholeSRImplementation;
-        SuperRegistry superRegistryC;
-    }
-
-    function _configureCurrentChainBasedOnTargetDestinations(
-        uint256 env,
-        CurrentChainBasedOnDstvars memory vars,
-        bool safeExecution
-    )
-        internal
-        returns (IPaymentHelper.PaymentHelperConfig memory addRemoteConfig)
-    {
-        for (uint256 k = 0; k < chainIds.length; k++) {
-            if (vars.dstChainId == chainIds[k]) {
-                vars.dstTrueIndex = k;
-
-                break;
-            }
-        }
-        vars.dstLzChainId = lz_chainIds[vars.dstTrueIndex];
-        vars.dstHypChainId = hyperlane_chainIds[vars.dstTrueIndex];
-        vars.dstWormholeChainId = wormhole_chainIds[vars.dstTrueIndex];
-
-        vars.dstLzImplementation =
-            _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "LayerzeroImplementation");
-        vars.dstHyperlaneImplementation =
-            _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "HyperlaneImplementation");
-        vars.dstWormholeARImplementation =
-            _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "WormholeARImplementation");
-        vars.dstWormholeSRImplementation =
-            _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "WormholeSRImplementation");
-
-        assert(abi.decode(GAS_USED[vars.dstChainId][3], (uint256)) > 0);
-        assert(abi.decode(GAS_USED[vars.dstChainId][4], (uint256)) > 0);
-        assert(abi.decode(GAS_USED[vars.dstChainId][6], (uint256)) > 0);
-        assert(abi.decode(GAS_USED[vars.dstChainId][13], (uint256)) > 0);
-
-        addRemoteConfig = IPaymentHelper.PaymentHelperConfig(
-            PRICE_FEEDS[vars.chainId][vars.dstChainId],
-            address(0),
-            abi.decode(GAS_USED[vars.dstChainId][3], (uint256)),
-            abi.decode(GAS_USED[vars.dstChainId][4], (uint256)),
-            vars.dstChainId == ARBI ? 1_000_000 : 200_000,
-            abi.decode(GAS_USED[vars.dstChainId][6], (uint256)),
-            nativePrices[vars.dstTrueIndex],
-            gasPrices[vars.dstTrueIndex],
-            750,
-            2_000_000,
-            /// @dev ackGasCost to move a msg from dst to source
-            10_000,
-            10_000,
-            abi.decode(GAS_USED[vars.dstChainId][13], (uint256))
-        );
-
-        /// @dev FIXME not setting BROADCAST_REGISTRY yet, which will result in all broadcast tentatives to fail
-        bytes32[] memory ids = new bytes32[](19);
-        ids[0] = vars.superRegistryC.SUPERFORM_ROUTER();
-        ids[1] = vars.superRegistryC.SUPERFORM_FACTORY();
-        ids[2] = vars.superRegistryC.PAYMASTER();
-        ids[3] = vars.superRegistryC.PAYMENT_HELPER();
-        ids[4] = vars.superRegistryC.CORE_STATE_REGISTRY();
-        ids[5] = vars.superRegistryC.DST_SWAPPER();
-        ids[6] = vars.superRegistryC.SUPER_POSITIONS();
-        ids[7] = vars.superRegistryC.SUPER_RBAC();
-        ids[8] = vars.superRegistryC.PAYLOAD_HELPER();
-        ids[9] = vars.superRegistryC.EMERGENCY_QUEUE();
-        ids[10] = vars.superRegistryC.PAYMENT_ADMIN();
-        ids[11] = vars.superRegistryC.CORE_REGISTRY_PROCESSOR();
-        ids[12] = vars.superRegistryC.CORE_REGISTRY_UPDATER();
-        ids[13] = vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR();
-        ids[14] = vars.superRegistryC.CORE_REGISTRY_RESCUER();
-        ids[15] = vars.superRegistryC.CORE_REGISTRY_DISPUTER();
-        ids[16] = vars.superRegistryC.DST_SWAPPER_PROCESSOR();
-        ids[17] = vars.superRegistryC.SUPERFORM_RECEIVER();
-        ids[18] = rewardsDistributorId;
-
-        address[] memory newAddresses = new address[](19);
-        newAddresses[0] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperformRouter");
-        newAddresses[1] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperformFactory");
-        newAddresses[2] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "PayMaster");
-        newAddresses[3] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "PaymentHelper");
-        newAddresses[4] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "CoreStateRegistry");
-        newAddresses[5] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "DstSwapper");
-        newAddresses[6] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperPositions");
-        newAddresses[7] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperRBAC");
-        newAddresses[8] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "PayloadHelper");
-        newAddresses[9] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "EmergencyQueue");
-        newAddresses[10] = PAYMENT_ADMIN;
-        newAddresses[11] = CSR_PROCESSOR;
-        newAddresses[12] = CSR_UPDATER;
-        newAddresses[13] = BROADCAST_REGISTRY_PROCESSOR;
-        newAddresses[14] = CSR_RESCUER;
-        newAddresses[15] = CSR_DISPUTER;
-        newAddresses[16] = DST_SWAPPER;
-        newAddresses[17] = SUPERFORM_RECEIVER;
-        newAddresses[18] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "RewardsDistributor");
-
-        uint64[] memory chainIdsSetAddresses = new uint64[](19);
-        chainIdsSetAddresses[0] = vars.dstChainId;
-        chainIdsSetAddresses[1] = vars.dstChainId;
-        chainIdsSetAddresses[2] = vars.dstChainId;
-        chainIdsSetAddresses[3] = vars.dstChainId;
-        chainIdsSetAddresses[4] = vars.dstChainId;
-        chainIdsSetAddresses[5] = vars.dstChainId;
-        chainIdsSetAddresses[6] = vars.dstChainId;
-        chainIdsSetAddresses[7] = vars.dstChainId;
-        chainIdsSetAddresses[8] = vars.dstChainId;
-        chainIdsSetAddresses[9] = vars.dstChainId;
-        chainIdsSetAddresses[10] = vars.dstChainId;
-        chainIdsSetAddresses[11] = vars.dstChainId;
-        chainIdsSetAddresses[12] = vars.dstChainId;
-        chainIdsSetAddresses[13] = vars.dstChainId;
-        chainIdsSetAddresses[14] = vars.dstChainId;
-        chainIdsSetAddresses[15] = vars.dstChainId;
-        chainIdsSetAddresses[16] = vars.dstChainId;
-        chainIdsSetAddresses[17] = vars.dstChainId;
-        chainIdsSetAddresses[18] = vars.dstChainId;
-
-        if (!safeExecution) {
-            LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
-                vars.dstLzChainId, abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
-            );
-
-            LayerzeroImplementation(payable(vars.lzImplementation)).setChainId(vars.dstChainId, vars.dstLzChainId);
-
-            /// @dev for mainnet
-            /// @dev do not override default oracle with chainlink for BASE
-
-            /// NOTE: since chainlink oracle is not on BASE, we use the default oracle
-            // if (vars.chainId != BASE) {
-            //     LayerzeroImplementation(payable(vars.lzImplementation)).setConfig(
-            //         0,
-            //         /// Defaults To Zero
-            //         vars.dstLzChainId,
-            //         6,
-            //         /// For Oracle Config
-            //         abi.encode(CHAINLINK_lzOracle)
-            //     );
-            // }
-            if (!(vars.chainId == FANTOM || vars.dstChainId == FANTOM)) {
-                HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setReceiver(
-                    vars.dstHypChainId, vars.dstHyperlaneImplementation
-                );
-
-                HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setChainId(
-                    vars.dstChainId, vars.dstHypChainId
-                );
-            }
-
-            WormholeARImplementation(payable(vars.wormholeImplementation)).setReceiver(
-                vars.dstWormholeChainId, vars.dstWormholeARImplementation
-            );
-
-            WormholeARImplementation(payable(vars.wormholeImplementation)).setChainId(
-                vars.dstChainId, vars.dstWormholeChainId
-            );
-
-            WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setChainId(
-                vars.dstChainId, vars.dstWormholeChainId
-            );
-
-            WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setReceiver(
-                vars.dstWormholeChainId, vars.dstWormholeSRImplementation
-            );
-
-            SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
-
-            vars.superRegistryC.setVaultLimitPerDestination(vars.dstChainId, 5);
-
-            vars.superRegistryC.batchSetAddress(ids, newAddresses, chainIdsSetAddresses);
-        } else {
-            bytes memory txn = abi.encodeWithSelector(
-                LayerzeroImplementation.setTrustedRemote.selector,
-                vars.dstLzChainId,
-                abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
-            );
-            addToBatch(vars.lzImplementation, 0, txn);
-
-            txn =
-                abi.encodeWithSelector(LayerzeroImplementation.setChainId.selector, vars.dstChainId, vars.dstLzChainId);
-            addToBatch(vars.lzImplementation, 0, txn);
-
-            /// @dev for mainnet
-            /// @dev do not override default oracle with chainlink for BASE
-
-            /// NOTE: since chainlink oracle is not on BASE, we use the default oracle
-            // if (vars.chainId != BASE) {
-            //     LayerzeroImplementation(payable(vars.lzImplementation)).setConfig(
-            //         0,
-            //         /// Defaults To Zero
-            //         vars.dstLzChainId,
-            //         6,
-            //         /// For Oracle Config
-            //         abi.encode(CHAINLINK_lzOracle)
-            //     );
-            // }
-            if (!(vars.chainId == FANTOM || vars.dstChainId == FANTOM)) {
-                txn = abi.encodeWithSelector(
-                    HyperlaneImplementation.setReceiver.selector, vars.dstHypChainId, vars.dstHyperlaneImplementation
-                );
-                addToBatch(vars.hyperlaneImplementation, 0, txn);
-
-                txn = abi.encodeWithSelector(
-                    HyperlaneImplementation.setChainId.selector, vars.dstChainId, vars.dstHypChainId
-                );
-                addToBatch(vars.hyperlaneImplementation, 0, txn);
-            }
-
-            txn = abi.encodeWithSelector(
-                WormholeARImplementation.setReceiver.selector, vars.dstWormholeChainId, vars.dstWormholeARImplementation
-            );
-            addToBatch(vars.wormholeImplementation, 0, txn);
-
-            txn = abi.encodeWithSelector(
-                WormholeARImplementation.setChainId.selector, vars.dstChainId, vars.dstWormholeChainId
-            );
-            addToBatch(vars.wormholeImplementation, 0, txn);
-
-            txn = abi.encodeWithSelector(
-                WormholeSRImplementation.setChainId.selector, vars.dstChainId, vars.dstWormholeChainId
-            );
-            addToBatch(vars.wormholeSRImplementation, 0, txn);
-
-            txn = abi.encodeWithSelector(
-                WormholeSRImplementation.setReceiver.selector, vars.dstWormholeChainId, vars.dstWormholeSRImplementation
-            );
-            addToBatch(vars.wormholeSRImplementation, 0, txn);
-
-            txn = abi.encodeWithSelector(SuperRegistry.setRequiredMessagingQuorum.selector, vars.dstChainId, 1);
-            addToBatch(vars.superRegistry, 0, txn);
-
-            txn = abi.encodeWithSelector(vars.superRegistryC.setVaultLimitPerDestination.selector, vars.dstChainId, 5);
-            addToBatch(vars.superRegistry, 0, txn);
-
-            txn = abi.encodeWithSelector(
-                vars.superRegistryC.batchSetAddress.selector, ids, newAddresses, chainIdsSetAddresses
-            );
-            addToBatch(vars.superRegistry, 0, txn);
-        }
-
-        /*
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.TIMELOCK_STATE_REGISTRY(),
-            _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "TimelockStateRegistry"),
-            vars.dstChainId
-        );
-        */
     }
 
     function _preDeploymentSetup() internal {

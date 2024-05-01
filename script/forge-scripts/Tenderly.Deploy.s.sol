@@ -20,38 +20,4 @@ contract TenderlyDeploy is EnvironmentUtils {
 
         _deployStage1(env, selectedChainIndex, trueIndex, Cycle.Dev, TARGET_CHAINS, keccak256(abi.encode(salt)));
     }
-
-    /// @dev stage 2 must be called only after stage 1 is complete for all chains!
-    function deployStage2(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
-
-        _preDeploymentSetup();
-
-        uint256 trueIndex;
-        for (uint256 i = 0; i < chainIds.length; i++) {
-            if (TARGET_CHAINS[selectedChainIndex] == chainIds[i]) {
-                trueIndex = i;
-                break;
-            }
-        }
-
-        _deployStage2(env, selectedChainIndex, trueIndex, Cycle.Dev, TARGET_CHAINS, TARGET_CHAINS);
-    }
-
-    /// @dev stage 3 must be called only after stage 1 is complete for all chains!
-    function deployStage3(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
-
-        _preDeploymentSetup();
-
-        uint256 trueIndex;
-        for (uint256 i = 0; i < chainIds.length; i++) {
-            if (TARGET_CHAINS[selectedChainIndex] == chainIds[i]) {
-                trueIndex = i;
-                break;
-            }
-        }
-
-        _deployStage3(env, selectedChainIndex, trueIndex, Cycle.Dev, TARGET_CHAINS, true);
-    }
 }
