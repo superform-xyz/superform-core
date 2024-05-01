@@ -3,8 +3,6 @@ pragma solidity ^0.8.23;
 
 import { EnvironmentUtils } from "../EnvironmentUtils.s.sol";
 
-import "forge-std/console.sol";
-
 contract MainnetDeployNewChain is EnvironmentUtils {
     /*//////////////////////////////////////////////////////////////
                         SELECT CHAIN IDS TO DEPLOY HERE
