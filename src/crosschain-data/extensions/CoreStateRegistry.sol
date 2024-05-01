@@ -10,7 +10,7 @@ import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
+import { IPaymentHelper } from "src/interfaces/IPaymentHelperV1.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { ProofLib } from "src/libraries/ProofLib.sol";
 import { ArrayCastLib } from "src/libraries/ArrayCastLib.sol";

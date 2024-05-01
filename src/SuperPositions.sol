@@ -9,7 +9,7 @@ import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
-import { IPaymentHelper } from "./interfaces/IPaymentHelper.sol";
+import { IPaymentHelper } from "src/interfaces/IPaymentHelperV1.sol";
 import { Error } from "src/libraries/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import {
