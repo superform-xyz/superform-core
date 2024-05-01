@@ -13,7 +13,7 @@ import {
 /// @title IPaymentHelper
 /// @dev Interface for PaymentHelper
 /// @author ZeroPoint Labs
-interface IPaymentHelperV2 {
+interface IPaymentHelper {
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                         //
     //////////////////////////////////////////////////////////////
@@ -21,7 +21,7 @@ interface IPaymentHelperV2 {
     /// @param nativeFeedOracle is the native price feed oracle
     /// @param gasPriceOracle is the gas price oracle
     /// @param swapGasUsed is the swap gas params
-    /// @param updateDepositGasUsed is the update gas params
+    /// @param updateGasUsed is the update gas params
     /// @param depositGasUsed is the deposit per vault gas on the chain
     /// @param withdrawGasUsed is the withdraw per vault gas on the chain
     /// @param defaultNativePrice is the native price on the specified chain
@@ -30,12 +30,11 @@ interface IPaymentHelperV2 {
     /// @param ackGasCost is the gas cost for sending and processing from dst->src
     /// @param timelockCost is the extra cost for processing timelocked payloads
     /// @param emergencyCost is the extra cost for processing emergency payloads
-    /// @param updateWithdrawGasUsed is the update gas params for withdraws
     struct PaymentHelperConfig {
         address nativeFeedOracle;
         address gasPriceOracle;
         uint256 swapGasUsed;
-        uint256 updateDepositGasUsed;
+        uint256 updateGasUsed;
         uint256 depositGasUsed;
         uint256 withdrawGasUsed;
         uint256 defaultNativePrice;
@@ -44,7 +43,6 @@ interface IPaymentHelperV2 {
         uint256 ackGasCost;
         uint256 timelockCost;
         uint256 emergencyCost;
-        uint256 updateWithdrawGasUsed;
     }
 
     //////////////////////////////////////////////////////////////
@@ -216,43 +214,16 @@ interface IPaymentHelperV2 {
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
 
-    /// @dev admin can configure a remote chain for the first time
+    /// @dev admin can configure a remote chain for first time
     /// @param chainId_ is the identifier of new chain id
     /// @param config_ is the chain config
     function addRemoteChain(uint64 chainId_, PaymentHelperConfig calldata config_) external;
-
-    /// @dev admin can configure various remote chain for the first time in a single call
-    /// @param chainIds_ is the identifier of new chain id
-    /// @param configs_ is the chain config
-    function addRemoteChains(uint64[] calldata chainIds_, PaymentHelperConfig[] calldata configs_) external;
 
     /// @dev admin can specifically configure/update certain configuration of a remote chain
     /// @param chainId_ is the remote chain's identifier
     /// @param configType_ is the type of config from 1 -> 6
     /// @param config_ is the encoded new configuration
     function updateRemoteChain(uint64 chainId_, uint256 configType_, bytes memory config_) external;
-
-    /// @dev admin can specifically configure/update certain configurations on a single remote chain
-    /// @param chainId_ are the remote chain's identifier
-    /// @param configTypes_ are the type of config from 1 -> 6 for the given chain
-    /// @param configs_ are the encoded new configurations for each config type for the given chain
-    function batchUpdateRemoteChain(
-        uint64 chainId_,
-        uint256[] calldata configTypes_,
-        bytes[] calldata configs_
-    )
-        external;
-
-    /// @dev admin can specifically configure/update certain configurations on various remote chains at the same time
-    /// @param chainIds_ are the remote chain's identifier
-    /// @param configTypes_ are the type of config from 1 -> 6 for each chain
-    /// @param configs_ are the encoded new configurations for each config type and chains
-    function batchUpdateRemoteChains(
-        uint64[] calldata chainIds_,
-        uint256[][] calldata configTypes_,
-        bytes[][] calldata configs_
-    )
-        external;
 
     /// @dev admin updates config for register transmuter amb params
     /// @param extraDataForTransmuter_ is the broadcast extra data

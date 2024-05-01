@@ -5,7 +5,7 @@ import { BaseRouter } from "src/BaseRouter.sol";
 import { IBaseRouterImplementation } from "src/interfaces/IBaseRouterImplementation.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { IPayMaster } from "src/interfaces/IPayMaster.sol";
-import { IPaymentHelper } from "src/interfaces/IPaymentHelperV1.sol";
+import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
