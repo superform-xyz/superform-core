@@ -67,7 +67,7 @@ import { IPermit2 } from "src/vendor/dragonfly-xyz/IPermit2.sol";
 import { TimelockStateRegistry } from "src/crosschain-data/extensions/TimelockStateRegistry.sol";
 import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
 import { PaymentHelper } from "src/payments/PaymentHelper.sol";
-import { IPaymentHelperV2 as PaymentHelper } from "src/interfaces/IPaymentHelperV2.sol";
+import { IPaymentHelperV2 as IPaymentHelper } from "src/interfaces/IPaymentHelperV2.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { Error } from "src/libraries/Error.sol";
