@@ -413,18 +413,18 @@ abstract contract AbstractDeploySingle is BatchScript {
         cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
 
         /// @dev 1 - Deploy SuperRBAC
+        /// @dev WARNING - MUST KEEP THESE ADDRESSES INTACT TO PRESERVE CREATE2 ADDRESS
         vars.superRBAC = address(
             new SuperRBAC{ salt: salt }(
                 ISuperRBAC.InitialRoleSetup({
                     admin: ownerAddress,
                     emergencyAdmin: ownerAddress,
-                    paymentAdmin: ownerAddress,
+                    paymentAdmin: PAYMENT_ADMIN,
                     csrProcessor: CSR_PROCESSOR,
                     tlProcessor: EMERGENCY_ADMIN,
-                    /// @dev Temporary, as we are not using this processor in this release
-                    brProcessor: BROADCAST_REGISTRY_PROCESSOR,
+                    brProcessor: EMERGENCY_ADMIN,
                     csrUpdater: CSR_UPDATER,
-                    srcVaaRelayer: WORMHOLE_VAA_RELAYER,
+                    srcVaaRelayer: EMERGENCY_ADMIN,
                     dstSwapper: DST_SWAPPER,
                     csrRescuer: CSR_RESCUER,
                     csrDisputer: CSR_DISPUTER
@@ -433,6 +433,18 @@ abstract contract AbstractDeploySingle is BatchScript {
         );
         contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars.superRBAC;
         vars.superRBACC = SuperRBAC(vars.superRBAC);
+
+        /// @dev 1.1 temporary setting of payment admin to owneraddress for updateRemoteChain at the end of this
+        /// function
+        vars.superRBACC.grantRole(vars.superRBACC.PAYMENT_ADMIN_ROLE(), ownerAddress);
+        /// @dev 1.2 new setting of BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE
+        vars.superRBACC.grantRole(
+            vars.superRBACC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), BROADCAST_REGISTRY_PROCESSOR
+        );
+        vars.superRBACC.revokeRole(vars.superRBACC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), EMERGENCY_ADMIN);
+        /// @dev 1.3 new setting of WORMHOLE_VAA_RELAYER_ROLE
+        vars.superRBACC.grantRole(vars.superRBACC.WORMHOLE_VAA_RELAYER_ROLE(), WORMHOLE_VAA_RELAYER);
+        vars.superRBACC.revokeRole(vars.superRBACC.WORMHOLE_VAA_RELAYER_ROLE(), EMERGENCY_ADMIN);
 
         /// @dev 2 - Deploy SuperRegistry
         vars.superRegistry = address(new SuperRegistry{ salt: salt }(vars.superRBAC));

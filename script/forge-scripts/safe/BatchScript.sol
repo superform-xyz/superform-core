@@ -8,7 +8,7 @@ pragma solidity >=0.6.2 <0.9.0;
 // 🧩 MODULES
 import { Script, console2, StdChains, stdJson, stdMath, StdStorage, stdStorageSafe, VmSafe } from "forge-std/Script.sol";
 
-import { Surl } from "surl/src/Surl.sol";
+import { Surl } from "./lib/Surl.sol";
 import { DelegatePrank } from "./lib/DelegatePrank.sol";
 
 // ⭐️ SCRIPT
