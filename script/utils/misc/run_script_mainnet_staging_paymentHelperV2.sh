@@ -40,35 +40,35 @@ echo Deploying paymentHelper v2: ...
 echo Configuring paymentHelper v2
 #0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3 is the payment admin on staging -has to execute this
 
-export FIREBLOCKS_CHAIN_ID=56
+export FIREBLOCKS_RPC_URL=$BSC_RPC_URL
 
 fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "configurePaymentHelper(uint256,uint256)" 1 0 \
     --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3 --broadcast --unlocked --slow
 
 wait
 
-export FIREBLOCKS_CHAIN_ID=42161
+export FIREBLOCKS_RPC_URL=$ARBITRUM_RPC_URL
 
 fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "configurePaymentHelper(uint256,uint256)" 1 1 \
     --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3 --broadcast --unlocked --slow
 
 wait
 
-export FIREBLOCKS_CHAIN_ID=10
+export FIREBLOCKS_RPC_URL=$OPTIMISM_RPC_URL
 
 fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "configurePaymentHelper(uint256,uint256)" 1 2 \
     --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3 --broadcast --unlocked --slow
 
 wait
 
-export FIREBLOCKS_CHAIN_ID=8453
+export FIREBLOCKS_RPC_URL=$BASE_RPC_URL
 
 fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "configurePaymentHelper(uint256,uint256)" 1 3 \
     --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3 --broadcast --unlocked --slow
 
 wait
 
-#export FIREBLOCKS_CHAIN_ID=250
+#export FIREBLOCKS_RPC_URL=$FANTOM_RPC_URL
 
 #fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "configurePaymentHelper(uint256,uint256)" 1 4 \
 #    --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3 --broadcast --unlocked --slow
