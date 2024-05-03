@@ -25,7 +25,6 @@ remappings = [ # do not change these remappings otherwise new create2 addresses 
   "openzeppelin-contracts/=lib/ERC1155A/lib/openzeppelin-contracts/",
   "pigeon/=lib/pigeon/src/",
   "solady/=lib/pigeon/lib/solady/",
-  "solidity-stringutils/=lib/surl/lib/solidity-stringutils/",
   "super-vaults/=lib/super-vaults/src/",
   "v2-core/=lib/super-vaults/lib/v2-core/contracts/",
   "v2-periphery/=lib/super-vaults/lib/v2-periphery/contracts/",
