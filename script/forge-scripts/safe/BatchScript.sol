@@ -10,7 +10,6 @@ import { Script, console2, StdChains, stdJson, stdMath, StdStorage, stdStorageSa
 
 import { Surl } from "lib/surl/src/Surl.sol";
 
-//import { Surl } from "./lib/Surl.sol";
 import { DelegatePrank } from "./lib/DelegatePrank.sol";
 
 // ⭐️ SCRIPT
