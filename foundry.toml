@@ -23,6 +23,7 @@ out = "out"
 script = "script"
 src = "src"
 test = "test"
+autodetect_remappings = false
 
 [profile.localdev]
 optimizer = false
