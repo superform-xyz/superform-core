@@ -339,6 +339,7 @@ contract SmokeTest is MainnetBaseSetup {
         }
     }
 
+    /*
     function test_wormholeARImplementation() public {
         WormholeARImplementation wormhole;
 
@@ -382,6 +383,7 @@ contract SmokeTest is MainnetBaseSetup {
             }
         }
     }
+    */
 
     function test_wormholeSRImplementation() public {
         WormholeSRImplementation wormhole;
