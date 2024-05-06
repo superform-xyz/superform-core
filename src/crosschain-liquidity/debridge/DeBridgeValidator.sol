@@ -55,7 +55,7 @@ contract DeBridgeValidator is BridgeValidator {
         /// FIXME: add explicity revert message
         if (deBridgeQuote.allowedCancelBeneficiarySrc.length > 0) revert();
 
-        /// @dev 1. chain id calidation
+        /// @dev 1. chain id validation
         /// FIXME: check if this cast is right
         /// FIXME: check upstream if the srcChain in this context is the block.chainid
         if (
@@ -64,7 +64,7 @@ contract DeBridgeValidator is BridgeValidator {
         ) revert Error.INVALID_TXDATA_CHAIN_ID();
 
         /// @dev 2. receiver address validation
-        /// @dev allows dst swaps by coupling hashflow with other bridges
+        /// @dev allows dst swaps by coupling debridge with other bridges
 
         /// FIXME: check if this cast is right
         address receiver = _castToAddress(deBridgeQuote.receiverDst);
@@ -85,7 +85,7 @@ contract DeBridgeValidator is BridgeValidator {
                 revert Error.INVALID_TXDATA_RECEIVER();
             }
 
-            /// @dev if there is a dst swap then the interim token should be the quote of hashflow
+            /// @dev if there is a dst swap then the interim token should be the quote of debridge
             if (hasDstSwap && (args_.liqDataInterimToken != _castToAddress(deBridgeQuote.takeTokenAddress))) {
                 revert Error.INVALID_INTERIM_TOKEN();
             }

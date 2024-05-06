@@ -82,7 +82,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
                 != deBridgeQuote.orderAuthorityAddressDst
         ) revert INVALID_DEBRIDGE_AUTHORITY();
 
-        /// @dev 1. chain id calidation
+        /// @dev 1. chain id validation
         if (uint64(deBridgeQuote.dstChainId) != args_.liqDstChainId || args_.liqDataToken != deBridgeQuote.inputToken) {
             revert Error.INVALID_TXDATA_CHAIN_ID();
         }
