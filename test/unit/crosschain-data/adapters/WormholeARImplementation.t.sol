@@ -2,8 +2,10 @@
 pragma solidity ^0.8.23;
 
 import "test/utils/BaseSetup.sol";
+import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { Error } from "src/libraries/Error.sol";
+import { ProofLib } from "src/libraries/ProofLib.sol";
 import { TransactionType, CallbackType, AMBMessage } from "src/types/DataTypes.sol";
 import { VaaKey, IWormholeRelayer } from "src/vendor/wormhole/IWormholeRelayer.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
@@ -15,6 +17,7 @@ contract InvalidReceiver {
 }
 
 contract WormholeARImplementationTest is BaseSetup {
+        using ProofLib for AMBMessage;
     ISuperRegistry public superRegistry;
     WormholeARImplementation wormholeARImpl;
 
@@ -244,4 +247,67 @@ contract WormholeARImplementationTest is BaseSetup {
             abi.encode(ambMessage), new bytes[](0), bytes32(uint256(uint160(address(0)))), 0, bytes32(0)
         );
     }
+
+    function test_receiveWormholeMessages_ambProtect() public {
+    vm.selectFork(FORKS[ARBI]);
+
+    address payable wormholeARArbi = payable(ISuperRegistry(getContract(ARBI, "SuperRegistry")).getAmbAddress(3));
+    address relayer = address(WormholeARImplementation(wormholeARArbi).relayer());
+
+    AMBMessage memory ambMessage = AMBMessage(
+        DataLib.packTxInfo(
+            uint8(TransactionType.DEPOSIT),
+            /// @dev TransactionType
+            uint8(CallbackType.INIT),
+            0,
+            /// @dev isMultiVaults
+            1,
+            /// @dev STATE_REGISTRY_TYPE,
+            deployer,
+            /// @dev srcSender,
+            ETH
+        ),
+        /// @dev srcChainId
+        abi.encode(new uint8[](0), "")
+    );
+
+    bytes32 proof = AMBMessage(ambMessage.txInfo, "").computeProof();
+
+    vm.prank(relayer);
+    WormholeARImplementation(wormholeARArbi).receiveWormholeMessages(
+        abi.encode(ambMessage),
+        new bytes[](0),
+        bytes32(uint256(uint160(address(wormholeARImpl)))),
+        2,
+        keccak256(abi.encode(ambMessage))
+    );
+
+    // Test with proof in params
+    AMBMessage memory ambMessageWithProof = AMBMessage(
+        DataLib.packTxInfo(
+            uint8(TransactionType.DEPOSIT),
+            /// @dev TransactionType
+            uint8(CallbackType.INIT),
+            0,
+            /// @dev isMultiVaults
+            1,
+            /// @dev STATE_REGISTRY_TYPE,
+            deployer,
+            /// @dev srcSender,
+            ETH
+        ),
+        /// @dev srcChainId
+        abi.encode(proof)
+    );
+
+    vm.prank(relayer);
+    vm.expectRevert(IAmbImplementation.MALICIOUS_DELIVERY.selector);
+    WormholeARImplementation(wormholeARArbi).receiveWormholeMessages(
+        abi.encode(ambMessageWithProof),
+        new bytes[](0),
+        bytes32(uint256(uint160(address(wormholeARImpl)))),
+        2,
+        keccak256(abi.encode(ambMessageWithProof, ambMessageWithProof))
+    );
+}
 }

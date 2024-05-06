@@ -6,6 +6,7 @@ import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
+import { ProofLib } from "src/libraries/ProofLib.sol";
 import { Error } from "src/libraries/Error.sol";
 import { AMBMessage } from "src/types/DataTypes.sol";
 import { IWormholeRelayer, VaaKey } from "src/vendor/wormhole/IWormholeRelayer.sol";
@@ -17,6 +18,7 @@ import "src/vendor/wormhole/Utils.sol";
 /// @author Zeropoint Labs
 contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     using DataLib for uint256;
+    using ProofLib for AMBMessage;
 
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
@@ -34,6 +36,7 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     mapping(uint16 => uint64) public superChainId;
     mapping(uint16 => address) public authorizedImpl;
     mapping(bytes32 => bool) public processedMessages;
+    mapping(bytes32 => bool) public ambProtect;
 
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
@@ -232,6 +235,7 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
             revert Error.INVALID_CHAIN_ID();
         }
 
+        _ambProtect(decoded);
         targetRegistry.receivePayload(sourceChain, payload_);
     }
 
@@ -286,5 +290,26 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
 
         authorizedImpl[chainId_] = authorizedImpl_;
         emit AuthorizedImplAdded(chainId_, authorizedImpl_);
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              INTERNAL HELPER FUNCTIONS                   //
+    //////////////////////////////////////////////////////////////
+    
+    /// @dev prevents the same AMB from delivery a payload and its proof
+    /// @dev is an additional protection against malicious ambs
+    function _ambProtect(AMBMessage memory _message) internal {
+        bytes32 proof;
+
+        /// @dev amb protect
+        if (_message.params.length != 32) {
+            (, bytes memory payloadBody) = abi.decode(_message.params, (uint8[], bytes));
+            proof = AMBMessage(_message.txInfo, payloadBody).computeProof();
+        } else {
+            proof = abi.decode(_message.params, (bytes32));
+        }
+
+        if (ambProtect[proof]) revert MALICIOUS_DELIVERY();
+        ambProtect[proof] = true;
     }
 }
