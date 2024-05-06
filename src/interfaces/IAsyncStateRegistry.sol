@@ -2,6 +2,12 @@
 pragma solidity ^0.8.23;
 
 import { InitSingleVaultData } from "src/types/DataTypes.sol";
+
+//////////////////////////////////////////////////////////////
+//                           ERRORS                        //
+//////////////////////////////////////////////////////////////
+error NOT_ASYNC_SUPERFORM();
+
 //////////////////////////////////////////////////////////////
 //                           ENUMS                        //
 //////////////////////////////////////////////////////////////
@@ -23,22 +29,12 @@ enum AsyncStatus {
 /// @param amounts is an array of amounts of settlementToken to be refunded
 /// @param receiverAddress is the users refund address
 /// @param lastProposedTime indicates the rescue proposal timestamp
-struct FailedDeposit {
+struct FailedAsyncDeposit {
     uint256[] superformIds;
     address[] settlementToken;
     uint256[] amounts;
-    bool[] settleFromDstSwapper;
     address receiverAddress;
     uint256 lastProposedTimestamp;
-}
-
-/// @dev holds information about the async withdraw payload
-struct AsyncWithdrawPayload {
-    uint8 isXChain;
-    uint64 srcChainId;
-    uint256 requestId_;
-    InitSingleVaultData data;
-    AsyncStatus status;
 }
 
 /// @dev holds information about the async deposit payload
@@ -47,6 +43,15 @@ struct AsyncDepositPayload {
     uint64 srcChainId;
     uint256 assetsToDeposit;
     uint256 requestId;
+    InitSingleVaultData data;
+    AsyncStatus status;
+}
+
+/// @dev holds information about the async withdraw payload
+struct AsyncWithdrawPayload {
+    uint8 isXChain;
+    uint64 srcChainId;
+    uint256 requestId_;
     InitSingleVaultData data;
     AsyncStatus status;
 }
@@ -60,7 +65,7 @@ interface IAsyncStateRegistry {
     //////////////////////////////////////////////////////////////
 
     /// @dev is emitted when any deposit fails
-    event FailedDeposits(uint256 indexed payloadId);
+    event FailedDeposit(uint256 indexed payloadId);
 
     /// @dev is emitted when a rescue is proposed for failed deposits in a payload
     event RescueProposed(
@@ -89,22 +94,25 @@ interface IAsyncStateRegistry {
 
     /// @dev allows users to read the deposit payload stored per payloadId_
     /// @param payloadId_ is the unique payload identifier allocated on the destination chain
-    /// @return asyncPayload_ the asyncDeposit payload stored
+    /// @return asyncDepositPayload_ the asyncDeposit payload stored
     function getAsyncDepositPayload(uint256 payloadId_)
         external
         view
-        returns (AsyncDepositPayload memory asyncPayload_);
+        returns (AsyncDepositPayload memory asyncDepositPayload_);
 
     /// @dev allows users to read the withdraw payload stored per payloadId_
     /// @param payloadId_ is the unique payload identifier allocated on the destination chain
-    /// @return asyncPayload_ the asyncWithdraw payload stored
+    /// @return asyncWithdrawPayload_ the asyncWithdraw payload stored
     function getAsyncWithdrawPayload(uint256 payloadId_)
         external
         view
-        returns (AsyncWithdrawPayload memory asyncPayload_);
+        returns (AsyncWithdrawPayload memory asyncWithdrawPayload_);
 
-    /// @dev allows users to read the asyncPayloadCounter
-    function asyncPayloadCounter() external view returns (uint256);
+    /// @dev allows users to read the asyncDepositPayloadCounter
+    function asyncDepositPayloadCounter() external view returns (uint256);
+
+    /// @dev allows users to read the asyncWithdrawPayloadCounter
+    function asyncWithdrawPayloadCounter() external view returns (uint256);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
@@ -143,7 +151,7 @@ interface IAsyncStateRegistry {
     /// @notice Form Keeper finalizes payload to process the async action fully.
     /// @param payloadId_ is the id of the payload to finalize
     /// @param txData_ is the off-chain generated transaction data
-    function finalizePayload(uint256 payloadId_, bytes memory txData_) external payable;
+    function finalizeWithdrawPayload(uint256 payloadId_, bytes memory txData_) external payable;
 
     /// @dev allows accounts with {ASYNC_STATE_REGISTRY_PROCESSOR_ROLE} to rescue tokens on failed deposits
     /// @param payloadId_ is the identifier of the cross-chain payload.
