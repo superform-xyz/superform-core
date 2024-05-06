@@ -36,7 +36,7 @@ struct FailedDeposit {
 struct AsyncWithdrawPayload {
     uint8 isXChain;
     uint64 srcChainId;
-    uint256 lockedTill;
+    uint256 requestId_;
     InitSingleVaultData data;
     AsyncStatus status;
 }
@@ -46,6 +46,7 @@ struct AsyncDepositPayload {
     uint8 isXChain;
     uint64 srcChainId;
     uint256 assetsToDeposit;
+    uint256 requestId;
     InitSingleVaultData data;
     AsyncStatus status;
 }
@@ -114,11 +115,13 @@ interface IAsyncStateRegistry {
     /// @param type_ is the nature of transaction (xChain: 1 or same chain: 0)
     /// @param srcChainId_ is the chainId of the source chain
     /// @param assetsToDeposit_ are the amount of assets to claim deposit into the vault
+    /// @param requestId_ is the unique identifier of the request
     /// @param data_ is the basic information of the action intent
     function receiveDepositPayload(
         uint8 type_,
         uint64 srcChainId_,
         uint256 assetsToDeposit_,
+        uint256 requestId_,
         InitSingleVaultData memory data_
     )
         external;
@@ -127,13 +130,12 @@ interface IAsyncStateRegistry {
     /// @notice There is an incremental asyncPayloadId that can be used to track in separate
     /// @param type_ is the nature of transaction (xChain: 1 or same chain: 0)
     /// @param srcChainId_ is the chainId of the source chain
-    /// @param lockedTill_ is the deadline for timelock (after which we can call `finalizePayload`) For deposits this is
-    /// 0
+    /// @param requestId_ is the unique identifier of the request
     /// @param data_ is the basic information of the action intent
     function receiveWithdrawPayload(
         uint8 type_,
         uint64 srcChainId_,
-        uint256 lockedTill_,
+        uint256 requestId_,
         InitSingleVaultData memory data_
     )
         external;

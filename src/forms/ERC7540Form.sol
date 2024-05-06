@@ -22,6 +22,20 @@ contract ERC7540Form is ERC4626FormImplementation {
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
+    //                          EVENTS                           //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev is emitted when a payload is processed by the destination contract.
+    event RequestProcessed(
+        uint64 indexed srcChainID,
+        uint64 indexed dstChainId,
+        uint256 indexed srcPayloadId,
+        uint256 amount,
+        address vault,
+        uint256 requestId
+    );
+
+    //////////////////////////////////////////////////////////////
     //                         ERRORS                         //
     //////////////////////////////////////////////////////////////
     error NOT_ASYNC_STATE_REGISTRY();
@@ -36,7 +50,7 @@ contract ERC7540Form is ERC4626FormImplementation {
     //                           STRUCTS                         //
     //////////////////////////////////////////////////////////////
 
-    struct WithdrawAfterCoolDownLocalVars {
+    struct ClaimWithdrawLocalVars {
         uint256 len1;
         address bridgeValidator;
         uint64 chainId;
@@ -67,16 +81,11 @@ contract ERC7540Form is ERC4626FormImplementation {
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
 
-    /// @dev this function is called when the timelock deposit is ready to be withdrawn after being unlocked
-    /// @dev retain4626 flag is not added in this implementation unlike in ERC4626Implementation.sol because
-    /// @dev if a vault fails to redeem at this stage, superPositions are minted back to the user and he can
-    /// @dev try again with retain4626 flag set and take their shares directly
+    /// @dev this function is called when the shares are ready to be transferred to the form or to receiverAddress (if
+    /// retain4626 is set)
     /// @param p_ the payload data
-    function withdrawAfterCoolDown(AsyncWithdrawPayload memory p_)
-        external
-        onlyAsyncStateRegistry
-        returns (uint256 assets)
-    {
+    /// @return shares the amount of shares minted
+    function claimDeposit(AsyncDepositPayload memory p_) external onlyAsyncStateRegistry returns (uint256 shares) {
         if (p_.data.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
 
         if (_isPaused(p_.data.superformId)) {
@@ -84,7 +93,39 @@ contract ERC7540Form is ERC4626FormImplementation {
 
             return 0;
         }
-        WithdrawAfterCoolDownLocalVars memory vars;
+
+        IERC7540 v = IERC7540(vault);
+        IERC20 share = IERC20(v.share());
+
+        address sharesReceiver = p_.data.retain4626 ? p_.data.receiverAddress : address(this);
+
+        /// @dev ISSUE: if we only detect this error by this step, must we make this a failed deposit?
+        uint256 sharesBalanceBefore = share.balanceOf(sharesReceiver);
+        shares = v.deposit(p_.assetsToDeposit, sharesReceiver);
+        uint256 sharesBalanceAfter = share.balanceOf(sharesReceiver);
+        if (
+            (sharesBalanceAfter - sharesBalanceBefore != shares)
+                || (ENTIRE_SLIPPAGE * shares < ((p_.data.outputAmount * (ENTIRE_SLIPPAGE - p_.data.maxSlippage))))
+        ) {
+            revert Error.VAULT_IMPLEMENTATION_FAILED();
+        }
+    }
+
+    /// @dev this function is called the withdraw request is ready to be claimed
+    /// @dev retain4626 flag is not added in this implementation unlike in ERC4626Implementation.sol because
+    /// @dev if a vault fails to redeem at this stage, superPositions are minted back to the user and he can
+    /// @dev try again with retain4626 flag set and take their shares directly
+    /// @param p_ the payload data
+    /// @return assets the amount of assets withdrawn
+    function claimWithdraw(AsyncWithdrawPayload memory p_) external onlyAsyncStateRegistry returns (uint256 assets) {
+        if (p_.data.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
+
+        if (_isPaused(p_.data.superformId)) {
+            IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(p_.data);
+
+            return 0;
+        }
+        ClaimWithdrawLocalVars memory vars;
 
         IERC7540 v = IERC7540(vault);
 
@@ -157,35 +198,6 @@ contract ERC7540Form is ERC4626FormImplementation {
         }
     }
 
-    /// @dev this function is called when the shares are ready to be transferred to the form or to receiverAddress (if
-    /// retain4626 is set)
-    /// @param p_ the payload data
-    function claimDeposit(AsyncDepositPayload memory p_) external onlyAsyncStateRegistry returns (uint256 shares) {
-        if (p_.data.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
-
-        if (_isPaused(p_.data.superformId)) {
-            IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(p_.data);
-
-            return 0;
-        }
-
-        IERC7540 v = IERC7540(vault);
-        IERC20 share = IERC20(v.share());
-
-        address sharesReceiver = p_.data.retain4626 ? p_.data.receiverAddress : address(this);
-
-        /// @dev ISSUE: if we only detect this error by this step, must we make this a failed deposit?
-        uint256 sharesBalanceBefore = share.balanceOf(sharesReceiver);
-        shares = v.deposit(p_.assetsToDeposit, sharesReceiver);
-        uint256 sharesBalanceAfter = share.balanceOf(sharesReceiver);
-        if (
-            (sharesBalanceAfter - sharesBalanceBefore != shares)
-                || (ENTIRE_SLIPPAGE * shares < ((p_.data.outputAmount * (ENTIRE_SLIPPAGE - p_.data.maxSlippage))))
-        ) {
-            revert Error.VAULT_IMPLEMENTATION_FAILED();
-        }
-    }
-
     //////////////////////////////////////////////////////////////
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
@@ -200,7 +212,10 @@ contract ERC7540Form is ERC4626FormImplementation {
         override
         returns (uint256 shares)
     {
-        _storeDepositPayload(0, CHAIN_ID, _requestDirectDeposit(singleVaultData_), singleVaultData_);
+        (uint256 assetsToDeposit, uint256 requestId) = _requestDirectDeposit(singleVaultData_);
+
+        /// @dev state registry for re-processing at a later date
+        _storeDepositPayload(0, CHAIN_ID, assetsToDeposit, requestId, singleVaultData_);
 
         return 0;
     }
@@ -216,13 +231,20 @@ contract ERC7540Form is ERC4626FormImplementation {
         override
         returns (uint256 shares)
     {
-        _storeDepositPayload(1, srcChainId_, _requestXChainDeposit(singleVaultData_, srcChainId_), singleVaultData_);
+        /// @dev state registry for re-processing at a later date
+        _storeDepositPayload(
+            1,
+            srcChainId_,
+            singleVaultData_.amount,
+            _requestXChainDeposit(singleVaultData_, srcChainId_),
+            singleVaultData_
+        );
 
         return 0;
     }
 
     /// @inheritdoc BaseForm
-    /// @dev this is the step-1 for timelock form withdrawal, direct case
+    /// @dev this is the step-1 for async form withdrawal, direct case
     /// @dev will mandatorily process unlock unless the retain4626 flag is set
     /// @return shares is always 0
     function _directWithdrawFromVault(
@@ -235,10 +257,8 @@ contract ERC7540Form is ERC4626FormImplementation {
         returns (uint256)
     {
         if (!singleVaultData_.retain4626) {
-            /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to
-            /// timelock
             /// @dev state registry for re-processing at a later date
-            _storeWithdrawPayload(0, CHAIN_ID, _requestUnlock(singleVaultData_.amount), singleVaultData_);
+            _storeWithdrawPayload(0, CHAIN_ID, _requestRedeem(singleVaultData_, CHAIN_ID), singleVaultData_);
         } else {
             /// @dev transfer shares to user and do not redeem shares for assets
             IERC20(IERC7540(vault).share()).safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
@@ -247,7 +267,7 @@ contract ERC7540Form is ERC4626FormImplementation {
     }
 
     /// @inheritdoc BaseForm
-    /// @dev this is the step-1 for timelock form withdrawal, xchain case
+    /// @dev this is the step-1 for async form withdrawal, xchain case
     /// @dev will mandatorily process unlock unless the retain4626 flag is set
     /// @return shares is always 0
     function _xChainWithdrawFromVault(
@@ -261,10 +281,8 @@ contract ERC7540Form is ERC4626FormImplementation {
         returns (uint256)
     {
         if (!singleVaultData_.retain4626) {
-            /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to
-            /// timelock
             /// @dev state registry for re-processing at a later date
-            _storeWithdrawPayload(1, srcChainId_, _requestUnlock(singleVaultData_.amount), singleVaultData_);
+            _storeWithdrawPayload(1, srcChainId_, _requestRedeem(singleVaultData_, srcChainId_), singleVaultData_);
         } else {
             /// @dev transfer shares to user and do not redeem shares for assets
             IERC20(IERC7540(vault).share()).safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
@@ -286,11 +304,12 @@ contract ERC7540Form is ERC4626FormImplementation {
     /// @dev calls the vault to request deposit
     function _requestDirectDeposit(InitSingleVaultData memory singleVaultData_)
         internal
-        returns (uint256 assetsToDeposit_)
+        returns (uint256 assetsToDeposit, uint256 requestId)
     {
         DirectDepositLocalVars memory vars;
 
-        IERC7540 v = IERC7540(vault);
+        address vaultLoc = vault;
+        IERC7540 v = IERC7540(vaultLoc);
         vars.asset = address(asset);
         vars.balanceBefore = IERC20(vars.asset).balanceOf(address(this));
         IERC20 token = IERC20(singleVaultData_.liqData.token);
@@ -358,25 +377,30 @@ contract ERC7540Form is ERC4626FormImplementation {
             }
         }
 
-        vars.assetDifference = IERC20(vars.asset).balanceOf(address(this)) - vars.balanceBefore;
+        assetsToDeposit = IERC20(vars.asset).balanceOf(address(this)) - vars.balanceBefore;
 
         /// @dev the difference in vault tokens, ready to be deposited, is compared with the amount inscribed in the
         /// superform data
         if (
-            vars.assetDifference * ENTIRE_SLIPPAGE
+            assetsToDeposit * ENTIRE_SLIPPAGE
                 < singleVaultData_.amount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)
         ) {
             revert Error.DIRECT_DEPOSIT_SWAP_FAILED();
         }
 
-        /// @dev notice that vars.assetDifference is deposited regardless if txData exists or not
+        /// @dev notice that assetsToDeposit is deposited regardless if txData exists or not
         /// @dev this presumes no dust is left in the superform
-        IERC20(vars.asset).safeIncreaseAllowance(vault, vars.assetDifference);
+        IERC20(vars.asset).safeIncreaseAllowance(vaultLoc, assetsToDeposit);
 
         /// ERC7540 logic
-        v.requestDeposit(vars.assetDifference, singleVaultData_.receiverAddress, address(this), "");
+        /// @dev if receiver address is a contract it needs to have a onERC7540DepositReceived() function
+        requestId = v.requestDeposit(assetsToDeposit, singleVaultData_.receiverAddress, address(this), "");
 
-        return vars.assetDifference;
+        emit RequestProcessed(
+            CHAIN_ID, CHAIN_ID, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc, requestId
+        );
+
+        return (assetsToDeposit, requestId);
     }
 
     /// @dev calls the vault to request deposit
@@ -385,7 +409,7 @@ contract ERC7540Form is ERC4626FormImplementation {
         uint64 srcChainId_
     )
         internal
-        returns (uint256 assetsToDeposit_)
+        returns (uint256 requestId)
     {
         (,, uint64 dstChainId) = singleVaultData_.superformId.getSuperform();
         address vaultLoc = vault;
@@ -403,20 +427,37 @@ contract ERC7540Form is ERC4626FormImplementation {
         IERC20(asset).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
 
         /// ERC7540 logic
-        v.requestDeposit(singleVaultData_.amount, singleVaultData_.receiverAddress, address(this), "");
+        /// @dev if receiver address is a contract it needs to have a onERC7540DepositReceived() function
+        requestId = v.requestDeposit(singleVaultData_.amount, singleVaultData_.receiverAddress, address(this), "");
 
-        return singleVaultData_.amount;
+        emit RequestProcessed(
+            srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc, requestId
+        );
+
+        return requestId;
     }
 
     /// @dev calls the vault to request unlock
     /// @notice superPositions are already burned at this point
-    function _requestUnlock(uint256 amount_) internal returns (uint256 lockedTill_) {
+    function _requestRedeem(
+        InitSingleVaultData memory singleVaultData_,
+        uint64 srcChainId_
+    )
+        internal
+        returns (uint256 requestId_)
+    {
+        (,, uint64 dstChainId) = singleVaultData_.superformId.getSuperform();
+
         IERC7540 v = IERC7540(vault);
-        /*
-        TODO: implement unlock
-        v.requestUnlock(amount_, address(this));
-        lockedTill_ = block.timestamp + v.getLockPeriod();
-        */
+
+        uint256 requestId =
+            v.requestRedeem(singleVaultData_.amount, singleVaultData_.receiverAddress, address(this), "");
+
+        emit RequestProcessed(
+            srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault, requestId
+        );
+
+        return requestId;
     }
 
     /// @dev stores the withdrawal payload
@@ -424,12 +465,13 @@ contract ERC7540Form is ERC4626FormImplementation {
         uint8 type_,
         uint64 srcChainId_,
         uint256 assetsToDeposit_,
+        uint256 requestId_,
         InitSingleVaultData memory data_
     )
         internal
     {
         IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY"))).receiveDepositPayload(
-            type_, srcChainId_, assetsToDeposit_, data_
+            type_, srcChainId_, assetsToDeposit_, requestId_, data_
         );
     }
 
@@ -437,13 +479,13 @@ contract ERC7540Form is ERC4626FormImplementation {
     function _storeWithdrawPayload(
         uint8 type_,
         uint64 srcChainId_,
-        uint256 lockedTill_,
+        uint256 requestId_,
         InitSingleVaultData memory data_
     )
         internal
     {
         IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY"))).receiveWithdrawPayload(
-            type_, srcChainId_, lockedTill_, data_
+            type_, srcChainId_, requestId_, data_
         );
     }
 }
