@@ -295,7 +295,7 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     //////////////////////////////////////////////////////////////
     //              INTERNAL HELPER FUNCTIONS                   //
     //////////////////////////////////////////////////////////////
-    
+
     /// @dev prevents the same AMB from delivery a payload and its proof
     /// @dev is an additional protection against malicious ambs
     function _ambProtect(AMBMessage memory _message) internal {

@@ -12,6 +12,7 @@ import { Error } from "src/libraries/Error.sol";
 
 contract HyperlaneImplementationUnitTest is BaseSetup {
     using ProofLib for AMBMessage;
+
     HyperlaneImplementation hyperlaneImplementation;
 
     function setUp() public override {
@@ -38,14 +39,7 @@ contract HyperlaneImplementationUnitTest is BaseSetup {
         bytes32 sender = bytes32(uint256(uint160(address(hyperlaneImplementation))));
 
         AMBMessage memory ambMessage = AMBMessage(
-            DataLib.packTxInfo(
-                uint8(TransactionType.DEPOSIT),
-                uint8(CallbackType.INIT),
-                0,
-                1,
-                deployer,
-                ETH
-            ),
+            DataLib.packTxInfo(uint8(TransactionType.DEPOSIT), uint8(CallbackType.INIT), 0, 1, deployer, ETH),
             abi.encode(new uint8[](0), "")
         );
 
@@ -56,14 +50,7 @@ contract HyperlaneImplementationUnitTest is BaseSetup {
 
         // Test with proof in params
         AMBMessage memory ambMessageWithProof = AMBMessage(
-            DataLib.packTxInfo(
-                uint8(TransactionType.DEPOSIT),
-                uint8(CallbackType.INIT),
-                0,
-                1,
-                deployer,
-                ETH
-            ),
+            DataLib.packTxInfo(uint8(TransactionType.DEPOSIT), uint8(CallbackType.INIT), 0, 1, deployer, ETH),
             abi.encode(proof)
         );
 

@@ -17,7 +17,8 @@ contract InvalidReceiver {
 }
 
 contract WormholeARImplementationTest is BaseSetup {
-        using ProofLib for AMBMessage;
+    using ProofLib for AMBMessage;
+
     ISuperRegistry public superRegistry;
     WormholeARImplementation wormholeARImpl;
 
@@ -249,65 +250,65 @@ contract WormholeARImplementationTest is BaseSetup {
     }
 
     function test_receiveWormholeMessages_ambProtect() public {
-    vm.selectFork(FORKS[ARBI]);
+        vm.selectFork(FORKS[ARBI]);
 
-    address payable wormholeARArbi = payable(ISuperRegistry(getContract(ARBI, "SuperRegistry")).getAmbAddress(3));
-    address relayer = address(WormholeARImplementation(wormholeARArbi).relayer());
+        address payable wormholeARArbi = payable(ISuperRegistry(getContract(ARBI, "SuperRegistry")).getAmbAddress(3));
+        address relayer = address(WormholeARImplementation(wormholeARArbi).relayer());
 
-    AMBMessage memory ambMessage = AMBMessage(
-        DataLib.packTxInfo(
-            uint8(TransactionType.DEPOSIT),
-            /// @dev TransactionType
-            uint8(CallbackType.INIT),
-            0,
-            /// @dev isMultiVaults
-            1,
-            /// @dev STATE_REGISTRY_TYPE,
-            deployer,
-            /// @dev srcSender,
-            ETH
-        ),
-        /// @dev srcChainId
-        abi.encode(new uint8[](0), "")
-    );
+        AMBMessage memory ambMessage = AMBMessage(
+            DataLib.packTxInfo(
+                uint8(TransactionType.DEPOSIT),
+                /// @dev TransactionType
+                uint8(CallbackType.INIT),
+                0,
+                /// @dev isMultiVaults
+                1,
+                /// @dev STATE_REGISTRY_TYPE,
+                deployer,
+                /// @dev srcSender,
+                ETH
+            ),
+            /// @dev srcChainId
+            abi.encode(new uint8[](0), "")
+        );
 
-    bytes32 proof = AMBMessage(ambMessage.txInfo, "").computeProof();
+        bytes32 proof = AMBMessage(ambMessage.txInfo, "").computeProof();
 
-    vm.prank(relayer);
-    WormholeARImplementation(wormholeARArbi).receiveWormholeMessages(
-        abi.encode(ambMessage),
-        new bytes[](0),
-        bytes32(uint256(uint160(address(wormholeARImpl)))),
-        2,
-        keccak256(abi.encode(ambMessage))
-    );
+        vm.prank(relayer);
+        WormholeARImplementation(wormholeARArbi).receiveWormholeMessages(
+            abi.encode(ambMessage),
+            new bytes[](0),
+            bytes32(uint256(uint160(address(wormholeARImpl)))),
+            2,
+            keccak256(abi.encode(ambMessage))
+        );
 
-    // Test with proof in params
-    AMBMessage memory ambMessageWithProof = AMBMessage(
-        DataLib.packTxInfo(
-            uint8(TransactionType.DEPOSIT),
-            /// @dev TransactionType
-            uint8(CallbackType.INIT),
-            0,
-            /// @dev isMultiVaults
-            1,
-            /// @dev STATE_REGISTRY_TYPE,
-            deployer,
-            /// @dev srcSender,
-            ETH
-        ),
-        /// @dev srcChainId
-        abi.encode(proof)
-    );
+        // Test with proof in params
+        AMBMessage memory ambMessageWithProof = AMBMessage(
+            DataLib.packTxInfo(
+                uint8(TransactionType.DEPOSIT),
+                /// @dev TransactionType
+                uint8(CallbackType.INIT),
+                0,
+                /// @dev isMultiVaults
+                1,
+                /// @dev STATE_REGISTRY_TYPE,
+                deployer,
+                /// @dev srcSender,
+                ETH
+            ),
+            /// @dev srcChainId
+            abi.encode(proof)
+        );
 
-    vm.prank(relayer);
-    vm.expectRevert(IAmbImplementation.MALICIOUS_DELIVERY.selector);
-    WormholeARImplementation(wormholeARArbi).receiveWormholeMessages(
-        abi.encode(ambMessageWithProof),
-        new bytes[](0),
-        bytes32(uint256(uint160(address(wormholeARImpl)))),
-        2,
-        keccak256(abi.encode(ambMessageWithProof, ambMessageWithProof))
-    );
-}
+        vm.prank(relayer);
+        vm.expectRevert(IAmbImplementation.MALICIOUS_DELIVERY.selector);
+        WormholeARImplementation(wormholeARArbi).receiveWormholeMessages(
+            abi.encode(ambMessageWithProof),
+            new bytes[](0),
+            bytes32(uint256(uint160(address(wormholeARImpl)))),
+            2,
+            keccak256(abi.encode(ambMessageWithProof, ambMessageWithProof))
+        );
+    }
 }
