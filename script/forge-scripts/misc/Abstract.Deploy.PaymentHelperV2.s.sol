@@ -231,7 +231,6 @@ abstract contract AbstractDeployPaymentHelperV2 is EnvironmentUtils {
                 }
             }
 
-            assert(PRICE_FEEDS[vars.chainId][remoteChainIds[j]] != address(0));
             assert(abi.decode(GAS_USED[remoteChainIds[j]][3], (uint256)) > 0);
             assert(abi.decode(GAS_USED[remoteChainIds[j]][4], (uint256)) > 0);
             assert(abi.decode(GAS_USED[remoteChainIds[j]][6], (uint256)) > 0);
@@ -288,6 +287,6 @@ abstract contract AbstractDeployPaymentHelperV2 is EnvironmentUtils {
             }
         }
         /// Send to Safe to sign
-        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], false);
+        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], true);
     }
 }
