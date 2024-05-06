@@ -311,4 +311,38 @@ contract WormholeARImplementationTest is BaseSetup {
             keccak256(abi.encode(ambMessageWithProof, ambMessageWithProof))
         );
     }
+
+    function test_receiveWormholeMessages_CALLER_NOT_RELAYER() public {
+        vm.expectRevert(Error.CALLER_NOT_RELAYER.selector);
+        wormholeARImpl.receiveWormholeMessages("", new bytes[](0), bytes32(0), 0, bytes32(0));
+    }
+
+    function test_dispatchPayload_NOT_STATE_REGISTRY() public {
+        vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
+        wormholeARImpl.dispatchPayload(deployer, 0, "", "");
+    }
+
+    function test_setWormholeRelayer_NOT_PROTOCOL_ADMIN() public {
+        vm.prank(address(0));
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        wormholeARImpl.setWormholeRelayer(address(0));
+    }
+
+    function test_setChainId_NOT_PROTOCOL_ADMIN() public {
+        vm.prank(address(0));
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        wormholeARImpl.setChainId(0, 0);
+    }
+
+    function test_setRefundChainId_NOT_PROTOCOL_ADMIN() public {
+        vm.prank(address(0));
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        wormholeARImpl.setRefundChainId(0);
+    }
+
+    function test_setReceiver_NOT_PROTOCOL_ADMIN() public {
+        vm.prank(address(0));
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        wormholeARImpl.setReceiver(0, deployer);
+    }
 }
