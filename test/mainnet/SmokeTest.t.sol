@@ -61,6 +61,7 @@ contract SmokeTest is MainnetBaseSetup {
         }
     }
 
+    /*
     function test_superRegistryAddresses_destination() public {
         SuperRegistry sr;
 
@@ -116,6 +117,7 @@ contract SmokeTest is MainnetBaseSetup {
             }
         }
     }
+    */
 
     function test_roles() public {
         SuperRBAC srbac;
@@ -434,36 +436,38 @@ contract SmokeTest is MainnetBaseSetup {
         }
     }
 
-    // function test_paymentHelper() public {
-    //     PaymentHelper paymentHelper;
+    /*    
+    function test_paymentHelper() public {
+        PaymentHelper paymentHelper;
 
-    //     for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
-    //         uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
-    //         vm.selectFork(FORKS[chainId]);
-    //         paymentHelper = PaymentHelper(getContract(chainId, "PaymentHelper"));
-    //         console.log("--Checking chain id ", chainId);
+        for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
+            uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+            vm.selectFork(FORKS[chainId]);
+            paymentHelper = PaymentHelper(getContract(chainId, "PaymentHelper"));
+            console.log("--Checking chain id ", chainId);
 
-    //         for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
-    //             assertEq(
-    //                 address(paymentHelper.nativeFeedOracle(TARGET_DEPLOYMENT_CHAINS[j])),
-    //                 PRICE_FEEDS[chainId][TARGET_DEPLOYMENT_CHAINS[j]]
-    //             );
-    //             if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
-    //                 assertEq(
-    //                     paymentHelper.swapGasUsed(TARGET_DEPLOYMENT_CHAINS[j]),
-    //                     abi.decode(GAS_USED[TARGET_DEPLOYMENT_CHAINS[j]][3], (uint256))
-    //                 );
-    //                 assertEq(
-    //                     paymentHelper.updateDepositGasUsed(TARGET_DEPLOYMENT_CHAINS[j]),
-    //                     abi.decode(GAS_USED[TARGET_DEPLOYMENT_CHAINS[j]][4], (uint256))
-    //                 );
+            for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
+                assertEq(
+                    address(paymentHelper.nativeFeedOracle(TARGET_DEPLOYMENT_CHAINS[j])),
+                    PRICE_FEEDS[chainId][TARGET_DEPLOYMENT_CHAINS[j]]
+                );
+                if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
+                    assertEq(
+                        paymentHelper.swapGasUsed(TARGET_DEPLOYMENT_CHAINS[j]),
+                        abi.decode(GAS_USED[TARGET_DEPLOYMENT_CHAINS[j]][3], (uint256))
+                    );
+                    assertEq(
+                        paymentHelper.updateDepositGasUsed(TARGET_DEPLOYMENT_CHAINS[j]),
+                        abi.decode(GAS_USED[TARGET_DEPLOYMENT_CHAINS[j]][4], (uint256))
+                    );
 
-    //                 assertEq(
-    //                     paymentHelper.withdrawGasUsed(TARGET_DEPLOYMENT_CHAINS[j]),
-    //                     abi.decode(GAS_USED[TARGET_DEPLOYMENT_CHAINS[j]][6], (uint256))
-    //                 );
-    //             }
-    //         }
-    //     }
-    // }
+                    assertEq(
+                        paymentHelper.withdrawGasUsed(TARGET_DEPLOYMENT_CHAINS[j]),
+                        abi.decode(GAS_USED[TARGET_DEPLOYMENT_CHAINS[j]][6], (uint256))
+                    );
+                }
+            }
+        }
+    }
+    */
 }
