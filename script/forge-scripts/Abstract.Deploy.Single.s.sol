@@ -29,7 +29,7 @@ import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaym
 import { TimelockStateRegistry } from "src/crosschain-data/extensions/TimelockStateRegistry.sol";
 import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
 import { PaymentHelper } from "src/payments/PaymentHelper.sol";
-import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
+import { IPaymentHelperV2 as IPaymentHelper } from "src/interfaces/IPaymentHelperV2.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
 import { EmergencyQueue } from "src/EmergencyQueue.sol";
@@ -347,8 +347,11 @@ abstract contract AbstractDeploySingle is BatchScript {
     ];
 
     address[] public PROTOCOL_ADMINS_STAGING = [
+        address(0),
         0xBbb23AE2e3816a178f8bd405fb101D064C5071d9,
         /// @dev BSC https://app.onchainden.com/safes/bnb:0xBbb23AE2e3816a178f8bd405fb101D064C5071d9
+        address(0),
+        address(0),
         0xBbb23AE2e3816a178f8bd405fb101D064C5071d9,
         /// @dev ARBI https://app.onchainden.com/safes/arb1:0xBbb23AE2e3816a178f8bd405fb101D064C5071d9
         0xfe3A0C3c4980Eef00C2Ec73D8770a2D9A489fdE5,
@@ -410,18 +413,18 @@ abstract contract AbstractDeploySingle is BatchScript {
         cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
 
         /// @dev 1 - Deploy SuperRBAC
+        /// @dev WARNING - MUST KEEP THESE ADDRESSES INTACT TO PRESERVE CREATE2 ADDRESS
         vars.superRBAC = address(
             new SuperRBAC{ salt: salt }(
                 ISuperRBAC.InitialRoleSetup({
                     admin: ownerAddress,
                     emergencyAdmin: ownerAddress,
-                    paymentAdmin: ownerAddress,
+                    paymentAdmin: PAYMENT_ADMIN,
                     csrProcessor: CSR_PROCESSOR,
                     tlProcessor: EMERGENCY_ADMIN,
-                    /// @dev Temporary, as we are not using this processor in this release
-                    brProcessor: BROADCAST_REGISTRY_PROCESSOR,
+                    brProcessor: EMERGENCY_ADMIN,
                     csrUpdater: CSR_UPDATER,
-                    srcVaaRelayer: WORMHOLE_VAA_RELAYER,
+                    srcVaaRelayer: EMERGENCY_ADMIN,
                     dstSwapper: DST_SWAPPER,
                     csrRescuer: CSR_RESCUER,
                     csrDisputer: CSR_DISPUTER
@@ -430,6 +433,18 @@ abstract contract AbstractDeploySingle is BatchScript {
         );
         contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars.superRBAC;
         vars.superRBACC = SuperRBAC(vars.superRBAC);
+
+        /// @dev 1.1 temporary setting of payment admin to owneraddress for updateRemoteChain at the end of this
+        /// function
+        vars.superRBACC.grantRole(vars.superRBACC.PAYMENT_ADMIN_ROLE(), ownerAddress);
+        /// @dev 1.2 new setting of BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE
+        vars.superRBACC.grantRole(
+            vars.superRBACC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), BROADCAST_REGISTRY_PROCESSOR
+        );
+        vars.superRBACC.revokeRole(vars.superRBACC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), EMERGENCY_ADMIN);
+        /// @dev 1.3 new setting of WORMHOLE_VAA_RELAYER_ROLE
+        vars.superRBACC.grantRole(vars.superRBACC.WORMHOLE_VAA_RELAYER_ROLE(), WORMHOLE_VAA_RELAYER);
+        vars.superRBACC.revokeRole(vars.superRBACC.WORMHOLE_VAA_RELAYER_ROLE(), EMERGENCY_ADMIN);
 
         /// @dev 2 - Deploy SuperRegistry
         vars.superRegistry = address(new SuperRegistry{ salt: salt }(vars.superRBAC));
@@ -654,7 +669,7 @@ abstract contract AbstractDeploySingle is BatchScript {
             vars.superRegistryC.setBridgeAddresses(bridgeIds, BRIDGE_ADDRESSES[vars.chainId], bridgeValidators);
         }
 
-        /// @dev configures ambImpkementations to super registry
+        /// @dev configures ambImplementations to super registry
         if (vars.chainId == FANTOM) {
             uint8[] memory ambIdsFantom = new uint8[](3);
             ambIdsFantom[0] = 1;
@@ -883,9 +898,11 @@ abstract contract AbstractDeploySingle is BatchScript {
         srbac.grantRole(emergencyAdminRole, EMERGENCY_ADMIN);
         srbac.grantRole(paymentAdminRole, PAYMENT_ADMIN);
 
-        srbac.revokeRole(emergencyAdminRole, ownerAddress);
-        srbac.revokeRole(paymentAdminRole, ownerAddress);
-        srbac.revokeRole(protocolAdminRole, ownerAddress);
+        if (env == 0) {
+            srbac.revokeRole(emergencyAdminRole, ownerAddress);
+            srbac.revokeRole(paymentAdminRole, ownerAddress);
+            srbac.revokeRole(protocolAdminRole, ownerAddress);
+        }
 
         vm.stopBroadcast();
     }
@@ -908,6 +925,11 @@ abstract contract AbstractDeploySingle is BatchScript {
         SetupVars memory vars;
 
         vars.chainId = previousDeploymentChains[i];
+        bool safeExecution = env == 0 ? true : false;
+
+        if (!safeExecution) {
+            cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
+        }
 
         vars.lzImplementation = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
         vars.hyperlaneImplementation =
@@ -919,7 +941,6 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
         vars.paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
         vars.superRegistryC = SuperRegistry(payable(vars.superRegistry));
-
         IPaymentHelper.PaymentHelperConfig memory addRemoteConfig = _configureCurrentChainBasedOnTargetDestinations(
             env,
             CurrentChainBasedOnDstvars(
@@ -941,12 +962,19 @@ abstract contract AbstractDeploySingle is BatchScript {
                 address(0),
                 vars.superRegistryC
             ),
-            env == 0 ? true : false
+            safeExecution
         );
-        PaymentHelper(payable(vars.paymentHelper)).addRemoteChain(newChainId, addRemoteConfig);
+        if (!safeExecution) {
+            PaymentHelper(payable(vars.paymentHelper)).addRemoteChain(newChainId, addRemoteConfig);
+            vm.stopBroadcast();
+        } else {
+            bytes memory txn =
+                abi.encodeWithSelector(PaymentHelper.addRemoteChain.selector, newChainId, addRemoteConfig);
+            addToBatch(vars.paymentHelper, 0, txn);
 
-        /// Send to Safe to sign
-        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], execute);
+            /// Send to Safe to sign
+            executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], execute);
+        }
     }
 
     struct CurrentChainBasedOnDstvars {
@@ -1382,9 +1410,9 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// BASE
         priceFeeds[BASE][BASE] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
         priceFeeds[BASE][OP] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
-        priceFeeds[BASE][POLY] = address(0);
-        priceFeeds[BASE][AVAX] = address(0);
-        priceFeeds[BASE][BSC] = address(0);
+        priceFeeds[BASE][POLY] = 0x12129aAC52D6B0f0125677D4E1435633E61fD25f;
+        priceFeeds[BASE][AVAX] = 0xE70f2D34Fd04046aaEC26a198A35dD8F2dF5cd92;
+        priceFeeds[BASE][BSC] = 0x4b7836916781CAAfbb7Bd1E5FDd20ED544B453b1;
         priceFeeds[BASE][ETH] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
         priceFeeds[BASE][ARBI] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
         priceFeeds[BASE][FANTOM] = address(0);

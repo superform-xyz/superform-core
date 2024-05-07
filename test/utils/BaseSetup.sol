@@ -72,7 +72,7 @@ import { IPermit2 } from "src/vendor/dragonfly-xyz/IPermit2.sol";
 import { TimelockStateRegistry } from "src/crosschain-data/extensions/TimelockStateRegistry.sol";
 import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
 import { PaymentHelper } from "src/payments/PaymentHelper.sol";
-import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
+import { IPaymentHelperV2 as IPaymentHelper } from "src/interfaces/IPaymentHelperV2.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { Error } from "src/libraries/Error.sol";
@@ -1363,9 +1363,9 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// BASE
         priceFeeds[BASE][BASE] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
         priceFeeds[BASE][OP] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
-        priceFeeds[BASE][POLY] = address(0);
-        priceFeeds[BASE][AVAX] = address(0);
-        priceFeeds[BASE][BSC] = address(0);
+        priceFeeds[BASE][POLY] = 0x12129aAC52D6B0f0125677D4E1435633E61fD25f;
+        priceFeeds[BASE][AVAX] = 0xE70f2D34Fd04046aaEC26a198A35dD8F2dF5cd92;
+        priceFeeds[BASE][BSC] = 0x4b7836916781CAAfbb7Bd1E5FDd20ED544B453b1;
         priceFeeds[BASE][ETH] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
         priceFeeds[BASE][ARBI] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
         priceFeeds[BASE][FANTOM] = address(0);
