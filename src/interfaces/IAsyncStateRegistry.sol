@@ -38,7 +38,7 @@ struct AsyncDepositPayload {
 struct AsyncWithdrawPayload {
     uint8 isXChain;
     uint64 srcChainId;
-    uint256 requestId_;
+    uint256 requestId;
     InitSingleVaultData data;
     AsyncStatus status;
 }

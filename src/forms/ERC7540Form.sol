@@ -202,7 +202,7 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
 
         uint256 assetsBalanceBefore = assetERC.balanceOf(vars.receiver);
 
-        assets = v.redeem(p_.data.amount, vars.receiver, address(this));
+        assets = v.redeem(p_.data.amount, vars.receiver, p_.data.receiverAddress);
         uint256 assetsBalanceAfter = assetERC.balanceOf(vars.receiver);
 
         if (

@@ -55,7 +55,6 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
     mapping(uint256 asyncPayloadId => AsyncDepositPayload) public asyncDepositPayload;
     mapping(uint256 asyncPayloadId => AsyncWithdrawPayload) public asyncWithdrawPayload;
 
-
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
     //////////////////////////////////////////////////////////////
@@ -245,18 +244,23 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
             revert Error.INVALID_PAYLOAD_STATUS();
         }
 
-        /// @dev ADD MISSING LOGIC TO CHECK CLAIMABLE WITHDRAWS
+        (address superformAddress,,) = p.data.superformId.getSuperform();
+
+        IERC7540Form superform = IERC7540Form(superformAddress);
+
+        uint256 claimableRedeem = superform.getClaimableRedeemRequest(p.requestId, p.data.receiverAddress);
+
+        if (p.requestId == 0 && claimableRedeem < p.data.amount || p.requestId != 0 && claimableRedeem != p.data.amount)
+        {
+            revert NOT_READY_TO_CLAIM();
+        }
 
         IBridgeValidator bridgeValidator = IBridgeValidator(superRegistry.getBridgeValidator(p.data.liqData.bridgeId));
 
         /// @dev set status here to prevent re-entrancy
         p.status = AsyncStatus.PROCESSED;
 
-        (address superformAddress,,) = p.data.superformId.getSuperform();
-
-        IERC7540Form superform = IERC7540Form(superformAddress);
-
-        /// @dev this step is used to re-feed txData to avoid using old txData that would have expired by now
+        /// @dev this step is used to feed txData in case user wants to receive assets in a different way
         if (txData_.length != 0) {
             uint256 finalAmount;
 
@@ -288,26 +292,10 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
             p.data.liqData.txData = txData_;
         }
 
-        try superform.claimWithdraw(p) { }
-        catch {
-            /// @dev dispatch acknowledgement to mint superPositions back because of failure
-            if (p.isXChain == 1) {
-                (uint256 payloadId,) = abi.decode(p.data.extraFormData, (uint256, uint256));
-
-                _dispatchAcknowledgement(
-                    p.srcChainId,
-                    _getDeliveryAMB(payloadId),
-                    _constructSingleWithdrawReturnData(p.data.receiverAddress, p.data)
-                );
-            }
-
-            /// @dev for direct chain, superPositions are minted directly
-            if (p.isXChain == 0) {
-                ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintSingle(
-                    p.data.receiverAddress, p.data.superformId, p.data.amount
-                );
-            }
-        }
+        /// @dev if redeeming failed superPositions are not reminted
+        /// @dev this is different than the normal 4626 flow because if a redeem is claimable
+        /// @dev a user could simply go to the vault and claim the assets directly
+        superform.claimWithdraw(p);
 
         /// @dev restoring state for gas saving
         /// @dev should this be done ? considering we'd want to mark this as forever not possible to process in case of
@@ -346,7 +334,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
             revert Error.INSUFFICIENT_QUORUM();
         }
 
-        if (callbackType == uint256(CallbackType.FAIL) || callbackType == uint256(CallbackType.RETURN)) {
+        if (callbackType == uint256(CallbackType.RETURN)) {
             ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).stateSync(_message);
         }
     }
@@ -394,35 +382,6 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
                     CHAIN_ID
                 ),
                 abi.encode(ReturnSingleData(singleVaultData_.payloadId, singleVaultData_.superformId, shares_))
-            )
-        );
-    }
-
-    /// @notice CoreStateRegistry-like function for build message back to the source. In regular flow called after
-    /// xChainWithdraw succeeds.
-    /// @dev Constructs return message in case of a FAILURE to perform redemption of already unlocked assets
-    function _constructSingleWithdrawReturnData(
-        address receiverAddress_,
-        InitSingleVaultData memory singleVaultData_
-    )
-        internal
-        view
-        returns (bytes memory returnMessage)
-    {
-        /// @notice Send Data to Source to issue superform positions.
-        return abi.encode(
-            AMBMessage(
-                DataLib.packTxInfo(
-                    uint8(TransactionType.WITHDRAW),
-                    uint8(CallbackType.FAIL),
-                    0,
-                    superRegistry.getStateRegistryId(address(this)),
-                    receiverAddress_,
-                    CHAIN_ID
-                ),
-                abi.encode(
-                    ReturnSingleData(singleVaultData_.payloadId, singleVaultData_.superformId, singleVaultData_.amount)
-                )
             )
         );
     }
