@@ -19,7 +19,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
-    //                         CONSTANTS                         //
+    //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
 
     ISuperRegistry public immutable superRegistry;
