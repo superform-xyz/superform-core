@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.23;
+pragma solidity >=0.5.0;
 
 import { IERC7575 } from "./IERC7575.sol";
 
@@ -15,7 +15,7 @@ interface IERC7540DepositReceiver {
      *
      * Note: the contract address is always the message sender.
      *
-     * @param _operator The address which called `requestDeposit` function
+     * @param _sender The address which called `requestDeposit` function
      * @param _owner The address which funded the `assets` of the Request (or message sender)
      * @param _requestId The RID identifier of the Request which is being received
      * @param _assets The amount transferred on `requestDeposit`
@@ -24,7 +24,7 @@ interface IERC7540DepositReceiver {
      *  unless throwing
      */
     function onERC7540DepositReceived(
-        address _operator,
+        address _sender,
         address _owner,
         uint256 _requestId,
         uint256 _assets,
@@ -46,7 +46,7 @@ interface IERC7540RedeemReceiver {
      *
      * Note: the contract address is always the message sender.
      *
-     * @param _operator The address which called `requestRedeem` function
+     * @param _sender The address which called `requestRedeem` function
      * @param _owner The address which funded the `shares` of the Request (or message sender)
      * @param _requestId The RID identifier of the Request which is being received
      * @param _shares The amount transferred on `requestDeposit`
@@ -55,7 +55,7 @@ interface IERC7540RedeemReceiver {
      *  unless throwing
      */
     function onERC7540RedeemReceived(
-        address _operator,
+        address _sender,
         address _owner,
         uint256 _requestId,
         uint256 _shares,
@@ -293,4 +293,37 @@ interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC7540CancelDeposit, IE
     event RedeemClaimable(address indexed owner, uint256 indexed requestId, uint256 assets, uint256 shares);
     event CancelDepositClaimable(address indexed owner, uint256 indexed requestId, uint256 assets);
     event CancelRedeemClaimable(address indexed owner, uint256 indexed requestId, uint256 shares);
+
+    /**
+     * @dev Mints shares Vault shares to receiver by claiming the Request of the owner.
+     *
+     * - MUST emit the Deposit event.
+     * - owner MUST equal msg.sender unless the owner has approved the msg.sender as an operator.
+     */
+    function deposit(uint256 assets, address receiver, address owner) external returns (uint256 shares);
+
+    /**
+     * @dev Mints exactly shares Vault shares to receiver by claiming the Request of the owner.
+     *
+     * - MUST emit the Deposit event.
+     * - owner MUST equal msg.sender unless the owner has approved the msg.sender as an operator.
+     */
+    function mint(uint256 shares, address receiver, address owner) external returns (uint256 assets);
+
+    /**
+     * @dev The event emitted when an operator is set.
+     *
+     * @param owner The address of the owner.
+     * @param operator The address of the operator.
+     * @param approved The approval status.
+     */
+    event OperatorSet(address indexed owner, address indexed operator, bool approved);
+
+    /**
+     * @dev Sets or removes an operator for the caller.
+     *
+     * @param operator The address of the operator.
+     * @param approved The approval status.
+     */
+    function setOperator(address operator, bool approved) external returns (bool);
 }

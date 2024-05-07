@@ -5,11 +5,33 @@ import { IERC4626Form } from "./IERC4626Form.sol";
 import { InitSingleVaultData, TimelockPayload } from "../../types/DataTypes.sol";
 import { AsyncWithdrawPayload, AsyncDepositPayload } from "../../interfaces/IAsyncStateRegistry.sol";
 
-/// @title IERC7540Form
-/// @dev Interface used by ERC7540Form. Required by AsyncStateRegistry
-/// @dev can it use the inherited public methods from 4626 or does it have to override them?
+/// @title IERC7540FormBase
 /// @author Zeropoint Labs
-interface IERC7540Form is IERC4626Form {
+interface IERC7540FormBase {
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
+
+    function getPendingDepositRequest(uint256 requestId, address owner) external view returns (uint256 pendingAssets);
+
+    function getClaimableDepositRequest(
+        uint256 requestId,
+        address owner
+    )
+        external
+        view
+        returns (uint256 claimableAssets);
+
+    function getPendingRedeemRequest(uint256 requestId, address owner) external view returns (uint256 pendingShares);
+
+    function getClaimableRedeemRequest(
+        uint256 requestId,
+        address owner
+    )
+        external
+        view
+        returns (uint256 claimableShares);
+
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
@@ -28,3 +50,8 @@ interface IERC7540Form is IERC4626Form {
     /// @return assets the amount of assets withdrawn
     function claimWithdraw(AsyncWithdrawPayload memory p_) external returns (uint256 assets);
 }
+
+/// @title IERC7540Form
+/// @dev Interface used by ERC7540Form. Required by AsyncStateRegistry
+/// @author Zeropoint Labs
+interface IERC7540Form is IERC7540FormBase, IERC4626Form { }

@@ -9,11 +9,12 @@ import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 import { IQuorumManager } from "src/interfaces/IQuorumManager.sol";
 import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
 import {
+    AsyncStatus,
     IAsyncStateRegistry,
     AsyncDepositPayload,
     AsyncWithdrawPayload,
-    FailedAsyncDeposit,
-    NOT_ASYNC_SUPERFORM
+    NOT_ASYNC_SUPERFORM,
+    NOT_READY_TO_CLAIM
 } from "src/interfaces/IAsyncStateRegistry.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
@@ -29,7 +30,6 @@ import {
     CallbackType,
     TransactionType,
     PayloadState,
-    TimelockStatus,
     ReturnSingleData
 } from "src/types/DataTypes.sol";
 import { ReentrancyGuard } from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
@@ -45,7 +45,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
     //                     STATE VARIABLES                      //
     //////////////////////////////////////////////////////////////
 
-    /// @dev tracks the total async deposit ayloads
+    /// @dev tracks the total async deposit payloads
     uint256 public asyncDepositPayloadCounter;
 
     /// @dev tracks the total async withdraw payloads
@@ -55,8 +55,6 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
     mapping(uint256 asyncPayloadId => AsyncDepositPayload) public asyncDepositPayload;
     mapping(uint256 asyncPayloadId => AsyncWithdrawPayload) public asyncWithdrawPayload;
 
-    /// @dev stores the information about a specific payload id that failed
-    mapping(uint256 asyncPayloadId => FailedAsyncDeposit) failedDeposits;
 
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
@@ -76,7 +74,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
         _;
     }
 
-    /// @dev ensures only a async superform can write to this state registry
+    /// @dev ensures only an async superform can write to this state registry
     /// @param superformId_ is the superformId of the superform to check
     modifier onlyAsyncSuperform(uint256 superformId_) {
         if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId_)) {
@@ -150,7 +148,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
         ++asyncDepositPayloadCounter;
 
         asyncDepositPayload[asyncDepositPayloadCounter] =
-            AsyncDepositPayload(type_, srcChainId_, assetsToDeposit_, requestId_, data_, TimelockStatus.PENDING);
+            AsyncDepositPayload(type_, srcChainId_, assetsToDeposit_, requestId_, data_, AsyncStatus.PENDING);
     }
 
     /// @inheritdoc IAsyncStateRegistry
@@ -169,26 +167,30 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
         ++asyncWithdrawPayloadCounter;
 
         asyncWithdrawPayload[asyncWithdrawPayloadCounter] =
-            AsyncDepositPayload(type_, srcChainId_, requestId_, data_, TimelockStatus.PENDING);
+            AsyncWithdrawPayload(type_, srcChainId_, requestId_, data_, AsyncStatus.PENDING);
     }
 
     /// @inheritdoc IAsyncStateRegistry
     function finalizeDepositPayload(uint256 asyncPayloadId_) external payable override onlyAsyncStateRegistry {
         AsyncDepositPayload storage p = asyncDepositPayload[asyncPayloadId_];
-        if (p.status != TimelockStatus.PENDING) {
+        if (p.status != AsyncStatus.PENDING) {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
-
-        /// @dev set status here to prevent re-entrancy
-        p.status = TimelockStatus.PROCESSED;
 
         (address superformAddress,,) = p.data.superformId.getSuperform();
 
         IERC7540Form superform = IERC7540Form(superformAddress);
 
-        /// @dev MISSES LOGIC TO CHECK IF THERE ARE CLAIMABLE SHARES
+        uint256 claimableDeposit = superform.getClaimableDepositRequest(p.requestId, p.data.receiverAddress);
+        if (
+            p.requestId == 0 && claimableDeposit < p.assetsToDeposit
+                || p.requestId != 0 && claimableDeposit != p.assetsToDeposit
+        ) {
+            revert NOT_READY_TO_CLAIM();
+        }
 
-        /// @dev Should we have keeper amount re-update logic here?
+        /// @dev set status here to prevent re-entrancy
+        p.status = AsyncStatus.PROCESSED;
 
         try superform.claimDeposit(p) returns (uint256 shares) {
             if (shares != 0 && !p.data.retain4626) {
@@ -211,14 +213,20 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
                 }
             }
         } catch {
-            /// @dev if any deposit fails, add it to failedDepositSuperformIds mapping for future rescuing
-            failedDeposits[asyncPayloadId_].superformIds.push(p.data.superformId);
-            failedDeposits[asyncPayloadId_].settlementToken.push(superform.getVaultAsset());
+            /// @dev In case of a deposit actual failure (at the vault level, or returned shares level in the form),
+            /// @dev the course of action for a user to claim the deposit would be to directly call claim deposit at the
+            /// vault contract level.
+            /// @dev This must happen like this because superform does not have the shares nor the assets to act upon
+            /// them.
 
             emit FailedDeposit(asyncPayloadId_);
         }
 
         /// @dev restoring state for gas saving
+        /// @dev should this be done ? considering we'd want to mark this as forever not possible to process in case of
+        /// failure?
+        /// @dev or maybe the form is momentarily paused and we'd want the keeper to try again later when it's
+        /// unpaused...
         delete asyncDepositPayload[asyncPayloadId_];
     }
 
@@ -233,18 +241,16 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
         onlyAsyncStateRegistry
     {
         AsyncWithdrawPayload storage p = asyncWithdrawPayload[asyncPayloadId_];
-        if (p.status != TimelockStatus.PENDING) {
+        if (p.status != AsyncStatus.PENDING) {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
 
-        if (p.lockedTill > block.timestamp) {
-            revert Error.LOCKED();
-        }
+        /// @dev ADD MISSING LOGIC TO CHECK CLAIMABLE WITHDRAWS
 
         IBridgeValidator bridgeValidator = IBridgeValidator(superRegistry.getBridgeValidator(p.data.liqData.bridgeId));
 
         /// @dev set status here to prevent re-entrancy
-        p.status = TimelockStatus.PROCESSED;
+        p.status = AsyncStatus.PROCESSED;
 
         (address superformAddress,,) = p.data.superformId.getSuperform();
 
@@ -304,6 +310,10 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
         }
 
         /// @dev restoring state for gas saving
+        /// @dev should this be done ? considering we'd want to mark this as forever not possible to process in case of
+        /// failure?
+        /// @dev or maybe the form is momentarily paused and we'd want the keeper to try again later when it's
+        /// unpaused...
         delete asyncWithdrawPayload[asyncPayloadId_];
     }
 
@@ -336,7 +346,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
             revert Error.INSUFFICIENT_QUORUM();
         }
 
-        if (callbackType == uint256(CallbackType.FAIL)) {
+        if (callbackType == uint256(CallbackType.FAIL) || callbackType == uint256(CallbackType.RETURN)) {
             ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).stateSync(_message);
         }
     }
@@ -362,7 +372,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
 
     /// @notice CoreStateRegistry-like function for build message back to the source. In regular flow called after
     /// xChainDeposit succeeds.
-    /// @dev Constructs return message in case of a FAILURE to perform redemption of already unlocked assets
+    /// @dev Constructs return message in case of a SUCCESS in depositing assets to the vault
     function _constructSingleDepositReturnData(
         address receiverAddress_,
         InitSingleVaultData memory singleVaultData_,

@@ -12,11 +12,12 @@ import { InitSingleVaultData, LiqRequest } from "src/types/DataTypes.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC7540 } from "./interfaces/IERC7540.sol";
+import { IERC7540FormBase } from "./interfaces/IERC7540Form.sol";
 
 /// @title ERC7540Form
 /// @dev Form implementation to handle async 7540 vaults
 /// @author Zeropoint Labs
-contract ERC7540Form is ERC4626FormImplementation {
+contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
     using SafeERC20 for IERC20;
     using SafeERC20 for IERC7540;
     using DataLib for uint256;
@@ -76,21 +77,78 @@ contract ERC7540Form is ERC4626FormImplementation {
     //////////////////////////////////////////////////////////////
 
     constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_, stateRegistryId) { }
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc IERC7540FormBase
+    function getPendingDepositRequest(
+        uint256 requestId,
+        address owner
+    )
+        public
+        view
+        virtual
+        override
+        returns (uint256 pendingAssets)
+    {
+        return IERC7540(vault).pendingDepositRequest(requestId, owner);
+    }
+
+    /// @inheritdoc IERC7540FormBase
+    function getClaimableDepositRequest(
+        uint256 requestId,
+        address owner
+    )
+        public
+        view
+        virtual
+        override
+        returns (uint256 claimableAssets)
+    {
+        return IERC7540(vault).claimableDepositRequest(requestId, owner);
+    }
+
+    /// @inheritdoc IERC7540FormBase
+    function getPendingRedeemRequest(
+        uint256 requestId,
+        address owner
+    )
+        public
+        view
+        virtual
+        override
+        returns (uint256 pendingShares)
+    {
+        return IERC7540(vault).pendingRedeemRequest(requestId, owner);
+    }
+
+    /// @inheritdoc IERC7540FormBase
+    function getClaimableRedeemRequest(
+        uint256 requestId,
+        address owner
+    )
+        public
+        view
+        virtual
+        override
+        returns (uint256 claimableShares)
+    {
+        return IERC7540(vault).claimableRedeemRequest(requestId, owner);
+    }
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
 
-    /// @dev this function is called when the shares are ready to be transferred to the form or to receiverAddress (if
-    /// retain4626 is set)
-    /// @param p_ the payload data
-    /// @return shares the amount of shares minted
+    /// @inheritdoc IERC7540FormBase
     function claimDeposit(AsyncDepositPayload memory p_) external onlyAsyncStateRegistry returns (uint256 shares) {
         if (p_.data.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
 
         if (_isPaused(p_.data.superformId)) {
-            IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(p_.data);
-
+            /// @dev in case of a deposit and the form is paused, nothing can be sent to the emergency queue as there
+            /// are no shares belonging to this
+            /// @dev payload in the superform. return 0 to stop processing
             return 0;
         }
 
@@ -99,9 +157,8 @@ contract ERC7540Form is ERC4626FormImplementation {
 
         address sharesReceiver = p_.data.retain4626 ? p_.data.receiverAddress : address(this);
 
-        /// @dev ISSUE: if we only detect this error by this step, must we make this a failed deposit?
         uint256 sharesBalanceBefore = share.balanceOf(sharesReceiver);
-        shares = v.deposit(p_.assetsToDeposit, sharesReceiver);
+        shares = v.deposit(p_.assetsToDeposit, sharesReceiver, p_.data.receiverAddress);
         uint256 sharesBalanceAfter = share.balanceOf(sharesReceiver);
         if (
             (sharesBalanceAfter - sharesBalanceBefore != shares)
@@ -111,17 +168,14 @@ contract ERC7540Form is ERC4626FormImplementation {
         }
     }
 
-    /// @dev this function is called the withdraw request is ready to be claimed
-    /// @dev retain4626 flag is not added in this implementation unlike in ERC4626Implementation.sol because
-    /// @dev if a vault fails to redeem at this stage, superPositions are minted back to the user and he can
-    /// @dev try again with retain4626 flag set and take their shares directly
-    /// @param p_ the payload data
-    /// @return assets the amount of assets withdrawn
+    /// @inheritdoc IERC7540FormBase
     function claimWithdraw(AsyncWithdrawPayload memory p_) external onlyAsyncStateRegistry returns (uint256 assets) {
         if (p_.data.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
 
         if (_isPaused(p_.data.superformId)) {
-            IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(p_.data);
+            /// @dev in case of a deposit and the form is paused, nothing can be sent to the emergency queue as there
+            /// are no shares belonging to this
+            /// @dev payload in the superform. return 0 to stop processing
 
             return 0;
         }
@@ -244,7 +298,7 @@ contract ERC7540Form is ERC4626FormImplementation {
     }
 
     /// @inheritdoc BaseForm
-    /// @dev this is the step-1 for async form withdrawal, direct case
+    /// @dev this is the step-1 for async form withdraw, direct case
     /// @dev will mandatorily process unlock unless the retain4626 flag is set
     /// @return shares is always 0
     function _directWithdrawFromVault(
@@ -267,7 +321,7 @@ contract ERC7540Form is ERC4626FormImplementation {
     }
 
     /// @inheritdoc BaseForm
-    /// @dev this is the step-1 for async form withdrawal, xchain case
+    /// @dev this is the step-1 for async form withdraw, xchain case
     /// @dev will mandatorily process unlock unless the retain4626 flag is set
     /// @return shares is always 0
     function _xChainWithdrawFromVault(
@@ -292,8 +346,10 @@ contract ERC7540Form is ERC4626FormImplementation {
     }
 
     /// @inheritdoc BaseForm
-    function _emergencyWithdraw(address receiverAddress_, uint256 amount_) internal override {
-        _processEmergencyWithdraw(receiverAddress_, amount_);
+    function _emergencyWithdraw(address, uint256) internal virtual override {
+        /// @dev emergency withdraws are disabled in async forms, if the form is paused and user has pendingRequests
+        /// @dev can cancel them directly in the underlying vault
+        revert Error.DISABLED();
     }
 
     /// @inheritdoc BaseForm
@@ -460,7 +516,7 @@ contract ERC7540Form is ERC4626FormImplementation {
         return requestId;
     }
 
-    /// @dev stores the withdrawal payload
+    /// @dev stores the withdraw payload
     function _storeDepositPayload(
         uint8 type_,
         uint64 srcChainId_,
@@ -475,7 +531,7 @@ contract ERC7540Form is ERC4626FormImplementation {
         );
     }
 
-    /// @dev stores the withdrawal payload
+    /// @dev stores the withdraw payload
     function _storeWithdrawPayload(
         uint8 type_,
         uint64 srcChainId_,
