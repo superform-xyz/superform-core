@@ -28,12 +28,35 @@ contract LayerzeroV2ImplementationTest is BaseSetup {
         lzEndpoint = lzV2Endpoint;
     }
 
+    function testSetChainIdInvalidChainId() public {
+        vm.prank(deployer);
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        layerzeroImpl.setChainId(0, 0);
+    }
+
+    function testSetChainIdExistingChainId() public {
+        vm.prank(deployer);
+        layerzeroImpl.setChainId(chainId, 301001);
+    }
+    
+    function testSetChainIdExistingAmbChainId() public {
+        vm.prank(deployer);
+        layerzeroImpl.setChainId(chainId, 30101);
+    }
+
     function testSetPeer() public {
         bytes32 peer = bytes32(uint256(uint160(1)));
 
         vm.prank(deployer);
         layerzeroImpl.setPeer(eid, peer);
         assertEq(layerzeroImpl.peers(eid), peer);
+    }
+
+    function testSetPeerNotProtocolAdmin() public {
+        bytes32 peer = bytes32(uint256(uint160(420)));
+
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        layerzeroImpl.setPeer(eid, peer);
     }
 
     function testSetLzEndpointReverts() public {
@@ -79,7 +102,7 @@ contract LayerzeroV2ImplementationTest is BaseSetup {
         layerzeroImpl.dispatchPayload{value: fees}(stateRegistry, chainId, message, extraData);
     }
 
-    function testEstimateFees() public {
+    function testEstimateFees() public view {
         uint256 gas = 200_000;
         bytes memory optionEncoded = layerzeroImpl.generateExtraData(gas);
         bytes memory message = abi.encode(AMBMessage(DataLib.packTxInfo(0, 0, 0, 0, address(0), 0), new bytes(0)));
@@ -87,7 +110,7 @@ contract LayerzeroV2ImplementationTest is BaseSetup {
         assertGt(fees, 0);
     }
 
-    function testGenerateExtraData() public {
+    function testGenerateExtraData() public view {
         uint256 gasLimit = 100000;
         bytes memory extraData = layerzeroImpl.generateExtraData(gasLimit);
 
@@ -98,6 +121,20 @@ contract LayerzeroV2ImplementationTest is BaseSetup {
 
     function testLzReceive() public {
         bytes memory message = abi.encode(AMBMessage(DataLib.packTxInfo(0, 0, 0, 1, address(0), 0), abi.encode(bytes32(0))));
+        bytes32 guid = bytes32(uint256(1));
+        Origin memory origin = Origin(eid, bytes32(uint256(uint160(address(layerzeroImpl)))), 0);
+        vm.mockCall(
+            address(superRegistry),
+            abi.encodeWithSelector(superRegistry.getStateRegistry.selector, 0),
+            abi.encode(stateRegistry)
+        );
+
+        vm.prank(lzEndpoint);
+        layerzeroImpl.lzReceive(origin, guid, message, address(0), bytes(""));
+    }
+
+    function testLzReceiveAmbMessage() public {
+        bytes memory message = abi.encode(AMBMessage(DataLib.packTxInfo(0, 0, 0, 1, address(0), 0), abi.encode(new uint8[](0), "")));
         bytes32 guid = bytes32(uint256(1));
         Origin memory origin = Origin(eid, bytes32(uint256(uint160(address(layerzeroImpl)))), 0);
         vm.mockCall(
@@ -185,15 +222,5 @@ contract LayerzeroV2ImplementationTest is BaseSetup {
         vm.expectRevert(Error.DUPLICATE_PAYLOAD.selector);
         vm.prank(lzEndpoint);
         layerzeroImpl.lzReceive(origin, guid, message, address(0), bytes(""));
-    }
-}
-
-contract MockSuperRegistry {
-    function getStateRegistry(uint8) external pure returns (address) {
-        return address(0);
-    }
-
-    function isValidStateRegistry(address) external pure returns (bool) {
-        return true;
     }
 }

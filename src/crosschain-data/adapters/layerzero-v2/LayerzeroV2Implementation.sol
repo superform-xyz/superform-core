@@ -182,15 +182,15 @@ contract LayerzeroV2Implementation is IAmbImplementation, OApp {
         override
         returns (uint256 fees)
     {
-        uint32 ambChainId = ambChainId[dstChainId_];
+        uint32 tempAmbChainId = ambChainId[dstChainId_];
 
-        if(ambChainId == 0) {
+        if(tempAmbChainId == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
 
         /// @dev superform core cannot support _payInLzToken at this moment
         /// extraData_ here is the layerzero options
-        fees = _quote(ambChainId, message_, extraData_, false).nativeFee;
+        fees = _quote(tempAmbChainId, message_, extraData_, false).nativeFee;
     }
 
     /// @inheritdoc IAmbImplementation
