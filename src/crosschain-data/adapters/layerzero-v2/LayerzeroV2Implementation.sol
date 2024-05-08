@@ -16,15 +16,19 @@ import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 /// @title LayerzeroV2Implementation
 /// @dev Allows state registries to use Layerzero v2 for crosschain communication
 /// @author Zeropoint Labs
-contract LayerzeroImplementation is IAmbImplementation, OApp {
+contract LayerzeroV2Implementation is IAmbImplementation, OApp {
     using DataLib for uint256;
     using ProofLib for AMBMessage;
 
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
-    
+    uint16 constant private OPTIONS_TYPE = 1;  /// legacy options is fine for superform
     ISuperRegistry public immutable superRegistry;
+
+    //////////////////////////////////////////////////////////////
+    //                         STATE VARIABLES                  //
+    //////////////////////////////////////////////////////////////
 
     mapping(bytes32 => bool) public ambProtect;
 
@@ -32,6 +36,16 @@ contract LayerzeroImplementation is IAmbImplementation, OApp {
     mapping(uint32 => uint64) public superChainId;
 
     mapping(bytes32 => bool) public processedMessages;
+
+    /////////////////////////////////////////////////////////////
+    //                      CUSTOM  ERRORS                     //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev thrown if endpoint is already set
+    error ENDPOINT_EXISTS();
+
+    /// @dev thrown if endpoint is not set
+    error ENDPOINT_NOT_SET();
 
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
@@ -79,22 +93,50 @@ contract LayerzeroImplementation is IAmbImplementation, OApp {
     /// @dev allows protocol admin to configure layerzero endpoint
     /// @param endpoint_ is the layerzero endpoint on the deployed network
     function setLzEndpoint(address endpoint_) external onlyProtocolAdmin {
+        if(address(endpoint) != address(0)) revert ENDPOINT_EXISTS();
         if (endpoint_ == address(0)) revert Error.ZERO_ADDRESS();
 
-        if (address(endpoint_) == address(0)) {
-            endpoint = ILayerZeroEndpointV2(endpoint_);
-            emit EndpointUpdated(address(0), endpoint_);
-        }
+        endpoint = ILayerZeroEndpointV2(endpoint_);
+        emit EndpointUpdated(address(0), endpoint_);
     }
 
     /// @dev allows protocol admin to configure layerzero delegate
     /// @param delegate_ is the layerzero delegate to be configured
     function setDelegate(address delegate_) external override onlyProtocolAdmin {
-        if (address(endpoint) == address(0)) revert Error.ZERO_ADDRESS();
-
+        if (address(endpoint) == address(0)) revert ENDPOINT_NOT_SET();
+        if(delegate_ == address(0)) revert Error.ZERO_ADDRESS();
+        
         endpoint.setDelegate(delegate_);
         emit DelegateUpdated(delegate_);
     }
+
+    /// @dev allows protocol admin to add new chain ids in future
+    /// @param superChainId_ is the identifier of the chain within superform protocol
+    /// @param ambChainId_ is the identifier of the chain given by the AMB
+    /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
+    function setChainId(uint64 superChainId_, uint32 ambChainId_) external onlyProtocolAdmin {
+        if (superChainId_ == 0 || ambChainId_ == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
+        /// @dev  reset old mappings
+        uint64 oldSuperChainId = superChainId[ambChainId_];
+        uint32 oldAmbChainId = ambChainId[superChainId_];
+
+        if (oldSuperChainId != 0) {
+            delete ambChainId[oldSuperChainId];
+        }
+
+        if (oldAmbChainId != 0) {
+            delete superChainId[oldAmbChainId];
+        }
+
+        ambChainId[superChainId_] = ambChainId_;
+        superChainId[ambChainId_] = superChainId_;
+
+        emit ChainAdded(superChainId_);
+    }
+
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
@@ -140,16 +182,22 @@ contract LayerzeroImplementation is IAmbImplementation, OApp {
         override
         returns (uint256 fees)
     {
+        uint32 ambChainId = ambChainId[dstChainId_];
+
+        if(ambChainId == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
         /// @dev superform core cannot support _payInLzToken at this moment
         /// extraData_ here is the layerzero options
-        return _quote(ambChainId[dstChainId_], message_, extraData_, false).nativeFee;
+        fees = _quote(ambChainId, message_, extraData_, false).nativeFee;
     }
 
     /// @inheritdoc IAmbImplementation
     function generateExtraData(uint256 gasLimit) external override pure returns (bytes memory extraData) {
         /// generate the executor options here, since we don't use msg.value just returning encoded args
         /// refer: https://docs.layerzero.network/v2/developers/evm/gas-settings/options#lzreceive-option
-        return abi.encode(gasLimit);
+        return abi.encodePacked(OPTIONS_TYPE, gasLimit);
     }
 
     //////////////////////////////////////////////////////////////
