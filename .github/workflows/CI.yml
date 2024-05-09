@@ -115,6 +115,9 @@ jobs:
       - name: "Run all tests except invariant against the optimized build"
         run: "make test-ci"
 
+      - name: "Run all invariant tests (no vaultshares for now)"
+        run: "make invariant-rewards"
+
       - name: "Add test summary"
         run: |
           echo "## Tests result" >> $GITHUB_STEP_SUMMARY

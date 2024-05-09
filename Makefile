@@ -21,13 +21,15 @@ update:; forge update
 # Build & test
 build :; FOUNDRY_PROFILE=production forge build
 build-unoptimized :; FOUNDRY_PROFILE=localdev forge build
-build-sizes :; FOUNDRY_PROFILE=default forge build --sizes
-test-vvv   :; forge test -vvvvv --match-contract SDMVW0000TokenInputNoSlippageAMB13Fantom
+build-sizes :; FOUNDRY_PROFILE=production forge build --sizes
+test-vvv   :; forge test --match-test test_paymentHelper -vvv
 ftest   :; forge test
 test-ci :; forge test --no-match-path "test/invariant/**/*.sol"
 coverage :; FOUNDRY_PROFILE=coverage forge coverage --match-path "test/**/*.sol" --report lcov
+coverage-t :; FOUNDRY_PROFILE=coverage forge coverage --match-contract RewardsDistributorTests --report lcov
 smoke-test   :; forge test --match-contract SmokeTest -vvv
-invariant   :; forge test --match-test invariant_vaultShares -vvv
+invariant   :; forge test --match-path "test/invariant/**/*.sol" -vvv
+invariant-rewards   :; forge test --match-test invariant_tokenBalances -vvv
 clean  :; forge clean
 snapshot :; forge snapshot
 fmt    :; forge fmt && forge fmt test/
