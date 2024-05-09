@@ -96,13 +96,12 @@ contract LayerzeroV2ImplementationTest is BaseSetup {
         bytes memory optionEncoded = layerzeroImpl.generateExtraData(gas);
         uint256 fees = layerzeroImpl.estimateFees(chainId, message, optionEncoded);
 
-        bytes memory extraData = abi.encode(optionEncoded, MessagingFee(fees, 0));
         vm.deal(stateRegistry, fees);
         vm.prank(stateRegistry);
-        layerzeroImpl.dispatchPayload{value: fees}(stateRegistry, chainId, message, extraData);
+        layerzeroImpl.dispatchPayload{value: fees}(stateRegistry, chainId, message, optionEncoded);
     }
 
-    function testEstimateFees() public view {
+    function testEstimateFees() public {
         uint256 gas = 200_000;
         bytes memory optionEncoded = layerzeroImpl.generateExtraData(gas);
         bytes memory message = abi.encode(AMBMessage(DataLib.packTxInfo(0, 0, 0, 0, address(0), 0), new bytes(0)));
@@ -110,7 +109,7 @@ contract LayerzeroV2ImplementationTest is BaseSetup {
         assertGt(fees, 0);
     }
 
-    function testGenerateExtraData() public view {
+    function testGenerateExtraData() public {
         uint256 gasLimit = 100000;
         bytes memory extraData = layerzeroImpl.generateExtraData(gasLimit);
 

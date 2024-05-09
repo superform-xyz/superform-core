@@ -526,7 +526,9 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         address[] toMailboxes;
         uint32[] expDstDomains;
         address[] endpoints;
+        address[] endpointsV2;
         uint16[] lzChainIds;
+        uint32[] lzChainIdsV2;
         address[] wormholeRelayers;
         address[] expDstChainAddresses;
         uint256[] forkIds;
@@ -577,7 +579,10 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         internalVars.expDstDomains = new uint32[](vars.nUniqueDsts);
 
         internalVars.endpoints = new address[](vars.nUniqueDsts);
+        internalVars.endpointsV2 = new address[](vars.nUniqueDsts);
+        
         internalVars.lzChainIds = new uint16[](vars.nUniqueDsts);
+        internalVars.lzChainIdsV2 = new uint32[](vars.nUniqueDsts);
 
         internalVars.wormholeRelayers = new address[](vars.nUniqueDsts);
         internalVars.expDstChainAddresses = new address[](vars.nUniqueDsts);
@@ -592,7 +597,10 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     internalVars.expDstDomains[internalVars.k] = hyperlane_chainIds[i];
 
                     internalVars.endpoints[internalVars.k] = lzEndpoints[i];
+                    internalVars.endpointsV2[internalVars.k] = lzV2Endpoint;
+                    
                     internalVars.lzChainIds[internalVars.k] = lz_chainIds[i];
+                    internalVars.lzChainIdsV2[internalVars.k] = lz_v2_chainIds[i];
 
                     internalVars.forkIds[internalVars.k] = FORKS[chainIds[i]];
 
@@ -613,6 +621,15 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     internalVars.lzChainIds,
                     5_000_000,
                     /// note: using some max limit
+                    internalVars.forkIds,
+                    vars.logs
+                );
+            }
+
+            if(vars.AMBs[index] == 6) {
+                LayerZeroV2Helper(getContract(vars.CHAIN_0, "LayerZeroV2Helper")).help(
+                   internalVars.endpointsV2,
+                    internalVars.lzChainIdsV2,
                     internalVars.forkIds,
                     vars.logs
                 );
@@ -1695,6 +1712,15 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     logs
                 );
             }
+
+            /// @notice ID: 6 Layerzero v2
+            if(AMBs[i] == 6) {
+               LayerZeroV2Helper(getContract(TO_CHAIN, "LayerZeroV2Helper")).help(
+                    lzV2Endpoint,
+                    FORKS[FROM_CHAIN],
+                    logs
+                ); 
+            } 
 
             /// @notice ID: 2 Hyperlane
             if (AMBs[i] == 2) {

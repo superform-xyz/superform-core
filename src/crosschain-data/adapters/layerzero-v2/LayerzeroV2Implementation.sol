@@ -159,9 +159,9 @@ contract LayerzeroV2Implementation is IAmbImplementation, OApp {
             revert Error.INVALID_CHAIN_ID();
         }
 
-        (bytes memory options_, MessagingFee memory fee_) = abi.decode(extraData_, (bytes, MessagingFee));
+        MessagingFee memory fee_ = _quote(eid, message_, extraData_, false);
 
-        _lzSend(eid, message_, options_, fee_, srcSender_);
+        _lzSend(eid, message_, extraData_, fee_, srcSender_);
     }
 
     /// @inheritdoc IAmbImplementation

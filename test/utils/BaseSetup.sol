@@ -6,6 +6,7 @@ import "forge-std/Test.sol";
 import { StdInvariant } from "forge-std/StdInvariant.sol";
 
 import { LayerZeroHelper } from "pigeon/layerzero/LayerZeroHelper.sol";
+import { LayerZeroV2Helper } from "pigeon/layerzero-v2/LayerzeroV2Helper.sol";
 import { HyperlaneHelper } from "pigeon/hyperlane/HyperlaneHelper.sol";
 
 import { WormholeHelper } from "pigeon/wormhole/automatic-relayer/WormholeHelper.sol";
@@ -103,7 +104,7 @@ abstract contract BaseSetup is StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[32] public contractNames = [
+    string[33] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -127,6 +128,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         "PaymentHelper",
         "PayMaster",
         "LayerZeroHelper",
+        "LayerZeroV2Helper",
         "HyperlaneHelper",
         "WormholeHelper",
         "WormholeBroadcastHelper",
@@ -430,6 +432,12 @@ abstract contract BaseSetup is StdInvariant, Test {
             vm.allowCheatcodes(vars.lzHelper);
 
             contracts[vars.chainId][bytes32(bytes("LayerZeroHelper"))] = vars.lzHelper;
+
+            /// @dev 1.1.2- deploy LZ v2 Helper from Pigeon
+            vars.lzV2Helper = address(new LayerZeroV2Helper{ salt: salt }());
+            vm.allowCheatcodes(vars.lzV2Helper);
+
+            contracts[vars.chainId][bytes32(bytes("LayerZeroV2Helper"))] = vars.lzV2Helper;
 
             /// @dev 1.2- deploy Hyperlane Helper from Pigeon
             vars.hyperlaneHelper = address(new HyperlaneHelper{ salt: salt }());
@@ -1207,12 +1215,12 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
         if (!invariant) {
-            forks[ETH] = pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 19_093_717) : vm.createFork(ETHEREUM_RPC_URL);
+            forks[ETH] = pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 19_293_715) : vm.createFork(ETHEREUM_RPC_URL);
             forks[BSC] = pinnedBlock ? vm.createFork(BSC_RPC_URL, 32_899_049) : vm.createFork(BSC_RPC_URL);
             forks[AVAX] = pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 36_974_720) : vm.createFork(AVALANCHE_RPC_URL);
             forks[POLY] = pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 56_710_026) : vm.createFork(POLYGON_RPC_URL);
             forks[ARBI] = pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 143_659_807) : vm.createFork(ARBITRUM_RPC_URL);
-            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 111_390_769) : vm.createFork(OPTIMISM_RPC_URL);
+            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 116_353_583) : vm.createFork(OPTIMISM_RPC_URL);
             forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL);
             forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 78_945_396) : vm.createFork(FANTOM_RPC_URL);
         }
