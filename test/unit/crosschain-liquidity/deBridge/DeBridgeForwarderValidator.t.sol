@@ -43,7 +43,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
                 allowedCancelBeneficiarySrc: bytes(""),
                 takeChainId: uint256(BSC),
                 givePatchAuthoritySrc: address(0),
-                allowedTakerDst: abi.encode(address(420))
+                allowedTakerDst: bytes("")
             }),
             uint64(block.timestamp),
             bytes(""),
@@ -76,7 +76,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
                 allowedCancelBeneficiarySrc: bytes(""),
                 takeChainId: uint256(AVAX),
                 givePatchAuthoritySrc: address(0),
-                allowedTakerDst: abi.encode(address(420))
+                allowedTakerDst: bytes("")
             }),
             uint64(block.timestamp),
             bytes(""),
@@ -109,7 +109,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
                 allowedCancelBeneficiarySrc: bytes(""),
                 takeChainId: uint256(BSC),
                 givePatchAuthoritySrc: address(0),
-                allowedTakerDst: abi.encode(address(420))
+                allowedTakerDst: bytes("")
             }),
             uint64(block.timestamp),
             bytes(""),
@@ -149,7 +149,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
                 allowedCancelBeneficiarySrc: bytes(""),
                 takeChainId: uint256(AVAX),
                 givePatchAuthoritySrc: address(0),
-                allowedTakerDst: abi.encode(address(420))
+                allowedTakerDst: bytes("")
             }),
             uint64(block.timestamp),
             bytes(""),
@@ -284,7 +284,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
                     allowedCancelBeneficiarySrc: bytes(""),
                     takeChainId: 1,
                     givePatchAuthoritySrc: address(0),
-                    allowedTakerDst: abi.encode(address(420))
+                    allowedTakerDst: bytes("")
                 }),
                 bytes(""),
                 uint32(1),
@@ -359,10 +359,11 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
 
         vm.expectRevert(Error.BLACKLISTED_ROUTE_ID.selector);
         validator.validateReceiver(txDataWithInvalidSelector, address(420));
-    }
+    }    
 
-    function test_decodeTxData_bridgeTxData_srcDeBridgeAuthority() public {
-        bytes memory txDataWithInvalidSelector = _buildDummyDeBridgeTxData(
+    function test_validateTxData_invalidAllowedTakerDst() public {
+        bytes memory invalidTakerDst = abi.encode(address(420));
+        bytes memory txDataWithInvalidTakerDst = _buildDummyDeBridgeTxData(
             address(0),
             100,
             getContract(BSC, "CoreStateRegistry"),
@@ -378,12 +379,12 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
                     takeAmount: 200,
                     takeTokenAddress: abi.encode(address(1)),
                     receiverDst: abi.encode(address(0)),
-                    orderAuthorityAddressDst: abi.encode(address(1)), // Invalid authority address
+                    orderAuthorityAddressDst: abi.encode(mockDebridgeAuth),
                     externalCall: new bytes(0),
                     allowedCancelBeneficiarySrc: bytes(""),
-                    takeChainId: 1,
-                    givePatchAuthoritySrc: address(321),
-                    allowedTakerDst: abi.encode(address(420))
+                    takeChainId: 56,
+                    givePatchAuthoritySrc: address(0),
+                    allowedTakerDst: invalidTakerDst // Invalid allowedTakerDst
                 }),
                 bytes(""),
                 uint32(1),
@@ -391,8 +392,20 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
             )
         );
 
-        vm.expectRevert(DeBridgeForwarderValidator.INVALID_SRC_DEBRIDGE_AUTHORITY.selector);
-        validator.validateReceiver(txDataWithInvalidSelector, address(420));
+        vm.expectRevert(DeBridgeForwarderValidator.INVALID_TAKER_DST.selector);
+        validator.validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                txDataWithInvalidTakerDst,
+                ETH,
+                BSC,
+                BSC,
+                true,
+                address(0),
+                deployer,
+                NATIVE,
+                NATIVE
+            )
+        );
     }
 
     function _buildDummyDeBridgeTxData(

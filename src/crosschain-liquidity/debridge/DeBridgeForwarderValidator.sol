@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
 import { Error } from "src/libraries/Error.sol";
+import {DeBridgeErrors} from "src/libraries/DebridgeError.sol";
 import { IDlnSource } from "src/vendor/debridge/IDlnSource.sol";
 import { DlnOrderLib } from "src/vendor/debridge/DlnOrderLib.sol";
 import { ICrossChainForwarder } from "src/vendor/debridge/ICrossChainForwarder.sol";
@@ -29,31 +30,6 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         address finalReceiver;
         address orderAuthorityAddressDst;
     }
-
-    //////////////////////////////////////////////////////////////
-    //                        ERRORS                            //
-    //////////////////////////////////////////////////////////////
-
-    /// @dev if permit envelop length is greater than zero
-    error INVALID_PERMIT_ENVELOP();
-
-    /// @dev if authority address is invalid
-    error INVALID_DEBRIDGE_AUTHORITY();
-
-    /// @dev if external call is allowed
-    error INVALID_EXTRA_CALL_DATA();
-
-    /// @dev if bridge data is invalid
-    error INVALID_BRIDGE_DATA();
-
-    /// @dev if swap token and bridge token mismatch
-    error INVALID_BRIDGE_TOKEN();
-
-    /// @dev if source authority address is invalid
-    error INVALID_SRC_DEBRIDGE_AUTHORITY();
-
-    /// @dev debridge don't allow same chain swaps
-    error ONLY_SWAPS_DISALLOWED();
 
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
@@ -209,16 +185,16 @@ contract DeBridgeForwarderValidator is BridgeValidator {
 
         if (v.swapOutputToken != v.xChainQuote.giveTokenAddress) revert INVALID_BRIDGE_TOKEN();
 
-        if (v.xChainQuote.givePatchAuthoritySrc != address(0) || v.xChainQuote.allowedCancelBeneficiarySrc.length > 0) {
-            revert INVALID_SRC_DEBRIDGE_AUTHORITY();
-        }
-
         if (v.permitEnvelope.length > 0) {
             revert INVALID_PERMIT_ENVELOP();
         }
 
         if (v.xChainQuote.externalCall.length > 0) {
             revert INVALID_EXTRA_CALL_DATA();
+        }
+
+        if(v.xChainQuote.allowedTakerDst.length > 0) {
+            revert INVALID_TAKER_DST();
         }
 
         deBridgeQuote.outputToken = _castToAddress(v.xChainQuote.takeTokenAddress);

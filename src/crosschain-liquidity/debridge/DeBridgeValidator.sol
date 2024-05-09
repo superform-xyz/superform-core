@@ -11,19 +11,6 @@ import { DlnOrderLib } from "src/vendor/debridge/DlnOrderLib.sol";
 /// @author Zeropoint Labs
 contract DeBridgeValidator is BridgeValidator {
     //////////////////////////////////////////////////////////////
-    //                        ERRORS                            //
-    //////////////////////////////////////////////////////////////
-
-    /// @dev if permit envelop length is greater than zero
-    error INVALID_PERMIT_ENVELOP();
-
-    /// @dev if authority address is invalid
-    error INVALID_DEBRIDGE_AUTHORITY();
-
-    /// @dev if external call is allowed
-    error INVALID_EXTRA_CALL_DATA();
-
-    //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
@@ -40,24 +27,22 @@ contract DeBridgeValidator is BridgeValidator {
         return (receiver == _castToAddress(deBridgeQuote.receiverDst));
     }
 
-    /// NOTE: check other parameters including: `givePatchAuthoritySrc`
     /// @inheritdoc BridgeValidator
+    /// @dev make sure the OrderCreation.allowedCancelBeneficiarySrc and OrderCreation.givePatchAuthoritySrc is the user address on source
     function validateTxData(ValidateTxDataArgs calldata args_) external view override returns (bool hasDstSwap) {
         DlnOrderLib.OrderCreation memory deBridgeQuote = _decodeTxData(args_.txData);
 
+        /// sanity check for allowed parameters of tx data
         if (deBridgeQuote.externalCall.length > 0) revert INVALID_EXTRA_CALL_DATA();
+
+        if(deBridgeQuote.allowedTakerDst.length > 0) revert INVALID_TAKER_DST();
 
         if (
             superRegistry.getAddressByChainId(keccak256("DEBRIDGE_AUTHORITY"), args_.dstChainId)
                 != _castToAddress(deBridgeQuote.orderAuthorityAddressDst)
         ) revert INVALID_DEBRIDGE_AUTHORITY();
 
-        /// FIXME: add explicity revert message
-        if (deBridgeQuote.allowedCancelBeneficiarySrc.length > 0) revert();
-
         /// @dev 1. chain id validation
-        /// FIXME: check if this cast is right
-        /// FIXME: check upstream if the srcChain in this context is the block.chainid
         if (
             uint64(deBridgeQuote.takeChainId) != args_.liqDstChainId
                 || args_.liqDataToken != deBridgeQuote.giveTokenAddress
@@ -65,9 +50,8 @@ contract DeBridgeValidator is BridgeValidator {
 
         /// @dev 2. receiver address validation
         /// @dev allows dst swaps by coupling debridge with other bridges
-
-        /// FIXME: check if this cast is right
         address receiver = _castToAddress(deBridgeQuote.receiverDst);
+
         if (args_.deposit) {
             if (args_.srcChainId == args_.dstChainId) {
                 revert Error.INVALID_ACTION();
@@ -164,7 +148,6 @@ contract DeBridgeValidator is BridgeValidator {
 
     /// @dev helps cast bytes to address
     function _castToAddress(bytes memory address_) internal pure returns (address) {
-        /// FIXME: check if address(uint160(uint256(b))) could be true ??
         return abi.decode(address_, (address));
     }
 }

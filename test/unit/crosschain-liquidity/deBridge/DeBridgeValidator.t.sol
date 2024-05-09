@@ -303,7 +303,7 @@ contract DeBridgeValidatorTest is ProtocolActions {
                 allowedCancelBeneficiarySrc: abi.encode(address(321)),
                 takeChainId: 1,
                 givePatchAuthoritySrc: address(0),
-                allowedTakerDst: abi.encode(address(420))
+                allowedTakerDst: bytes("")
             }),
             bytes(""),
             uint32(1),
@@ -326,6 +326,43 @@ contract DeBridgeValidatorTest is ProtocolActions {
         );
     }
 
+    function test_validateTxData_invalidAllowedTakerDst() public {
+        bytes memory txDataWithInvalidAllowedTakerDst = abi.encodeWithSelector(
+            IDlnSource.createOrder.selector,
+            DlnOrderLib.OrderCreation({
+                giveAmount: 100,
+                giveTokenAddress: address(0),
+                takeAmount: 200,
+                takeTokenAddress: abi.encode(address(1)),
+                receiverDst: abi.encode(address(0)),
+                orderAuthorityAddressDst: abi.encode(getContract(BSC, "DeBridgeAuthority")),
+                externalCall: new bytes(0),
+                allowedCancelBeneficiarySrc: abi.encode(address(321)),
+                takeChainId: 56,
+                givePatchAuthoritySrc: address(0),
+                allowedTakerDst: abi.encode(address(420)) // Invalid allowedTakerDst
+            }),
+            bytes(""),
+            uint32(1),
+            bytes("")
+        );
+
+        vm.expectRevert(DeBridgeValidator.INVALID_TAKER_DST.selector);
+        DeBridgeValidator(getContract(ETH, "DeBridgeValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                txDataWithInvalidAllowedTakerDst,
+                ETH,
+                BSC,
+                BSC,
+                true,
+                address(0),
+                deployer,
+                NATIVE,
+                NATIVE
+            )
+        );
+    }
+
     function test_decodeTxData_invalidPermitEnvelope() public {
         bytes memory txDataWithInvalidPermitEnvelope = abi.encodeWithSelector(
             IDlnSource.createOrder.selector,
@@ -335,21 +372,22 @@ contract DeBridgeValidatorTest is ProtocolActions {
                 takeAmount: 200,
                 takeTokenAddress: abi.encode(address(1)),
                 receiverDst: abi.encode(address(0)),
-                orderAuthorityAddressDst: abi.encode(address(1)), // Invalid authority address
+                orderAuthorityAddressDst: abi.encode(getContract(BSC, "DeBridgeAuthority")),
                 externalCall: new bytes(0),
                 allowedCancelBeneficiarySrc: abi.encode(address(321)),
-                takeChainId: 1,
+                takeChainId: 56,
                 givePatchAuthoritySrc: address(0),
-                allowedTakerDst: abi.encode(address(420))
+                allowedTakerDst: bytes("")
             }),
             bytes(""),
             uint32(1),
-            bytes("hello")
+            bytes("invalid-permit-envelope") // Invalid permit envelope
         );
 
         vm.expectRevert(DeBridgeValidator.INVALID_PERMIT_ENVELOP.selector);
         DeBridgeValidator(getContract(ETH, "DeBridgeValidator")).validateReceiver(
-            txDataWithInvalidPermitEnvelope, address(420)
+            txDataWithInvalidPermitEnvelope,
+            address(0)
         );
     }
 }
