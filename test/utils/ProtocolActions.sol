@@ -396,7 +396,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         : payable(getContract(DST_CHAINS[i], "CoreStateRegistry"));
                 }
             }
-
+            
             vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
 
             vars.outputAmounts = vars.amounts;
@@ -1967,13 +1967,16 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vm.selectFork(FORKS[args.toChainId]);
         (address superform,,) = DataLib.getSuperform(args.superformId);
         console.log("finalAMount", args.amount);
-        console.log("-- OA---", IBaseForm(superform).previewRedeemFrom(args.amount));
+        console.log(superform);
+
+        uint256 oa = IBaseForm(superform).previewRedeemFrom(args.amount);
+        console.log("-- OA---", oa);
         /// @dev extraData is currently used to send in the partialWithdraw vaults without resorting to extra args, just
         /// for withdraws
         superformData = SingleVaultSFData(
             args.superformId,
             args.amount,
-            IBaseForm(superform).previewRedeemFrom(args.amount),
+            oa > 0 ? oa : args.amount,
             args.maxSlippage,
             vars.liqReq,
             "",
