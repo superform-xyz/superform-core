@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
 import { Error } from "src/libraries/Error.sol";
+import { DeBridgeError } from "src/libraries/DebridgeError.sol";
 import { IDlnSource } from "src/vendor/debridge/IDlnSource.sol";
 import { DlnOrderLib } from "src/vendor/debridge/DlnOrderLib.sol";
 
@@ -33,14 +34,14 @@ contract DeBridgeValidator is BridgeValidator {
         DlnOrderLib.OrderCreation memory deBridgeQuote = _decodeTxData(args_.txData);
 
         /// sanity check for allowed parameters of tx data
-        if (deBridgeQuote.externalCall.length > 0) revert INVALID_EXTRA_CALL_DATA();
+        if (deBridgeQuote.externalCall.length > 0) revert DeBridgeError.INVALID_EXTRA_CALL_DATA();
 
-        if(deBridgeQuote.allowedTakerDst.length > 0) revert INVALID_TAKER_DST();
+        if(deBridgeQuote.allowedTakerDst.length > 0) revert DeBridgeError.INVALID_TAKER_DST();
 
         if (
             superRegistry.getAddressByChainId(keccak256("DEBRIDGE_AUTHORITY"), args_.dstChainId)
                 != _castToAddress(deBridgeQuote.orderAuthorityAddressDst)
-        ) revert INVALID_DEBRIDGE_AUTHORITY();
+        ) revert DeBridgeError.INVALID_DEBRIDGE_AUTHORITY();
 
         /// @dev 1. chain id validation
         if (
@@ -137,7 +138,7 @@ contract DeBridgeValidator is BridgeValidator {
         }
 
         if (permitEnvelope.length > 0) {
-            revert INVALID_PERMIT_ENVELOP();
+            revert DeBridgeError.INVALID_PERMIT_ENVELOP();
         }
     }
 

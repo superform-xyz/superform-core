@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import { Error } from "src/libraries/Error.sol";
+import { DeBridgeError } from "src/libraries/DeBridgeError.sol";
 import "test/utils/ProtocolActions.sol";
 import "src/interfaces/IBridgeValidator.sol";
 import { DeBridgeValidator } from "src/crosschain-liquidity/debridge/DeBridgeValidator.sol";
@@ -273,7 +274,7 @@ contract DeBridgeValidatorTest is ProtocolActions {
             bytes("")
         );
 
-        vm.expectRevert(DeBridgeValidator.INVALID_EXTRA_CALL_DATA.selector);
+        vm.expectRevert(DeBridgeError.INVALID_EXTRA_CALL_DATA.selector);
         DeBridgeValidator(getContract(ETH, "DeBridgeValidator")).validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
                 txDataWithInvalidAuthority,
@@ -310,7 +311,7 @@ contract DeBridgeValidatorTest is ProtocolActions {
             bytes("")
         );
 
-        vm.expectRevert(DeBridgeValidator.INVALID_DEBRIDGE_AUTHORITY.selector);
+        vm.expectRevert(DeBridgeError.INVALID_DEBRIDGE_AUTHORITY.selector);
         DeBridgeValidator(getContract(ETH, "DeBridgeValidator")).validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
                 txDataWithInvalidAuthority,
@@ -347,7 +348,7 @@ contract DeBridgeValidatorTest is ProtocolActions {
             bytes("")
         );
 
-        vm.expectRevert(DeBridgeValidator.INVALID_TAKER_DST.selector);
+        vm.expectRevert(DeBridgeError.INVALID_TAKER_DST.selector);
         DeBridgeValidator(getContract(ETH, "DeBridgeValidator")).validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
                 txDataWithInvalidAllowedTakerDst,
@@ -384,7 +385,7 @@ contract DeBridgeValidatorTest is ProtocolActions {
             bytes("invalid-permit-envelope") // Invalid permit envelope
         );
 
-        vm.expectRevert(DeBridgeValidator.INVALID_PERMIT_ENVELOP.selector);
+        vm.expectRevert(DeBridgeError.INVALID_PERMIT_ENVELOP.selector);
         DeBridgeValidator(getContract(ETH, "DeBridgeValidator")).validateReceiver(
             txDataWithInvalidPermitEnvelope,
             address(0)

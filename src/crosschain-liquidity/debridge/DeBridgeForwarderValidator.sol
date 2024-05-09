@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
 import { Error } from "src/libraries/Error.sol";
-import {DeBridgeErrors} from "src/libraries/DebridgeError.sol";
+import { DeBridgeError } from "src/libraries/DebridgeError.sol";
 import { IDlnSource } from "src/vendor/debridge/IDlnSource.sol";
 import { DlnOrderLib } from "src/vendor/debridge/DlnOrderLib.sol";
 import { ICrossChainForwarder } from "src/vendor/debridge/ICrossChainForwarder.sol";
@@ -56,7 +56,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         if (
             superRegistry.getAddressByChainId(keccak256("DEBRIDGE_AUTHORITY"), args_.dstChainId)
                 != deBridgeQuote.orderAuthorityAddressDst
-        ) revert INVALID_DEBRIDGE_AUTHORITY();
+        ) revert DeBridgeError.INVALID_DEBRIDGE_AUTHORITY();
 
         /// @dev 1. chain id validation
         if (uint64(deBridgeQuote.dstChainId) != args_.liqDstChainId || args_.liqDataToken != deBridgeQuote.inputToken) {
@@ -116,13 +116,13 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         returns (address, /*token_*/ uint256 /*amount_*/ )
     {
         /// @dev debridge cannot be used for just swaps
-        revert ONLY_SWAPS_DISALLOWED();
+        revert DeBridgeError.ONLY_SWAPS_DISALLOWED();
     }
 
     /// @inheritdoc BridgeValidator
     function decodeSwapOutputToken(bytes calldata /*txData_*/ ) external pure override returns (address /*token_*/ ) {
         /// @dev debridge cannot be used for same chain swaps
-        revert ONLY_SWAPS_DISALLOWED();
+        revert DeBridgeError.ONLY_SWAPS_DISALLOWED();
     }
 
     //////////////////////////////////////////////////////////////
@@ -168,7 +168,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         }
 
         /// bridge tx data shouldn't be empty
-        if (v.bridgeTxData.length == 0 || v.bridgeTarget != DE_BRIDGE_SOURCE) revert INVALID_BRIDGE_DATA();
+        if (v.bridgeTxData.length == 0 || v.bridgeTarget != DE_BRIDGE_SOURCE) revert DeBridgeError.INVALID_BRIDGE_DATA();
 
         /// now decoding the bridge data
         v.selector = _parseSelectorMem(v.bridgeTxData);
@@ -183,18 +183,18 @@ contract DeBridgeForwarderValidator is BridgeValidator {
             revert Error.BLACKLISTED_ROUTE_ID();
         }
 
-        if (v.swapOutputToken != v.xChainQuote.giveTokenAddress) revert INVALID_BRIDGE_TOKEN();
+        if (v.swapOutputToken != v.xChainQuote.giveTokenAddress) revert DeBridgeError.INVALID_BRIDGE_TOKEN();
 
         if (v.permitEnvelope.length > 0) {
-            revert INVALID_PERMIT_ENVELOP();
+            revert DeBridgeError.INVALID_PERMIT_ENVELOP();
         }
 
         if (v.xChainQuote.externalCall.length > 0) {
-            revert INVALID_EXTRA_CALL_DATA();
+            revert DeBridgeError.INVALID_EXTRA_CALL_DATA();
         }
 
         if(v.xChainQuote.allowedTakerDst.length > 0) {
-            revert INVALID_TAKER_DST();
+            revert DeBridgeError.INVALID_TAKER_DST();
         }
 
         deBridgeQuote.outputToken = _castToAddress(v.xChainQuote.takeTokenAddress);

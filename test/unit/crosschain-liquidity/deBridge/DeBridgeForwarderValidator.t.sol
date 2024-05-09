@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import { Error } from "src/libraries/Error.sol";
+import { DeBridgeError } from "src/libraries/DeBridgeError.sol";
 import "test/utils/ProtocolActions.sol";
 import "src/interfaces/IBridgeValidator.sol";
 import { DeBridgeForwarderValidator } from "src/crosschain-liquidity/debridge/DeBridgeForwarderValidator.sol";
@@ -214,12 +215,12 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
     }
 
     function test_decodeDstSwap() public {
-        vm.expectRevert(DeBridgeForwarderValidator.ONLY_SWAPS_DISALLOWED.selector);
+        vm.expectRevert(DeBridgeError.ONLY_SWAPS_DISALLOWED.selector);
         validator.decodeDstSwap(new bytes(0));
     }
 
     function test_decodeSwapOutputToken() public {
-        vm.expectRevert(DeBridgeForwarderValidator.ONLY_SWAPS_DISALLOWED.selector);
+        vm.expectRevert(DeBridgeError.ONLY_SWAPS_DISALLOWED.selector);
         validator.decodeSwapOutputToken(new bytes(0));
     }
 
@@ -254,7 +255,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
             )
         );
 
-        vm.expectRevert(DeBridgeForwarderValidator.INVALID_EXTRA_CALL_DATA.selector);
+        vm.expectRevert(DeBridgeError.INVALID_EXTRA_CALL_DATA.selector);
         validator.validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
                 txDataWithInvalidAuthority, ETH, BSC, BSC, false, address(0), deployer, NATIVE, NATIVE
@@ -292,7 +293,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
             )
         );
 
-        vm.expectRevert(DeBridgeForwarderValidator.INVALID_DEBRIDGE_AUTHORITY.selector);
+        vm.expectRevert(DeBridgeError.INVALID_DEBRIDGE_AUTHORITY.selector);
         validator.validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
                 txDataWithInvalidAuthority, ETH, BSC, BSC, false, address(0), deployer, NATIVE, NATIVE
@@ -314,13 +315,13 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
         );
         /// permit envelope for bridge
 
-        vm.expectRevert(DeBridgeForwarderValidator.INVALID_PERMIT_ENVELOP.selector);
+        vm.expectRevert(DeBridgeError.INVALID_PERMIT_ENVELOP.selector);
         validator.validateReceiver(txDataWithInvalidPermitEnvelope, address(420));
     }
 
     function test_decodeTxData_blacklistRoute() public {
         bytes memory txDataWithInvalidSelector =
-            abi.encodeWithSelector(DeBridgeForwarderValidator.validateTxData.selector, address(420));
+            abi.encodeWithSelector(DeBridgeValidator.validateTxData.selector, address(420));
         /// permit envelope for bridge
 
         vm.expectRevert(Error.BLACKLISTED_ROUTE_ID.selector);
@@ -392,7 +393,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
             )
         );
 
-        vm.expectRevert(DeBridgeForwarderValidator.INVALID_TAKER_DST.selector);
+        vm.expectRevert(DeBridgeError.INVALID_TAKER_DST.selector);
         validator.validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
                 txDataWithInvalidTakerDst,
