@@ -25,4 +25,7 @@ library DeBridgeError {
 
     /// @dev if cancel beneficiary is invalid
     error INVALID_REFUND_ADDRESS();
+
+    /// @dev if swap permit envelope is  invalid
+    error INVALID_SWAP_PERMIT_ENVELOP();
 }

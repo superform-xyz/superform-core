@@ -41,7 +41,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
                 receiverDst: abi.encodePacked(getContract(BSC, "DstSwapper")), // dstswapper
                 orderAuthorityAddressDst: abi.encodePacked(mockDebridgeAuth),
                 externalCall: new bytes(0),
-                allowedCancelBeneficiarySrc: bytes(""),
+                allowedCancelBeneficiarySrc: abi.encodePacked(getContract(BSC, "DstSwapper")),
                 takeChainId: uint256(BSC),
                 givePatchAuthoritySrc: address(0),
                 allowedTakerDst: bytes("")
@@ -58,7 +58,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
         );
 
         bool hasDstSwap = validator.validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, BSC, BSC, true, address(0), deployer, NATIVE, address(1))
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, BSC, BSC, true, address(0), getContract(BSC, "DstSwapper"), NATIVE, address(1))
         );
         assertTrue(hasDstSwap);
     }
@@ -74,7 +74,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
                 receiverDst: abi.encodePacked(getContract(AVAX, "CoreStateRegistry")),
                 orderAuthorityAddressDst: abi.encodePacked(mockDebridgeAuth),
                 externalCall: new bytes(0),
-                allowedCancelBeneficiarySrc: bytes(""),
+                allowedCancelBeneficiarySrc: abi.encodePacked(getContract(AVAX, "CoreStateRegistry")),
                 takeChainId: uint256(AVAX),
                 givePatchAuthoritySrc: address(0),
                 allowedTakerDst: bytes("")
@@ -87,12 +87,12 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
         );
 
         bytes memory txData = _buildDummyDeBridgeTxData(
-            address(0), 100, getContract(ETH, "CoreStateRegistry"), address(0), AVAX, AVAX, bytes(""), targetTxData
+            address(0), 100, getContract(AVAX, "CoreStateRegistry"), address(0), AVAX, AVAX, bytes(""), targetTxData
         );
 
         vm.expectRevert(Error.INVALID_ACTION.selector);
         validator.validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, AVAX, AVAX, AVAX, true, address(0), deployer, NATIVE, NATIVE)
+            IBridgeValidator.ValidateTxDataArgs(txData, AVAX, AVAX, AVAX, true, address(0), getContract(AVAX, "CoreStateRegistry"), NATIVE, NATIVE)
         );
     }
 
@@ -107,7 +107,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
                 receiverDst: abi.encodePacked(address(1)), // Invalid receiver address
                 orderAuthorityAddressDst: abi.encodePacked(mockDebridgeAuth),
                 externalCall: new bytes(0),
-                allowedCancelBeneficiarySrc: bytes(""),
+                allowedCancelBeneficiarySrc: abi.encodePacked(address(1)),
                 takeChainId: uint256(BSC),
                 givePatchAuthoritySrc: address(0),
                 allowedTakerDst: bytes("")
@@ -132,7 +132,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
 
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
         validator.validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, BSC, BSC, true, address(0), deployer, NATIVE, NATIVE)
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, BSC, BSC, true, address(0), address(1), NATIVE, NATIVE)
         );
     }
 
@@ -147,7 +147,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
                 receiverDst: abi.encodePacked(getContract(BSC, "DstSwapper")),
                 orderAuthorityAddressDst: abi.encodePacked(mockDebridgeAuth),
                 externalCall: new bytes(0),
-                allowedCancelBeneficiarySrc: bytes(""),
+                allowedCancelBeneficiarySrc: abi.encodePacked(getContract(BSC, "DstSwapper")),
                 takeChainId: uint256(AVAX),
                 givePatchAuthoritySrc: address(0),
                 allowedTakerDst: bytes("")
@@ -172,7 +172,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
 
         vm.expectRevert(Error.INVALID_INTERIM_TOKEN.selector);
         validator.validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, AVAX, AVAX, true, address(0), deployer, NATIVE, NATIVE)
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, AVAX, AVAX, true, address(0), getContract(BSC, "DstSwapper"), NATIVE, NATIVE)
         );
     }
 
@@ -183,25 +183,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
 
         vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
         validator.validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, AVAX, ETH, true, address(0), deployer, NATIVE, NATIVE)
-        );
-    }
-
-    function test_validateTxData_invalidWithdrawalReceiver() public {
-        bytes memory txData = _buildDummyDeBridgeTxData(
-            address(0),
-            100,
-            address(1), // Invalid receiver address
-            address(0),
-            ETH,
-            BSC,
-            bytes(""),
-            ""
-        );
-
-        vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
-        validator.validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, BSC, BSC, false, address(0), deployer, NATIVE, NATIVE)
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, AVAX, ETH, true, address(0), getContract(AVAX, "CoreStateRegistry"), NATIVE, NATIVE)
         );
     }
 
@@ -282,7 +264,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
                     receiverDst: abi.encode(address(0)),
                     orderAuthorityAddressDst: abi.encode(address(1)), // Invalid authority address
                     externalCall: new bytes(0),
-                    allowedCancelBeneficiarySrc: bytes(""),
+                    allowedCancelBeneficiarySrc: abi.encodePacked(getContract(BSC, "CoreStateRegistry")),
                     takeChainId: 1,
                     givePatchAuthoritySrc: address(0),
                     allowedTakerDst: bytes("")
@@ -296,7 +278,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
         vm.expectRevert(DeBridgeError.INVALID_DEBRIDGE_AUTHORITY.selector);
         validator.validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
-                txDataWithInvalidAuthority, ETH, BSC, BSC, false, address(0), deployer, NATIVE, NATIVE
+                txDataWithInvalidAuthority, ETH, BSC, BSC, false, address(0), getContract(BSC, "CoreStateRegistry"), NATIVE, NATIVE
             )
         );
     }
@@ -446,7 +428,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
                     abi.encodePacked(mockDebridgeAuth),
                     bytes(""),
                     bytes(""),
-                    bytes("")
+                    abi.encodePacked(getContract(_dstChainId, "CoreStateRegistry"))
                 ),
                 /// random salt
                 uint64(block.timestamp),

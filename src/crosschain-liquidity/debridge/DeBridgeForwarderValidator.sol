@@ -27,6 +27,8 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         uint256 dstChainId;
         address outputToken;
         uint256 outputAmount;
+        address swapRefundRecipient;
+        address bridgeRefundRecipient;
         address finalReceiver;
         address orderAuthorityAddressDst;
     }
@@ -52,6 +54,14 @@ contract DeBridgeForwarderValidator is BridgeValidator {
     /// @inheritdoc BridgeValidator
     function validateTxData(ValidateTxDataArgs calldata args_) external view override returns (bool hasDstSwap) {
         DecodedQuote memory deBridgeQuote = _decodeTxData(args_.txData);
+
+        /// @dev mandates the refund receiver to be args_.receiver
+        if (
+            deBridgeQuote.bridgeRefundRecipient != args_.receiverAddress
+                || deBridgeQuote.swapRefundRecipient != args_.receiverAddress
+        ) {
+            revert DeBridgeError.INVALID_REFUND_ADDRESS();
+        }
 
         if (
             superRegistry.getAddressByChainId(keccak256("DEBRIDGE_AUTHORITY"), args_.dstChainId)
@@ -132,7 +142,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
     struct InternalVars {
         bytes4 selector;
         address swapOutputToken;
-        address swapRefundAddress;
+        bytes swapPermitEnvelope;
         address bridgeTarget;
         bytes bridgeTxData;
         bytes permitEnvelope;
@@ -151,12 +161,12 @@ contract DeBridgeForwarderValidator is BridgeValidator {
             (
                 deBridgeQuote.inputToken,
                 deBridgeQuote.inputAmount,
-                ,
+                v.swapPermitEnvelope,
                 ,
                 ,
                 v.swapOutputToken,
                 ,
-                v.swapRefundAddress,
+                deBridgeQuote.swapRefundRecipient,
                 v.bridgeTarget,
                 v.bridgeTxData
             ) = abi.decode(
@@ -167,8 +177,13 @@ contract DeBridgeForwarderValidator is BridgeValidator {
             revert Error.BLACKLISTED_ROUTE_ID();
         }
 
+        /// swap permit envelope should be empty
+        if (v.swapPermitEnvelope.length > 0) revert DeBridgeError.INVALID_SWAP_PERMIT_ENVELOP();
+
         /// bridge tx data shouldn't be empty
-        if (v.bridgeTxData.length == 0 || v.bridgeTarget != DE_BRIDGE_SOURCE) revert DeBridgeError.INVALID_BRIDGE_DATA();
+        if (v.bridgeTxData.length == 0 || v.bridgeTarget != DE_BRIDGE_SOURCE) {
+            revert DeBridgeError.INVALID_BRIDGE_DATA();
+        }
 
         /// now decoding the bridge data
         v.selector = _parseSelectorMem(v.bridgeTxData);
@@ -193,7 +208,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
             revert DeBridgeError.INVALID_EXTRA_CALL_DATA();
         }
 
-        if(v.xChainQuote.allowedTakerDst.length > 0) {
+        if (v.xChainQuote.allowedTakerDst.length > 0) {
             revert DeBridgeError.INVALID_TAKER_DST();
         }
 
@@ -202,6 +217,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         deBridgeQuote.finalReceiver = _castToAddress(v.xChainQuote.receiverDst);
         deBridgeQuote.dstChainId = v.xChainQuote.takeChainId;
         deBridgeQuote.orderAuthorityAddressDst = _castToAddress(v.xChainQuote.orderAuthorityAddressDst);
+        deBridgeQuote.bridgeRefundRecipient = _castToAddress(v.xChainQuote.allowedCancelBeneficiarySrc);
     }
 
     /// @dev helps parsing debridge calldata and return the input parameters
