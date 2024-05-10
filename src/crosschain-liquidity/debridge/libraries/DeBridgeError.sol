@@ -22,4 +22,7 @@ library DeBridgeError {
 
     /// @dev if dst taker is restricted
     error INVALID_TAKER_DST();
+
+    /// @dev if cancel beneficiary is invalid
+    error INVALID_REFUND_ADDRESS();
 }

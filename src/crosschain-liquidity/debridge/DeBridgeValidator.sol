@@ -29,14 +29,20 @@ contract DeBridgeValidator is BridgeValidator {
     }
 
     /// @inheritdoc BridgeValidator
-    /// @dev make sure the OrderCreation.allowedCancelBeneficiarySrc and OrderCreation.givePatchAuthoritySrc is the user address on source
+    /// @dev make sure the OrderCreation.allowedCancelBeneficiarySrc and OrderCreation.givePatchAuthoritySrc is the user
+    /// address on source
     function validateTxData(ValidateTxDataArgs calldata args_) external view override returns (bool hasDstSwap) {
         DlnOrderLib.OrderCreation memory deBridgeQuote = _decodeTxData(args_.txData);
 
         /// sanity check for allowed parameters of tx data
         if (deBridgeQuote.externalCall.length > 0) revert DeBridgeError.INVALID_EXTRA_CALL_DATA();
 
-        if(deBridgeQuote.allowedTakerDst.length > 0) revert DeBridgeError.INVALID_TAKER_DST();
+        if (deBridgeQuote.allowedTakerDst.length > 0) revert DeBridgeError.INVALID_TAKER_DST();
+
+        /// @dev mandates the refund receiver to be args_.receiver
+        if (_castToAddress(deBridgeQuote.allowedCancelBeneficiarySrc) != args_.receiverAddress) {
+            revert DeBridgeError.INVALID_REFUND_ADDRESS();
+        }
 
         if (
             superRegistry.getAddressByChainId(keccak256("DEBRIDGE_AUTHORITY"), args_.dstChainId)
