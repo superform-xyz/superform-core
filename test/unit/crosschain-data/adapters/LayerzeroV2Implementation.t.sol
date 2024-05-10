@@ -288,4 +288,26 @@ contract LayerzeroV2ImplementationTest is BaseSetup {
         vm.prank(stateRegistry);
         layerzeroImpl.dispatchPayload(stateRegistry, chainId, message, optionEncoded);
     }
+
+    function testOAppVersion() public view {
+        (uint64 senderVersion, uint64 receiverVersion) = layerzeroImpl.oAppVersion();
+        assertEq(senderVersion, 1);
+        assertEq(receiverVersion, 2);
+    }
+
+    function testAllowInitializePath() public view {
+        Origin memory origin = Origin(eid, bytes32(uint256(uint160(address(layerzeroImpl)))), 0);
+        bool allowPath = layerzeroImpl.allowInitializePath(origin);
+        assertTrue(allowPath);
+    }
+
+    function testNextNonce() public view {
+        uint64 nonce = layerzeroImpl.nextNonce(30101, bytes32(uint256(uint160(address(layerzeroImpl)))));
+        assertEq(nonce, 0);
+    }
+
+    function testIsComposeMessage() public view {
+        Origin memory origin = Origin(eid, bytes32(uint256(uint160(address(layerzeroImpl)))), 0);
+        bool isComposer = layerzeroImpl.isComposeMsgSender(origin, bytes(""), address(layerzeroImpl));
+    }
 }
