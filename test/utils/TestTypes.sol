@@ -172,7 +172,6 @@ struct SetupVars {
     address socketOneInchValidator;
     address debridgeValidator;
     address debridgeForwarderValidator;
-    address hashflowValidator;
     address rewardsDistributor;
     Vm.Log[] logs;
     address superPositions;

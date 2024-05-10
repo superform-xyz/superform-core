@@ -50,8 +50,8 @@ contract DeBridgeForwarderMock is Test {
     function _bridge(InternalVars memory v) internal {
         vm.selectFork(v.toChainId);
         deal(
-            abi.decode(v.quote.takeTokenAddress, (address)),
-            abi.decode(v.quote.receiverDst, (address)),
+            _castToAddress(v.quote.takeTokenAddress),
+            _castToAddress(v.quote.receiverDst),
             v.quote.takeAmount
         );
 
@@ -63,5 +63,9 @@ contract DeBridgeForwarderMock is Test {
         assembly {
             calldata_ := add(data, 0x04)
         }
+    }
+
+    function _castToAddress(bytes memory address_) internal pure returns (address) {
+        return address(uint160(bytes20(address_)));
     }
 }

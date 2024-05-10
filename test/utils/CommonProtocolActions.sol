@@ -270,13 +270,13 @@ abstract contract CommonProtocolActions is BaseSetup {
                 DlnOrderLib.OrderCreation(
                     args.externalToken,
                     args.amount,
-                    abi.encode(args.underlyingTokenDst),
+                    abi.encodePacked(args.underlyingTokenDst),
                     /// take amount
                     (args.amount * uint256(args.USDPerUnderlyingToken)) / uint256(args.USDPerUnderlyingTokenDst),
                     uint256(args.toChainId),
-                    abi.encode(getContract(args.toChainId, "CoreStateRegistry")),
+                    abi.encodePacked(getContract(args.toChainId, "CoreStateRegistry")),
                     address(0),
-                    abi.encode(mockDebridgeAuth),
+                    abi.encodePacked(mockDebridgeAuth),
                     bytes(""),
                     bytes(""),
                     bytes("")
@@ -298,13 +298,13 @@ abstract contract CommonProtocolActions is BaseSetup {
                 DlnOrderLib.OrderCreation(
                     args.externalToken,
                     args.amount,
-                    abi.encode(args.underlyingTokenDst),
+                    abi.encodePacked(args.underlyingTokenDst),
                     /// take amount
                     (args.amount * uint256(args.USDPerUnderlyingToken)) / uint256(args.USDPerUnderlyingTokenDst),
                     uint256(args.toChainId),
-                    abi.encode(getContract(args.toChainId, "CoreStateRegistry")),
+                    abi.encodePacked(getContract(args.toChainId, "CoreStateRegistry")),
                     address(0),
-                    abi.encode(mockDebridgeAuth),
+                    abi.encodePacked(mockDebridgeAuth),
                     bytes(""),
                     bytes(""),
                     bytes("")
@@ -628,13 +628,13 @@ abstract contract CommonProtocolActions is BaseSetup {
                 DlnOrderLib.OrderCreation(
                     v.underlyingToken_,
                     v.amount_,
-                    abi.encode(v.underlyingTokenDst_),
+                    abi.encodePacked(v.underlyingTokenDst_),
                     /// take amount
                     (v.amount_ * uint256(USDPerUnderlyingToken)) / uint256(USDPerUnderlyingTokenDst),
                     v.toChainId_,
-                    abi.encode(v.receiver_),
+                    abi.encodePacked(v.receiver_),
                     address(0),
-                    abi.encode(mockDebridgeAuth),
+                    abi.encodePacked(mockDebridgeAuth),
                     bytes(""),
                     bytes(""),
                     bytes("")

@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
 import { Error } from "src/libraries/Error.sol";
-import { DeBridgeError } from "src/libraries/DebridgeError.sol";
+import { DeBridgeError } from "src/crosschain-liquidity/debridge/libraries/DebridgeError.sol";
 import { IDlnSource } from "src/vendor/debridge/IDlnSource.sol";
 import { DlnOrderLib } from "src/vendor/debridge/DlnOrderLib.sol";
 
@@ -149,6 +149,6 @@ contract DeBridgeValidator is BridgeValidator {
 
     /// @dev helps cast bytes to address
     function _castToAddress(bytes memory address_) internal pure returns (address) {
-        return abi.decode(address_, (address));
+        return address(uint160(bytes20(address_)));
     }
 }

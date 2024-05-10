@@ -38,8 +38,8 @@ contract DeBridgeMock is Test {
 
         vm.selectFork(toChainId);
         deal(
-            abi.decode(_orderCreation.takeTokenAddress, (address)),
-            abi.decode(_orderCreation.receiverDst, (address)),
+            _castToAddress(_orderCreation.takeTokenAddress),
+            _castToAddress(_orderCreation.receiverDst),
             _orderCreation.takeAmount
         );
 
@@ -47,5 +47,9 @@ contract DeBridgeMock is Test {
 
         /// just returning a random key here
         return keccak256(abi.encode(_orderCreation));
+    }
+
+    function _castToAddress(bytes memory address_) internal pure returns (address) {
+        return address(uint160(bytes20(address_)));
     }
 }
