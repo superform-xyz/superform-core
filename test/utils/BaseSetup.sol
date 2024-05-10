@@ -1217,9 +1217,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         if (!invariant) {
             forks[ETH] = pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 19_293_715) : vm.createFork(ETHEREUM_RPC_URL);
             forks[BSC] = pinnedBlock ? vm.createFork(BSC_RPC_URL, 32_899_049) : vm.createFork(BSC_RPC_URL);
-            forks[AVAX] = pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 36_974_720) : vm.createFork(AVALANCHE_RPC_URL);
+            forks[AVAX] = pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 43_845_494) : vm.createFork(AVALANCHE_RPC_URL);
             forks[POLY] = pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 56_710_026) : vm.createFork(POLYGON_RPC_URL);
-            forks[ARBI] = pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 143_659_807) : vm.createFork(ARBITRUM_RPC_URL);
+            forks[ARBI] = pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 175_504_760) : vm.createFork(ARBITRUM_RPC_URL);
             forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 116_353_583) : vm.createFork(OPTIMISM_RPC_URL);
             forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL);
             forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 78_945_396) : vm.createFork(FANTOM_RPC_URL);

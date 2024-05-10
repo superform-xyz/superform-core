@@ -1996,7 +1996,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         superformData = SingleVaultSFData(
             args.superformId,
             args.amount,
-            oa > 0 ? oa : args.amount,
+            oa,
             args.maxSlippage,
             vars.liqReq,
             "",
