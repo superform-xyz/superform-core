@@ -60,7 +60,10 @@ interface ILayerZeroEndpointV2 is IMessageLibManager, IMessagingComposer, IMessa
     function send(
         MessagingParams calldata _params,
         address _refundAddress
-    ) external payable returns (MessagingReceipt memory);
+    )
+        external
+        payable
+        returns (MessagingReceipt memory);
 
     function verify(Origin calldata _origin, address _receiver, bytes32 _payloadHash) external;
 
@@ -74,9 +77,12 @@ interface ILayerZeroEndpointV2 is IMessageLibManager, IMessagingComposer, IMessa
         bytes32 _guid,
         bytes calldata _message,
         bytes calldata _extraData
-    ) external payable;
+    )
+        external
+        payable;
 
-    // oapp can burn messages partially by calling this function with its own business logic if messages are verified in order
+    // oapp can burn messages partially by calling this function with its own business logic if messages are verified in
+    // order
     function clear(address _oapp, Origin calldata _origin, bytes32 _guid, bytes calldata _message) external;
 
     function setLzToken(address _lzToken) external;

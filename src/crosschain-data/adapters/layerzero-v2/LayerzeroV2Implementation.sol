@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import "src/vendor/layerzero/v2/OApp.sol";
-import "src/vendor/layerzero/v2/interfaces/ILayerZeroEndpointV2.sol";
+import "src/vendor/layerzero/v2/ILayerZeroReceiver.sol";
+import "src/vendor/layerzero/v2/ILayerZeroEndpointV2.sol";
 
 import { Error } from "src/libraries/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
@@ -16,19 +16,27 @@ import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 /// @title LayerzeroV2Implementation
 /// @dev Allows state registries to use Layerzero v2 for crosschain communication
 /// @author Zeropoint Labs
-contract LayerzeroV2Implementation is IAmbImplementation, OApp {
+contract LayerzeroV2Implementation is IAmbImplementation, ILayerZeroReceiver {
     using DataLib for uint256;
     using ProofLib for AMBMessage;
 
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
-    uint16 constant private OPTIONS_TYPE = 1;  /// legacy options is fine for superform
+    uint64 internal constant SENDER_VERSION = 1;
+    /// identifier for oapp sender version
+    uint64 internal constant RECEIVER_VERSION = 2;
+    /// identifier for oapp receiver
+
+    uint16 private constant OPTIONS_TYPE = 1;
+
+    /// legacy options is fine for superform
     ISuperRegistry public immutable superRegistry;
 
     //////////////////////////////////////////////////////////////
     //                         STATE VARIABLES                  //
     //////////////////////////////////////////////////////////////
+    ILayerZeroEndpointV2 public endpoint;
 
     mapping(bytes32 => bool) public ambProtect;
 
@@ -36,6 +44,7 @@ contract LayerzeroV2Implementation is IAmbImplementation, OApp {
     mapping(uint32 => uint64) public superChainId;
 
     mapping(bytes32 => bool) public processedMessages;
+    mapping(uint32 eid => bytes32 peer) public peers;
 
     /////////////////////////////////////////////////////////////
     //                      CUSTOM  ERRORS                     //
@@ -46,6 +55,12 @@ contract LayerzeroV2Implementation is IAmbImplementation, OApp {
 
     /// @dev thrown if endpoint is not set
     error ENDPOINT_NOT_SET();
+    
+    /// @dev thrown if msg.value is not expected msg fees
+    error INVALID_MSG_FEE();
+
+    /// @dev thrown if peer is not set
+    error PEER_NOT_SET();
 
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
@@ -53,6 +68,7 @@ contract LayerzeroV2Implementation is IAmbImplementation, OApp {
 
     event EndpointUpdated(address indexed oldEndpoint_, address indexed newEndpoint_);
     event DelegateUpdated(address indexed newDelegate_);
+    event PeerSet(uint32 indexed eid_, bytes32 peer_);
 
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
@@ -72,7 +88,6 @@ contract LayerzeroV2Implementation is IAmbImplementation, OApp {
         _;
     }
 
-
     /// @param superRegistry_ is the super registry address
     constructor(ISuperRegistry superRegistry_) {
         superRegistry = superRegistry_;
@@ -85,15 +100,15 @@ contract LayerzeroV2Implementation is IAmbImplementation, OApp {
     /// @notice Sets the peer address (OApp instance) for a corresponding endpoint.
     /// @param eid_ The endpoint ID.
     /// @param peer_ The address of the peer to be associated with the corresponding endpoint.
-    function setPeer(uint32 eid_, bytes32 peer_) external override onlyProtocolAdmin {
-        _setPeer(eid_, peer_);
+    function setPeer(uint32 eid_, bytes32 peer_) external onlyProtocolAdmin {
+        peers[eid_] = peer_;
+        emit PeerSet(eid_, peer_);
     }
-
 
     /// @dev allows protocol admin to configure layerzero endpoint
     /// @param endpoint_ is the layerzero endpoint on the deployed network
     function setLzEndpoint(address endpoint_) external onlyProtocolAdmin {
-        if(address(endpoint) != address(0)) revert ENDPOINT_EXISTS();
+        if (address(endpoint) != address(0)) revert ENDPOINT_EXISTS();
         if (endpoint_ == address(0)) revert Error.ZERO_ADDRESS();
 
         endpoint = ILayerZeroEndpointV2(endpoint_);
@@ -102,10 +117,10 @@ contract LayerzeroV2Implementation is IAmbImplementation, OApp {
 
     /// @dev allows protocol admin to configure layerzero delegate
     /// @param delegate_ is the layerzero delegate to be configured
-    function setDelegate(address delegate_) external override onlyProtocolAdmin {
+    function setDelegate(address delegate_) external onlyProtocolAdmin {
         if (address(endpoint) == address(0)) revert ENDPOINT_NOT_SET();
-        if(delegate_ == address(0)) revert Error.ZERO_ADDRESS();
-        
+        if (delegate_ == address(0)) revert Error.ZERO_ADDRESS();
+
         endpoint.setDelegate(delegate_);
         emit DelegateUpdated(delegate_);
     }
@@ -137,7 +152,6 @@ contract LayerzeroV2Implementation is IAmbImplementation, OApp {
         emit ChainAdded(superChainId_);
     }
 
-
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
@@ -164,8 +178,29 @@ contract LayerzeroV2Implementation is IAmbImplementation, OApp {
         _lzSend(eid, message_, extraData_, fee_, srcSender_);
     }
 
+    /// @inheritdoc ILayerZeroReceiver
+    function lzReceive(
+        Origin calldata origin_,
+        bytes32 guid_,
+        bytes calldata message_,
+        address executor_,
+        bytes calldata extraData_
+    )
+        external
+        override
+        payable
+    {
+        /// @dev validates if caller is lz endpoint
+        if (address(endpoint) != msg.sender) revert Error.CALLER_NOT_ENDPOINT();
+
+        /// @dev validates is source sender is valid
+        if (_getPeerOrRevert(origin_.srcEid) != origin_.sender) revert Error.INVALID_SRC_SENDER();
+
+        _lzReceive(origin_, guid_, message_, executor_, extraData_);
+    }
+
     /// @inheritdoc IAmbImplementation
-    function retryPayload(bytes memory data_) external payable override {}
+    function retryPayload(bytes memory data_) external payable override { }
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
@@ -184,7 +219,7 @@ contract LayerzeroV2Implementation is IAmbImplementation, OApp {
     {
         uint32 tempAmbChainId = ambChainId[dstChainId_];
 
-        if(tempAmbChainId == 0) {
+        if (tempAmbChainId == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
 
@@ -194,23 +229,101 @@ contract LayerzeroV2Implementation is IAmbImplementation, OApp {
     }
 
     /// @inheritdoc IAmbImplementation
-    function generateExtraData(uint256 gasLimit) external override pure returns (bytes memory extraData) {
+    function generateExtraData(uint256 gasLimit) external pure override returns (bytes memory extraData) {
         /// generate the executor options here, since we don't use msg.value just returning encoded args
         /// refer: https://docs.layerzero.network/v2/developers/evm/gas-settings/options#lzreceive-option
         return abi.encodePacked(OPTIONS_TYPE, gasLimit);
+    }
+
+    /// @notice returns the oapp version information
+    function oAppVersion() external view returns (uint64 senderVersion, uint64 receiverVersion) {
+        return (SENDER_VERSION, RECEIVER_VERSION);
+    }
+
+    /// @notice checks if the path initialization is allowed based on the provided origin.
+    function allowInitializePath(Origin calldata origin) external override view returns (bool) {
+        return peers[origin.srcEid] == origin.sender;
+    }
+
+    /// @dev the path nonce starts from 1. If 0 is returned it means that there is NO nonce ordered enforcement.
+    /// @dev is required by the off-chain executor to determine the OApp expects msg execution is ordered.
+    function nextNonce(uint32, /*_srcEid*/ bytes32 /*_sender*/ ) external override view returns (uint64 nonce) {
+        return 0;
+    }
+
+    /// @notice indicates whether an address is an approved composeMsg sender to the endpoint.
+    /// @dev the default sender IS the OAppReceiver implementer.
+    function isComposeMsgSender(
+        Origin calldata, /*_origin*/
+        bytes calldata, /*_message*/
+        address _sender
+    )
+        public
+        view
+        virtual
+        returns (bool)
+    {
+        return _sender == address(this);
     }
 
     //////////////////////////////////////////////////////////////
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
 
+     /// @notice internal function to get the peer address associated with a specific endpoint; reverts if NOT set.
+    function _getPeerOrRevert(uint32 _eid) internal view virtual returns (bytes32) {
+        bytes32 peer = peers[_eid];
+        if (peer == bytes32(0)) revert PEER_NOT_SET();
+        return peer;
+    }
+
+    /// @dev interacts with EndpointV2.quote() for fee calculation
+    function _quote(
+        uint32 _dstEid,
+        bytes memory _message,
+        bytes memory _options,
+        bool _payInLzToken
+    )
+        internal
+        view
+        virtual
+        returns (MessagingFee memory fee)
+    {
+        return endpoint.quote(
+            MessagingParams(_dstEid, _getPeerOrRevert(_dstEid), _message, _options, _payInLzToken), address(this)
+        );
+    }
+
+    /// @dev interacts with the LayerZero EndpointV2.send() for sending a message
+    function _lzSend(
+        uint32 _dstEid,
+        bytes memory _message,
+        bytes memory _options,
+        MessagingFee memory _fee,
+        address _refundAddress
+    )
+        internal
+        virtual
+        returns (MessagingReceipt memory receipt)
+    {
+        // @dev push corresponding fees to the endpoint
+        if(msg.value != _fee.nativeFee || _fee.lzTokenFee != 0) revert INVALID_MSG_FEE();
+
+        return endpoint.send{ value: msg.value }(
+            MessagingParams(_dstEid, _getPeerOrRevert(_dstEid), _message, _options, false), _refundAddress
+        );
+    }
+
+    /// @dev processes a received payload
     function _lzReceive(
         Origin calldata origin_,
         bytes32 guid_,
         bytes calldata message_,
-        address , /// executor_
+        address, /// executor_
         bytes calldata /// extraData_
-    ) internal override {
+    )
+        internal
+    {
         if (processedMessages[guid_]) {
             revert Error.DUPLICATE_PAYLOAD();
         }
@@ -234,7 +347,6 @@ contract LayerzeroV2Implementation is IAmbImplementation, OApp {
         _ambProtect(decoded);
         targetRegistry.receivePayload(srcChainId, message_);
     }
-
 
     /// @dev prevents the same AMB from delivery a payload and its proof
     /// @dev is an additional protection against malicious ambs

@@ -15,5 +15,7 @@ interface ILayerZeroReceiver {
         bytes calldata _message,
         address _executor,
         bytes calldata _extraData
-    ) external payable;
+    )
+        external
+        payable;
 }

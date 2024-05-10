@@ -57,7 +57,13 @@ interface IMessageLibManager {
 
     function setReceiveLibraryTimeout(address _oapp, uint32 _eid, address _lib, uint256 _expiry) external;
 
-    function receiveLibraryTimeout(address _receiver, uint32 _eid) external view returns (address lib, uint256 expiry);
+    function receiveLibraryTimeout(
+        address _receiver,
+        uint32 _eid
+    )
+        external
+        view
+        returns (address lib, uint256 expiry);
 
     function setConfig(address _oapp, address _lib, SetConfigParam[] calldata _params) external;
 
@@ -66,5 +72,8 @@ interface IMessageLibManager {
         address _lib,
         uint32 _eid,
         uint32 _configType
-    ) external view returns (bytes memory config);
+    )
+        external
+        view
+        returns (bytes memory config);
 }

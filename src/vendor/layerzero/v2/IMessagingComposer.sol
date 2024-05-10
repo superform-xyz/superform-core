@@ -23,7 +23,10 @@ interface IMessagingComposer {
         address _to,
         bytes32 _guid,
         uint16 _index
-    ) external view returns (bytes32 messageHash);
+    )
+        external
+        view
+        returns (bytes32 messageHash);
 
     function sendCompose(address _to, bytes32 _guid, uint16 _index, bytes calldata _message) external;
 
@@ -34,5 +37,7 @@ interface IMessagingComposer {
         uint16 _index,
         bytes calldata _message,
         bytes calldata _extraData
-    ) external payable;
+    )
+        external
+        payable;
 }
