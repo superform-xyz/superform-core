@@ -20,17 +20,17 @@ contract DeBridgeForwarderValidator is BridgeValidator {
     //////////////////////////////////////////////////////////////
     //                       STRUCTS                            //
     //////////////////////////////////////////////////////////////
-
+    
     struct DecodedQuote {
-        address inputToken;
-        uint256 inputAmount;
-        uint256 dstChainId;
-        address outputToken;
-        uint256 outputAmount;
-        address swapRefundRecipient;
-        address bridgeRefundRecipient;
-        address finalReceiver;
-        address orderAuthorityAddressDst;
+        address inputToken; /// swap input token
+        uint256 inputAmount; /// swap input amount
+        uint256 dstChainId; /// final bridging dst chain id
+        address outputToken; /// final take token (after swap + bridge)
+        uint256 outputAmount; /// final take token amount
+        address swapRefundRecipient; /// excess swap output receiver
+        address bridgeRefundRecipient; /// bridge cancel beneficiary
+        address finalReceiver; /// final take token receiver on dst chain
+        address orderAuthorityAddressDst; /// order authority for bridge on dst chain
     }
 
     //////////////////////////////////////////////////////////////
