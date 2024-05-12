@@ -410,7 +410,7 @@ contract DeBridgeValidatorTest is ProtocolActions {
                 takeAmount: 200,
                 takeTokenAddress: abi.encode(address(1)),
                 receiverDst: abi.encode(address(1)), // Invalid receiver address for withdrawal
-                orderAuthorityAddressDst: abi.encodePacked(mockDebridgeAuth),
+                orderAuthorityAddressDst: abi.encodePacked(deployer),
                 externalCall: new bytes(0),
                 allowedCancelBeneficiarySrc: abi.encodePacked(deployer),
                 takeChainId: 56,
@@ -448,7 +448,7 @@ contract DeBridgeValidatorTest is ProtocolActions {
                 takeAmount: 200,
                 takeTokenAddress: abi.encode(address(1)),
                 receiverDst: abi.encodePacked(deployer), // Valid receiver address for withdrawal
-                orderAuthorityAddressDst: abi.encodePacked(mockDebridgeAuth),
+                orderAuthorityAddressDst: abi.encodePacked(deployer),
                 externalCall: new bytes(0),
                 allowedCancelBeneficiarySrc: abi.encodePacked(deployer),
                 takeChainId: 56,

@@ -100,7 +100,6 @@ abstract contract BaseSetup is StdInvariant, Test {
     address public constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     /// CREATE2 assumption but it works otherwise too
-    address public mockDebridgeAuth = vm.addr(7);
     address public deployer = vm.addr(777);
     address[] public users;
     uint256[] public userKeys;
@@ -143,7 +142,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         "EmergencyQueue",
         "SocketOneInchValidator",
         "DeBridgeValidator",
-        "DeBridgeForwarderValidator" "RewardsDistributor"
+        "DeBridgeForwarderValidator",
+        "RewardsDistributor"
     ];
 
     /*//////////////////////////////////////////////////////////////
@@ -942,7 +942,7 @@ abstract contract BaseSetup is StdInvariant, Test {
 
                     vars.superRegistryC.setRequiredMessagingQuorum(vars.dstChainId, 1);
                     vars.superRegistryC.setVaultLimitPerDestination(vars.dstChainId, 5);
-                    vars.superRegistryC.setAddress(keccak256("DEBRIDGE_AUTHORITY"), mockDebridgeAuth, vars.dstChainId);
+                    vars.superRegistryC.setAddress(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), deployer, vars.dstChainId);
 
                     /// swap gas cost: 50000
                     /// update gas cost: 40000

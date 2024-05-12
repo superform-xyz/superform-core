@@ -8,6 +8,8 @@ import { IDlnSource } from "src/vendor/debridge/IDlnSource.sol";
 import { DlnOrderLib } from "src/vendor/debridge/DlnOrderLib.sol";
 import { ICrossChainForwarder } from "src/vendor/debridge/ICrossChainForwarder.sol";
 
+import "forge-std/console.sol";
+
 /// @title DeBridgeForwarderValidator
 /// @dev Asserts if De-Bridge swap + bridge input txData is valid
 /// @author Zeropoint Labs
@@ -20,18 +22,27 @@ contract DeBridgeForwarderValidator is BridgeValidator {
     //////////////////////////////////////////////////////////////
     //                       STRUCTS                            //
     //////////////////////////////////////////////////////////////
-    
+
     struct DecodedQuote {
-        address inputToken; /// swap input token
-        uint256 inputAmount; /// swap input amount
-        uint256 dstChainId; /// final bridging dst chain id
-        address outputToken; /// final take token (after swap + bridge)
-        uint256 outputAmount; /// final take token amount
-        address swapRefundRecipient; /// excess swap output receiver
-        address bridgeRefundRecipient; /// bridge cancel beneficiary
-        address finalReceiver; /// final take token receiver on dst chain
-        address orderAuthorityAddressDst; /// order authority for bridge on dst chain
+        /// swap input token
+        address inputToken;
+        /// swap input amount
+        uint256 inputAmount;
+        /// final bridging dst chain id
+        uint256 dstChainId;
+        /// final take token (after swap + bridge)
+        address outputToken;
+        /// final take token amount
+        uint256 outputAmount;
+        /// excess swap output receiver
+        address swapRefundRecipient;
+        /// bridge cancel beneficiary
+        address bridgeRefundRecipient;
+        /// final take token receiver on dst chain
+        address finalReceiver;
+        address orderAuthorityAddressDst;
     }
+    /// order authority for bridge on dst chain
 
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
@@ -55,6 +66,8 @@ contract DeBridgeForwarderValidator is BridgeValidator {
     function validateTxData(ValidateTxDataArgs calldata args_) external view override returns (bool hasDstSwap) {
         DecodedQuote memory deBridgeQuote = _decodeTxData(args_.txData);
 
+        console.log(superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), args_.dstChainId));
+        console.log(deBridgeQuote.swapRefundRecipient, deBridgeQuote.bridgeRefundRecipient, args_.receiverAddress);
         /// @dev mandates the refund receiver to be args_.receiver
         if (
             deBridgeQuote.bridgeRefundRecipient != args_.receiverAddress
@@ -64,7 +77,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         }
 
         if (
-            superRegistry.getAddressByChainId(keccak256("DEBRIDGE_AUTHORITY"), args_.dstChainId)
+            superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), args_.dstChainId)
                 != deBridgeQuote.orderAuthorityAddressDst
         ) revert DeBridgeError.INVALID_DEBRIDGE_AUTHORITY();
 
@@ -149,7 +162,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         DlnOrderLib.OrderCreation xChainQuote;
     }
 
-    /// @notice we should only allow the `tradeXChainRFQT` identifier
+    /// @notice supports `strictlySwapAndCall` function for swapping using forwarder
     function _decodeTxData(bytes calldata txData_) internal view returns (DecodedQuote memory deBridgeQuote) {
         InternalVars memory v;
 
@@ -178,15 +191,23 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         }
 
         /// swap permit envelope should be empty
-        if (v.swapPermitEnvelope.length > 0) revert DeBridgeError.INVALID_SWAP_PERMIT_ENVELOP();
+        if (v.swapPermitEnvelope.length > 0) {
+            revert DeBridgeError.INVALID_SWAP_PERMIT_ENVELOP();
+        }
 
         /// bridge tx data shouldn't be empty
         if (v.bridgeTxData.length == 0 || v.bridgeTarget != DE_BRIDGE_SOURCE) {
             revert DeBridgeError.INVALID_BRIDGE_DATA();
         }
 
+        _decodeBridgeData(v, deBridgeQuote);
+    }
+
+    /// @notice supports `createOrder` and `createSaltedOrder` for bridging using dln source
+    function _decodeBridgeData(InternalVars memory v, DecodedQuote memory deBridgeQuote) internal view {
         /// now decoding the bridge data
         v.selector = _parseSelectorMem(v.bridgeTxData);
+
         if (v.selector == IDlnSource.createOrder.selector) {
             (v.xChainQuote,,, v.permitEnvelope) =
                 abi.decode(this.parseCallData(v.bridgeTxData), (DlnOrderLib.OrderCreation, bytes, uint32, bytes));
@@ -198,7 +219,9 @@ contract DeBridgeForwarderValidator is BridgeValidator {
             revert Error.BLACKLISTED_ROUTE_ID();
         }
 
-        if (v.swapOutputToken != v.xChainQuote.giveTokenAddress) revert DeBridgeError.INVALID_BRIDGE_TOKEN();
+        if (v.swapOutputToken != v.xChainQuote.giveTokenAddress) {
+            revert DeBridgeError.INVALID_BRIDGE_TOKEN();
+        }
 
         if (v.permitEnvelope.length > 0) {
             revert DeBridgeError.INVALID_PERMIT_ENVELOP();

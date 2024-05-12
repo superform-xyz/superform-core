@@ -45,7 +45,7 @@ contract DeBridgeValidator is BridgeValidator {
         }
 
         if (
-            superRegistry.getAddressByChainId(keccak256("DEBRIDGE_AUTHORITY"), args_.dstChainId)
+            superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), args_.dstChainId)
                 != _castToAddress(deBridgeQuote.orderAuthorityAddressDst)
         ) revert DeBridgeError.INVALID_DEBRIDGE_AUTHORITY();
 
@@ -121,7 +121,7 @@ contract DeBridgeValidator is BridgeValidator {
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
 
-    /// NOTE: we should only allow the `tradeXChainRFQT` identifier
+    /// @notice supports both `createOrder` and `createSaltedOrder` functions for bridging using dln source
     function _decodeTxData(bytes calldata txData_)
         internal
         pure

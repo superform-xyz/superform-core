@@ -5,7 +5,8 @@ library DeBridgeError {
     /// @dev if permit envelop length is greater than zero
     error INVALID_PERMIT_ENVELOP();
 
-    /// @dev if authority address is invalid
+    /// @dev if dst authority address is not CORE_STATE_REGISTRY_RESCUER_ROLE
+    /// only the CORE_STATE_REGISTRY_RESCUER_ROLE is allowed to cancel a debridge order on destination chain
     error INVALID_DEBRIDGE_AUTHORITY();
 
     /// @dev if external call is allowed
