@@ -805,7 +805,8 @@ contract EmergencyQueueTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         SingleVaultSFData memory data = SingleVaultSFData(
