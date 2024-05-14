@@ -13,6 +13,11 @@ import { ICrossChainForwarder } from "src/vendor/debridge/ICrossChainForwarder.s
 contract DeBridgeForwarderValidatorTest is ProtocolActions {
     address constant NATIVE = address(0); // native for de-bridge is address(0)
     address constant DE_BRIDGE_SOURCE = 0xeF4fB24aD0916217251F553c0596F8Edc630EB66;
+
+    address constant SWAP_ROUTER = 0x1111111254EEB25477B68fb85Ed929f73A960582;
+
+    /// 1inch
+
     DeBridgeForwarderValidator validator;
 
     function setUp() public override {
@@ -397,7 +402,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
             address(420),
             1000,
             bytes(""),
-            address(0),
+            SWAP_ROUTER,
             bytes(""),
             address(320),
             1000,
@@ -415,13 +420,37 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
         );
     }
 
+    function test_validateTxData_invalidSwapRouter() public {
+        bytes memory txDataWithInvalidTakerDst = abi.encodeWithSelector(
+            DeBridgeForwarderMock.strictlySwapAndCall.selector,
+            address(420),
+            1000,
+            bytes(""),
+            address(100),
+            bytes(""),
+            address(320),
+            1000,
+            getContract(BSC, "CoreStateRegistry"),
+            DE_BRIDGE_SOURCE,
+            bytes("")
+        );
+        /// the txdata is empty here
+
+        vm.expectRevert(DeBridgeError.INVALID_SWAP_ROUTER.selector);
+        validator.validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                txDataWithInvalidTakerDst, ETH, BSC, BSC, true, address(0), deployer, NATIVE, NATIVE
+            )
+        );
+    }
+
     function test_validateTxData_invalidBridgeTarget() public {
         bytes memory txDataWithInvalidTakerDst = abi.encodeWithSelector(
             DeBridgeForwarderMock.strictlySwapAndCall.selector,
             address(420),
             1000,
             bytes(""),
-            address(0),
+            SWAP_ROUTER,
             bytes(""),
             address(320),
             1000,
@@ -583,9 +612,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
 
         vm.expectRevert(DeBridgeError.INVALID_PATCH_ADDRESS.selector);
         validator.validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(
-                txData, ETH, BSC, BSC, false, address(0), receiver, NATIVE, NATIVE
-            )
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, BSC, BSC, false, address(0), receiver, NATIVE, NATIVE)
         );
     }
 
@@ -648,7 +675,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
             _inputAmount,
             bytes(""),
             // src swap router
-            address(0),
+            SWAP_ROUTER,
             /// src swap calldata
             bytes(""),
             _swapOutputToken,

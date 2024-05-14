@@ -32,4 +32,7 @@ library DeBridgeError {
 
     /// @dev if the patch authority is not valid
     error INVALID_PATCH_ADDRESS();
+
+    /// @dev if the swap router is invalid
+    error INVALID_SWAP_ROUTER();
 }

@@ -32,4 +32,7 @@ interface ICrossChainForwarder {
     )
         external
         payable;
+
+    /// @dev returns whether a swap router is whitelisted
+    function supportedRouters(address router_) external view returns (bool);
 }

@@ -16,6 +16,8 @@ contract DeBridgeForwarderValidator is BridgeValidator {
     //                       CONSTANTS                          //
     //////////////////////////////////////////////////////////////
     address private constant DE_BRIDGE_SOURCE = 0xeF4fB24aD0916217251F553c0596F8Edc630EB66;
+    ICrossChainForwarder private constant DE_BRIDGE_FORWARDER =
+        ICrossChainForwarder(0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251);
 
     //////////////////////////////////////////////////////////////
     //                       STRUCTS                            //
@@ -73,10 +75,9 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         }
 
         /// @dev mandates the give patch authority src to be args_.receiver
-        if(deBridgeQuote.givePatchAuthoritySrc != args_.receiverAddress) {
+        if (deBridgeQuote.givePatchAuthoritySrc != args_.receiverAddress) {
             revert DeBridgeError.INVALID_PATCH_ADDRESS();
         }
-
 
         if (
             superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), args_.dstChainId)
@@ -157,6 +158,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
     struct InternalVars {
         bytes4 selector;
         address swapOutputToken;
+        address swapRouter;
         bytes swapPermitEnvelope;
         address bridgeTarget;
         bytes bridgeTxData;
@@ -177,7 +179,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
                 deBridgeQuote.inputToken,
                 deBridgeQuote.inputAmount,
                 v.swapPermitEnvelope,
-                ,
+                v.swapRouter,
                 ,
                 v.swapOutputToken,
                 ,
@@ -195,6 +197,12 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         /// swap permit envelope should be empty
         if (v.swapPermitEnvelope.length > 0) {
             revert DeBridgeError.INVALID_SWAP_PERMIT_ENVELOP();
+        }
+
+        /// defensive check to protect against unknown swap routers
+        /// this check is also made in the debridge forwarder contract
+        if (!DE_BRIDGE_FORWARDER.supportedRouters(v.swapRouter)) {
+            revert DeBridgeError.INVALID_SWAP_ROUTER();
         }
 
         /// bridge tx data shouldn't be empty
