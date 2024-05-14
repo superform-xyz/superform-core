@@ -18,6 +18,8 @@ import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
 import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator.sol";
 import { SocketOneInchValidator } from "src/crosschain-liquidity/socket/SocketOneInchValidator.sol";
+import { DeBridgeValidator } from "src/crosschain-liquidity/debridge/DeBridgeValidator.sol";
+import { DeBridgeForwarderValidator } from "src/crosschain-liquidity/debridge/DeBridgeForwarderValidator.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
 import { WormholeARImplementation } from
@@ -78,6 +80,8 @@ struct SetupVars {
     address lifiValidator;
     address socketValidator;
     address socketOneInchValidator;
+    address deBridgeValidator;
+    address deBridgeForwarderValidator;
     address kycDao4626Form;
     address PayloadHelper;
     address paymentHelper;
@@ -100,7 +104,7 @@ abstract contract AbstractDeploySingle is BatchScript {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[22] public contractNames = [
+    string[24] public contractNames = [
         "CoreStateRegistry",
         //"TimelockStateRegistry",
         "BroadcastRegistry",
@@ -125,7 +129,9 @@ abstract contract AbstractDeploySingle is BatchScript {
         "PayMaster",
         "EmergencyQueue",
         "VaultClaimer",
-        "RewardsDistributor"
+        "RewardsDistributor",
+        "DeBridgeValidator",
+        "DeBridgeForwarderValidator"
     ];
 
     enum Chains {
