@@ -162,8 +162,12 @@ abstract contract AbstractDeploySingle is BatchScript {
     uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(2), uint32(3)];
     string[] public VAULT_KINDS = ["Vault", "TimelockedVault", "KYCDaoVault"];
 
-    /// @dev liquidity bridge ids 101 is lifi v2, 2 is socket, 3 is socket one inch implementation
-    uint8[] public bridgeIds = [101, 2, 3];
+    /// @dev liquidity bridge ids 101 is lifi v2, 
+    /// 2 is socket
+    /// 3 is socket one inch implementation
+    /// 4 is debridge 
+    /// 5 is debridge crosschain forwarder
+    uint8[] public bridgeIds = [101, 2, 3, 4, 5];
 
     mapping(uint64 chainId => address[] bridgeAddresses) public BRIDGE_ADDRESSES;
 
@@ -582,9 +586,17 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.socketOneInchValidator = address(new SocketOneInchValidator{ salt: salt }(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("SocketOneInchValidator"))] = vars.socketOneInchValidator;
 
+        vars.deBridgeValidator = address(new DeBridgeValidator{ salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("DeBridgeValidator"))] = vars.deBridgeValidator;
+
+        vars.deBridgeForwarderValidator = address(new DeBridgeForwarderValidator{ salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderValidator"))] = vars.deBridgeForwarderValidator;
+
         bridgeValidators[0] = vars.lifiValidator;
         bridgeValidators[1] = vars.socketValidator;
         bridgeValidators[2] = vars.socketOneInchValidator;
+        bridgeValidators[3] = vars.deBridgeValidator;
+        bridgeValidators[4] = vars.deBridgeForwarderValidator;
 
         /// @dev 7 - Deploy SuperformFactory
         vars.factory = address(new SuperformFactory{ salt: salt }(vars.superRegistry));
