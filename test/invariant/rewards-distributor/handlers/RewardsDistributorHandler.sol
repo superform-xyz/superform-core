@@ -63,7 +63,7 @@ contract RewardsDistributorHandler is StdInvariant, MerkleReader {
 
     constructor(
         uint64[] memory chainIds_,
-        string[31] memory contractNames_,
+        string[35] memory contractNames_,
         address[][] memory coreContracts,
         uint256[] memory forksArray,
         RewardsDistributorStore _rewardsDistributorStore
@@ -303,7 +303,7 @@ contract RewardsDistributorHandler is StdInvariant, MerkleReader {
 
     struct InitHandlerSetupVars {
         uint64[] chainIds;
-        string[31] contractNames;
+        string[35] contractNames;
         address[][] coreContracts;
         uint256[] forksArray;
     }

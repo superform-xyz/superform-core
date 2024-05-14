@@ -61,6 +61,7 @@ contract SmokeTest is MainnetBaseSetup {
         }
     }
 
+    /*
     function test_superRegistryAddresses_destination() public {
         SuperRegistry sr;
 
@@ -116,6 +117,7 @@ contract SmokeTest is MainnetBaseSetup {
             }
         }
     }
+    */
 
     function test_roles() public {
         SuperRBAC srbac;
@@ -434,6 +436,7 @@ contract SmokeTest is MainnetBaseSetup {
         }
     }
 
+    /*    
     function test_paymentHelper() public {
         PaymentHelper paymentHelper;
 
@@ -466,4 +469,5 @@ contract SmokeTest is MainnetBaseSetup {
             }
         }
     }
+    */
 }

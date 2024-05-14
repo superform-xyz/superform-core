@@ -18,6 +18,8 @@ import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
 import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator.sol";
 import { SocketOneInchValidator } from "src/crosschain-liquidity/socket/SocketOneInchValidator.sol";
+import { DeBridgeValidator } from "src/crosschain-liquidity/debridge/DeBridgeValidator.sol";
+import { DeBridgeForwarderValidator } from "src/crosschain-liquidity/debridge/DeBridgeForwarderValidator.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
 import { WormholeARImplementation } from
@@ -78,6 +80,8 @@ struct SetupVars {
     address lifiValidator;
     address socketValidator;
     address socketOneInchValidator;
+    address deBridgeValidator;
+    address deBridgeForwarderValidator;
     address kycDao4626Form;
     address PayloadHelper;
     address paymentHelper;
@@ -100,7 +104,7 @@ abstract contract AbstractDeploySingle is BatchScript {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[22] public contractNames = [
+    string[24] public contractNames = [
         "CoreStateRegistry",
         //"TimelockStateRegistry",
         "BroadcastRegistry",
@@ -125,7 +129,9 @@ abstract contract AbstractDeploySingle is BatchScript {
         "PayMaster",
         "EmergencyQueue",
         "VaultClaimer",
-        "RewardsDistributor"
+        "RewardsDistributor",
+        "DeBridgeValidator",
+        "DeBridgeForwarderValidator"
     ];
 
     enum Chains {
@@ -156,8 +162,12 @@ abstract contract AbstractDeploySingle is BatchScript {
     uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(2), uint32(3)];
     string[] public VAULT_KINDS = ["Vault", "TimelockedVault", "KYCDaoVault"];
 
-    /// @dev liquidity bridge ids 101 is lifi v2, 2 is socket, 3 is socket one inch implementation
-    uint8[] public bridgeIds = [101, 2, 3];
+    /// @dev liquidity bridge ids 101 is lifi v2, 
+    /// 2 is socket
+    /// 3 is socket one inch implementation
+    /// 4 is debridge 
+    /// 5 is debridge crosschain forwarder
+    uint8[] public bridgeIds = [101, 2, 3, 4, 5];
 
     mapping(uint64 chainId => address[] bridgeAddresses) public BRIDGE_ADDRESSES;
 
@@ -576,9 +586,17 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.socketOneInchValidator = address(new SocketOneInchValidator{ salt: salt }(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("SocketOneInchValidator"))] = vars.socketOneInchValidator;
 
+        vars.deBridgeValidator = address(new DeBridgeValidator{ salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("DeBridgeValidator"))] = vars.deBridgeValidator;
+
+        vars.deBridgeForwarderValidator = address(new DeBridgeForwarderValidator{ salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderValidator"))] = vars.deBridgeForwarderValidator;
+
         bridgeValidators[0] = vars.lifiValidator;
         bridgeValidators[1] = vars.socketValidator;
         bridgeValidators[2] = vars.socketOneInchValidator;
+        bridgeValidators[3] = vars.deBridgeValidator;
+        bridgeValidators[4] = vars.deBridgeForwarderValidator;
 
         /// @dev 7 - Deploy SuperformFactory
         vars.factory = address(new SuperformFactory{ salt: salt }(vars.superRegistry));

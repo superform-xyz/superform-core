@@ -3,7 +3,6 @@ pragma solidity ^0.8.23;
 
 /// @dev lib imports
 import "forge-std/Test.sol";
-import "ds-test/test.sol";
 import { StdInvariant } from "forge-std/StdInvariant.sol";
 
 import { LayerZeroHelper } from "pigeon/layerzero/LayerZeroHelper.sol";
@@ -21,6 +20,8 @@ import { SocketOneInchMock } from "../mocks/SocketOneInchMock.sol";
 import { LiFiMockRugpull } from "../mocks/LiFiMockRugpull.sol";
 import { LiFiMockBlacklisted } from "../mocks/LiFiMockBlacklisted.sol";
 import { LiFiMockSwapToAttacker } from "../mocks/LiFiMockSwapToAttacker.sol";
+import { DeBridgeMock } from "../mocks/DeBridgeMock.sol";
+import { DeBridgeForwarderMock } from "../mocks/DeBridgeForwarderMock.sol";
 
 import { MockERC20 } from "../mocks/MockERC20.sol";
 import { VaultMock } from "../mocks/VaultMock.sol";
@@ -53,6 +54,9 @@ import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
 import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
 import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator.sol";
+import { DeBridgeValidator } from "src/crosschain-liquidity/debridge/DeBridgeValidator.sol";
+import { DeBridgeForwarderValidator } from "src/crosschain-liquidity/debridge/DeBridgeForwarderValidator.sol";
+
 import { SocketOneInchValidator } from "src/crosschain-liquidity/socket/SocketOneInchValidator.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
@@ -75,7 +79,7 @@ import { RewardsDistributor } from "src/RewardsDistributor.sol";
 import "src/types/DataTypes.sol";
 import "./TestTypes.sol";
 
-abstract contract BaseSetup is DSTest, StdInvariant, Test {
+abstract contract BaseSetup is StdInvariant, Test {
     /*//////////////////////////////////////////////////////////////
                         GENERAL VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -95,6 +99,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     /// @dev for mainnet deployment
     address public constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
+    /// CREATE2 assumption but it works otherwise too
     address public deployer = vm.addr(777);
     address[] public users;
     uint256[] public userKeys;
@@ -103,7 +108,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[31] public contractNames = [
+    string[35] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -130,10 +135,14 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         "WormholeHelper",
         "WormholeBroadcastHelper",
         "LiFiMock",
+        "DeBridgeMock",
+        "DeBridgeForwarderMock",
         "KYCDAOMock",
         "CanonicalPermit2",
         "EmergencyQueue",
         "SocketOneInchValidator",
+        "DeBridgeValidator",
+        "DeBridgeForwarderValidator",
         "RewardsDistributor"
     ];
 
@@ -578,6 +587,16 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             contracts[vars.chainId][bytes32(bytes("LiFiMockBlacklisted"))] = vars.liFiMockSwapToAttacker;
             vm.allowCheatcodes(vars.liFiMockSwapToAttacker);
 
+            /// @dev 7.1.7 deploy DeBridgeMock. This mocks tests the behavior of debridge
+            vars.deBridgeMock = address(new DeBridgeMock{ salt: salt }());
+            contracts[vars.chainId][bytes32(bytes("DeBridgeMock"))] = vars.deBridgeMock;
+            vm.allowCheatcodes(vars.deBridgeMock);
+
+            /// @dev 7.1.7 deploy DeBridgeForwarderMock. This mocks tests the behavior of debridge forwarder
+            vars.debridgeForwarderMock = address(new DeBridgeForwarderMock{ salt: salt }());
+            contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderMock"))] = vars.debridgeForwarderMock;
+            vm.allowCheatcodes(vars.debridgeForwarderMock);
+
             /// @dev 7.2.1- deploy  lifi validator
             vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
@@ -607,6 +626,14 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.socketOneInchValidator = address(new SocketOneInchValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("SocketOneInchValidator"))] = vars.socketOneInchValidator;
 
+            /// @dev 7.2.4- deploy deBridge validator
+            vars.debridgeValidator = address(new DeBridgeValidator{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("DeBridgeValidator"))] = vars.debridgeValidator;
+
+            /// @dev 7.2.5- deploy deBridge forwarder validator
+            vars.debridgeForwarderValidator = address(new DeBridgeForwarderValidator{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderValidator"))] = vars.debridgeForwarderValidator;
+
             /// @dev 7.3- kycDAO NFT used to test kycDAO vaults
             vars.kycDAOMock = address(new KYCDaoNFTMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("KYCDAOMock"))] = vars.kycDAOMock;
@@ -617,6 +644,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             bridgeAddresses.push(vars.liFiMockRugpull);
             bridgeAddresses.push(vars.liFiMockBlacklisted);
             bridgeAddresses.push(vars.liFiMockSwapToAttacker);
+            bridgeAddresses.push(vars.deBridgeMock);
+            bridgeAddresses.push(vars.debridgeForwarderMock);
 
             bridgeValidators.push(vars.lifiValidator);
             bridgeValidators.push(vars.socketValidator);
@@ -624,6 +653,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             bridgeValidators.push(vars.lifiValidator);
             bridgeValidators.push(vars.lifiValidator);
             bridgeValidators.push(vars.lifiValidator);
+            bridgeValidators.push(vars.debridgeValidator);
+            bridgeValidators.push(vars.debridgeForwarderValidator);
 
             /// @dev 8.1 - Deploy UNDERLYING_TOKENS and VAULTS
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; ++j) {
@@ -758,23 +789,26 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             /// @dev 17 - Super Registry extra setters
             /// @dev BASE does not have SocketV1 available
             if (vars.chainId == BASE) {
-                uint8[] memory bridgeIdsBase = new uint8[](4);
+                uint8[] memory bridgeIdsBase = new uint8[](5);
                 bridgeIdsBase[0] = bridgeIds[0];
                 bridgeIdsBase[1] = bridgeIds[3];
                 bridgeIdsBase[2] = bridgeIds[4];
                 bridgeIdsBase[3] = bridgeIds[5];
+                bridgeIdsBase[4] = bridgeIds[6];
 
-                address[] memory bridgeAddressesBase = new address[](4);
+                address[] memory bridgeAddressesBase = new address[](5);
                 bridgeAddressesBase[0] = bridgeAddresses[0];
                 bridgeAddressesBase[1] = bridgeAddresses[3];
                 bridgeAddressesBase[2] = bridgeAddresses[4];
                 bridgeAddressesBase[3] = bridgeAddresses[5];
+                bridgeAddressesBase[4] = bridgeAddresses[6];
 
-                address[] memory bridgeValidatorsBase = new address[](4);
+                address[] memory bridgeValidatorsBase = new address[](5);
                 bridgeValidatorsBase[0] = bridgeValidators[0];
                 bridgeValidatorsBase[1] = bridgeValidators[3];
                 bridgeValidatorsBase[2] = bridgeValidators[4];
                 bridgeValidatorsBase[3] = bridgeValidators[5];
+                bridgeValidatorsBase[4] = bridgeValidators[6];
 
                 vars.superRegistryC.setBridgeAddresses(bridgeIdsBase, bridgeAddressesBase, bridgeValidatorsBase);
             } else {
@@ -908,6 +942,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
                     vars.superRegistryC.setRequiredMessagingQuorum(vars.dstChainId, 1);
                     vars.superRegistryC.setVaultLimitPerDestination(vars.dstChainId, 5);
+                    vars.superRegistryC.setAddress(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), deployer, vars.dstChainId);
 
                     /// swap gas cost: 50000
                     /// update gas cost: 40000
@@ -1343,6 +1378,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         priceFeeds[FANTOM][ETH] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
         priceFeeds[FANTOM][BASE] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
         priceFeeds[FANTOM][ARBI] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+
         /// @dev setup bridges.
         /// 1 is lifi
         /// 2 is socket
@@ -1350,6 +1386,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// 4 is lifi rugpull
         /// 5 is lifi blacklist
         /// 6 is lifi swap to attacker
+        /// 7 is debridge
+        /// 8 is debridge forwarder
 
         bridgeIds.push(1);
         bridgeIds.push(2);
@@ -1357,6 +1395,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         bridgeIds.push(4);
         bridgeIds.push(5);
         bridgeIds.push(6);
+        bridgeIds.push(7);
+        bridgeIds.push(8);
 
         /// @dev setup users
         userKeys.push(1);
