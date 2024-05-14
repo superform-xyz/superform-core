@@ -8,8 +8,6 @@ import { IDlnSource } from "src/vendor/debridge/IDlnSource.sol";
 import { DlnOrderLib } from "src/vendor/debridge/DlnOrderLib.sol";
 import { ICrossChainForwarder } from "src/vendor/debridge/ICrossChainForwarder.sol";
 
-import "forge-std/console.sol";
-
 /// @title DeBridgeForwarderValidator
 /// @dev Asserts if De-Bridge swap + bridge input txData is valid
 /// @author Zeropoint Labs
@@ -40,6 +38,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         address bridgeRefundRecipient;
         /// final take token receiver on dst chain
         address finalReceiver;
+        address givePatchAuthoritySrc;
         address orderAuthorityAddressDst;
     }
     /// order authority for bridge on dst chain
@@ -61,13 +60,10 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         return (receiver == deBridgeQuote.finalReceiver);
     }
 
-    /// @notice check other parameters including: `givePatchAuthoritySrc`
     /// @inheritdoc BridgeValidator
     function validateTxData(ValidateTxDataArgs calldata args_) external view override returns (bool hasDstSwap) {
         DecodedQuote memory deBridgeQuote = _decodeTxData(args_.txData);
 
-        console.log(superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), args_.dstChainId));
-        console.log(deBridgeQuote.swapRefundRecipient, deBridgeQuote.bridgeRefundRecipient, args_.receiverAddress);
         /// @dev mandates the refund receiver to be args_.receiver
         if (
             deBridgeQuote.bridgeRefundRecipient != args_.receiverAddress
@@ -75,6 +71,12 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         ) {
             revert DeBridgeError.INVALID_REFUND_ADDRESS();
         }
+
+        /// @dev mandates the give patch authority src to be args_.receiver
+        if(deBridgeQuote.givePatchAuthoritySrc != args_.receiverAddress) {
+            revert DeBridgeError.INVALID_PATCH_ADDRESS();
+        }
+
 
         if (
             superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), args_.dstChainId)
@@ -241,6 +243,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         deBridgeQuote.dstChainId = v.xChainQuote.takeChainId;
         deBridgeQuote.orderAuthorityAddressDst = _castToAddress(v.xChainQuote.orderAuthorityAddressDst);
         deBridgeQuote.bridgeRefundRecipient = _castToAddress(v.xChainQuote.allowedCancelBeneficiarySrc);
+        deBridgeQuote.givePatchAuthoritySrc = v.xChainQuote.givePatchAuthoritySrc;
     }
 
     /// @dev helps parsing debridge calldata and return the input parameters

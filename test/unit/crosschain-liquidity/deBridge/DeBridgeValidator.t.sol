@@ -269,12 +269,12 @@ contract DeBridgeValidatorTest is ProtocolActions {
                 giveTokenAddress: address(0),
                 takeAmount: 200,
                 takeTokenAddress: abi.encodePacked(address(1)),
-                receiverDst: abi.encodePacked(address(0)),
+                receiverDst: abi.encodePacked(address(1)),
                 orderAuthorityAddressDst: abi.encodePacked(address(1)), // Invalid authority address
                 externalCall: new bytes(0),
                 allowedCancelBeneficiarySrc: abi.encodePacked(address(420)),
                 takeChainId: 1,
-                givePatchAuthoritySrc: address(0),
+                givePatchAuthoritySrc: address(420),
                 allowedTakerDst: bytes("")
             }),
             bytes(""),
@@ -414,7 +414,7 @@ contract DeBridgeValidatorTest is ProtocolActions {
                 externalCall: new bytes(0),
                 allowedCancelBeneficiarySrc: abi.encodePacked(deployer),
                 takeChainId: 56,
-                givePatchAuthoritySrc: address(0),
+                givePatchAuthoritySrc: address(deployer),
                 allowedTakerDst: bytes("")
             }),
             bytes(""),
@@ -452,7 +452,7 @@ contract DeBridgeValidatorTest is ProtocolActions {
                 externalCall: new bytes(0),
                 allowedCancelBeneficiarySrc: abi.encodePacked(deployer),
                 takeChainId: 56,
-                givePatchAuthoritySrc: address(0),
+                givePatchAuthoritySrc: address(deployer),
                 allowedTakerDst: bytes("")
             }),
             bytes(""),
@@ -460,6 +460,44 @@ contract DeBridgeValidatorTest is ProtocolActions {
             bytes("")
         );
 
+        DeBridgeValidator(getContract(ETH, "DeBridgeValidator")).validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                txDataWithValidWithdrawalReceiver,
+                ETH,
+                BSC,
+                BSC,
+                false, // Withdrawal
+                deployer, // receiverAddress
+                deployer,
+                NATIVE,
+                NATIVE
+            )
+        );
+    }
+
+    function test_validateTxData_invalidSrcPatchAddress() public {
+        vm.selectFork(FORKS[ETH]);
+        bytes memory txDataWithValidWithdrawalReceiver = abi.encodeWithSelector(
+            IDlnSource.createOrder.selector,
+            DlnOrderLib.OrderCreation({
+                giveAmount: 100,
+                giveTokenAddress: address(0),
+                takeAmount: 200,
+                takeTokenAddress: abi.encode(address(1)),
+                receiverDst: abi.encodePacked(deployer), // Valid receiver address for withdrawal
+                orderAuthorityAddressDst: abi.encodePacked(deployer),
+                externalCall: new bytes(0),
+                allowedCancelBeneficiarySrc: abi.encodePacked(deployer),
+                takeChainId: 56,
+                givePatchAuthoritySrc: address(420),
+                allowedTakerDst: bytes("")
+            }),
+            bytes(""),
+            uint32(1),
+            bytes("")
+        );
+
+        vm.expectRevert(DeBridgeError.INVALID_PATCH_ADDRESS.selector);
         DeBridgeValidator(getContract(ETH, "DeBridgeValidator")).validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
                 txDataWithValidWithdrawalReceiver,

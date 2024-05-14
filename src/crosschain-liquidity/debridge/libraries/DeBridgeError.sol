@@ -29,4 +29,7 @@ library DeBridgeError {
 
     /// @dev if swap permit envelope is  invalid
     error INVALID_SWAP_PERMIT_ENVELOP();
+
+    /// @dev if the patch authority is not valid
+    error INVALID_PATCH_ADDRESS();
 }

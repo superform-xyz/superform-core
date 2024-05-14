@@ -44,6 +44,11 @@ contract DeBridgeValidator is BridgeValidator {
             revert DeBridgeError.INVALID_REFUND_ADDRESS();
         }
 
+        /// @dev mandates the give patch authority src to be args_.receiver
+        if(deBridgeQuote.givePatchAuthoritySrc != args_.receiverAddress) {
+            revert DeBridgeError.INVALID_PATCH_ADDRESS();
+        }
+
         if (
             superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), args_.dstChainId)
                 != _castToAddress(deBridgeQuote.orderAuthorityAddressDst)

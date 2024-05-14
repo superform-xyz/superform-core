@@ -43,7 +43,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
                 externalCall: new bytes(0),
                 allowedCancelBeneficiarySrc: abi.encodePacked(receiver),
                 takeChainId: uint256(BSC),
-                givePatchAuthoritySrc: address(0),
+                givePatchAuthoritySrc: address(receiver),
                 allowedTakerDst: bytes("")
             }),
             uint64(block.timestamp),
@@ -78,7 +78,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
                 externalCall: new bytes(0),
                 allowedCancelBeneficiarySrc: abi.encodePacked(receiver),
                 takeChainId: uint256(AVAX),
-                givePatchAuthoritySrc: address(0),
+                givePatchAuthoritySrc: address(receiver),
                 allowedTakerDst: bytes("")
             }),
             uint64(block.timestamp),
@@ -114,7 +114,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
                 externalCall: new bytes(0),
                 allowedCancelBeneficiarySrc: abi.encodePacked(receiver),
                 takeChainId: uint256(BSC),
-                givePatchAuthoritySrc: address(0),
+                givePatchAuthoritySrc: address(receiver),
                 allowedTakerDst: bytes("")
             }),
             uint64(block.timestamp),
@@ -155,7 +155,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
                 externalCall: new bytes(0),
                 allowedCancelBeneficiarySrc: abi.encodePacked(receiver),
                 takeChainId: uint256(AVAX),
-                givePatchAuthoritySrc: address(0),
+                givePatchAuthoritySrc: address(receiver),
                 allowedTakerDst: bytes("")
             }),
             uint64(block.timestamp),
@@ -273,7 +273,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
                     externalCall: new bytes(0),
                     allowedCancelBeneficiarySrc: abi.encodePacked(receiver),
                     takeChainId: 1,
-                    givePatchAuthoritySrc: address(0),
+                    givePatchAuthoritySrc: address(receiver),
                     allowedTakerDst: bytes("")
                 }),
                 bytes(""),
@@ -533,7 +533,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
                 externalCall: new bytes(0),
                 allowedCancelBeneficiarySrc: abi.encodePacked(invalidReceiver),
                 takeChainId: uint256(BSC),
-                givePatchAuthoritySrc: address(0),
+                givePatchAuthoritySrc: address(invalidReceiver),
                 allowedTakerDst: bytes("")
             }),
             uint64(block.timestamp),
@@ -550,6 +550,41 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
         validator.validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
                 txData, ETH, BSC, BSC, false, address(0), invalidReceiver, NATIVE, NATIVE
+            )
+        );
+    }
+
+    function test_validateTxData_invalidPatchAddress() public {
+        address receiver = getContract(ETH, "CoreStateRegistry");
+        bytes memory targetTxData = abi.encodeWithSelector(
+            DeBridgeMock.createSaltedOrder.selector,
+            DlnOrderLib.OrderCreation({
+                giveAmount: 100,
+                giveTokenAddress: address(0),
+                takeAmount: 200,
+                takeTokenAddress: abi.encodePacked(address(1)),
+                receiverDst: abi.encodePacked(receiver),
+                orderAuthorityAddressDst: abi.encodePacked(deployer),
+                externalCall: new bytes(0),
+                allowedCancelBeneficiarySrc: abi.encodePacked(receiver),
+                takeChainId: uint256(BSC),
+                givePatchAuthoritySrc: address(420),
+                allowedTakerDst: bytes("")
+            }),
+            uint64(block.timestamp),
+            bytes(""),
+            uint32(0),
+            bytes(""),
+            bytes("")
+        );
+
+        bytes memory txData =
+            _buildDummyDeBridgeTxData(address(0), 100, receiver, address(0), ETH, BSC, bytes(""), targetTxData);
+
+        vm.expectRevert(DeBridgeError.INVALID_PATCH_ADDRESS.selector);
+        validator.validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                txData, ETH, BSC, BSC, false, address(0), receiver, NATIVE, NATIVE
             )
         );
     }
@@ -588,7 +623,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
                     _inputAmount,
                     uint256(_dstChainId),
                     abi.encodePacked(getContract(_dstChainId, "CoreStateRegistry")),
-                    address(0),
+                    _receiver,
                     abi.encodePacked(deployer),
                     bytes(""),
                     bytes(""),
