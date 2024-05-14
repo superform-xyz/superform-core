@@ -101,6 +101,15 @@ interface IRewardsDistributor {
     )
         external;
 
+    /// @notice allows the owner to rescue any ERC20 tokens sent to the contract
+    /// @param rewardTokens_ are the address of the rewards token to claim on the specific period
+    /// @param amounts_ are the amount of tokens to claim for each reward token
+    function rescueRewards(address[] calldata rewardTokens_, uint256[] calldata amounts_) external;
+
+    /// @notice allows the owner to invalidate a period
+    /// @param periodId_ is the period identifier
+    function invalidatePeriod(uint256 periodId_) external;
+
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////

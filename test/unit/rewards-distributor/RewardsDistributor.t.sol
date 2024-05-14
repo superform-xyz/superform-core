@@ -164,6 +164,72 @@ contract RewardsDistributorTests is MerkleReader {
         rewards.claim(user, periodId, tokensToClaim, amountsToClaim, proof_);
     }
 
+    function test_invalidate_Claim() public {
+        uint256 periodId = 0;
+        address user = testUsers[periodId][0];
+        (,,,, bytes32[] memory proof_, address[] memory tokensToClaim, uint256[] memory amountsToClaim) =
+            _generateMerkleTree(MerkleReader.MerkleArgs(periodId, user, OP));
+        vm.prank(deployer);
+        rewards.invalidatePeriod(periodId);
+
+        vm.prank(user);
+        vm.expectRevert(IRewardsDistributor.MERKLE_ROOT_NOT_SET.selector);
+        rewards.claim(user, periodId, tokensToClaim, amountsToClaim, proof_);
+    }
+
+    function test_partialClaim_Invalid() public {
+        uint256 periodId = 0;
+        address user = testUsers[periodId][2];
+        (,,,, bytes32[] memory proof_, address[] memory tokensToClaim, uint256[] memory amountsToClaim) =
+            _generateMerkleTree(MerkleReader.MerkleArgs(periodId, user, OP));
+
+        for (uint256 i = 0; i < tokensToClaim.length; i++) {
+            console.log("Token: ", tokensToClaim[i]);
+            console.log("Amount: ", amountsToClaim[i]);
+        }
+        address[] memory tokensToClaimPartial = new address[](1);
+        tokensToClaimPartial[0] = tokensToClaim[0];
+
+        uint256[] memory amountsToClaimPartial = new uint256[](1);
+        amountsToClaimPartial[0] = amountsToClaim[0];
+        vm.prank(user);
+        vm.expectRevert(IRewardsDistributor.INVALID_CLAIM.selector);
+        rewards.claim(user, periodId, tokensToClaimPartial, amountsToClaimPartial, proof_);
+    }
+
+    function test_rescueRewards() public {
+        address[] memory tokensToRescue;
+        uint256[] memory amountsToRescue = new uint256[](1);
+
+        vm.prank(deployer);
+        vm.expectRevert(IRewardsDistributor.ZERO_ARR_LENGTH.selector);
+        rewards.rescueRewards(tokensToRescue, amountsToRescue);
+
+        tokensToRescue = new address[](2);
+        tokensToRescue[0] = USDC;
+        tokensToRescue[1] = DAI;
+
+        vm.prank(deployer);
+        vm.expectRevert(IRewardsDistributor.INVALID_REQ_TOKENS_AMOUNTS.selector);
+        rewards.rescueRewards(tokensToRescue, amountsToRescue);
+
+        amountsToRescue = new uint256[](2);
+        amountsToRescue[0] = 1000;
+        amountsToRescue[1] = 1000;
+
+        uint256[] memory balanceBefore = new uint256[](2);
+
+        for (uint256 i = 0; i < tokensToRescue.length; i++) {
+            balanceBefore[i] = IERC20(tokensToRescue[i]).balanceOf(address(rewards));
+        }
+        vm.prank(deployer);
+        rewards.rescueRewards(tokensToRescue, amountsToRescue);
+
+        for (uint256 i = 0; i < tokensToRescue.length; i++) {
+            assertEq(IERC20(tokensToRescue[i]).balanceOf(address(rewards)), balanceBefore[i] - amountsToRescue[i]);
+        }
+    }
+
     function test_claim_deadlineHasPassed() public {
         _addRoot();
 

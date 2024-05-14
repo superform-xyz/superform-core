@@ -145,6 +145,30 @@ contract RewardsDistributor is IRewardsDistributor {
         }
     }
 
+    /// @inheritdoc IRewardsDistributor
+    function rescueRewards(
+        address[] calldata rewardTokens_,
+        uint256[] calldata amounts_
+    )
+        external
+        override
+        onlyRewardsAdmin
+    {
+        address receiver = superRegistry.getAddress(keccak256("PAYMASTER"));
+
+        uint256 len = rewardTokens_.length;
+
+        if (len == 0) revert ZERO_ARR_LENGTH();
+        if (len != amounts_.length) revert INVALID_REQ_TOKENS_AMOUNTS();
+
+        _transferRewards(receiver, rewardTokens_, amounts_, rewardTokens_.length);
+    }
+
+    /// @inheritdoc IRewardsDistributor
+    function invalidatePeriod(uint256 periodId_) external override onlyRewardsAdmin {
+        delete periodicRewardsMerkleRootData[periodId_];
+    }
+
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////

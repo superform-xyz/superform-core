@@ -16,42 +16,42 @@ export FOUNDRY_PROFILE=production
 # Run the script
 echo Deploying Rewards Distributor v2: ...
 
-#FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "deployRewardsDistributor(uint256,uint256)" 1 0 --rpc-url $BSC_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "deployRewardsDistributor(uint256,uint256)" 1 0 --rpc-url $BSC_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
-#wait
+wait
 
-#FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "deployRewardsDistributor(uint256,uint256)" 1 1 --rpc-url $ARBITRUM_RPC_URL --broadcast --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
-#wait
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "deployRewardsDistributor(uint256,uint256)" 1 1 --rpc-url $ARBITRUM_RPC_URL --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+wait
 
-#FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "deployRewardsDistributor(uint256,uint256)" 1 2 --rpc-url $OPTIMISM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
-#wait
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "deployRewardsDistributor(uint256,uint256)" 1 2 --rpc-url $OPTIMISM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+wait
 
-#FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "deployRewardsDistributor(uint256,uint256)" 1 3 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "deployRewardsDistributor(uint256,uint256)" 1 3 --rpc-url $BASE_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 
-#wait
+wait
 
-#FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "deployRewardsDistributor(uint256,uint256)" 1 4 --rpc-url $FANTOM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "deployRewardsDistributor(uint256,uint256)" 1 4 --rpc-url $FANTOM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
-#wait
+wait
 
 echo Configuring Rewards Distributor v2 on super registry ...
 
-#FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "configureSettings(uint256,uint256)" 1 0 --rpc-url $BSC_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "configureSettings(uint256,uint256)" 1 0 --rpc-url $BSC_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
-#wait
+wait
 
-#FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "configureSettings(uint256,uint256)" 1 1 --rpc-url $ARBITRUM_RPC_URL --broadcast --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "configureSettings(uint256,uint256)" 1 1 --rpc-url $ARBITRUM_RPC_URL --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 
-#wait
+wait
 
-#FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "configureSettings(uint256,uint256)" 1 2 --rpc-url $OPTIMISM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "configureSettings(uint256,uint256)" 1 2 --rpc-url $OPTIMISM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 
-#wait
+wait
 
-#FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "configureSettings(uint256,uint256)" 1 3 --rpc-url $BASE_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "configureSettings(uint256,uint256)" 1 3 --rpc-url $BASE_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 
-#wait
+wait
 
-#FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "configureSettings(uint256,uint256)" 1 4 --rpc-url $FANTOM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "configureSettings(uint256,uint256)" 1 4 --rpc-url $FANTOM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
-#wait
+wait

@@ -35,6 +35,12 @@ superregistry_constructor_arg="$(cast abi-encode "constructor(address)" 0x9736b6
 super_rbac_arg="$(cast abi-encode 'constructor((address,address,address,address,address,address,address,address,address,address,address))' '(0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92,0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92,0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3,0x2759142A9e3cBbcCc1E3d5F76490eEE4007B8943,0x6A5DD913fE3CB5193E09D1810a3b9ff1C0f9c0D6,0x6A5DD913fE3CB5193E09D1810a3b9ff1C0f9c0D6,0xF1c73958118F22Fc3A3947f405DcEBF08a1E68f7,0x6A5DD913fE3CB5193E09D1810a3b9ff1C0f9c0D6,0x3ea519270248BdEE4a939df20049E02290bf9CaF,0xe1A61d90554131314cB30dB55B8AD4F4b6e21C3a,0xe9F074d003b377A197D336B8a1c86EdaA6cC4dEF)')"
 wormhole_sr_arg="$(cast abi-encode "constructor(address, uint8)" 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47 2)"
 
+super_constructor_arg_ftm="$(cast abi-encode "constructor(address)" 0x7B8d68f90dAaC67C577936d3Ce451801864EF189)"
+superposition_constructor_arg_ftm="$(cast abi-encode "constructor(string, address, string, string)" https://ipfs-gateway.superform.xyz/ipns/k51qzi5uqu5dg90fqdo9j63m556wlddeux4mlgyythp30zousgh3huhyzouyq8/JSON/ 0x7B8d68f90dAaC67C577936d3Ce451801864EF189 StagingSuperPositions SP)"
+superregistry_constructor_arg_ftm="$(cast abi-encode "constructor(address)" 0xFFe9AFe35806F3fc1Df81188953ADb72f0B22F2A)"
+super_rbac_arg_ftm="$(cast abi-encode 'constructor((address,address,address,address,address,address,address,address,address,address,address))' '(0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92,0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92,0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3,0x2759142A9e3cBbcCc1E3d5F76490eEE4007B8943,0x6A5DD913fE3CB5193E09D1810a3b9ff1C0f9c0D6,0x6A5DD913fE3CB5193E09D1810a3b9ff1C0f9c0D6,0xF1c73958118F22Fc3A3947f405DcEBF08a1E68f7,0x6A5DD913fE3CB5193E09D1810a3b9ff1C0f9c0D6,0x3ea519270248BdEE4a939df20049E02290bf9CaF,0xe1A61d90554131314cB30dB55B8AD4F4b6e21C3a,0xe9F074d003b377A197D336B8a1c86EdaA6cC4dEF)')"
+wormhole_sr_arg_ftm="$(cast abi-encode "constructor(address, uint8)" 0x7B8d68f90dAaC67C577936d3Ce451801864EF189 2)"
+
 file_names=(
     "src/crosschain-data/extensions/CoreStateRegistry.sol"
     "src/crosschain-liquidity/DstSwapper.sol"
@@ -164,6 +170,31 @@ constructor_args=(
     $super_constructor_arg
 )
 
+constructor_args_fantom=(
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $superposition_constructor_arg_ftm
+    $superregistry_constructor_arg_ftm
+    $super_rbac_arg_ftm
+    $empty_constructor_arg
+    $super_constructor_arg_ftm
+    $wormhole_sr_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+)
+
 # loop through networks
 for i in "${!networks[@]}"; do
     network="${networks[$i]}"
@@ -176,6 +207,7 @@ for i in "${!networks[@]}"; do
         contract_address="${contract_addresses[$j]}"
         contract_address_fantom="${contract_addresses_fantom[$j]}"
         constructor_arg="${constructor_args[$j]}"
+        constructor_arg_fantom="${constructor_args_fantom[$j]}"
 
         # verify the contract
         if [[ $network == 43114 ]]; then
@@ -192,7 +224,7 @@ for i in "${!networks[@]}"; do
                 --chain-id $network \
                 --num-of-optimizations 200 \
                 --watch --compiler-version v0.8.23+commit.f704f362 \
-                --constructor-args "$constructor_arg" \
+                --constructor-args "$constructor_arg_fantom" \
                 "$file_name:$contract_name" \
                 --etherscan-api-key "$api_key"
         else
