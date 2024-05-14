@@ -26,6 +26,7 @@ contract RewardsDistributor is IRewardsDistributor {
     ISuperRegistry public immutable superRegistry;
     uint64 public immutable CHAIN_ID;
     bytes32 internal constant ZERO_BYTES32 = bytes32(0);
+    uint256 public constant DEADLINE = 52 weeks;
 
     //////////////////////////////////////////////////////////////
     //                      STATE VARIABLES                     //
@@ -33,7 +34,7 @@ contract RewardsDistributor is IRewardsDistributor {
 
     uint256 public currentPeriodId;
 
-    /// @dev maps the periodic rewards id to its corresponding merkle root and deadline
+    /// @dev maps the periodic rewards id to its corresponding merkle root and startTimestamp
     mapping(uint256 periodId => PeriodicRewardsData data) public periodicRewardsMerkleRootData;
 
     /// @dev mapping from periodId to claimer address to claimed status
@@ -81,13 +82,13 @@ contract RewardsDistributor is IRewardsDistributor {
         if (root_ == ZERO_BYTES32) revert INVALID_MERKLE_ROOT();
 
         uint256 periodId = currentPeriodId;
-        uint256 deadline = block.timestamp + 52 weeks;
+        uint256 startTimestamp = block.timestamp;
 
-        periodicRewardsMerkleRootData[periodId].deadline = deadline;
+        periodicRewardsMerkleRootData[periodId].startTimestamp = startTimestamp;
         periodicRewardsMerkleRootData[periodId].merkleRoot = root_;
 
         ++currentPeriodId;
-        emit PeriodicRewardsSet(periodId, root_, deadline);
+        emit PeriodicRewardsSet(periodId, root_, startTimestamp);
     }
 
     /// @inheritdoc IRewardsDistributor
@@ -189,8 +190,8 @@ contract RewardsDistributor is IRewardsDistributor {
         bytes32 root = periodicRewardsMerkleRootData[periodId_].merkleRoot;
         if (root == ZERO_BYTES32) revert MERKLE_ROOT_NOT_SET();
 
-        uint256 deadline = periodicRewardsMerkleRootData[periodId_].deadline;
-        if (block.timestamp > deadline) revert CLAIM_DEADLINE_PASSED();
+        uint256 deadlineTimestamp = periodicRewardsMerkleRootData[periodId_].startTimestamp + DEADLINE;
+        if (block.timestamp > deadlineTimestamp) revert CLAIM_DEADLINE_PASSED();
 
         /// @dev a given receiver cannot claim rewards a second time for a given period
         if (periodicRewardsClaimed[periodId_][receiver_]) revert ALREADY_CLAIMED();

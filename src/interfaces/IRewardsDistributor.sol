@@ -56,14 +56,14 @@ interface IRewardsDistributor {
     );
 
     /// @dev Emitted when new periodic rewards are set.
-    event PeriodicRewardsSet(uint256 indexed periodId, bytes32 merkleRoot, uint256 deadline);
+    event PeriodicRewardsSet(uint256 indexed periodId, bytes32 merkleRoot, uint256 startTimestamp);
 
     //////////////////////////////////////////////////////////////
     //                      STRUCTS                             //
     //////////////////////////////////////////////////////////////
 
     struct PeriodicRewardsData {
-        uint256 deadline;
+        uint256 startTimestamp;
         bytes32 merkleRoot;
     }
 
