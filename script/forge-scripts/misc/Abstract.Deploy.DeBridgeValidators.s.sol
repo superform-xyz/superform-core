@@ -64,6 +64,7 @@ abstract contract AbstractDeployDeBridgeValidators is EnvironmentUtils {
         setEnvDeploy(cycle)
     {
         assert(salt.length > 0);
+        assert(env == 1);
         UpdateVars memory vars;
 
         vars.chainId = s_superFormChainIds[i];
@@ -97,9 +98,7 @@ abstract contract AbstractDeployDeBridgeValidators is EnvironmentUtils {
 
         vars.superRegistryC =
             SuperRegistry(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry")));
-        address expectedSr = env == 0
-            ? 0x17A332dC7B40aE701485023b219E9D6f493a2514
-            : vars.chainId == 250 ? 0x7B8d68f90dAaC67C577936d3Ce451801864EF189 : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
+        address expectedSr = vars.chainId == 250 ? 0x7B8d68f90dAaC67C577936d3Ce451801864EF189 : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
         assert(address(vars.superRegistryC) == expectedSr);
 
         vars.superRegistryC.setBridgeAddresses(newBridgeids, NEW_BRIDGE_ADDRESSES[vars.chainId], bridgeValidators);

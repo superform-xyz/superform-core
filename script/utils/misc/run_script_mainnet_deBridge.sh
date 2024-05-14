@@ -34,6 +34,3 @@ wait
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnnet.DeployDeBridgeValidators.s.sol:MainnetDeployDeBridgeValidators --sig "deployDeBridgeValidator(uint256,uint256)" 0 6 --rpc-url $BASE_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnnet.DeployDeBridgeValidators.s.sol:MainnetDeployDeBridgeValidators --sig "deployDeBridgeValidator(uint256,uint256)" 0 7 --rpc-url $FANTOM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
-wait
-
