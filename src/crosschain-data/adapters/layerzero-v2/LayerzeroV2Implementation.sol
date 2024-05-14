@@ -55,7 +55,7 @@ contract LayerzeroV2Implementation is IAmbImplementation, ILayerZeroReceiver {
 
     /// @dev thrown if endpoint is not set
     error ENDPOINT_NOT_SET();
-    
+
     /// @dev thrown if msg.value is not expected msg fees
     error INVALID_MSG_FEE();
 
@@ -173,7 +173,7 @@ contract LayerzeroV2Implementation is IAmbImplementation, ILayerZeroReceiver {
             revert Error.INVALID_CHAIN_ID();
         }
 
-        MessagingFee memory fee_ = _quote(eid, message_, extraData_, false);
+        MessagingFee memory fee_ = _quote(eid, message_, extraData_);
 
         _lzSend(eid, message_, extraData_, fee_, srcSender_);
     }
@@ -187,8 +187,8 @@ contract LayerzeroV2Implementation is IAmbImplementation, ILayerZeroReceiver {
         bytes calldata extraData_
     )
         external
-        override
         payable
+        override
     {
         /// @dev validates if caller is lz endpoint
         if (address(endpoint) != msg.sender) revert Error.CALLER_NOT_ENDPOINT();
@@ -200,7 +200,13 @@ contract LayerzeroV2Implementation is IAmbImplementation, ILayerZeroReceiver {
     }
 
     /// @inheritdoc IAmbImplementation
-    function retryPayload(bytes memory data_) external payable override { }
+    function retryPayload(bytes calldata data_) external payable override {
+        /// @dev this is just a helper function. this can be direct made to the layerzero endpoint as well
+        (Origin memory origin, address receiver, bytes32 guid, bytes memory message, bytes memory extraData) =
+            abi.decode(data_, (Origin, address, bytes32, bytes, bytes));
+
+        endpoint.lzReceive{ value: msg.value }(origin, receiver, guid, message, extraData);
+    }
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
@@ -225,7 +231,7 @@ contract LayerzeroV2Implementation is IAmbImplementation, ILayerZeroReceiver {
 
         /// @dev superform core cannot support _payInLzToken at this moment
         /// extraData_ here is the layerzero options
-        fees = _quote(tempAmbChainId, message_, extraData_, false).nativeFee;
+        fees = _quote(tempAmbChainId, message_, extraData_).nativeFee;
     }
 
     /// @inheritdoc IAmbImplementation
@@ -241,13 +247,13 @@ contract LayerzeroV2Implementation is IAmbImplementation, ILayerZeroReceiver {
     }
 
     /// @notice checks if the path initialization is allowed based on the provided origin.
-    function allowInitializePath(Origin calldata origin) external override view returns (bool) {
+    function allowInitializePath(Origin calldata origin) external view override returns (bool) {
         return peers[origin.srcEid] == origin.sender;
     }
 
     /// @dev the path nonce starts from 1. If 0 is returned it means that there is NO nonce ordered enforcement.
     /// @dev is required by the off-chain executor to determine the OApp expects msg execution is ordered.
-    function nextNonce(uint32, /*_srcEid*/ bytes32 /*_sender*/ ) external override view returns (uint64 nonce) {
+    function nextNonce(uint32, /*_srcEid*/ bytes32 /*_sender*/ ) external view override returns (uint64 nonce) {
         return 0;
     }
 
@@ -270,7 +276,7 @@ contract LayerzeroV2Implementation is IAmbImplementation, ILayerZeroReceiver {
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
 
-     /// @notice internal function to get the peer address associated with a specific endpoint; reverts if NOT set.
+    /// @notice internal function to get the peer address associated with a specific endpoint; reverts if NOT set.
     function _getPeerOrRevert(uint32 _eid) internal view virtual returns (bytes32) {
         bytes32 peer = peers[_eid];
         if (peer == bytes32(0)) revert PEER_NOT_SET();
@@ -281,16 +287,16 @@ contract LayerzeroV2Implementation is IAmbImplementation, ILayerZeroReceiver {
     function _quote(
         uint32 _dstEid,
         bytes memory _message,
-        bytes memory _options,
-        bool _payInLzToken
+        bytes memory _options
     )
         internal
         view
         virtual
         returns (MessagingFee memory fee)
     {
+        /// payInLzToken is hardcoded to false
         return endpoint.quote(
-            MessagingParams(_dstEid, _getPeerOrRevert(_dstEid), _message, _options, _payInLzToken), address(this)
+            MessagingParams(_dstEid, _getPeerOrRevert(_dstEid), _message, _options, false), address(this)
         );
     }
 
@@ -307,7 +313,7 @@ contract LayerzeroV2Implementation is IAmbImplementation, ILayerZeroReceiver {
         returns (MessagingReceipt memory receipt)
     {
         // @dev push corresponding fees to the endpoint
-        if(msg.value != _fee.nativeFee || _fee.lzTokenFee != 0) revert INVALID_MSG_FEE();
+        if (msg.value != _fee.nativeFee || _fee.lzTokenFee != 0) revert INVALID_MSG_FEE();
 
         return endpoint.send{ value: msg.value }(
             MessagingParams(_dstEid, _getPeerOrRevert(_dstEid), _message, _options, false), _refundAddress
@@ -319,9 +325,11 @@ contract LayerzeroV2Implementation is IAmbImplementation, ILayerZeroReceiver {
         Origin calldata origin_,
         bytes32 guid_,
         bytes calldata message_,
-        address, /// executor_
-        bytes calldata /// extraData_
+        address,
+        /// executor_
+        bytes calldata
     )
+        /// extraData_
         internal
     {
         if (processedMessages[guid_]) {

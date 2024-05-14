@@ -302,12 +302,24 @@ contract LayerzeroV2ImplementationTest is BaseSetup {
     }
 
     function testNextNonce() public view {
-        uint64 nonce = layerzeroImpl.nextNonce(30101, bytes32(uint256(uint160(address(layerzeroImpl)))));
+        uint64 nonce = layerzeroImpl.nextNonce(30_101, bytes32(uint256(uint160(address(layerzeroImpl)))));
         assertEq(nonce, 0);
     }
 
     function testIsComposeMessage() public view {
         Origin memory origin = Origin(eid, bytes32(uint256(uint160(address(layerzeroImpl)))), 0);
         bool isComposer = layerzeroImpl.isComposeMsgSender(origin, bytes(""), address(layerzeroImpl));
+    }
+
+    function testRevertRetryMessage() public {
+        bytes memory message =
+            abi.encode(AMBMessage(DataLib.packTxInfo(0, 0, 0, 1, address(0), 0), abi.encode(bytes32(0))));
+        bytes32 guid = bytes32(uint256(1));
+        Origin memory origin = Origin(eid, bytes32(uint256(uint160(address(layerzeroImpl)))), 0);
+
+        bytes memory data = abi.encode(origin, address(layerzeroImpl), guid, message, bytes(""));
+
+        vm.expectRevert();
+        layerzeroImpl.retryPayload(data);
     }
 }
