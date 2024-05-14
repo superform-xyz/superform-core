@@ -342,8 +342,8 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// @dev OP https://app.onchainden.com/safes/oeth:0x99620a926d68746d5f085b3f7cd62f4ffb71f0c1
         0x2F973806f8863E860A553d4F2E7c2AB4A9F3b87C,
         /// @dev BASE https://app.onchainden.com/safes/base:0x2f973806f8863e860a553d4f2e7c2ab4a9f3b87c
-        address(0)
-        /// @dev FANTOM FIXME - PROTOCOL ADMIN NOT SET FOR FANTOM
+        0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1
+        /// @dev FANTOM https://safe.fantom.network/home?safe=ftm:0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1
     ];
 
     address[] public PROTOCOL_ADMINS_STAGING = [
