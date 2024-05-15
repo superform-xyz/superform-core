@@ -36,7 +36,11 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
             TARGET_CHAINS.push(OP);
             TARGET_CHAINS.push(BASE);
 
-            salt = useNewSalt ? "SunNeverSetsOnSuperformRealmV2" : "SunNeverSetsOnSuperformRealm";
+            if (useNewSalt) {
+                salt = "SunNeverSetsOnSuperformRealmV2";
+            } else {
+                salt = "SunNeverSetsOnSuperformRealm";
+            }
 
             PAYMENT_ADMIN = 0xD911673eAF0D3e15fe662D58De15511c5509bAbB;
             CSR_PROCESSOR = 0x23c658FE050B4eAeB9401768bF5911D11621629c;
