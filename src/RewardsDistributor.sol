@@ -33,8 +33,8 @@ contract RewardsDistributor is IRewardsDistributor {
 
     uint256 public currentPeriodId;
 
-    /// @dev maps the periodic rewards id to its corresponding merkle root
-    mapping(uint256 periodId => bytes32 merkleRoot) public periodicRewardsMerkleRoot;
+    /// @dev maps the periodic rewards id to its corresponding merkle root and deadline
+    mapping(uint256 periodId => PeriodicRewardsData data) public periodicRewardsMerkleRootData;
 
     /// @dev mapping from periodId to claimer address to claimed status
     mapping(uint256 periodId => mapping(address claimerAddress => bool claimed)) public periodicRewardsClaimed;
@@ -81,11 +81,13 @@ contract RewardsDistributor is IRewardsDistributor {
         if (root_ == ZERO_BYTES32) revert INVALID_MERKLE_ROOT();
 
         uint256 periodId = currentPeriodId;
+        uint256 deadline = block.timestamp + 52 weeks;
 
-        periodicRewardsMerkleRoot[periodId] = root_;
+        periodicRewardsMerkleRootData[periodId].deadline = deadline;
+        periodicRewardsMerkleRootData[periodId].merkleRoot = root_;
 
         ++currentPeriodId;
-        emit PeriodicRewardsSet(periodId, root_);
+        emit PeriodicRewardsSet(periodId, root_, deadline);
     }
 
     /// @inheritdoc IRewardsDistributor
@@ -104,7 +106,7 @@ contract RewardsDistributor is IRewardsDistributor {
         uint256 tokensToClaim = rewardTokens_.length;
 
         if (tokensToClaim == 0) revert ZERO_ARR_LENGTH();
-        if (tokensToClaim != amountsClaimed_.length) revert INVALID_BATCH_REQ();
+        if (tokensToClaim != amountsClaimed_.length) revert INVALID_REQ_TOKENS_AMOUNTS();
 
         _claim(receiver_, periodId_, rewardTokens_, amountsClaimed_, tokensToClaim, proof_);
 
@@ -127,13 +129,15 @@ contract RewardsDistributor is IRewardsDistributor {
         uint256 len = periodIds_.length;
 
         if (len == 0) revert ZERO_ARR_LENGTH();
-        if (len != proofs_.length) revert INVALID_BATCH_REQ();
 
+        if (!(len == proofs_.length && len == rewardTokens_.length && len == amountsClaimed_.length)) {
+            revert INVALID_BATCH_REQ();
+        }
         for (uint256 i; i < len; ++i) {
-            uint256 tokensToClaim = rewardTokens_.length;
+            uint256 tokensToClaim = rewardTokens_[i].length;
 
             if (tokensToClaim == 0) revert ZERO_ARR_LENGTH();
-            if (tokensToClaim != amountsClaimed_[i].length) revert INVALID_BATCH_REQ();
+            if (tokensToClaim != amountsClaimed_[i].length) revert INVALID_BATCH_REQ_TOKENS_AMOUNTS();
 
             _claim(receiver_, periodIds_[i], rewardTokens_[i], amountsClaimed_[i], tokensToClaim, proofs_[i]);
 
@@ -147,7 +151,7 @@ contract RewardsDistributor is IRewardsDistributor {
 
     /// @inheritdoc IRewardsDistributor
     function verifyClaim(
-        address claimer_,
+        address receiver_,
         uint256 periodId_,
         address[] calldata rewardTokens_,
         uint256[] calldata amountsClaimed_,
@@ -158,15 +162,21 @@ contract RewardsDistributor is IRewardsDistributor {
         override
         returns (bool valid)
     {
-        bytes32 root = periodicRewardsMerkleRoot[periodId_];
+        bytes32 root = periodicRewardsMerkleRootData[periodId_].merkleRoot;
         if (root == ZERO_BYTES32) revert MERKLE_ROOT_NOT_SET();
 
-        /// @dev user cannot claim a periodic reward twice
-        if (periodicRewardsClaimed[periodId_][claimer_]) return false;
+        uint256 deadline = periodicRewardsMerkleRootData[periodId_].deadline;
+        if (block.timestamp > deadline) revert CLAIM_DEADLINE_PASSED();
 
+        /// @dev a given receiver cannot claim rewards a second time for a given period
+        if (periodicRewardsClaimed[periodId_][receiver_]) revert ALREADY_CLAIMED();
+
+        /// @dev double hashing is used to protect from
+        /// https://www.rareskills.io/post/merkle-tree-second-preimage-attack
         bytes32 leaf = keccak256(
-            bytes.concat(keccak256(abi.encode(claimer_, periodId_, rewardTokens_, amountsClaimed_, CHAIN_ID)))
+            bytes.concat(keccak256(abi.encode(receiver_, periodId_, rewardTokens_, amountsClaimed_, CHAIN_ID)))
         );
+
         return MerkleProof.verify(proof_, root, leaf);
     }
 
@@ -185,7 +195,8 @@ contract RewardsDistributor is IRewardsDistributor {
     )
         internal
     {
-        if (!verifyClaim(msg.sender, periodId_, rewardTokens_, amountsClaimed_, proof_)) revert INVALID_CLAIM();
+        /// @dev claim verification is on receiver, this allows anyone to permissionessly claim on behalf of any address
+        if (!verifyClaim(receiver_, periodId_, rewardTokens_, amountsClaimed_, proof_)) revert INVALID_CLAIM();
 
         periodicRewardsClaimed[periodId_][receiver_] = true;
 
@@ -194,7 +205,7 @@ contract RewardsDistributor is IRewardsDistributor {
 
     /// @notice transfer token rewards to the receiver
     function _transferRewards(
-        address to_,
+        address receiver_,
         address[] calldata rewardTokens_,
         uint256[] calldata amountsClaimed_,
         uint256 tokensToClaim_
@@ -202,7 +213,7 @@ contract RewardsDistributor is IRewardsDistributor {
         internal
     {
         for (uint256 i; i < tokensToClaim_; ++i) {
-            IERC20(rewardTokens_[i]).safeTransfer(to_, amountsClaimed_[i]);
+            IERC20(rewardTokens_[i]).safeTransfer(receiver_, amountsClaimed_[i]);
         }
     }
 }

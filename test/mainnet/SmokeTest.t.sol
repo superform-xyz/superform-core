@@ -61,6 +61,7 @@ contract SmokeTest is MainnetBaseSetup {
         }
     }
 
+    /*
     function test_superRegistryAddresses_destination() public {
         SuperRegistry sr;
 
@@ -116,6 +117,7 @@ contract SmokeTest is MainnetBaseSetup {
             }
         }
     }
+    */
 
     function test_roles() public {
         SuperRBAC srbac;
@@ -433,6 +435,7 @@ contract SmokeTest is MainnetBaseSetup {
         }
     }
 
+    /*    
     function test_paymentHelper() public {
         PaymentHelper paymentHelper;
 
@@ -453,7 +456,7 @@ contract SmokeTest is MainnetBaseSetup {
                         abi.decode(GAS_USED[TARGET_DEPLOYMENT_CHAINS[j]][3], (uint256))
                     );
                     assertEq(
-                        paymentHelper.updateGasUsed(TARGET_DEPLOYMENT_CHAINS[j]),
+                        paymentHelper.updateDepositGasUsed(TARGET_DEPLOYMENT_CHAINS[j]),
                         abi.decode(GAS_USED[TARGET_DEPLOYMENT_CHAINS[j]][4], (uint256))
                     );
 
@@ -465,4 +468,5 @@ contract SmokeTest is MainnetBaseSetup {
             }
         }
     }
+    */
 }

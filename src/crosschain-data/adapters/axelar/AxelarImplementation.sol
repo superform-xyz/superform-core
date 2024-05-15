@@ -148,10 +148,9 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
 
         /// @dev the destinationAddress is not used in the upstream axelar contract; hence passing in zero address
         /// @dev the params is also not used; hence passing in bytes(0)
-        // return gasEstimator.estimateGasFee(
-        //     axelarChainId, address(0).toString(), message_, abi.decode(extraData_, (uint256)), bytes("")
-        // );
-        return 0.1 ether;
+        return gasEstimator.estimateGasFee(
+            axelarChainId, address(0).toString(), message_, abi.decode(extraData_, (uint256)), bytes("")
+        );
     }
 
     /// @inheritdoc IAmbImplementation

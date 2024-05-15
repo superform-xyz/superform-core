@@ -8,19 +8,39 @@ interface IRewardsDistributor {
     //////////////////////////////////////////////////////////////
     //                     ERRORS                               //
     //////////////////////////////////////////////////////////////
+
+    /// @dev error message for not being a rewards admin
     error NOT_REWARDS_ADMIN();
 
+    /// @dev error message for an invalid claim
     error INVALID_CLAIM();
 
+    /// @dev error message for an invalid batch request (different array lengths)
     error INVALID_BATCH_REQ();
 
+    /// @dev error message for an invalid claim (invalid token/amounts array length)
+    error INVALID_REQ_TOKENS_AMOUNTS();
+
+    /// @dev error message for an invalid batch claim (invalid token/amounts array length)
+    error INVALID_BATCH_REQ_TOKENS_AMOUNTS();
+
+    /// @dev error message for an invalid merkle root
     error INVALID_MERKLE_ROOT();
 
+    /// @dev error message for an invalid receiver
     error INVALID_RECEIVER();
 
+    /// @dev error message for when merkle root is not set
     error MERKLE_ROOT_NOT_SET();
 
+    /// @dev error message for when the array length is zero
     error ZERO_ARR_LENGTH();
+
+    /// @dev error message for when the claimer has already claimed their rewards
+    error ALREADY_CLAIMED();
+
+    /// @dev error message for when the claim deadline has passed
+    error CLAIM_DEADLINE_PASSED();
 
     //////////////////////////////////////////////////////////////
     //                      EVENTS                              //
@@ -36,7 +56,16 @@ interface IRewardsDistributor {
     );
 
     /// @dev Emitted when new periodic rewards are set.
-    event PeriodicRewardsSet(uint256 indexed periodId, bytes32 merkleRoot);
+    event PeriodicRewardsSet(uint256 indexed periodId, bytes32 merkleRoot, uint256 deadline);
+
+    //////////////////////////////////////////////////////////////
+    //                      STRUCTS                             //
+    //////////////////////////////////////////////////////////////
+
+    struct PeriodicRewardsData {
+        uint256 deadline;
+        bytes32 merkleRoot;
+    }
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //

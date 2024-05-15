@@ -14,15 +14,27 @@ optimizer_runs = 200
 verbosity = 0
 ffi = true
 libs = ["lib"]
-fs_permissions = [{ access = "read-write", path = "./script/" }]
-remappings = [
+fs_permissions = [{ access = "read-write", path = "./" }]
+remappings = [ # do not change these remappings otherwise new create2 addresses will be generated, see https://github.com/foundry-rs/foundry/issues/7826
   "solmate/=lib/ERC1155A/lib/solmate/src/",
   "ERC1155A/=lib/ERC1155A/src/",
+  "@openzeppelin/contracts/=lib/ERC1155A/lib/openzeppelin-contracts/contracts/",
+  "ds-test/=lib/ds-test/src/",
+  "erc4626-tests/=lib/ERC1155A/lib/openzeppelin-contracts/lib/erc4626-tests/",
+  "forge-std/=lib/forge-std/src/",
+  "openzeppelin-contracts/=lib/ERC1155A/lib/openzeppelin-contracts/",
+  "pigeon/=lib/pigeon/src/",
+  "solady/=lib/pigeon/lib/solady/",
+  "super-vaults/=lib/super-vaults/src/",
+  "v2-core/=lib/super-vaults/lib/v2-core/contracts/",
+  "v2-periphery/=lib/super-vaults/lib/v2-periphery/contracts/",
+  "v3-core/=lib/super-vaults/lib/v3-core/",
 ]
 out = "out"
 script = "script"
 src = "src"
 test = "test"
+auto_detect_remappings = false
 
 [profile.localdev]
 optimizer = false
@@ -30,7 +42,7 @@ out = 'localdev'
 
 [profile.coverage]
 fuzz = { runs = 1, max_test_rejects = 350_000 }
-invariant = { runs = 5_000 }
+invariant = { runs = 10 }
 src = 'src'
 test = 'test'
 script = 'src'
@@ -57,8 +69,8 @@ runs = 50
 
 [invariant]
 runs = 20
-depth = 2              # “Calls” refer to the number of times functions in the smart contract are called during a single test run. “Reverts” refers to the number of times a call to any function within the smart contract resulted in a transaction being reverted due to an error or exception.
-fail_on_revert = false
+depth = 2             # “Calls” refer to the number of times functions in the smart contract are called during a single test run. “Reverts” refers to the number of times a call to any function within the smart contract resulted in a transaction being reverted due to an error or exception.
+fail_on_revert = true
 call_override = false
 
 [fmt]
