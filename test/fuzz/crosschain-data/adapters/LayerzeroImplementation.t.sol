@@ -313,9 +313,10 @@ contract LayerzeroImplementationTest is BaseSetup {
         public
     {
         uint256 userIndex = userSeed_ % users.length;
-        vm.assume(
-            chainId != 1 && chainId != 56 && chainId != 43_114 && chainId != 137 && chainId != 42_161 && chainId != 10
-        );
+
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            vm.assume(chainId != chainIds[i]);
+        }
 
         AMBMessage memory ambMessage;
         BroadCastAMBExtraData memory ambExtraData;
