@@ -936,6 +936,39 @@ abstract contract AbstractDeploySingle is BatchScript {
         vm.stopBroadcast();
     }
 
+    /// @dev revoke roles from burner wallets
+    function _disableInvalidDeployment(
+        uint256 env,
+        uint256 i,
+        uint256 trueIndex,
+        Cycle cycle,
+        uint64[] memory targetDeploymentChains
+    )
+        internal
+        setEnvDeploy(cycle)
+    {
+        SetupVars memory vars;
+
+        vars.chainId = targetDeploymentChains[i];
+
+        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
+
+        vars.superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
+        vars.factory = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperformFactory");
+        vars.superRBAC = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRBAC");
+
+        vars.superRegistryC = SuperRegistry(vars.superRegistry);
+        vars.superRBACC = SuperRBAC(vars.superRBAC);
+
+        /// @dev pause forms
+
+        SuperformFactory(vars.factory).changeFormImplementationPauseStatus(
+            FORM_IMPLEMENTATION_IDS[0], ISuperformFactory.PauseStatus(1), ""
+        );
+
+        vm.stopBroadcast();
+    }
+
     /// @dev changes the settings in the already deployed chains with the new chain information
     function _configurePreviouslyDeployedChainsWithNewChain(
         uint256 env,
