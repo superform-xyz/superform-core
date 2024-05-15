@@ -5,6 +5,7 @@ import "test/utils/BaseSetup.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { IAxelarGateway } from "src/vendor/axelar/IAxelarGateway.sol";
 import { IAxelarGasService } from "src/vendor/axelar/IAxelarGasService.sol";
+import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
 import { IInterchainGasEstimation } from "src/vendor/axelar/IInterchainGasEstimation.sol";
 import { Error } from "src/libraries/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
@@ -252,7 +253,7 @@ contract AxelarImplementationTest is BaseSetup {
             abi.encode(true)
         );
 
-        vm.expectRevert(AxelarImplementation.MALICIOUS_DELIVERY.selector);
+        vm.expectRevert(IAmbImplementation.MALICIOUS_DELIVERY.selector);
         vm.prank(address(gateway));
         axelarImpl.execute(commandId, sourceChain, sourceAddress, payload);
     }

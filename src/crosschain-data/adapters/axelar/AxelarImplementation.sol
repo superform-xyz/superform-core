@@ -53,9 +53,6 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
     /// @dev thrown if the incoming request is an invalid contract call
     error INVALID_CONTRACT_CALL();
 
-    /// @dev thrown if same amb tries to deliver a payload and proof
-    error MALICIOUS_DELIVERY();
-
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
