@@ -7,6 +7,7 @@ export POLYGONSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/POLYGONSCAN
 export ARBISCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/ARBISCAN_API_KEY/credential)
 export OPSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/OPSCAN_API_KEY/credential)
 export BASESCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BASESCAN_API_KEY/credential)
+export FTMSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/FTMSCAN_API_KEY/credential)
 
 networks=(
     1
@@ -16,6 +17,7 @@ networks=(
     42161
     10
     8453
+    250
     # add more networks here if needed
 )
 
@@ -27,6 +29,7 @@ api_keys=(
     $ARBISCAN_API_KEY
     $OPSCAN_API_KEY
     $BASESCAN_API_KEY
+    $FTMSCAN_API_KEY
     # add more API keys here if needed
 )
 
@@ -113,6 +116,31 @@ contract_addresses=(
     # Add more addresses here if needed
 )
 
+contract_addresses_fantom=(
+    0x3721B0E122768CedDfB3Dec810E64c361177f826
+    0x2691638Fa19357773C186BA34924E194B4Ab6cDa
+    0x58F8Cef0D825B1a609FaD0576d5F2b7399ab1335
+    0xE22DCd9264086DF7B26d97A9A9d35e8dFac819dd
+    0x0000000000000000000000000000000000000000
+    0x8a3E646d9FDAA5ce032743fCe4d81B5Fa8723Be2
+    0x717de40D4e360C678aC5e195B99605bc4aAC697E
+    0x3639492Dc83019EA36899108B4A1A47cC3b3ecAa
+    0x92f98d698d2c8E0f29D1bb4d75C3A03e05e811bc
+    0x722669cbE532F08bb4EB81127e6Ef386627E90be
+    0x7483486862BDa9BA68Be4923E7E9945c2771Ec28
+    0xD85ec15A9F814D6173bF1a89273bFB3964aAdaEC
+    0xa195608C2306A26f727d5199D5A382a4508308DA
+    0xbD59F0B24d7A668f2c2CEAcfa056518bB3C06A9f
+    0x01dF6fb6a28a89d6bFa53b2b3F20644AbF417678
+    0x17A332dC7B40aE701485023b219E9D6f493a2514
+    0x480bec236e3d3AE33789908BF024850B2Fe71258
+    0xC4A234A40aC13b02096Dd4aae1b8221541Dc5d5A
+    0x856ddF6348fFF6B774566cD63f2e8db3796a0965
+    0x2827eFf89affacf9E80D671bca6DeCf7dbdcCaCa
+    0x3dD20fB87bc2576CB0a2D7f2E75E9D13371eee79
+    # Add more addresses here if needed
+)
+
 constructor_args=(
     $super_constructor_arg
     $super_constructor_arg
@@ -147,6 +175,7 @@ for i in "${!networks[@]}"; do
         file_name="${file_names[$j]}"
         contract_name="${contract_names[$j]}"
         contract_address="${contract_addresses[$j]}"
+        contract_address_fantom="${contract_addresses_fantom[$j]}"
         constructor_arg="${constructor_args[$j]}"
 
         # verify the contract
@@ -159,6 +188,14 @@ for i in "${!networks[@]}"; do
                 "$file_name:$contract_name" \
                 --etherscan-api-key "$api_key" \
                 --verifier-url 'https://api.routescan.io/v2/network/mainnet/evm/43114/etherscan'
+        elif [[ $network == 250 ]]; then
+            forge verify-contract $contract_address_fantom \
+                --chain-id $network \
+                --num-of-optimizations 200 \
+                --watch --compiler-version v0.8.23+commit.f704f362 \
+                --constructor-args "$constructor_arg" \
+                "$file_name:$contract_name" \
+                --etherscan-api-key "$api_key"
         else
             forge verify-contract $contract_address \
                 --chain-id $network \

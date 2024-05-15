@@ -59,8 +59,28 @@ contract MainnetDeployNewChain is EnvironmentUtils {
         _deployStage3(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_DEPLOYMENT_CHAINS, true);
     }
 
-    /// @dev configures stage 2 for previous chains for the newly added chain
-    function configurePreviousChains(uint256 env, uint256 selectedChainIndex) external {
+    /// @dev configures stage 2 for previous chains for the newly added chain with emergency admin
+    function configurePreviousChainsWithEmergencyAdmin(uint256 env, uint256 selectedChainIndex) external {
+        _setEnvironment(env);
+
+        _preDeploymentSetup();
+
+        uint256 trueIndex;
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            if (TARGET_CHAINS[selectedChainIndex] == chainIds[i]) {
+                trueIndex = i;
+                break;
+            }
+        }
+
+        /// @dev set execute to false to simulate the transactions
+        _configurePreviouslyDeployedChainsWithVaultLimit(
+            env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS, TARGET_DEPLOYMENT_CHAINS[0]
+        );
+    }
+
+    /// @dev configures stage 2 for previous chains for the newly added chain with protocol admin
+    function configurePreviousChainsWithProtocolAdmin(uint256 env, uint256 selectedChainIndex) external {
         _setEnvironment(env);
 
         _preDeploymentSetup();
@@ -75,7 +95,7 @@ contract MainnetDeployNewChain is EnvironmentUtils {
 
         /// @dev set execute to false to simulate the transactions
         _configurePreviouslyDeployedChainsWithNewChain(
-            env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS, TARGET_DEPLOYMENT_CHAINS[0], false
+            env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS, TARGET_DEPLOYMENT_CHAINS[0], true
         );
     }
 }

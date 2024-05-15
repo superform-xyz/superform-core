@@ -100,7 +100,7 @@ abstract contract AbstractDeploySingle is BatchScript {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[22] public contractNames = [
+    string[21] public contractNames = [
         "CoreStateRegistry",
         //"TimelockStateRegistry",
         "BroadcastRegistry",
@@ -124,8 +124,8 @@ abstract contract AbstractDeploySingle is BatchScript {
         "PaymentHelper",
         "PayMaster",
         "EmergencyQueue",
-        "VaultClaimer",
-        "RewardsDistributor"
+        "VaultClaimer"
+        // "RewardsDistributor"
     ];
 
     enum Chains {
@@ -770,6 +770,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// @dev !WARNING - Default value for updateWithdrawGas for now
         PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(abi.encode(4, abi.encode(0, "")));
 
+        /*
         /// @dev 20 deploy rewards distributor
         vars.rewardsDistributor = address(new RewardsDistributor{ salt: salt }(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("RewardsDistributor"))] = vars.rewardsDistributor;
@@ -780,6 +781,7 @@ abstract contract AbstractDeploySingle is BatchScript {
 
         vars.superRBACC.setRoleAdmin(rewardsAdminRole, vars.superRBACC.PROTOCOL_ADMIN_ROLE());
         vars.superRBACC.grantRole(rewardsAdminRole, REWARDS_ADMIN);
+        */
 
         vm.stopBroadcast();
 
@@ -977,6 +979,32 @@ abstract contract AbstractDeploySingle is BatchScript {
         }
     }
 
+    /// @dev changes the settings in the already deployed chains with the new chain information
+    function _configurePreviouslyDeployedChainsWithVaultLimit(
+        uint256 env,
+        uint256 i,
+        /// 0, 1, 2
+        uint256 trueIndex,
+        /// 0, 1, 2, 3, 4, 5
+        Cycle cycle,
+        uint64[] memory previousDeploymentChains,
+        uint64 newChainId
+    )
+        internal
+        setEnvDeploy(cycle)
+    {
+        SetupVars memory vars;
+
+        vars.chainId = previousDeploymentChains[i];
+
+        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
+
+        vars.superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
+        vars.superRegistryC = SuperRegistry(payable(vars.superRegistry));
+        vars.superRegistryC.setVaultLimitPerDestination(newChainId, 5);
+        vm.stopBroadcast();
+    }
+
     struct CurrentChainBasedOnDstvars {
         uint64 chainId;
         uint64 dstChainId;
@@ -1048,7 +1076,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         );
 
         /// @dev FIXME not setting BROADCAST_REGISTRY yet, which will result in all broadcast tentatives to fail
-        bytes32[] memory ids = new bytes32[](19);
+        bytes32[] memory ids = new bytes32[](18);
         ids[0] = vars.superRegistryC.SUPERFORM_ROUTER();
         ids[1] = vars.superRegistryC.SUPERFORM_FACTORY();
         ids[2] = vars.superRegistryC.PAYMASTER();
@@ -1067,9 +1095,9 @@ abstract contract AbstractDeploySingle is BatchScript {
         ids[15] = vars.superRegistryC.CORE_REGISTRY_DISPUTER();
         ids[16] = vars.superRegistryC.DST_SWAPPER_PROCESSOR();
         ids[17] = vars.superRegistryC.SUPERFORM_RECEIVER();
-        ids[18] = rewardsDistributorId;
+        //ids[18] = rewardsDistributorId;
 
-        address[] memory newAddresses = new address[](19);
+        address[] memory newAddresses = new address[](18);
         newAddresses[0] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperformRouter");
         newAddresses[1] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperformFactory");
         newAddresses[2] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "PayMaster");
@@ -1088,9 +1116,10 @@ abstract contract AbstractDeploySingle is BatchScript {
         newAddresses[15] = CSR_DISPUTER;
         newAddresses[16] = DST_SWAPPER;
         newAddresses[17] = SUPERFORM_RECEIVER;
-        newAddresses[18] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "RewardsDistributor");
+        //newAddresses[18] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId,
+        // "RewardsDistributor");
 
-        uint64[] memory chainIdsSetAddresses = new uint64[](19);
+        uint64[] memory chainIdsSetAddresses = new uint64[](18);
         chainIdsSetAddresses[0] = vars.dstChainId;
         chainIdsSetAddresses[1] = vars.dstChainId;
         chainIdsSetAddresses[2] = vars.dstChainId;
@@ -1109,7 +1138,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         chainIdsSetAddresses[15] = vars.dstChainId;
         chainIdsSetAddresses[16] = vars.dstChainId;
         chainIdsSetAddresses[17] = vars.dstChainId;
-        chainIdsSetAddresses[18] = vars.dstChainId;
+        //chainIdsSetAddresses[18] = vars.dstChainId;
 
         if (!safeExecution) {
             LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
@@ -1224,8 +1253,10 @@ abstract contract AbstractDeploySingle is BatchScript {
             txn = abi.encodeWithSelector(SuperRegistry.setRequiredMessagingQuorum.selector, vars.dstChainId, 1);
             addToBatch(vars.superRegistry, 0, txn);
 
+            /*
             txn = abi.encodeWithSelector(vars.superRegistryC.setVaultLimitPerDestination.selector, vars.dstChainId, 5);
             addToBatch(vars.superRegistry, 0, txn);
+            */
 
             txn = abi.encodeWithSelector(
                 vars.superRegistryC.batchSetAddress.selector, ids, newAddresses, chainIdsSetAddresses
@@ -1355,7 +1386,8 @@ abstract contract AbstractDeploySingle is BatchScript {
         priceFeeds[ETH][OP] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][ARBI] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][BASE] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-        priceFeeds[ETH][FANTOM] = 0x2DE7E4a9488488e0058B95854CC2f7955B35dC9b;
+        priceFeeds[ETH][FANTOM] = address(0); // 0x2DE7E4a9488488e0058B95854CC2f7955B35dC9b has 18 decimals which looks
+            // to be incorrect
 
         /// BSC
         priceFeeds[BSC][BSC] = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
