@@ -9,8 +9,8 @@ contract MainnetDeployNewChain is EnvironmentUtils {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice The main stage 1 script entrypoint
-    function deployStage1(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+    function deployStage1(uint256 env, uint256 selectedChainIndex, uint256 useNewSalt) external {
+        _setEnvironment(env, useNewSalt == 1 ? true : false);
 
         _preDeploymentSetup();
         uint256 trueIndex;
@@ -26,8 +26,8 @@ contract MainnetDeployNewChain is EnvironmentUtils {
     }
 
     /// @dev stage 2 must be called only after stage 1 is complete for all chains!
-    function deployStage2(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+    function deployStage2(uint256 env, uint256 selectedChainIndex, uint256 useNewSalt) external {
+        _setEnvironment(env, useNewSalt == 1 ? true : false);
 
         _preDeploymentSetup();
 
@@ -42,8 +42,8 @@ contract MainnetDeployNewChain is EnvironmentUtils {
     }
 
     /// @dev stage 3 must be called only after stage 1 is complete for all chains!
-    function deployStage3(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+    function deployStage3(uint256 env, uint256 selectedChainIndex, uint256 useNewSalt) external {
+        _setEnvironment(env, useNewSalt == 1 ? true : false);
 
         _preDeploymentSetup();
 
@@ -61,7 +61,7 @@ contract MainnetDeployNewChain is EnvironmentUtils {
 
     /// @dev configures stage 2 for previous chains for the newly added chain with emergency admin
     function configurePreviousChainsWithEmergencyAdmin(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         _preDeploymentSetup();
 
@@ -81,7 +81,7 @@ contract MainnetDeployNewChain is EnvironmentUtils {
 
     /// @dev configures stage 2 for previous chains for the newly added chain with protocol admin
     function configurePreviousChainsWithProtocolAdmin(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         _preDeploymentSetup();
 
@@ -97,5 +97,23 @@ contract MainnetDeployNewChain is EnvironmentUtils {
         _configurePreviouslyDeployedChainsWithNewChain(
             env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS, TARGET_DEPLOYMENT_CHAINS[0], true
         );
+    }
+
+    /// @dev only revoke burner addresses after smoke tests are complete
+    function revokeBurnerAddress(uint256 env, uint256 selectedChainIndex) external {
+        _setEnvironment(env, false);
+
+        _preDeploymentSetup();
+
+        uint256 trueIndex;
+
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            if (TARGET_DEPLOYMENT_CHAINS[selectedChainIndex] == chainIds[i]) {
+                trueIndex = i;
+                break;
+            }
+        }
+
+        _revokeFromBurnerWallets(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_DEPLOYMENT_CHAINS);
     }
 }

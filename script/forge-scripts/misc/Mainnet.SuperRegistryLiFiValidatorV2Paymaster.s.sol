@@ -5,7 +5,7 @@ import { AbstractSuperRegistryLiFiValidatorV2 } from "./Abstract.SuperRegistry.L
 
 contract MainnetSuperRegistryLiFiValidatorV2Paymaster is AbstractSuperRegistryLiFiValidatorV2 {
     function configureSuperRegistry(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {

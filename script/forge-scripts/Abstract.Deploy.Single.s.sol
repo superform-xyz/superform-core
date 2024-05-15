@@ -342,8 +342,8 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// @dev OP https://app.onchainden.com/safes/oeth:0x99620a926d68746d5f085b3f7cd62f4ffb71f0c1
         0x2F973806f8863E860A553d4F2E7c2AB4A9F3b87C,
         /// @dev BASE https://app.onchainden.com/safes/base:0x2f973806f8863e860a553d4f2e7c2ab4a9f3b87c
-        address(0)
-        /// @dev FANTOM FIXME - PROTOCOL ADMIN NOT SET FOR FANTOM
+        0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1
+        /// @dev FANTOM https://safe.fantom.network/home?safe=ftm:0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1
     ];
 
     address[] public PROTOCOL_ADMINS_STAGING = [
@@ -891,20 +891,47 @@ abstract contract AbstractDeploySingle is BatchScript {
         bytes32 emergencyAdminRole = srbac.EMERGENCY_ADMIN_ROLE();
         bytes32 paymentAdminRole = srbac.PAYMENT_ADMIN_ROLE();
 
+        address protocolAdmin = env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[trueIndex];
+
         if (grantProtocolAdmin) {
-            srbac.grantRole(
-                protocolAdminRole, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[trueIndex]
-            );
+            if (protocolAdmin != address(0)) {
+                srbac.grantRole(protocolAdminRole, protocolAdmin);
+            } else {
+                revert("PROTOCOL_ADMIN_NOT_SET");
+            }
         }
 
         srbac.grantRole(emergencyAdminRole, EMERGENCY_ADMIN);
         srbac.grantRole(paymentAdminRole, PAYMENT_ADMIN);
 
-        if (env == 0) {
-            srbac.revokeRole(emergencyAdminRole, ownerAddress);
-            srbac.revokeRole(paymentAdminRole, ownerAddress);
-            srbac.revokeRole(protocolAdminRole, ownerAddress);
-        }
+        vm.stopBroadcast();
+    }
+
+    /// @dev revoke roles from burner wallets
+    function _revokeFromBurnerWallets(
+        uint256 env,
+        uint256 i,
+        uint256 trueIndex,
+        Cycle cycle,
+        uint64[] memory s_superFormChainIds
+    )
+        internal
+        setEnvDeploy(cycle)
+    {
+        SetupVars memory vars;
+
+        vars.chainId = s_superFormChainIds[i];
+
+        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
+
+        SuperRBAC srbac = SuperRBAC(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRBAC")));
+        bytes32 protocolAdminRole = srbac.PROTOCOL_ADMIN_ROLE();
+        bytes32 emergencyAdminRole = srbac.EMERGENCY_ADMIN_ROLE();
+        bytes32 paymentAdminRole = srbac.PAYMENT_ADMIN_ROLE();
+
+        srbac.revokeRole(emergencyAdminRole, ownerAddress);
+        srbac.revokeRole(paymentAdminRole, ownerAddress);
+        srbac.revokeRole(protocolAdminRole, ownerAddress);
 
         vm.stopBroadcast();
     }
