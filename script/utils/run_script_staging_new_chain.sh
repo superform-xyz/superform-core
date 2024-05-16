@@ -106,11 +106,10 @@ fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Dep
   --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3 --broadcast --unlocked --slow
 
 wait
-
+comment
 export FIREBLOCKS_RPC_URL=$BASE_RPC_URL
 
 fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 1 3 \
   --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3 --broadcast --unlocked --slow
 
 wait
-comment
