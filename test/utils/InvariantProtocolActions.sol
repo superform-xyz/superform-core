@@ -1059,7 +1059,8 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             args.slippage,
             uint256(v.USDPerExternalToken),
             uint256(v.USDPerUnderlyingOrInterimTokenDst),
-            uint256(v.USDPerUnderlyingToken)
+            uint256(v.USDPerUnderlyingToken),
+            users[args.user]
         );
 
         v.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, args.srcChainId == args.toChainId);
@@ -1258,7 +1259,8 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             /// @dev switching USDPerExternalToken with USDPerUnderlyingTokenDst as above
             uint256(USDPerUnderlyingTokenDst),
             uint256(USDPerExternalToken),
-            uint256(USDPerUnderlyingToken)
+            uint256(USDPerUnderlyingToken),
+            users[args.user]
         );
 
         vars.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, args.toChainId == args.liqDstChainId);

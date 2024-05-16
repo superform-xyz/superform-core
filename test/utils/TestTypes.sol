@@ -140,8 +140,10 @@ struct SetupVars {
     address wormholeSRImplementation;
     address dstSwapper;
     address lifiRouter;
+    address deBridgeMock;
     address socketRouter;
     address socketOneInch;
+    address debridgeForwarderMock;
     address liFiMockRugpull;
     address liFiMockBlacklisted;
     address liFiMockSwapToAttacker;
@@ -170,6 +172,8 @@ struct SetupVars {
     address lifiValidator;
     address socketValidator;
     address socketOneInchValidator;
+    address debridgeValidator;
+    address debridgeForwarderValidator;
     address rewardsDistributor;
     Vm.Log[] logs;
     address superPositions;

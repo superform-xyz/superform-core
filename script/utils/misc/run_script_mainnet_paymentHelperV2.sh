@@ -99,7 +99,7 @@ fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Dep
     --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
 
 wait
-comment
+
 
 echo Configuring paymentHelper v2 with protocol admin:
 
@@ -126,5 +126,5 @@ wait
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "configureSuperRegistry(uint256,uint256)" 0 5 --rpc-url $OPTIMISM_RPC_URL --broadcast --slow --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 
 wait
-
+comment
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.PaymentHelperV2.s.sol:MainnetDeployPaymentHelperV2 --sig "configureSuperRegistry(uint256,uint256)" 0 6 --rpc-url $BASE_RPC_URL --broadcast --slow --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy

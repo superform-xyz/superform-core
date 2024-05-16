@@ -21,6 +21,8 @@ import { SocketOneInchMock } from "../mocks/SocketOneInchMock.sol";
 import { LiFiMockRugpull } from "../mocks/LiFiMockRugpull.sol";
 import { LiFiMockBlacklisted } from "../mocks/LiFiMockBlacklisted.sol";
 import { LiFiMockSwapToAttacker } from "../mocks/LiFiMockSwapToAttacker.sol";
+import { DeBridgeMock } from "../mocks/DeBridgeMock.sol";
+import { DeBridgeForwarderMock } from "../mocks/DeBridgeForwarderMock.sol";
 
 import { MockERC20 } from "../mocks/MockERC20.sol";
 import { VaultMock } from "../mocks/VaultMock.sol";
@@ -53,6 +55,9 @@ import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
 import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
 import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator.sol";
+import { DeBridgeValidator } from "src/crosschain-liquidity/debridge/DeBridgeValidator.sol";
+import { DeBridgeForwarderValidator } from "src/crosschain-liquidity/debridge/DeBridgeForwarderValidator.sol";
+
 import { SocketOneInchValidator } from "src/crosschain-liquidity/socket/SocketOneInchValidator.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { LayerzeroV2Implementation } from "src/crosschain-data/adapters/layerzero-v2/LayerzeroV2Implementation.sol";
@@ -96,6 +101,7 @@ abstract contract BaseSetup is StdInvariant, Test {
     /// @dev for mainnet deployment
     address public constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
+    /// CREATE2 assumption but it works otherwise too
     address public deployer = vm.addr(777);
     address[] public users;
     uint256[] public userKeys;
@@ -104,7 +110,7 @@ abstract contract BaseSetup is StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[33] public contractNames = [
+    string[37] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -133,10 +139,14 @@ abstract contract BaseSetup is StdInvariant, Test {
         "WormholeHelper",
         "WormholeBroadcastHelper",
         "LiFiMock",
+        "DeBridgeMock",
+        "DeBridgeForwarderMock",
         "KYCDAOMock",
         "CanonicalPermit2",
         "EmergencyQueue",
         "SocketOneInchValidator",
+        "DeBridgeValidator",
+        "DeBridgeForwarderValidator",
         "RewardsDistributor"
     ];
 
@@ -267,14 +277,14 @@ abstract contract BaseSetup is StdInvariant, Test {
     /// @dev uses CREATE2
     address public lzV2Endpoint = 0x1a44076050125825900e736c501f859c50fE728c;
 
-    uint32 public constant LZ_V2_ETH = 30101;
-    uint32 public constant LZ_V2_BSC = 30102;
-    uint32 public constant LZ_V2_AVAX = 30106;
-    uint32 public constant LZ_V2_POLY = 30109;
-    uint32 public constant LZ_V2_ARBI = 30110;
-    uint32 public constant LZ_V2_OP = 30111;
-    uint32 public constant LZ_V2_BASE = 30184;
-    uint32 public constant LZ_V2_FANTOM = 30112;
+    uint32 public constant LZ_V2_ETH = 30_101;
+    uint32 public constant LZ_V2_BSC = 30_102;
+    uint32 public constant LZ_V2_AVAX = 30_106;
+    uint32 public constant LZ_V2_POLY = 30_109;
+    uint32 public constant LZ_V2_ARBI = 30_110;
+    uint32 public constant LZ_V2_OP = 30_111;
+    uint32 public constant LZ_V2_BASE = 30_184;
+    uint32 public constant LZ_V2_FANTOM = 30_112;
 
     /*//////////////////////////////////////////////////////////////
                         HYPERLANE VARIABLES
@@ -541,7 +551,7 @@ abstract contract BaseSetup is StdInvariant, Test {
             LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[i]);
 
             /// @dev 6.1.1 - deploy Layerzero v2 implementation
-            vars.lzV2Implementation = address(new LayerzeroV2Implementation{salt: salt}(vars.superRegistryC));
+            vars.lzV2Implementation = address(new LayerzeroV2Implementation{ salt: salt }(vars.superRegistryC));
             contracts[vars.chainId][bytes32(bytes("LayerzeroV2Implementation"))] = vars.lzV2Implementation;
 
             LayerzeroV2Implementation(payable(vars.lzV2Implementation)).setLzEndpoint(lzV2Endpoint);
@@ -611,6 +621,16 @@ abstract contract BaseSetup is StdInvariant, Test {
             contracts[vars.chainId][bytes32(bytes("LiFiMockBlacklisted"))] = vars.liFiMockSwapToAttacker;
             vm.allowCheatcodes(vars.liFiMockSwapToAttacker);
 
+            /// @dev 7.1.7 deploy DeBridgeMock. This mocks tests the behavior of debridge
+            vars.deBridgeMock = address(new DeBridgeMock{ salt: salt }());
+            contracts[vars.chainId][bytes32(bytes("DeBridgeMock"))] = vars.deBridgeMock;
+            vm.allowCheatcodes(vars.deBridgeMock);
+
+            /// @dev 7.1.7 deploy DeBridgeForwarderMock. This mocks tests the behavior of debridge forwarder
+            vars.debridgeForwarderMock = address(new DeBridgeForwarderMock{ salt: salt }());
+            contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderMock"))] = vars.debridgeForwarderMock;
+            vm.allowCheatcodes(vars.debridgeForwarderMock);
+
             /// @dev 7.2.1- deploy  lifi validator
             vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
@@ -640,6 +660,14 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.socketOneInchValidator = address(new SocketOneInchValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("SocketOneInchValidator"))] = vars.socketOneInchValidator;
 
+            /// @dev 7.2.4- deploy deBridge validator
+            vars.debridgeValidator = address(new DeBridgeValidator{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("DeBridgeValidator"))] = vars.debridgeValidator;
+
+            /// @dev 7.2.5- deploy deBridge forwarder validator
+            vars.debridgeForwarderValidator = address(new DeBridgeForwarderValidator{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderValidator"))] = vars.debridgeForwarderValidator;
+
             /// @dev 7.3- kycDAO NFT used to test kycDAO vaults
             vars.kycDAOMock = address(new KYCDaoNFTMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("KYCDAOMock"))] = vars.kycDAOMock;
@@ -650,6 +678,8 @@ abstract contract BaseSetup is StdInvariant, Test {
             bridgeAddresses.push(vars.liFiMockRugpull);
             bridgeAddresses.push(vars.liFiMockBlacklisted);
             bridgeAddresses.push(vars.liFiMockSwapToAttacker);
+            bridgeAddresses.push(vars.deBridgeMock);
+            bridgeAddresses.push(vars.debridgeForwarderMock);
 
             bridgeValidators.push(vars.lifiValidator);
             bridgeValidators.push(vars.socketValidator);
@@ -657,6 +687,8 @@ abstract contract BaseSetup is StdInvariant, Test {
             bridgeValidators.push(vars.lifiValidator);
             bridgeValidators.push(vars.lifiValidator);
             bridgeValidators.push(vars.lifiValidator);
+            bridgeValidators.push(vars.debridgeValidator);
+            bridgeValidators.push(vars.debridgeForwarderValidator);
 
             /// @dev 8.1 - Deploy UNDERLYING_TOKENS and VAULTS
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; ++j) {
@@ -791,23 +823,26 @@ abstract contract BaseSetup is StdInvariant, Test {
             /// @dev 17 - Super Registry extra setters
             /// @dev BASE does not have SocketV1 available
             if (vars.chainId == BASE) {
-                uint8[] memory bridgeIdsBase = new uint8[](4);
+                uint8[] memory bridgeIdsBase = new uint8[](5);
                 bridgeIdsBase[0] = bridgeIds[0];
                 bridgeIdsBase[1] = bridgeIds[3];
                 bridgeIdsBase[2] = bridgeIds[4];
                 bridgeIdsBase[3] = bridgeIds[5];
+                bridgeIdsBase[4] = bridgeIds[6];
 
-                address[] memory bridgeAddressesBase = new address[](4);
+                address[] memory bridgeAddressesBase = new address[](5);
                 bridgeAddressesBase[0] = bridgeAddresses[0];
                 bridgeAddressesBase[1] = bridgeAddresses[3];
                 bridgeAddressesBase[2] = bridgeAddresses[4];
                 bridgeAddressesBase[3] = bridgeAddresses[5];
+                bridgeAddressesBase[4] = bridgeAddresses[6];
 
-                address[] memory bridgeValidatorsBase = new address[](4);
+                address[] memory bridgeValidatorsBase = new address[](5);
                 bridgeValidatorsBase[0] = bridgeValidators[0];
                 bridgeValidatorsBase[1] = bridgeValidators[3];
                 bridgeValidatorsBase[2] = bridgeValidators[4];
                 bridgeValidatorsBase[3] = bridgeValidators[5];
+                bridgeValidatorsBase[4] = bridgeValidators[6];
 
                 vars.superRegistryC.setBridgeAddresses(bridgeIdsBase, bridgeAddressesBase, bridgeValidatorsBase);
             } else {
@@ -910,7 +945,8 @@ abstract contract BaseSetup is StdInvariant, Test {
                     );
 
                     LayerzeroV2Implementation(payable(vars.lzV2Implementation)).setPeer(
-                        lz_v2_chainIds[j], bytes32(uint256(uint160(getContract(vars.dstChainId, "LayerzeroV2Implementation"))))
+                        lz_v2_chainIds[j],
+                        bytes32(uint256(uint160(getContract(vars.dstChainId, "LayerzeroV2Implementation"))))
                     );
 
                     LayerzeroV2Implementation(payable(vars.lzV2Implementation)).setChainId(
@@ -950,6 +986,9 @@ abstract contract BaseSetup is StdInvariant, Test {
 
                     vars.superRegistryC.setRequiredMessagingQuorum(vars.dstChainId, 1);
                     vars.superRegistryC.setVaultLimitPerDestination(vars.dstChainId, 5);
+                    vars.superRegistryC.setAddress(
+                        keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), deployer, vars.dstChainId
+                    );
 
                     /// swap gas cost: 50000
                     /// update gas cost: 40000
@@ -1385,6 +1424,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[FANTOM][ETH] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
         priceFeeds[FANTOM][BASE] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
         priceFeeds[FANTOM][ARBI] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+
         /// @dev setup bridges.
         /// 1 is lifi
         /// 2 is socket
@@ -1392,6 +1432,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// 4 is lifi rugpull
         /// 5 is lifi blacklist
         /// 6 is lifi swap to attacker
+        /// 7 is debridge
+        /// 8 is debridge forwarder
 
         bridgeIds.push(1);
         bridgeIds.push(2);
@@ -1399,6 +1441,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         bridgeIds.push(4);
         bridgeIds.push(5);
         bridgeIds.push(6);
+        bridgeIds.push(7);
+        bridgeIds.push(8);
 
         /// @dev setup users
         userKeys.push(1);

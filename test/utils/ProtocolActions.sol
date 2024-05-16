@@ -643,13 +643,14 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
                         (liqValue,,, msgValue) =
                             paymentHelper.estimateSingleXChainSingleVault(vars.singleXChainSingleVaultStateReq, true);
-                        vm.prank(users[action.user]);
 
                         if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                             vm.expectRevert();
                         }
-                        /// @dev the actual call to the entry point
 
+                        vm.prank(users[action.user]);
+                        console.log("Inside Protocol Actions", users[action.user]);
+                        /// @dev the actual call to the entry point
                         superformRouter.singleXChainSingleVaultDeposit{ value: msgValue }(
                             vars.singleXChainSingleVaultStateReq
                         );
@@ -1756,7 +1757,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
             args.slippage,
             uint256(v.USDPerExternalToken),
             uint256(v.USDPerUnderlyingOrInterimTokenDst),
-            uint256(v.USDPerUnderlyingToken)
+            uint256(v.USDPerUnderlyingToken),
+            users[args.user]
         );
 
         v.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, args.srcChainId == args.toChainId);
@@ -1928,8 +1930,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vars.superPositions = IERC1155A(
             ISuperRegistry(vars.stateRegistry).getAddress(ISuperRegistry(vars.stateRegistry).SUPER_POSITIONS())
         );
+        
         vm.prank(users[args.user]);
-
         /// @dev singleId approvals from ERC1155A are used here https://github.com/superform-xyz/ERC1155A, avoiding
         /// approving all superPositions at once
         vars.superPositions.increaseAllowance(vars.superformRouter, args.superformId, args.amount);
@@ -1963,7 +1965,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
             /// @dev switching USDPerExternalToken with USDPerUnderlyingTokenDst as above
             uint256(USDPerUnderlyingTokenDst),
             uint256(USDPerExternalToken),
-            uint256(USDPerUnderlyingToken)
+            uint256(USDPerUnderlyingToken),
+            users[args.user]
         );
 
         vars.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, args.toChainId == args.liqDstChainId);
@@ -3619,7 +3622,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         0,
                         1,
                         1,
-                        1
+                        1,
+                        address(0)
                     ),
                     false
                 ),
