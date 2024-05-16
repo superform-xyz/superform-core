@@ -27,7 +27,7 @@ ftest   :; forge test
 test-ci :; forge test --no-match-path "test/invariant/**/*.sol"
 coverage :; FOUNDRY_PROFILE=coverage forge coverage --match-path "test/**/*.sol" --report lcov
 coverage-t :; FOUNDRY_PROFILE=coverage forge coverage --match-contract RewardsDistributorTests --report lcov
-smoke-test   :; forge test --match-contract SmokeTest -vvv
+smoke-test   :; forge test --match-contract SmokeTestStaging -vvv
 invariant   :; forge test --match-path "test/invariant/**/*.sol" -vvv
 invariant-rewards   :; forge test --match-test invariant_tokenBalances -vvv
 clean  :; forge clean

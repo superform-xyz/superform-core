@@ -7,11 +7,12 @@ contract SmokeTestStaging is MainnetBaseSetup {
     function setUp() public override {
         folderToRead = "/script/deployments/v1_staging_deployment/";
 
-        uint64[] memory chains = new uint64[](4);
+        uint64[] memory chains = new uint64[](5);
         chains[0] = BSC;
         chains[1] = ARBI;
         chains[2] = OP;
         chains[3] = BASE;
+        chains[4] = FANTOM;
 
         TARGET_DEPLOYMENT_CHAINS = chains;
         EMERGENCY_ADMIN = 0x6A5DD913fE3CB5193E09D1810a3b9ff1C0f9c0D6;
@@ -143,13 +144,18 @@ contract SmokeTestStaging is MainnetBaseSetup {
         newAddresses[8] = 0xaD1bF3301971Ecd9E6219423129e360774ABEA68;
 
         for (uint256 i = 0; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
-            vm.selectFork(FORKS[TARGET_DEPLOYMENT_CHAINS[i]]);
-            srbac = SuperRBAC(getContract(TARGET_DEPLOYMENT_CHAINS[i], "SuperRBAC"));
+            uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+            vm.selectFork(FORKS[chainId]);
+            srbac = SuperRBAC(getContract(chainId, "SuperRBAC"));
 
             for (uint256 j = 0; j < len; ++j) {
                 assert(srbac.hasRole(ids[j], newAddresses[j]));
-                /// @dev each role should have a single member
-                assertEq(srbac.getRoleMemberCount(ids[j]), 1);
+                if (chainId == 250 && ids[j] == keccak256("PAYMENT_ADMIN_ROLE")) {
+                    assertEq(srbac.getRoleMemberCount(ids[j]), 2);
+                } else {
+                    /// @dev each role should have a single member
+                    assertEq(srbac.getRoleMemberCount(ids[j]), 1);
+                }
             }
             assert(srbac.hasRole(keccak256("PROTOCOL_ADMIN_ROLE"), 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92));
             assert(srbac.hasRole(keccak256("PROTOCOL_ADMIN_ROLE"), PROTOCOL_ADMINS_STAGING[i]));
@@ -247,6 +253,7 @@ contract SmokeTestStaging is MainnetBaseSetup {
         mailboxes[1] = 0x979Ca5202784112f4738403dBec5D0F3B9daabB9;
         mailboxes[2] = 0xd4C1905BB1D26BC93DAC913e13CaCC278CdCC80D;
         mailboxes[3] = 0xeA87ae93Fa0019a82A727bfd3eBd1cFCa8f64f1D;
+        mailboxes[4] = address(0);
 
         /// @dev index should match the index of target chains
         address[] memory igps = new address[](TARGET_DEPLOYMENT_CHAINS.length);
@@ -254,30 +261,34 @@ contract SmokeTestStaging is MainnetBaseSetup {
         igps[1] = 0x3b6044acd6767f017e99318AA6Ef93b7B06A5a22;
         igps[2] = 0xD8A76C4D91fCbB7Cc8eA795DFDF870E48368995C;
         igps[3] = 0xc3F23848Ed2e04C0c6d41bd7804fa8f89F940B94;
+        igps[4] = address(0);
 
         /// @dev index should match the index of target chains
-        uint32[] memory ambIds = new uint32[](TARGET_DEPLOYMENT_CHAINS.length);
-        ambIds[0] = uint32(56);
-        ambIds[1] = uint32(42_161);
-        ambIds[2] = uint32(10);
-        ambIds[3] = uint32(8453);
+        uint32[] memory ambIds_ = new uint32[](TARGET_DEPLOYMENT_CHAINS.length);
+        ambIds_[0] = uint32(56);
+        ambIds_[1] = uint32(42_161);
+        ambIds_[2] = uint32(10);
+        ambIds_[3] = uint32(8453);
+        ambIds_[4] = uint32(250);
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
-            vm.selectFork(FORKS[chainId]);
-            hyperlane = HyperlaneImplementation(getContract(chainId, "HyperlaneImplementation"));
+            if (chainId != 250) {
+                vm.selectFork(FORKS[chainId]);
+                hyperlane = HyperlaneImplementation(getContract(chainId, "HyperlaneImplementation"));
 
-            assertEq(address(hyperlane.mailbox()), mailboxes[i]);
-            assertEq(address(hyperlane.igp()), igps[i]);
+                assertEq(address(hyperlane.mailbox()), mailboxes[i]);
+                assertEq(address(hyperlane.igp()), igps[i]);
 
-            for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
-                if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
-                    assertEq(
-                        hyperlane.authorizedImpl(ambIds[j]),
-                        getContract(TARGET_DEPLOYMENT_CHAINS[j], "HyperlaneImplementation")
-                    );
-                    assertEq(hyperlane.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds[j]);
-                    assertEq(hyperlane.superChainId(ambIds[j]), TARGET_DEPLOYMENT_CHAINS[j]);
+                for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
+                    if (chainId != TARGET_DEPLOYMENT_CHAINS[j] && TARGET_DEPLOYMENT_CHAINS[j] != 250) {
+                        assertEq(
+                            hyperlane.authorizedImpl(ambIds_[j]),
+                            getContract(TARGET_DEPLOYMENT_CHAINS[j], "HyperlaneImplementation")
+                        );
+                        assertEq(hyperlane.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds_[j]);
+                        assertEq(hyperlane.superChainId(ambIds_[j]), TARGET_DEPLOYMENT_CHAINS[j]);
+                    }
                 }
             }
         }
@@ -292,13 +303,15 @@ contract SmokeTestStaging is MainnetBaseSetup {
         endpoints[1] = 0x3c2269811836af69497E5F486A85D7316753cf62;
         endpoints[2] = 0x3c2269811836af69497E5F486A85D7316753cf62;
         endpoints[3] = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
+        endpoints[4] = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
 
         /// @dev index should match the index of target chains
-        uint16[] memory ambIds = new uint16[](TARGET_DEPLOYMENT_CHAINS.length);
-        ambIds[0] = uint16(102);
-        ambIds[1] = uint16(110);
-        ambIds[2] = uint16(111);
-        ambIds[3] = uint16(184);
+        uint16[] memory ambIds_ = new uint16[](TARGET_DEPLOYMENT_CHAINS.length);
+        ambIds_[0] = uint16(102);
+        ambIds_[1] = uint16(110);
+        ambIds_[2] = uint16(111);
+        ambIds_[3] = uint16(184);
+        ambIds_[4] = uint16(112);
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
@@ -310,14 +323,14 @@ contract SmokeTestStaging is MainnetBaseSetup {
             for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
                 if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
                     assertEq(
-                        layerzero.trustedRemoteLookup(ambIds[j]),
+                        layerzero.trustedRemoteLookup(ambIds_[j]),
                         abi.encodePacked(
                             getContract(TARGET_DEPLOYMENT_CHAINS[j], "LayerzeroImplementation"),
                             getContract(TARGET_DEPLOYMENT_CHAINS[i], "LayerzeroImplementation")
                         )
                     );
-                    assertEq(layerzero.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds[j]);
-                    assertEq(layerzero.superChainId(ambIds[j]), TARGET_DEPLOYMENT_CHAINS[j]);
+                    assertEq(layerzero.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds_[j]);
+                    assertEq(layerzero.superChainId(ambIds_[j]), TARGET_DEPLOYMENT_CHAINS[j]);
                 }
             }
         }
@@ -332,13 +345,15 @@ contract SmokeTestStaging is MainnetBaseSetup {
         relayers[1] = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
         relayers[2] = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
         relayers[3] = 0x706F82e9bb5b0813501714Ab5974216704980e31;
+        relayers[4] = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
 
         /// @dev index should match the index of target chains
-        uint16[] memory ambIds = new uint16[](TARGET_DEPLOYMENT_CHAINS.length);
-        ambIds[0] = uint16(4);
-        ambIds[1] = uint16(23);
-        ambIds[2] = uint16(24);
-        ambIds[3] = uint16(30);
+        uint16[] memory ambIds_ = new uint16[](TARGET_DEPLOYMENT_CHAINS.length);
+        ambIds_[0] = uint16(4);
+        ambIds_[1] = uint16(23);
+        ambIds_[2] = uint16(24);
+        ambIds_[3] = uint16(30);
+        ambIds_[4] = uint16(10);
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
@@ -346,16 +361,16 @@ contract SmokeTestStaging is MainnetBaseSetup {
             wormhole = WormholeARImplementation(getContract(chainId, "WormholeARImplementation"));
 
             assertEq(address(wormhole.relayer()), relayers[i]);
-            assertEq(wormhole.refundChainId(), ambIds[i]);
+            assertEq(wormhole.refundChainId(), ambIds_[i]);
 
             for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
                 if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
                     assertEq(
-                        wormhole.authorizedImpl(ambIds[j]),
+                        wormhole.authorizedImpl(ambIds_[j]),
                         getContract(TARGET_DEPLOYMENT_CHAINS[j], "WormholeARImplementation")
                     );
-                    assertEq(wormhole.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds[j]);
-                    assertEq(wormhole.superChainId(ambIds[j]), TARGET_DEPLOYMENT_CHAINS[j]);
+                    assertEq(wormhole.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds_[j]);
+                    assertEq(wormhole.superChainId(ambIds_[j]), TARGET_DEPLOYMENT_CHAINS[j]);
                 }
             }
         }
@@ -365,18 +380,20 @@ contract SmokeTestStaging is MainnetBaseSetup {
         WormholeSRImplementation wormhole;
 
         /// @dev index should match the index of target chains
-        address[] memory wormholeCore = new address[](TARGET_DEPLOYMENT_CHAINS.length);
-        wormholeCore[0] = 0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B;
-        wormholeCore[1] = 0xa5f208e072434bC67592E4C49C1B991BA79BCA46;
-        wormholeCore[2] = 0xEe91C335eab126dF5fDB3797EA9d6aD93aeC9722;
-        wormholeCore[3] = 0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6;
+        address[] memory wormholeCoreAddresses = new address[](TARGET_DEPLOYMENT_CHAINS.length);
+        wormholeCoreAddresses[0] = 0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B;
+        wormholeCoreAddresses[1] = 0xa5f208e072434bC67592E4C49C1B991BA79BCA46;
+        wormholeCoreAddresses[2] = 0xEe91C335eab126dF5fDB3797EA9d6aD93aeC9722;
+        wormholeCoreAddresses[3] = 0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6;
+        wormholeCoreAddresses[4] = 0x126783A6Cb203a3E35344528B26ca3a0489a1485;
 
         /// @dev index should match the index of target chains
-        uint16[] memory ambIds = new uint16[](TARGET_DEPLOYMENT_CHAINS.length);
-        ambIds[0] = uint16(4);
-        ambIds[1] = uint16(23);
-        ambIds[2] = uint16(24);
-        ambIds[3] = uint16(30);
+        uint16[] memory ambIds_ = new uint16[](TARGET_DEPLOYMENT_CHAINS.length);
+        ambIds_[0] = uint16(4);
+        ambIds_[1] = uint16(23);
+        ambIds_[2] = uint16(24);
+        ambIds_[3] = uint16(30);
+        ambIds_[4] = uint16(10);
 
         address relayer = 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92;
 
@@ -388,17 +405,50 @@ contract SmokeTestStaging is MainnetBaseSetup {
             wormhole = WormholeSRImplementation(getContract(chainId, "WormholeSRImplementation"));
 
             assertEq(address(wormhole.relayer()), relayer);
-            assertEq(address(wormhole.wormhole()), wormholeCore[i]);
+            assertEq(address(wormhole.wormhole()), wormholeCoreAddresses[i]);
             assertEq(wormhole.broadcastFinality(), 0);
 
             for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
                 if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
                     assertEq(
-                        wormhole.authorizedImpl(ambIds[j]),
+                        wormhole.authorizedImpl(ambIds_[j]),
                         getContract(TARGET_DEPLOYMENT_CHAINS[j], "WormholeSRImplementation")
                     );
-                    assertEq(wormhole.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds[j]);
-                    assertEq(wormhole.superChainId(ambIds[j]), TARGET_DEPLOYMENT_CHAINS[j]);
+                    assertEq(wormhole.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds_[j]);
+                    assertEq(wormhole.superChainId(ambIds_[j]), TARGET_DEPLOYMENT_CHAINS[j]);
+                }
+            }
+        }
+    }
+
+    function test_paymentHelper() public {
+        PaymentHelper paymentHelper;
+
+        for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
+            uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+            vm.selectFork(FORKS[chainId]);
+            paymentHelper = PaymentHelper(getContract(chainId, "PaymentHelper"));
+            console.log("--Checking chain id ", chainId);
+
+            for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
+                assertEq(
+                    address(paymentHelper.nativeFeedOracle(TARGET_DEPLOYMENT_CHAINS[j])),
+                    PRICE_FEEDS[chainId][TARGET_DEPLOYMENT_CHAINS[j]]
+                );
+                if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
+                    assertEq(
+                        paymentHelper.swapGasUsed(TARGET_DEPLOYMENT_CHAINS[j]),
+                        abi.decode(GAS_USED[TARGET_DEPLOYMENT_CHAINS[j]][3], (uint256))
+                    );
+                    assertEq(
+                        paymentHelper.updateDepositGasUsed(TARGET_DEPLOYMENT_CHAINS[j]),
+                        abi.decode(GAS_USED[TARGET_DEPLOYMENT_CHAINS[j]][4], (uint256))
+                    );
+
+                    assertEq(
+                        paymentHelper.withdrawGasUsed(TARGET_DEPLOYMENT_CHAINS[j]),
+                        abi.decode(GAS_USED[TARGET_DEPLOYMENT_CHAINS[j]][6], (uint256))
+                    );
                 }
             }
         }

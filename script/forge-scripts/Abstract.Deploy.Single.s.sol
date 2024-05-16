@@ -735,7 +735,7 @@ abstract contract AbstractDeploySingle is BatchScript {
 
         vars.superRegistryC.batchSetAddress(vars.ids, vars.newAddresses, vars.chainIdsSetAddresses);
 
-        vars.superRegistryC.setDelay(14_400);
+        vars.superRegistryC.setDelay(env == 0 ? 14_400 : 900);
 
         /// @dev 17 deploy emergency queue
         vars.emergencyQueue = address(new EmergencyQueue{ salt: salt }(vars.superRegistry));
@@ -965,6 +965,47 @@ abstract contract AbstractDeploySingle is BatchScript {
         SuperformFactory(vars.factory).changeFormImplementationPauseStatus(
             FORM_IMPLEMENTATION_IDS[0], ISuperformFactory.PauseStatus(1), ""
         );
+
+        vm.stopBroadcast();
+    }
+
+    function _configureGasAmountsOfNewChainInAllChains(
+        uint256 env,
+        uint256 i,
+        uint256 trueIndex,
+        Cycle cycle,
+        uint64[] memory previousDeploymentChains,
+        uint64 newChainId
+    )
+        internal
+        setEnvDeploy(cycle)
+    {
+        SetupVars memory vars;
+
+        vars.chainId = previousDeploymentChains[i];
+
+        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
+
+        address paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
+
+        uint256[] memory configTypes = new uint256[](4);
+        configTypes[0] = 3;
+        configTypes[1] = 4;
+        configTypes[2] = 6;
+        configTypes[3] = 13;
+
+        bytes[] memory configs = new bytes[](4);
+        assert(abi.decode(GAS_USED[newChainId][3], (uint256)) > 0);
+        assert(abi.decode(GAS_USED[newChainId][4], (uint256)) > 0);
+        assert(abi.decode(GAS_USED[newChainId][6], (uint256)) > 0);
+        assert(abi.decode(GAS_USED[newChainId][13], (uint256)) > 0);
+
+        configs[0] = GAS_USED[newChainId][3];
+        configs[1] = GAS_USED[newChainId][4];
+        configs[2] = GAS_USED[newChainId][6];
+        configs[3] = GAS_USED[newChainId][13];
+
+        PaymentHelper(payable(paymentHelper)).batchUpdateRemoteChain(newChainId, configTypes, configs);
 
         vm.stopBroadcast();
     }
@@ -1344,7 +1385,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         gasUsed[OP][3] = abi.encode(550_000);
         gasUsed[ARBI][3] = abi.encode(2_500_000);
         gasUsed[BASE][3] = abi.encode(600_000);
-        gasUsed[FANTOM][3] = abi.encode(600_000);
+        gasUsed[FANTOM][3] = abi.encode(643_315);
 
         // updateDepositGasUsed == 4 (only used on deposits for now)
         gasUsed[ETH][4] = abi.encode(225_000);
@@ -1354,7 +1395,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         gasUsed[OP][4] = abi.encode(200_000);
         gasUsed[ARBI][4] = abi.encode(1_400_000);
         gasUsed[BASE][4] = abi.encode(200_000);
-        gasUsed[FANTOM][4] = abi.encode(200_000);
+        gasUsed[FANTOM][4] = abi.encode(734_757);
 
         // withdrawGasUsed == 6
         gasUsed[ETH][6] = abi.encode(1_272_330);
@@ -1364,7 +1405,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         gasUsed[OP][6] = abi.encode(1_716_146);
         gasUsed[ARBI][6] = abi.encode(1_654_955);
         gasUsed[BASE][6] = abi.encode(1_178_778);
-        gasUsed[FANTOM][6] = abi.encode(1_500_000);
+        gasUsed[FANTOM][6] = abi.encode(567_881);
 
         // updateWithdrawGasUsed == 13
         /*
@@ -1384,7 +1425,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         gasUsed[OP][13] = abi.encode(649_240);
         gasUsed[ARBI][13] = abi.encode(1_366_122);
         gasUsed[BASE][13] = abi.encode(919_466);
-        gasUsed[FANTOM][13] = abi.encode(600_000);
+        gasUsed[FANTOM][13] = abi.encode(2_003_157);
 
         mapping(uint64 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
         lzEndpointsStorage[ETH] = ETH_lzEndpoint;
