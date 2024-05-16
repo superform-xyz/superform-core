@@ -20,7 +20,7 @@ import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator
 import { SocketOneInchValidator } from "src/crosschain-liquidity/socket/SocketOneInchValidator.sol";
 import { DeBridgeValidator } from "src/crosschain-liquidity/debridge/DeBridgeValidator.sol";
 import { DeBridgeForwarderValidator } from "src/crosschain-liquidity/debridge/DeBridgeForwarderValidator.sol";
-import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
+import { LayerzeroV2Implementation } from "src/crosschain-data/adapters/layerzero-v2/LayerzeroV2Implementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
 import { WormholeARImplementation } from
     "src/crosschain-data/adapters/wormhole/automatic-relayer/WormholeARImplementation.sol";
@@ -186,30 +186,10 @@ abstract contract AbstractDeploySingle is BatchScript {
     /*//////////////////////////////////////////////////////////////
                         AMB VARIABLES
     //////////////////////////////////////////////////////////////*/
-
-    mapping(uint64 => address) public LZ_ENDPOINTS;
-
-    address public constant ETH_lzEndpoint = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
-    address public constant BSC_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
-    address public constant AVAX_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
-    address public constant POLY_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
-    address public constant ARBI_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
-    address public constant OP_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
-    address public constant BASE_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
-    address public constant FANTOM_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
-
+    
+    /// @dev uses CREATE2
+    address public lzV2Endpoint = 0x1a44076050125825900e736c501f859c50fE728c;
     address public constant CHAINLINK_lzOracle = 0x150A58e9E6BF69ccEb1DBA5ae97C166DC8792539;
-
-    address[] public lzEndpoints = [
-        0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
-        0x3c2269811836af69497E5F486A85D7316753cf62,
-        0x3c2269811836af69497E5F486A85D7316753cf62,
-        0x3c2269811836af69497E5F486A85D7316753cf62,
-        0x3c2269811836af69497E5F486A85D7316753cf62,
-        0x3c2269811836af69497E5F486A85D7316753cf62,
-        0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7,
-        0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7
-    ];
 
     address[] public hyperlaneMailboxes = [
         0xc005dc82818d67AF737725bD4bf75435d065D239,
@@ -263,7 +243,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         ["Ethereum", "Binance", "Avalanche", "Polygon", "Arbitrum", "Optimism", "Base", "Fantom"];
 
     /// @dev vendor chain ids
-    uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111, 184, 112];
+    uint32[] public lz_chainIds = [30_101, 30_102, 30_106, 30_109, 30_110, 30_111, 30_184, 30_112];
     uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
     uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30, 10];
 
@@ -506,10 +486,10 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_HELPER(), vars.paymentHelper, vars.chainId);
 
         /// @dev 5.1- deploy Layerzero Implementation
-        vars.lzImplementation = address(new LayerzeroImplementation{ salt: salt }(vars.superRegistryC));
+        vars.lzImplementation = address(new LayerzeroV2Implementation{ salt: salt }(vars.superRegistryC));
         contracts[vars.chainId][bytes32(bytes("LayerzeroImplementation"))] = vars.lzImplementation;
 
-        LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[trueIndex]);
+        LayerzeroV2Implementation(payable(vars.lzImplementation)).setLzEndpoint(lzV2Endpoint);
 
         /// @dev 5.2- deploy Hyperlane Implementation
         if (vars.chainId != FANTOM) {
@@ -1010,7 +990,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         uint64 chainId;
         uint64 dstChainId;
         uint256 dstTrueIndex;
-        uint16 dstLzChainId;
+        uint32 dstLzChainId;
         uint32 dstHypChainId;
         uint16 dstWormholeChainId;
         address lzImplementation;
@@ -1141,11 +1121,11 @@ abstract contract AbstractDeploySingle is BatchScript {
         chainIdsSetAddresses[18] = vars.dstChainId;
 
         if (!safeExecution) {
-            LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
-                vars.dstLzChainId, abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
+            LayerzeroV2Implementation(payable(vars.lzImplementation)).setPeer(
+                vars.dstLzChainId,  bytes32(uint256(uint160(vars.dstLzImplementation)))
             );
 
-            LayerzeroImplementation(payable(vars.lzImplementation)).setChainId(vars.dstChainId, vars.dstLzChainId);
+            LayerzeroV2Implementation(payable(vars.lzImplementation)).setChainId(vars.dstChainId, vars.dstLzChainId);
 
             /// @dev for mainnet
             /// @dev do not override default oracle with chainlink for BASE
@@ -1194,14 +1174,14 @@ abstract contract AbstractDeploySingle is BatchScript {
             vars.superRegistryC.batchSetAddress(ids, newAddresses, chainIdsSetAddresses);
         } else {
             bytes memory txn = abi.encodeWithSelector(
-                LayerzeroImplementation.setTrustedRemote.selector,
+                LayerzeroV2Implementation.setPeer.selector,
                 vars.dstLzChainId,
-                abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
+                bytes32(uint256(uint160(vars.dstLzImplementation)))
             );
             addToBatch(vars.lzImplementation, 0, txn);
 
             txn =
-                abi.encodeWithSelector(LayerzeroImplementation.setChainId.selector, vars.dstChainId, vars.dstLzChainId);
+                abi.encodeWithSelector(LayerzeroV2Implementation.setChainId.selector, vars.dstChainId, vars.dstLzChainId);
             addToBatch(vars.lzImplementation, 0, txn);
 
             /// @dev for mainnet
@@ -1323,16 +1303,6 @@ abstract contract AbstractDeploySingle is BatchScript {
         gasUsed[ARBI][13] = abi.encode(1_366_122);
         gasUsed[BASE][13] = abi.encode(919_466);
         gasUsed[FANTOM][13] = abi.encode(600_000);
-
-        mapping(uint64 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
-        lzEndpointsStorage[ETH] = ETH_lzEndpoint;
-        lzEndpointsStorage[BSC] = BSC_lzEndpoint;
-        lzEndpointsStorage[AVAX] = AVAX_lzEndpoint;
-        lzEndpointsStorage[POLY] = POLY_lzEndpoint;
-        lzEndpointsStorage[ARBI] = ARBI_lzEndpoint;
-        lzEndpointsStorage[OP] = OP_lzEndpoint;
-        lzEndpointsStorage[BASE] = BASE_lzEndpoint;
-        lzEndpointsStorage[FANTOM] = FANTOM_lzEndpoint;
 
         mapping(uint64 chainId => address[] bridgeAddresses) storage bridgeAddresses = BRIDGE_ADDRESSES;
         bridgeAddresses[ETH] = [
