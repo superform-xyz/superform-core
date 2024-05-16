@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
 import { Error } from "src/libraries/Error.sol";
-import { DeBridgeError } from "src/crosschain-liquidity/debridge/libraries/DebridgeError.sol";
+import { DeBridgeError } from "src/crosschain-liquidity/debridge/libraries/DeBridgeError.sol";
 import { IDlnSource } from "src/vendor/debridge/IDlnSource.sol";
 import { DlnOrderLib } from "src/vendor/debridge/DlnOrderLib.sol";
 
