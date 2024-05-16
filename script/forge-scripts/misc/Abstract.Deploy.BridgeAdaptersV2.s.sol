@@ -105,7 +105,7 @@ abstract contract AbstractDeployBridgeAdaptersV2 is EnvironmentUtils {
             /// lz v2
             bridgeIds[0] = 5;
             /// wormhole (with amb protect)
-            bridgeIds[2] = 7;
+            bridgeIds[1] = 7;
 
             address[] memory bridgeAddress = new address[](2);
             bridgeAddress[0] = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
