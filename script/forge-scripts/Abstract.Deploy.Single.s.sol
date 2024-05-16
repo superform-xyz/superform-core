@@ -889,10 +889,10 @@ abstract contract AbstractDeploySingle is BatchScript {
         SuperRBAC srbac = SuperRBAC(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRBAC")));
         bytes32 protocolAdminRole = srbac.PROTOCOL_ADMIN_ROLE();
         bytes32 emergencyAdminRole = srbac.EMERGENCY_ADMIN_ROLE();
-        bytes32 paymentAdminRole = srbac.PAYMENT_ADMIN_ROLE();
 
         address protocolAdmin = env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[trueIndex];
 
+        console.log("protocolAdmin", protocolAdmin);
         if (grantProtocolAdmin) {
             if (protocolAdmin != address(0)) {
                 srbac.grantRole(protocolAdminRole, protocolAdmin);
@@ -902,7 +902,6 @@ abstract contract AbstractDeploySingle is BatchScript {
         }
 
         srbac.grantRole(emergencyAdminRole, EMERGENCY_ADMIN);
-        srbac.grantRole(paymentAdminRole, PAYMENT_ADMIN);
 
         vm.stopBroadcast();
     }
