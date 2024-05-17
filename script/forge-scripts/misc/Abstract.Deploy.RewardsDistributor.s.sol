@@ -30,8 +30,9 @@ abstract contract AbstractDeployRewardsDistributor is EnvironmentUtils {
         cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
 
         address superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
-        address expectedSr =
-            env == 0 ? 0x17A332dC7B40aE701485023b219E9D6f493a2514 : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
+        address expectedSr = env == 0
+            ? 0x17A332dC7B40aE701485023b219E9D6f493a2514
+            : vars.chainId == 250 ? 0x7B8d68f90dAaC67C577936d3Ce451801864EF189 : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
         assert(superRegistry == expectedSr);
 
         address rewards = address(new RewardsDistributor{ salt: salt }(superRegistry));
@@ -68,8 +69,9 @@ abstract contract AbstractDeployRewardsDistributor is EnvironmentUtils {
 
         vars.superRegistryC =
             SuperRegistry(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry")));
-        address expectedSr =
-            env == 0 ? 0x17A332dC7B40aE701485023b219E9D6f493a2514 : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
+        address expectedSr = env == 0
+            ? 0x17A332dC7B40aE701485023b219E9D6f493a2514
+            : vars.chainId == 250 ? 0x7B8d68f90dAaC67C577936d3Ce451801864EF189 : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
         assert(address(vars.superRegistryC) == expectedSr);
 
         address rewards = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "RewardsDistributor");
@@ -79,17 +81,6 @@ abstract contract AbstractDeployRewardsDistributor is EnvironmentUtils {
         vars.superRegistryC.setAddress(rewardsId, rewards, vars.chainId);
 
         vars.superRBACC = SuperRBAC(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRBAC")));
-
-        address expectedSrbac =
-            env == 0 ? 0x480bec236e3d3AE33789908BF024850B2Fe71258 : 0x9736b60c4f749232d400B5605f21AE137a5Ebb71;
-
-        assert(address(vars.superRBACC) == expectedSrbac);
-
-        bytes32 role = keccak256("REWARDS_ADMIN_ROLE");
-        assert(REWARDS_ADMIN != address(0));
-
-        vars.superRBACC.setRoleAdmin(role, vars.superRBACC.PROTOCOL_ADMIN_ROLE());
-        vars.superRBACC.grantRole(role, REWARDS_ADMIN);
 
         /// @dev configure remotes based on source chain
         for (uint256 j = 0; j < finalDeployedChains.length; j++) {
@@ -107,6 +98,21 @@ abstract contract AbstractDeployRewardsDistributor is EnvironmentUtils {
                 vars.superRegistryC.setAddress(rewardsId, rewards, vars.dstChainId);
             }
         }
+
+        /// @dev rewards admin has already been set on staging
+        /*
+        address expectedSrbac =
+            env == 0 ? 0x480bec236e3d3AE33789908BF024850B2Fe71258 : 0x9736b60c4f749232d400B5605f21AE137a5Ebb71;
+
+        assert(address(vars.superRBACC) == expectedSrbac);
+
+        bytes32 role = keccak256("REWARDS_ADMIN_ROLE");
+        assert(REWARDS_ADMIN != address(0));
+
+        vars.superRBACC.setRoleAdmin(role, vars.superRBACC.PROTOCOL_ADMIN_ROLE());
+        vars.superRBACC.grantRole(role, REWARDS_ADMIN);
+        */
+
         vm.stopBroadcast();
     }
 

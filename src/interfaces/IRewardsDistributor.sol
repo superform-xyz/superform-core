@@ -56,14 +56,14 @@ interface IRewardsDistributor {
     );
 
     /// @dev Emitted when new periodic rewards are set.
-    event PeriodicRewardsSet(uint256 indexed periodId, bytes32 merkleRoot, uint256 deadline);
+    event PeriodicRewardsSet(uint256 indexed periodId, bytes32 merkleRoot, uint256 startTimestamp);
 
     //////////////////////////////////////////////////////////////
     //                      STRUCTS                             //
     //////////////////////////////////////////////////////////////
 
     struct PeriodicRewardsData {
-        uint256 deadline;
+        uint256 startTimestamp;
         bytes32 merkleRoot;
     }
 
@@ -100,6 +100,15 @@ interface IRewardsDistributor {
         bytes32[][] calldata proofs_
     )
         external;
+
+    /// @notice allows the owner to rescue any ERC20 tokens sent to the contract
+    /// @param rewardTokens_ are the address of the rewards token to claim on the specific period
+    /// @param amounts_ are the amount of tokens to claim for each reward token
+    function rescueRewards(address[] calldata rewardTokens_, uint256[] calldata amounts_) external;
+
+    /// @notice allows the owner to invalidate a period
+    /// @param periodId_ is the period identifier
+    function invalidatePeriod(uint256 periodId_) external;
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
