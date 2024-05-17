@@ -105,7 +105,7 @@ abstract contract AbstractDeployBridgeAdaptersV2 is EnvironmentUtils {
             /// lz v2
             bridgeIds[0] = 5;
             /// wormhole (with amb protect)
-            bridgeIds[2] = 7;
+            bridgeIds[1] = 7;
 
             address[] memory bridgeAddress = new address[](2);
             bridgeAddress[0] = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
@@ -122,5 +122,94 @@ abstract contract AbstractDeployBridgeAdaptersV2 is EnvironmentUtils {
             vars.superRegistryC.setAmbAddress(bridgeIds, bridgeAddress, new bool[](2));
         }
         vm.stopBroadcast();
+    }
+
+    function _configureDeployedAdapters(
+        uint256 env,
+        uint256 i,
+        uint256 trueIndex,
+        Cycle cycle,
+        uint64[] memory s_superFormChainIds
+    )
+        internal
+        setEnvDeploy(cycle)
+    {
+        assert(salt.length > 0);
+        UpdateVars memory vars;
+        vars.chainId = s_superFormChainIds[i];
+        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
+
+        LayerzeroV2Implementation lzImpl = LayerzeroV2Implementation(
+            _readContractsV1(env, chainNames[trueIndex], vars.chainId, "LayerzeroImplementation")
+        );
+        HyperlaneImplementation hypImpl = HyperlaneImplementation(
+            _readContractsV1(env, chainNames[trueIndex], vars.chainId, "HyperlaneImplementation")
+        );
+        WormholeARImplementation wormholeImpl = WormholeARImplementation(
+            _readContractsV1(env, chainNames[trueIndex], vars.chainId, "WormholeARImplementation")
+        );
+        
+        wormholeImpl.setRefundChainId(wormhole_chainIds[trueIndex]);
+
+        lzImpl.setLzEndpoint(lzV2Endpoint);
+
+        if (vars.chainId == 8453) {
+            wormholeImpl.setWormholeRelayer(wormholeBaseRelayer);
+        } else {
+            wormholeImpl.setWormholeRelayer(wormholeRelayer);
+        }
+
+        if (vars.chainId != 250) {
+            hypImpl.setHyperlaneConfig(
+                IMailbox(hyperlaneMailboxes[trueIndex]), IInterchainGasPaymaster(hyperlanePaymasters[trueIndex])
+            );
+        }
+
+        for (uint256 j; j < TARGET_CHAINS.length; j++) {
+            vars.dstChainId = TARGET_CHAINS[j];
+            if (vars.chainId != vars.dstChainId) {
+                vars.dstTrueIndex = _getTrueIndex(vars.dstChainId);
+
+                /// set chain ids
+                lzImpl.setChainId(vars.dstChainId, lz_chainIds[vars.dstTrueIndex]);
+                wormholeImpl.setChainId(vars.dstChainId, wormhole_chainIds[vars.dstTrueIndex]);
+
+                /// set receivers
+                lzImpl.setPeer(
+                    lz_chainIds[vars.dstTrueIndex],
+                    bytes32(
+                        uint256(
+                            uint160(
+                                _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "LayerzeroImplementation")
+                            )
+                        )
+                    )
+                );
+
+                wormholeImpl.setReceiver(
+                    wormhole_chainIds[vars.dstTrueIndex],
+                    _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "WormholeARImplementation")
+                );
+
+                if (vars.dstChainId != 250 && vars.chainId != 250) {
+                    hypImpl.setChainId(vars.dstChainId, hyperlane_chainIds[vars.dstTrueIndex]);
+                    hypImpl.setReceiver(
+                        hyperlane_chainIds[vars.dstTrueIndex],
+                        _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "HyperlaneImplementation")
+                    );
+                }
+            }
+        }
+
+        vm.stopBroadcast();
+    }
+
+    function _getTrueIndex(uint256 chainId) public view returns (uint256 index) {
+        for (uint256 i; i < chainIds.length; i++) {
+            if (chainId == chainIds[i]) {
+                index = i;
+                break;
+            }
+        }
     }
 }
