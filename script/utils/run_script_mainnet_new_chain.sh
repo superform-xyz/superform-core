@@ -154,7 +154,7 @@ wait
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChainsWithProtocolAdmin(uint256,uint256)" 0 6 --rpc-url $BASE_RPC_URL --broadcast --slow --sender 0x1985df46791BEBb1e3ed9Ec60417F38CECc1D349 --legacy
 
 wait
-comment
+
 
 echo Configure all other chains based on new chain payment helper gas values: ...
 
@@ -166,50 +166,55 @@ export FIREBLOCKS_VAULT_ACCOUNT_IDS=5 #PaymentAdmin Prod
 
 export FIREBLOCKS_RPC_URL=$ETHEREUM_RPC_URL
 
-fireblocks-json-rpc --http -- FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 0 0 --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
+fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 0 0 \
+    --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow --legacy
 
 wait
 
 export FIREBLOCKS_RPC_URL=$BSC_RPC_URL
 
-fireblocks-json-rpc --http -- FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 0 1 --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
+fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 0 1 \
+    --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
 
 wait
 
 export FIREBLOCKS_RPC_URL=$AVALANCHE_RPC_URL
 
-fireblocks-json-rpc --http -- FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 0 2 --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
+fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 0 2 \
+    --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
 
 wait
 
 export FIREBLOCKS_RPC_URL=$POLYGON_RPC_URL
 
-fireblocks-json-rpc --http -- FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 0 3 --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
-
+fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 0 3 \
+    --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
 wait
 
 export FIREBLOCKS_RPC_URL=$ARBITRUM_RPC_URL
 
-fireblocks-json-rpc --http -- FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 0 4 --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
+fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 0 4 \
+    --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
 
 wait
 
 export FIREBLOCKS_RPC_URL=$OPTIMISM_RPC_URL
 
-fireblocks-json-rpc --http -- FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 0 5 --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
+fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 0 5 \
+    --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
 
 wait
 
 export FIREBLOCKS_RPC_URL=$BASE_RPC_URL
 
-fireblocks-json-rpc --http -- FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 0 6 --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
+fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 0 6 \
+    --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
 
 wait
+comment
 
-<<comment
 echo Revoke burner address: ...
 
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "revokeBurnerAddress(uint256,uint256)" 0 0 --rpc-url $FANTOM_RPC_URL --broadcast --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
 wait
-comment
