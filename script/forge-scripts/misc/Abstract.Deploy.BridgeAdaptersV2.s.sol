@@ -148,6 +148,8 @@ abstract contract AbstractDeployBridgeAdaptersV2 is EnvironmentUtils {
         WormholeARImplementation wormholeImpl = WormholeARImplementation(
             _readContractsV1(env, chainNames[trueIndex], vars.chainId, "WormholeARImplementation")
         );
+        
+        wormholeImpl.setRefundChainId(wormhole_chainIds[trueIndex]);
 
         lzImpl.setLzEndpoint(lzV2Endpoint);
 
