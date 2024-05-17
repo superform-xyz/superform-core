@@ -3,9 +3,6 @@ pragma solidity ^0.8.23;
 
 import "../EnvironmentUtils.s.sol";
 
-import { BatchScript } from "../safe/BatchScript.sol";
-
-
 struct UpdateVars {
     uint64 chainId;
     uint64 dstChainId;
@@ -14,7 +11,7 @@ struct UpdateVars {
     SuperRegistry superRegistryC;
 }
 
-abstract contract AbstractDeployLiFiValidatorV2 is BatchScript, EnvironmentUtils {
+abstract contract AbstractDeployLiFiValidatorV2 is EnvironmentUtils {
     mapping(uint64 chainId => address[] bridgeAddresses) public NEW_BRIDGE_ADDRESSES;
 
     function _deployLiFiValidatorV2(

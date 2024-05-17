@@ -25,7 +25,7 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
     uint64[] TARGET_DEPLOYMENT_CHAINS = [FANTOM];
     uint64[] FINAL_DEPLOYED_CHAINS;
 
-    function _setEnvironment(uint256 env) internal {
+    function _setEnvironment(uint256 env, bool useNewSalt) internal {
         /// Production
         if (env == 0) {
             TARGET_CHAINS.push(ETH);
@@ -36,7 +36,11 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
             TARGET_CHAINS.push(OP);
             TARGET_CHAINS.push(BASE);
 
-            salt = "SunNeverSetsOnSuperformRealm";
+            if (useNewSalt) {
+                salt = "SunNeverSetsOnSuperformRealmV2";
+            } else {
+                salt = "SunNeverSetsOnSuperformRealm";
+            }
 
             PAYMENT_ADMIN = 0xD911673eAF0D3e15fe662D58De15511c5509bAbB;
             CSR_PROCESSOR = 0x23c658FE050B4eAeB9401768bF5911D11621629c;
@@ -46,6 +50,7 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
             CSR_DISPUTER = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
             SUPERFORM_RECEIVER = 0x1a6805487322565202848f239C1B5bC32303C2FE;
             EMERGENCY_ADMIN = 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490;
+            REWARDS_ADMIN = 0xf82F3D7Df94FC2994315c32322DA6238cA2A2f7f;
             SUPER_POSITIONS_NAME = "SuperPositions";
 
             // BROADCASTING
@@ -57,6 +62,7 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
             TARGET_CHAINS.push(ARBI);
             TARGET_CHAINS.push(OP);
             TARGET_CHAINS.push(BASE);
+            TARGET_CHAINS.push(FANTOM);
 
             salt = "StagingV1_0";
 
@@ -68,6 +74,7 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
             CSR_DISPUTER = 0xe9F074d003b377A197D336B8a1c86EdaA6cC4dEF;
             SUPERFORM_RECEIVER = 0x46F15EDC21f7eed6D1eb01e5Abe993Dc6c6A78BB;
             EMERGENCY_ADMIN = 0x6A5DD913fE3CB5193E09D1810a3b9ff1C0f9c0D6;
+            REWARDS_ADMIN = 0x1F05a8Ff6d895Ba04C84c5031c5d63FA1afCDA6F;
             SUPER_POSITIONS_NAME = "StagingSuperPositions";
 
             // BROADCASTING
@@ -88,6 +95,7 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
             CSR_DISPUTER = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
             SUPERFORM_RECEIVER = 0x1a6805487322565202848f239C1B5bC32303C2FE;
             EMERGENCY_ADMIN = 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490;
+            REWARDS_ADMIN = 0xf82F3D7Df94FC2994315c32322DA6238cA2A2f7f;
             SUPER_POSITIONS_NAME = "SuperPositions";
 
             // BROADCASTING
@@ -101,8 +109,8 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
 
         FINAL_DEPLOYED_CHAINS = TARGET_DEPLOYMENT_CHAINS;
 
-        for (uint256 i = 0; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
-            FINAL_DEPLOYED_CHAINS.push(TARGET_DEPLOYMENT_CHAINS[i]);
+        for (uint256 i = 0; i < TARGET_CHAINS.length; ++i) {
+            FINAL_DEPLOYED_CHAINS.push(TARGET_CHAINS[i]);
         }
     }
 }

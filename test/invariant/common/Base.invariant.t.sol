@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import "../utils/BaseSetup.sol";
+import "../../utils/BaseSetup.sol";
 
-import { TimestampStore } from "./stores/TimestampStore.sol";
+import { TimestampStore } from "./TimestampStore.sol";
 
 contract BaseInvariantTest is BaseSetup {
     TimestampStore internal timestampStore;

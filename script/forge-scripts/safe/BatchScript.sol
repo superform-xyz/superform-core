@@ -8,7 +8,8 @@ pragma solidity >=0.6.2 <0.9.0;
 // 🧩 MODULES
 import { Script, console2, StdChains, stdJson, stdMath, StdStorage, stdStorageSafe, VmSafe } from "forge-std/Script.sol";
 
-import { Surl } from "surl/src/Surl.sol";
+import { Surl } from "lib/surl/src/Surl.sol";
+
 import { DelegatePrank } from "./lib/DelegatePrank.sol";
 
 // ⭐️ SCRIPT
@@ -157,6 +158,9 @@ abstract contract BatchScript is Script, DelegatePrank {
             SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
         } else if (chainId == 8453) {
             SAFE_API_BASE_URL = "https://safe-transaction-base.safe.global/api/v1/safes/";
+            SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
+        } else if (chainId == 250) {
+            SAFE_API_BASE_URL = "https://safe-txservice.fantom.network/api/v1/safes/";
             SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
         } else {
             revert("Unsupported chain");

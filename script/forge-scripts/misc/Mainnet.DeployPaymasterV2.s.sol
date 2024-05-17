@@ -5,7 +5,7 @@ import { AbstractDeployPaymasterV2 } from "./Abstract.Deploy.PaymasterV2.s.sol";
 
 contract MainnetDeployPaymasterV2 is AbstractDeployPaymasterV2 {
     function deployPaymasterV2(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {
@@ -19,7 +19,7 @@ contract MainnetDeployPaymasterV2 is AbstractDeployPaymasterV2 {
     }
 
     function configureSuperRegistry(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {
