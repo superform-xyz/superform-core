@@ -40,8 +40,8 @@ abstract contract MainnetBaseSetup is BaseSetup {
         /// @dev OP https://app.onchainden.com/safes/oeth:0x99620a926d68746d5f085b3f7cd62f4ffb71f0c1
         0x2F973806f8863E860A553d4F2E7c2AB4A9F3b87C,
         /// @dev BASE https://app.onchainden.com/safes/base:0x2f973806f8863e860a553d4f2e7c2ab4a9f3b87c
-        address(0)
-        /// @dev GNOSIS FIXME - PROTOCOL ADMIN NOT SET FOR GNOSIS
+        0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1
+        /// @dev FANTOM https://safe.fantom.network/home?safe=ftm:0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1
     ];
 
     address[] public PROTOCOL_ADMINS_STAGING = [
@@ -51,8 +51,10 @@ abstract contract MainnetBaseSetup is BaseSetup {
         /// @dev ARBI https://app.onchainden.com/safes/arb1:0xBbb23AE2e3816a178f8bd405fb101D064C5071d9
         0xfe3A0C3c4980Eef00C2Ec73D8770a2D9A489fdE5,
         /// @dev OP https://app.onchainden.com/safes/oeth:0xfe3A0C3c4980Eef00C2Ec73D8770a2D9A489fdE5
-        0xbd1F951F52FC7616E2F743F976295fDc5276Cfb9
+        0xbd1F951F52FC7616E2F743F976295fDc5276Cfb9,
         /// @dev BASE https://app.onchainden.com/safes/base:0xbd1F951F52FC7616E2F743F976295fDc5276Cfb9
+        0xdc337f59a90B1F6a016c02851559AdbE81f0B889
+        /// @dev FANTOM https://safe.fantom.network/home?safe=ftm:0xdc337f59a90B1F6a016c02851559AdbE81f0B889
     ];
 
     /// @dev environment variable setup for upgrade

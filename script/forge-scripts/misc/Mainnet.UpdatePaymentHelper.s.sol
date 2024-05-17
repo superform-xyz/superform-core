@@ -5,7 +5,7 @@ import { AbstractUpdatePaymentHelper } from "./Abstract.Update.PaymentHelper.s.s
 
 contract MainnetUpdatePaymentHelper is AbstractUpdatePaymentHelper {
     function updatePaymentHelper(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {
