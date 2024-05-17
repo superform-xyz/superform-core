@@ -12,10 +12,10 @@ import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { IRewardsDistributor } from "src/interfaces/IRewardsDistributor.sol";
 
-/// @title SuperFrens
+/// @title RewardsDistributor
 /// @author Zeropoint Labs
-/// @notice This will be SUPERFORM_RECEIVER in SuperRegistry. Also, requires a new REWARDS_ADMIN_ROLE (a fireblocks
-/// address)
+/// @notice This will be SUPERFORM_RECEIVER in SuperRegistry.
+/// @notice Also, requires a new REWARDS_ADMIN_ROLE (a fireblocks address)
 contract RewardsDistributor is IRewardsDistributor {
     using SafeERC20 for IERC20;
 
