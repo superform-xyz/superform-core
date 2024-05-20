@@ -13,6 +13,18 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
         super.setUp();
     }
 
+    /// @dev Test caller auth
+    function test_kycDaoOnlyProtocolAdmin() public {
+        vm.selectFork(FORKS[ETH]);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "kycDAO4626", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[2]))
+        );
+
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        ERC4626KYCDaoForm(superform).mintKYC(uint32(8));
+    }
+
     /// @dev Test Vault Symbol
     function test_superformRevertKYCDaoCheck() public {
         /// scenario: user deposits with his own token and has approved enough tokens

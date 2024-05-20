@@ -330,6 +330,34 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         );
     }
 
+    function test_withdrawAfterCoolDown_OnlyTimelockStateRegistry() public {
+        vm.selectFork(FORKS[ETH]);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[1], ETH);
+
+        InitSingleVaultData memory data = InitSingleVaultData(
+            1,
+            superformId,
+            1e18,
+            1e18,
+            100,
+            LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ARBI, 0),
+            false,
+            false,
+            receiverAddress,
+            ""
+        );
+
+        vm.expectRevert(Error.NOT_TIMELOCK_STATE_REGISTRY.selector);
+        ERC4626TimelockForm(payable(superform)).withdrawAfterCoolDown(
+            TimelockPayload(1, ETH, block.timestamp, data, TimelockStatus.PENDING)
+        );
+    }
+
     /*///////////////////////////////////////////////////////////////
                         INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
