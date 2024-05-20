@@ -71,6 +71,9 @@ jobs:
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
 
+      - name: "Install Tenderly CLI"
+        run: curl https://raw.githubusercontent.com/Tenderly/tenderly-cli/master/scripts/install-linux.sh | sudo sh
+
       - name: "Generate the coverage report using unit and integration tests"
         run: "make coverage"
 
@@ -107,6 +110,9 @@ jobs:
             cache
             out
             localdev
+
+      - name: "Install Tenderly CLI"
+        run: curl https://raw.githubusercontent.com/Tenderly/tenderly-cli/master/scripts/install-linux.sh | sudo sh
 
       - name: "Generate fuzz seed that changes weekly to avoid burning through RPC allowance"
         run: |
