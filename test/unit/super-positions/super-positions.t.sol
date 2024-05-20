@@ -36,6 +36,12 @@ contract SuperPositionsTest is BaseSetup {
         );
     }
 
+    function test_addDynamicURI_NOT_PROTOCOL_ADMIN() public {
+        vm.prank(address(0x2828));
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        superPositions.setDynamicURI(URI, false);
+    }
+
     /// Test dynamic url addition without freeze
     function test_addDynamicURI() public {
         vm.startPrank(deployer);
@@ -75,6 +81,13 @@ contract SuperPositionsTest is BaseSetup {
         superPositions.stateSync(maliciousMessage);
     }
     /// Test revert for invalid txType (single)
+
+    function test_updateTxHistory_NOT_SUPERFORM_ROUTER() public {
+        uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
+        vm.prank(address(0x2828));
+        vm.expectRevert(Error.NOT_SUPERFORM_ROUTER.selector);
+        SuperPositions(address(superPositions)).updateTxHistory(0, txInfo, receiverAddress);
+    }
 
     function test_revert_stateSync_InvalidPayloadStatus() public {
         uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
@@ -251,6 +264,33 @@ contract SuperPositionsTest is BaseSetup {
         vm.broadcast(getContract(ETH, "CoreStateRegistry"));
         vm.expectRevert(Error.SRC_TX_TYPE_MISMATCH.selector);
         superPositions.stateMultiSync(maliciousMessage);
+    }
+
+    function test_mintSingle_NOT_MINTER() public {
+        (uint256 superformId,) =
+            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
+        vm.prank(address(0x2828));
+        vm.expectRevert(Error.NOT_MINTER.selector);
+        superPositions.mintSingle(address(0x888), superformId, 1);
+    }
+
+    function test_mintBatch_NOT_MINTER() public {
+        address timelockVault = getContract(ETH, VAULT_NAMES[1][0]);
+
+        (uint256 superformId,) =
+            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(2, timelockVault);
+        uint256[] memory superformIds = new uint256[](1);
+        superformIds[0] = superformId;
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 1;
+
+        vm.prank(address(0x2828));
+        vm.expectRevert(Error.NOT_MINTER.selector);
+        superPositions.mintBatch(address(0x888), superformIds, amounts);
+
+        vm.prank(getContract(ETH, "TimelockStateRegistry"));
+        superPositions.mintBatch(address(0x888), superformIds, amounts);
     }
 
     function test_registerAERC20() public {

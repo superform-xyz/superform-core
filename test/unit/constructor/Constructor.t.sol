@@ -21,9 +21,24 @@ contract ConstructorsTest is BaseSetup {
         new SuperformRouter(address(0));
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        new EmergencyAdmin(address(0));
+        new EmergencyQueue(address(0));
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         new RewardsDistributor(address(0));
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        new LiFiValidator(address(0));
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        new SocketOneInchValidator(address(0));
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        new SocketValidator(address(0));
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        new DstSwapper(address(0));
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        new SuperformFactory(address(0));
     }
 }

@@ -145,9 +145,11 @@ contract EmergencyQueueTest is ProtocolActions {
     }
 
     function test_emergencyQueueProcessing_NOT_EMERGENCY_ADMIN() public {
+        vm.selectFork(FORKS[ETH]);
+
         vm.prank(address(0x2828));
         vm.expectRevert(Error.NOT_EMERGENCY_ADMIN.selector);
-        EmergencyQueue(emergencyQueue).executeQueuedWithdrawal(1);
+        EmergencyQueue(getContract(ETH, "EmergencyQueue")).executeQueuedWithdrawal(1);
     }
 
     function test_emergencyQueueProcessing() public {
