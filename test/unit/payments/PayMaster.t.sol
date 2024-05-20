@@ -78,6 +78,22 @@ contract PayMasterTest is ProtocolActions {
         PayMaster(payable(getContract(ETH, "PayMaster"))).makePayment{ value: 1 wei }(address(0));
     }
 
+    function test_withdrawNativeToTx_notPrivileged() public {
+        vm.selectFork(FORKS[ETH]);
+        vm.prank(deployer);
+
+        address feeCollector = getContract(ETH, "PayMaster");
+
+        /// @dev makes payment of 1 wei
+        PayMaster(payable(feeCollector)).makePayment{ value: 1 wei }(deployer);
+        assertEq(feeCollector.balance, 1 wei);
+
+        vm.prank(address(0x8282));
+        /// @dev admin tries withdraw more than balance (check if handled gracefully)
+        vm.expectRevert(Error.NOT_PAYMENT_ADMIN.selector);
+        PayMaster(payable(feeCollector)).withdrawNativeTo(keccak256("CORE_REGISTRY_PROCESSOR"), 2 wei);
+    }
+
     function test_withdrawNativeToTxProcessor() public {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);

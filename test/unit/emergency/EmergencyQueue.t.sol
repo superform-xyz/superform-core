@@ -144,6 +144,12 @@ contract EmergencyQueueTest is ProtocolActions {
         _withdrawAfterPause();
     }
 
+    function test_emergencyQueueProcessing_NOT_EMERGENCY_ADMIN() public {
+        vm.prank(address(0x2828));
+        vm.expectRevert(Error.NOT_EMERGENCY_ADMIN.selector);
+        EmergencyQueue(emergencyQueue).executeQueuedWithdrawal(1);
+    }
+
     function test_emergencyQueueProcessing() public {
         /// user deposits successfully to a form
         _successfulDeposit();
@@ -755,7 +761,17 @@ contract EmergencyQueueTest is ProtocolActions {
         uint256 superformId = _getTestSuperformId();
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, 2e18, 2e18, 100, LiqRequest("", dai, address(0), 1, 1, 0), "", false, false, mrperfect, mrperfect, ""
+            superformId,
+            2e18,
+            2e18,
+            100,
+            LiqRequest("", dai, address(0), 1, 1, 0),
+            "",
+            false,
+            false,
+            mrperfect,
+            mrperfect,
+            ""
         );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);

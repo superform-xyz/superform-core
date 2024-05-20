@@ -1152,6 +1152,17 @@ contract PaymentHelperTest is ProtocolActions {
         assertEq(result11, 430);
     }
 
+    function test_addRemoteChain_NOT_PROTOCOL_ADMIN() public {
+        vm.prank(address(0x8282));
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        paymentHelper.addRemoteChain(
+            420,
+            IPaymentHelper.PaymentHelperConfig(
+                address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
+            )
+        );
+    }
+
     function test_addRemoteChain() public {
         vm.startPrank(deployer);
         paymentHelper.addRemoteChain(
@@ -1290,6 +1301,12 @@ contract PaymentHelperTest is ProtocolActions {
         paymentHelper.addRemoteChains(chainIds, configs);
 
         vm.stopPrank();
+    }
+
+    function test_updateRemoteChain_NOT_PAYMENT_ADMIN() public {
+        vm.prank(address(0x8282));
+        vm.expectRevert(Error.NOT_PAYMENT_ADMIN.selector);
+        paymentHelper.updateRemoteChain(420, 1, abi.encode(address(mockGasPriceOracle)));
     }
 
     function test_updateRemoteChain() public {

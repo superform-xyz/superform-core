@@ -55,6 +55,10 @@ contract RewardsDistributorTests is MerkleReader {
 
         rewards = RewardsDistributor(getContract(OP, "RewardsDistributor"));
 
+        vm.prank(address(0x2828));
+        vm.expectRevert(IRewardsDistributor.NOT_REWARDS_ADMIN.selector);
+        rewards.setPeriodicRewards(emptyRoot);
+
         vm.startPrank(deployer);
 
         address[][] memory testUsersMem = new address[][](3);
