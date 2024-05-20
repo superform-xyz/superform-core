@@ -5,7 +5,7 @@ import { AbstractDeployPaymentHelperV2 } from "./Abstract.Deploy.PaymentHelperV2
 
 contract MainnetDeployPaymentHelperV2 is AbstractDeployPaymentHelperV2 {
     function deployPaymentHelper(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {
@@ -19,7 +19,7 @@ contract MainnetDeployPaymentHelperV2 is AbstractDeployPaymentHelperV2 {
     }
 
     function configurePaymentHelper(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {
@@ -33,7 +33,7 @@ contract MainnetDeployPaymentHelperV2 is AbstractDeployPaymentHelperV2 {
     }
 
     function configureSuperRegistry(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {

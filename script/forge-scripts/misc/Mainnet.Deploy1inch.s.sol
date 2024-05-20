@@ -5,7 +5,7 @@ import { AbstractDeploySocket1inch } from "./Abstract.Deploy.Socket1inch.s.sol";
 
 contract MainnetDeploy1inch is AbstractDeploySocket1inch {
     function deploy1inch(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {
@@ -19,7 +19,7 @@ contract MainnetDeploy1inch is AbstractDeploySocket1inch {
     }
 
     function addSafeStagingProtocolAdmin(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {
@@ -33,7 +33,7 @@ contract MainnetDeploy1inch is AbstractDeploySocket1inch {
     }
 
     function configureSuperRegistry(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {

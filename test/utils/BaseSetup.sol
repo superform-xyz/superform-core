@@ -1284,7 +1284,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[OP][3] = abi.encode(550_000);
         gasUsed[ARBI][3] = abi.encode(2_500_000);
         gasUsed[BASE][3] = abi.encode(600_000);
-        gasUsed[FANTOM][3] = abi.encode(600_000);
+        gasUsed[FANTOM][3] = abi.encode(643_315);
 
         // updateDepositGasUsed == 4 (only used on deposits for now)
         gasUsed[ETH][4] = abi.encode(225_000);
@@ -1294,7 +1294,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[OP][4] = abi.encode(200_000);
         gasUsed[ARBI][4] = abi.encode(1_400_000);
         gasUsed[BASE][4] = abi.encode(200_000);
-        gasUsed[FANTOM][4] = abi.encode(200_000);
+        gasUsed[FANTOM][4] = abi.encode(734_757);
 
         // withdrawGasUsed == 6
         gasUsed[ETH][6] = abi.encode(1_272_330);
@@ -1304,9 +1304,19 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[OP][6] = abi.encode(1_716_146);
         gasUsed[ARBI][6] = abi.encode(1_654_955);
         gasUsed[BASE][6] = abi.encode(1_178_778);
-        gasUsed[FANTOM][6] = abi.encode(1_500_000);
+        gasUsed[FANTOM][6] = abi.encode(567_881);
 
         // updateWithdrawGasUsed == 13
+        /*
+        2049183 / 1.5 = 1366122 ARB
+        535243 / 1.5 = 356828  MAINNET
+        973861 / 1.5 = 649240 OP
+        901119  / 1.5 = 600746 AVAX
+        896967 / 1.5 = 597978 MATIC
+        1350127 / 1.5 = 900085 BSC
+        1379199 / 1.5 = 919466 BASE
+        */
+
         gasUsed[ETH][13] = abi.encode(356_828);
         gasUsed[BSC][13] = abi.encode(900_085);
         gasUsed[AVAX][13] = abi.encode(600_746);
@@ -1314,7 +1324,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[OP][13] = abi.encode(649_240);
         gasUsed[ARBI][13] = abi.encode(1_366_122);
         gasUsed[BASE][13] = abi.encode(919_466);
-        gasUsed[FANTOM][13] = abi.encode(600_000);
+        gasUsed[FANTOM][13] = abi.encode(2_003_157);
 
         mapping(uint64 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
         lzEndpointsStorage[ETH] = ETH_lzEndpoint;

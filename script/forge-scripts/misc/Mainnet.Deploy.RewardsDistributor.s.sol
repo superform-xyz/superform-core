@@ -5,7 +5,7 @@ import { AbstractDeployRewardsDistributor } from "./Abstract.Deploy.RewardsDistr
 
 contract MainnetDeployRewardsDistributor is AbstractDeployRewardsDistributor {
     function deployRewardsDistributor(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {
@@ -19,7 +19,7 @@ contract MainnetDeployRewardsDistributor is AbstractDeployRewardsDistributor {
     }
 
     function configureSettings(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {

@@ -5,7 +5,7 @@ import { AbstractDeployDeBridgeValidators } from "./Abstract.Deploy.DeBridgeVali
 
 contract MainnetDeployDeBridgeValidatorsV2 is AbstractDeployDeBridgeValidators {
     function deployDeBridgeValidator(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, TARGET_CHAINS[selectedChainIndex] == FANTOM);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {
@@ -19,7 +19,7 @@ contract MainnetDeployDeBridgeValidatorsV2 is AbstractDeployDeBridgeValidators {
     }
 
     function configureSuperRegistry(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, TARGET_CHAINS[selectedChainIndex] == FANTOM);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {

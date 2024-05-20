@@ -5,7 +5,7 @@ import { AbstractDeployBridgeAdaptersV2 } from "./Abstract.Deploy.BridgeAdapters
 
 contract MainnetDeployBridgeAdaptersV2 is AbstractDeployBridgeAdaptersV2 {
     function deployBridgeAdaptersV2(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, TARGET_CHAINS[selectedChainIndex] == FANTOM);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {
@@ -19,7 +19,7 @@ contract MainnetDeployBridgeAdaptersV2 is AbstractDeployBridgeAdaptersV2 {
     }
 
     function configureSuperRegistry(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, TARGET_CHAINS[selectedChainIndex] == FANTOM);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {
@@ -35,7 +35,7 @@ contract MainnetDeployBridgeAdaptersV2 is AbstractDeployBridgeAdaptersV2 {
     }
 
     function configureDeploymentAdapters(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, TARGET_CHAINS[selectedChainIndex] == FANTOM);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {
