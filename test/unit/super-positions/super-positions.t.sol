@@ -7,7 +7,7 @@ import "test/utils/Utilities.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { SuperPositions } from "src/SuperPositions.sol";
 import { Error } from "src/libraries/Error.sol";
-
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 
 contract SuperPositionsTest is BaseSetup {
@@ -269,7 +269,18 @@ contract SuperPositionsTest is BaseSetup {
     function test_mintSingle_NOT_MINTER() public {
         (uint256 superformId,) =
             SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
-        vm.prank(address(0x2828));
+        uint8[] memory srId = new uint8[](1);
+        srId[0] = 5;
+
+        address newSr = address(new CoreStateRegistry(ISuperRegistry(getContract(ETH, "SuperRegistry"))));
+
+        address[] memory srAddresses = new address[](1);
+        srAddresses[0] = newSr;
+
+        vm.prank(deployer);
+        SuperRegistry(getContract(ETH, "SuperRegistry")).setStateRegistryAddress(srId, srAddresses);
+
+        vm.prank(newSr);
         vm.expectRevert(Error.NOT_MINTER.selector);
         superPositions.mintSingle(address(0x888), superformId, 1);
     }
@@ -285,7 +296,18 @@ contract SuperPositionsTest is BaseSetup {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 1;
 
-        vm.prank(address(0x2828));
+        uint8[] memory srId = new uint8[](1);
+        srId[0] = 5;
+
+        address newSr = address(new CoreStateRegistry(ISuperRegistry(getContract(ETH, "SuperRegistry"))));
+
+        address[] memory srAddresses = new address[](1);
+        srAddresses[0] = newSr;
+
+        vm.prank(deployer);
+        SuperRegistry(getContract(ETH, "SuperRegistry")).setStateRegistryAddress(srId, srAddresses);
+
+        vm.prank(newSr);
         vm.expectRevert(Error.NOT_MINTER.selector);
         superPositions.mintBatch(address(0x888), superformIds, amounts);
 
