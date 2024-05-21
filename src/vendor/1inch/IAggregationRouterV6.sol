@@ -5,6 +5,9 @@ pragma solidity ^0.8.23;
 
 type Address is uint256;
 
+uint256 constant _CURVE_TO_COINS_ARG_MASK = 0xff;
+uint256 constant _CURVE_TO_COINS_ARG_OFFSET = 216;
+
 library AddressLib {
     uint256 private constant _LOW_160_BIT_MASK = (1 << 160) - 1;
 
@@ -91,6 +94,10 @@ library ProtocolLib {
 interface IUniswapV2Pair {
     function token0() external view returns (address);
     function token1() external view returns (address);
+}
+
+interface ICurvePool {
+    function underlying_coins(int128 index) external view returns (address);
 }
 
 interface IAggregationRouterV6 {

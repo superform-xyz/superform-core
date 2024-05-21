@@ -6,6 +6,8 @@ import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { Error } from "src/libraries/Error.sol";
 import "src/vendor/1inch/IAggregationRouterV6.sol";
 
+import "forge-std/console.sol";
+
 /// @title OneInchValidator
 /// @dev Asserts OneInch txData is valid
 /// @author Zeropoint Labs
@@ -85,6 +87,13 @@ contract OneInchValidator {
             if (token_ == fromToken) {
                 token_ = IUniswapV2Pair(dex.get()).token1();
             }
+        }
+
+        if (protocol == ProtocolLib.Protocol.Curve) {
+            uint256 toTokenIndex = (Address.unwrap(dex) >> _CURVE_TO_COINS_ARG_OFFSET) & _CURVE_TO_COINS_ARG_MASK;
+            token_ = ICurvePool(dex.get()).underlying_coins(int128(uint128(toTokenIndex)));
+
+            console.log(token_);
         }
     }
 
