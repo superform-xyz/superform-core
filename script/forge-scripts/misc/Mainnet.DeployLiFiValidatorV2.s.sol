@@ -5,7 +5,7 @@ import { AbstractDeployLiFiValidatorV2 } from "./Abstract.Deploy.LiFiValidatorV2
 
 contract MainnetDeployLiFiValidatorV2 is AbstractDeployLiFiValidatorV2 {
     function deployLiFiValidatorV2(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {
@@ -19,7 +19,7 @@ contract MainnetDeployLiFiValidatorV2 is AbstractDeployLiFiValidatorV2 {
     }
 
     function configureSuperRegistry(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {

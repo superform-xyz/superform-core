@@ -159,7 +159,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         liqReqArr[0] = LiqRequest(
@@ -467,7 +468,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         txData[0] = _buildLiqBridgeTxData(liqBridgeTxDataArgs, false);
@@ -780,7 +782,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             /// @dev assuming same price of DAI on ETH and AVAX for this test
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         SingleVaultSFData memory data = SingleVaultSFData(
@@ -927,7 +930,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         liqReqArr[0] = LiqRequest(
@@ -1072,7 +1076,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         liqReqArr[0] = LiqRequest(

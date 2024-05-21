@@ -22,10 +22,10 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
     //!WARNING ENUSRE output folder has correct addresses of the deployment!
     //!WARNING CHECK LATEST PAYMENT HELPER CONFIGURATION TO ENSURE IT'S UP TO DATE
 
-    uint64[] TARGET_DEPLOYMENT_CHAINS = [POLY];
+    uint64[] TARGET_DEPLOYMENT_CHAINS = [FANTOM];
     uint64[] FINAL_DEPLOYED_CHAINS;
 
-    function _setEnvironment(uint256 env) internal {
+    function _setEnvironment(uint256 env, bool useNewSalt) internal {
         /// Production
         if (env == 0) {
             TARGET_CHAINS.push(ETH);
@@ -36,7 +36,11 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
             TARGET_CHAINS.push(OP);
             TARGET_CHAINS.push(BASE);
 
-            salt = "SunNeverSetsOnSuperformRealm";
+            if (useNewSalt) {
+                salt = "SunNeverSetsOnSuperformRealmV2";
+            } else {
+                salt = "SunNeverSetsOnSuperformRealm";
+            }
 
             PAYMENT_ADMIN = 0xD911673eAF0D3e15fe662D58De15511c5509bAbB;
             CSR_PROCESSOR = 0x23c658FE050B4eAeB9401768bF5911D11621629c;

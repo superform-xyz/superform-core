@@ -6,7 +6,7 @@ import { EnvironmentUtils } from "./EnvironmentUtils.s.sol";
 contract TenderlyDeploy is EnvironmentUtils {
     /// @notice The main stage 1 script entrypoint
     function deployStage1(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         _preDeploymentSetup();
         uint256 trueIndex;
@@ -23,7 +23,7 @@ contract TenderlyDeploy is EnvironmentUtils {
 
     /// @dev stage 2 must be called only after stage 1 is complete for all chains!
     function deployStage2(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         _preDeploymentSetup();
 
@@ -40,7 +40,7 @@ contract TenderlyDeploy is EnvironmentUtils {
 
     /// @dev stage 3 must be called only after stage 1 is complete for all chains!
     function deployStage3(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         _preDeploymentSetup();
 
