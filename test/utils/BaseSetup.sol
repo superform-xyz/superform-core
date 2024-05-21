@@ -59,6 +59,8 @@ import { DeBridgeValidator } from "src/crosschain-liquidity/debridge/DeBridgeVal
 import { DeBridgeForwarderValidator } from "src/crosschain-liquidity/debridge/DeBridgeForwarderValidator.sol";
 
 import { SocketOneInchValidator } from "src/crosschain-liquidity/socket/SocketOneInchValidator.sol";
+import { OneInchValidator } from "src/crosschain-liquidity/1inch/OneInchValidator.sol";
+
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { LayerzeroV2Implementation } from "src/crosschain-data/adapters/layerzero-v2/LayerzeroV2Implementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
@@ -110,7 +112,7 @@ abstract contract BaseSetup is StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[37] public contractNames = [
+    string[38] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -145,6 +147,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         "CanonicalPermit2",
         "EmergencyQueue",
         "SocketOneInchValidator",
+        "OneInchValidator",
         "DeBridgeValidator",
         "DeBridgeForwarderValidator",
         "RewardsDistributor"
@@ -667,6 +670,10 @@ abstract contract BaseSetup is StdInvariant, Test {
             /// @dev 7.2.5- deploy deBridge forwarder validator
             vars.debridgeForwarderValidator = address(new DeBridgeForwarderValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderValidator"))] = vars.debridgeForwarderValidator;
+
+            /// @dev 7.2.6- deploy socket one inch validator
+            vars.oneInchValidator = address(new OneInchValidator{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("OneInchValidator"))] = vars.oneInchValidator;
 
             /// @dev 7.3- kycDAO NFT used to test kycDAO vaults
             vars.kycDAOMock = address(new KYCDaoNFTMock{ salt: salt }());

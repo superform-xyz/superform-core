@@ -172,6 +172,7 @@ struct SetupVars {
     address lifiValidator;
     address socketValidator;
     address socketOneInchValidator;
+    address oneInchValidator;
     address debridgeValidator;
     address debridgeForwarderValidator;
     address rewardsDistributor;
