@@ -57,5 +57,5 @@ interface IBridgeValidator {
     /// @dev decodes the final output token address (for only direct chain actions!)
     /// @param txData_ is the txData to be decoded
     /// @return token_ the address of the token
-    function decodeSwapOutputToken(bytes calldata txData_) external view returns (address token_);
+    function decodeSwapOutputToken(bytes calldata txData_) external pure returns (address token_);
 }

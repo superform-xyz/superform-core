@@ -1,61 +1,85 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
+import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { Error } from "src/libraries/Error.sol";
 import "src/vendor/1inch/IAggregationRouterV6.sol";
 
 /// @title OneInchValidator
 /// @dev Asserts OneInch txData is valid
 /// @author Zeropoint Labs
-contract OneInchValidator is BridgeValidator {
+
+/// @notice this does not import BridgeValidator as decodeSwapOutpuToken cannot have `pure` as visibility identifier
+contract OneInchValidator {
     using AddressLib for Address;
     using ProtocolLib for Address;
+
+    //////////////////////////////////////////////////////////////
+    //                         CONSTANTS                        //
+    //////////////////////////////////////////////////////////////
+    ISuperRegistry public immutable superRegistry;
 
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address superRegistry_) BridgeValidator(superRegistry_) { }
+    constructor(address superRegistry_) {
+        if (superRegistry_ == address(0)) {
+            revert Error.ZERO_ADDRESS();
+        }
+        superRegistry = ISuperRegistry(superRegistry_);
+    }
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
 
-    /// @inheritdoc BridgeValidator
-    function validateReceiver(bytes calldata txData_, address receiver_) external pure override returns (bool) {
+    /// @dev validates the receiver of the liquidity request
+    /// @param txData_ is the txData of the cross chain deposit
+    /// @param receiver_ is the address of the receiver to validate
+    /// @return valid_ if the address is valid
+    function validateReceiver(bytes calldata txData_, address receiver_) external pure returns (bool) {
         (,, address decodedReceiver,) = _decodeTxData(txData_);
         return (receiver_ == decodedReceiver);
     }
 
-    /// @inheritdoc BridgeValidator
-    function validateTxData(ValidateTxDataArgs calldata args_) external pure override returns (bool) { }
+    /// @dev validates the txData of a cross chain deposit
+    /// @param args_ the txData arguments to validate in txData
+    /// @return hasDstSwap if the txData contains a destination swap
+    function validateTxData(IBridgeValidator.ValidateTxDataArgs calldata args_) external pure returns (bool) { }
 
-    /// @inheritdoc BridgeValidator
+    /// @dev decodes the txData and returns the amount of input token on source
+    /// @param txData_ is the txData of the cross chain deposit
+    /// @return amount_ the amount expected
     function decodeAmountIn(
         bytes calldata txData_,
         bool /*genericSwapDisallowed_*/
     )
         external
         pure
-        override
         returns (uint256 amount_)
     {
         (, amount_,,) = _decodeTxData(txData_);
     }
 
-    /// @inheritdoc BridgeValidator
-    function decodeDstSwap(bytes calldata txData_) external pure override returns (address token_, uint256 amount_) {
+    /// @dev decodes neccesary information for processing swaps on the destination chain
+    /// @param txData_ is the txData to be decoded
+    /// @return token_ is the address of the token
+    /// @return amount_ the amount expected
+    function decodeDstSwap(bytes calldata txData_) external pure returns (address token_, uint256 amount_) {
         (token_, amount_,,) = _decodeTxData(txData_);
     }
 
-    /// @inheritdoc BridgeValidator
-    function decodeSwapOutputToken(bytes calldata txData_) external view override returns (address token_) {
+    /// @dev decodes the final output token address (for only direct chain actions!)
+    /// @param txData_ is the txData to be decoded
+    /// @return token_ the address of the token
+    function decodeSwapOutputToken(bytes calldata txData_) external view returns (address token_) {
         (address fromToken,,, Address dex) = _decodeTxData(txData_);
         ProtocolLib.Protocol protocol = dex.protocol();
 
-        /// @dev if protocol is uniswap v2
-        if (protocol == ProtocolLib.Protocol.UniswapV2) {
+        /// @dev if protocol is uniswap v2 or uniswap v3
+        if (protocol == ProtocolLib.Protocol.UniswapV2 || protocol == ProtocolLib.Protocol.UniswapV3) {
             token_ = IUniswapV2Pair(dex.get()).token0();
 
             if (token_ == fromToken) {
