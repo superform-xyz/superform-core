@@ -22,6 +22,11 @@ contract LiFiValidatorTest is ProtocolActions {
     function test_LiFiEmergencyAdmin() public {
         vm.expectRevert(Error.NOT_EMERGENCY_ADMIN.selector);
         LiFiValidator(getContract(ETH, "LiFiValidator")).addToBlacklist(bytes4(LiFiValidator.addToBlacklist.selector));
+
+        vm.expectRevert(Error.NOT_EMERGENCY_ADMIN.selector);
+        LiFiValidator(getContract(ETH, "LiFiValidator")).removeFromBlacklist(
+            bytes4(LiFiValidator.addToBlacklist.selector)
+        );
     }
 
     function test_lifi_validator() public {

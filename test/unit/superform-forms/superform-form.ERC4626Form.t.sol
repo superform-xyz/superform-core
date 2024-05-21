@@ -1232,6 +1232,32 @@ contract SuperformERC4626FormTest is ProtocolActions {
         ERC4626Form(payable(superform)).directDepositIntoVault(data, address(0));
     }
 
+    function test_xChainDepositIntoVault_SuperformIdNonexistent() public {
+        vm.selectFork(FORKS[ETH]);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 nonexistentSuperformId = 123;
+        InitSingleVaultData memory data = InitSingleVaultData(
+            0,
+            nonexistentSuperformId,
+            0,
+            0,
+            0,
+            LiqRequest(bytes(""), address(0), address(0), 0, 0, 0),
+            false,
+            false,
+            address(0),
+            ""
+        );
+
+        vm.prank(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
+        ERC4626Form(payable(superform)).xChainDepositIntoVault(data, address(0), 1);
+    }
+
     function test_directDepositIntoVault_Paused() public {
         vm.selectFork(FORKS[ETH]);
 
@@ -1260,6 +1286,36 @@ contract SuperformERC4626FormTest is ProtocolActions {
         vm.prank(getContract(ETH, "SuperformRouter"));
         vm.expectRevert(Error.PAUSED.selector);
         ERC4626Form(payable(superform)).directDepositIntoVault(data, address(0));
+    }
+
+    function test_xChainDepositIntoVault_Paused() public {
+        vm.selectFork(FORKS[ETH]);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
+        InitSingleVaultData memory data = InitSingleVaultData(
+            0,
+            superformId,
+            0,
+            0,
+            0,
+            LiqRequest(bytes(""), address(0), address(0), 0, 0, 0),
+            false,
+            false,
+            address(0),
+            ""
+        );
+
+        vm.prank(deployer);
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
+            FORM_IMPLEMENTATION_IDS[0], ISuperformFactory.PauseStatus.PAUSED, bytes("")
+        );
+
+        vm.prank(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.PAUSED.selector);
+        ERC4626Form(payable(superform)).xChainDepositIntoVault(data, address(0), 1);
     }
 
     function test_xChainDepositIntoVault_NotCoreStateRegistry() public {

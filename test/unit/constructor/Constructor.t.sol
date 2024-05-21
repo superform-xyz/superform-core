@@ -11,34 +11,35 @@ contract ConstructorsTest is BaseSetup {
     }
 
     function test_superRegistry_address_0() public {
+        bytes32 saltT = keccak256(abi.encodePacked("test"));
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        new PayMaster(address(0));
+        new PayMaster{ salt: saltT }(address(0));
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        new PaymentHelper(address(0));
+        new PaymentHelper{ salt: saltT }(address(0));
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        new SuperformRouter(address(0));
+        new SuperformRouter{ salt: saltT }(address(0));
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        new EmergencyQueue(address(0));
+        new EmergencyQueue{ salt: saltT }(address(0));
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        new RewardsDistributor(address(0));
+        new RewardsDistributor{ salt: saltT }(address(0));
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        new LiFiValidator(address(0));
+        new LiFiValidator{ salt: saltT }(address(0));
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        new SocketOneInchValidator(address(0));
+        new SocketOneInchValidator{ salt: saltT }(address(0));
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        new SocketValidator(address(0));
+        new SocketValidator{ salt: saltT }(address(0));
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        new DstSwapper(address(0));
+        new DstSwapper{ salt: saltT }(address(0));
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        new SuperformFactory(address(0));
+        new SuperformFactory{ salt: saltT }(address(0));
     }
 }

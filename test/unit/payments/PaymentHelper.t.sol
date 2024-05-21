@@ -1163,6 +1163,19 @@ contract PaymentHelperTest is ProtocolActions {
         );
     }
 
+    function test_addRemoteChains_NOT_PROTOCOL_ADMIN() public {
+        uint64[] memory chainIds_ = new uint64[](1);
+        chainIds_[0] = 422;
+
+        IPaymentHelper.PaymentHelperConfig[] memory configs = new IPaymentHelper.PaymentHelperConfig[](1);
+        configs[0] = IPaymentHelper.PaymentHelperConfig(
+            address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
+        );
+        vm.prank(address(0x8282));
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        paymentHelper.addRemoteChains(chainIds_, configs);
+    }
+
     function test_addRemoteChain() public {
         vm.startPrank(deployer);
         paymentHelper.addRemoteChain(

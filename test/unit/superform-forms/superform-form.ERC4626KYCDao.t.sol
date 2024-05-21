@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import { Error } from "src/libraries/Error.sol";
+import { SuperformFactory, ISuperformFactory } from "src/SuperformFactory.sol";
 
 import "test/utils/ProtocolActions.sol";
 
@@ -162,5 +163,61 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
         vm.prank(getContract(ETH, "EmergencyQueue"));
 
         IBaseForm(superform).emergencyWithdraw(receiverAddress, 1e18);
+    }
+
+    function test_directDepositIntoVault_SuperformIdNonexistent_timelock() public {
+        vm.selectFork(FORKS[ETH]);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "kycDAO4626", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[2]))
+        );
+
+        uint256 nonexistentSuperformId = 123;
+        InitSingleVaultData memory data = InitSingleVaultData(
+            0,
+            nonexistentSuperformId,
+            0,
+            0,
+            0,
+            LiqRequest(bytes(""), address(0), address(0), 0, 0, 0),
+            false,
+            false,
+            address(0),
+            ""
+        );
+
+        vm.prank(getContract(ETH, "SuperformRouter"));
+        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
+        ERC4626KYCDaoForm(payable(superform)).directDepositIntoVault(data, address(0));
+    }
+
+    function test_directDepositIntoVault_Paused_kycdao() public {
+        vm.selectFork(FORKS[ETH]);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "kycDAO4626", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[2]))
+        );
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[2], ETH);
+        InitSingleVaultData memory data = InitSingleVaultData(
+            0,
+            superformId,
+            0,
+            0,
+            0,
+            LiqRequest(bytes(""), address(0), address(0), 0, 0, 0),
+            false,
+            false,
+            address(0),
+            ""
+        );
+
+        vm.prank(deployer);
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
+            FORM_IMPLEMENTATION_IDS[2], ISuperformFactory.PauseStatus.PAUSED, bytes("")
+        );
+
+        vm.prank(getContract(ETH, "SuperformRouter"));
+        vm.expectRevert(Error.PAUSED.selector);
+        ERC4626Form(payable(superform)).directDepositIntoVault(data, address(0));
     }
 }

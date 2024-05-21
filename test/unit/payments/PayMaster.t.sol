@@ -88,10 +88,20 @@ contract PayMasterTest is ProtocolActions {
         PayMaster(payable(feeCollector)).makePayment{ value: 1 wei }(deployer);
         assertEq(feeCollector.balance, 1 wei);
 
-        vm.prank(address(0x8282));
+        vm.startPrank(address(0x8282));
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
         vm.expectRevert(Error.NOT_PAYMENT_ADMIN.selector);
         PayMaster(payable(feeCollector)).withdrawNativeTo(keccak256("CORE_REGISTRY_PROCESSOR"), 2 wei);
+
+        vm.expectRevert(Error.NOT_PAYMENT_ADMIN.selector);
+        PayMaster(payable(feeCollector)).withdrawTo(keccak256("CORE_REGISTRY_PROCESSOR"), address(0), 2 wei);
+
+        LiqRequest memory r;
+        vm.expectRevert(Error.NOT_PAYMENT_ADMIN.selector);
+        PayMaster(payable(feeCollector)).rebalanceTo(keccak256("CORE_REGISTRY_PROCESSOR"), r, 1);
+
+        vm.expectRevert(Error.NOT_PAYMENT_ADMIN.selector);
+        PayMaster(payable(feeCollector)).treatAMB(1, 1, "");
     }
 
     function test_withdrawNativeToTxProcessor() public {
