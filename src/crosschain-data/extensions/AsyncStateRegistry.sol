@@ -59,7 +59,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
     //                       MODIFIERS                          //
     //////////////////////////////////////////////////////////////
 
-    modifier onlyAsyncStateRegistry() {
+    modifier onlyAsyncStateRegistryProcessor() {
         bytes32 role = keccak256("ASYNC_STATE_REGISTRY_PROCESSOR_ROLE");
         if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(role, msg.sender)) {
             revert Error.NOT_PRIVILEGED_CALLER(role);
@@ -170,7 +170,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
     }
 
     /// @inheritdoc IAsyncStateRegistry
-    function finalizeDepositPayload(uint256 asyncPayloadId_) external payable override onlyAsyncStateRegistry {
+    function finalizeDepositPayload(uint256 asyncPayloadId_) external payable override onlyAsyncStateRegistryProcessor {
         AsyncDepositPayload storage p = asyncDepositPayload[asyncPayloadId_];
         if (p.status != AsyncStatus.PENDING) {
             revert Error.INVALID_PAYLOAD_STATUS();
@@ -237,7 +237,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
         external
         payable
         override
-        onlyAsyncStateRegistry
+        onlyAsyncStateRegistryProcessor
     {
         AsyncWithdrawPayload storage p = asyncWithdrawPayload[asyncPayloadId_];
         if (p.status != AsyncStatus.PENDING) {
@@ -311,7 +311,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
         payable
         virtual
         override
-        onlyAsyncStateRegistry
+        onlyAsyncStateRegistryProcessor
         isValidPayloadId(payloadId_)
     {
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {

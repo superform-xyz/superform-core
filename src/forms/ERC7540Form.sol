@@ -146,9 +146,10 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         if (p_.data.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
 
         if (_isPaused(p_.data.superformId)) {
-            /// @dev in case of a deposit and the form is paused, nothing can be sent to the emergency queue as there
-            /// are no shares belonging to this
-            /// @dev payload in the superform. return 0 to stop processing
+            /// @dev in case of a deposit claim and the form is paused, nothing can be sent to the emergency queue as
+            /// there
+            /// @dev are no shares belonging to this payload in the superform at this moment. return 0 to stop
+            /// processing
             return 0;
         }
 
@@ -173,9 +174,9 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         if (p_.data.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
 
         if (_isPaused(p_.data.superformId)) {
-            /// @dev in case of a deposit and the form is paused, nothing can be sent to the emergency queue as there
-            /// are no shares belonging to this
-            /// @dev payload in the superform. return 0 to stop processing
+            /// @dev in case of a withdraw claim and the form is paused, nothing can be sent to the emergency queue as
+            /// the shares
+            /// @dev have already been sent via requestRedeem to the vault. return 0 to stop processing
 
             return 0;
         }
@@ -310,12 +311,16 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         override
         returns (uint256)
     {
-        if (!singleVaultData_.retain4626) {
-            /// @dev state registry for re-processing at a later date
-            _storeWithdrawPayload(0, CHAIN_ID, _requestRedeem(singleVaultData_, CHAIN_ID), singleVaultData_);
+        if (!_isPaused(singleVaultData_.superformId)) {
+            if (!singleVaultData_.retain4626) {
+                /// @dev state registry for re-processing at a later date
+                _storeWithdrawPayload(0, CHAIN_ID, _requestRedeem(singleVaultData_, CHAIN_ID), singleVaultData_);
+            } else {
+                /// @dev transfer shares to user and do not redeem shares for assets
+                IERC20(IERC7540(vault).share()).safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
+            }
         } else {
-            /// @dev transfer shares to user and do not redeem shares for assets
-            IERC20(IERC7540(vault).share()).safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
+            IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(singleVaultData_);
         }
         return 0;
     }
@@ -334,22 +339,45 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         override
         returns (uint256)
     {
-        if (!singleVaultData_.retain4626) {
-            /// @dev state registry for re-processing at a later date
-            _storeWithdrawPayload(1, srcChainId_, _requestRedeem(singleVaultData_, srcChainId_), singleVaultData_);
+        if (srcChainId_ != 0 && srcChainId_ != CHAIN_ID) {
+            if (!_isPaused(singleVaultData_.superformId)) {
+                if (!singleVaultData_.retain4626) {
+                    /// @dev state registry for re-processing at a later date
+                    _storeWithdrawPayload(
+                        1, srcChainId_, _requestRedeem(singleVaultData_, srcChainId_), singleVaultData_
+                    );
+                } else {
+                    /// @dev transfer shares to user and do not redeem shares for assets
+                    IERC20(IERC7540(vault).share()).safeTransfer(
+                        singleVaultData_.receiverAddress, singleVaultData_.amount
+                    );
+                }
+            } else {
+                IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
+                    singleVaultData_
+                );
+            }
         } else {
-            /// @dev transfer shares to user and do not redeem shares for assets
-            IERC20(IERC7540(vault).share()).safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
+            revert Error.INVALID_CHAIN_ID();
         }
 
         return 0;
     }
 
     /// @inheritdoc BaseForm
-    function _emergencyWithdraw(address, uint256) internal virtual override {
-        /// @dev emergency withdraws are disabled in async forms, if the form is paused and user has pendingRequests
-        /// @dev can cancel them directly in the underlying vault
-        revert Error.DISABLED();
+    function _emergencyWithdraw(address receiverAddress_, uint256 amount_) internal virtual override {
+        IERC7540 v = IERC7540(vault);
+        IERC20 share = IERC20(v.share());
+
+        if (receiverAddress_ == address(0)) revert Error.ZERO_ADDRESS();
+
+        if (share.balanceOf(address(this)) < amount_) {
+            revert Error.INSUFFICIENT_BALANCE();
+        }
+
+        share.safeTransfer(receiverAddress_, amount_);
+
+        emit EmergencyWithdrawalProcessed(receiverAddress_, amount_);
     }
 
     /// @inheritdoc BaseForm
@@ -516,7 +544,7 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         return requestId;
     }
 
-    /// @dev stores the withdraw payload
+    /// @dev stores the deposit payload
     function _storeDepositPayload(
         uint8 type_,
         uint64 srcChainId_,
