@@ -48,6 +48,51 @@ library AddressLib {
     }
 }
 
+library ProtocolLib {
+    using AddressLib for Address;
+
+    enum Protocol {
+        UniswapV2,
+        UniswapV3,
+        Curve
+    }
+
+    uint256 private constant _PROTOCOL_OFFSET = 253;
+    uint256 private constant _WETH_UNWRAP_FLAG = 1 << 252;
+    uint256 private constant _WETH_NOT_WRAP_FLAG = 1 << 251;
+    uint256 private constant _USE_PERMIT2_FLAG = 1 << 250;
+
+    function protocol(Address self) internal pure returns (Protocol) {
+        // there is no need to mask because protocol is stored in the highest 3 bits
+        return Protocol((Address.unwrap(self) >> _PROTOCOL_OFFSET));
+    }
+
+    function shouldUnwrapWeth(Address self) internal pure returns (bool) {
+        return self.getFlag(_WETH_UNWRAP_FLAG);
+    }
+
+    function shouldWrapWeth(Address self) internal pure returns (bool) {
+        return !self.getFlag(_WETH_NOT_WRAP_FLAG);
+    }
+
+    function usePermit2(Address self) internal pure returns (bool) {
+        return self.getFlag(_USE_PERMIT2_FLAG);
+    }
+
+    function addressForPreTransfer(Address self) internal view returns (address) {
+        if (protocol(self) == Protocol.UniswapV2) {
+            return self.get();
+        }
+        return address(this);
+    }
+}
+
+/// @dev imported from https://docs.uniswap.org/contracts/v2/reference/smart-contracts/pair#token1
+interface IUniswapV2Pair {
+    function token0() external view returns (address);
+    function token1() external view returns (address);
+}
+
 interface IAggregationRouterV6 {
     /**
      * @notice Swaps `amount` of the specified `token` for another token using an Unoswap-compatible exchange's pool,

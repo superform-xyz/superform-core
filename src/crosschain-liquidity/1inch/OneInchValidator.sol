@@ -3,15 +3,14 @@ pragma solidity ^0.8.23;
 
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
 import { Error } from "src/libraries/Error.sol";
-import { IAggregationRouterV6, AddressLib, Address } from "src/vendor/1inch/IAggregationRouterV6.sol";
-
-import "forge-std/console.sol";
+import "src/vendor/1inch/IAggregationRouterV6.sol";
 
 /// @title OneInchValidator
 /// @dev Asserts OneInch txData is valid
 /// @author Zeropoint Labs
 contract OneInchValidator is BridgeValidator {
     using AddressLib for Address;
+    using ProtocolLib for Address;
 
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
@@ -24,9 +23,8 @@ contract OneInchValidator is BridgeValidator {
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc BridgeValidator
-    function validateReceiver(bytes calldata txData_, address receiver_) external view override returns (bool) {
-        (,,, address decodedReceiver) = _decodeTxData(txData_);
-        console.log(decodedReceiver);
+    function validateReceiver(bytes calldata txData_, address receiver_) external pure override returns (bool) {
+        (,, address decodedReceiver,) = _decodeTxData(txData_);
         return (receiver_ == decodedReceiver);
     }
 
@@ -52,8 +50,18 @@ contract OneInchValidator is BridgeValidator {
     }
 
     /// @inheritdoc BridgeValidator
-    function decodeSwapOutputToken(bytes calldata txData_) external pure override returns (address token_) {
-        (,, token_,) = _decodeTxData(txData_);
+    function decodeSwapOutputToken(bytes calldata txData_) external view override returns (address token_) {
+        (address fromToken,,, Address dex) = _decodeTxData(txData_);
+        ProtocolLib.Protocol protocol = dex.protocol();
+
+        /// @dev if protocol is uniswap v2
+        if (protocol == ProtocolLib.Protocol.UniswapV2) {
+            token_ = IUniswapV2Pair(dex.get()).token0();
+
+            if (token_ == fromToken) {
+                token_ = IUniswapV2Pair(dex.get()).token1();
+            }
+        }
     }
 
     //////////////////////////////////////////////////////////////
@@ -65,18 +73,19 @@ contract OneInchValidator is BridgeValidator {
     function _decodeTxData(bytes calldata txData_)
         internal
         pure
-        returns (address fromToken, uint256 fromAmount, address toToken, address receiver)
+        returns (address fromToken, uint256 fromAmount, address receiver, Address dexAddress)
     {
         bytes4 selector = bytes4(txData_[:4]);
 
         /// @dev does not support any sequential pools with unoswap
         if (selector == IAggregationRouterV6.unoswapTo.selector) {
-            (Address receiverUint256, Address fromTokenUint256, uint256 decodedFromAmount,,) =
+            (Address receiverUint256, Address fromTokenUint256, uint256 decodedFromAmount,, Address dex) =
                 abi.decode(_parseCallData(txData_), (Address, Address, uint256, uint256, Address));
 
             fromToken = fromTokenUint256.get();
             fromAmount = decodedFromAmount;
             receiver = receiverUint256.get();
+            dexAddress = dex;
         }
     }
 
