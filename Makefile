@@ -4,7 +4,10 @@
 
 
 # only export these env vars if ENVIRONMENT = local
-export TENDERLY_ACCESS_KEY := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/TENDERLY_ACCESS_KEY/credential)
+ifeq ($(ENVIRONMENT), local)
+	export TENDERLY_ACCESS_KEY := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/TENDERLY_ACCESS_KEY/credential)
+endif
+
 export ETHEREUM_RPC_URL = $(shell tenderly devnet spawn-rpc --project ${TENDERLY_PROJECT_SLUG} --template ethereum-devnet --account ${TENDERLY_ACCOUNT_ID} --access_key ${TENDERLY_ACCESS_KEY} --return-url)
 export BSC_RPC_URL := $(shell tenderly devnet spawn-rpc --project ${TENDERLY_PROJECT_SLUG} --template bnb-devnet --account ${TENDERLY_ACCOUNT_ID} --access_key ${TENDERLY_ACCESS_KEY} --return-url)
 export AVALANCHE_RPC_URL := $(shell tenderly devnet spawn-rpc --project ${TENDERLY_PROJECT_SLUG} --template avalanche-devnet --account ${TENDERLY_ACCOUNT_ID} --access_key ${TENDERLY_ACCESS_KEY} --return-url)
