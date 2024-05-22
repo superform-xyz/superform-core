@@ -10,10 +10,12 @@ import { InitSingleVaultData } from "src/types/DataTypes.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IStandardizedYield } from "src/vendor/IStandardizedYield.sol";
+import { IStandardizedYield } from "src/vendor/pendle/IStandardizedYield.sol";
 
 /// @title ERC5115Form
 /// @dev The Form implementation for ERC5115 vaults
+/// @notice Reference implementation of a vault:
+/// https://github.com/pendle-finance/pendle-core-v2-public/blob/main/contracts/core/StandardizedYield/SYBase.sol
 /// @author Zeropoint Labs
 contract ERC5115Form is BaseForm, LiquidityHandler {
     using SafeERC20 for IERC20;
@@ -81,52 +83,112 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
 
-    /// @inheritdoc IERC5115Form
-    function getExchangeRate() public view virtual override returns (uint256 exchangeRate) {
+    /// @inheritdoc BaseForm
+    function getVaultName() public view virtual override returns (string memory) {
+        return IStandardizedYield(vault).name();
+    }
+
+    /// @inheritdoc BaseForm
+    function getVaultSymbol() public view virtual override returns (string memory) {
+        return IStandardizedYield(vault).symbol();
+    }
+
+    /// @inheritdoc BaseForm
+    function getVaultDecimals() public view virtual override returns (uint256) {
+        return uint256(IStandardizedYield(vault).decimals());
+    }
+
+    /// @inheritdoc BaseForm
+    function getPricePerVaultShare() public view virtual override returns (uint256) {
+        return 0;
+    }
+
+    /// @inheritdoc BaseForm
+    function getVaultShareBalance() public view virtual override returns (uint256) {
+        return IStandardizedYield(vault).balanceOf(address(this));
+    }
+
+    /// @inheritdoc BaseForm
+    function getTotalAssets() public view virtual override returns (uint256) {
+        return 0;
+    }
+
+    /// @inheritdoc BaseForm
+    function getTotalSupply() public view virtual override returns (uint256) {
+        return IERC20Metadata(vault).totalSupply();
+    }
+
+    /// @inheritdoc BaseForm
+    function getPreviewPricePerVaultShare() public view virtual override returns (uint256) {
+        return 0;
+    }
+
+    /// @inheritdoc BaseForm
+    function previewDepositTo(uint256 assets_) public view virtual override returns (uint256) {
+        return 0;
+    }
+
+    /// @inheritdoc BaseForm
+    function previewWithdrawFrom(uint256 assets_) public view virtual override returns (uint256) {
+        return 0;
+    }
+
+    /// @inheritdoc BaseForm
+    function previewRedeemFrom(uint256 shares_) public view virtual override returns (uint256) {
+        return 0;
+    }
+
+    /// @inheritdoc BaseForm
+    function superformYieldTokenName() external view virtual override returns (string memory) {
+        return string(abi.encodePacked(IERC20Metadata(vault).name(), " SuperPosition"));
+    }
+
+    /// @inheritdoc BaseForm
+    function superformYieldTokenSymbol() external view virtual override returns (string memory) {
+        return string(abi.encodePacked("sp-", IERC20Metadata(vault).symbol()));
+    }
+
+    /// @inheritdoc BaseForm
+    function getStateRegistryId() external view override returns (uint8) {
+        return STATE_REGISTRY_ID;
+    }
+
+    function getExchangeRate() public view virtual returns (uint256 exchangeRate) {
         exchangeRate = IStandardizedYield(vault).exchangeRate();
     }
 
-    /// @inheritdoc IERC5115Form
-    function getAccruedRewards(address user) public view virtual override returns (uint256 rewards) {
+    function getAccruedRewards(address user) public view virtual returns (uint256[] memory rewards) {
         rewards = IStandardizedYield(vault).accruedRewards(user);
     }
 
-    /// @inheritdoc IERC5115Form
-    function getRewardIndexesStored() public view virtual override returns (uint256[] memory indexes) {
+    function getRewardIndexesStored() public view virtual returns (uint256[] memory indexes) {
         indexes = IStandardizedYield(vault).rewardIndexesStored();
     }
 
-    /// @inheritdoc IERC5115Form
-    function getRewardTokens() public view virtual override returns (address[] memory rewardTokens) {
+    function getRewardTokens() public view virtual returns (address[] memory rewardTokens) {
         rewardTokens = IStandardizedYield(vault).getRewardTokens();
     }
 
-    /// @inheritdoc IERC5115Form
-    function getYieldToken() public view virtual override returns (address yieldToken) {
+    function getYieldToken() public view virtual returns (address yieldToken) {
         yieldToken = IStandardizedYield(vault).yieldToken();
     }
 
-    /// @inheritdoc IERC5115Form
-    function getTokensIn() public view virtual override returns (address[] memory tokensIn) {
+    function getTokensIn() public view virtual returns (address[] memory tokensIn) {
         tokensIn = IStandardizedYield(vault).getTokensIn();
     }
 
-    /// @inheritdoc IERC5115Form
-    function getTokensOut() public view virtual override returns (address[] memory tokensOut) {
+    function getTokensOut() public view virtual returns (address[] memory tokensOut) {
         tokensOut = IStandardizedYield(vault).getTokensOut();
     }
 
-    /// @inheritdoc IERC5115Form
-    function isValidTokenIn(address token) public view virtual override returns (bool) {
+    function isValidTokenIn(address token) public view virtual returns (bool) {
         return IStandardizedYield(vault).isValidTokenIn(token);
     }
 
-    /// @inheritdoc IERC5115Form
-    function isValidTokenOut(address token) public view virtual override returns (bool) {
+    function isValidTokenOut(address token) public view virtual returns (bool) {
         return IStandardizedYield(vault).isValidTokenOut(token);
     }
 
-    /// @inheritdoc IERC5115Form
     function previewDeposit(
         address tokenIn,
         uint256 amountTokenToDeposit
@@ -134,13 +196,11 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
         public
         view
         virtual
-        override
         returns (uint256 amountSharesOut)
     {
         amountSharesOut = IStandardizedYield(vault).previewDeposit(tokenIn, amountTokenToDeposit);
     }
 
-    /// @inheritdoc IERC5115Form
     function previewRedeem(
         address tokenOut,
         uint256 amountSharesToRedeem
@@ -148,18 +208,15 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
         public
         view
         virtual
-        override
         returns (uint256 amountTokenOut)
     {
         amountTokenOut = IStandardizedYield(vault).previewRedeem(tokenOut, amountSharesToRedeem);
     }
 
-    /// @inheritdoc IERC5115Form
     function getAssetInfo()
         public
         view
         virtual
-        override
         returns (IStandardizedYield.AssetType assetType, address assetAddress, uint8 assetDecimals)
     {
         (assetType, assetAddress, assetDecimals) = IStandardizedYield(vault).assetInfo();
@@ -505,7 +562,7 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
 
         uint256 minSharesOut = singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage);
 
-        if (!isValidTokenIn(singleVaultData_.liqData.token)) {
+        if (!isValidTokenIn(asset)) {
             revert INVALID_TOKEN_IN();
         }
 
@@ -533,7 +590,11 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
 
         uint256 minTokenOut = singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage);
 
-        assets = v.redeem(assetsReceiver, singleVaultData_.amount, tokenOut, minTokenOut, false);
+        if (!isValidTokenOut(asset)) {
+            revert INVALID_TOKEN_IN();
+        }
+
+        assets = v.redeem(assetsReceiver, singleVaultData_.amount, asset, minTokenOut, false);
 
         uint256 assetsBalanceAfter = a.balanceOf(assetsReceiver);
 
