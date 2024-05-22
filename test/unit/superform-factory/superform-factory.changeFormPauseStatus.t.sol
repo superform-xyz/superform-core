@@ -15,6 +15,33 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
         super.setUp();
     }
 
+    function test_addFormImplementation_NOT_PROTOCOL_ADMIN() public {
+        vm.selectFork(FORKS[chainId]);
+
+        address superRegistry = getContract(chainId, "SuperRegistry");
+
+        /// @dev Deploying Forms
+        address formImplementation1 = address(new ERC4626Form(superRegistry));
+        uint32 formImplementationId = 0;
+
+        vm.prank(address(0x2828));
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
+            formImplementation1, formImplementationId, 1
+        );
+    }
+
+    function test_changeFormImplementationPauseStatus_NOT_EMERGENCY_ADMIN() public {
+        vm.selectFork(FORKS[chainId]);
+        uint32 formImplementationId = 0;
+
+        vm.prank(address(0x2828));
+        vm.expectRevert(Error.NOT_EMERGENCY_ADMIN.selector);
+        SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormImplementationPauseStatus(
+            formImplementationId, ISuperformFactory.PauseStatus.PAUSED, generateBroadcastParams(0)
+        );
+    }
+
     function test_changeFormImplementationPauseStatus() public {
         vm.startPrank(deployer);
 

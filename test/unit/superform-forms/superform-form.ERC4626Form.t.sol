@@ -7,7 +7,7 @@ import { MockERC20 } from "test/mocks/MockERC20.sol";
 import { VaultMock } from "test/mocks/VaultMock.sol";
 import { VaultMockFailedDeposit } from "test/mocks/VaultMockFailedDeposit.sol";
 import { VaultMockFailedWithdraw } from "test/mocks/VaultMockFailedWithdraw.sol";
-import { SuperformFactory } from "src/SuperformFactory.sol";
+import { SuperformFactory, ISuperformFactory } from "src/SuperformFactory.sol";
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import "test/utils/ProtocolActions.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
@@ -1204,6 +1204,156 @@ contract SuperformERC4626FormTest is ProtocolActions {
         vm.prank(getContract(ETH, "CoreStateRegistry"));
         vm.expectRevert(Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT.selector);
         IBaseForm(superform).xChainDepositIntoVault(data, deployer, POLY);
+    }
+
+    function test_directDepositIntoVault_SuperformIdNonexistent() public {
+        vm.selectFork(FORKS[ETH]);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 nonexistentSuperformId = 123;
+        InitSingleVaultData memory data = InitSingleVaultData(
+            0,
+            nonexistentSuperformId,
+            0,
+            0,
+            0,
+            LiqRequest(bytes(""), address(0), address(0), 0, 0, 0),
+            false,
+            false,
+            address(0),
+            ""
+        );
+
+        vm.prank(getContract(ETH, "SuperformRouter"));
+        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
+        ERC4626Form(payable(superform)).directDepositIntoVault(data, address(0));
+    }
+
+    function test_xChainDepositIntoVault_SuperformIdNonexistent() public {
+        vm.selectFork(FORKS[ETH]);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 nonexistentSuperformId = 123;
+        InitSingleVaultData memory data = InitSingleVaultData(
+            0,
+            nonexistentSuperformId,
+            0,
+            0,
+            0,
+            LiqRequest(bytes(""), address(0), address(0), 0, 0, 0),
+            false,
+            false,
+            address(0),
+            ""
+        );
+
+        vm.prank(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
+        ERC4626Form(payable(superform)).xChainDepositIntoVault(data, address(0), 1);
+    }
+
+    function test_directDepositIntoVault_Paused() public {
+        vm.selectFork(FORKS[ETH]);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
+        InitSingleVaultData memory data = InitSingleVaultData(
+            0,
+            superformId,
+            0,
+            0,
+            0,
+            LiqRequest(bytes(""), address(0), address(0), 0, 0, 0),
+            false,
+            false,
+            address(0),
+            ""
+        );
+
+        vm.prank(deployer);
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
+            FORM_IMPLEMENTATION_IDS[0], ISuperformFactory.PauseStatus.PAUSED, bytes("")
+        );
+
+        vm.prank(getContract(ETH, "SuperformRouter"));
+        vm.expectRevert(Error.PAUSED.selector);
+        ERC4626Form(payable(superform)).directDepositIntoVault(data, address(0));
+    }
+
+    function test_xChainDepositIntoVault_Paused() public {
+        vm.selectFork(FORKS[ETH]);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
+        InitSingleVaultData memory data = InitSingleVaultData(
+            0,
+            superformId,
+            0,
+            0,
+            0,
+            LiqRequest(bytes(""), address(0), address(0), 0, 0, 0),
+            false,
+            false,
+            address(0),
+            ""
+        );
+
+        vm.prank(deployer);
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
+            FORM_IMPLEMENTATION_IDS[0], ISuperformFactory.PauseStatus.PAUSED, bytes("")
+        );
+
+        vm.prank(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.PAUSED.selector);
+        ERC4626Form(payable(superform)).xChainDepositIntoVault(data, address(0), 1);
+    }
+
+    function test_xChainDepositIntoVault_NotCoreStateRegistry() public {
+        vm.selectFork(FORKS[ETH]);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
+        InitSingleVaultData memory data = InitSingleVaultData(
+            0,
+            superformId,
+            0,
+            0,
+            0,
+            LiqRequest(bytes(""), address(0), address(0), 0, 0, 0),
+            false,
+            false,
+            address(0),
+            ""
+        );
+
+        vm.prank(address(1));
+        vm.expectRevert(Error.NOT_CORE_STATE_REGISTRY.selector);
+        ERC4626Form(payable(superform)).xChainDepositIntoVault(data, address(0), 0);
+    }
+
+    function test_emergencyWithdraw_NotEmergencyQueue() public {
+        vm.selectFork(FORKS[ETH]);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        vm.prank(address(1));
+        vm.expectRevert(Error.NOT_EMERGENCY_QUEUE.selector);
+        ERC4626Form(payable(superform)).emergencyWithdraw(address(0), 0);
     }
 
     /*///////////////////////////////////////////////////////////////
