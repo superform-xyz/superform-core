@@ -244,4 +244,40 @@ contract WormholeARImplementationTest is BaseSetup {
             abi.encode(ambMessage), new bytes[](0), bytes32(uint256(uint160(address(0)))), 0, bytes32(0)
         );
     }
+
+    function test_setWormholeRelayer_NotProtocolAdmin() public {
+        vm.prank(address(1));
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        wormholeARImpl.setWormholeRelayer(address(2));
+    }
+
+    function test_setChainId_NotProtocolAdmin() public {
+        vm.prank(address(1));
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        wormholeARImpl.setChainId(1, 1);
+    }
+
+    function test_setRefundChainId_NotProtocolAdmin() public {
+        vm.prank(address(1));
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        wormholeARImpl.setRefundChainId(1);
+    }
+
+    function test_setReceiver_NotProtocolAdmin() public {
+        vm.prank(address(1));
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        wormholeARImpl.setReceiver(1, address(2));
+    }
+
+    function test_dispatchPayload_NotStateRegistry() public {
+        vm.prank(address(1));
+        vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
+        wormholeARImpl.dispatchPayload(address(1), 1, bytes(""), bytes(""));
+    }
+
+    function test_receiveWormholeMessages_CallerNotRelayer() public {
+        vm.prank(address(1));
+        vm.expectRevert(Error.CALLER_NOT_RELAYER.selector);
+        wormholeARImpl.receiveWormholeMessages(bytes(""), new bytes[](0), bytes32(0), 1, bytes32(0));
+    }
 }

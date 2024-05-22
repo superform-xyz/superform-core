@@ -21,6 +21,11 @@ contract DstSwapperTest is ProtocolActions {
         super.setUp();
     }
 
+    function test_constructor_ZeroAddress() public {
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        new DstSwapper(address(0));
+    }
+
     function test_failed_invalid_interim_token() public {
         address payable dstSwapper = payable(getContract(ETH, "DstSwapper"));
         address payable coreStateRegistry = payable(getContract(ETH, "CoreStateRegistry"));
@@ -852,6 +857,54 @@ contract DstSwapperTest is ProtocolActions {
 
         vm.expectRevert(Error.INVALID_DST_SWAPPER_FAILED_SWAP.selector);
         CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, bridgedTokens, finalAmounts);
+    }
+
+    function test_processTx_NotPrivilegedCaller() public {
+        vm.selectFork(FORKS[ETH]);
+
+        vm.prank(address(1));
+        vm.expectRevert(abi.encodeWithSelector(Error.NOT_PRIVILEGED_CALLER.selector, keccak256("DST_SWAPPER_ROLE")));
+        DstSwapper(payable(getContract(ETH, "DstSwapper"))).processTx(1, 1, "");
+    }
+
+    function test_batchProcessTx_NotPrivilegedCaller() public {
+        uint256[] memory indices = new uint256[](1);
+        uint8[] memory bridgeIds = new uint8[](1);
+        bytes[] memory txData = new bytes[](1);
+
+        vm.selectFork(FORKS[ETH]);
+
+        vm.prank(address(1));
+        vm.expectRevert(abi.encodeWithSelector(Error.NOT_PRIVILEGED_CALLER.selector, keccak256("DST_SWAPPER_ROLE")));
+        DstSwapper(payable(getContract(ETH, "DstSwapper"))).batchProcessTx(1, indices, bridgeIds, txData);
+    }
+
+    function test_updateFailedTx_NotPrivilegedCaller() public {
+        vm.selectFork(FORKS[ETH]);
+
+        vm.prank(address(1));
+        vm.expectRevert(abi.encodeWithSelector(Error.NOT_PRIVILEGED_CALLER.selector, keccak256("DST_SWAPPER_ROLE")));
+        DstSwapper(payable(getContract(ETH, "DstSwapper"))).updateFailedTx(1, address(0), 0);
+    }
+
+    function test_batchUpdateFailedTx_NotPrivilegedCaller() public {
+        uint256[] memory indices = new uint256[](1);
+        address[] memory interimTokens = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        vm.selectFork(FORKS[ETH]);
+
+        vm.prank(address(1));
+        vm.expectRevert(abi.encodeWithSelector(Error.NOT_PRIVILEGED_CALLER.selector, keccak256("DST_SWAPPER_ROLE")));
+        DstSwapper(payable(getContract(ETH, "DstSwapper"))).batchUpdateFailedTx(1, indices, interimTokens, amounts);
+    }
+
+    function test_processFailedTx_NotCoreStateRegistry() public {
+        vm.selectFork(FORKS[ETH]);
+
+        vm.prank(address(1));
+        vm.expectRevert(Error.NOT_CORE_STATE_REGISTRY.selector);
+        DstSwapper(payable(getContract(ETH, "DstSwapper"))).processFailedTx(address(1), address(0), 0);
     }
 
     function _simulateSingleVaultExistingPayload(
