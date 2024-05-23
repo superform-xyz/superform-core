@@ -357,7 +357,6 @@ contract SmokeTest is MainnetBaseSetup {
         }
     }
 
-    /*
     function test_wormholeARImplementation() public {
         WormholeARImplementation wormhole;
 
@@ -370,6 +369,7 @@ contract SmokeTest is MainnetBaseSetup {
         relayers[4] = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
         relayers[5] = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
         relayers[6] = 0x706F82e9bb5b0813501714Ab5974216704980e31;
+        relayers[7] = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
 
         /// @dev index should match the index of target chains
         uint16[] memory _ambIds = new uint16[](TARGET_DEPLOYMENT_CHAINS.length);
@@ -380,6 +380,7 @@ contract SmokeTest is MainnetBaseSetup {
         _ambIds[4] = uint16(23);
         _ambIds[5] = uint16(24);
         _ambIds[6] = uint16(30);
+        _ambIds[7] = uint16(10);
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
@@ -401,7 +402,6 @@ contract SmokeTest is MainnetBaseSetup {
             }
         }
     }
-    */
 
     function test_wormholeSRImplementation() public {
         WormholeSRImplementation wormhole;
