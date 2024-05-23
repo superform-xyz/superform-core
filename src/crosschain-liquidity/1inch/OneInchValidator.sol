@@ -41,8 +41,9 @@ contract OneInchValidator {
     /// @param txData_ is the txData of the cross chain deposit
     /// @param receiver_ is the address of the receiver to validate
     /// @return valid_ if the address is valid
-    function validateReceiver(bytes calldata txData_, address receiver_) external pure returns (bool) {
-        (,, address decodedReceiver,) = _decodeTxData(txData_);
+    function validateReceiver(bytes calldata txData_, address receiver_) external view returns (bool) {
+        (,,, address decodedReceiver,) = _decodeTxData(txData_);
+        console.log(decodedReceiver);
         return (receiver_ == decodedReceiver);
     }
 
@@ -62,7 +63,7 @@ contract OneInchValidator {
         pure
         returns (uint256 amount_)
     {
-        (, amount_,,) = _decodeTxData(txData_);
+        (, amount_,,,) = _decodeTxData(txData_);
     }
 
     /// @dev decodes neccesary information for processing swaps on the destination chain
@@ -70,14 +71,14 @@ contract OneInchValidator {
     /// @return token_ is the address of the token
     /// @return amount_ the amount expected
     function decodeDstSwap(bytes calldata txData_) external pure returns (address token_, uint256 amount_) {
-        (token_, amount_,,) = _decodeTxData(txData_);
+        (token_, amount_,,,) = _decodeTxData(txData_);
     }
 
     /// @dev decodes the final output token address (for only direct chain actions!)
     /// @param txData_ is the txData to be decoded
     /// @return token_ the address of the token
     function decodeSwapOutputToken(bytes calldata txData_) external view returns (address token_) {
-        (address fromToken,,, Address dex) = _decodeTxData(txData_);
+        (address fromToken,,,, Address dex) = _decodeTxData(txData_);
         ProtocolLib.Protocol protocol = dex.protocol();
 
         /// @dev if protocol is uniswap v2 or uniswap v3
@@ -87,13 +88,13 @@ contract OneInchValidator {
             if (token_ == fromToken) {
                 token_ = IUniswapV2Pair(dex.get()).token1();
             }
-        }
-
-        if (protocol == ProtocolLib.Protocol.Curve) {
+        } else if (protocol == ProtocolLib.Protocol.Curve) {
             uint256 toTokenIndex = (Address.unwrap(dex) >> _CURVE_TO_COINS_ARG_OFFSET) & _CURVE_TO_COINS_ARG_MASK;
             token_ = ICurvePool(dex.get()).underlying_coins(int128(uint128(toTokenIndex)));
 
             console.log(token_);
+        } else {
+            revert();
         }
     }
 
@@ -106,11 +107,12 @@ contract OneInchValidator {
     function _decodeTxData(bytes calldata txData_)
         internal
         pure
-        returns (address fromToken, uint256 fromAmount, address receiver, Address dexAddress)
+        returns (address fromToken, uint256 fromAmount, address toToken, address receiver, Address dexAddress)
     {
         bytes4 selector = bytes4(txData_[:4]);
 
         /// @dev does not support any sequential pools with unoswap
+        /// NOTE: support UNISWAP_V2, UNISWAP_V3, CURVE, SHIBASWAP
         if (selector == IAggregationRouterV6.unoswapTo.selector) {
             (Address receiverUint256, Address fromTokenUint256, uint256 decodedFromAmount,, Address dex) =
                 abi.decode(_parseCallData(txData_), (Address, Address, uint256, uint256, Address));
@@ -119,6 +121,20 @@ contract OneInchValidator {
             fromAmount = decodedFromAmount;
             receiver = receiverUint256.get();
             dexAddress = dex;
+        }
+
+        /// @dev decodes the clipperSwapTo selector
+        if (selector == IAggregationRouterV6.clipperSwapTo.selector) {
+            (, address decodedReceiver, Address fromTokenUint256, IERC20 decodedToToken, uint256 decodedFromAmount,,,,)
+            = abi.decode(
+                _parseCallData(txData_),
+                (IClipperExchange, address, Address, IERC20, uint256, uint256, uint256, bytes32, bytes32)
+            );
+
+            fromToken = fromTokenUint256.get();
+            fromAmount = decodedFromAmount;
+            toToken = address(decodedToToken);
+            receiver = decodedReceiver;
         }
     }
 
