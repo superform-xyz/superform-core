@@ -100,7 +100,7 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
 
     /// @inheritdoc BaseForm
     function getPricePerVaultShare() public view virtual override returns (uint256) {
-        return 0;
+        return price = IStandardizedYield(vault).exchangeRate();
     }
 
     /// @inheritdoc BaseForm
@@ -151,10 +151,6 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
     /// @inheritdoc BaseForm
     function getStateRegistryId() external view override returns (uint8) {
         return STATE_REGISTRY_ID;
-    }
-
-    function getExchangeRate() public view virtual returns (uint256 exchangeRate) {
-        exchangeRate = IStandardizedYield(vault).exchangeRate();
     }
 
     function getAccruedRewards(address user) public view virtual returns (uint256[] memory rewards) {
