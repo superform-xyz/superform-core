@@ -50,7 +50,29 @@ contract OneInchValidator {
     /// @dev validates the txData of a cross chain deposit
     /// @param args_ the txData arguments to validate in txData
     /// @return hasDstSwap if the txData contains a destination swap
-    function validateTxData(IBridgeValidator.ValidateTxDataArgs calldata args_) external pure returns (bool) { }
+    function validateTxData(IBridgeValidator.ValidateTxDataArgs calldata args_) external view returns (bool) {
+        (address fromToken,,, address receiver,) = _decodeTxData(args_.txData);
+        console.log(receiver);
+
+        if (args_.deposit) {
+            /// @dev 1. chain id validation (only allow samechain with this)
+            if (args_.dstChainId != args_.srcChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
+            if (args_.dstChainId != args_.liqDstChainId) revert Error.INVALID_DEPOSIT_LIQ_DST_CHAIN_ID();
+
+            /// @dev 2. receiver address validation
+            /// @dev If same chain deposits then receiver address must be the superform
+            if (receiver != args_.superform) revert Error.INVALID_TXDATA_RECEIVER();
+        } else {
+            /// @dev 2. receiver address validation
+            /// @dev if withdraws, then receiver address must be the receiverAddress
+            if (receiver != args_.receiverAddress) revert Error.INVALID_TXDATA_RECEIVER();
+        }
+
+        /// @dev 3. token validations
+        if (args_.liqDataToken != fromToken) revert Error.INVALID_TXDATA_TOKEN();
+
+        return false;
+    }
 
     /// @dev decodes the txData and returns the amount of input token on source
     /// @param txData_ is the txData of the cross chain deposit
