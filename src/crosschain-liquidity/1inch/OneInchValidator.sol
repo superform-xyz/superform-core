@@ -78,23 +78,23 @@ contract OneInchValidator {
     /// @param txData_ is the txData to be decoded
     /// @return token_ the address of the token
     function decodeSwapOutputToken(bytes calldata txData_) external view returns (address token_) {
-        (address fromToken,,,, Address dex) = _decodeTxData(txData_);
+        (address fromToken,, address toToken,, Address dex) = _decodeTxData(txData_);
         ProtocolLib.Protocol protocol = dex.protocol();
 
-        /// @dev if protocol is uniswap v2 or uniswap v3
-        if (protocol == ProtocolLib.Protocol.UniswapV2 || protocol == ProtocolLib.Protocol.UniswapV3) {
-            token_ = IUniswapV2Pair(dex.get()).token0();
-
-            if (token_ == fromToken) {
-                token_ = IUniswapV2Pair(dex.get()).token1();
-            }
-        } else if (protocol == ProtocolLib.Protocol.Curve) {
-            uint256 toTokenIndex = (Address.unwrap(dex) >> _CURVE_TO_COINS_ARG_OFFSET) & _CURVE_TO_COINS_ARG_MASK;
-            token_ = ICurvePool(dex.get()).underlying_coins(int128(uint128(toTokenIndex)));
-
-            console.log(token_);
+        if (toToken != address(0)) {
+            token_ = toToken;
         } else {
-            revert();
+            /// @dev if protocol is uniswap v2 or uniswap v3
+            if (protocol == ProtocolLib.Protocol.UniswapV2 || protocol == ProtocolLib.Protocol.UniswapV3) {
+                token_ = IUniswapV2Pair(dex.get()).token0();
+
+                if (token_ == fromToken) {
+                    token_ = IUniswapV2Pair(dex.get()).token1();
+                }
+            } else if (protocol == ProtocolLib.Protocol.Curve) {
+                uint256 toTokenIndex = (Address.unwrap(dex) >> _CURVE_TO_COINS_ARG_OFFSET) & _CURVE_TO_COINS_ARG_MASK;
+                token_ = ICurvePool(dex.get()).underlying_coins(int128(uint128(toTokenIndex)));
+            }
         }
     }
 
@@ -135,6 +135,17 @@ contract OneInchValidator {
             fromAmount = decodedFromAmount;
             toToken = address(decodedToToken);
             receiver = decodedReceiver;
+        }
+
+        /// @dev decodes the generic router call
+        if (selector == IAggregationRouterV6.swap.selector) {
+            (, IAggregationRouterV6.SwapDescription memory swapDescription, bytes memory extCallData) =
+                abi.decode(_parseCallData(txData_), (IAggregationExecutor, IAggregationRouterV6.SwapDescription, bytes));
+
+            fromToken = address(swapDescription.srcToken);
+            fromAmount = swapDescription.amount;
+            toToken = address(swapDescription.dstToken);
+            receiver = swapDescription.dstReceiver;
         }
     }
 
