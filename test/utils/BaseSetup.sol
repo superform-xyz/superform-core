@@ -74,6 +74,8 @@ import { RewardsDistributor } from "src/RewardsDistributor.sol";
 import "src/types/DataTypes.sol";
 import "./TestTypes.sol";
 
+import "forge-std/console.sol";
+
 abstract contract BaseSetup is StdInvariant, Test {
     /*//////////////////////////////////////////////////////////////
                         GENERAL VARIABLES
