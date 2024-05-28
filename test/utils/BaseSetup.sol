@@ -378,6 +378,15 @@ abstract contract BaseSetup is StdInvariant, Test {
     string public BASE_RPC_URL = vm.envString("BASE_RPC_URL"); // Native token: BASE
     string public FANTOM_RPC_URL = vm.envString("FANTOM_RPC_URL"); // Native token: BASE
 
+    string public ETHEREUM_RPC_URL_QN = vm.envString("ETHEREUM_RPC_URL_QN"); // Native token: ETH
+    string public BSC_RPC_URL_QN = vm.envString("BSC_RPC_URL_QN"); // Native token: BNB
+    string public AVALANCHE_RPC_URL_QN = vm.envString("AVALANCHE_RPC_URL_QN"); // Native token: AVAX
+    string public POLYGON_RPC_URL_QN = vm.envString("POLYGON_RPC_URL_QN"); // Native token: MATIC
+    string public ARBITRUM_RPC_URL_QN = vm.envString("ARBITRUM_RPC_URL_QN"); // Native token: ETH
+    string public OPTIMISM_RPC_URL_QN = vm.envString("OPTIMISM_RPC_URL_QN"); // Native token: ETH
+    string public BASE_RPC_URL_QN = vm.envString("BASE_RPC_URL_QN"); // Native token: BASE
+    string public FANTOM_RPC_URL_QN = vm.envString("FANTOM_RPC_URL_QN"); // Native token: BASE
+
     /*//////////////////////////////////////////////////////////////
                         KYC DAO VALIDITY VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -1254,14 +1263,16 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
         if (!invariant) {
-            forks[ETH] = pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 19_293_715) : vm.createFork(ETHEREUM_RPC_URL);
-            forks[BSC] = pinnedBlock ? vm.createFork(BSC_RPC_URL, 32_899_049) : vm.createFork(BSC_RPC_URL);
-            forks[AVAX] = pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 43_845_494) : vm.createFork(AVALANCHE_RPC_URL);
-            forks[POLY] = pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 56_710_026) : vm.createFork(POLYGON_RPC_URL);
-            forks[ARBI] = pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 175_504_761) : vm.createFork(ARBITRUM_RPC_URL);
-            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 116_353_583) : vm.createFork(OPTIMISM_RPC_URL);
-            forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL);
-            forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 78_945_396) : vm.createFork(FANTOM_RPC_URL);
+            forks[ETH] = pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 19_293_715) : vm.createFork(ETHEREUM_RPC_URL_QN);
+            forks[BSC] = pinnedBlock ? vm.createFork(BSC_RPC_URL, 32_899_049) : vm.createFork(BSC_RPC_URL_QN);
+            forks[AVAX] =
+                pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 43_845_494) : vm.createFork(AVALANCHE_RPC_URL_QN);
+            forks[POLY] = pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 56_710_026) : vm.createFork(POLYGON_RPC_URL_QN);
+            forks[ARBI] =
+                pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 175_504_761) : vm.createFork(ARBITRUM_RPC_URL_QN);
+            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 116_353_583) : vm.createFork(OPTIMISM_RPC_URL_QN);
+            forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL_QN);
+            forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 78_945_396) : vm.createFork(FANTOM_RPC_URL_QN);
         }
 
         mapping(uint64 => string) storage rpcURLs = RPC_URLS;

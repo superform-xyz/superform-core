@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import { Error } from "src/libraries/Error.sol";
 import { MockERC20 } from "test/mocks/MockERC20.sol";
-import { SuperformFactory } from "src/SuperformFactory.sol";
+import { SuperformFactory, ISuperformFactory } from "src/SuperformFactory.sol";
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import { ProtocolActions } from "test/utils/ProtocolActions.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
@@ -12,7 +12,6 @@ import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { ERC4626TimelockForm } from "src/forms/ERC4626TimelockForm.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import "src/types/DataTypes.sol";
-import "forge-std/console.sol";
 
 contract SuperformERC4626TimelockFormTest is ProtocolActions {
     uint64 internal chainId = ETH;
@@ -331,6 +330,90 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         ERC4626TimelockForm(payable(superform)).withdrawAfterCoolDown(
             TimelockPayload(0, ETH, block.timestamp, data, TimelockStatus.PENDING)
         );
+    }
+
+    function test_withdrawAfterCoolDown_OnlyTimelockStateRegistry() public {
+        vm.selectFork(FORKS[ETH]);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[1], ETH);
+
+        InitSingleVaultData memory data = InitSingleVaultData(
+            1,
+            superformId,
+            1e18,
+            1e18,
+            100,
+            LiqRequest(bytes(""), getContract(ETH, "DAI"), address(0), 1, ARBI, 0),
+            false,
+            false,
+            receiverAddress,
+            ""
+        );
+
+        vm.expectRevert(Error.NOT_TIMELOCK_STATE_REGISTRY.selector);
+        ERC4626TimelockForm(payable(superform)).withdrawAfterCoolDown(
+            TimelockPayload(1, ETH, block.timestamp, data, TimelockStatus.PENDING)
+        );
+    }
+
+    function test_directDepositIntoVault_SuperformIdNonexistent_timelock() public {
+        vm.selectFork(FORKS[ETH]);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
+        );
+
+        uint256 nonexistentSuperformId = 123;
+        InitSingleVaultData memory data = InitSingleVaultData(
+            0,
+            nonexistentSuperformId,
+            0,
+            0,
+            0,
+            LiqRequest(bytes(""), address(0), address(0), 0, 0, 0),
+            false,
+            false,
+            address(0),
+            ""
+        );
+
+        vm.prank(getContract(ETH, "SuperformRouter"));
+        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
+        ERC4626TimelockForm(payable(superform)).directDepositIntoVault(data, address(0));
+    }
+
+    function test_directDepositIntoVault_Paused_timelock() public {
+        vm.selectFork(FORKS[ETH]);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
+        );
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[1], ETH);
+        InitSingleVaultData memory data = InitSingleVaultData(
+            0,
+            superformId,
+            0,
+            0,
+            0,
+            LiqRequest(bytes(""), address(0), address(0), 0, 0, 0),
+            false,
+            false,
+            address(0),
+            ""
+        );
+
+        vm.prank(deployer);
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
+            FORM_IMPLEMENTATION_IDS[1], ISuperformFactory.PauseStatus.PAUSED, bytes("")
+        );
+
+        vm.prank(getContract(ETH, "SuperformRouter"));
+        vm.expectRevert(Error.PAUSED.selector);
+        ERC4626TimelockForm(payable(superform)).directDepositIntoVault(data, address(0));
     }
 
     /*///////////////////////////////////////////////////////////////
