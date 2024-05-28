@@ -49,26 +49,26 @@ jobs:
         run: "forge config"
 
       - name: "Perform mainnet size checks"
-        run: forge build --sizes
+        run: "make build-sizes"
 
       - name: "Cache unoptimized build"
-        run: "FOUNDRY_PROFILE=localdev forge build"
+        run: "make build-unoptimized"
 
       - name: "Cache the build so that it can be re-used by the other jobs"
-        uses: "actions/cache/save@v3"
+        uses: "actions/cache/save@v4"
         with:
           key: "foundry-build-${{ github.sha }}"
           path: |
             cache
             out
-            out-optimized
+            localdev
 
       - name: "Add build summary"
         run: |
           echo "## Build result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
-  test-gas-report:
+  test:
     needs: ["build"]
     runs-on: SuperformCore2
     steps:
@@ -81,29 +81,69 @@ jobs:
         uses: "foundry-rs/foundry-toolchain@v1"
 
       - name: "Restore the cached build"
-        uses: "actions/cache/restore@v3"
+        uses: "actions/cache/restore@v4"
         with:
           fail-on-cache-miss: true
           key: "foundry-build-${{ github.sha }}"
           path: |
             cache
             out
-            out-optimized
+            localdev
+
+      - name: "Install Tenderly CLI"
+        run: curl https://raw.githubusercontent.com/Tenderly/tenderly-cli/master/scripts/install-linux.sh | sudo sh
 
       - name: "Generate fuzz seed that changes weekly to avoid burning through RPC allowance"
         run: |
           echo "FOUNDRY_FUZZ_SEED=$(echo $(($EPOCHSECONDS / 604800)))" >> $GITHUB_ENV
 
-      - name: "Run all tests except invariant against the optimized build and produce gas reports"
-        run: 'forge test --gas-report --no-match-path "test/invariant/**/*.sol"'
+      - name: "Run all tests except invariant against the optimized build"
+        run: "make test-ci"
+
+      - name: "Run all invariant tests (no vaultshares for now)"
+        run: "make invariant-rewards"
 
       - name: "Add test summary"
         run: |
           echo "## Tests result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
+  deploy-tenderly-devnets:
+    needs: ["build"]
+    runs-on: SuperformCore2
+    steps:
+      - name: "Check out the repo"
+        uses: "actions/checkout@v4"
+        with:
+          submodules: "recursive"
+      - name: "Install Foundry"
+        uses: "foundry-rs/foundry-toolchain@v1"
+
+      - name: "Restore the cached build"
+        uses: "actions/cache/restore@v4"
+        with:
+          fail-on-cache-miss: true
+          key: "foundry-build-${{ github.sha }}"
+          path: |
+            cache
+            out
+            localdev
+
+      - name: "Install Tenderly CLI"
+        run: curl https://raw.githubusercontent.com/Tenderly/tenderly-cli/master/scripts/install-linux.sh | sudo sh
+
+      - name: "Deploy to Tenderly Devnets"
+        run: ./script/utils/run_script_tenderly.sh
+        shell: bash
+
+      - name: "Add devnet deployment summary"
+        run: |
+          echo "## Devnet deployment result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Deployed to Tenderly Devnet" >> $GITHUB_STEP_SUMMARY
+
   coverage:
     runs-on: SuperformCore2
+    needs: ["test"]
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v4"
@@ -113,11 +153,14 @@ jobs:
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
 
-      - name: "Generate the coverage report using the unit and the integration tests"
-        run: 'FOUNDRY_PROFILE=coverage forge coverage --match-path "test/**/*.sol" --report lcov'
+      - name: "Install Tenderly CLI"
+        run: curl https://raw.githubusercontent.com/Tenderly/tenderly-cli/master/scripts/install-linux.sh | sudo sh
+
+      - name: "Generate the coverage report using unit and integration tests"
+        run: "make coverage"
 
       - name: "Upload coverage report to Codecov"
-        uses: "codecov/codecov-action@v4.0.0-beta.3"
+        uses: "codecov/codecov-action@v4"
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
@@ -127,22 +170,3 @@ jobs:
         run: |
           echo "## Coverage result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Uploaded to Codecov" >> $GITHUB_STEP_SUMMARY
-
-  deploy-tenderly-devnets:
-    runs-on: SuperformCore2
-    steps:
-      - name: "Check out the repo"
-        uses: "actions/checkout@v4"
-        with:
-          submodules: "recursive"
-      - name: "Install Foundry"
-        uses: "foundry-rs/foundry-toolchain@v1"
-      - name: "Install Tenderly CLI"
-        run: curl https://raw.githubusercontent.com/Tenderly/tenderly-cli/master/scripts/install-linux.sh | sudo sh
-      - name: "Deploy to Tenderly Devnets"
-        run: ./utils/run_script_tenderly.sh
-        shell: bash
-      - name: "Add devnet deployment summary"
-        run: |
-          echo "## Devnet deployment result" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Deployed to Tenderly Devnet" >> $GITHUB_STEP_SUMMARY
