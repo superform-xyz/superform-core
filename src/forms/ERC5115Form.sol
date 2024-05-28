@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import { BaseForm } from "src/BaseForm.sol";
 import { LiquidityHandler } from "src/crosschain-liquidity/LiquidityHandler.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
+import { IERC5115Form } from "src/forms/interfaces/IERC5115Form.sol";
 import { Error } from "src/libraries/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { InitSingleVaultData } from "src/types/DataTypes.sol";
@@ -17,7 +18,7 @@ import { IStandardizedYield } from "src/vendor/pendle/IStandardizedYield.sol";
 /// @notice Reference implementation of a vault:
 /// https://github.com/pendle-finance/pendle-core-v2-public/blob/main/contracts/core/StandardizedYield/SYBase.sol
 /// @author Zeropoint Labs
-contract ERC5115Form is BaseForm, LiquidityHandler {
+contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     using SafeERC20 for IERC20;
     using SafeERC20 for IStandardizedYield;
     using DataLib for uint256;
@@ -25,13 +26,16 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
     //////////////////////////////////////////////////////////////
     //                           Errors                        //
     //////////////////////////////////////////////////////////////
-
+    /// @dev Error emitted when the tokenIn is not valid
     error INVALID_TOKEN_IN();
 
+    /// @dev Error emitted when the tokenOut is not valid
     error INVALID_TOKEN_OUT();
 
+    /// @dev Error emitted when the tokenIn is not encoded in the extraFormData
     error ERC5115FORM_TOKEN_IN_NOT_ENCODED();
 
+    /// @dev Error emitted when the tokenOut is not set as the interimToken
     error ERC5115FORM_TOKEN_OUT_NOT_SET();
 
     //////////////////////////////////////////////////////////////
@@ -159,38 +163,47 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
         return STATE_REGISTRY_ID;
     }
 
-    function getAccruedRewards(address user) public view virtual returns (uint256[] memory rewards) {
+    /// @inheritdoc IERC5115Form
+    function getAccruedRewards(address user) public view virtual override returns (uint256[] memory rewards) {
         rewards = IStandardizedYield(vault).accruedRewards(user);
     }
 
-    function getRewardIndexesStored() public view virtual returns (uint256[] memory indexes) {
+    /// @inheritdoc IERC5115Form
+    function getRewardIndexesStored() public view virtual override returns (uint256[] memory indexes) {
         indexes = IStandardizedYield(vault).rewardIndexesStored();
     }
 
-    function getRewardTokens() public view virtual returns (address[] memory rewardTokens) {
+    /// @inheritdoc IERC5115Form
+    function getRewardTokens() public view virtual override returns (address[] memory rewardTokens) {
         rewardTokens = IStandardizedYield(vault).getRewardTokens();
     }
 
-    function getYieldToken() public view virtual returns (address yieldToken) {
+    /// @inheritdoc IERC5115Form
+    function getYieldToken() public view virtual override returns (address yieldToken) {
         yieldToken = IStandardizedYield(vault).yieldToken();
     }
 
-    function getTokensIn() public view virtual returns (address[] memory tokensIn) {
+    /// @inheritdoc IERC5115Form
+    function getTokensIn() public view virtual override returns (address[] memory tokensIn) {
         tokensIn = IStandardizedYield(vault).getTokensIn();
     }
 
-    function getTokensOut() public view virtual returns (address[] memory tokensOut) {
+    /// @inheritdoc IERC5115Form
+    function getTokensOut() public view virtual override returns (address[] memory tokensOut) {
         tokensOut = IStandardizedYield(vault).getTokensOut();
     }
 
-    function isValidTokenIn(address token) public view virtual returns (bool) {
+    /// @inheritdoc IERC5115Form
+    function isValidTokenIn(address token) public view virtual override returns (bool) {
         return IStandardizedYield(vault).isValidTokenIn(token);
     }
 
-    function isValidTokenOut(address token) public view virtual returns (bool) {
+    /// @inheritdoc IERC5115Form
+    function isValidTokenOut(address token) public view virtual override returns (bool) {
         return IStandardizedYield(vault).isValidTokenOut(token);
     }
 
+    /// @inheritdoc IERC5115Form
     function getTokensOutBalance()
         public
         view
@@ -210,6 +223,7 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
         }
     }
 
+    /// @inheritdoc IERC5115Form
     function previewDeposit(
         address tokenIn,
         uint256 amountTokenToDeposit
@@ -222,6 +236,7 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
         amountSharesOut = IStandardizedYield(vault).previewDeposit(tokenIn, amountTokenToDeposit);
     }
 
+    /// @inheritdoc IERC5115Form
     function previewRedeem(
         address tokenOut,
         uint256 amountSharesToRedeem
@@ -234,6 +249,7 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
         amountTokenOut = IStandardizedYield(vault).previewRedeem(tokenOut, amountSharesToRedeem);
     }
 
+    /// @inheritdoc IERC5115Form
     function getAssetInfo()
         public
         view
@@ -319,7 +335,9 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
         DirectDepositLocalVars memory vars;
 
         /// @dev for deposits tokenIn must be decoded from extraFormData as interimToken may be in use
-
+        /// @dev Warning: This must be validated by a keeper to be the token received in CSR for the given payload, as
+        /// this can be forged by the user
+        /// @dev and it's not possible to validate on chain the final token post bridging/swapping
         vars.vaultTokenIn = abi.decode(singleVaultData_.extraFormData, (address));
 
         /// @dev notice that by validating it like this, it will deny any tokenIn that is native (sometimes addressed as
@@ -424,7 +442,9 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
         address vaultLoc = vault;
 
         /// @dev for deposits tokenIn must be decoded from extraFormData as interimToken may be in use
-
+        /// @dev Warning: This must be validated by a keeper to be the token received in CSR for the given payload, as
+        /// this can be forged by the user
+        /// @dev and it's not possible to validate on chain the final token post bridging/swapping
         address vaultTokenIn = abi.decode(singleVaultData_.extraFormData, (address));
 
         /// @dev notice that by validating it like this, it will deny any tokenIn that is native (sometimes addressed as
