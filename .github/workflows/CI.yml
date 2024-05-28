@@ -143,6 +143,7 @@ jobs:
 
   deploy-tenderly-devnets:
     runs-on: SuperformCore2
+    needs: ["build"]
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v4"
