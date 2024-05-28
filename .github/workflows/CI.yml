@@ -141,34 +141,34 @@ jobs:
           echo "## Tests result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
-  # deploy-tenderly-devnets:
-  #   runs-on: SuperformCore2
-  #   steps:
-  #     - name: "Check out the repo"
-  #       uses: "actions/checkout@v4"
-  #       with:
-  #         submodules: "recursive"
-  #     - name: "Install Foundry"
-  #       uses: "foundry-rs/foundry-toolchain@v1"
+  deploy-tenderly-devnets:
+    runs-on: SuperformCore2
+    steps:
+      - name: "Check out the repo"
+        uses: "actions/checkout@v4"
+        with:
+          submodules: "recursive"
+      - name: "Install Foundry"
+        uses: "foundry-rs/foundry-toolchain@v1"
 
-  #     - name: "Restore the cached build"
-  #       uses: "actions/cache/restore@v4"
-  #       with:
-  #         fail-on-cache-miss: true
-  #         key: "foundry-build-${{ github.sha }}"
-  #         path: |
-  #           cache
-  #           out
-  #           localdev
+      - name: "Restore the cached build"
+        uses: "actions/cache/restore@v4"
+        with:
+          fail-on-cache-miss: true
+          key: "foundry-build-${{ github.sha }}"
+          path: |
+            cache
+            out
+            localdev
 
-  #     - name: "Install Tenderly CLI"
-  #       run: curl https://raw.githubusercontent.com/Tenderly/tenderly-cli/master/scripts/install-linux.sh | sudo sh
+      - name: "Install Tenderly CLI"
+        run: curl https://raw.githubusercontent.com/Tenderly/tenderly-cli/master/scripts/install-linux.sh | sudo sh
 
-  #     - name: "Deploy to Tenderly Devnets"
-  #       run: ./script/utils/run_script_tenderly.sh
-  #       shell: bash
+      - name: "Deploy to Tenderly Devnets"
+        run: ./script/utils/run_script_tenderly.sh
+        shell: bash
 
-  #     - name: "Add devnet deployment summary"
-  #       run: |
-  #         echo "## Devnet deployment result" >> $GITHUB_STEP_SUMMARY
-  #         echo "✅ Deployed to Tenderly Devnet" >> $GITHUB_STEP_SUMMARY
+      - name: "Add devnet deployment summary"
+        run: |
+          echo "## Devnet deployment result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Deployed to Tenderly Devnet" >> $GITHUB_STEP_SUMMARY
