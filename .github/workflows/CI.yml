@@ -44,6 +44,8 @@ jobs:
 
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
+        with:
+          version: nightly
 
       - name: "Show the Foundry config"
         run: "forge config"
@@ -108,6 +110,8 @@ jobs:
 
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
+        with:
+          version: nightly
 
       - name: "Restore the cached build"
         uses: "actions/cache/restore@v4"
