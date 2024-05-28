@@ -34,39 +34,39 @@ env:
   OWNER_ADDRESS: ${{ secrets.OWNER_ADDRESS }}
 
 jobs:
-  # build:
-  #   runs-on: SuperformCore2
-  #   steps:
-  #     - name: "Check out the repo"
-  #       uses: "actions/checkout@v4"
-  #       with:
-  #         submodules: "recursive"
+  build:
+    runs-on: SuperformCore2
+    steps:
+      - name: "Check out the repo"
+        uses: "actions/checkout@v4"
+        with:
+          submodules: "recursive"
 
-  #     - name: "Install Foundry"
-  #       uses: "foundry-rs/foundry-toolchain@v1"
+      - name: "Install Foundry"
+        uses: "foundry-rs/foundry-toolchain@v1"
 
-  #     - name: "Show the Foundry config"
-  #       run: "forge config"
+      - name: "Show the Foundry config"
+        run: "forge config"
 
-  #     - name: "Perform mainnet size checks"
-  #       run: "make build-sizes"
+      - name: "Perform mainnet size checks"
+        run: "make build-sizes"
 
-  #     - name: "Cache unoptimized build"
-  #       run: "make build-unoptimized"
+      - name: "Cache unoptimized build"
+        run: "make build-unoptimized"
 
-  #     - name: "Cache the build so that it can be re-used by the other jobs"
-  #       uses: "actions/cache/save@v4"
-  #       with:
-  #         key: "foundry-build-${{ github.sha }}"
-  #         path: |
-  #           cache
-  #           out
-  #           localdev
+      - name: "Cache the build so that it can be re-used by the other jobs"
+        uses: "actions/cache/save@v4"
+        with:
+          key: "foundry-build-${{ github.sha }}"
+          path: |
+            cache
+            out
+            localdev
 
-  #     - name: "Add build summary"
-  #       run: |
-  #         echo "## Build result" >> $GITHUB_STEP_SUMMARY
-  #         echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+      - name: "Add build summary"
+        run: |
+          echo "## Build result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
   # coverage:
   #   runs-on: SuperformCore2
@@ -99,6 +99,7 @@ jobs:
 
   test:
     runs-on: SuperformCore2
+    needs: ["build"]
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v4"
