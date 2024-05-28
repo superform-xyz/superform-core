@@ -68,35 +68,6 @@ jobs:
           echo "## Build result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
-  coverage:
-    runs-on: SuperformCore2
-    steps:
-      - name: "Check out the repo"
-        uses: "actions/checkout@v4"
-        with:
-          submodules: "recursive"
-
-      - name: "Install Foundry"
-        uses: "foundry-rs/foundry-toolchain@v1"
-
-      - name: "Install Tenderly CLI"
-        run: curl https://raw.githubusercontent.com/Tenderly/tenderly-cli/master/scripts/install-linux.sh | sudo sh
-
-      - name: "Generate the coverage report using unit and integration tests"
-        run: "make coverage"
-
-      - name: "Upload coverage report to Codecov"
-        uses: "codecov/codecov-action@v4"
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-        with:
-          files: "./lcov.info"
-
-      - name: "Add coverage summary"
-        run: |
-          echo "## Coverage result" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Uploaded to Codecov" >> $GITHUB_STEP_SUMMARY
-
   test:
     needs: ["build"]
     runs-on: SuperformCore2
@@ -169,3 +140,33 @@ jobs:
         run: |
           echo "## Devnet deployment result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Deployed to Tenderly Devnet" >> $GITHUB_STEP_SUMMARY
+
+  coverage:
+    runs-on: SuperformCore2
+    needs: ["test"]
+    steps:
+      - name: "Check out the repo"
+        uses: "actions/checkout@v4"
+        with:
+          submodules: "recursive"
+
+      - name: "Install Foundry"
+        uses: "foundry-rs/foundry-toolchain@v1"
+
+      - name: "Install Tenderly CLI"
+        run: curl https://raw.githubusercontent.com/Tenderly/tenderly-cli/master/scripts/install-linux.sh | sudo sh
+
+      - name: "Generate the coverage report using unit and integration tests"
+        run: "make coverage"
+
+      - name: "Upload coverage report to Codecov"
+        uses: "codecov/codecov-action@v4"
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          files: "./lcov.info"
+
+      - name: "Add coverage summary"
+        run: |
+          echo "## Coverage result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Uploaded to Codecov" >> $GITHUB_STEP_SUMMARY

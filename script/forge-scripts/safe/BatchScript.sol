@@ -130,6 +130,17 @@ abstract contract BatchScript is Script, DelegatePrank {
 
     // Internal functions
     function _initialize(uint256 chainId_) private {
+        /// FANTOM is not available on default foundry list
+        if (chainId_ == 250) {
+            Chain memory chain = Chain({
+                name: "FANTOM",
+                chainId: 250,
+                chainAlias: "fantom",
+                rpcUrl: "https://fantom.blockpi.network/v1/rpc/public"
+            });
+            setChain("fantom", chain);
+        }
+
         // Set the chain ID
         Chain memory chain = getChain(chainId_);
         chainId = chain.chainId;
