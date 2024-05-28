@@ -28,6 +28,12 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
 
     error INVALID_TOKEN_IN();
 
+    error INVALID_TOKEN_OUT();
+
+    error ERC5115FORM_TOKEN_IN_NOT_ENCODED();
+
+    error ERC5115FORM_TOKEN_OUT_NOT_SET();
+
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                         //
     //////////////////////////////////////////////////////////////
@@ -41,7 +47,7 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
 
     struct DirectDepositLocalVars {
         uint64 chainId;
-        address asset;
+        address vaultTokenIn;
         address bridgeValidator;
         uint256 shares;
         uint256 balanceBefore;
@@ -54,14 +60,14 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
 
     struct DirectWithdrawLocalVars {
         uint64 chainId;
-        address asset;
+        address vaultTokenOut;
         address bridgeValidator;
         uint256 amount;
     }
 
     struct XChainWithdrawLocalVars {
         uint64 dstChainId;
-        address asset;
+        address vaultTokenOut;
         address bridgeValidator;
         uint256 balanceBefore;
         uint256 balanceAfter;
@@ -100,7 +106,7 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
 
     /// @inheritdoc BaseForm
     function getPricePerVaultShare() public view virtual override returns (uint256) {
-        return price = IStandardizedYield(vault).exchangeRate();
+        return IStandardizedYield(vault).exchangeRate();
     }
 
     /// @inheritdoc BaseForm
@@ -124,17 +130,17 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
     }
 
     /// @inheritdoc BaseForm
-    function previewDepositTo(uint256 assets_) public view virtual override returns (uint256) {
+    function previewDepositTo(uint256 /*assets_*/ ) public view virtual override returns (uint256) {
         return 0;
     }
 
     /// @inheritdoc BaseForm
-    function previewWithdrawFrom(uint256 assets_) public view virtual override returns (uint256) {
+    function previewWithdrawFrom(uint256 /*assets_*/ ) public view virtual override returns (uint256) {
         return 0;
     }
 
     /// @inheritdoc BaseForm
-    function previewRedeemFrom(uint256 shares_) public view virtual override returns (uint256) {
+    function previewRedeemFrom(uint256 /*shares_*/ ) public view virtual override returns (uint256) {
         return 0;
     }
 
@@ -183,6 +189,25 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
 
     function isValidTokenOut(address token) public view virtual returns (bool) {
         return IStandardizedYield(vault).isValidTokenOut(token);
+    }
+
+    function getTokensOutBalance()
+        public
+        view
+        virtual
+        returns (address[] memory tokensOut, uint256[] memory balances)
+    {
+        tokensOut = IStandardizedYield(vault).getTokensOut();
+        uint256 len = tokensOut.length;
+
+        balances = new uint256[](len);
+        for (uint256 i = 0; i < len; i++) {
+            try IERC20(tokensOut[i]).balanceOf(vault) returns (uint256 balance) {
+                balances[i] = balance;
+            } catch {
+                balances[i] = address(vault).balance;
+            }
+        }
     }
 
     function previewDeposit(
@@ -293,21 +318,29 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
     {
         DirectDepositLocalVars memory vars;
 
-        vars.asset = address(asset);
-        vars.balanceBefore = IERC20(vars.asset).balanceOf(address(this));
-        IERC20 token = IERC20(singleVaultData_.liqData.token);
+        /// @dev for deposits tokenIn must be decoded from extraFormData as interimToken may be in use
 
-        if (address(token) != NATIVE && singleVaultData_.liqData.txData.length == 0) {
-            /// @dev this is only valid if token == asset (no txData)
-            if (singleVaultData_.liqData.token != vars.asset) revert Error.DIFFERENT_TOKENS();
+        vars.vaultTokenIn = abi.decode(singleVaultData_.extraFormData, (address));
 
-            /// @dev handles the asset token transfers.
-            if (token.allowance(msg.sender, address(this)) < singleVaultData_.amount) {
+        /// @dev notice that by validating it like this, it will deny any tokenIn that is native (sometimes addressed as
+        /// address 0)
+        if (vars.vaultTokenIn == address(0)) revert ERC5115FORM_TOKEN_IN_NOT_ENCODED();
+
+        vars.balanceBefore = IERC20(vars.vaultTokenIn).balanceOf(address(this));
+        address sendingTokenAddress = singleVaultData_.liqData.token;
+        IERC20 sendingToken = IERC20(sendingTokenAddress);
+
+        if (sendingTokenAddress != NATIVE && singleVaultData_.liqData.txData.length == 0) {
+            /// @dev this is only valid if sendingTokenAddress == vaultTokenIn (no txData)
+            if (sendingTokenAddress != vars.vaultTokenIn) revert Error.DIFFERENT_TOKENS();
+
+            /// @dev handles the vaultTokenIn token transfers.
+            if (sendingToken.allowance(msg.sender, address(this)) < singleVaultData_.amount) {
                 revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
             }
 
-            /// @dev transfers input token, which is the same as vault asset, to the form
-            token.safeTransferFrom(msg.sender, address(this), singleVaultData_.amount);
+            /// @dev transfers sendingToken to the form
+            sendingToken.safeTransferFrom(msg.sender, address(this), singleVaultData_.amount);
         }
 
         /// @dev non empty txData means there is a swap needed before depositing (input asset not the same as vault
@@ -320,14 +353,14 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
             vars.inputAmount =
                 IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
-            if (address(token) != NATIVE) {
+            if (sendingTokenAddress != NATIVE) {
                 /// @dev checks the allowance before transfer from router
-                if (token.allowance(msg.sender, address(this)) < vars.inputAmount) {
+                if (sendingToken.allowance(msg.sender, address(this)) < vars.inputAmount) {
                     revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
                 }
 
-                /// @dev transfers input token, which is different from the vault asset, to the form
-                token.safeTransferFrom(msg.sender, address(this), vars.inputAmount);
+                /// @dev transfers sendingToken, which is different from the vault asset, to the form
+                sendingToken.safeTransferFrom(msg.sender, address(this), vars.inputAmount);
             }
 
             IBridgeValidator(vars.bridgeValidator).validateTxData(
@@ -339,7 +372,7 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
                     true,
                     address(this),
                     msg.sender,
-                    address(token),
+                    sendingTokenAddress,
                     address(0)
                 )
             );
@@ -347,20 +380,20 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
             _dispatchTokens(
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
-                address(token),
+                sendingTokenAddress,
                 vars.inputAmount,
                 singleVaultData_.liqData.nativeAmount
             );
 
             if (
                 IBridgeValidator(vars.bridgeValidator).decodeSwapOutputToken(singleVaultData_.liqData.txData)
-                    != vars.asset
+                    != vars.vaultTokenIn
             ) {
                 revert Error.DIFFERENT_TOKENS();
             }
         }
 
-        vars.assetDifference = IERC20(vars.asset).balanceOf(address(this)) - vars.balanceBefore;
+        vars.assetDifference = IERC20(vars.vaultTokenIn).balanceOf(address(this)) - vars.balanceBefore;
 
         /// @dev the difference in vault tokens, ready to be deposited, is compared with the amount inscribed in the
         /// superform data
@@ -373,10 +406,10 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
 
         /// @dev notice that vars.assetDifference is deposited regardless if txData exists or not
         /// @dev this presumes no dust is left in the superform
-        IERC20(vars.asset).safeIncreaseAllowance(vault, vars.assetDifference);
+        IERC20(vars.vaultTokenIn).safeIncreaseAllowance(vault, vars.assetDifference);
 
-        /// @dev deposit assets for shares and add extra validation check to ensure intended ERC4626 behavior
-        shares = _depositAndValidate(singleVaultData_, vars.assetDifference);
+        /// @dev deposit assets for shares and add extra validation check to ensure intended ERC5115 behavior
+        shares = _depositAndValidate(singleVaultData_, vars.assetDifference, vars.vaultTokenIn);
     }
 
     function _processXChainDeposit(
@@ -390,18 +423,26 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
         (,, uint64 dstChainId) = singleVaultData_.superformId.getSuperform();
         address vaultLoc = vault;
 
-        if (IERC20(asset).allowance(msg.sender, address(this)) < singleVaultData_.amount) {
+        /// @dev for deposits tokenIn must be decoded from extraFormData as interimToken may be in use
+
+        address vaultTokenIn = abi.decode(singleVaultData_.extraFormData, (address));
+
+        /// @dev notice that by validating it like this, it will deny any tokenIn that is native (sometimes addressed as
+        /// address 0)
+        if (vaultTokenIn == address(0)) revert ERC5115FORM_TOKEN_IN_NOT_ENCODED();
+
+        if (IERC20(vaultTokenIn).allowance(msg.sender, address(this)) < singleVaultData_.amount) {
             revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
         }
 
         /// @dev pulling from sender, to auto-send tokens back in case of failed deposits / reverts
-        IERC20(asset).safeTransferFrom(msg.sender, address(this), singleVaultData_.amount);
+        IERC20(vaultTokenIn).safeTransferFrom(msg.sender, address(this), singleVaultData_.amount);
 
         /// @dev allowance is modified inside of the IERC20.transferFrom() call
-        IERC20(asset).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
+        IERC20(vaultTokenIn).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
 
-        /// @dev deposit assets for shares and add extra validation check to ensure intended ERC4626 behavior
-        shares = _depositAndValidate(singleVaultData_, singleVaultData_.amount);
+        /// @dev deposit vaultTokenIn for shares and add extra validation check to ensure intended ERC5115 behavior
+        shares = _depositAndValidate(singleVaultData_, singleVaultData_.amount, vaultTokenIn);
 
         emit Processed(srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
     }
@@ -417,13 +458,19 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
         /// is this contract (before swap)
 
         IStandardizedYield v = IStandardizedYield(vault);
-        IERC20 a = IERC20(asset);
+
+        /// @dev for withdraws interimToken is used as tokenOut (as extraFormData is overriden in CSR, so cannot be used
+        /// to send this intent)
+
+        vars.vaultTokenOut = singleVaultData_.liqData.interimToken;
+
+        /// @dev notice that by validating it like this, it will deny any tokenOut that is native (sometimes addressed
+        /// as address 0)
+        if (vars.vaultTokenOut == address(0)) revert ERC5115FORM_TOKEN_OUT_NOT_SET();
 
         if (!singleVaultData_.retain4626) {
-            vars.asset = address(asset);
-
-            /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
-            assets = _withdrawAndValidate(singleVaultData_, v, a);
+            /// @dev redeem shares for assets and add extra validation check to ensure intended ERC5115 behavior
+            assets = _withdrawAndValidate(singleVaultData_, v, vars.vaultTokenOut);
 
             if (singleVaultData_.liqData.txData.length != 0) {
                 vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
@@ -450,7 +497,7 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
                         false,
                         address(this),
                         singleVaultData_.receiverAddress,
-                        vars.asset,
+                        vars.vaultTokenOut,
                         address(0)
                     )
                 );
@@ -458,7 +505,7 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
                 _dispatchTokens(
                     superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                     singleVaultData_.liqData.txData,
-                    vars.asset,
+                    vars.vaultTokenOut,
                     vars.amount,
                     singleVaultData_.liqData.nativeAmount
                 );
@@ -480,6 +527,15 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
     {
         XChainWithdrawLocalVars memory vars;
 
+        /// @dev for withdraws interimToken is used as tokenOut (as extraFormData is overriden in CSR, so cannot be used
+        /// to send this intent)
+
+        vars.vaultTokenOut = singleVaultData_.liqData.interimToken;
+
+        /// @dev notice that by validating it like this, it will deny any tokenOut that is native (sometimes addressed
+        /// as address 0)
+        if (vars.vaultTokenOut == address(0)) revert ERC5115FORM_TOKEN_OUT_NOT_SET();
+
         uint256 len = singleVaultData_.liqData.txData.length;
         /// @dev a case where the withdraw req liqData has a valid token and tx data is not updated by the keeper
         if (singleVaultData_.liqData.token != address(0) && len == 0) {
@@ -491,12 +547,10 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
         (,, vars.dstChainId) = singleVaultData_.superformId.getSuperform();
 
         IStandardizedYield v = IStandardizedYield(vault);
-        IERC20 a = IERC20(asset);
-        if (!singleVaultData_.retain4626) {
-            vars.asset = address(asset);
 
-            /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
-            assets = _withdrawAndValidate(singleVaultData_, v, a);
+        if (!singleVaultData_.retain4626) {
+            /// @dev redeem shares for assets and add extra validation check to ensure intended ERC5115 behavior
+            assets = _withdrawAndValidate(singleVaultData_, v, vars.vaultTokenOut);
 
             if (len != 0) {
                 vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
@@ -521,7 +575,7 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
                         false,
                         address(this),
                         singleVaultData_.receiverAddress,
-                        vars.asset,
+                        vars.vaultTokenOut,
                         address(0)
                     )
                 );
@@ -529,7 +583,7 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
                 _dispatchTokens(
                     superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                     singleVaultData_.liqData.txData,
-                    vars.asset,
+                    vars.vaultTokenOut,
                     vars.amount,
                     singleVaultData_.liqData.nativeAmount
                 );
@@ -545,7 +599,8 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
 
     function _depositAndValidate(
         InitSingleVaultData memory singleVaultData_,
-        uint256 assetDifference
+        uint256 assetDifference_,
+        address vaultTokenIn_
     )
         internal
         returns (uint256 shares)
@@ -558,11 +613,11 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
 
         uint256 minSharesOut = singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage);
 
-        if (!isValidTokenIn(asset)) {
+        if (!isValidTokenIn(vaultTokenIn_)) {
             revert INVALID_TOKEN_IN();
         }
 
-        shares = v.deposit(sharesReceiver, singleVaultData_.liqData.token, assetDifference, minSharesOut);
+        shares = v.deposit(sharesReceiver, vaultTokenIn_, assetDifference_, minSharesOut);
 
         uint256 sharesBalanceAfter = v.balanceOf(sharesReceiver);
 
@@ -573,8 +628,8 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
 
     function _withdrawAndValidate(
         InitSingleVaultData memory singleVaultData_,
-        IStandardizedYield v,
-        IERC20 a
+        IStandardizedYield v_,
+        address vaultTokenOut_
     )
         internal
         returns (uint256 assets)
@@ -582,17 +637,17 @@ contract ERC5115Form is BaseForm, LiquidityHandler {
         address assetsReceiver =
             singleVaultData_.liqData.txData.length == 0 ? singleVaultData_.receiverAddress : address(this);
 
-        uint256 assetsBalanceBefore = a.balanceOf(assetsReceiver);
+        uint256 assetsBalanceBefore = IERC20(vaultTokenOut_).balanceOf(assetsReceiver);
 
         uint256 minTokenOut = singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage);
 
-        if (!isValidTokenOut(asset)) {
-            revert INVALID_TOKEN_IN();
+        if (!isValidTokenOut(vaultTokenOut_)) {
+            revert INVALID_TOKEN_OUT();
         }
 
-        assets = v.redeem(assetsReceiver, singleVaultData_.amount, asset, minTokenOut, false);
+        assets = v_.redeem(assetsReceiver, singleVaultData_.amount, vaultTokenOut_, minTokenOut, false);
 
-        uint256 assetsBalanceAfter = a.balanceOf(assetsReceiver);
+        uint256 assetsBalanceAfter = IERC20(vaultTokenOut_).balanceOf(assetsReceiver);
 
         if ((assetsBalanceAfter - assetsBalanceBefore != assets) || (ENTIRE_SLIPPAGE * assets < minTokenOut)) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
