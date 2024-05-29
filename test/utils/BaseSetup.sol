@@ -496,6 +496,50 @@ abstract contract BaseSetup is StdInvariant, Test {
         vm.allowCheatcodes(vars.axelarHelper);
         vm.makePersistent(vars.axelarHelper);
 
+        /// @dev 7.1.1 deploy  LiFiRouterMock. This mock is a very minimal versions to allow
+        /// liquidity bridge testing
+        vars.lifiRouter = address(new LiFiMock{ salt: salt }());
+        vm.allowCheatcodes(vars.lifiRouter);
+        vm.makePersistent(vars.lifiRouter);
+
+        /// @dev 7.1.2 deploy SocketMock. This mock is a very minimal versions to allow
+        /// liquidity bridge testing
+        vars.socketRouter = address(new SocketMock{ salt: salt }());
+        vm.allowCheatcodes(vars.socketRouter);
+        vm.makePersistent(vars.socketRouter);
+
+        /// @dev 7.1.3 deploy SocketOneInchMock. This mock is a very minimal versions to allow
+        /// socket same chain swaps
+        vars.socketOneInch = address(new SocketOneInchMock{ salt: salt }());
+        vm.allowCheatcodes(vars.socketOneInch);
+        vm.makePersistent(vars.socketOneInch);
+
+        /// @dev 7.1.4 deploy LiFiMockRugpull. This mock tests a behaviour where the bridge is malicious and tries
+        /// to steal tokens
+        vars.liFiMockRugpull = address(new LiFiMockRugpull{ salt: salt }());
+        vm.allowCheatcodes(vars.liFiMockRugpull);
+        vm.makePersistent(vars.liFiMockRugpull);
+
+        /// @dev 7.1.5 deploy LiFiMockBlacklisted. This mock tests the behaviour of blacklisted selectors
+        vars.liFiMockBlacklisted = address(new LiFiMockBlacklisted{ salt: salt }());
+        vm.allowCheatcodes(vars.liFiMockBlacklisted);
+        vm.makePersistent(vars.liFiMockBlacklisted);
+
+        /// @dev 7.1.6 deploy LiFiMockSwapToAttacker. This mock tests the behaviour of blacklisted selectors
+        vars.liFiMockSwapToAttacker = address(new LiFiMockSwapToAttacker{ salt: salt }());
+        vm.allowCheatcodes(vars.liFiMockSwapToAttacker);
+        vm.makePersistent(vars.liFiMockSwapToAttacker);
+
+        /// @dev 7.1.7 deploy DeBridgeMock. This mocks tests the behavior of debridge
+        vars.deBridgeMock = address(new DeBridgeMock{ salt: salt }());
+        vm.allowCheatcodes(vars.deBridgeMock);
+        vm.makePersistent(vars.deBridgeMock);
+
+        /// @dev 7.1.7 deploy DeBridgeForwarderMock. This mocks tests the behavior of debridge forwarder
+        vars.debridgeForwarderMock = address(new DeBridgeForwarderMock{ salt: salt }());
+        vm.allowCheatcodes(vars.debridgeForwarderMock);
+        vm.makePersistent(vars.debridgeForwarderMock);
+
         /// @dev deployments
         for (uint256 i = 0; i < chainIds.length; ++i) {
             vars.chainId = chainIds[i];
@@ -667,47 +711,31 @@ abstract contract BaseSetup is StdInvariant, Test {
 
             /// @dev 7.1.1 deploy  LiFiRouterMock. This mock is a very minimal versions to allow
             /// liquidity bridge testing
-            vars.lifiRouter = address(new LiFiMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("LiFiMock"))] = vars.lifiRouter;
-            vm.allowCheatcodes(vars.lifiRouter);
 
             /// @dev 7.1.2 deploy SocketMock. This mock is a very minimal versions to allow
             /// liquidity bridge testing
-            vars.socketRouter = address(new SocketMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("SocketMock"))] = vars.socketRouter;
-            vm.allowCheatcodes(vars.socketRouter);
 
             /// @dev 7.1.3 deploy SocketOneInchMock. This mock is a very minimal versions to allow
             /// socket same chain swaps
-            vars.socketOneInch = address(new SocketOneInchMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("SocketOneInchMock"))] = vars.socketOneInch;
-            vm.allowCheatcodes(vars.socketOneInch);
 
             /// @dev 7.1.4 deploy LiFiMockRugpull. This mock tests a behaviour where the bridge is malicious and tries
             /// to steal tokens
-            vars.liFiMockRugpull = address(new LiFiMockRugpull{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("LiFiMockRugpull"))] = vars.liFiMockRugpull;
-            vm.allowCheatcodes(vars.liFiMockRugpull);
 
             /// @dev 7.1.5 deploy LiFiMockBlacklisted. This mock tests the behaviour of blacklisted selectors
-            vars.liFiMockBlacklisted = address(new LiFiMockBlacklisted{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("LiFiMockBlacklisted"))] = vars.liFiMockBlacklisted;
-            vm.allowCheatcodes(vars.liFiMockBlacklisted);
 
             /// @dev 7.1.6 deploy LiFiMockSwapToAttacker. This mock tests the behaviour of blacklisted selectors
-            vars.liFiMockSwapToAttacker = address(new LiFiMockSwapToAttacker{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("LiFiMockBlacklisted"))] = vars.liFiMockSwapToAttacker;
-            vm.allowCheatcodes(vars.liFiMockSwapToAttacker);
 
             /// @dev 7.1.7 deploy DeBridgeMock. This mocks tests the behavior of debridge
-            vars.deBridgeMock = address(new DeBridgeMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("DeBridgeMock"))] = vars.deBridgeMock;
-            vm.allowCheatcodes(vars.deBridgeMock);
 
             /// @dev 7.1.7 deploy DeBridgeForwarderMock. This mocks tests the behavior of debridge forwarder
-            vars.debridgeForwarderMock = address(new DeBridgeForwarderMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderMock"))] = vars.debridgeForwarderMock;
-            vm.allowCheatcodes(vars.debridgeForwarderMock);
 
             /// @dev 7.2.1- deploy  lifi validator
             vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
