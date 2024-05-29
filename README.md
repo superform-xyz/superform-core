@@ -15,7 +15,7 @@ For DeFi protocols, it acts as an instant out-of-the-box distribution platform f
 **Core capabilities for users include:** 
 - Deposit or withdraw into any vault using any asset from any chain
 - Batch desired actions across multiple vaults and multiple chains in a single transaction
-- Automate and mange your yield portfolio from any chain
+- Automate and manage your yield portfolio from any chain
 - Automatically compound your yield position
 - Make cross-chain transactions using multiple AMBs 
 
@@ -91,7 +91,7 @@ In this section we will run through examples where users deposit and withdraw in
 
 - Validation of the input data in `SuperformRouter.sol`.
 - Process swap transaction data if provided to allow SuperformRouter to move tokens from the user to the Superform and call `directDepositIntoVault` to move tokens from the Superform into the vault.
-- Store ERC-4626 shares in the Superform and mint the apppropriate amount of SuperPositions back to the user.
+- Store ERC-4626 shares in the Superform and mint the appropriate amount of SuperPositions back to the user.
 
 ### Cross-chain Deposit Flow
 
@@ -102,7 +102,7 @@ In this section we will run through examples where users deposit and withdraw in
 - Create an `AMBMessage` with the information about what is going to be deposited and by whom.
 - Message the information about the deposits to the vaults using `CoreStateRegistry.sol`. This is done with the combination of a main AMB and a configurable number of proof AMBs for added security, a measure set via `setRequiredMessagingQuorum` in `SuperRegistry.sol`.
 - Forward remaining payment to `PayMaster.sol` to cover the costs of cross-chain transactions and relayer payments. 
-- Receive the information on the destination chain's `CoreStateRegistry.sol`. Assuming no swap was required in `DstSwapper.sol`, at this step, assuming both the payload and proof have arrived, a keeper updates the messaged amounts to-be deposited with the actual amounts received through the liquidity bridge using `updateDepositPayload`. The maximum number it can be updated to is what the user specified in StateReq.amount. If the end number of tokens received is below the minimum bound of what the user specified, calculated by StateReq.amount*(10000-StateReq.maxSlippage), the deposit is marked as failed and must be rescued through the `rescueFailedDeposit` function to return funds back to the user through an optimisic dispute process.  
+- Receive the information on the destination chain's `CoreStateRegistry.sol`. Assuming no swap was required in `DstSwapper.sol`, at this step, assuming both the payload and proof have arrived, a keeper updates the messaged amounts to-be deposited with the actual amounts received through the liquidity bridge using `updateDepositPayload`. The maximum number it can be updated to is what the user specified in StateReq.amount. If the end number of tokens received is below the minimum bound of what the user specified, calculated by StateReq.amount*(10000-StateReq.maxSlippage), the deposit is marked as failed and must be rescued through the `rescueFailedDeposit` function to return funds back to the user through an optimistic dispute process.  
 - The keeper can then process the received message using `processPayload`. Here the deposit action is try-catched for errors. Should the action pass, a message is sent back to source acknowledging the action and mints SuperPositions to the user. If the action fails, no message is sent back, no SuperPositions are minted, and the `rescueFailedDeposit` function must be used.
 
 ### Same-chain Withdrawal Flow
@@ -120,7 +120,7 @@ In this section we will run through examples where users deposit and withdraw in
 - Create the `AMBMessage` with the information about what is going to be withdrawn and by whom.
 - Message the information about the withdrawals from the vaults using `CoreStateRegistry.sol`. This is done with the combination of a main AMB and a configurable number of proof AMBs for added security, a measure set via `setRequiredMessagingQuorum` in `SuperRegistry.sol`.
 - Forward remaining payment to `PayMaster.sol` to cover the costs of cross-chain transactions and relayer payments. 
-- If no transaction data was provided with the transaction, but the user defined an intended token and chain to recieve assets back on, assuming both the payload and proof have arrived, a keeper can call `updateWithdrawPayload` to update the payload with transaction data. This can be done to reduce the chance of transaction data failure due to latency. 
+- If no transaction data was provided with the transaction, but the user defined an intended token and chain to receive assets back on, assuming both the payload and proof have arrived, a keeper can call `updateWithdrawPayload` to update the payload with transaction data. This can be done to reduce the chance of transaction data failure due to latency. 
 - The keeper can then process the received message using `processPayload`. Here the withdraw action is try-catched for errors. Should the action pass, the underlying obtained is bridged back to the user in the form of the desired tokens to be received. If the action fails, a message is sent back indicating that SuperPositions need to be re-minted for the user according to the original amounts that were burned. No rescue methods are implemented given the re-minting behavior on withdrawals. 
 
 ## Tests
