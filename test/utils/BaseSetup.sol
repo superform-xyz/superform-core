@@ -6,8 +6,9 @@ import "forge-std/Test.sol";
 import { StdInvariant } from "forge-std/StdInvariant.sol";
 
 import { LayerZeroHelper } from "pigeon/layerzero/LayerZeroHelper.sol";
+import { LayerZeroV2Helper } from "pigeon/layerzero-v2/LayerzeroV2Helper.sol";
 import { HyperlaneHelper } from "pigeon/hyperlane/HyperlaneHelper.sol";
-
+import { AxelarHelper } from "pigeon/axelar/AxelarHelper.sol";
 import { WormholeHelper } from "pigeon/wormhole/automatic-relayer/WormholeHelper.sol";
 import "pigeon/wormhole/specialized-relayer/WormholeHelper.sol" as WormholeBroadcastHelper;
 
@@ -20,6 +21,8 @@ import { SocketOneInchMock } from "../mocks/SocketOneInchMock.sol";
 import { LiFiMockRugpull } from "../mocks/LiFiMockRugpull.sol";
 import { LiFiMockBlacklisted } from "../mocks/LiFiMockBlacklisted.sol";
 import { LiFiMockSwapToAttacker } from "../mocks/LiFiMockSwapToAttacker.sol";
+import { DeBridgeMock } from "../mocks/DeBridgeMock.sol";
+import { DeBridgeForwarderMock } from "../mocks/DeBridgeForwarderMock.sol";
 
 import { MockERC20 } from "../mocks/MockERC20.sol";
 import { VaultMock } from "../mocks/VaultMock.sol";
@@ -54,13 +57,23 @@ import { ERC5115To4626Wrapper } from "src/forms/wrappers/ERC5115To4626Wrapper.so
 import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
 import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator.sol";
+import { DeBridgeValidator } from "src/crosschain-liquidity/debridge/DeBridgeValidator.sol";
+import { DeBridgeForwarderValidator } from "src/crosschain-liquidity/debridge/DeBridgeForwarderValidator.sol";
+
 import { SocketOneInchValidator } from "src/crosschain-liquidity/socket/SocketOneInchValidator.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
+import { LayerzeroV2Implementation } from "src/crosschain-data/adapters/layerzero-v2/LayerzeroV2Implementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
 import { WormholeARImplementation } from
     "src/crosschain-data/adapters/wormhole/automatic-relayer/WormholeARImplementation.sol";
 import { WormholeSRImplementation } from
     "src/crosschain-data/adapters/wormhole/specialized-relayer/WormholeSRImplementation.sol";
+import {
+    AxelarImplementation,
+    IAxelarGateway,
+    IAxelarGasService,
+    IInterchainGasEstimation
+} from "src/crosschain-data/adapters/axelar/AxelarImplementation.sol";
 import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
 import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
 import ".././utils/AmbParams.sol";
@@ -75,8 +88,6 @@ import { Error } from "src/libraries/Error.sol";
 import { RewardsDistributor } from "src/RewardsDistributor.sol";
 import "src/types/DataTypes.sol";
 import "./TestTypes.sol";
-
-import "forge-std/console.sol";
 
 abstract contract BaseSetup is StdInvariant, Test {
     /*//////////////////////////////////////////////////////////////
@@ -98,6 +109,7 @@ abstract contract BaseSetup is StdInvariant, Test {
     /// @dev for mainnet deployment
     address public constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
+    /// CREATE2 assumption but it works otherwise too
     address public deployer = vm.addr(777);
     address[] public users;
     uint256[] public userKeys;
@@ -106,14 +118,16 @@ abstract contract BaseSetup is StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[31] public contractNames = [
+    string[39] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
         "LayerzeroImplementation",
+        "LayerzeroV2Implementation",
         "HyperlaneImplementation",
         "WormholeARImplementation",
         "WormholeSRImplementation",
+        "AxelarImplementation",
         "LiFiValidator",
         "SocketValidator",
         "DstSwapper",
@@ -129,14 +143,20 @@ abstract contract BaseSetup is StdInvariant, Test {
         "PaymentHelper",
         "PayMaster",
         "LayerZeroHelper",
+        "LayerZeroV2Helper",
         "HyperlaneHelper",
         "WormholeHelper",
+        "AxelarHelper",
         "WormholeBroadcastHelper",
         "LiFiMock",
+        "DeBridgeMock",
+        "DeBridgeForwarderMock",
         "KYCDAOMock",
         "CanonicalPermit2",
         "EmergencyQueue",
         "SocketOneInchValidator",
+        "DeBridgeValidator",
+        "DeBridgeForwarderValidator",
         "RewardsDistributor"
     ];
 
@@ -190,9 +210,11 @@ abstract contract BaseSetup is StdInvariant, Test {
     /// @notice id 2 is hyperlane
     /// @notice id 3 is wormhole (Automatic Relayer)
     /// @notice id 4 is wormhole (Specialized Relayer)
+    /// @notice id 5 is axelar
+    /// @notice id 6 is layerzero-v2
 
-    uint8[] public ambIds = [uint8(1), 2, 3, 4];
-    bool[] public isBroadcastAMB = [false, false, false, true];
+    uint8[] public ambIds = [uint8(1), 2, 3, 4, 5, 6];
+    bool[] public isBroadcastAMB = [false, false, false, true, false, false];
 
     /*//////////////////////////////////////////////////////////////
                         AMB VARIABLES
@@ -201,6 +223,8 @@ abstract contract BaseSetup is StdInvariant, Test {
     mapping(uint64 => address) public LZ_ENDPOINTS;
     mapping(uint64 => uint16) public WORMHOLE_CHAIN_IDS;
     mapping(uint64 => address) public HYPERLANE_MAILBOXES;
+    mapping(uint64 => string) public AXELAR_CHAIN_IDS;
+    mapping(uint64 => address) public AXELAR_GATEWAYS;
 
     address public constant ETH_lzEndpoint = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
     address public constant BSC_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
@@ -255,12 +279,50 @@ abstract contract BaseSetup is StdInvariant, Test {
         0x126783A6Cb203a3E35344528B26ca3a0489a1485
     ];
 
+    address[] public axelarGateway = [
+        0x4F4495243837681061C4743b74B3eEdf548D56A5,
+        0x304acf330bbE08d1e512eefaa92F6a57871fD895,
+        0x5029C0EFf6C34351a0CEc334542cDb22c7928f78,
+        0x6f015F16De9fC8791b234eF68D486d2bF203FBA8,
+        0xe432150cce91c13a887f7D836923d5597adD8E31,
+        0xe432150cce91c13a887f7D836923d5597adD8E31,
+        0xe432150cce91c13a887f7D836923d5597adD8E31,
+        0x304acf330bbE08d1e512eefaa92F6a57871fD895
+    ];
+
+    address[] public axelarGasService = [
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712
+    ];
+
     /*//////////////////////////////////////////////////////////////
                         WORMHOLE VARIABLES
     //////////////////////////////////////////////////////////////*/
     /// @dev uses CREATE2
     address public wormholeRelayer = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
     address public wormholeBaseRelayer = 0x706F82e9bb5b0813501714Ab5974216704980e31;
+
+    /*//////////////////////////////////////////////////////////////
+                        LAYERZERO V2 VARIABLES
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev uses CREATE2
+    address public lzV2Endpoint = 0x1a44076050125825900e736c501f859c50fE728c;
+
+    uint32 public constant LZ_V2_ETH = 30_101;
+    uint32 public constant LZ_V2_BSC = 30_102;
+    uint32 public constant LZ_V2_AVAX = 30_106;
+    uint32 public constant LZ_V2_POLY = 30_109;
+    uint32 public constant LZ_V2_ARBI = 30_110;
+    uint32 public constant LZ_V2_OP = 30_111;
+    uint32 public constant LZ_V2_BASE = 30_184;
+    uint32 public constant LZ_V2_FANTOM = 30_112;
 
     /*//////////////////////////////////////////////////////////////
                         HYPERLANE VARIABLES
@@ -287,8 +349,11 @@ abstract contract BaseSetup is StdInvariant, Test {
     uint16 public constant LZ_FANTOM = 112;
 
     uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111, 184, 112];
+    uint32[] public lz_v2_chainIds = [30_101, 30_102, 30_106, 30_109, 30_110, 30_111, 30_184, 30_112];
     uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
     uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30, 10];
+    string[] public axelar_chainIds =
+        ["Ethereum", "binance", "Avalanche", "Polygon", "arbitrum", "optimism", "base", "Fantom"];
 
     /// @dev minting enough tokens to be able to fuzz with bigger amounts (DAI's 3.6B supply etc)
     uint256 public constant hundredBilly = 100 * 1e9 * 1e18;
@@ -431,6 +496,12 @@ abstract contract BaseSetup is StdInvariant, Test {
 
             contracts[vars.chainId][bytes32(bytes("LayerZeroHelper"))] = vars.lzHelper;
 
+            /// @dev 1.1.2- deploy LZ v2 Helper from Pigeon
+            vars.lzV2Helper = address(new LayerZeroV2Helper{ salt: salt }());
+            vm.allowCheatcodes(vars.lzV2Helper);
+
+            contracts[vars.chainId][bytes32(bytes("LayerZeroV2Helper"))] = vars.lzV2Helper;
+
             /// @dev 1.2- deploy Hyperlane Helper from Pigeon
             vars.hyperlaneHelper = address(new HyperlaneHelper{ salt: salt }());
             vm.allowCheatcodes(vars.hyperlaneHelper);
@@ -448,6 +519,12 @@ abstract contract BaseSetup is StdInvariant, Test {
             vm.allowCheatcodes(vars.wormholeBroadcastHelper);
 
             contracts[vars.chainId][bytes32(bytes("WormholeBroadcastHelper"))] = vars.wormholeBroadcastHelper;
+
+            /// @dev 1.5- deploy axelar from Pigeon
+            vars.axelarHelper = address(new AxelarHelper{ salt: salt }());
+            vm.allowCheatcodes(vars.axelarHelper);
+
+            contracts[vars.chainId][bytes32(bytes("AxelarHelper"))] = vars.axelarHelper;
 
             /// @dev 2 - Deploy SuperRBAC
             vars.superRBAC = address(
@@ -532,6 +609,12 @@ abstract contract BaseSetup is StdInvariant, Test {
 
             LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[i]);
 
+            /// @dev 6.1.1 - deploy Layerzero v2 implementation
+            vars.lzV2Implementation = address(new LayerzeroV2Implementation{ salt: salt }(vars.superRegistryC));
+            contracts[vars.chainId][bytes32(bytes("LayerzeroV2Implementation"))] = vars.lzV2Implementation;
+
+            LayerzeroV2Implementation(payable(vars.lzV2Implementation)).setLzEndpoint(lzV2Endpoint);
+
             /// @dev 6.2 - deploy Hyperlane Implementation
             if (vars.chainId != FANTOM) {
                 vars.hyperlaneImplementation =
@@ -550,17 +633,28 @@ abstract contract BaseSetup is StdInvariant, Test {
             /// set refund chain id to wormhole chain id
             WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(wormhole_chainIds[i]);
 
-            /// @dev 6.5- deploy Wormhole Specialized Relayer Implementation
+            /// @dev 6.4- deploy Wormhole Specialized Relayer Implementation
             vars.wormholeSRImplementation = address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC, 3));
             contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
 
             WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[i]);
             WormholeSRImplementation(vars.wormholeSRImplementation).setRelayer(deployer);
 
+            /// @dev 6.5- deploy Axelar Implementation
+            vars.axelarImplementation = address(new AxelarImplementation{ salt: salt }(vars.superRegistryC));
+            contracts[vars.chainId][bytes32(bytes("AxelarImplementation"))] = vars.axelarImplementation;
+
+            AxelarImplementation(vars.axelarImplementation).setAxelarConfig(IAxelarGateway(axelarGateway[i]));
+            AxelarImplementation(vars.axelarImplementation).setAxelarGasService(
+                IAxelarGasService(axelarGasService[i]), IInterchainGasEstimation(axelarGasService[i])
+            );
+
             vars.ambAddresses[0] = vars.lzImplementation;
             vars.ambAddresses[1] = vars.hyperlaneImplementation;
             vars.ambAddresses[2] = vars.wormholeImplementation;
             vars.ambAddresses[3] = vars.wormholeSRImplementation;
+            vars.ambAddresses[4] = vars.axelarImplementation;
+            vars.ambAddresses[5] = vars.lzV2Implementation;
 
             /// @dev 7.1.1 deploy  LiFiRouterMock. This mock is a very minimal versions to allow
             /// liquidity bridge testing
@@ -596,6 +690,16 @@ abstract contract BaseSetup is StdInvariant, Test {
             contracts[vars.chainId][bytes32(bytes("LiFiMockBlacklisted"))] = vars.liFiMockSwapToAttacker;
             vm.allowCheatcodes(vars.liFiMockSwapToAttacker);
 
+            /// @dev 7.1.7 deploy DeBridgeMock. This mocks tests the behavior of debridge
+            vars.deBridgeMock = address(new DeBridgeMock{ salt: salt }());
+            contracts[vars.chainId][bytes32(bytes("DeBridgeMock"))] = vars.deBridgeMock;
+            vm.allowCheatcodes(vars.deBridgeMock);
+
+            /// @dev 7.1.7 deploy DeBridgeForwarderMock. This mocks tests the behavior of debridge forwarder
+            vars.debridgeForwarderMock = address(new DeBridgeForwarderMock{ salt: salt }());
+            contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderMock"))] = vars.debridgeForwarderMock;
+            vm.allowCheatcodes(vars.debridgeForwarderMock);
+
             /// @dev 7.2.1- deploy  lifi validator
             vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
@@ -625,6 +729,14 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.socketOneInchValidator = address(new SocketOneInchValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("SocketOneInchValidator"))] = vars.socketOneInchValidator;
 
+            /// @dev 7.2.4- deploy deBridge validator
+            vars.debridgeValidator = address(new DeBridgeValidator{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("DeBridgeValidator"))] = vars.debridgeValidator;
+
+            /// @dev 7.2.5- deploy deBridge forwarder validator
+            vars.debridgeForwarderValidator = address(new DeBridgeForwarderValidator{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderValidator"))] = vars.debridgeForwarderValidator;
+
             /// @dev 7.3- kycDAO NFT used to test kycDAO vaults
             vars.kycDAOMock = address(new KYCDaoNFTMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("KYCDAOMock"))] = vars.kycDAOMock;
@@ -635,6 +747,8 @@ abstract contract BaseSetup is StdInvariant, Test {
             bridgeAddresses.push(vars.liFiMockRugpull);
             bridgeAddresses.push(vars.liFiMockBlacklisted);
             bridgeAddresses.push(vars.liFiMockSwapToAttacker);
+            bridgeAddresses.push(vars.deBridgeMock);
+            bridgeAddresses.push(vars.debridgeForwarderMock);
 
             bridgeValidators.push(vars.lifiValidator);
             bridgeValidators.push(vars.socketValidator);
@@ -642,6 +756,8 @@ abstract contract BaseSetup is StdInvariant, Test {
             bridgeValidators.push(vars.lifiValidator);
             bridgeValidators.push(vars.lifiValidator);
             bridgeValidators.push(vars.lifiValidator);
+            bridgeValidators.push(vars.debridgeValidator);
+            bridgeValidators.push(vars.debridgeForwarderValidator);
 
             /// @dev 8.1 - Deploy UNDERLYING_TOKENS and VAULTS
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; ++j) {
@@ -793,23 +909,26 @@ abstract contract BaseSetup is StdInvariant, Test {
             /// @dev 17 - Super Registry extra setters
             /// @dev BASE does not have SocketV1 available
             if (vars.chainId == BASE) {
-                uint8[] memory bridgeIdsBase = new uint8[](4);
+                uint8[] memory bridgeIdsBase = new uint8[](5);
                 bridgeIdsBase[0] = bridgeIds[0];
                 bridgeIdsBase[1] = bridgeIds[3];
                 bridgeIdsBase[2] = bridgeIds[4];
                 bridgeIdsBase[3] = bridgeIds[5];
+                bridgeIdsBase[4] = bridgeIds[6];
 
-                address[] memory bridgeAddressesBase = new address[](4);
+                address[] memory bridgeAddressesBase = new address[](5);
                 bridgeAddressesBase[0] = bridgeAddresses[0];
                 bridgeAddressesBase[1] = bridgeAddresses[3];
                 bridgeAddressesBase[2] = bridgeAddresses[4];
                 bridgeAddressesBase[3] = bridgeAddresses[5];
+                bridgeAddressesBase[4] = bridgeAddresses[6];
 
-                address[] memory bridgeValidatorsBase = new address[](4);
+                address[] memory bridgeValidatorsBase = new address[](5);
                 bridgeValidatorsBase[0] = bridgeValidators[0];
                 bridgeValidatorsBase[1] = bridgeValidators[3];
                 bridgeValidatorsBase[2] = bridgeValidators[4];
                 bridgeValidatorsBase[3] = bridgeValidators[5];
+                bridgeValidatorsBase[4] = bridgeValidators[6];
 
                 vars.superRegistryC.setBridgeAddresses(bridgeIdsBase, bridgeAddressesBase, bridgeValidatorsBase);
             } else {
@@ -876,9 +995,11 @@ abstract contract BaseSetup is StdInvariant, Test {
             vm.selectFork(vars.fork);
 
             vars.lzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
+            vars.lzV2Implementation = getContract(vars.chainId, "LayerzeroV2Implementation");
             vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
             vars.wormholeImplementation = getContract(vars.chainId, "WormholeARImplementation");
             vars.wormholeSRImplementation = getContract(vars.chainId, "WormholeSRImplementation");
+            vars.axelarImplementation = getContract(vars.chainId, "AxelarImplementation");
             vars.superRBAC = getContract(vars.chainId, "SuperRBAC");
 
             vars.superRegistry = getContract(vars.chainId, "SuperRegistry");
@@ -902,12 +1023,22 @@ abstract contract BaseSetup is StdInvariant, Test {
                     vars.dstWormholeARImplementation = getContract(vars.dstChainId, "WormholeARImplementation");
                     vars.dstWormholeSRImplementation = getContract(vars.dstChainId, "WormholeSRImplementation");
                     vars.dstwormholeBroadcastHelper = getContract(vars.dstChainId, "WormholeBroadcastHelper");
+                    vars.dstAxelarImplementation = getContract(vars.dstChainId, "AxelarImplementation");
 
                     LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
                         vars.dstLzChainId, abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
                     );
                     LayerzeroImplementation(payable(vars.lzImplementation)).setChainId(
                         vars.dstChainId, vars.dstLzChainId
+                    );
+
+                    LayerzeroV2Implementation(payable(vars.lzV2Implementation)).setPeer(
+                        lz_v2_chainIds[j],
+                        bytes32(uint256(uint160(getContract(vars.dstChainId, "LayerzeroV2Implementation"))))
+                    );
+
+                    LayerzeroV2Implementation(payable(vars.lzV2Implementation)).setChainId(
+                        vars.dstChainId, lz_v2_chainIds[j]
                     );
 
                     if (!(vars.chainId == FANTOM || vars.dstChainId == FANTOM)) {
@@ -928,6 +1059,14 @@ abstract contract BaseSetup is StdInvariant, Test {
                         vars.dstChainId, vars.dstWormholeChainId
                     );
 
+                    AxelarImplementation(payable(vars.axelarImplementation)).setChainId(
+                        vars.dstChainId, axelar_chainIds[j]
+                    );
+
+                    AxelarImplementation(payable(vars.axelarImplementation)).setReceiver(
+                        axelar_chainIds[j], vars.dstAxelarImplementation
+                    );
+
                     WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setChainId(
                         vars.dstChainId, vars.dstWormholeChainId
                     );
@@ -943,6 +1082,9 @@ abstract contract BaseSetup is StdInvariant, Test {
 
                     vars.superRegistryC.setRequiredMessagingQuorum(vars.dstChainId, 1);
                     vars.superRegistryC.setVaultLimitPerDestination(vars.dstChainId, 5);
+                    vars.superRegistryC.setAddress(
+                        keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), deployer, vars.dstChainId
+                    );
 
                     /// swap gas cost: 50000
                     /// update gas cost: 40000
@@ -1233,14 +1375,14 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
         if (!invariant) {
-            forks[ETH] = pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 18_432_589) : vm.createFork(ETHEREUM_RPC_URL_QN);
+            forks[ETH] = pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 19_293_715) : vm.createFork(ETHEREUM_RPC_URL_QN);
             forks[BSC] = pinnedBlock ? vm.createFork(BSC_RPC_URL, 32_899_049) : vm.createFork(BSC_RPC_URL_QN);
             forks[AVAX] =
-                pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 36_974_720) : vm.createFork(AVALANCHE_RPC_URL_QN);
-            forks[POLY] = pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 49_118_079) : vm.createFork(POLYGON_RPC_URL_QN);
+                pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 43_845_494) : vm.createFork(AVALANCHE_RPC_URL_QN);
+            forks[POLY] = pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 56_710_026) : vm.createFork(POLYGON_RPC_URL_QN);
             forks[ARBI] =
-                pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 143_659_807) : vm.createFork(ARBITRUM_RPC_URL_QN);
-            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 111_390_769) : vm.createFork(OPTIMISM_RPC_URL_QN);
+                pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 175_504_761) : vm.createFork(ARBITRUM_RPC_URL_QN);
+            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 116_353_583) : vm.createFork(OPTIMISM_RPC_URL_QN);
             forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL_QN);
             forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 78_945_396) : vm.createFork(FANTOM_RPC_URL_QN);
         }
@@ -1331,6 +1473,8 @@ abstract contract BaseSetup is StdInvariant, Test {
 
         for (uint256 i = 0; i < chainIds.length; ++i) {
             wormholeChainIdsStorage[chainIds[i]] = wormhole_chainIds[i];
+            AXELAR_GATEWAYS[chainIds[i]] = axelarGateway[i];
+            AXELAR_CHAIN_IDS[chainIds[i]] = axelar_chainIds[i];
         }
 
         /// price feeds on all chains, for paymentHelper: chain => asset => priceFeed (against USD)
@@ -1415,6 +1559,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[FANTOM][ETH] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
         priceFeeds[FANTOM][BASE] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
         priceFeeds[FANTOM][ARBI] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+
         /// @dev setup bridges.
         /// 1 is lifi
         /// 2 is socket
@@ -1422,6 +1567,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// 4 is lifi rugpull
         /// 5 is lifi blacklist
         /// 6 is lifi swap to attacker
+        /// 7 is debridge
+        /// 8 is debridge forwarder
 
         bridgeIds.push(1);
         bridgeIds.push(2);
@@ -1429,6 +1576,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         bridgeIds.push(4);
         bridgeIds.push(5);
         bridgeIds.push(6);
+        bridgeIds.push(7);
+        bridgeIds.push(8);
 
         /// @dev setup users
         userKeys.push(1);

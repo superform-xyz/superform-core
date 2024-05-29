@@ -5,11 +5,15 @@ import "./BaseSetup.sol";
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
+import { DlnOrderLib } from "src/vendor/debridge/DlnOrderLib.sol";
 import { AggregatorV3Interface } from "../../src/vendor/chainlink/AggregatorV3Interface.sol";
 import { LiFiMock } from "../mocks/LiFiMock.sol";
 import { SocketMock } from "../mocks/SocketMock.sol";
+import { DeBridgeMock } from "../mocks/DeBridgeMock.sol";
 import { SocketOneInchMock } from "../mocks/SocketOneInchMock.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
+
+import "forge-std/console.sol";
 
 abstract contract CommonProtocolActions is BaseSetup {
     /// @dev percentage of total slippage that is used for dstSwap
@@ -35,6 +39,7 @@ abstract contract CommonProtocolActions is BaseSetup {
         uint256 USDPerExternalToken;
         uint256 USDPerUnderlyingTokenDst;
         uint256 USDPerUnderlyingToken;
+        address deBridgeRefundAddress;
     }
 
     function _buildLiqBridgeTxData(
@@ -261,6 +266,82 @@ abstract contract CommonProtocolActions is BaseSetup {
                 args.toDst,
                 args.amount,
                 abi.encode(args.from, args.USDPerExternalToken, args.USDPerUnderlyingToken)
+            );
+        } else if (args.liqBridgeKind == 7) {
+            txData = abi.encodeWithSelector(
+                DeBridgeMock.createSaltedOrder.selector,
+                DlnOrderLib.OrderCreation(
+                    args.externalToken,
+                    args.amount,
+                    abi.encodePacked(args.underlyingTokenDst),
+                    /// take amount
+                    (args.amount * uint256(args.USDPerUnderlyingToken)) / uint256(args.USDPerUnderlyingTokenDst),
+                    uint256(args.toChainId),
+                    abi.encodePacked(getContract(args.toChainId, "CoreStateRegistry")),
+                    address(args.deBridgeRefundAddress),
+                    abi.encodePacked(deployer),
+                    bytes(""),
+                    bytes(""),
+                    abi.encodePacked(args.deBridgeRefundAddress)
+                ),
+                /// random salt
+                uint64(block.timestamp),
+                /// affliate fee
+                bytes(""),
+                /// referral code
+                uint32(0),
+                /// permit envelope
+                bytes(""),
+                /// metadata
+                abi.encode(args.from, FORKS[args.srcChainId], FORKS[args.liqDstChainId])
+            );
+        } else if (args.liqBridgeKind == 8) {
+            console.log("Common Protocol Actions", args.from);
+            bytes memory targetTxData = abi.encodeWithSelector(
+                DeBridgeMock.createSaltedOrder.selector,
+                DlnOrderLib.OrderCreation(
+                    args.externalToken,
+                    args.amount,
+                    abi.encodePacked(args.underlyingTokenDst),
+                    /// take amount
+                    (args.amount * uint256(args.USDPerUnderlyingToken)) / uint256(args.USDPerUnderlyingTokenDst),
+                    uint256(args.toChainId),
+                    abi.encodePacked(getContract(args.toChainId, "CoreStateRegistry")),
+                    address(args.deBridgeRefundAddress),
+                    abi.encodePacked(deployer),
+                    bytes(""),
+                    bytes(""),
+                    abi.encodePacked(args.deBridgeRefundAddress)
+                ),
+                /// random salt
+                uint64(block.timestamp),
+                /// affliate fee
+                bytes(""),
+                /// referral code
+                uint32(0),
+                /// permit envelope
+                bytes(""),
+                /// metadata
+                abi.encode(args.from, FORKS[args.srcChainId], FORKS[args.liqDstChainId])
+            );
+
+            txData = abi.encodeWithSelector(
+                DeBridgeForwarderMock.strictlySwapAndCall.selector,
+                args.externalToken,
+                args.amount,
+                bytes(""),
+                // src swap router
+                 0x1111111254EEB25477B68fb85Ed929f73A960582, /// 1inch
+                /// src swap calldata
+                bytes(""),
+                args.externalToken,
+                /// src token expected amount
+                args.amount,
+                /// src token refund recipient
+                args.deBridgeRefundAddress,
+                /// de bridge target
+                0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
+                targetTxData
             );
         }
     }
@@ -544,6 +625,34 @@ abstract contract CommonProtocolActions is BaseSetup {
                 v.receiver_,
                 v.amount_,
                 abi.encode(v.from_, USDPerUnderlyingToken, USDPerUnderlyingTokenDst)
+            );
+        } else if (v.liqBridgeKind_ == 7) {
+            txData = abi.encodeWithSelector(
+                DeBridgeMock.createSaltedOrder.selector,
+                DlnOrderLib.OrderCreation(
+                    v.underlyingToken_,
+                    v.amount_,
+                    abi.encodePacked(v.underlyingTokenDst_),
+                    /// take amount
+                    (v.amount_ * uint256(USDPerUnderlyingToken)) / uint256(USDPerUnderlyingTokenDst),
+                    v.toChainId_,
+                    abi.encodePacked(v.receiver_),
+                    v.receiver_,
+                    abi.encodePacked(deployer),
+                    bytes(""),
+                    bytes(""),
+                    abi.encodePacked(v.receiver_)
+                ),
+                /// random salt
+                uint64(block.timestamp),
+                /// affliate fee
+                bytes(""),
+                /// referral code
+                uint32(0),
+                /// permit envelope
+                bytes(""),
+                /// metadata
+                abi.encode(v.from_, FORKS[v.srcChainId_], FORKS[v.toChainId_])
             );
         }
     }

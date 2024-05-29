@@ -396,7 +396,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         : payable(getContract(DST_CHAINS[i], "CoreStateRegistry"));
                 }
             }
-
+            
             vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
 
             vars.outputAmounts = vars.amounts;
@@ -643,13 +643,14 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
                         (liqValue,,, msgValue) =
                             paymentHelper.estimateSingleXChainSingleVault(vars.singleXChainSingleVaultStateReq, true);
-                        vm.prank(users[action.user]);
 
                         if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                             vm.expectRevert();
                         }
-                        /// @dev the actual call to the entry point
 
+                        vm.prank(users[action.user]);
+                        console.log("Inside Protocol Actions", users[action.user]);
+                        /// @dev the actual call to the entry point
                         superformRouter.singleXChainSingleVaultDeposit{ value: msgValue }(
                             vars.singleXChainSingleVaultStateReq
                         );
@@ -744,8 +745,13 @@ abstract contract ProtocolActions is CommonProtocolActions {
         address[] toMailboxes;
         uint32[] expDstDomains;
         address[] endpoints;
+        address[] endpointsV2;
         uint16[] lzChainIds;
+        uint32[] lzChainIdsV2;
         address[] wormholeRelayers;
+        address[] axelarGateways;
+        string[] axelarChainIds;
+        string axelarFromChain;
         address[] expDstChainAddresses;
         uint256[] forkIds;
         uint256 k;
@@ -779,28 +785,45 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 ++usedDSTs[DST_CHAINS[i]].payloadNumber;
             }
         }
+        
         vars.nUniqueDsts = uniqueDSTs.length;
 
         internalVars.toMailboxes = new address[](vars.nUniqueDsts);
         internalVars.expDstDomains = new uint32[](vars.nUniqueDsts);
 
         internalVars.endpoints = new address[](vars.nUniqueDsts);
+        internalVars.endpointsV2 = new address[](vars.nUniqueDsts);
+
         internalVars.lzChainIds = new uint16[](vars.nUniqueDsts);
+        internalVars.lzChainIdsV2 = new uint32[](vars.nUniqueDsts);
 
         internalVars.wormholeRelayers = new address[](vars.nUniqueDsts);
         internalVars.expDstChainAddresses = new address[](vars.nUniqueDsts);
+
+        internalVars.axelarGateways = new address[](vars.nUniqueDsts);
+        internalVars.axelarChainIds = new string[](vars.nUniqueDsts);
 
         internalVars.forkIds = new uint256[](vars.nUniqueDsts);
 
         internalVars.k = 0;
         for (uint256 i = 0; i < chainIds.length; ++i) {
+            if (chainIds[i] == CHAIN_0) {
+                internalVars.axelarFromChain = axelar_chainIds[i];
+            }
+
             for (uint256 j = 0; j < vars.nUniqueDsts; ++j) {
                 if (uniqueDSTs[j] == chainIds[i] && chainIds[i] != CHAIN_0) {
                     internalVars.toMailboxes[internalVars.k] = hyperlaneMailboxes[i];
                     internalVars.expDstDomains[internalVars.k] = hyperlane_chainIds[i];
 
                     internalVars.endpoints[internalVars.k] = lzEndpoints[i];
+                    internalVars.endpointsV2[internalVars.k] = lzV2Endpoint;
+
                     internalVars.lzChainIds[internalVars.k] = lz_chainIds[i];
+                    internalVars.lzChainIdsV2[internalVars.k] = lz_v2_chainIds[i];
+
+                    internalVars.axelarGateways[internalVars.k] = axelarGateway[i];
+                    internalVars.axelarChainIds[internalVars.k] = axelar_chainIds[i];
 
                     internalVars.forkIds[internalVars.k] = FORKS[chainIds[i]];
 
@@ -816,12 +839,23 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vars.logs = vm.getRecordedLogs();
 
         for (uint256 index; index < AMBs.length; index++) {
+            console.log(AMBs[index]);
             if (AMBs[index] == 1) {
                 LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper")).help(
                     internalVars.endpoints,
                     internalVars.lzChainIds,
                     5_000_000,
                     /// note: using some max limit
+                    internalVars.forkIds,
+                    vars.logs
+                );
+            }
+
+            if(AMBs[index] == 6) {
+                console.log("6 6 6");
+                LayerZeroV2Helper(getContract(CHAIN_0, "LayerZeroV2Helper")).help(
+                    internalVars.endpointsV2,
+                    internalVars.lzChainIdsV2,
                     internalVars.forkIds,
                     vars.logs
                 );
@@ -844,6 +878,16 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     internalVars.forkIds,
                     internalVars.expDstChainAddresses,
                     internalVars.wormholeRelayers,
+                    vars.logs
+                );
+            }
+
+            if (AMBs[index] == 5) {
+                AxelarHelper(getContract(CHAIN_0, "AxelarHelper")).help(
+                    internalVars.axelarFromChain,
+                    internalVars.axelarGateways,
+                    internalVars.axelarChainIds,
+                    internalVars.forkIds,
                     vars.logs
                 );
             }
@@ -1736,7 +1780,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
             args.slippage,
             uint256(v.USDPerExternalToken),
             uint256(v.USDPerUnderlyingOrInterimTokenDst),
-            uint256(v.USDPerUnderlyingToken)
+            uint256(v.USDPerUnderlyingToken),
+            users[args.user]
         );
 
         v.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, args.srcChainId == args.toChainId);
@@ -1908,8 +1953,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vars.superPositions = IERC1155A(
             ISuperRegistry(vars.stateRegistry).getAddress(ISuperRegistry(vars.stateRegistry).SUPER_POSITIONS())
         );
+        
         vm.prank(users[args.user]);
-
         /// @dev singleId approvals from ERC1155A are used here https://github.com/superform-xyz/ERC1155A, avoiding
         /// approving all superPositions at once
         vars.superPositions.increaseAllowance(vars.superformRouter, args.superformId, args.amount);
@@ -1943,7 +1988,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
             /// @dev switching USDPerExternalToken with USDPerUnderlyingTokenDst as above
             uint256(USDPerUnderlyingTokenDst),
             uint256(USDPerExternalToken),
-            uint256(USDPerUnderlyingToken)
+            uint256(USDPerUnderlyingToken),
+            users[args.user]
         );
 
         vars.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, args.toChainId == args.liqDstChainId);
@@ -1967,13 +2013,16 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vm.selectFork(FORKS[args.toChainId]);
         (address superform,,) = DataLib.getSuperform(args.superformId);
         console.log("finalAMount", args.amount);
-        console.log("-- OA---", IBaseForm(superform).previewRedeemFrom(args.amount));
+        console.log(superform);
+
+        uint256 oa = IBaseForm(superform).previewRedeemFrom(args.amount);
+        console.log("-- OA---", oa);
         /// @dev extraData is currently used to send in the partialWithdraw vaults without resorting to extra args, just
         /// for withdraws
         superformData = SingleVaultSFData(
             args.superformId,
             args.amount,
-            IBaseForm(superform).previewRedeemFrom(args.amount),
+            oa,
             args.maxSlippage,
             vars.liqReq,
             "",
@@ -2528,6 +2577,15 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 );
             }
 
+            /// @notice ID: 6 Layerzero v2
+            if (AMBs[i] == 6) {
+                LayerZeroV2Helper(getContract(TO_CHAIN, "LayerZeroV2Helper")).help(
+                    lzV2Endpoint,
+                    FORKS[FROM_CHAIN],
+                    logs
+                );
+            }
+
             /// @notice ID: 2 Hyperlane
             if (AMBs[i] == 2) {
                 HyperlaneHelper(getContract(TO_CHAIN, "HyperlaneHelper")).help(
@@ -2542,6 +2600,17 @@ abstract contract ProtocolActions is CommonProtocolActions {
             if (AMBs[i] == 3) {
                 WormholeHelper(getContract(TO_CHAIN, "WormholeHelper")).help(
                     WORMHOLE_CHAIN_IDS[TO_CHAIN], FORKS[FROM_CHAIN], wormholeRelayer, logs
+                );
+            }
+
+            /// @notice ID: 5 Axelar
+            if (AMBs[i] == 5) {
+                AxelarHelper(getContract(TO_CHAIN, "AxelarHelper")).help(
+                    AXELAR_CHAIN_IDS[TO_CHAIN],
+                    AXELAR_GATEWAYS[FROM_CHAIN],
+                    AXELAR_CHAIN_IDS[FROM_CHAIN],
+                    FORKS[FROM_CHAIN],
+                    logs
                 );
             }
         }
@@ -3587,7 +3656,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         0,
                         1,
                         1,
-                        1
+                        1,
+                        address(0)
                     ),
                     false
                 ),

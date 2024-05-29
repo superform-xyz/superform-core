@@ -464,7 +464,8 @@ contract SuperformERC4626FormTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         /// @dev superform data with 2e18 final amount
@@ -1106,7 +1107,8 @@ contract SuperformERC4626FormTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         SingleVaultSFData memory data = SingleVaultSFData(
