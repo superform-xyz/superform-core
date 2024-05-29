@@ -156,21 +156,13 @@ contract SmokeTest is MainnetBaseSetup {
             for (uint256 j = 0; j < len; ++j) {
                 assert(srbac.hasRole(ids[j], newAddresses[j]));
                 /// @dev each role should have a single member
-                if (chainId == 250 && ids[j] == keccak256("PAYMENT_ADMIN_ROLE")) {
-                    assertEq(srbac.getRoleMemberCount(ids[j]), 2);
-                } else {
-                    assertEq(srbac.getRoleMemberCount(ids[j]), 1);
-                }
+                assertEq(srbac.getRoleMemberCount(ids[j]), 1);
             }
             assert(srbac.hasRole(keccak256("PROTOCOL_ADMIN_ROLE"), PROTOCOL_ADMINS[i]));
             assert(srbac.hasRole(keccak256("EMERGENCY_ADMIN_ROLE"), EMERGENCY_ADMIN));
-            if (chainId == 250) {
-                assertEq(srbac.getRoleMemberCount(keccak256("PROTOCOL_ADMIN_ROLE")), 2);
-                assertEq(srbac.getRoleMemberCount(keccak256("EMERGENCY_ADMIN_ROLE")), 2);
-            } else {
-                assertEq(srbac.getRoleMemberCount(keccak256("PROTOCOL_ADMIN_ROLE")), 1);
-                assertEq(srbac.getRoleMemberCount(keccak256("EMERGENCY_ADMIN_ROLE")), 1);
-            }
+
+            assertEq(srbac.getRoleMemberCount(keccak256("PROTOCOL_ADMIN_ROLE")), 1);
+            assertEq(srbac.getRoleMemberCount(keccak256("EMERGENCY_ADMIN_ROLE")), 1);
         }
     }
 
