@@ -64,6 +64,7 @@ file_names=(
     "src/crosschain-data/adapters/wormhole/specialized-relayer/WormholeSRImplementation.sol"
     "src/crosschain-liquidity/socket/SocketOneInchValidator.sol"
     "src/RewardsDistributor.sol"
+    "src/crosschain-data/adapters/axelar/AxelarImplementation.sol"
     # Add more file names here if needed
 )
 
@@ -89,7 +90,8 @@ contract_names=(
     "BroadcastRegistry"
     "WormholeSRImplementation"
     "SocketOneInchValidator"
-    "RewardsDistributor"
+    "RewardsDistributor",
+    "AxelarImplementation"
     # Add more contract names here if needed
 )
 
@@ -116,6 +118,7 @@ contract_addresses=(
     0x44b451Ca87267a62A0C853ECFbaaC1C3E528a82C
     0xde882a104F265497782d421b3fDAC589b420289e
     0xCE0D4e1c23CD166f84e5746c6833e8bc762F3456
+    0xF6DF56fE8C896c1950848B4D43eC1d769f6E9178
     # Add more addresses here if needed
 )
 
@@ -142,6 +145,7 @@ contract_addresses_fantom=(
     0x57B64858cE903A7da4b2B60b0299e23f599A0038
     0x35A00Af0A70de6BF8C99F21C6b3f13D159Babb8a
     0x92C0A5f9DF2c9DD99DCC27801aa75b0634689e53
+    0xD7eecFBf6381C721916A1C37660A64010298f038
     # Add more addresses here if needed
 )
 
@@ -168,6 +172,7 @@ constructor_args=(
     $wormhole_sr_arg
     $super_constructor_arg
     $super_constructor_arg
+    $super_constructor_arg
 )
 
 constructor_args_fantom=(
@@ -191,6 +196,7 @@ constructor_args_fantom=(
     $empty_constructor_arg
     $super_constructor_arg_ftm
     $wormhole_sr_arg_ftm
+    $super_constructor_arg_ftm
     $super_constructor_arg_ftm
     $super_constructor_arg_ftm
 )

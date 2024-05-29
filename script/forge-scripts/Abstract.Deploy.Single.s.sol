@@ -21,6 +21,12 @@ import { SocketOneInchValidator } from "src/crosschain-liquidity/socket/SocketOn
 import { DeBridgeValidator } from "src/crosschain-liquidity/debridge/DeBridgeValidator.sol";
 import { DeBridgeForwarderValidator } from "src/crosschain-liquidity/debridge/DeBridgeForwarderValidator.sol";
 import { LayerzeroV2Implementation } from "src/crosschain-data/adapters/layerzero-v2/LayerzeroV2Implementation.sol";
+import {
+    AxelarImplementation,
+    IAxelarGateway,
+    IAxelarGasService,
+    IInterchainGasEstimation
+} from "src/crosschain-data/adapters/axelar/AxelarImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
 import { WormholeARImplementation } from
     "src/crosschain-data/adapters/wormhole/automatic-relayer/WormholeARImplementation.sol";
@@ -59,6 +65,7 @@ struct SetupVars {
     address hyperlaneImplementation;
     address wormholeImplementation;
     address wormholeSRImplementation;
+    address axelarImplementation;
     address erc4626Form;
     address erc4626TimelockForm;
     address timelockStateRegistry;
@@ -72,6 +79,7 @@ struct SetupVars {
     address dstHyperlaneImplementation;
     address dstWormholeARImplementation;
     address dstWormholeSRImplementation;
+    address dstAxelarImplementation;
     address dstStateRegistry;
     address dstSwapper;
     address superRegistry;
@@ -104,7 +112,7 @@ abstract contract AbstractDeploySingle is BatchScript {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[24] public contractNames = [
+    string[25] public contractNames = [
         "CoreStateRegistry",
         //"TimelockStateRegistry",
         "BroadcastRegistry",
@@ -131,7 +139,8 @@ abstract contract AbstractDeploySingle is BatchScript {
         "VaultClaimer",
         "RewardsDistributor",
         "DeBridgeValidator",
-        "DeBridgeForwarderValidator"
+        "DeBridgeForwarderValidator",
+        "AxelarImplementation"
     ];
 
     enum Chains {
@@ -176,8 +185,9 @@ abstract contract AbstractDeploySingle is BatchScript {
     /// @notice id 2 is hyperlane
     /// @notice id 3 is wormhole AR
     /// @notice id 4 is wormhole SR
-    uint8[] public ambIds = [uint8(1), 2, 3, 4];
-    bool[] public broadcastAMB = [false, false, false, true];
+    /// @notice id 5 is axelar
+    uint8[] public ambIds = [uint8(1), 2, 3, 4, 5];
+    bool[] public broadcastAMB = [false, false, false, true, false];
 
     /// @dev new settings ids
     bytes32 rewardsDistributorId = keccak256("REWARDS_DISTRIBUTOR");
@@ -224,6 +234,28 @@ abstract contract AbstractDeploySingle is BatchScript {
         0x126783A6Cb203a3E35344528B26ca3a0489a1485
     ];
 
+    address[] public axelarGateway = [
+        0x4F4495243837681061C4743b74B3eEdf548D56A5,
+        0x304acf330bbE08d1e512eefaa92F6a57871fD895,
+        0x5029C0EFf6C34351a0CEc334542cDb22c7928f78,
+        0x6f015F16De9fC8791b234eF68D486d2bF203FBA8,
+        0xe432150cce91c13a887f7D836923d5597adD8E31,
+        0xe432150cce91c13a887f7D836923d5597adD8E31,
+        0xe432150cce91c13a887f7D836923d5597adD8E31,
+        0x304acf330bbE08d1e512eefaa92F6a57871fD895
+    ];
+
+    address[] public axelarGasService = [
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712
+    ];
+
     /// @dev uses CREATE2
     address public wormholeRelayer = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
     address public wormholeBaseRelayer = 0x706F82e9bb5b0813501714Ab5974216704980e31;
@@ -246,6 +278,8 @@ abstract contract AbstractDeploySingle is BatchScript {
     uint32[] public lz_chainIds = [30_101, 30_102, 30_106, 30_109, 30_110, 30_111, 30_184, 30_112];
     uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
     uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30, 10];
+    string[] public axelar_chainIds =
+        ["Ethereum", "binance", "Avalanche", "Polygon", "arbitrum", "optimism", "base", "Fantom"];
 
     uint256 public constant milionTokensE18 = 1 ether;
 
@@ -508,7 +542,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayerConfig);
         WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(wormhole_chainIds[trueIndex]);
 
-        /// @dev 6.5- deploy Wormhole Specialized Relayer Implementation
+        /// @dev 6.4- deploy Wormhole Specialized Relayer Implementation
         vars.wormholeSRImplementation =
             address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC, brRegistryId));
         contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
@@ -517,10 +551,20 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// @dev FIXME who is the wormhole relayer on mainnet?
         WormholeSRImplementation(vars.wormholeSRImplementation).setRelayer(ownerAddress);
 
+        /// @dev 6.5- deploy Axelar Implementation
+        vars.axelarImplementation = address(new AxelarImplementation{ salt: salt }(vars.superRegistryC));
+        contracts[vars.chainId][bytes32(bytes("AxelarImplementation"))] = vars.axelarImplementation;
+
+        AxelarImplementation(vars.axelarImplementation).setAxelarConfig(IAxelarGateway(axelarGateway[i]));
+        AxelarImplementation(vars.axelarImplementation).setAxelarGasService(
+            IAxelarGasService(axelarGasService[i]), IInterchainGasEstimation(axelarGasService[i])
+        );
+
         vars.ambAddresses[0] = vars.lzImplementation;
         vars.ambAddresses[1] = vars.hyperlaneImplementation;
         vars.ambAddresses[2] = vars.wormholeImplementation;
         vars.ambAddresses[3] = vars.wormholeSRImplementation;
+        vars.ambAddresses[4] = vars.axelarImplementation;
 
         /// @dev 6- deploy liquidity validators
         vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
@@ -856,12 +900,15 @@ abstract contract AbstractDeploySingle is BatchScript {
                     0,
                     0,
                     0,
+                    "",
                     vars.lzImplementation,
                     vars.hyperlaneImplementation,
                     vars.wormholeImplementation,
                     vars.wormholeSRImplementation,
+                    vars.axelarImplementation,
                     vars.superRegistry,
                     vars.paymentHelper,
+                    address(0),
                     address(0),
                     address(0),
                     address(0),
@@ -1049,6 +1096,7 @@ abstract contract AbstractDeploySingle is BatchScript {
             _readContractsV1(env, chainNames[trueIndex], vars.chainId, "WormholeARImplementation");
         vars.wormholeSRImplementation =
             _readContractsV1(env, chainNames[trueIndex], vars.chainId, "WormholeSRImplementation");
+        vars.axelarImplementation = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "AxelarImplementation");
         vars.superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
         vars.paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
         vars.superRegistryC = SuperRegistry(payable(vars.superRegistry));
@@ -1061,12 +1109,15 @@ abstract contract AbstractDeploySingle is BatchScript {
                 0,
                 0,
                 0,
+                "",
                 vars.lzImplementation,
                 vars.hyperlaneImplementation,
                 vars.wormholeImplementation,
                 vars.wormholeSRImplementation,
+                vars.axelarImplementation,
                 vars.superRegistry,
                 vars.paymentHelper,
+                address(0),
                 address(0),
                 address(0),
                 address(0),
@@ -1121,16 +1172,19 @@ abstract contract AbstractDeploySingle is BatchScript {
         uint32 dstLzChainId;
         uint32 dstHypChainId;
         uint16 dstWormholeChainId;
+        string dstAxelarChainId;
         address lzImplementation;
         address hyperlaneImplementation;
         address wormholeImplementation;
         address wormholeSRImplementation;
+        address axelarImplementation;
         address superRegistry;
         address paymentHelper;
         address dstLzImplementation;
         address dstHyperlaneImplementation;
         address dstWormholeARImplementation;
         address dstWormholeSRImplementation;
+        address dstAxelarImplementation;
         SuperRegistry superRegistryC;
     }
 
@@ -1152,6 +1206,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.dstLzChainId = lz_chainIds[vars.dstTrueIndex];
         vars.dstHypChainId = hyperlane_chainIds[vars.dstTrueIndex];
         vars.dstWormholeChainId = wormhole_chainIds[vars.dstTrueIndex];
+        vars.dstAxelarChainId = axelar_chainIds[vars.dstTrueIndex];
 
         vars.dstLzImplementation =
             _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "LayerzeroImplementation");
@@ -1161,6 +1216,8 @@ abstract contract AbstractDeploySingle is BatchScript {
             _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "WormholeARImplementation");
         vars.dstWormholeSRImplementation =
             _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "WormholeSRImplementation");
+        vars.dstAxelarImplementation =
+            _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "AxelarImplementation");
 
         assert(abi.decode(GAS_USED[vars.dstChainId][3], (uint256)) > 0);
         assert(abi.decode(GAS_USED[vars.dstChainId][4], (uint256)) > 0);
@@ -1294,6 +1351,12 @@ abstract contract AbstractDeploySingle is BatchScript {
 
             WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setReceiver(
                 vars.dstWormholeChainId, vars.dstWormholeSRImplementation
+            );
+
+            AxelarImplementation(payable(vars.axelarImplementation)).setChainId(vars.dstChainId, vars.dstAxelarChainId);
+
+            AxelarImplementation(payable(vars.axelarImplementation)).setReceiver(
+                vars.dstAxelarChainId, vars.dstAxelarImplementation
             );
 
             SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);

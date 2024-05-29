@@ -325,6 +325,7 @@ contract SmokeTestStaging is MainnetBaseSetup {
         }
     }
 
+    /// @dev commented out as ar implementation is paused for now
     function test_wormholeARImplementation() public {
         WormholeARImplementation wormhole;
 
@@ -405,6 +406,55 @@ contract SmokeTestStaging is MainnetBaseSetup {
                     );
                     assertEq(wormhole.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds_[j]);
                     assertEq(wormhole.superChainId(ambIds_[j]), TARGET_DEPLOYMENT_CHAINS[j]);
+                }
+            }
+        }
+    }
+
+    function test_axelar() public {
+        AxelarImplementation axelar;
+
+        /// @dev index should match the index of target chains
+        address[] memory axelar_gateways = new address[](TARGET_DEPLOYMENT_CHAINS.length);
+        axelar_gateways[0] = 0x304acf330bbE08d1e512eefaa92F6a57871fD895;
+        axelar_gateways[1] = 0xe432150cce91c13a887f7D836923d5597adD8E31;
+        axelar_gateways[2] = 0xe432150cce91c13a887f7D836923d5597adD8E31;
+        axelar_gateways[3] = 0xe432150cce91c13a887f7D836923d5597adD8E31;
+        axelar_gateways[4] = 0x304acf330bbE08d1e512eefaa92F6a57871fD895;
+
+        /// @dev index should match the index of target chains
+        address[] memory axelar_gasServices = new address[](TARGET_DEPLOYMENT_CHAINS.length);
+        axelar_gasServices[0] = 0x2d5d7d31F671F86C782533cc367F14109a082712;
+        axelar_gasServices[1] = 0x2d5d7d31F671F86C782533cc367F14109a082712;
+        axelar_gasServices[2] = 0x2d5d7d31F671F86C782533cc367F14109a082712;
+        axelar_gasServices[3] = 0x2d5d7d31F671F86C782533cc367F14109a082712;
+        axelar_gasServices[4] = 0x2d5d7d31F671F86C782533cc367F14109a082712;
+
+        /// @dev index should match the index of target chains
+        string[] memory ambIds_ = new string[](TARGET_DEPLOYMENT_CHAINS.length);
+        ambIds_[0] = "binance";
+        ambIds_[1] = "arbitrum";
+        ambIds_[2] = "optimism";
+        ambIds_[3] = "base";
+        ambIds_[4] = "Fantom";
+
+        for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
+            uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+            vm.selectFork(FORKS[chainId]);
+            axelar = AxelarImplementation(getContract(chainId, "AxelarImplementation"));
+
+            assertEq(address(axelar.gateway()), axelar_gateways[i]);
+            assertEq(address(axelar.gasService()), axelar_gasServices[i]);
+            assertEq(address(axelar.gasEstimator()), axelar_gasServices[i]);
+
+            for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
+                if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
+                    assertEq(
+                        axelar.authorizedImpl(ambIds_[j]),
+                        getContract(TARGET_DEPLOYMENT_CHAINS[j], "AxelarImplementation")
+                    );
+                    assertEq(axelar.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds_[j]);
+                    assertEq(axelar.superChainId(ambIds_[j]), TARGET_DEPLOYMENT_CHAINS[j]);
                 }
             }
         }

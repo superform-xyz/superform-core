@@ -749,6 +749,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint16[] lzChainIds;
         uint32[] lzChainIdsV2;
         address[] wormholeRelayers;
+        address[] axelarGateways;
+        string[] axelarChainIds;
+        string axelarFromChain;
         address[] expDstChainAddresses;
         uint256[] forkIds;
         uint256 k;
@@ -797,10 +800,17 @@ abstract contract ProtocolActions is CommonProtocolActions {
         internalVars.wormholeRelayers = new address[](vars.nUniqueDsts);
         internalVars.expDstChainAddresses = new address[](vars.nUniqueDsts);
 
+        internalVars.axelarGateways = new address[](vars.nUniqueDsts);
+        internalVars.axelarChainIds = new string[](vars.nUniqueDsts);
+
         internalVars.forkIds = new uint256[](vars.nUniqueDsts);
 
         internalVars.k = 0;
         for (uint256 i = 0; i < chainIds.length; ++i) {
+            if (chainIds[i] == CHAIN_0) {
+                internalVars.axelarFromChain = axelar_chainIds[i];
+            }
+
             for (uint256 j = 0; j < vars.nUniqueDsts; ++j) {
                 if (uniqueDSTs[j] == chainIds[i] && chainIds[i] != CHAIN_0) {
                     internalVars.toMailboxes[internalVars.k] = hyperlaneMailboxes[i];
@@ -811,6 +821,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
                     internalVars.lzChainIds[internalVars.k] = lz_chainIds[i];
                     internalVars.lzChainIdsV2[internalVars.k] = lz_v2_chainIds[i];
+
+                    internalVars.axelarGateways[internalVars.k] = axelarGateway[i];
+                    internalVars.axelarChainIds[internalVars.k] = axelar_chainIds[i];
 
                     internalVars.forkIds[internalVars.k] = FORKS[chainIds[i]];
 
@@ -865,6 +878,16 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     internalVars.forkIds,
                     internalVars.expDstChainAddresses,
                     internalVars.wormholeRelayers,
+                    vars.logs
+                );
+            }
+
+            if (AMBs[index] == 5) {
+                AxelarHelper(getContract(CHAIN_0, "AxelarHelper")).help(
+                    internalVars.axelarFromChain,
+                    internalVars.axelarGateways,
+                    internalVars.axelarChainIds,
+                    internalVars.forkIds,
                     vars.logs
                 );
             }
@@ -2577,6 +2600,17 @@ abstract contract ProtocolActions is CommonProtocolActions {
             if (AMBs[i] == 3) {
                 WormholeHelper(getContract(TO_CHAIN, "WormholeHelper")).help(
                     WORMHOLE_CHAIN_IDS[TO_CHAIN], FORKS[FROM_CHAIN], wormholeRelayer, logs
+                );
+            }
+
+            /// @notice ID: 5 Axelar
+            if (AMBs[i] == 5) {
+                AxelarHelper(getContract(TO_CHAIN, "AxelarHelper")).help(
+                    AXELAR_CHAIN_IDS[TO_CHAIN],
+                    AXELAR_GATEWAYS[FROM_CHAIN],
+                    AXELAR_CHAIN_IDS[FROM_CHAIN],
+                    FORKS[FROM_CHAIN],
+                    logs
                 );
             }
         }
