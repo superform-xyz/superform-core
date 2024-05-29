@@ -14,6 +14,21 @@ contract LiFiValidatorTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
     }
 
+    function test_zeroAddressConstructor() public {
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        new LiFiValidator(address(0));
+    }
+
+    function test_LiFiEmergencyAdmin() public {
+        vm.expectRevert(Error.NOT_EMERGENCY_ADMIN.selector);
+        LiFiValidator(getContract(ETH, "LiFiValidator")).addToBlacklist(bytes4(LiFiValidator.addToBlacklist.selector));
+
+        vm.expectRevert(Error.NOT_EMERGENCY_ADMIN.selector);
+        LiFiValidator(getContract(ETH, "LiFiValidator")).removeFromBlacklist(
+            bytes4(LiFiValidator.addToBlacklist.selector)
+        );
+    }
+
     function test_lifi_validator() public {
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
             IBridgeValidator.ValidateTxDataArgs(

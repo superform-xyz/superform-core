@@ -168,6 +168,11 @@ contract PayloadHelperSingleTest is ProtocolActions {
         PayloadHelper(getContract(ETH, "PayloadHelper")).decodeCoreStateRegistryPayload(1);
     }
 
+    function test_constructorZeroAddress() public {
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        new PayloadHelper(address(0));
+    }
+
     function _checkSrcPayload() internal {
         vm.selectFork(FORKS[CHAIN_0]);
 

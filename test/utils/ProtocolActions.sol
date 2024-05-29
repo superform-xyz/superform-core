@@ -396,7 +396,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         : payable(getContract(DST_CHAINS[i], "CoreStateRegistry"));
                 }
             }
-
+            
             vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
 
             vars.outputAmounts = vars.amounts;
@@ -745,7 +745,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
         address[] toMailboxes;
         uint32[] expDstDomains;
         address[] endpoints;
+        address[] endpointsV2;
         uint16[] lzChainIds;
+        uint32[] lzChainIdsV2;
         address[] wormholeRelayers;
         address[] axelarGateways;
         string[] axelarChainIds;
@@ -783,13 +785,17 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 ++usedDSTs[DST_CHAINS[i]].payloadNumber;
             }
         }
+        
         vars.nUniqueDsts = uniqueDSTs.length;
 
         internalVars.toMailboxes = new address[](vars.nUniqueDsts);
         internalVars.expDstDomains = new uint32[](vars.nUniqueDsts);
 
         internalVars.endpoints = new address[](vars.nUniqueDsts);
+        internalVars.endpointsV2 = new address[](vars.nUniqueDsts);
+
         internalVars.lzChainIds = new uint16[](vars.nUniqueDsts);
+        internalVars.lzChainIdsV2 = new uint32[](vars.nUniqueDsts);
 
         internalVars.wormholeRelayers = new address[](vars.nUniqueDsts);
         internalVars.expDstChainAddresses = new address[](vars.nUniqueDsts);
@@ -811,7 +817,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     internalVars.expDstDomains[internalVars.k] = hyperlane_chainIds[i];
 
                     internalVars.endpoints[internalVars.k] = lzEndpoints[i];
+                    internalVars.endpointsV2[internalVars.k] = lzV2Endpoint;
+
                     internalVars.lzChainIds[internalVars.k] = lz_chainIds[i];
+                    internalVars.lzChainIdsV2[internalVars.k] = lz_v2_chainIds[i];
 
                     internalVars.axelarGateways[internalVars.k] = axelarGateway[i];
                     internalVars.axelarChainIds[internalVars.k] = axelar_chainIds[i];
@@ -830,12 +839,23 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vars.logs = vm.getRecordedLogs();
 
         for (uint256 index; index < AMBs.length; index++) {
+            console.log(AMBs[index]);
             if (AMBs[index] == 1) {
                 LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper")).help(
                     internalVars.endpoints,
                     internalVars.lzChainIds,
                     5_000_000,
                     /// note: using some max limit
+                    internalVars.forkIds,
+                    vars.logs
+                );
+            }
+
+            if(AMBs[index] == 6) {
+                console.log("6 6 6");
+                LayerZeroV2Helper(getContract(CHAIN_0, "LayerZeroV2Helper")).help(
+                    internalVars.endpointsV2,
+                    internalVars.lzChainIdsV2,
                     internalVars.forkIds,
                     vars.logs
                 );
@@ -1993,13 +2013,16 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vm.selectFork(FORKS[args.toChainId]);
         (address superform,,) = DataLib.getSuperform(args.superformId);
         console.log("finalAMount", args.amount);
-        console.log("-- OA---", IBaseForm(superform).previewRedeemFrom(args.amount));
+        console.log(superform);
+
+        uint256 oa = IBaseForm(superform).previewRedeemFrom(args.amount);
+        console.log("-- OA---", oa);
         /// @dev extraData is currently used to send in the partialWithdraw vaults without resorting to extra args, just
         /// for withdraws
         superformData = SingleVaultSFData(
             args.superformId,
             args.amount,
-            IBaseForm(superform).previewRedeemFrom(args.amount),
+            oa,
             args.maxSlippage,
             vars.liqReq,
             "",
@@ -2549,6 +2572,15 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     LZ_ENDPOINTS[FROM_CHAIN],
                     5_000_000,
                     /// note: using some max limit
+                    FORKS[FROM_CHAIN],
+                    logs
+                );
+            }
+
+            /// @notice ID: 6 Layerzero v2
+            if (AMBs[i] == 6) {
+                LayerZeroV2Helper(getContract(TO_CHAIN, "LayerZeroV2Helper")).help(
+                    lzV2Endpoint,
                     FORKS[FROM_CHAIN],
                     logs
                 );

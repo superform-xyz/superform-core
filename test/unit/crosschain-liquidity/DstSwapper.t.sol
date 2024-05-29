@@ -21,6 +21,11 @@ contract DstSwapperTest is ProtocolActions {
         super.setUp();
     }
 
+    function test_constructor_ZeroAddress() public {
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        new DstSwapper(address(0));
+    }
+
     function test_failed_invalid_interim_token() public {
         address payable dstSwapper = payable(getContract(ETH, "DstSwapper"));
         address payable coreStateRegistry = payable(getContract(ETH, "CoreStateRegistry"));
@@ -182,7 +187,7 @@ contract DstSwapperTest is ProtocolActions {
         );
 
         vm.startPrank(deployer);
-        deal(getContract(ETH, "WETH"), dstSwapper, 1e18);
+        deal(getContract(ETH, "WETH"), dstSwapper, 100e18);
 
         bytes memory txData = _buildLiqBridgeTxDataDstSwap(
             1, getContract(ETH, "WETH"), getContract(ETH, "DAI"), dstSwapper, ETH, 1e17, 1001
@@ -273,7 +278,7 @@ contract DstSwapperTest is ProtocolActions {
         _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry, address(0x2222));
 
         vm.startPrank(deployer);
-        deal(weth, dstSwapper, 1e18);
+        deal(weth, dstSwapper, 2e18);
 
         vm.expectRevert(Error.ZERO_AMOUNT.selector);
         DstSwapper(dstSwapper).updateFailedTx(1, weth, 0);
@@ -399,7 +404,7 @@ contract DstSwapperTest is ProtocolActions {
         vm.expectRevert(Error.INSUFFICIENT_BALANCE.selector);
         DstSwapper(dstSwapper).updateFailedTx(1, native, 1e18);
 
-        deal(dstSwapper, 1e18);
+        deal(dstSwapper, 100e18);
 
         DstSwapper(dstSwapper).updateFailedTx(1, native, 1e18);
 
@@ -463,7 +468,7 @@ contract DstSwapperTest is ProtocolActions {
         _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry, interimToken);
 
         vm.startPrank(deployer);
-        deal(interimToken, dstSwapper, 2e18);
+        deal(interimToken, dstSwapper, 100e18);
 
         address[] memory interimTokens = new address[](2);
         interimTokens[0] = interimToken;
@@ -566,7 +571,7 @@ contract DstSwapperTest is ProtocolActions {
         _simulateMultiVaultExistingPayloadOnOP(coreStateRegistry, interimToken);
         vm.startPrank(deployer);
         /// @dev simulating a failed swap in DstSwapper that leaves these tokens there
-        deal(dstSwapper, 2e18);
+        deal(dstSwapper, 100e18);
 
         address[] memory interimTokens = new address[](2);
         interimTokens[0] = interimToken;
@@ -811,7 +816,7 @@ contract DstSwapperTest is ProtocolActions {
         );
 
         vm.startPrank(deployer);
-        deal(getContract(ETH, "WETH"), dstSwapper, 1e18);
+        deal(getContract(ETH, "WETH"), dstSwapper, 100e18);
 
         bytes memory txData = _buildLiqBridgeTxDataDstSwap(
             1, getContract(ETH, "WETH"), getContract(ETH, "DAI"), dstSwapper, ETH, 1e17, 1001
@@ -852,6 +857,54 @@ contract DstSwapperTest is ProtocolActions {
 
         vm.expectRevert(Error.INVALID_DST_SWAPPER_FAILED_SWAP.selector);
         CoreStateRegistry(coreStateRegistry).updateDepositPayload(1, bridgedTokens, finalAmounts);
+    }
+
+    function test_processTx_NotPrivilegedCaller() public {
+        vm.selectFork(FORKS[ETH]);
+
+        vm.prank(address(1));
+        vm.expectRevert(abi.encodeWithSelector(Error.NOT_PRIVILEGED_CALLER.selector, keccak256("DST_SWAPPER_ROLE")));
+        DstSwapper(payable(getContract(ETH, "DstSwapper"))).processTx(1, 1, "");
+    }
+
+    function test_batchProcessTx_NotPrivilegedCaller() public {
+        uint256[] memory indices = new uint256[](1);
+        uint8[] memory bridgeIds = new uint8[](1);
+        bytes[] memory txData = new bytes[](1);
+
+        vm.selectFork(FORKS[ETH]);
+
+        vm.prank(address(1));
+        vm.expectRevert(abi.encodeWithSelector(Error.NOT_PRIVILEGED_CALLER.selector, keccak256("DST_SWAPPER_ROLE")));
+        DstSwapper(payable(getContract(ETH, "DstSwapper"))).batchProcessTx(1, indices, bridgeIds, txData);
+    }
+
+    function test_updateFailedTx_NotPrivilegedCaller() public {
+        vm.selectFork(FORKS[ETH]);
+
+        vm.prank(address(1));
+        vm.expectRevert(abi.encodeWithSelector(Error.NOT_PRIVILEGED_CALLER.selector, keccak256("DST_SWAPPER_ROLE")));
+        DstSwapper(payable(getContract(ETH, "DstSwapper"))).updateFailedTx(1, address(0), 0);
+    }
+
+    function test_batchUpdateFailedTx_NotPrivilegedCaller() public {
+        uint256[] memory indices = new uint256[](1);
+        address[] memory interimTokens = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        vm.selectFork(FORKS[ETH]);
+
+        vm.prank(address(1));
+        vm.expectRevert(abi.encodeWithSelector(Error.NOT_PRIVILEGED_CALLER.selector, keccak256("DST_SWAPPER_ROLE")));
+        DstSwapper(payable(getContract(ETH, "DstSwapper"))).batchUpdateFailedTx(1, indices, interimTokens, amounts);
+    }
+
+    function test_processFailedTx_NotCoreStateRegistry() public {
+        vm.selectFork(FORKS[ETH]);
+
+        vm.prank(address(1));
+        vm.expectRevert(Error.NOT_CORE_STATE_REGISTRY.selector);
+        DstSwapper(payable(getContract(ETH, "DstSwapper"))).processFailedTx(address(1), address(0), 0);
     }
 
     function _simulateSingleVaultExistingPayload(

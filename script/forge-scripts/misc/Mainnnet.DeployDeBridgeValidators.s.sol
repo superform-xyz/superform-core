@@ -3,9 +3,9 @@ pragma solidity ^0.8.23;
 
 import { AbstractDeployDeBridgeValidators } from "./Abstract.Deploy.DeBridgeValidators.s.sol";
 
-contract MainnetDeployDeBridgeValidators is AbstractDeployDeBridgeValidators {
+contract MainnetDeployDeBridgeValidatorsV2 is AbstractDeployDeBridgeValidators {
     function deployDeBridgeValidator(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, TARGET_CHAINS[selectedChainIndex] == FANTOM);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {
@@ -19,7 +19,7 @@ contract MainnetDeployDeBridgeValidators is AbstractDeployDeBridgeValidators {
     }
 
     function configureSuperRegistry(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, TARGET_CHAINS[selectedChainIndex] == FANTOM);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {

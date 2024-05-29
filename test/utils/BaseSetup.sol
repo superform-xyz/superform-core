@@ -6,6 +6,7 @@ import "forge-std/Test.sol";
 import { StdInvariant } from "forge-std/StdInvariant.sol";
 
 import { LayerZeroHelper } from "pigeon/layerzero/LayerZeroHelper.sol";
+import { LayerZeroV2Helper } from "pigeon/layerzero-v2/LayerzeroV2Helper.sol";
 import { HyperlaneHelper } from "pigeon/hyperlane/HyperlaneHelper.sol";
 import { AxelarHelper } from "pigeon/axelar/AxelarHelper.sol";
 import { WormholeHelper } from "pigeon/wormhole/automatic-relayer/WormholeHelper.sol";
@@ -59,6 +60,7 @@ import { DeBridgeForwarderValidator } from "src/crosschain-liquidity/debridge/De
 
 import { SocketOneInchValidator } from "src/crosschain-liquidity/socket/SocketOneInchValidator.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
+import { LayerzeroV2Implementation } from "src/crosschain-data/adapters/layerzero-v2/LayerzeroV2Implementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
 import { WormholeARImplementation } from
     "src/crosschain-data/adapters/wormhole/automatic-relayer/WormholeARImplementation.sol";
@@ -114,11 +116,12 @@ abstract contract BaseSetup is StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[37] public contractNames = [
+    string[39] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
         "LayerzeroImplementation",
+        "LayerzeroV2Implementation",
         "HyperlaneImplementation",
         "WormholeARImplementation",
         "WormholeSRImplementation",
@@ -138,6 +141,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         "PaymentHelper",
         "PayMaster",
         "LayerZeroHelper",
+        "LayerZeroV2Helper",
         "HyperlaneHelper",
         "WormholeHelper",
         "AxelarHelper",
@@ -203,9 +207,10 @@ abstract contract BaseSetup is StdInvariant, Test {
     /// @notice id 3 is wormhole (Automatic Relayer)
     /// @notice id 4 is wormhole (Specialized Relayer)
     /// @notice id 5 is axelar
+    /// @notice id 6 is layerzero-v2
 
-    uint8[] public ambIds = [uint8(1), 2, 3, 4, 5];
-    bool[] public isBroadcastAMB = [false, false, false, true, false];
+    uint8[] public ambIds = [uint8(1), 2, 3, 4, 5, 6];
+    bool[] public isBroadcastAMB = [false, false, false, true, false, false];
 
     /*//////////////////////////////////////////////////////////////
                         AMB VARIABLES
@@ -300,6 +305,22 @@ abstract contract BaseSetup is StdInvariant, Test {
     address public wormholeBaseRelayer = 0x706F82e9bb5b0813501714Ab5974216704980e31;
 
     /*//////////////////////////////////////////////////////////////
+                        LAYERZERO V2 VARIABLES
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev uses CREATE2
+    address public lzV2Endpoint = 0x1a44076050125825900e736c501f859c50fE728c;
+
+    uint32 public constant LZ_V2_ETH = 30_101;
+    uint32 public constant LZ_V2_BSC = 30_102;
+    uint32 public constant LZ_V2_AVAX = 30_106;
+    uint32 public constant LZ_V2_POLY = 30_109;
+    uint32 public constant LZ_V2_ARBI = 30_110;
+    uint32 public constant LZ_V2_OP = 30_111;
+    uint32 public constant LZ_V2_BASE = 30_184;
+    uint32 public constant LZ_V2_FANTOM = 30_112;
+
+    /*//////////////////////////////////////////////////////////////
                         HYPERLANE VARIABLES
     //////////////////////////////////////////////////////////////*/
     uint64 public constant ETH = 1;
@@ -324,6 +345,7 @@ abstract contract BaseSetup is StdInvariant, Test {
     uint16 public constant LZ_FANTOM = 112;
 
     uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111, 184, 112];
+    uint32[] public lz_v2_chainIds = [30_101, 30_102, 30_106, 30_109, 30_110, 30_111, 30_184, 30_112];
     uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
     uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30, 10];
     string[] public axelar_chainIds =
@@ -392,6 +414,15 @@ abstract contract BaseSetup is StdInvariant, Test {
     string public BASE_RPC_URL = vm.envString("BASE_RPC_URL"); // Native token: BASE
     string public FANTOM_RPC_URL = vm.envString("FANTOM_RPC_URL"); // Native token: BASE
 
+    string public ETHEREUM_RPC_URL_QN = vm.envString("ETHEREUM_RPC_URL_QN"); // Native token: ETH
+    string public BSC_RPC_URL_QN = vm.envString("BSC_RPC_URL_QN"); // Native token: BNB
+    string public AVALANCHE_RPC_URL_QN = vm.envString("AVALANCHE_RPC_URL_QN"); // Native token: AVAX
+    string public POLYGON_RPC_URL_QN = vm.envString("POLYGON_RPC_URL_QN"); // Native token: MATIC
+    string public ARBITRUM_RPC_URL_QN = vm.envString("ARBITRUM_RPC_URL_QN"); // Native token: ETH
+    string public OPTIMISM_RPC_URL_QN = vm.envString("OPTIMISM_RPC_URL_QN"); // Native token: ETH
+    string public BASE_RPC_URL_QN = vm.envString("BASE_RPC_URL_QN"); // Native token: BASE
+    string public FANTOM_RPC_URL_QN = vm.envString("FANTOM_RPC_URL_QN"); // Native token: BASE
+
     /*//////////////////////////////////////////////////////////////
                         KYC DAO VALIDITY VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -456,6 +487,12 @@ abstract contract BaseSetup is StdInvariant, Test {
             vm.allowCheatcodes(vars.lzHelper);
 
             contracts[vars.chainId][bytes32(bytes("LayerZeroHelper"))] = vars.lzHelper;
+
+            /// @dev 1.1.2- deploy LZ v2 Helper from Pigeon
+            vars.lzV2Helper = address(new LayerZeroV2Helper{ salt: salt }());
+            vm.allowCheatcodes(vars.lzV2Helper);
+
+            contracts[vars.chainId][bytes32(bytes("LayerZeroV2Helper"))] = vars.lzV2Helper;
 
             /// @dev 1.2- deploy Hyperlane Helper from Pigeon
             vars.hyperlaneHelper = address(new HyperlaneHelper{ salt: salt }());
@@ -564,6 +601,12 @@ abstract contract BaseSetup is StdInvariant, Test {
 
             LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[i]);
 
+            /// @dev 6.1.1 - deploy Layerzero v2 implementation
+            vars.lzV2Implementation = address(new LayerzeroV2Implementation{ salt: salt }(vars.superRegistryC));
+            contracts[vars.chainId][bytes32(bytes("LayerzeroV2Implementation"))] = vars.lzV2Implementation;
+
+            LayerzeroV2Implementation(payable(vars.lzV2Implementation)).setLzEndpoint(lzV2Endpoint);
+
             /// @dev 6.2 - deploy Hyperlane Implementation
             if (vars.chainId != FANTOM) {
                 vars.hyperlaneImplementation =
@@ -603,6 +646,7 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.ambAddresses[2] = vars.wormholeImplementation;
             vars.ambAddresses[3] = vars.wormholeSRImplementation;
             vars.ambAddresses[4] = vars.axelarImplementation;
+            vars.ambAddresses[5] = vars.lzV2Implementation;
 
             /// @dev 7.1.1 deploy  LiFiRouterMock. This mock is a very minimal versions to allow
             /// liquidity bridge testing
@@ -926,6 +970,7 @@ abstract contract BaseSetup is StdInvariant, Test {
             vm.selectFork(vars.fork);
 
             vars.lzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
+            vars.lzV2Implementation = getContract(vars.chainId, "LayerzeroV2Implementation");
             vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
             vars.wormholeImplementation = getContract(vars.chainId, "WormholeARImplementation");
             vars.wormholeSRImplementation = getContract(vars.chainId, "WormholeSRImplementation");
@@ -960,6 +1005,15 @@ abstract contract BaseSetup is StdInvariant, Test {
                     );
                     LayerzeroImplementation(payable(vars.lzImplementation)).setChainId(
                         vars.dstChainId, vars.dstLzChainId
+                    );
+
+                    LayerzeroV2Implementation(payable(vars.lzV2Implementation)).setPeer(
+                        lz_v2_chainIds[j],
+                        bytes32(uint256(uint160(getContract(vars.dstChainId, "LayerzeroV2Implementation"))))
+                    );
+
+                    LayerzeroV2Implementation(payable(vars.lzV2Implementation)).setChainId(
+                        vars.dstChainId, lz_v2_chainIds[j]
                     );
 
                     if (!(vars.chainId == FANTOM || vars.dstChainId == FANTOM)) {
@@ -1271,14 +1325,16 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
         if (!invariant) {
-            forks[ETH] = pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 18_432_589) : vm.createFork(ETHEREUM_RPC_URL);
-            forks[BSC] = pinnedBlock ? vm.createFork(BSC_RPC_URL, 32_899_049) : vm.createFork(BSC_RPC_URL);
-            forks[AVAX] = pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 36_974_720) : vm.createFork(AVALANCHE_RPC_URL);
-            forks[POLY] = pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 49_118_079) : vm.createFork(POLYGON_RPC_URL);
-            forks[ARBI] = pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 143_659_807) : vm.createFork(ARBITRUM_RPC_URL);
-            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 111_390_769) : vm.createFork(OPTIMISM_RPC_URL);
-            forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL);
-            forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 78_945_396) : vm.createFork(FANTOM_RPC_URL);
+            forks[ETH] = pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 19_293_715) : vm.createFork(ETHEREUM_RPC_URL_QN);
+            forks[BSC] = pinnedBlock ? vm.createFork(BSC_RPC_URL, 32_899_049) : vm.createFork(BSC_RPC_URL_QN);
+            forks[AVAX] =
+                pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 43_845_494) : vm.createFork(AVALANCHE_RPC_URL_QN);
+            forks[POLY] = pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 56_710_026) : vm.createFork(POLYGON_RPC_URL_QN);
+            forks[ARBI] =
+                pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 175_504_761) : vm.createFork(ARBITRUM_RPC_URL_QN);
+            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 116_353_583) : vm.createFork(OPTIMISM_RPC_URL_QN);
+            forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL_QN);
+            forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 78_945_396) : vm.createFork(FANTOM_RPC_URL_QN);
         }
 
         mapping(uint64 => string) storage rpcURLs = RPC_URLS;
@@ -1301,7 +1357,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[OP][3] = abi.encode(550_000);
         gasUsed[ARBI][3] = abi.encode(2_500_000);
         gasUsed[BASE][3] = abi.encode(600_000);
-        gasUsed[FANTOM][3] = abi.encode(600_000);
+        gasUsed[FANTOM][3] = abi.encode(643_315);
 
         // updateDepositGasUsed == 4 (only used on deposits for now)
         gasUsed[ETH][4] = abi.encode(225_000);
@@ -1311,7 +1367,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[OP][4] = abi.encode(200_000);
         gasUsed[ARBI][4] = abi.encode(1_400_000);
         gasUsed[BASE][4] = abi.encode(200_000);
-        gasUsed[FANTOM][4] = abi.encode(200_000);
+        gasUsed[FANTOM][4] = abi.encode(734_757);
 
         // withdrawGasUsed == 6
         gasUsed[ETH][6] = abi.encode(1_272_330);
@@ -1321,9 +1377,19 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[OP][6] = abi.encode(1_716_146);
         gasUsed[ARBI][6] = abi.encode(1_654_955);
         gasUsed[BASE][6] = abi.encode(1_178_778);
-        gasUsed[FANTOM][6] = abi.encode(1_500_000);
+        gasUsed[FANTOM][6] = abi.encode(567_881);
 
         // updateWithdrawGasUsed == 13
+        /*
+        2049183 / 1.5 = 1366122 ARB
+        535243 / 1.5 = 356828  MAINNET
+        973861 / 1.5 = 649240 OP
+        901119  / 1.5 = 600746 AVAX
+        896967 / 1.5 = 597978 MATIC
+        1350127 / 1.5 = 900085 BSC
+        1379199 / 1.5 = 919466 BASE
+        */
+
         gasUsed[ETH][13] = abi.encode(356_828);
         gasUsed[BSC][13] = abi.encode(900_085);
         gasUsed[AVAX][13] = abi.encode(600_746);
@@ -1331,7 +1397,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[OP][13] = abi.encode(649_240);
         gasUsed[ARBI][13] = abi.encode(1_366_122);
         gasUsed[BASE][13] = abi.encode(919_466);
-        gasUsed[FANTOM][13] = abi.encode(600_000);
+        gasUsed[FANTOM][13] = abi.encode(2_003_157);
 
         mapping(uint64 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
         lzEndpointsStorage[ETH] = ETH_lzEndpoint;

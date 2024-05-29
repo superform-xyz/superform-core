@@ -129,7 +129,9 @@ struct SetupVars {
     address superform;
     address factory;
     address lzHelper;
+    address lzV2Helper;
     address lzImplementation;
+    address lzV2Implementation;
     address hyperlaneHelper;
     address hyperlaneImplementation;
     address wormholeHelper;

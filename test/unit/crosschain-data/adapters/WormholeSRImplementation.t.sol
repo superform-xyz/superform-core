@@ -258,4 +258,46 @@ contract WormholeSRImplementationTest is BaseSetup {
 
         vm.clearMockedCalls();
     }
+
+    function test_setWormholeCore_NotProtocolAdmin() public {
+        vm.prank(address(1));
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        wormholeSRImpl.setWormholeCore(address(2));
+    }
+
+    function test_setRelayer_NotProtocolAdmin() public {
+        vm.prank(address(1));
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        wormholeSRImpl.setRelayer(address(2));
+    }
+
+    function test_setFinality_NotProtocolAdmin() public {
+        vm.prank(address(1));
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        wormholeSRImpl.setFinality(1);
+    }
+
+    function test_setChainId_NotProtocolAdmin() public {
+        vm.prank(address(1));
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        wormholeSRImpl.setChainId(1, 1);
+    }
+
+    function test_setReceiver_NotProtocolAdmin() public {
+        vm.prank(address(1));
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        wormholeSRImpl.setReceiver(1, address(2));
+    }
+
+    function test_receiveMessage_CallerNotRelayer() public {
+        vm.prank(address(1));
+        vm.expectRevert(Error.CALLER_NOT_RELAYER.selector);
+        wormholeSRImpl.receiveMessage(bytes(""));
+    }
+
+    function test_broadcastPayload_NotStateRegistry() public {
+        vm.prank(address(1));
+        vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
+        wormholeSRImpl.broadcastPayload(address(1), bytes(""), bytes(""));
+    }
 }

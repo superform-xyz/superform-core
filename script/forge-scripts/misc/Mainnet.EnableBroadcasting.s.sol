@@ -5,7 +5,7 @@ import { AbstractEnableBroadcasting } from "./Abstract.EnableBroadcasting.s.sol"
 
 contract MainnetEnableBroadcasting is AbstractEnableBroadcasting {
     function enableBroadcasting(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {
@@ -21,7 +21,7 @@ contract MainnetEnableBroadcasting is AbstractEnableBroadcasting {
     }
 
     function fixRevokeRole(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env);
+        _setEnvironment(env, false);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {
