@@ -14,6 +14,9 @@ contract BroadcastRegistryTest is BaseSetup {
     BroadcastRegistry public broadcastRegistry;
     address caller;
     address invalidReceiver;
+    address nonBroadcaster;
+    address nonProcessor;
+    address invalidAmbImplementation;
 
     function setUp() public override {
         super.setUp();
@@ -26,6 +29,10 @@ contract BroadcastRegistryTest is BaseSetup {
         caller = address(420);
         vm.deal(caller, 100 ether);
         vm.deal(invalidReceiver, 100 ether);
+
+        nonBroadcaster = address(421);
+        nonProcessor = address(422);
+        invalidAmbImplementation = address(423);
 
         vm.startPrank(deployer);
         SuperRBAC rbac = SuperRBAC(getContract(ETH, "SuperRBAC"));
@@ -53,5 +60,28 @@ contract BroadcastRegistryTest is BaseSetup {
         vm.startPrank(invalidReceiver);
         vm.expectRevert(Error.INVALID_BROADCAST_FEE.selector);
         broadcastRegistry.broadcastPayload{ value: 1 ether }(invalidReceiver, 4, 2 ether, bytes("testmepls"), bytes(""));
+    }
+
+    function test_revertOnNonBroadcaster() public {
+        vm.startPrank(nonBroadcaster);
+        vm.expectRevert(Error.NOT_ALLOWED_BROADCASTER.selector);
+        broadcastRegistry.broadcastPayload(nonBroadcaster, 4, 0, bytes("testmepls"), bytes(""));
+    }
+
+    function test_revertOnNonProcessor() public {
+        vm.startPrank(nonProcessor);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Error.NOT_PRIVILEGED_CALLER.selector,
+                bytes32(0xbc04cc915ae49862455f81e94a0b624d54c65f74ec4700f8249a99a5ac18cf56)
+            )
+        );
+        broadcastRegistry.processPayload(1);
+    }
+
+    function test_revertOnInvalidAmbImplementation() public {
+        vm.startPrank(invalidAmbImplementation);
+        vm.expectRevert(Error.NOT_BROADCAST_AMB_IMPLEMENTATION.selector);
+        broadcastRegistry.receiveBroadcastPayload(1, bytes("testmepls"));
     }
 }

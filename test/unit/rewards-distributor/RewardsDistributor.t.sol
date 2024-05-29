@@ -51,9 +51,15 @@ contract RewardsDistributorTests is MerkleReader {
 
     function setUp() public virtual override {
         super.setUp();
+        bytes32 emptyRoot;
+
         vm.selectFork(FORKS[OP]);
 
         rewards = RewardsDistributor(getContract(OP, "RewardsDistributor"));
+
+        vm.prank(address(0x2828));
+        vm.expectRevert(IRewardsDistributor.NOT_REWARDS_ADMIN.selector);
+        rewards.setPeriodicRewards(emptyRoot);
 
         vm.startPrank(deployer);
 
@@ -79,8 +85,6 @@ contract RewardsDistributorTests is MerkleReader {
         uint256 usdcToDeposit;
         uint256 daiToDeposit;
         (root,, usdcToDeposit, daiToDeposit,,,) = _generateMerkleTree(MerkleReader.MerkleArgs(0, address(0), OP));
-
-        bytes32 emptyRoot;
 
         vm.expectRevert(IRewardsDistributor.INVALID_MERKLE_ROOT.selector);
         rewards.setPeriodicRewards(emptyRoot);
