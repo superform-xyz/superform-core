@@ -6,8 +6,6 @@ import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { Error } from "src/libraries/Error.sol";
 import "src/vendor/1inch/IAggregationRouterV6.sol";
 
-import "forge-std/console.sol";
-
 /// @title OneInchValidator
 /// @dev Asserts OneInch txData is valid
 /// @author Zeropoint Labs
@@ -42,8 +40,7 @@ contract OneInchValidator {
     /// @param receiver_ is the address of the receiver to validate
     /// @return valid_ if the address is valid
     function validateReceiver(bytes calldata txData_, address receiver_) external view returns (bool) {
-        (,,, address decodedReceiver,) = _decodeTxData(txData_);
-        console.log(decodedReceiver);
+        (,,, address decodedReceiver) = _decodeTxData(txData_);
         return (receiver_ == decodedReceiver);
     }
 
@@ -51,8 +48,7 @@ contract OneInchValidator {
     /// @param args_ the txData arguments to validate in txData
     /// @return hasDstSwap if the txData contains a destination swap
     function validateTxData(IBridgeValidator.ValidateTxDataArgs calldata args_) external view returns (bool) {
-        (address fromToken,,, address receiver,) = _decodeTxData(args_.txData);
-        console.log(receiver);
+        (address fromToken,,, address receiver) = _decodeTxData(args_.txData);
 
         if (args_.deposit) {
             /// @dev 1. chain id validation (only allow samechain with this)
@@ -82,42 +78,25 @@ contract OneInchValidator {
         bool /*genericSwapDisallowed_*/
     )
         external
-        pure
+        view
         returns (uint256 amount_)
     {
-        (, amount_,,,) = _decodeTxData(txData_);
+        (, amount_,,) = _decodeTxData(txData_);
     }
 
     /// @dev decodes neccesary information for processing swaps on the destination chain
     /// @param txData_ is the txData to be decoded
     /// @return token_ is the address of the token
     /// @return amount_ the amount expected
-    function decodeDstSwap(bytes calldata txData_) external pure returns (address token_, uint256 amount_) {
-        (token_, amount_,,,) = _decodeTxData(txData_);
+    function decodeDstSwap(bytes calldata txData_) external view returns (address token_, uint256 amount_) {
+        (token_, amount_,,) = _decodeTxData(txData_);
     }
 
     /// @dev decodes the final output token address (for only direct chain actions!)
     /// @param txData_ is the txData to be decoded
     /// @return token_ the address of the token
     function decodeSwapOutputToken(bytes calldata txData_) external view returns (address token_) {
-        (address fromToken,, address toToken,, Address dex) = _decodeTxData(txData_);
-        ProtocolLib.Protocol protocol = dex.protocol();
-
-        if (toToken != address(0)) {
-            token_ = toToken;
-        } else {
-            /// @dev if protocol is uniswap v2 or uniswap v3
-            if (protocol == ProtocolLib.Protocol.UniswapV2 || protocol == ProtocolLib.Protocol.UniswapV3) {
-                token_ = IUniswapV2Pair(dex.get()).token0();
-
-                if (token_ == fromToken) {
-                    token_ = IUniswapV2Pair(dex.get()).token1();
-                }
-            } else if (protocol == ProtocolLib.Protocol.Curve) {
-                uint256 toTokenIndex = (Address.unwrap(dex) >> _CURVE_TO_COINS_ARG_OFFSET) & _CURVE_TO_COINS_ARG_MASK;
-                token_ = ICurvePool(dex.get()).underlying_coins(int128(uint128(toTokenIndex)));
-            }
-        }
+        (,, token_,) = _decodeTxData(txData_);
     }
 
     //////////////////////////////////////////////////////////////
@@ -128,8 +107,8 @@ contract OneInchValidator {
     /// returns useful parameters for validaiton
     function _decodeTxData(bytes calldata txData_)
         internal
-        pure
-        returns (address fromToken, uint256 fromAmount, address toToken, address receiver, Address dexAddress)
+        view
+        returns (address fromToken, uint256 fromAmount, address toToken, address receiver)
     {
         bytes4 selector = bytes4(txData_[:4]);
 
@@ -142,11 +121,23 @@ contract OneInchValidator {
             fromToken = fromTokenUint256.get();
             fromAmount = decodedFromAmount;
             receiver = receiverUint256.get();
-            dexAddress = dex;
-        }
 
+            ProtocolLib.Protocol protocol = dex.protocol();
+
+            /// @dev if protocol is uniswap v2 or uniswap v3
+            if (protocol == ProtocolLib.Protocol.UniswapV2 || protocol == ProtocolLib.Protocol.UniswapV3) {
+                toToken = IUniswapV2Pair(dex.get()).token0();
+
+                if (toToken == fromToken) {
+                    toToken = IUniswapV2Pair(dex.get()).token1();
+                }
+            } else if (protocol == ProtocolLib.Protocol.Curve) {
+                uint256 toTokenIndex = (Address.unwrap(dex) >> _CURVE_TO_COINS_ARG_OFFSET) & _CURVE_TO_COINS_ARG_MASK;
+                toToken = ICurvePool(dex.get()).underlying_coins(int128(uint128(toTokenIndex)));
+            }
+        }
         /// @dev decodes the clipperSwapTo selector
-        if (selector == IAggregationRouterV6.clipperSwapTo.selector) {
+        else if (selector == IAggregationRouterV6.clipperSwapTo.selector) {
             (, address decodedReceiver, Address fromTokenUint256, IERC20 decodedToToken, uint256 decodedFromAmount,,,,)
             = abi.decode(
                 _parseCallData(txData_),
@@ -158,9 +149,8 @@ contract OneInchValidator {
             toToken = address(decodedToToken);
             receiver = decodedReceiver;
         }
-
         /// @dev decodes the generic router call
-        if (selector == IAggregationRouterV6.swap.selector) {
+        else if (selector == IAggregationRouterV6.swap.selector) {
             (, IAggregationRouterV6.SwapDescription memory swapDescription, bytes memory extCallData) =
                 abi.decode(_parseCallData(txData_), (IAggregationExecutor, IAggregationRouterV6.SwapDescription, bytes));
 
@@ -168,6 +158,8 @@ contract OneInchValidator {
             fromAmount = swapDescription.amount;
             toToken = address(swapDescription.dstToken);
             receiver = swapDescription.dstReceiver;
+        } else {
+            revert Error.BLACKLISTED_SELECTOR();
         }
     }
 
