@@ -469,6 +469,33 @@ abstract contract BaseSetup is StdInvariant, Test {
         SetupVars memory vars;
 
         vm.startPrank(deployer);
+
+        /// @dev 1 - Pigeon helpers allow us to fullfill cross-chain messages in a manner as close to mainnet as
+        /// possible
+        vars.lzHelper = address(new LayerZeroHelper{ salt: salt }());
+        vm.allowCheatcodes(vars.lzHelper);
+        vm.makePersistent(vars.lzHelper);
+
+        vars.lzV2Helper = address(new LayerZeroV2Helper{ salt: salt }());
+        vm.allowCheatcodes(vars.lzV2Helper);
+        vm.makePersistent(vars.lzV2Helper);
+
+        vars.hyperlaneHelper = address(new HyperlaneHelper{ salt: salt }());
+        vm.allowCheatcodes(vars.hyperlaneHelper);
+        vm.makePersistent(vars.hyperlaneHelper);
+
+        vars.wormholeHelper = address(new WormholeHelper{ salt: salt }());
+        vm.allowCheatcodes(vars.wormholeHelper);
+        vm.makePersistent(vars.wormholeHelper);
+
+        vars.wormholeBroadcastHelper = address(new WormholeBroadcastHelper.WormholeHelper{ salt: salt }());
+        vm.allowCheatcodes(vars.wormholeBroadcastHelper);
+        vm.makePersistent(vars.wormholeBroadcastHelper);
+
+        vars.axelarHelper = address(new AxelarHelper{ salt: salt }());
+        vm.allowCheatcodes(vars.axelarHelper);
+        vm.makePersistent(vars.axelarHelper);
+
         /// @dev deployments
         for (uint256 i = 0; i < chainIds.length; ++i) {
             vars.chainId = chainIds[i];
@@ -490,40 +517,22 @@ abstract contract BaseSetup is StdInvariant, Test {
 
             /// @dev 1 - Pigeon helpers allow us to fullfill cross-chain messages in a manner as close to mainnet as
             /// possible
-            /// @dev 1.1- deploy LZ Helper from Pigeon
-            vars.lzHelper = address(new LayerZeroHelper{ salt: salt }());
-            vm.allowCheatcodes(vars.lzHelper);
-
+            /// @dev 1.1.1- LZ Helper from Pigeon
             contracts[vars.chainId][bytes32(bytes("LayerZeroHelper"))] = vars.lzHelper;
 
-            /// @dev 1.1.2- deploy LZ v2 Helper from Pigeon
-            vars.lzV2Helper = address(new LayerZeroV2Helper{ salt: salt }());
-            vm.allowCheatcodes(vars.lzV2Helper);
-
+            /// @dev 1.1.2-  LZ v2 Helper from Pigeon
             contracts[vars.chainId][bytes32(bytes("LayerZeroV2Helper"))] = vars.lzV2Helper;
 
-            /// @dev 1.2- deploy Hyperlane Helper from Pigeon
-            vars.hyperlaneHelper = address(new HyperlaneHelper{ salt: salt }());
-            vm.allowCheatcodes(vars.hyperlaneHelper);
-
+            /// @dev 1.2-  Hyperlane Helper from Pigeon
             contracts[vars.chainId][bytes32(bytes("HyperlaneHelper"))] = vars.hyperlaneHelper;
 
-            /// @dev 1.3- deploy Wormhole Automatic Relayer Helper from Pigeon
-            vars.wormholeHelper = address(new WormholeHelper{ salt: salt }());
-            vm.allowCheatcodes(vars.wormholeHelper);
-
+            /// @dev 1.3-  Wormhole Automatic Relayer Helper from Pigeon
             contracts[vars.chainId][bytes32(bytes("WormholeHelper"))] = vars.wormholeHelper;
 
-            /// @dev 1.4- deploy Wormhole Specialized Relayer Helper from Pigeon
-            vars.wormholeBroadcastHelper = address(new WormholeBroadcastHelper.WormholeHelper{ salt: salt }());
-            vm.allowCheatcodes(vars.wormholeBroadcastHelper);
-
+            /// @dev 1.4-  Wormhole Specialized Relayer Helper from Pigeon
             contracts[vars.chainId][bytes32(bytes("WormholeBroadcastHelper"))] = vars.wormholeBroadcastHelper;
 
-            /// @dev 1.5- deploy axelar from Pigeon
-            vars.axelarHelper = address(new AxelarHelper{ salt: salt }());
-            vm.allowCheatcodes(vars.axelarHelper);
-
+            /// @dev 1.5-  axelar from Pigeon
             contracts[vars.chainId][bytes32(bytes("AxelarHelper"))] = vars.axelarHelper;
 
             /// @dev 2 - Deploy SuperRBAC
