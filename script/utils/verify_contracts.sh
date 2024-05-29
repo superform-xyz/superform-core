@@ -7,26 +7,29 @@ export POLYGONSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/POLYGONSCAN
 export ARBISCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/ARBISCAN_API_KEY/credential)
 export OPSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/OPSCAN_API_KEY/credential)
 export BASESCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BASESCAN_API_KEY/credential)
+export FTMSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/FTMSCAN_API_KEY/credential)
 
 networks=(
-    1
-    56
-    43114
-    137
-    42161
-    10
-    8453
+    #1
+    #56
+    #43114
+    #137
+    #42161
+    #10
+    #8453
+    250
     # add more networks here if needed
 )
 
 api_keys=(
-    $ETHERSCAN_API_KEY
-    $BSCSCAN_API_KEY
-    $SNOWTRACE_API_KEY
-    $POLYGONSCAN_API_KEY
-    $ARBISCAN_API_KEY
-    $OPSCAN_API_KEY
-    $BASESCAN_API_KEY
+    #$ETHERSCAN_API_KEY
+    #$BSCSCAN_API_KEY
+    #$SNOWTRACE_API_KEY
+    #$POLYGONSCAN_API_KEY
+    #$ARBISCAN_API_KEY
+    #$OPSCAN_API_KEY
+    #$BASESCAN_API_KEY
+    $FTMSCAN_API_KEY
     # add more API keys here if needed
 )
 
@@ -37,6 +40,12 @@ superposition_constructor_arg="$(cast abi-encode "constructor(string, address, s
 superregistry_constructor_arg="$(cast abi-encode "constructor(address)" 0x480bec236e3d3AE33789908BF024850B2Fe71258)"
 super_rbac_arg="$(cast abi-encode 'constructor((address,address,address,address,address,address,address,address,address,address,address))' '(0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92,0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92,0xD911673eAF0D3e15fe662D58De15511c5509bAbB,0x23c658FE050B4eAeB9401768bF5911D11621629c,0x73009CE7cFFc6C4c5363734d1b429f0b848e0490,0x73009CE7cFFc6C4c5363734d1b429f0b848e0490,0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f,0x73009CE7cFFc6C4c5363734d1b429f0b848e0490,0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C,0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5,0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a)')"
 wormhole_sr_arg="$(cast abi-encode "constructor(address, uint8)" 0x17A332dC7B40aE701485023b219E9D6f493a2514 2)"
+
+super_constructor_arg_ftm="$(cast abi-encode "constructor(address)" 0x7feB31d18E43E2faeC718EEd2D7f34402c3e27b4)"
+superposition_constructor_arg_ftm="$(cast abi-encode "constructor(string, address, string, string)" https://ipfs-gateway.superform.xyz/ipns/k51qzi5uqu5dg90fqdo9j63m556wlddeux4mlgyythp30zousgh3huhyzouyq8/JSON/ 0x7feB31d18E43E2faeC718EEd2D7f34402c3e27b4 SuperPositions SP)"
+superregistry_constructor_arg_ftm="$(cast abi-encode "constructor(address)" 0xd831b4ba49852F6E7246Fe7f4A7DABB5b0C56e1F)"
+super_rbac_arg_ftm="$(cast abi-encode 'constructor((address,address,address,address,address,address,address,address,address,address,address))' '(0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92,0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92,0xD911673eAF0D3e15fe662D58De15511c5509bAbB,0x23c658FE050B4eAeB9401768bF5911D11621629c,0x73009CE7cFFc6C4c5363734d1b429f0b848e0490,0x73009CE7cFFc6C4c5363734d1b429f0b848e0490,0xaEbb4b9f7e16BEE2a0963569a5E33eE10E478a5f,0x73009CE7cFFc6C4c5363734d1b429f0b848e0490,0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C,0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5,0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a)')"
+wormhole_sr_arg_ftm="$(cast abi-encode "constructor(address, uint8)" 0x7feB31d18E43E2faeC718EEd2D7f34402c3e27b4 2)"
 
 file_names=(
     "src/crosschain-data/extensions/CoreStateRegistry.sol"
@@ -113,6 +122,31 @@ contract_addresses=(
     # Add more addresses here if needed
 )
 
+contract_addresses_fantom=(
+    0xc4e6b51bcE2F92666207214965CBeb0Bd9B5d6BF
+    0x3c6C2D73ED864E25c2C0599F5716192a89554695
+    0x290dE2677EC5056458D60202B112ac44e9b3d90d
+    0x898e4E8a442C079e74c9E61E956d2FD183e5Eb99
+    0x0000000000000000000000000000000000000000
+    0x2551c2218a37e8e28BF3C1658d8A315cD4209847
+    0xbB7d1453487043Aa8db8512eC22498a8F2fB652B
+    0xeE8695cDa4697987e1Fcd191F3c69FFF5Ef02eD0
+    0xEBDf673A9A0c40149641E50244415C67DD2B5CE8
+    0xA7fEEE543b40d9Ca37722A8bda03D1fff4b2EE53
+    0xfDf661e1e7e8F617b383516688A8aFC9c6176A04
+    0xbc85043544CC2b3Fd095d54b6431822979BBB62A
+    0x50DFeb29B462a64867f421C585BDaE89cf4656d4
+    0xE4350dFcB29Fd580B662522b3fC85Dc5c3E9aBC8
+    0x7F1535FF0f0A099eb7D314e1655BD4dC92986aAD
+    0x7feB31d18E43E2faeC718EEd2D7f34402c3e27b4
+    0xd831b4ba49852F6E7246Fe7f4A7DABB5b0C56e1F
+    0x861e766B97eEE8774fA96C16Ee8cc448A3d68d1C
+    0xf631CA98f1884Ca3AD5abC510F071C54fbd3d8E9
+    0x0Bb3468d5b3Cd0842eEc911C735a9B128B21B0C9
+    0xeb077f9CB0406667DDD7BE945f393297578372F1
+    # Add more addresses here if needed
+)
+
 constructor_args=(
     $super_constructor_arg
     $super_constructor_arg
@@ -147,6 +181,7 @@ for i in "${!networks[@]}"; do
         file_name="${file_names[$j]}"
         contract_name="${contract_names[$j]}"
         contract_address="${contract_addresses[$j]}"
+        contract_address_fantom="${contract_addresses_fantom[$j]}"
         constructor_arg="${constructor_args[$j]}"
 
         # verify the contract
@@ -159,6 +194,14 @@ for i in "${!networks[@]}"; do
                 "$file_name:$contract_name" \
                 --etherscan-api-key "$api_key" \
                 --verifier-url 'https://api.routescan.io/v2/network/mainnet/evm/43114/etherscan'
+        elif [[ $network == 250 ]]; then
+            forge verify-contract $contract_address_fantom \
+                --chain-id $network \
+                --num-of-optimizations 200 \
+                --watch --compiler-version v0.8.23+commit.f704f362 \
+                --constructor-args "$constructor_arg" \
+                "$file_name:$contract_name" \
+                --etherscan-api-key "$api_key"
         else
             forge verify-contract $contract_address \
                 --chain-id $network \
