@@ -114,4 +114,61 @@ contract OneInchValidatorTest is ProtocolActions {
         vm.expectRevert(Error.INVALID_TXDATA_TOKEN.selector);
         validator.validateTxData(args);
     }
+
+    function test_constructor_zeroAddress() public {
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        new OneInchValidator(address(0));
+    }
+
+    function test_decodeTxData_swapSelector() public {
+        /// @dev txData is imported from
+        /// https://etherscan.io/tx/0xe6c6ca260d59041934097c51c42733b60f8c28cc66da93b16ef97edcbdafec29
+        bytes memory txData =
+            hex"07ed2379000000000000000000000000e37e799d5077682fa0a244d46e5649f71457bd09000000000000000000000000d29da236dd4aac627346e1bba06a619e8c22d7c5000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000c3fdf9c70835f9be9db9585ecb6a1ee3f20a6c7000000000000000000000000f62cc7b4e8f91dbeef515ec11f477f4836c0ea1c0000000000000000000000000000000000000000000000000053442ca5785469000000000000000000000000000000000000000000000000339197b56fb2863d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000000dd0000000000000000000000000000000000000000bf0000a500008f00005300206ae4071118002dc6c00c3fdf9c70835f9be9db9585ecb6a1ee3f20a6c7000000000000000000000000000000000000000000000000334f40c1638ee4c2d29da236dd4aac627346e1bba06a619e8c22d7c54101c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200042e1a7d4d0000000000000000000000000000000000000000000000000000000000000000c061111111125421ca6dc452d289314280a0f8842a6500206b4be0b9111111125421ca6dc452d289314280a0f8842a65000000e26b9977";
+
+        assertTrue(validator.validateReceiver(txData, 0xf62Cc7b4e8f91DBEEf515Ec11f477f4836C0eA1c));
+
+        IBridgeValidator.ValidateTxDataArgs memory args = IBridgeValidator.ValidateTxDataArgs({
+            deposit: false,
+            srcChainId: 1,
+            dstChainId: 1,
+            liqDstChainId: 1,
+            txData: txData,
+            superform: 0xf62Cc7b4e8f91DBEEf515Ec11f477f4836C0eA1c,
+            liqDataToken: 0xD29DA236dd4AAc627346e1bBa06A619E8c22d7C5,
+            liqDataInterimToken: address(0),
+            receiverAddress: 0xf62Cc7b4e8f91DBEEf515Ec11f477f4836C0eA1c
+        });
+
+        assertFalse(validator.validateTxData(args));
+
+        assertEq(validator.decodeSwapOutputToken(txData), 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
+        (address fromToken, uint256 fromAmount) = validator.decodeDstSwap(txData);
+
+        assertEq(fromToken, 0xD29DA236dd4AAc627346e1bBa06A619E8c22d7C5);
+        assertEq(fromAmount, 23_437_381_612_360_809);
+    }
+
+    function test_decodeTxData_unsupportedSelector() public {
+        bytes memory txData = hex"11111111";
+        vm.expectRevert(Error.BLACKLISTED_SELECTOR.selector);
+        validator.validateReceiver(txData, address(420));
+    }
+
+    function test_validateTxData_deposit_invalidLiqDstChainId() public {
+        IBridgeValidator.ValidateTxDataArgs memory args = IBridgeValidator.ValidateTxDataArgs({
+            deposit: true,
+            srcChainId: 1,
+            dstChainId: 1,
+            liqDstChainId: 5,
+            txData: mockTxData,
+            superform: address(this),
+            liqDataToken: 0xdAC17F958D2ee523a2206206994597C13D831ec7,
+            liqDataInterimToken: address(0),
+            receiverAddress: address(0)
+        });
+
+        vm.expectRevert(Error.INVALID_DEPOSIT_LIQ_DST_CHAIN_ID.selector);
+        validator.validateTxData(args);
+    }
 }
