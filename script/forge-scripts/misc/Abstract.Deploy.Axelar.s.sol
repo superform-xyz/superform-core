@@ -122,6 +122,19 @@ abstract contract AbstractDeployAxelar is EnvironmentUtils {
         internal
         setEnvDeploy(cycle)
     {
+        if (env == 0) _configureAxelarProd(env, i, trueIndex, cycle, s_superFormChainIds);
+        if (env == 1) _configureAxelarStaging(env, i, trueIndex, cycle, s_superFormChainIds);
+    }
+
+    function _configureAxelarStaging(
+        uint256 env,
+        uint256 i,
+        uint256 trueIndex,
+        Cycle cycle,
+        uint64[] memory s_superFormChainIds
+    )
+        internal
+    {
         assert(salt.length > 0);
         UpdateVars memory vars;
         vars.chainId = s_superFormChainIds[i];
@@ -152,6 +165,57 @@ abstract contract AbstractDeployAxelar is EnvironmentUtils {
         }
 
         vm.stopBroadcast();
+    }
+
+    function _configureAxelarProd(
+        uint256 env,
+        uint256 i,
+        uint256 trueIndex,
+        Cycle cycle,
+        uint64[] memory s_superFormChainIds
+    )
+        internal
+    {
+        assert(salt.length > 0);
+        UpdateVars memory vars;
+        vars.chainId = s_superFormChainIds[i];
+
+        AxelarImplementation axelarImpl =
+            AxelarImplementation(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "AxelarImplementation"));
+
+        bytes memory txn = abi.encodeWithSelector(
+            AxelarImplementation.setAxelarConfig.selector, IAxelarGateway(axelarGateway[trueIndex])
+        );
+        addToBatch(address(axelarImpl), 0, txn);
+
+        txn = abi.encodeWithSelector(
+            AxelarImplementation.setAxelarGasService.selector,
+            IAxelarGasService(axelarGasService[trueIndex]),
+            IInterchainGasEstimation(axelarGasService[trueIndex])
+        );
+        addToBatch(address(axelarImpl), 0, txn);
+
+        for (uint256 j; j < TARGET_CHAINS.length; j++) {
+            vars.dstChainId = TARGET_CHAINS[j];
+            if (vars.chainId != vars.dstChainId) {
+                vars.dstTrueIndex = _getTrueIndex(vars.dstChainId);
+
+                txn = abi.encodeWithSelector(
+                    AxelarImplementation.setChainId.selector, vars.dstChainId, axelar_chainIds[vars.dstTrueIndex]
+                );
+                addToBatch(address(axelarImpl), 0, txn);
+
+                txn = abi.encodeWithSelector(
+                    AxelarImplementation.setReceiver.selector,
+                    axelar_chainIds[vars.dstTrueIndex],
+                    _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "AxelarImplementation")
+                );
+                addToBatch(address(axelarImpl), 0, txn);
+            }
+        }
+
+        /// Send to Safe to sign
+        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], false);
     }
 
     function _getTrueIndex(uint256 chainId) public view returns (uint256 index) {
