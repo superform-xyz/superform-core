@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import "test/utils/BaseSetup.sol";
 import { AMBMessage } from "src/types/DataTypes.sol";
-import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
+import { CoreStateRegistry, ISuperRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
 import { Error } from "src/libraries/Error.sol";
 import { IQuorumManager } from "src/interfaces/IQuorumManager.sol";
 

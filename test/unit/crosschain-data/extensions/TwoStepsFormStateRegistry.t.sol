@@ -176,6 +176,94 @@ contract TimelockStateRegistryTest is ProtocolActions {
         timelockStateRegistry.dispatchPayload(address(420), ambIds, uint64(1), bytes(""), bytes(""));
     }
 
+    function test_finalizePayload_NotPrivilegedCaller() public {
+        vm.selectFork(FORKS[ETH]);
+
+        vm.prank(address(1));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Error.NOT_PRIVILEGED_CALLER.selector, keccak256("TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE")
+            )
+        );
+        timelockStateRegistry.finalizePayload(1, bytes(""));
+    }
+
+    function test_processPayload_NotPrivilegedCaller() public {
+        vm.selectFork(FORKS[ETH]);
+
+        vm.prank(address(1));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Error.NOT_PRIVILEGED_CALLER.selector, keccak256("TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE")
+            )
+        );
+        timelockStateRegistry.processPayload(1);
+    }
+
+    function test_receivePayload_SuperformIdNonexistent() public {
+        vm.selectFork(FORKS[ETH]);
+
+        uint256 nonexistentSuperformId = 123;
+        vm.prank(address(1));
+        vm.expectRevert(Error.SUPERFORM_ID_NONEXISTENT.selector);
+        timelockStateRegistry.receivePayload(
+            0,
+            0,
+            0,
+            InitSingleVaultData(
+                0,
+                nonexistentSuperformId,
+                0,
+                0,
+                0,
+                LiqRequest(bytes(""), address(0), address(0), 0, 0, 0),
+                false,
+                false,
+                address(0),
+                bytes("")
+            )
+        );
+    }
+
+    function test_receivePayload_NotTimelockSuperform() public {
+        vm.selectFork(FORKS[ETH]);
+
+        address nonTimelockSuperform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 nonTimelockSuperformId = DataLib.packSuperform(nonTimelockSuperform, FORM_IMPLEMENTATION_IDS[0], ETH);
+
+        vm.prank(nonTimelockSuperform);
+        vm.expectRevert(Error.NOT_TIMELOCK_SUPERFORM.selector);
+        timelockStateRegistry.receivePayload(
+            0,
+            0,
+            0,
+            InitSingleVaultData(
+                0,
+                nonTimelockSuperformId,
+                0,
+                0,
+                0,
+                LiqRequest(bytes(""), address(0), address(0), 0, 0, 0),
+                false,
+                false,
+                address(0),
+                bytes("")
+            )
+        );
+    }
+
+    function test_processPayload_InvalidPayloadId() public {
+        vm.selectFork(FORKS[ETH]);
+
+        uint256 invalidPayloadId = timelockStateRegistry.payloadsCount() + 1;
+        vm.prank(deployer);
+        vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);
+        timelockStateRegistry.processPayload(invalidPayloadId);
+    }
+
     function _legacySuperformPackWithShift(uint64 chainId_)
         internal
         view

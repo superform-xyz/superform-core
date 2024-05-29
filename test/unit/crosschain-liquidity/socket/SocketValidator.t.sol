@@ -13,6 +13,11 @@ contract SocketValidatorTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
     }
 
+    function test_socketEmergencyAdmin() public {
+        vm.expectRevert(Error.NOT_EMERGENCY_ADMIN.selector);
+        SocketValidator(getContract(ETH, "SocketValidator")).addToBlacklist(420);
+    }
+
     function test_socket_validator() public {
         SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
