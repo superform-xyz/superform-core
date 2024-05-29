@@ -13,23 +13,26 @@ export FANTOM_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/FANTOM_RPC_URL/c
 # Run the script
 echo Deploying axelar: ...
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployAxelar.s.sol:MainnetDeployAxelar --sig "deployAxelar( uint256,uint256, uint256)" 0 0 0 --rpc-url $ETHEREUM_RPC_URL --slow --broadcast --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployAxelar.s.sol:MainnetDeployAxelar --sig "deployAxelar( uint256,uint256, uint256)" 0 0 0 --rpc-url $ETHEREUM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployAxelar.s.sol:MainnetDeployAxelar --sig "deployAxelar( uint256,uint256, uint256)" 0 1 0 --rpc-url $BSC_RPC_URL --slow --broadcast --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployAxelar.s.sol:MainnetDeployAxelar --sig "deployAxelar( uint256,uint256, uint256)" 0 1 0 --rpc-url $BSC_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployAxelar.s.sol:MainnetDeployAxelar --sig "deployAxelar( uint256,uint256, uint256)" 0 2 0 --rpc-url $AVALANCHE_RPC_URL --slow --broadcast --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployAxelar.s.sol:MainnetDeployAxelar --sig "deployAxelar( uint256,uint256, uint256)" 0 2 0 --rpc-url $AVALANCHE_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployAxelar.s.sol:MainnetDeployAxelar --sig "deployAxelar( uint256,uint256, uint256)" 0 3 0 --rpc-url $POLYGON_RPC_URL --slow --broadcast --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployAxelar.s.sol:MainnetDeployAxelar --sig "deployAxelar( uint256,uint256, uint256)" 0 3 0 --rpc-url $POLYGON_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployAxelar.s.sol:MainnetDeployAxelar --sig "deployAxelar( uint256,uint256, uint256)" 0 4 0 --rpc-url $ARBITRUM_RPC_URL --slow --broadcast --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployAxelar.s.sol:MainnetDeployAxelar --sig "deployAxelar( uint256,uint256, uint256)" 0 4 0 --rpc-url $ARBITRUM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployAxelar.s.sol:MainnetDeployAxelar --sig "deployAxelar( uint256,uint256, uint256)" 0 5 0 --rpc-url $OPTIMISM_RPC_URL --slow --broadcast --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployAxelar.s.sol:MainnetDeployAxelar --sig "deployAxelar( uint256,uint256, uint256)" 0 5 0 --rpc-url $OPTIMISM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployAxelar.s.sol:MainnetDeployAxelar --sig "deployAxelar( uint256,uint256, uint256)" 0 6 0 --rpc-url $BASE_RPC_URL --slow --broadcast --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployAxelar.s.sol:MainnetDeployAxelar --sig "deployAxelar( uint256,uint256, uint256)" 0 6 0 --rpc-url $BASE_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+wait
+
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployAxelar.s.sol:MainnetDeployAxelar --sig "deployAxelar( uint256,uint256, uint256)" 0 7 0 --rpc-url $FANTOM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 wait
