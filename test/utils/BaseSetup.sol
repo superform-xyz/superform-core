@@ -49,6 +49,8 @@ import { SuperformFactory } from "src/SuperformFactory.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
 import { ERC4626TimelockForm } from "src/forms/ERC4626TimelockForm.sol";
 import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
+import { ERC5115Form } from "src/forms/ERC5115Form.sol";
+import { ERC5115To4626Wrapper } from "src/forms/wrappers/ERC5115To4626Wrapper.sol";
 import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
 import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator.sol";
@@ -145,8 +147,8 @@ abstract contract BaseSetup is StdInvariant, Test {
     /// @dev we should fork these instead of mocking
     string[] public UNDERLYING_TOKENS = ["DAI", "USDC", "WETH"];
 
-    /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm
-    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(2), uint32(3)];
+    /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm, 4 = ERC511§5
+    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(2), uint32(3), uint32(4)];
 
     /// @dev WARNING!! THESE VAULT NAMES MUST BE THE EXACT NAMES AS FILLED IN vaultKinds
     string[] public VAULT_KINDS = [
@@ -158,7 +160,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         "ERC4626TimelockMockRevertDeposit",
         "kycDAO4626RevertDeposit",
         "kycDAO4626RevertWithdraw",
-        "VaultMockRevertWithdraw"
+        "VaultMockRevertWithdraw",
+        "ERC5115"
     ];
 
     struct VaultInfo {
@@ -170,7 +173,8 @@ abstract contract BaseSetup is StdInvariant, Test {
 
     mapping(uint256 vaultId => string[] names) VAULT_NAMES;
 
-    mapping(uint64 chainId => mapping(uint32 formImplementationId => IERC4626[][] vaults)) public vaults;
+    mapping(uint64 chainId => mapping(uint32 formImplementationId => address[][] vaults)) public vaults;
+    mapping(uint64 chainId => address[] wrapped5115vaults) public wrapped5115vaults;
     mapping(uint64 chainId => uint256 payloadId) PAYLOAD_ID;
     mapping(uint64 chainId => uint256 payloadId) TIMELOCK_PAYLOAD_ID;
 
@@ -339,6 +343,10 @@ abstract contract BaseSetup is StdInvariant, Test {
                     => mapping(string underlying => mapping(uint256 vaultKindIndex => address realVault))
             )
     ) public REAL_VAULT_ADDRESS;
+
+    mapping(uint64 chainId => mapping(uint256 market => address realVault)) public ERC5115_VAULTS;
+    mapping(uint64 chainId => uint256 nVaults) public NUMBER_OF_5115S;
+    mapping(uint64 chainId => mapping(uint256 market => string name)) public ERC5115_VAULTS_NAMES;
 
     string public ETHEREUM_RPC_URL = vm.envString("ETHEREUM_RPC_URL"); // Native token: ETH
     string public BSC_RPC_URL = vm.envString("BSC_RPC_URL"); // Native token: BNB
@@ -652,48 +660,59 @@ abstract contract BaseSetup is StdInvariant, Test {
             /// NOTE: This loop deploys all vaults on all chainIds with all of the UNDERLYING TOKENS (id x form) x
             /// chainId
             for (uint32 j = 0; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
-                IERC4626[][] memory doubleVaults = new IERC4626[][](UNDERLYING_TOKENS.length);
+                /// @dev don't do this for 5115
+                if (j != 3) {
+                    address[][] memory doubleVaults = new address[][](UNDERLYING_TOKENS.length);
 
-                for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
-                    uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
-                    IERC4626[] memory vaultsT = new IERC4626[](lenBytecodes);
-                    for (uint256 l = 0; l < lenBytecodes; l++) {
-                        vars.vault =
-                            REAL_VAULT_ADDRESS[vars.chainId][FORM_IMPLEMENTATION_IDS[j]][UNDERLYING_TOKENS[k]][l];
+                    for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
+                        uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
+                        address[] memory vaultsT = new address[](lenBytecodes);
+                        for (uint256 l = 0; l < lenBytecodes; l++) {
+                            vars.vault =
+                                REAL_VAULT_ADDRESS[vars.chainId][FORM_IMPLEMENTATION_IDS[j]][UNDERLYING_TOKENS[k]][l];
 
-                        if (vars.vault == address(0)) {
-                            /// @dev 8.2 - Deploy mock Vault
-                            if (j != 2) {
-                                bytecodeWithArgs = abi.encodePacked(
-                                    vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode[l],
-                                    abi.encode(
-                                        MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])),
-                                        VAULT_NAMES[l][k],
-                                        VAULT_NAMES[l][k]
-                                    )
-                                );
+                            if (vars.vault == address(0)) {
+                                /// @dev 8.2 - Deploy mock Vault
+                                if (j != 2) {
+                                    bytecodeWithArgs = abi.encodePacked(
+                                        vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode[l],
+                                        abi.encode(
+                                            MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])),
+                                            VAULT_NAMES[l][k],
+                                            VAULT_NAMES[l][k]
+                                        )
+                                    );
 
-                                vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
-                            } else {
-                                /// deploy the kycDAOVault wrapper with different args
-                                bytecodeWithArgs = abi.encodePacked(
-                                    vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode[l],
-                                    abi.encode(
-                                        MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])), vars.kycDAOMock
-                                    )
-                                );
+                                    vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
+                                } else {
+                                    /// deploy the kycDAOVault wrapper with different args
+                                    bytecodeWithArgs = abi.encodePacked(
+                                        vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode[l],
+                                        abi.encode(
+                                            MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])), vars.kycDAOMock
+                                        )
+                                    );
 
-                                vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
+                                    vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
+                                }
                             }
-                        }
 
-                        /// @dev Add VaultMock
-                        contracts[vars.chainId][bytes32(bytes(string.concat(VAULT_NAMES[l][k])))] = vars.vault;
-                        vaultsT[l] = IERC4626(vars.vault);
+                            /// @dev Add VaultMock
+                            contracts[vars.chainId][bytes32(bytes(string.concat(VAULT_NAMES[l][k])))] = vars.vault;
+                            vaultsT[l] = vars.vault;
+                        }
+                        doubleVaults[k] = vaultsT;
                     }
-                    doubleVaults[k] = vaultsT;
+                    vaults[vars.chainId][FORM_IMPLEMENTATION_IDS[j]] = doubleVaults;
                 }
-                vaults[vars.chainId][FORM_IMPLEMENTATION_IDS[j]] = doubleVaults;
+            }
+
+            if (NUMBER_OF_5115S[vars.chainId] > 0) {
+                for (uint256 j = 0; j < NUMBER_OF_5115S[vars.chainId]; ++j) {
+                    wrapped5115vaults[vars.chainId].push(
+                        address(new ERC5115To4626Wrapper{ salt: salt }(ERC5115_VAULTS[vars.chainId][j]))
+                    );
+                }
             }
 
             /// @dev 9 - Deploy SuperformFactory
@@ -716,6 +735,10 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.kycDao4626Form = address(new ERC4626KYCDaoForm{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
 
+            // Pendle ERC5115 Form
+            vars.erc5115form = address(new ERC5115Form{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("ERC5115Form"))] = vars.erc5115form;
+
             /// @dev 11 - Add newly deployed form implementations to Factory
             ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0], 1);
 
@@ -724,6 +747,8 @@ abstract contract BaseSetup is StdInvariant, Test {
             );
 
             ISuperformFactory(vars.factory).addFormImplementation(vars.kycDao4626Form, FORM_IMPLEMENTATION_IDS[2], 1);
+
+            ISuperformFactory(vars.factory).addFormImplementation(vars.erc5115form, FORM_IMPLEMENTATION_IDS[3], 1);
 
             /// @dev 12 - Deploy SuperformRouter
             vars.superformRouter = address(new SuperformRouter{ salt: salt }(vars.superRegistry));
@@ -1077,32 +1102,57 @@ abstract contract BaseSetup is StdInvariant, Test {
             /// @dev 18 - create test superforms when the whole state registry is configured
 
             for (uint256 j = 0; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
-                for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
-                    uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
+                if (j != 3) {
+                    for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
+                        uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
 
-                    for (uint256 l = 0; l < lenBytecodes; l++) {
-                        address vault = address(vaults[chainIds[i]][FORM_IMPLEMENTATION_IDS[j]][k][l]);
+                        for (uint256 l = 0; l < lenBytecodes; l++) {
+                            address vault = vaults[chainIds[i]][FORM_IMPLEMENTATION_IDS[j]][k][l];
 
-                        uint256 superformId;
-                        (superformId, vars.superform) = ISuperformFactory(
-                            contracts[chainIds[i]][bytes32(bytes("SuperformFactory"))]
-                        ).createSuperform(FORM_IMPLEMENTATION_IDS[j], vault);
+                            uint256 superformId;
+                            (superformId, vars.superform) = ISuperformFactory(
+                                contracts[chainIds[i]][bytes32(bytes("SuperformFactory"))]
+                            ).createSuperform(FORM_IMPLEMENTATION_IDS[j], vault);
 
-                        if (FORM_IMPLEMENTATION_IDS[j] == 3) {
-                            /// mint a kycDAO Nft to the newly kycDAO superform
-                            ERC4626KYCDaoForm(vars.superform).mintKYC(1);
-                        }
+                            if (FORM_IMPLEMENTATION_IDS[j] == 3) {
+                                /// mint a kycDAO Nft to the newly kycDAO superform
+                                ERC4626KYCDaoForm(vars.superform).mintKYC(1);
+                            }
 
-                        contracts[chainIds[i]][bytes32(
-                            bytes(
-                                string.concat(
-                                    UNDERLYING_TOKENS[k],
-                                    vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultKinds[l],
-                                    "Superform",
-                                    Strings.toString(FORM_IMPLEMENTATION_IDS[j])
+                            contracts[chainIds[i]][bytes32(
+                                bytes(
+                                    string.concat(
+                                        UNDERLYING_TOKENS[k],
+                                        vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultKinds[l],
+                                        "Superform",
+                                        Strings.toString(FORM_IMPLEMENTATION_IDS[j])
+                                    )
                                 )
-                            )
-                        )] = vars.superform;
+                            )] = vars.superform;
+                        }
+                    }
+                } else if (j == 3) {
+                    if (NUMBER_OF_5115S[chainIds[i]] > 0) {
+                        for (uint256 k = 0; k < NUMBER_OF_5115S[chainIds[i]]; ++k) {
+                            uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
+
+                            for (uint256 l = 0; l < lenBytecodes; l++) {
+                                (, vars.superform) = ISuperformFactory(
+                                    contracts[chainIds[i]][bytes32(bytes("SuperformFactory"))]
+                                ).createSuperform(FORM_IMPLEMENTATION_IDS[j], wrapped5115vaults[chainIds[i]][k]);
+
+                                contracts[chainIds[i]][bytes32(
+                                    bytes(
+                                        string.concat(
+                                            ERC5115_VAULTS_NAMES[chainIds[i]][k],
+                                            vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultKinds[l],
+                                            "Superform",
+                                            Strings.toString(FORM_IMPLEMENTATION_IDS[j])
+                                        )
+                                    )
+                                )] = vars.superform;
+                            }
+                        }
                     }
                 }
             }
@@ -1416,6 +1466,10 @@ abstract contract BaseSetup is StdInvariant, Test {
         vaultBytecodes2[3].vaultBytecode.push(type(kycDAO4626RevertWithdraw).creationCode);
         vaultBytecodes2[3].vaultKinds.push("kycDAO4626RevertWithdraw");
 
+        /// @dev form 4 (pendle 5115)
+        vaultBytecodes2[4].vaultBytecode.push(type(ERC5115To4626Wrapper).creationCode);
+        vaultBytecodes2[4].vaultKinds.push("ERC5115");
+
         /// @dev populate VAULT_NAMES state arg with tokenNames + vaultKinds names
         string[] memory underlyingTokens = UNDERLYING_TOKENS;
         for (uint256 i = 0; i < VAULT_KINDS.length; ++i) {
@@ -1498,6 +1552,44 @@ abstract contract BaseSetup is StdInvariant, Test {
         existingVaults[250][1]["DAI"][0] = address(0);
         existingVaults[250][1]["USDC"][0] = 0xd55C59Da5872DE866e39b1e3Af2065330ea8Acd6;
         existingVaults[250][1]["WETH"][0] = address(0);
+
+        mapping(uint64 chainId => mapping(uint256 market => address realVault)) storage erc5115Vaults = ERC5115_VAULTS;
+        mapping(uint64 chainId => mapping(uint256 market => string name)) storage erc5115VaultsNames =
+            ERC5115_VAULTS_NAMES;
+        mapping(uint64 chainId => uint256 nVaults) storage numberOf5115s = NUMBER_OF_5115S;
+
+        numberOf5115s[1] = 2;
+        numberOf5115s[10] = 1;
+        numberOf5115s[42_161] = 2;
+        numberOf5115s[56] = 1;
+        numberOf5115s[8453] = 0;
+        numberOf5115s[250] = 0;
+        numberOf5115s[137] = 0;
+        numberOf5115s[43_114] = 0;
+
+        /// @dev  pendle ethena - market: SUSDE-MAINNET-SEP2024
+        erc5115Vaults[1][0] = 0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65;
+        erc5115VaultsNames[1][0] = "SUSDE-MAINNET-SEP2024";
+
+        /// @dev pendle renzo - market:  SY ezETH
+        erc5115Vaults[1][1] = 0x22E12A50e3ca49FB183074235cB1db84Fe4C716D;
+        erc5115VaultsNames[1][1] = "SY ezETH";
+
+        /// @dev pendle wrapped st ETH from LDO - market:  SY wstETH
+        erc5115Vaults[10][0] = 0x96A528f4414aC3CcD21342996c93f2EcdEc24286;
+        erc5115VaultsNames[10][0] = "SY wstETH";
+
+        /// @dev pendle renzo - market: EZETH-BSC-SEP2024
+        erc5115Vaults[56][0] = 0xe49269B5D31299BcE407c8CcCf241274e9A93C9A;
+        erc5115VaultsNames[56][0] = "EZETH-BSC-SEP2024";
+
+        /// @dev pendle aave - market: SY aUSDC
+        erc5115Vaults[42_161][0] = 0x50288c30c37FA1Ec6167a31E575EA8632645dE20;
+        erc5115VaultsNames[42_161][0] = "SY aUSDC";
+
+        /// @dev pendle wrapped st ETH from LDO - market: SY wstETH
+        erc5115Vaults[42_161][1] = 0x80c12D5b6Cc494632Bf11b03F09436c8B61Cc5Df;
+        erc5115VaultsNames[42_161][1] = "SY wstETH";
     }
 
     function _fundNativeTokens() internal {

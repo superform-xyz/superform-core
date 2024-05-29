@@ -146,6 +146,7 @@ struct SetupVars {
     address erc4626Form;
     address erc4626TimelockForm;
     address kycDao4626Form;
+    address erc5115form;
     address coreStateRegistry;
     address PayloadHelper;
     address paymentHelper;

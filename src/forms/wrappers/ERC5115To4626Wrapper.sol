@@ -2,10 +2,24 @@
 pragma solidity ^0.8.17;
 
 import { IStandardizedYield } from "src/vendor/pendle/IStandardizedYield.sol";
-import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import { IERC20Metadata, IERC20 } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract ERC5115To4626Wrapper is IStandardizedYield {
+    using SafeERC20 for IERC20;
+    //////////////////////////////////////////////////////////////
+    //                      ERRORS                              //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev if receiver is this contract
+    error INVALID_RECEIVER();
+
+    //////////////////////////////////////////////////////////////
+    //                      STORAGE                             //
+    //////////////////////////////////////////////////////////////
+
     address public immutable vault;
+    address internal constant NATIVE = address(0);
 
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
@@ -38,7 +52,25 @@ contract ERC5115To4626Wrapper is IStandardizedYield {
         payable
         returns (uint256 amountSharesOut)
     {
-        return IStandardizedYield(vault).deposit(receiver, tokenIn, amountTokenToDeposit, minSharesOut);
+        /// @dev receiver cannot be this wrapper contract
+        if (receiver == address(this)) revert INVALID_RECEIVER();
+
+        /// @dev tokenIn is forwarded to this wrapper first
+        _transferIn(tokenIn, msg.sender, amountTokenToDeposit);
+
+        /// @dev allowance is increased for non native tokens
+        if (tokenIn != NATIVE) {
+            IERC20(tokenIn).safeIncreaseAllowance(vault, amountTokenToDeposit);
+        }
+
+        /// @dev deposit is made and any allowance is reset
+        amountSharesOut = IStandardizedYield(vault).deposit(receiver, tokenIn, amountTokenToDeposit, minSharesOut);
+
+        if (tokenIn != NATIVE) {
+            if (IERC20(tokenIn).allowance(address(this), vault) > 0) IERC20(tokenIn).forceApprove(vault, 0);
+        }
+
+        return amountSharesOut;
     }
 
     /// @inheritdoc IStandardizedYield
@@ -47,14 +79,19 @@ contract ERC5115To4626Wrapper is IStandardizedYield {
         uint256 amountSharesToRedeem,
         address tokenOut,
         uint256 minTokenOut,
-        bool burnFromInternalBalance
+        bool /*burnFromInternalBalance*/
     )
         external
         returns (uint256 amountTokenOut)
     {
-        return IStandardizedYield(vault).redeem(
-            receiver, amountSharesToRedeem, tokenOut, minTokenOut, burnFromInternalBalance
-        );
+        /// @dev receiver cannot be this wrapper contract
+        if (receiver == address(this)) revert INVALID_RECEIVER();
+
+        /// @dev the share is transfered to this contract first
+        IERC20(vault).safeTransferFrom(msg.sender, address(this), amountSharesToRedeem);
+
+        /// @dev redeem will burn the share from this contract
+        return IStandardizedYield(vault).redeem(receiver, amountSharesToRedeem, tokenOut, minTokenOut, false);
     }
 
     /// @inheritdoc IStandardizedYield
@@ -175,5 +212,14 @@ contract ERC5115To4626Wrapper is IStandardizedYield {
 
     function transferFrom(address from, address to, uint256 value) external returns (bool) {
         return IStandardizedYield(vault).transferFrom(from, to, value);
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                    INTERNAL FUNCTIONS                    //
+    //////////////////////////////////////////////////////////////
+
+    function _transferIn(address token, address from, uint256 amount) internal {
+        if (token == NATIVE) require(msg.value == amount, "eth mismatch");
+        else if (amount != 0) IERC20(token).safeTransferFrom(from, address(this), amount);
     }
 }

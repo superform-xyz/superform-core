@@ -42,7 +42,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     //                         CONSTANTS                         //
     //////////////////////////////////////////////////////////////
 
-    uint8 internal immutable STATE_REGISTRY_ID;
+    uint8 constant stateRegistryId = 1; // CoreStateRegistry
     uint256 internal constant ENTIRE_SLIPPAGE = 10_000;
 
     //////////////////////////////////////////////////////////////
@@ -82,12 +82,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address superRegistry_, uint8 stateRegistryId_) BaseForm(superRegistry_) {
-        /// @dev check if state registry id is valid
-        superRegistry.getStateRegistry(stateRegistryId_);
-
-        STATE_REGISTRY_ID = stateRegistryId_;
-    }
+    constructor(address superRegistry_) BaseForm(superRegistry_) { }
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
@@ -159,8 +154,8 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     }
 
     /// @inheritdoc BaseForm
-    function getStateRegistryId() external view override returns (uint8) {
-        return STATE_REGISTRY_ID;
+    function getStateRegistryId() external pure override returns (uint8) {
+        return stateRegistryId;
     }
 
     /// @inheritdoc IERC5115Form

@@ -23,11 +23,9 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         super.setUp();
 
         /// @dev ERC4626 DAI vault on chainId
-        vault = address(
-            vaults[chainId][FORM_IMPLEMENTATION_IDS[0]][0][vaultBytecodes2[FORM_IMPLEMENTATION_IDS[0]]
-                .vaultBytecode
-                .length - 1]
-        );
+        vault = vaults[chainId][FORM_IMPLEMENTATION_IDS[0]][0][vaultBytecodes2[FORM_IMPLEMENTATION_IDS[0]]
+            .vaultBytecode
+            .length - 1];
     }
 
     struct UtilityArgs {
@@ -206,13 +204,9 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         address formImplementation2 = address(new ERC4626Form(superRegistry));
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation, 420, 1
-        );
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(formImplementation, 420, 1);
 
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation2, 69, 1
-        );
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(formImplementation2, 69, 1);
 
         SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(420, vault);
         SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(69, vault);
