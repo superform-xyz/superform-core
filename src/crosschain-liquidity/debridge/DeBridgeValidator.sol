@@ -4,8 +4,8 @@ pragma solidity ^0.8.23;
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
 import { Error } from "src/libraries/Error.sol";
 import { DeBridgeError } from "src/crosschain-liquidity/debridge/libraries/DeBridgeError.sol";
-import { IDlnSource } from "src/vendor/debridge/IDlnSource.sol";
-import { DlnOrderLib } from "src/vendor/debridge/DlnOrderLib.sol";
+import { IDlnSource } from "src/vendor/deBridge/IDlnSource.sol";
+import { DlnOrderLib } from "src/vendor/deBridge/DlnOrderLib.sol";
 
 /// @title DeBridgeValidator
 /// @dev Asserts if De-Bridge input txData is valid
@@ -45,7 +45,7 @@ contract DeBridgeValidator is BridgeValidator {
         }
 
         /// @dev mandates the give patch authority src to be args_.receiver
-        if(deBridgeQuote.givePatchAuthoritySrc != args_.receiverAddress) {
+        if (deBridgeQuote.givePatchAuthoritySrc != args_.receiverAddress) {
             revert DeBridgeError.INVALID_PATCH_ADDRESS();
         }
 
