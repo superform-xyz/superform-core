@@ -15,6 +15,10 @@ import { DataLib } from "src/libraries/DataLib.sol";
 
 import "forge-std/console.sol";
 
+interface IUniswapFactory {
+    function getPair(address tokenA, address tokenB) external view returns (address pair);
+}
+
 abstract contract CommonProtocolActions is BaseSetup {
     /// @dev percentage of total slippage that is used for dstSwap
     uint256 MULTI_TX_SLIPPAGE_SHARE;
@@ -331,7 +335,8 @@ abstract contract CommonProtocolActions is BaseSetup {
                 args.amount,
                 bytes(""),
                 // src swap router
-                 0x1111111254EEB25477B68fb85Ed929f73A960582, /// 1inch
+                0x1111111254EEB25477B68fb85Ed929f73A960582,
+                /// 1inch
                 /// src swap calldata
                 bytes(""),
                 args.externalToken,
@@ -342,6 +347,20 @@ abstract contract CommonProtocolActions is BaseSetup {
                 /// de bridge target
                 0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
                 targetTxData
+            );
+        } else if (args.liqBridgeKind == 9) {
+            address dex = IUniswapFactory(0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f).getPair(
+                args.externalToken, args.underlyingToken
+            );
+
+            require(dex != address(0), "1inch unavailable");
+            txData = abi.encodeWithSelector(
+                OneInchMock.unoswapTo.selector,
+                uint256(uint160(args.toDst)),
+                uint256(uint160(args.externalToken)),
+                args.amount,
+                (args.amount * uint256(args.USDPerUnderlyingToken)) / uint256(args.USDPerUnderlyingTokenDst),
+                uint256(uint160(dex))
             );
         }
     }

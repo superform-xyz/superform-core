@@ -141,6 +141,7 @@ struct SetupVars {
     address dstSwapper;
     address lifiRouter;
     address deBridgeMock;
+    address oneInchMock;
     address socketRouter;
     address socketOneInch;
     address debridgeForwarderMock;

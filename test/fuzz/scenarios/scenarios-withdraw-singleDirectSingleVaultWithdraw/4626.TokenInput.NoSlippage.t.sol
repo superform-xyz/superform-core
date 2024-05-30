@@ -31,7 +31,7 @@ contract SXSVWNormal4626TokenInputSlippage is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[ETH][0] = [1];
+        LIQ_BRIDGES[ETH][0] = [9];
         LIQ_BRIDGES[ETH][1] = [1];
 
         RECEIVE_4626[ETH][0] = [false];
