@@ -101,7 +101,9 @@ abstract contract AbstractDeployRewardsDistributor is EnvironmentUtils {
 
         /// @dev rewards admin has already been set on staging
 
-        address expectedSrbac = 0x9736b60c4f749232d400B5605f21AE137a5Ebb71;
+        address expectedSrbac = vars.chainId == 250
+            ? 0xFFe9AFe35806F3fc1Df81188953ADb72f0B22F2A
+            : 0x9736b60c4f749232d400B5605f21AE137a5Ebb71;
 
         assert(address(vars.superRBACC) == expectedSrbac);
 
