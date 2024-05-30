@@ -2,9 +2,10 @@
 pragma solidity ^0.8.23;
 
 import { Test } from "forge-std/Test.sol";
+import { DSTest } from "ds-test/test.sol";
 
 //common utilities for forge tests
-contract Utilities is Test {
+contract Utilities is DSTest, Test {
     bytes32 internal nextUser = keccak256(abi.encodePacked("user address"));
 
     function getNextUserAddress() external returns (address payable) {

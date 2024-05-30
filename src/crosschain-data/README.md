@@ -43,7 +43,7 @@ Every AMB has their identifier for different chains/networks. In state registrie
 - Only AMB implementation contracts can write new messages into state registry
 - Sender should be authenticated to interact with the AMB implementation contract
 - Updating and processing payloads can only be made by keepers with special privileges
-- `onlySender` modifier is overriden by all contracts inheriting base state registry
+- `onlySender` modifier is overridden by all contracts inheriting base state registry
 
 ## In scope
 
