@@ -69,9 +69,9 @@ abstract contract AbstractDeployRewardsDistributor is EnvironmentUtils {
 
         vars.superRegistryC =
             SuperRegistry(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry")));
-        address expectedSr = env == 0
-            ? 0x17A332dC7B40aE701485023b219E9D6f493a2514
-            : vars.chainId == 250 ? 0x7B8d68f90dAaC67C577936d3Ce451801864EF189 : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
+        address expectedSr = vars.chainId == 250
+            ? 0x7B8d68f90dAaC67C577936d3Ce451801864EF189
+            : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
         assert(address(vars.superRegistryC) == expectedSr);
 
         address rewards = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "RewardsDistributor");
@@ -100,9 +100,8 @@ abstract contract AbstractDeployRewardsDistributor is EnvironmentUtils {
         }
 
         /// @dev rewards admin has already been set on staging
-        /*
-        address expectedSrbac =
-            env == 0 ? 0x480bec236e3d3AE33789908BF024850B2Fe71258 : 0x9736b60c4f749232d400B5605f21AE137a5Ebb71;
+
+        address expectedSrbac = 0x9736b60c4f749232d400B5605f21AE137a5Ebb71;
 
         assert(address(vars.superRBACC) == expectedSrbac);
 
@@ -111,7 +110,6 @@ abstract contract AbstractDeployRewardsDistributor is EnvironmentUtils {
 
         vars.superRBACC.setRoleAdmin(role, vars.superRBACC.PROTOCOL_ADMIN_ROLE());
         vars.superRBACC.grantRole(role, REWARDS_ADMIN);
-        */
 
         vm.stopBroadcast();
     }
@@ -135,8 +133,10 @@ abstract contract AbstractDeployRewardsDistributor is EnvironmentUtils {
 
         vars.superRegistryC =
             SuperRegistry(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry")));
-        address expectedSr =
-            env == 0 ? 0x17A332dC7B40aE701485023b219E9D6f493a2514 : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
+        address expectedSr = vars.chainId == 250
+            ? 0x7feB31d18E43E2faeC718EEd2D7f34402c3e27b4
+            : 0x17A332dC7B40aE701485023b219E9D6f493a2514;
+
         assert(address(vars.superRegistryC) == expectedSr);
 
         address rewards = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "RewardsDistributor");
@@ -148,8 +148,9 @@ abstract contract AbstractDeployRewardsDistributor is EnvironmentUtils {
 
         vars.superRBACC = SuperRBAC(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRBAC")));
 
-        address expectedSrbac =
-            env == 0 ? 0x480bec236e3d3AE33789908BF024850B2Fe71258 : 0x9736b60c4f749232d400B5605f21AE137a5Ebb71;
+        address expectedSrbac = vars.chainId == 250
+            ? 0xd831b4ba49852F6E7246Fe7f4A7DABB5b0C56e1F
+            : 0x480bec236e3d3AE33789908BF024850B2Fe71258;
 
         assert(address(vars.superRBACC) == expectedSrbac);
 
