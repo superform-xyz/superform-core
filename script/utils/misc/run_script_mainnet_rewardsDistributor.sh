@@ -16,7 +16,7 @@ export FOUNDRY_PROFILE=production
 # Run the script
 echo Deploying RewardsDistributor: ...
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "deployRewardsDistributor(uint256,uint256,uint256)" 0 0 0 --rpc-url $ETHEREUM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "deployRewardsDistributor(uint256,uint256,uint256)" 0 0 0 --rpc-url $ETHEREUM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 
 wait
 
@@ -47,7 +47,6 @@ wait
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "deployRewardsDistributor(uint256,uint256,uint256)" 0 7 1 --rpc-url $FANTOM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 
 <<comment
-
 
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.RewardsDistributor.s.sol:MainnetDeployRewardsDistributor --sig "configureSettings(uint256,uint256)" 0 0 --rpc-url $ETHEREUM_RPC_URL --broadcast --slow --sender 0x1985df46791BEBb1e3ed9Ec60417F38CECc1D349
 
