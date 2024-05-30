@@ -3,7 +3,6 @@ pragma solidity ^0.8.23;
 
 /// @dev lib imports
 import "forge-std/Test.sol";
-import "ds-test/test.sol";
 import { StdInvariant } from "forge-std/StdInvariant.sol";
 
 import { LayerZeroHelper } from "pigeon/layerzero/LayerZeroHelper.sol";
@@ -75,7 +74,9 @@ import { RewardsDistributor } from "src/RewardsDistributor.sol";
 import "src/types/DataTypes.sol";
 import "./TestTypes.sol";
 
-abstract contract BaseSetup is DSTest, StdInvariant, Test {
+import "forge-std/console.sol";
+
+abstract contract BaseSetup is StdInvariant, Test {
     /*//////////////////////////////////////////////////////////////
                         GENERAL VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -395,6 +396,59 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         SetupVars memory vars;
 
         vm.startPrank(deployer);
+
+        /// @dev 1 - Pigeon helpers allow us to fullfill cross-chain messages in a manner as close to mainnet as
+        /// possible
+        vars.lzHelper = address(new LayerZeroHelper{ salt: salt }());
+        vm.allowCheatcodes(vars.lzHelper);
+        vm.makePersistent(vars.lzHelper);
+
+        vars.hyperlaneHelper = address(new HyperlaneHelper{ salt: salt }());
+        vm.allowCheatcodes(vars.hyperlaneHelper);
+        vm.makePersistent(vars.hyperlaneHelper);
+
+        vars.wormholeHelper = address(new WormholeHelper{ salt: salt }());
+        vm.allowCheatcodes(vars.wormholeHelper);
+        vm.makePersistent(vars.wormholeHelper);
+
+        vars.wormholeBroadcastHelper = address(new WormholeBroadcastHelper.WormholeHelper{ salt: salt }());
+        vm.allowCheatcodes(vars.wormholeBroadcastHelper);
+        vm.makePersistent(vars.wormholeBroadcastHelper);
+
+        /// @dev deploy  LiFiRouterMock. This mock is a very minimal versions to allow
+        /// liquidity bridge testing
+        vars.lifiRouter = address(new LiFiMock{ salt: salt }());
+        vm.allowCheatcodes(vars.lifiRouter);
+        vm.makePersistent(vars.lifiRouter);
+
+        /// @dev deploy SocketMock. This mock is a very minimal versions to allow
+        /// liquidity bridge testing
+        vars.socketRouter = address(new SocketMock{ salt: salt }());
+        vm.allowCheatcodes(vars.socketRouter);
+        vm.makePersistent(vars.socketRouter);
+
+        /// @dev deploy SocketOneInchMock. This mock is a very minimal versions to allow
+        /// socket same chain swaps
+        vars.socketOneInch = address(new SocketOneInchMock{ salt: salt }());
+        vm.allowCheatcodes(vars.socketOneInch);
+        vm.makePersistent(vars.socketOneInch);
+
+        /// @dev deploy LiFiMockRugpull. This mock tests a behaviour where the bridge is malicious and tries
+        /// to steal tokens
+        vars.liFiMockRugpull = address(new LiFiMockRugpull{ salt: salt }());
+        vm.allowCheatcodes(vars.liFiMockRugpull);
+        vm.makePersistent(vars.liFiMockRugpull);
+
+        /// @dev deploy LiFiMockBlacklisted. This mock tests the behaviour of blacklisted selectors
+        vars.liFiMockBlacklisted = address(new LiFiMockBlacklisted{ salt: salt }());
+        vm.allowCheatcodes(vars.liFiMockBlacklisted);
+        vm.makePersistent(vars.liFiMockBlacklisted);
+
+        /// @dev deploy LiFiMockSwapToAttacker. This mock tests the behaviour of blacklisted selectors
+        vars.liFiMockSwapToAttacker = address(new LiFiMockSwapToAttacker{ salt: salt }());
+        vm.allowCheatcodes(vars.liFiMockSwapToAttacker);
+        vm.makePersistent(vars.liFiMockSwapToAttacker);
+
         /// @dev deployments
         for (uint256 i = 0; i < chainIds.length; ++i) {
             vars.chainId = chainIds[i];
@@ -416,28 +470,16 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
             /// @dev 1 - Pigeon helpers allow us to fullfill cross-chain messages in a manner as close to mainnet as
             /// possible
-            /// @dev 1.1- deploy LZ Helper from Pigeon
-            vars.lzHelper = address(new LayerZeroHelper{ salt: salt }());
-            vm.allowCheatcodes(vars.lzHelper);
-
+            /// @dev 1.1.1- LZ Helper from Pigeon
             contracts[vars.chainId][bytes32(bytes("LayerZeroHelper"))] = vars.lzHelper;
 
-            /// @dev 1.2- deploy Hyperlane Helper from Pigeon
-            vars.hyperlaneHelper = address(new HyperlaneHelper{ salt: salt }());
-            vm.allowCheatcodes(vars.hyperlaneHelper);
-
+            /// @dev 1.2-  Hyperlane Helper from Pigeon
             contracts[vars.chainId][bytes32(bytes("HyperlaneHelper"))] = vars.hyperlaneHelper;
 
-            /// @dev 1.3- deploy Wormhole Automatic Relayer Helper from Pigeon
-            vars.wormholeHelper = address(new WormholeHelper{ salt: salt }());
-            vm.allowCheatcodes(vars.wormholeHelper);
-
+            /// @dev 1.3-  Wormhole Automatic Relayer Helper from Pigeon
             contracts[vars.chainId][bytes32(bytes("WormholeHelper"))] = vars.wormholeHelper;
 
-            /// @dev 1.4- deploy Wormhole Specialized Relayer Helper from Pigeon
-            vars.wormholeBroadcastHelper = address(new WormholeBroadcastHelper.WormholeHelper{ salt: salt }());
-            vm.allowCheatcodes(vars.wormholeBroadcastHelper);
-
+            /// @dev 1.4-  Wormhole Specialized Relayer Helper from Pigeon
             contracts[vars.chainId][bytes32(bytes("WormholeBroadcastHelper"))] = vars.wormholeBroadcastHelper;
 
             /// @dev 2 - Deploy SuperRBAC
@@ -553,39 +595,17 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.ambAddresses[2] = vars.wormholeImplementation;
             vars.ambAddresses[3] = vars.wormholeSRImplementation;
 
-            /// @dev 7.1.1 deploy  LiFiRouterMock. This mock is a very minimal versions to allow
-            /// liquidity bridge testing
-            vars.lifiRouter = address(new LiFiMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("LiFiMock"))] = vars.lifiRouter;
-            vm.allowCheatcodes(vars.lifiRouter);
 
-            /// @dev 7.1.2 deploy SocketMock. This mock is a very minimal versions to allow
-            /// liquidity bridge testing
-            vars.socketRouter = address(new SocketMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("SocketMock"))] = vars.socketRouter;
-            vm.allowCheatcodes(vars.socketRouter);
 
-            /// @dev 7.1.3 deploy SocketOneInchMock. This mock is a very minimal versions to allow
-            /// socket same chain swaps
-            vars.socketOneInch = address(new SocketOneInchMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("SocketOneInchMock"))] = vars.socketOneInch;
-            vm.allowCheatcodes(vars.socketOneInch);
 
-            /// @dev 7.1.4 deploy LiFiMockRugpull. This mock tests a behaviour where the bridge is malicious and tries
-            /// to steal tokens
-            vars.liFiMockRugpull = address(new LiFiMockRugpull{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("LiFiMockRugpull"))] = vars.liFiMockRugpull;
-            vm.allowCheatcodes(vars.liFiMockRugpull);
 
-            /// @dev 7.1.5 deploy LiFiMockBlacklisted. This mock tests the behaviour of blacklisted selectors
-            vars.liFiMockBlacklisted = address(new LiFiMockBlacklisted{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("LiFiMockBlacklisted"))] = vars.liFiMockBlacklisted;
-            vm.allowCheatcodes(vars.liFiMockBlacklisted);
 
-            /// @dev 7.1.6 deploy LiFiMockSwapToAttacker. This mock tests the behaviour of blacklisted selectors
-            vars.liFiMockSwapToAttacker = address(new LiFiMockSwapToAttacker{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("LiFiMockBlacklisted"))] = vars.liFiMockSwapToAttacker;
-            vm.allowCheatcodes(vars.liFiMockSwapToAttacker);
 
             /// @dev 7.2.1- deploy  lifi validator
             vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
