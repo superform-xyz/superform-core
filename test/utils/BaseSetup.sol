@@ -6,7 +6,7 @@ import "forge-std/Test.sol";
 import { StdInvariant } from "forge-std/StdInvariant.sol";
 
 import { LayerZeroHelper } from "pigeon/layerzero/LayerZeroHelper.sol";
-import { LayerZeroV2Helper } from "pigeon/layerzero-v2/LayerzeroV2Helper.sol";
+import { LayerZeroV2Helper } from "pigeon/layerzero-v2/LayerZeroV2Helper.sol";
 import { HyperlaneHelper } from "pigeon/hyperlane/HyperlaneHelper.sol";
 import { AxelarHelper } from "pigeon/axelar/AxelarHelper.sol";
 import { WormholeHelper } from "pigeon/wormhole/automatic-relayer/WormholeHelper.sol";
