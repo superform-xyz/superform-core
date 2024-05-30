@@ -20,6 +20,7 @@ import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator
 import { SocketOneInchValidator } from "src/crosschain-liquidity/socket/SocketOneInchValidator.sol";
 import { DeBridgeValidator } from "src/crosschain-liquidity/debridge/DeBridgeValidator.sol";
 import { DeBridgeForwarderValidator } from "src/crosschain-liquidity/debridge/DeBridgeForwarderValidator.sol";
+import { OneInchValidator } from "src/crosschain-liquidity/1inch/OneInchValidator.sol";
 import { LayerzeroV2Implementation } from "src/crosschain-data/adapters/layerzero-v2/LayerzeroV2Implementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
 import { WormholeARImplementation } from
@@ -82,6 +83,7 @@ struct SetupVars {
     address socketOneInchValidator;
     address deBridgeValidator;
     address deBridgeForwarderValidator;
+    address oneInchValidator;
     address kycDao4626Form;
     address PayloadHelper;
     address paymentHelper;
@@ -104,7 +106,7 @@ abstract contract AbstractDeploySingle is BatchScript {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[24] public contractNames = [
+    string[25] public contractNames = [
         "CoreStateRegistry",
         //"TimelockStateRegistry",
         "BroadcastRegistry",
@@ -131,7 +133,8 @@ abstract contract AbstractDeploySingle is BatchScript {
         "VaultClaimer",
         "RewardsDistributor",
         "DeBridgeValidator",
-        "DeBridgeForwarderValidator"
+        "DeBridgeForwarderValidator",
+        "OneInchValidator"
     ];
 
     enum Chains {
@@ -167,7 +170,8 @@ abstract contract AbstractDeploySingle is BatchScript {
     /// 3 is socket one inch implementation
     /// 4 is debridge
     /// 5 is debridge crosschain forwarder
-    uint8[] public bridgeIds = [101, 2, 3, 4, 5];
+    /// 6 is one inch implementation
+    uint8[] public bridgeIds = [101, 2, 3, 4, 5, 6];
 
     mapping(uint64 chainId => address[] bridgeAddresses) public BRIDGE_ADDRESSES;
 
@@ -572,11 +576,15 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.deBridgeForwarderValidator = address(new DeBridgeForwarderValidator{ salt: salt }(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderValidator"))] = vars.deBridgeForwarderValidator;
 
+        vars.oneInchValidator = address(new OneInchValidator{ salt: salt }(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("OneInchValidator"))] = vars.oneInchValidator;
+
         bridgeValidators[0] = vars.lifiValidator;
         bridgeValidators[1] = vars.socketValidator;
         bridgeValidators[2] = vars.socketOneInchValidator;
         bridgeValidators[3] = vars.deBridgeValidator;
         bridgeValidators[4] = vars.deBridgeForwarderValidator;
+        bridgeValidators[5] = vars.oneInchValidator;
 
         /// @dev 7 - Deploy SuperformFactory
         vars.factory = address(new SuperformFactory{ salt: salt }(vars.superRegistry));
@@ -653,25 +661,30 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// @dev 15 - Super Registry extra setters
         /// @dev BASE does not have SocketV1 available
         if (vars.chainId == BASE) {
-            uint8[] memory bridgeIdsBase = new uint8[](3);
+            uint8[] memory bridgeIdsBase = new uint8[](4);
             /// @dev this is the new id of lifi validator
             bridgeIdsBase[0] = 101;
 
             /// @dev these are debridge
             bridgeIdsBase[1] = 4;
             bridgeIdsBase[2] = 5;
+            bridgeIdsBase[3] = 6;
 
-            address[] memory bridgeAddressesBase = new address[](3);
+            address[] memory bridgeAddressesBase = new address[](4);
             bridgeAddressesBase[0] = BRIDGE_ADDRESSES[vars.chainId][0];
 
             /// 3 is debridge and 4 is debridge forwarder
             bridgeAddressesBase[1] = BRIDGE_ADDRESSES[vars.chainId][3];
             bridgeAddressesBase[2] = BRIDGE_ADDRESSES[vars.chainId][4];
 
-            address[] memory bridgeValidatorsBase = new address[](3);
+            /// 5 is 1inch
+            bridgeAddressesBase[3] = BRIDGE_ADDRESSES[vars.chainId][5];
+
+            address[] memory bridgeValidatorsBase = new address[](4);
             bridgeValidatorsBase[0] = bridgeValidators[0];
-            bridgeValidatorsBase[0] = bridgeValidators[3];
-            bridgeValidatorsBase[0] = bridgeValidators[4];
+            bridgeValidatorsBase[1] = bridgeValidators[3];
+            bridgeValidatorsBase[2] = bridgeValidators[4];
+            bridgeValidatorsBase[3] = bridgeValidators[5];
 
             vars.superRegistryC.setBridgeAddresses(bridgeIdsBase, bridgeAddressesBase, bridgeValidatorsBase);
         } else {
@@ -1442,56 +1455,64 @@ abstract contract AbstractDeploySingle is BatchScript {
             0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
             0x2ddf16BA6d0180e5357d5e170eF1917a01b41fc0,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
-            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251,
+            0x111111125421cA6dc452d289314280a0f8842A65
         ];
         bridgeAddresses[BSC] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
             0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
             0xd286595d2e3D879596FAB51f83A702D10a6db27b,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
-            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251,
+            0x111111125421cA6dc452d289314280a0f8842A65
         ];
         bridgeAddresses[AVAX] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
             0x2b42AFFD4b7C14d9B7C2579229495c052672Ccd3,
             0xbDf50eAe568ECef74796ed6022a0d453e8432410,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
-            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251,
+            0x111111125421cA6dc452d289314280a0f8842A65
         ];
         bridgeAddresses[POLY] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
             0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
             0x2ddf16BA6d0180e5357d5e170eF1917a01b41fc0,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
-            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251,
+            0x111111125421cA6dc452d289314280a0f8842A65
         ];
         bridgeAddresses[ARBI] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
             0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
             0xaa3d9fA3aB930aE635b001d00C612aa5b14d750e,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
-            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251,
+            0x111111125421cA6dc452d289314280a0f8842A65
         ];
         bridgeAddresses[OP] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
             0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
             0xbDf50eAe568ECef74796ed6022a0d453e8432410,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
-            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251,
+            0x111111125421cA6dc452d289314280a0f8842A65
         ];
         bridgeAddresses[BASE] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
             address(0),
             address(0),
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
-            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251,
+            0x111111125421cA6dc452d289314280a0f8842A65
         ];
         bridgeAddresses[FANTOM] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
             0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
             0x565810cbfa3Cf1390963E5aFa2fB953795686339,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
-            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251,
+            0x111111125421cA6dc452d289314280a0f8842A65
         ];
 
         /// price feeds on all chains
