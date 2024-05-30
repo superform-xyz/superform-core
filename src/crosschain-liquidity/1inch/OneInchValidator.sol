@@ -131,23 +131,12 @@ contract OneInchValidator {
                 if (toToken == fromToken) {
                     toToken = IUniswapV2Pair(dex.get()).token1();
                 }
-            } else if (protocol == ProtocolLib.Protocol.Curve) {
+            }
+            /// @dev if protocol is curve
+            else if (protocol == ProtocolLib.Protocol.Curve) {
                 uint256 toTokenIndex = (Address.unwrap(dex) >> _CURVE_TO_COINS_ARG_OFFSET) & _CURVE_TO_COINS_ARG_MASK;
                 toToken = ICurvePool(dex.get()).underlying_coins(int128(uint128(toTokenIndex)));
             }
-        }
-        /// @dev decodes the clipperSwapTo selector
-        else if (selector == IAggregationRouterV6.clipperSwapTo.selector) {
-            (, address decodedReceiver, Address fromTokenUint256, IERC20 decodedToToken, uint256 decodedFromAmount,,,,)
-            = abi.decode(
-                _parseCallData(txData_),
-                (IClipperExchange, address, Address, IERC20, uint256, uint256, uint256, bytes32, bytes32)
-            );
-
-            fromToken = fromTokenUint256.get();
-            fromAmount = decodedFromAmount;
-            toToken = address(decodedToToken);
-            receiver = decodedReceiver;
         }
         /// @dev decodes the generic router call
         else if (selector == IAggregationRouterV6.swap.selector) {
@@ -159,6 +148,7 @@ contract OneInchValidator {
             toToken = address(swapDescription.dstToken);
             receiver = swapDescription.dstReceiver;
         } else {
+            /// @dev does not support clipper exchange
             revert Error.BLACKLISTED_SELECTOR();
         }
     }

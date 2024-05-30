@@ -171,4 +171,89 @@ contract OneInchValidatorTest is ProtocolActions {
         vm.expectRevert(Error.INVALID_DEPOSIT_LIQ_DST_CHAIN_ID.selector);
         validator.validateTxData(args);
     }
+
+    function test_decodeTxData_unoswapTo_shibaswap() public {
+        ///  @dev txdata for shibaswap
+        /// https://api.1inch.dev/swap/v6.0/1/swap?src=0xdac17f958d2ee523a2206206994597c13d831ec7&dst=0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE&amount=10000000&from=0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92&slippage=10&fee=0&includeProtocols=true&excludedProtocols=UNISWAP_V2%2CUNISWAP_V3&receiver=0x4A430607a16108994f878F2D8D8dd6a53Ae98288&allowPartialFill=false&disableEstimate=true
+        bytes memory txData =
+            hex"e2c95c820000000000000000000000004a430607a16108994f878f2d8d8dd6a53ae98288000000000000000000000000dac17f958d2ee523a2206206994597c13d831ec700000000000000000000000000000000000000000000000000000000009896800000000000000000000000000000000000000000000048bf97c8b7cc9e294ad408000000000000003b6d034098c2b0681d8bf07767826ea8bd3b11b0ca4216318a2be008";
+        assertTrue(validator.validateReceiver(txData, 0x4A430607a16108994f878F2D8D8dd6a53Ae98288));
+
+        assertEq(validator.decodeSwapOutputToken(txData), 0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE);
+        (address fromToken, uint256 fromAmount) = validator.decodeDstSwap(txData);
+
+        assertEq(fromToken, 0xdAC17F958D2ee523a2206206994597C13D831ec7);
+        assertEq(fromAmount, 10_000_000);
+
+        IBridgeValidator.ValidateTxDataArgs memory args = IBridgeValidator.ValidateTxDataArgs({
+            deposit: false,
+            srcChainId: 1,
+            dstChainId: 1,
+            liqDstChainId: 1,
+            txData: txData,
+            superform: address(0),
+            liqDataToken: 0xdAC17F958D2ee523a2206206994597C13D831ec7,
+            liqDataInterimToken: address(0),
+            receiverAddress: 0x4A430607a16108994f878F2D8D8dd6a53Ae98288
+        });
+
+        assertFalse(validator.validateTxData(args));
+    }
+
+    function test_decodeTxData_unsupportedSelector_errorMessage() public {
+        bytes memory txData = hex"11111111";
+        vm.expectRevert(abi.encodeWithSelector(Error.BLACKLISTED_SELECTOR.selector));
+        validator.validateReceiver(txData, address(420));
+    }
+
+    function test_validateTxData_deposit_invalidSrcChainId() public {
+        IBridgeValidator.ValidateTxDataArgs memory args = IBridgeValidator.ValidateTxDataArgs({
+            deposit: true,
+            srcChainId: 1,
+            dstChainId: 5,
+            liqDstChainId: 5,
+            txData: mockTxData,
+            superform: address(this),
+            liqDataToken: 0xdAC17F958D2ee523a2206206994597C13D831ec7,
+            liqDataInterimToken: address(0),
+            receiverAddress: address(0)
+        });
+
+        vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
+        validator.validateTxData(args);
+    }
+
+    function test_validateTxData_deposit_invalidSuperform() public {
+        IBridgeValidator.ValidateTxDataArgs memory args = IBridgeValidator.ValidateTxDataArgs({
+            deposit: true,
+            srcChainId: 1,
+            dstChainId: 1,
+            liqDstChainId: 1,
+            txData: mockTxData,
+            superform: address(0),
+            liqDataToken: 0xdAC17F958D2ee523a2206206994597C13D831ec7,
+            liqDataInterimToken: address(0),
+            receiverAddress: address(this)
+        });
+
+        vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
+        validator.validateTxData(args);
+    }
+
+    function test_validateTxData_withdraw_invalidReceiverAddress() public {
+        IBridgeValidator.ValidateTxDataArgs memory args = IBridgeValidator.ValidateTxDataArgs({
+            deposit: false,
+            srcChainId: 1,
+            dstChainId: 1,
+            liqDstChainId: 1,
+            txData: mockTxData,
+            superform: address(this),
+            liqDataToken: 0xdAC17F958D2ee523a2206206994597C13D831ec7,
+            liqDataInterimToken: address(0),
+            receiverAddress: address(0)
+        });
+
+        vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
+        validator.validateTxData(args);
+    }
 }
