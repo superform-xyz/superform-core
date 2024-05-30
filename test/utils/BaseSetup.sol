@@ -486,6 +486,10 @@ abstract contract BaseSetup is StdInvariant, Test {
         vm.allowCheatcodes(vars.wormholeBroadcastHelper);
         vm.makePersistent(vars.wormholeBroadcastHelper);
 
+        vars.axelarHelper = address(new AxelarHelper{ salt: salt }());
+        vm.allowCheatcodes(vars.axelarHelper);
+        vm.makePersistent(vars.axelarHelper);
+
         /// @dev deploy  LiFiRouterMock. This mock is a very minimal versions to allow
         /// liquidity bridge testing
         vars.lifiRouter = address(new LiFiMock{ salt: salt }());
@@ -519,6 +523,16 @@ abstract contract BaseSetup is StdInvariant, Test {
         vars.liFiMockSwapToAttacker = address(new LiFiMockSwapToAttacker{ salt: salt }());
         vm.allowCheatcodes(vars.liFiMockSwapToAttacker);
         vm.makePersistent(vars.liFiMockSwapToAttacker);
+
+        /// @dev 7.1.7 deploy DeBridgeMock. This mocks tests the behavior of debridge
+        vars.deBridgeMock = address(new DeBridgeMock{ salt: salt }());
+        vm.allowCheatcodes(vars.deBridgeMock);
+        vm.makePersistent(vars.deBridgeMock);
+
+        /// @dev 7.1.7 deploy DeBridgeForwarderMock. This mocks tests the behavior of debridge forwarder
+        vars.debridgeForwarderMock = address(new DeBridgeForwarderMock{ salt: salt }());
+        vm.allowCheatcodes(vars.debridgeForwarderMock);
+        vm.makePersistent(vars.debridgeForwarderMock);
 
         /// @dev deployments
         for (uint256 i = 0; i < chainIds.length; ++i) {
@@ -557,9 +571,6 @@ abstract contract BaseSetup is StdInvariant, Test {
             contracts[vars.chainId][bytes32(bytes("WormholeBroadcastHelper"))] = vars.wormholeBroadcastHelper;
 
             /// @dev 1.5- deploy axelar from Pigeon
-            vars.axelarHelper = address(new AxelarHelper{ salt: salt }());
-            vm.allowCheatcodes(vars.axelarHelper);
-
             contracts[vars.chainId][bytes32(bytes("AxelarHelper"))] = vars.axelarHelper;
 
             /// @dev 2 - Deploy SuperRBAC
@@ -704,15 +715,9 @@ abstract contract BaseSetup is StdInvariant, Test {
 
             contracts[vars.chainId][bytes32(bytes("LiFiMockBlacklisted"))] = vars.liFiMockSwapToAttacker;
 
-            /// @dev 7.1.7 deploy DeBridgeMock. This mocks tests the behavior of debridge
-            vars.deBridgeMock = address(new DeBridgeMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("DeBridgeMock"))] = vars.deBridgeMock;
-            vm.allowCheatcodes(vars.deBridgeMock);
 
-            /// @dev 7.1.7 deploy DeBridgeForwarderMock. This mocks tests the behavior of debridge forwarder
-            vars.debridgeForwarderMock = address(new DeBridgeForwarderMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderMock"))] = vars.debridgeForwarderMock;
-            vm.allowCheatcodes(vars.debridgeForwarderMock);
 
             /// @dev 7.2.1- deploy  lifi validator
             vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
