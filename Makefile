@@ -32,7 +32,7 @@ update:; forge update
 build :; FOUNDRY_PROFILE=production forge build
 build-unoptimized :; FOUNDRY_PROFILE=localdev forge build
 build-sizes :; FOUNDRY_PROFILE=production forge build --sizes
-test-vvv   :; forge test --match-contract SXSVDNormal4626MultiTokenInputNoSlippageAMB23 -vvv
+test-vvv   :; forge test --match-contract MDMVDMulti0026NativeSlippageAMB23 -vv
 ftest   :; forge test
 test-ci :; forge test --no-match-path "test/invariant/**/*.sol"
 coverage :; FOUNDRY_PROFILE=coverage forge coverage --no-match-path "test/invariant/**/*.sol" --no-match-contract SmokeTest --report lcov

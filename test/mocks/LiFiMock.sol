@@ -181,7 +181,8 @@ contract LiFiMock is Test {
         console.log("outputToken", outputToken_);
         console.log("decimal1", decimal1);
         console.log("decimal2", decimal2);
-
+        console.log("USDPerExternalToken", USDPerExternalToken);
+        console.log("USDPerUnderlyingToken", USDPerUnderlyingToken);
         console.log("amount pre-swap", amount_);
         /// @dev the results of this amount if there is a bridge are effectively ignored
         if (decimal1 > decimal2) {

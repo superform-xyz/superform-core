@@ -1392,11 +1392,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
         UpdateSuperformDataAmountWithPricesLocalVars memory v;
         uint256 initialFork = vm.activeFork();
 
+
         vm.selectFork(FORKS[dstChainId_]);
         v.vDecimal2 =
             underlyingOrInterimTokenDst_ != NATIVE_TOKEN ? MockERC20(underlyingOrInterimTokenDst_).decimals() : 18;
-        console.log("underlyingOrInterimTokenDst_ SAME ONE", underlyingOrInterimTokenDst_);
-        console.log("underlyingToken_ DIF one", underlyingToken_);
 
         (, v.USDPerUnderlyingOrInterimTokenDst,,,) =
             AggregatorV3Interface(tokenPriceFeeds[dstChainId_][underlyingOrInterimTokenDst_]).latestRoundData();
@@ -1452,11 +1451,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             amount_ = (amount_ * uint256(v.USDPerUnderlyingToken))
                 / (uint256(v.USDPerUnderlyingOrInterimTokenDst) * 10 ** (v.vDecimal3 - v.vDecimal2));
         } else {
-            console.log("amount_", amount_);
-            console.log("uint256(v.USDPerUnderlyingToken) DIF", uint256(v.USDPerUnderlyingToken));
-            console.log(
-                "uint256(v.USDPerUnderlyingOrInterimTokenDst)) SAME", uint256(v.USDPerUnderlyingOrInterimTokenDst)
-            );
+
 
             amount_ = (amount_ * uint256(v.USDPerUnderlyingToken) * 10 ** (v.vDecimal2 - v.vDecimal3))
                 / uint256(v.USDPerUnderlyingOrInterimTokenDst);
@@ -1667,9 +1662,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             v.totalAmount += finalAmounts[i];
 
             finalAmounts[i] = superformData.amount;
-            console.log("finalAmount", finalAmounts[i]);
             args.outputAmounts[i] = superformData.outputAmount;
-            console.log("args.outputAmounts[i]", args.outputAmounts[i]);
         }
 
         if (action == Actions.DepositPermit2) {
@@ -1880,11 +1873,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
         /// and _updateMultiVaultDepositPayload()
         int256 slippage = args.slippage;
         if (args.srcChainId == args.toChainId) slippage = 0;
-        /// @dev REMOVE THIS LINE IF THEORY IS CORRECT (this is full amount)
-        // else if (args.dstSwap) slippage = (slippage * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
+        else if (args.dstSwap) slippage = (slippage * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
 
         args.amount = (args.amount * uint256(10_000 - slippage)) / 10_000;
-        console.log("Intent: test amount pre-bridge, post-slippage", v.amount);
+        console.log("Intent: test amount pre-bridge, post-slippage", args.amount);
 
         /// @dev if args.externalToken == args.underlyingToken, USDPerExternalToken == USDPerUnderlyingToken
         /// @dev v.decimal3 = decimals of args.underlyingToken (args.externalToken too if above holds true) (src chain),
@@ -2033,11 +2025,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         vm.selectFork(FORKS[args.toChainId]);
         (address superform,,) = DataLib.getSuperform(args.superformId);
-        console.log("finalAmount", args.amount);
         console.log(superform);
 
         uint256 outputAmount = IBaseForm(superform).previewRedeemFrom(args.amount);
-        console.log("preview redeem amount", outputAmount);
         /// @dev extraData is currently used to send in the partialWithdraw vaults without resorting to extra args, just
         /// for withdraws
         superformData = SingleVaultSFData(
@@ -2282,9 +2272,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
                     vars.amountPostBridgingWithSlippage =
                         (finalAmountsPostBridging[i] * uint256(10_000 - dstSwapSlippage)) / 10_000;
-                    if (vars.amountPostBridgingWithSlippage < finalAmounts[i]) {
-                        finalAmounts[i] = vars.amountPostBridgingWithSlippage;
-                    }
+                    finalAmounts[i] = vars.amountPostBridgingWithSlippage;
+
                     /// @dev sendingToken (interim) is any random token, indexed by i
                     vars.sendingToken = getContract(args.targetChainId, UNDERLYING_TOKENS[i]);
                     vars.receivingToken = underlyingDstToken[i];
@@ -2310,7 +2299,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 }
             }
         }
-
         /// @dev if test type is RevertProcessPayload, revert is further down the call chain
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
             vm.prank(deployer);
@@ -2372,9 +2360,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
 
             vars.amountPostBridgingWithSlippage = (finalAmountPostBridging * uint256(10_000 - dstSwapSlippage)) / 10_000;
-            if (vars.amountPostBridgingWithSlippage < finalAmount) {
-                finalAmount = vars.amountPostBridgingWithSlippage;
-            }
+            finalAmount = vars.amountPostBridgingWithSlippage;
 
             /// @dev sendingToken (interim) is any random token, taking DAI here
             vars.sendingToken = getContract(args.targetChainId, UNDERLYING_TOKENS[0]);
@@ -2397,7 +2383,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 ) / uint256(vars.USDPerReceivingTokenDst);
             }
 
-            console.log("finalAmount", finalAmount);
         }
 
         /// @dev if test type is RevertProcessPayload, revert is further down the call chain
