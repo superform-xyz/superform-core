@@ -92,6 +92,10 @@ import "./TestTypes.sol";
 
 import "forge-std/console.sol";
 
+interface IUSDC {
+    function mint(address to, uint256 amount) external;
+}
+
 abstract contract BaseSetup is DSTest, StdInvariant, Test {
     /*//////////////////////////////////////////////////////////////
                         GENERAL VARIABLES
@@ -338,6 +342,17 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     uint64 public constant FANTOM = 250;
 
     uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
+
+    address[] public usdcPrankster = [
+        0x0A59649758aa4d66E25f08Dd01271e891fe52199,
+        address(0),
+        0x4aeFa39caEAdD662aE31ab0CE7c8C2c9c0a013E8,
+        address(0),
+        0xB38e8c17e38363aF6EbdCb3dAE12e0243582891D,
+        address(0),
+        address(0),
+        address(0)
+    ];
 
     /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
     uint16 public constant LZ_ETH = 101;
@@ -790,7 +805,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                         new MockERC20{ salt: salt }(UNDERLYING_TOKENS[j], UNDERLYING_TOKENS[j], deployer, hundredBilly)
                     );
                 } else {
-                    deal(vars.UNDERLYING_TOKEN, deployer, hundredBilly);
+                    _tokenDealWrapper(vars.UNDERLYING_TOKEN, deployer, hundredBilly);
                 }
                 contracts[vars.chainId][bytes32(bytes(UNDERLYING_TOKENS[j]))] = vars.UNDERLYING_TOKEN;
             }
@@ -1703,9 +1718,9 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             for (uint256 i = 0; i < chainIds.length; ++i) {
                 vm.selectFork(FORKS[chainIds[i]]);
                 address token = getContract(chainIds[i], UNDERLYING_TOKENS[j]);
-                deal(token, users[0], 1 ether * amount);
-                deal(token, users[1], 1 ether * amount);
-                deal(token, users[2], 1 ether * amount);
+                _tokenDealWrapper(token, users[0], 1 ether * amount);
+                _tokenDealWrapper(token, users[1], 1 ether * amount);
+                _tokenDealWrapper(token, users[2], 1 ether * amount);
             }
         }
     }
@@ -1872,5 +1887,35 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         vm.selectFork(initialFork);
 
         return abi.encode(AMBMessage(payloadHeader, payloadBody));
+    }
+
+    function _tokenDealWrapper(address token, address to, uint256 amount) internal {
+        bool isUSDC;
+        address prankster;
+        uint64 chainId;
+
+        for (uint256 i; i < chainIds.length; i++) {
+            if (UNDERLYING_EXISTING_TOKENS[chainIds[i]]["USDC"] == token) {
+                isUSDC = true;
+                prankster = usdcPrankster[i];
+                chainId = chainIds[i];
+                break;
+            }
+        }
+
+        if (isUSDC) {
+            if (chainId == 56 || chainId == 250 || chainId == 137 || chainId == 10) {
+                deal(token, to, amount);
+            } else {
+                vm.stopPrank();
+
+                vm.prank(prankster);
+                MockERC20(token).transfer(to, 1_000_000 * 1e6);
+
+                vm.startPrank(deployer);
+            }
+        } else {
+            deal(token, to, amount);
+        }
     }
 }

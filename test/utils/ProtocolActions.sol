@@ -139,11 +139,11 @@ abstract contract ProtocolActions is CommonProtocolActions {
             token = getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]);
 
             if (action.externalToken == 0) {
-                deal(token, users[action.user], TOTAL_SUPPLY_DAI);
+                _tokenDealWrapper(token, users[action.user], TOTAL_SUPPLY_DAI);
             } else if (action.externalToken == 1) {
-                deal(token, users[action.user], TOTAL_SUPPLY_USDC);
+                _tokenDealWrapper(token, users[action.user], TOTAL_SUPPLY_USDC);
             } else if (action.externalToken == 2) {
-                deal(token, users[action.user], TOTAL_SUPPLY_WETH);
+                _tokenDealWrapper(token, users[action.user], TOTAL_SUPPLY_WETH);
             }
         }
 
@@ -163,7 +163,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     token = getContract(DST_CHAINS[i], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[i]][act][j]]);
                     (vars.superformT,,) = vars.superformIds[j].getSuperform();
                     /// @dev grabs amounts in deposits (assumes deposit is action 0)
-                    deal(token, IBaseForm(vars.superformT).getVaultAddress(), AMOUNTS[DST_CHAINS[i]][0][j]);
+                    _tokenDealWrapper(token, IBaseForm(vars.superformT).getVaultAddress(), AMOUNTS[DST_CHAINS[i]][0][j]);
                 }
 
                 actualAmountWithdrawnPerDst.push(
@@ -396,7 +396,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         : payable(getContract(DST_CHAINS[i], "CoreStateRegistry"));
                 }
             }
-            
+
             vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
 
             vars.outputAmounts = vars.amounts;
@@ -785,7 +785,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 ++usedDSTs[DST_CHAINS[i]].payloadNumber;
             }
         }
-        
+
         vars.nUniqueDsts = uniqueDSTs.length;
 
         internalVars.toMailboxes = new address[](vars.nUniqueDsts);
@@ -851,13 +851,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 );
             }
 
-            if(AMBs[index] == 6) {
+            if (AMBs[index] == 6) {
                 console.log("6 6 6");
                 LayerZeroV2Helper(getContract(CHAIN_0, "LayerZeroV2Helper")).help(
-                    internalVars.endpointsV2,
-                    internalVars.lzChainIdsV2,
-                    internalVars.forkIds,
-                    vars.logs
+                    internalVars.endpointsV2, internalVars.lzChainIdsV2, internalVars.forkIds, vars.logs
                 );
             }
 
@@ -1953,7 +1950,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vars.superPositions = IERC1155A(
             ISuperRegistry(vars.stateRegistry).getAddress(ISuperRegistry(vars.stateRegistry).SUPER_POSITIONS())
         );
-        
+
         vm.prank(users[args.user]);
         /// @dev singleId approvals from ERC1155A are used here https://github.com/superform-xyz/ERC1155A, avoiding
         /// approving all superPositions at once
@@ -2580,9 +2577,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             /// @notice ID: 6 Layerzero v2
             if (AMBs[i] == 6) {
                 LayerZeroV2Helper(getContract(TO_CHAIN, "LayerZeroV2Helper")).help(
-                    lzV2Endpoint,
-                    FORKS[FROM_CHAIN],
-                    logs
+                    lzV2Endpoint, FORKS[FROM_CHAIN], logs
                 );
             }
 
