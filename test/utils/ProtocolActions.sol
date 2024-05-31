@@ -1051,11 +1051,15 @@ abstract contract ProtocolActions is CommonProtocolActions {
                             /// slippage
                             if (action.multiVaults) {
                                 _updateMultiVaultDepositPayload(
-                                    vars.multiVaultsPayloadArg, vars.underlyingWithBridgeSlippages
+                                    vars.multiVaultsPayloadArg,
+                                    vars.underlyingWithBridgeSlippages,
+                                    vars.underlyingDstToken
                                 );
                             } else if (singleSuperformsData.length > 0) {
                                 _updateSingleVaultDepositPayload(
-                                    vars.singleVaultsPayloadArg, vars.underlyingWithBridgeSlippage
+                                    vars.singleVaultsPayloadArg,
+                                    vars.underlyingWithBridgeSlippage,
+                                    vars.underlyingDstToken
                                 );
                             }
 
@@ -1072,11 +1076,15 @@ abstract contract ProtocolActions is CommonProtocolActions {
                             /// @dev this logic is essentially repeated from above
                             if (action.multiVaults) {
                                 _updateMultiVaultDepositPayload(
-                                    vars.multiVaultsPayloadArg, vars.underlyingWithBridgeSlippages
+                                    vars.multiVaultsPayloadArg,
+                                    vars.underlyingWithBridgeSlippages,
+                                    vars.underlyingDstToken
                                 );
                             } else if (singleSuperformsData.length > 0) {
                                 _updateSingleVaultDepositPayload(
-                                    vars.singleVaultsPayloadArg, vars.underlyingWithBridgeSlippage
+                                    vars.singleVaultsPayloadArg,
+                                    vars.underlyingWithBridgeSlippage,
+                                    vars.underlyingDstToken
                                 );
                             }
                             /// @dev process payload will revert in here
@@ -1091,11 +1099,15 @@ abstract contract ProtocolActions is CommonProtocolActions {
                             /// @dev branch used just for reverts of updatePayload (process payload is not even called)
                             if (action.multiVaults) {
                                 success = _updateMultiVaultDepositPayload(
-                                    vars.multiVaultsPayloadArg, vars.underlyingWithBridgeSlippages
+                                    vars.multiVaultsPayloadArg,
+                                    vars.underlyingWithBridgeSlippages,
+                                    vars.underlyingDstToken
                                 );
                             } else {
                                 success = _updateSingleVaultDepositPayload(
-                                    vars.singleVaultsPayloadArg, vars.underlyingWithBridgeSlippage
+                                    vars.singleVaultsPayloadArg,
+                                    vars.underlyingWithBridgeSlippage,
+                                    vars.underlyingDstToken
                                 );
                             }
 
@@ -1356,7 +1368,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint256 vDecimal1;
         uint256 vDecimal2;
         uint256 vDecimal3;
-        int256 USDPerUnderlyingTokenDst;
+        int256 USDPerUnderlyingOrInterimTokenDst;
         int256 USDPerExternalToken;
         int256 USDPerUnderlyingToken;
         uint256 decimal1;
@@ -1368,7 +1380,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
     function _updateAmountWithPricedSwapsAndSlippage(
         uint256 amount_,
         int256 slippage_,
-        address underlyingTokenDst_,
+        address underlyingOrInterimTokenDst_,
         address externalToken_,
         address underlyingToken_,
         uint64 srcChainId_,
@@ -1381,12 +1393,13 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint256 initialFork = vm.activeFork();
 
         vm.selectFork(FORKS[dstChainId_]);
-        v.vDecimal2 = underlyingTokenDst_ != NATIVE_TOKEN ? MockERC20(underlyingTokenDst_).decimals() : 18;
-        console.log("underlyingTokenDst_ SAME ONE", underlyingTokenDst_);
+        v.vDecimal2 =
+            underlyingOrInterimTokenDst_ != NATIVE_TOKEN ? MockERC20(underlyingOrInterimTokenDst_).decimals() : 18;
+        console.log("underlyingOrInterimTokenDst_ SAME ONE", underlyingOrInterimTokenDst_);
         console.log("underlyingToken_ DIF one", underlyingToken_);
 
-        (, v.USDPerUnderlyingTokenDst,,,) =
-            AggregatorV3Interface(tokenPriceFeeds[dstChainId_][underlyingTokenDst_]).latestRoundData();
+        (, v.USDPerUnderlyingOrInterimTokenDst,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[dstChainId_][underlyingOrInterimTokenDst_]).latestRoundData();
 
         vm.selectFork(FORKS[srcChainId_]);
         v.vDecimal1 = externalToken_ != NATIVE_TOKEN ? MockERC20(externalToken_).decimals() : 18;
@@ -1434,17 +1447,19 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         /// @dev if args.externalToken == underlyingToken_, USDPerExternalToken == USDPerUnderlyingToken
         /// @dev v.decimal3 = decimals of underlyingToken_ (externalToken_ too if above holds true) (src
-        /// chain), v.decimal2 = decimals of underlyingTokenDst_ (dst chain)
+        /// chain), v.decimal2 = decimals of underlyingOrInterimTokenDst_ (dst chain)
         if (v.vDecimal3 > v.vDecimal2) {
             amount_ = (amount_ * uint256(v.USDPerUnderlyingToken))
-                / (uint256(v.USDPerUnderlyingTokenDst) * 10 ** (v.vDecimal3 - v.vDecimal2));
+                / (uint256(v.USDPerUnderlyingOrInterimTokenDst) * 10 ** (v.vDecimal3 - v.vDecimal2));
         } else {
             console.log("amount_", amount_);
             console.log("uint256(v.USDPerUnderlyingToken) DIF", uint256(v.USDPerUnderlyingToken));
-            console.log("uint256(v.USDPerUnderlyingTokenDst)) SAME", uint256(v.USDPerUnderlyingTokenDst));
+            console.log(
+                "uint256(v.USDPerUnderlyingOrInterimTokenDst)) SAME", uint256(v.USDPerUnderlyingOrInterimTokenDst)
+            );
 
             amount_ = (amount_ * uint256(v.USDPerUnderlyingToken) * 10 ** (v.vDecimal2 - v.vDecimal3))
-                / uint256(v.USDPerUnderlyingTokenDst);
+                / uint256(v.USDPerUnderlyingOrInterimTokenDst);
         }
         console.log("test amount post-bridge", amount_);
         vm.selectFork(initialFork);
@@ -1840,7 +1855,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         /// @dev for e.g. externalToken = DAI, underlyingTokenDst = USDC, daiAmount = 100
         /// => usdcAmount = ((USDPerDai / 10e18) / (USDPerUsdc / 10e6)) * daiAmount
-        console.log("test amount pre-swap", args.amount);
+        console.log("Intent: test amount pre-swap", args.amount);
         /// @dev src swaps simulation if any
         if (args.externalToken != args.underlyingToken) {
             vm.selectFork(FORKS[args.srcChainId]);
@@ -1858,7 +1873,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 args.amount = ((args.amount * uint256(v.USDPerExternalToken)) * 10 ** (decimal2 - decimal1))
                     / uint256(v.USDPerUnderlyingToken);
             }
-            console.log("test amount post-swap", args.amount);
+            console.log("Intent: test amount post-swap", args.amount);
         }
 
         /// @dev applying only bridge slippage here as dstSwap slippage is applied in _updateSingleVaultDepositPayload()
@@ -1869,7 +1884,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         // else if (args.dstSwap) slippage = (slippage * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
 
         args.amount = (args.amount * uint256(10_000 - slippage)) / 10_000;
-        console.log("test amount pre-bridge, post-slippage", v.amount);
+        console.log("Intent: test amount pre-bridge, post-slippage", v.amount);
 
         /// @dev if args.externalToken == args.underlyingToken, USDPerExternalToken == USDPerUnderlyingToken
         /// @dev v.decimal3 = decimals of args.underlyingToken (args.externalToken too if above holds true) (src chain),
@@ -1882,7 +1897,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 / uint256(v.USDPerUnderlyingOrInterimTokenDst);
         }
 
-        console.log("test amount post-bridge", v.amount);
+        console.log("Intent: test amount post-bridge", v.amount);
 
         /// @dev extra step to convert interim token on dst to underlying token on dst (if there is a dst Swap)
         if (args.uniqueInterimToken != address(0)) {
@@ -1895,7 +1910,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             }
         }
 
-        console.log("test amount post-dst swap --", v.amount);
+        console.log("Intent: test amount post-dst swap --", v.amount);
 
         vm.selectFork(FORKS[args.toChainId]);
         (address superform,,) = DataLib.getSuperform(args.superformId);
@@ -2227,15 +2242,26 @@ abstract contract ProtocolActions is CommonProtocolActions {
         }
     }
 
+    struct UpdateDepositPayloadLocalVars {
+        address sendingToken;
+        address receivingToken;
+        int256 USDPerSendingTokenDst;
+        int256 USDPerReceivingTokenDst;
+        uint256 decimal1;
+        uint256 decimal2;
+        uint256 amountPostBridgingWithSlippage;
+    }
+
     function _updateMultiVaultDepositPayload(
         updateMultiVaultDepositPayloadArgs memory args,
-        uint256[] memory finalAmountsThatReachedCSR
+        uint256[] memory finalAmountsPostBridging,
+        address[] memory underlyingDstToken
     )
         internal
         returns (bool)
     {
         uint256 initialFork = vm.activeFork();
-
+        UpdateDepositPayloadLocalVars memory vars;
         vm.selectFork(FORKS[args.targetChainId]);
         uint256 len = args.amounts.length;
         uint256[] memory finalAmounts = new uint256[](len);
@@ -2250,14 +2276,36 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         for (uint256 i = 0; i < len; ++i) {
             finalAmounts[i] = args.amounts[i];
-            if (args.slippage > 0) {
-                /// @dev finalAmounts[i] has full slippage applied (final user expectedAmount)
-                uint256 amountPostDstSwap;
-                if (args.isdstSwap) {
+            /// @dev applying dstSwap slippage and amount in final token post swap
+            if (args.isdstSwap) {
+                if (args.slippage > 0) {
                     dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
-                    amountPostDstSwap = (finalAmountsThatReachedCSR[i] * uint256(10_000 - dstSwapSlippage)) / 10_000;
-                    if (amountPostDstSwap < finalAmounts[i]) {
-                        finalAmounts[i] = amountPostDstSwap;
+                    vars.amountPostBridgingWithSlippage =
+                        (finalAmountsPostBridging[i] * uint256(10_000 - dstSwapSlippage)) / 10_000;
+                    if (vars.amountPostBridgingWithSlippage < finalAmounts[i]) {
+                        finalAmounts[i] = vars.amountPostBridgingWithSlippage;
+                    }
+                    /// @dev sendingToken (interim) is any random token, indexed by i
+                    vars.sendingToken = getContract(args.targetChainId, UNDERLYING_TOKENS[i]);
+                    vars.receivingToken = underlyingDstToken[i];
+
+                    (, vars.USDPerSendingTokenDst,,,) =
+                        AggregatorV3Interface(tokenPriceFeeds[args.targetChainId][vars.sendingToken]).latestRoundData();
+                    (, vars.USDPerReceivingTokenDst,,,) = AggregatorV3Interface(
+                        tokenPriceFeeds[args.targetChainId][vars.receivingToken]
+                    ).latestRoundData();
+
+                    vars.decimal1 = vars.sendingToken == NATIVE_TOKEN ? 18 : MockERC20(vars.sendingToken).decimals();
+                    vars.decimal2 = vars.receivingToken == NATIVE_TOKEN ? 18 : MockERC20(vars.receivingToken).decimals();
+
+                    if (vars.decimal1 > vars.decimal2) {
+                        finalAmounts[i] = (finalAmounts[i] * uint256(vars.USDPerSendingTokenDst))
+                            / (10 ** (vars.decimal1 - vars.decimal2) * uint256(vars.USDPerReceivingTokenDst));
+                    } else {
+                        finalAmounts[i] = (
+                            (finalAmounts[i] * uint256(vars.USDPerSendingTokenDst))
+                                * 10 ** (vars.decimal2 - vars.decimal1)
+                        ) / uint256(vars.USDPerReceivingTokenDst);
                     }
                 }
             }
@@ -2301,11 +2349,14 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
     function _updateSingleVaultDepositPayload(
         updateSingleVaultDepositPayloadArgs memory args,
-        uint256 finalAmountsThatReachedCSR
+        uint256 finalAmountPostBridging,
+        address[] memory underlyingDstToken
     )
         internal
         returns (bool)
     {
+        UpdateDepositPayloadLocalVars memory vars;
+
         uint256 initialFork = vm.activeFork();
 
         vm.selectFork(FORKS[args.targetChainId]);
@@ -2316,19 +2367,37 @@ abstract contract ProtocolActions is CommonProtocolActions {
         finalAmount = args.amount;
         int256 dstSwapSlippage;
 
+        /// @dev applying dstSwap slippage and amount in final token post swap
         if (args.isdstSwap) {
             dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
-            uint256 amountPostDstSwap;
 
-            amountPostDstSwap = (finalAmountsThatReachedCSR * uint256(10_000 - dstSwapSlippage)) / 10_000;
-            if (amountPostDstSwap < finalAmount) {
-                finalAmount = amountPostDstSwap;
+            vars.amountPostBridgingWithSlippage = (finalAmountPostBridging * uint256(10_000 - dstSwapSlippage)) / 10_000;
+            if (vars.amountPostBridgingWithSlippage < finalAmount) {
+                finalAmount = vars.amountPostBridgingWithSlippage;
             }
-            console.log("dstSwapSlippage", uint256(dstSwapSlippage));
+
+            /// @dev sendingToken (interim) is any random token, taking DAI here
+            vars.sendingToken = getContract(args.targetChainId, UNDERLYING_TOKENS[0]);
+            vars.receivingToken = underlyingDstToken[0];
+
+            (, vars.USDPerSendingTokenDst,,,) =
+                AggregatorV3Interface(tokenPriceFeeds[args.targetChainId][vars.sendingToken]).latestRoundData();
+            (, vars.USDPerReceivingTokenDst,,,) =
+                AggregatorV3Interface(tokenPriceFeeds[args.targetChainId][vars.receivingToken]).latestRoundData();
+
+            vars.decimal1 = vars.sendingToken == NATIVE_TOKEN ? 18 : MockERC20(vars.sendingToken).decimals();
+            vars.decimal2 = vars.receivingToken == NATIVE_TOKEN ? 18 : MockERC20(vars.receivingToken).decimals();
+
+            if (vars.decimal1 > vars.decimal2) {
+                finalAmount = (finalAmount * uint256(vars.USDPerSendingTokenDst))
+                    / (10 ** (vars.decimal1 - vars.decimal2) * uint256(vars.USDPerReceivingTokenDst));
+            } else {
+                finalAmount = (
+                    (finalAmount * uint256(vars.USDPerSendingTokenDst)) * 10 ** (vars.decimal2 - vars.decimal1)
+                ) / uint256(vars.USDPerReceivingTokenDst);
+            }
 
             console.log("finalAmount", finalAmount);
-            console.log("amountPostDstSwap", amountPostDstSwap);
-            console.log("finalAmountsThatReachedCSR", finalAmountsThatReachedCSR);
         }
 
         /// @dev if test type is RevertProcessPayload, revert is further down the call chain
