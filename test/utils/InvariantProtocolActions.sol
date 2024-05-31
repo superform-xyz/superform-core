@@ -60,11 +60,11 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             token = getContract(vars.CHAIN_0, UNDERLYING_TOKENS[action.externalToken]);
 
             if (action.externalToken == 0) {
-                _tokenDealWrapper(token, users[action.user], TOTAL_SUPPLY_DAI);
+                deal(token, users[action.user], TOTAL_SUPPLY_DAI);
             } else if (action.externalToken == 1) {
-                _tokenDealWrapper(token, users[action.user], TOTAL_SUPPLY_USDC * 1e12);
+                deal(token, users[action.user], TOTAL_SUPPLY_USDC * 1e12);
             } else if (action.externalToken == 2) {
-                _tokenDealWrapper(token, users[action.user], TOTAL_SUPPLY_WETH);
+                deal(token, users[action.user], TOTAL_SUPPLY_WETH);
             }
         }
 
@@ -81,7 +81,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     token = getContract(vars.DST_CHAINS[i], UNDERLYING_TOKENS[vars.targetUnderlyings[i][j]]);
                     (vars.superformT,,) = vars.superformIds[j].getSuperform();
                     /// @dev grabs amounts in deposits (assumes deposit is action 0)
-                    _tokenDealWrapper(token, IBaseForm(vars.superformT).getVaultAddress(), vars.amounts[i]);
+                    deal(token, IBaseForm(vars.superformT).getVaultAddress(), vars.amounts[i]);
                 }
             }
         }

@@ -92,10 +92,6 @@ import "./TestTypes.sol";
 
 import "forge-std/console.sol";
 
-interface IUSDC {
-    function mint(address to, uint256 amount) external;
-}
-
 abstract contract BaseSetup is DSTest, StdInvariant, Test {
     /*//////////////////////////////////////////////////////////////
                         GENERAL VARIABLES
@@ -342,17 +338,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     uint64 public constant FANTOM = 250;
 
     uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
-
-    address[] public usdcPrankster = [
-        0x0A59649758aa4d66E25f08Dd01271e891fe52199,
-        address(0),
-        0x4aeFa39caEAdD662aE31ab0CE7c8C2c9c0a013E8,
-        address(0),
-        0xB38e8c17e38363aF6EbdCb3dAE12e0243582891D,
-        address(0),
-        address(0),
-        address(0)
-    ];
 
     /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
     uint16 public constant LZ_ETH = 101;
@@ -805,7 +790,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                         new MockERC20{ salt: salt }(UNDERLYING_TOKENS[j], UNDERLYING_TOKENS[j], deployer, hundredBilly)
                     );
                 } else {
-                    _tokenDealWrapper(vars.UNDERLYING_TOKEN, deployer, hundredBilly);
+                    deal(vars.UNDERLYING_TOKEN, deployer, hundredBilly);
                 }
                 contracts[vars.chainId][bytes32(bytes(UNDERLYING_TOKENS[j]))] = vars.UNDERLYING_TOKEN;
             }
@@ -1622,27 +1607,27 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             UNDERLYING_EXISTING_TOKENS;
 
         existingTokens[43_114]["DAI"] = 0xd586E7F844cEa2F87f50152665BCbc2C279D8d70;
-        existingTokens[43_114]["USDC"] = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
+        existingTokens[43_114]["USDC"] = address(0);
         existingTokens[43_114]["WETH"] = 0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB;
 
         existingTokens[42_161]["DAI"] = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
-        existingTokens[42_161]["USDC"] = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
+        existingTokens[42_161]["USDC"] = address(0);
         existingTokens[42_161]["WETH"] = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
 
         existingTokens[10]["DAI"] = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
-        existingTokens[10]["USDC"] = 0x7F5c764cBc14f9669B88837ca1490cCa17c31607;
+        existingTokens[10]["USDC"] = address(0);
         existingTokens[10]["WETH"] = 0x4200000000000000000000000000000000000006;
 
         existingTokens[1]["DAI"] = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-        existingTokens[1]["USDC"] = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+        existingTokens[1]["USDC"] = address(0);
         existingTokens[1]["WETH"] = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
         existingTokens[137]["DAI"] = 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063;
-        existingTokens[137]["USDC"] = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
+        existingTokens[137]["USDC"] = address(0);
         existingTokens[137]["WETH"] = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619;
 
         existingTokens[56]["DAI"] = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
-        existingTokens[56]["USDC"] = 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d;
+        existingTokens[56]["USDC"] = address(0);
         existingTokens[56]["WETH"] = address(0);
 
         existingTokens[8453]["DAI"] = 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb;
@@ -1650,7 +1635,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         existingTokens[8453]["WETH"] = address(0);
 
         existingTokens[250]["DAI"] = 0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E;
-        existingTokens[250]["USDC"] = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
+        existingTokens[250]["USDC"] = address(0);
         existingTokens[250]["WETH"] = address(0);
 
         mapping(
@@ -1662,7 +1647,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             ) storage existingVaults = REAL_VAULT_ADDRESS;
 
         existingVaults[43_114][1]["DAI"][0] = 0x75A8cFB425f366e424259b114CaeE5f634C07124;
-        existingVaults[43_114][1]["USDC"][0] = 0xB4001622c02F1354A3CfF995b7DaA15b1d47B0fe;
+        existingVaults[43_114][1]["USDC"][0] = address(0);
         existingVaults[43_114][1]["WETH"][0] = 0x1a225008efffB6e07D01671127c9E40f6f787c8C;
 
         existingVaults[42_161][1]["DAI"][0] = address(0);
@@ -1670,19 +1655,19 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         existingVaults[42_161][1]["WETH"][0] = 0xe4c2A17f38FEA3Dcb3bb59CEB0aC0267416806e2;
 
         existingVaults[1][1]["DAI"][0] = address(0);
-        existingVaults[1][1]["USDC"][0] = 0x6bAD6A9BcFdA3fd60Da6834aCe5F93B8cFed9598;
+        existingVaults[1][1]["USDC"][0] = address(0);
         existingVaults[1][1]["WETH"][0] = address(0);
 
         existingVaults[10][1]["DAI"][0] = address(0);
-        existingVaults[10][1]["USDC"][0] = 0x81C9A7B55A4df39A9B7B5F781ec0e53539694873;
+        existingVaults[10][1]["USDC"][0] = address(0);
         existingVaults[10][1]["WETH"][0] = 0xc4d4500326981eacD020e20A81b1c479c161c7EF;
 
         existingVaults[137][1]["DAI"][0] = 0x4A7CfE3ccE6E88479206Fefd7b4dcD738971e723;
-        existingVaults[137][1]["USDC"][0] = 0x277ba089b4CF2AF32589D98aA839Bf8c35A30Da3;
+        existingVaults[137][1]["USDC"][0] = address(0);
         existingVaults[137][1]["WETH"][0] = 0x0D0188268D0693e2494989dc3DA5e64F0D6BA972;
 
         existingVaults[56][1]["DAI"][0] = 0x6A354D50fC2476061F378390078e30F9782C5266;
-        existingVaults[56][1]["USDC"][0] = 0x32307B89a1c59Ea4EBaB1Fde6bD37b1139D06759;
+        existingVaults[56][1]["USDC"][0] = address(0);
         existingVaults[56][1]["WETH"][0] = address(0);
 
         existingVaults[8453][1]["DAI"][0] = 0x88510ced6F82eFd3ddc4599B72ad8ac2fF172043;
@@ -1690,7 +1675,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         existingVaults[8453][1]["WETH"][0] = address(0);
 
         existingVaults[250][1]["DAI"][0] = address(0);
-        existingVaults[250][1]["USDC"][0] = 0xd55C59Da5872DE866e39b1e3Af2065330ea8Acd6;
+        existingVaults[250][1]["USDC"][0] = address(0);
         existingVaults[250][1]["WETH"][0] = address(0);
     }
 
@@ -1718,9 +1703,9 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             for (uint256 i = 0; i < chainIds.length; ++i) {
                 vm.selectFork(FORKS[chainIds[i]]);
                 address token = getContract(chainIds[i], UNDERLYING_TOKENS[j]);
-                _tokenDealWrapper(token, users[0], 1 ether * amount);
-                _tokenDealWrapper(token, users[1], 1 ether * amount);
-                _tokenDealWrapper(token, users[2], 1 ether * amount);
+                deal(token, users[0], 1 ether * amount);
+                deal(token, users[1], 1 ether * amount);
+                deal(token, users[2], 1 ether * amount);
             }
         }
     }
@@ -1887,35 +1872,5 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         vm.selectFork(initialFork);
 
         return abi.encode(AMBMessage(payloadHeader, payloadBody));
-    }
-
-    function _tokenDealWrapper(address token, address to, uint256 amount) internal {
-        bool isUSDC;
-        address prankster;
-        uint64 chainId;
-
-        for (uint256 i; i < chainIds.length; i++) {
-            if (UNDERLYING_EXISTING_TOKENS[chainIds[i]]["USDC"] == token) {
-                isUSDC = true;
-                prankster = usdcPrankster[i];
-                chainId = chainIds[i];
-                break;
-            }
-        }
-
-        if (isUSDC) {
-            if (chainId == 56 || chainId == 250 || chainId == 137 || chainId == 10) {
-                deal(token, to, amount);
-            } else {
-                vm.stopPrank();
-
-                vm.prank(prankster);
-                MockERC20(token).transfer(to, 1_000_000 * 1e6);
-
-                vm.startPrank(deployer);
-            }
-        } else {
-            deal(token, to, amount);
-        }
     }
 }

@@ -139,11 +139,11 @@ abstract contract ProtocolActions is CommonProtocolActions {
             token = getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]);
 
             if (action.externalToken == 0) {
-                _tokenDealWrapper(token, users[action.user], TOTAL_SUPPLY_DAI);
+                deal(token, users[action.user], TOTAL_SUPPLY_DAI);
             } else if (action.externalToken == 1) {
-                _tokenDealWrapper(token, users[action.user], TOTAL_SUPPLY_USDC);
+                deal(token, users[action.user], TOTAL_SUPPLY_USDC);
             } else if (action.externalToken == 2) {
-                _tokenDealWrapper(token, users[action.user], TOTAL_SUPPLY_WETH);
+                deal(token, users[action.user], TOTAL_SUPPLY_WETH);
             }
         }
 
@@ -163,7 +163,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     token = getContract(DST_CHAINS[i], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[i]][act][j]]);
                     (vars.superformT,,) = vars.superformIds[j].getSuperform();
                     /// @dev grabs amounts in deposits (assumes deposit is action 0)
-                    _tokenDealWrapper(token, IBaseForm(vars.superformT).getVaultAddress(), AMOUNTS[DST_CHAINS[i]][0][j]);
+                    deal(token, IBaseForm(vars.superformT).getVaultAddress(), AMOUNTS[DST_CHAINS[i]][0][j]);
                 }
 
                 actualAmountWithdrawnPerDst.push(

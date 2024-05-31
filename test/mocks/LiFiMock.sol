@@ -141,7 +141,7 @@ contract LiFiMock is Test {
         console.log("amount post-bridge", finalAmount);
 
         if (outputToken != NATIVE) {
-            _tokenDealWrapper(outputToken, receiver_, MockERC20(outputToken).balanceOf(receiver_) + finalAmount);
+            deal(outputToken, receiver_, MockERC20(outputToken).balanceOf(receiver_) + finalAmount);
         } else {
             if (prevForkId_ != toForkId_) vm.deal(address(this), finalAmount);
             (bool success,) = payable(receiver_).call{ value: finalAmount }("");
@@ -193,26 +193,7 @@ contract LiFiMock is Test {
         /// @dev swap slippage if any, is applied in ProtocolActions._stage1_buildReqData() for direct
         /// actions and in ProtocolActions._buildLiqBridgeTxDataDstSwap() for dstSwaps.
         /// @dev Could allocate swap slippage share separately like for ProtocolActions.MULTI_TX_SLIPPAGE_SHARE
-        _tokenDealWrapper(outputToken_, receiver_, MockERC20(outputToken_).balanceOf(receiver_) + amount_);
+        deal(outputToken_, receiver_, MockERC20(outputToken_).balanceOf(receiver_) + amount_);
         return amount_;
-    }
-
-    function _tokenDealWrapper(address token, address to, uint256 amount) internal {
-        if (keccak256(bytes(MockERC20(token).symbol())) == keccak256(bytes("USDC"))) {
-            if (block.chainid == 56 || block.chainid == 250 || block.chainid == 137 || block.chainid == 10) {
-                deal(token, to, amount);
-            } else {
-                vm.startPrank(
-                    block.chainid == 1
-                        ? 0x0A59649758aa4d66E25f08Dd01271e891fe52199
-                        : block.chainid == 43_114
-                            ? 0x4aeFa39caEAdD662aE31ab0CE7c8C2c9c0a013E8
-                            : 0xB38e8c17e38363aF6EbdCb3dAE12e0243582891D
-                );
-                MockERC20(token).transfer(to, amount);
-            }
-        } else {
-            deal(token, to, amount);
-        }
     }
 }

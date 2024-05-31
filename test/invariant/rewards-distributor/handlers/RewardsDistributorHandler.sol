@@ -92,8 +92,10 @@ contract RewardsDistributorHandler is StdInvariant, MerkleReader {
             totalUSDCToDeposit += usdcToDeposit;
             totalDAIToDeposit += daiToDeposit;
         }
+
         deal(USDC, address(rewards), totalUSDCToDeposit);
         deal(DAI, address(rewards), totalDAIToDeposit);
+
         /*
         0
         Total amount USDC: 5349
