@@ -296,7 +296,6 @@ abstract contract CommonProtocolActions is BaseSetup {
                 abi.encode(args.from, FORKS[args.srcChainId], FORKS[args.liqDstChainId])
             );
         } else if (args.liqBridgeKind == 8) {
-            console.log("Common Protocol Actions", args.from);
             bytes memory targetTxData = abi.encodeWithSelector(
                 DeBridgeMock.createSaltedOrder.selector,
                 DlnOrderLib.OrderCreation(
@@ -364,8 +363,6 @@ abstract contract CommonProtocolActions is BaseSetup {
         int256 swapSlippage = (slippage_ * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
         amount_ = (amount_ * uint256(10_000 - swapSlippage)) / 10_000;
 
-        console.log("sendingTokenDst_ same one", sendingTokenDst_);
-        console.log("receivingTokenDst_ dif one", receivingTokenDst_);
         /// @dev already on target chain, so need to vm.selectFork() to it
         (, int256 USDPerSendingTokenDst,,,) =
             AggregatorV3Interface(tokenPriceFeeds[toChainId_][sendingTokenDst_]).latestRoundData();
