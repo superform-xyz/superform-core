@@ -7,8 +7,10 @@ import "forge-std/Test.sol";
 import "./MockERC20.sol";
 import { ISocketOneInchImpl } from "src/vendor/socket/ISocketOneInchImpl.sol";
 
+import "forge-std/console.sol";
 /// @title Socket OneInch Mock
 /// @dev eventually replace this by using a fork of the real registry contract
+
 contract SocketOneInchMock is ISocketOneInchImpl, Test {
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -53,6 +55,11 @@ contract SocketOneInchMock is ISocketOneInchImpl, Test {
             vars.finalAmount = ((amount * vars.USDPerUnderlyingToken) * 10 ** (vars.decimal2 - vars.decimal1))
                 / vars.USDPerUnderlyingTokenDst;
         }
+
+        console.log("finalAmount", vars.finalAmount);
+        console.log("amount", amount);
+        console.log("USDPerUnderlyingToken sending DAI", vars.USDPerUnderlyingToken);
+        console.log("USDPerUnderlyingTokenDst receiving USDC", vars.USDPerUnderlyingTokenDst);
 
         deal(toToken, receiver, MockERC20(toToken).balanceOf(receiver) + vars.finalAmount);
     }

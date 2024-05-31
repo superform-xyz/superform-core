@@ -12,6 +12,8 @@ import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
+import "forge-std/console.sol";
+
 abstract contract ProtocolActions is CommonProtocolActions {
     using DataLib for uint256;
 
@@ -1380,6 +1382,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         vm.selectFork(FORKS[dstChainId_]);
         v.vDecimal2 = underlyingTokenDst_ != NATIVE_TOKEN ? MockERC20(underlyingTokenDst_).decimals() : 18;
+        console.log("underlyingTokenDst_ SAME ONE", underlyingTokenDst_);
+        console.log("underlyingToken_ DIF one", underlyingToken_);
+
         (, v.USDPerUnderlyingTokenDst,,,) =
             AggregatorV3Interface(tokenPriceFeeds[dstChainId_][underlyingTokenDst_]).latestRoundData();
 
@@ -1434,6 +1439,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
             amount_ = (amount_ * uint256(v.USDPerUnderlyingToken))
                 / (uint256(v.USDPerUnderlyingTokenDst) * 10 ** (v.vDecimal3 - v.vDecimal2));
         } else {
+            console.log("amount_", amount_);
+            console.log("uint256(v.USDPerUnderlyingToken) DIF", uint256(v.USDPerUnderlyingToken));
+            console.log("uint256(v.USDPerUnderlyingTokenDst)) SAME", uint256(v.USDPerUnderlyingTokenDst));
+
             amount_ = (amount_ * uint256(v.USDPerUnderlyingToken) * 10 ** (v.vDecimal2 - v.vDecimal3))
                 / uint256(v.USDPerUnderlyingTokenDst);
         }
@@ -2009,17 +2018,17 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         vm.selectFork(FORKS[args.toChainId]);
         (address superform,,) = DataLib.getSuperform(args.superformId);
-        console.log("finalAMount", args.amount);
+        console.log("finalAmount", args.amount);
         console.log(superform);
 
-        uint256 oa = IBaseForm(superform).previewRedeemFrom(args.amount);
-        console.log("-- OA---", oa);
+        uint256 outputAmount = IBaseForm(superform).previewRedeemFrom(args.amount);
+        console.log("preview redeem amount", outputAmount);
         /// @dev extraData is currently used to send in the partialWithdraw vaults without resorting to extra args, just
         /// for withdraws
         superformData = SingleVaultSFData(
             args.superformId,
             args.amount,
-            oa,
+            outputAmount,
             args.maxSlippage,
             vars.liqReq,
             "",
@@ -2315,6 +2324,11 @@ abstract contract ProtocolActions is CommonProtocolActions {
             if (amountPostDstSwap < finalAmount) {
                 finalAmount = amountPostDstSwap;
             }
+            console.log("dstSwapSlippage", uint256(dstSwapSlippage));
+
+            console.log("finalAmount", finalAmount);
+            console.log("amountPostDstSwap", amountPostDstSwap);
+            console.log("finalAmountsThatReachedCSR", finalAmountsThatReachedCSR);
         }
 
         /// @dev if test type is RevertProcessPayload, revert is further down the call chain

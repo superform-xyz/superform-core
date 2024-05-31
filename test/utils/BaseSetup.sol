@@ -1644,7 +1644,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                     uint32 formImplementationId
                         => mapping(string underlying => mapping(uint256 vaultKindIndex => address realVault))
                 )
-            ) storage existingVaults = REAL_VAULT_ADDRESS;
+        ) storage existingVaults = REAL_VAULT_ADDRESS;
 
         existingVaults[43_114][1]["DAI"][0] = 0x75A8cFB425f366e424259b114CaeE5f634C07124;
         existingVaults[43_114][1]["USDC"][0] = address(0);
