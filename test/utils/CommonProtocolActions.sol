@@ -296,7 +296,6 @@ abstract contract CommonProtocolActions is BaseSetup {
                 abi.encode(args.from, FORKS[args.srcChainId], FORKS[args.liqDstChainId])
             );
         } else if (args.liqBridgeKind == 8) {
-            console.log("Common Protocol Actions", args.from);
             bytes memory targetTxData = abi.encodeWithSelector(
                 DeBridgeMock.createSaltedOrder.selector,
                 DlnOrderLib.OrderCreation(

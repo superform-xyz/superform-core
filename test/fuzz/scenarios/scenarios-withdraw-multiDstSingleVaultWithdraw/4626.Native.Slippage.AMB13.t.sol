@@ -124,7 +124,7 @@ contract MDSVWNormal4626NativeSlippageAMB24 is ProtocolActions {
                         AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0]];
                     } else if (DST_CHAINS[i] == AVAX) {
                         /// @dev bounded to 1 less due to partial withdrawals
-                        amountTwoWithdraw_ = uint128(bound(amountTwoWithdraw_, 1, superPositions[0] - 1));
+                        amountTwoWithdraw_ = uint128(bound(amountTwoWithdraw_, 10_000, superPositions[0] - 10_000));
                         AMOUNTS[DST_CHAINS[i]][1] = [amountTwoWithdraw_];
                     }
                 }
