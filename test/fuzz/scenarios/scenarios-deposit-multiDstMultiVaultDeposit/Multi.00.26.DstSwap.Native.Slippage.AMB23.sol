@@ -17,7 +17,7 @@ contract MDMVDMulti0026NativeSlippageAMB23 is ProtocolActions {
         CHAIN_0 = OP;
         DST_CHAINS = [POLY, ETH];
 
-        /// @dev define vaults amounts and slippage for every destination chain and for every acti on
+        /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[POLY][0] = [0, 1];
         TARGET_UNDERLYINGS[ETH][0] = [1, 1];
 
