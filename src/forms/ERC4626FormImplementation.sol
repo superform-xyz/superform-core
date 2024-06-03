@@ -271,7 +271,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     }
 
     function _processDirectWithdraw(InitSingleVaultData memory singleVaultData_) internal returns (uint256 assets) {
-
+    
         DirectWithdrawLocalVars memory vars;
 
         /// @dev if there is no txData, on withdraws the receiver is receiverAddress, otherwise it
