@@ -541,6 +541,11 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         vm.allowCheatcodes(vars.debridgeForwarderMock);
         vm.makePersistent(vars.debridgeForwarderMock);
 
+        /// @dev 7.1.8 deploy OneInchMock. This mocks the beahvior of 1inch
+        vars.oneInchMock = address(new OneInchMock{ salt: salt }());
+        vm.allowCheatcodes(vars.oneInchMock);
+        vm.makePersistent(vars.oneInchMock);
+
         /// @dev deployments
         for (uint256 i = 0; i < chainIds.length; ++i) {
             vars.chainId = chainIds[i];
@@ -726,10 +731,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
             contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderMock"))] = vars.debridgeForwarderMock;
 
-            /// @dev 7.1.8 deploy OneInchMock. This mocks the beahvior of 1inch
-            vars.oneInchMock = address(new OneInchMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("OneInchMock"))] = vars.debridgeForwarderMock;
-            vm.allowCheatcodes(vars.oneInchMock);
 
             /// @dev 7.2.1- deploy  lifi validator
             vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
