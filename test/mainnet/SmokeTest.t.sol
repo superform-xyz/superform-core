@@ -479,4 +479,24 @@ contract SmokeTest is MainnetBaseSetup {
             }
         }
     }
+
+    function test_rewardsDistributor() public {
+        RewardsDistributor rewardsDistributor;
+        SuperRegistry superRegistry;
+        SuperRBAC superRBAC;
+
+        for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
+            uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+            vm.selectFork(FORKS[chainId]);
+            rewardsDistributor = RewardsDistributor(getContract(chainId, "RewardsDistributor"));
+            superRegistry = SuperRegistry(getContract(chainId, "SuperRegistry"));
+            superRBAC = SuperRBAC(getContract(chainId, "SuperRBAC"));
+
+            assertEq(superRBAC.getRoleAdmin(keccak256("REWARDS_ADMIN_ROLE")), superRBAC.PROTOCOL_ADMIN_ROLE());
+            assertTrue(superRBAC.hasRole(keccak256("REWARDS_ADMIN_ROLE"), REWARDS_ADMIN));
+
+            assertEq(superRegistry.getAddress(keccak256("REWARDS_DISTRIBUTOR")), address(rewardsDistributor));
+            assertEq(address(rewardsDistributor.superRegistry()), address(superRegistry));
+        }
+    }
 }
