@@ -228,7 +228,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// superform data
         if (
             vars.assetDifference * ENTIRE_SLIPPAGE
-                < singleVaultData_.amount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)
+            < singleVaultData_.amount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)
         ) {
             revert Error.DIRECT_DEPOSIT_SWAP_FAILED();
         }
@@ -491,6 +491,3 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         }
     }
 }
-
-/// 5268608643
-/// 1800000
