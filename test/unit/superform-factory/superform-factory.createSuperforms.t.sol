@@ -69,7 +69,9 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         vars.expectedFormformImplementationIds = new uint32[](chainIds.length * UNDERLYING_TOKENS.length);
         vars.expectedChainIds = new uint256[](chainIds.length * UNDERLYING_TOKENS.length);
 
-        uint256 expectedNumberOfSuperforms = UNDERLYING_TOKENS.length * VAULT_KINDS.length;
+        /// @dev removed 1 from vault kinds as it corresponds to 5115
+        uint256 expectedNumberOfSuperforms =
+            UNDERLYING_TOKENS.length * (VAULT_KINDS.length - 1) + NUMBER_OF_5115S[chainId];
 
         assertEq(
             SuperformFactory(getContract(chainId, "SuperformFactory")).getSuperformCount(), expectedNumberOfSuperforms
@@ -102,7 +104,7 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         assertEq(totalSuperformsAfter, totalSuperformsBefore + 1);
 
         uint256 totalFormImplementations = SuperformFactory(getContract(chainId, "SuperformFactory")).getFormCount();
-        assertEq(totalFormImplementations, 4);
+        assertEq(totalFormImplementations, 5);
 
         bool superformExists =
             SuperformFactory(getContract(chainId, "SuperformFactory")).isSuperform(superformIdCreated);

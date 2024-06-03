@@ -169,8 +169,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                         PROTOCOL VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev we should fork these instead of mocking
-    string[] public UNDERLYING_TOKENS = ["DAI", "USDC", "WETH"];
+    /// @dev we should fork these instead of mocking.
+    string[] public UNDERLYING_TOKENS = ["DAI", "USDC", "WETH", "ezETH", "wstETH", "USDe"];
 
     /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm, 4 = ERC511§5
     uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(2), uint32(3), uint32(4)];
@@ -792,17 +792,22 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             /// @dev 8.1 - Deploy UNDERLYING_TOKENS and VAULTS
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; ++j) {
                 vars.UNDERLYING_TOKEN = UNDERLYING_EXISTING_TOKENS[vars.chainId][UNDERLYING_TOKENS[j]];
-
+                console.log(UNDERLYING_TOKENS[j]);
+                console.log(vars.UNDERLYING_TOKEN);
+                console.log(vars.chainId);
                 if (vars.UNDERLYING_TOKEN == address(0)) {
                     vars.UNDERLYING_TOKEN = address(
                         new MockERC20{ salt: salt }(UNDERLYING_TOKENS[j], UNDERLYING_TOKENS[j], deployer, hundredBilly)
                     );
                 } else {
+                    console.log("asdf");
+
                     deal(vars.UNDERLYING_TOKEN, deployer, hundredBilly);
+                    console.log("asdf");
                 }
                 contracts[vars.chainId][bytes32(bytes(UNDERLYING_TOKENS[j]))] = vars.UNDERLYING_TOKEN;
             }
-            console.log(111_111_111);
+
             bytes memory bytecodeWithArgs;
             /// NOTE: This loop deploys all vaults on all chainIds with all of the UNDERLYING TOKENS (id x form) x
             /// chainId
@@ -1666,16 +1671,20 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         existingTokens[43_114]["WETH"] = 0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB;
 
         existingTokens[42_161]["DAI"] = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
-        existingTokens[42_161]["USDC"] = address(0);
+        existingTokens[42_161]["USDC"] = address(0); // 0xaf88d065e77c8cC2239327C5EDb3A432268e5831
         existingTokens[42_161]["WETH"] = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+        existingTokens[42_161]["wstETH"] = 0x5979D7b546E38E414F7E9822514be443A4800529;
 
         existingTokens[10]["DAI"] = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
         existingTokens[10]["USDC"] = address(0);
         existingTokens[10]["WETH"] = 0x4200000000000000000000000000000000000006;
+        existingTokens[10]["wstETH"] = 0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb;
 
         existingTokens[1]["DAI"] = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
         existingTokens[1]["USDC"] = address(0);
         existingTokens[1]["WETH"] = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+        existingTokens[1]["USDe"] = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
+        existingTokens[1]["ezETH"] = 0xbf5495Efe5DB9ce00f80364C8B423567e58d2110;
 
         existingTokens[137]["DAI"] = 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063;
         existingTokens[137]["USDC"] = address(0);
@@ -1684,6 +1693,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         existingTokens[56]["DAI"] = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
         existingTokens[56]["USDC"] = address(0);
         existingTokens[56]["WETH"] = address(0);
+        existingTokens[56]["ezETH"] = 0x2416092f143378750bb29b79eD961ab195CcEea5;
 
         existingTokens[8453]["DAI"] = 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb;
         existingTokens[8453]["USDC"] = address(0);
@@ -1748,25 +1758,31 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         numberOf5115s[43_114] = 0;
 
         /// @dev  pendle ethena - market: SUSDE-MAINNET-SEP2024
+        /// USDe sUSDe
         erc5115Vaults[1][0] = 0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65;
         erc5115VaultsNames[1][0] = "SUSDE-MAINNET-SEP2024";
 
+        /// ezETH
         /// @dev pendle renzo - market:  SY ezETH
         erc5115Vaults[1][1] = 0x22E12A50e3ca49FB183074235cB1db84Fe4C716D;
         erc5115VaultsNames[1][1] = "SY ezETH";
 
+        /// wstETH
         /// @dev pendle wrapped st ETH from LDO - market:  SY wstETH
         erc5115Vaults[10][0] = 0x96A528f4414aC3CcD21342996c93f2EcdEc24286;
         erc5115VaultsNames[10][0] = "SY wstETH";
 
+        /// ezETH
         /// @dev pendle renzo - market: EZETH-BSC-SEP2024
         erc5115Vaults[56][0] = 0xe49269B5D31299BcE407c8CcCf241274e9A93C9A;
         erc5115VaultsNames[56][0] = "EZETH-BSC-SEP2024";
 
+        /// USDC aARBUsdc
         /// @dev pendle aave - market: SY aUSDC
         erc5115Vaults[42_161][0] = 0x50288c30c37FA1Ec6167a31E575EA8632645dE20;
         erc5115VaultsNames[42_161][0] = "SY aUSDC";
 
+        /// wstETH
         /// @dev pendle wrapped st ETH from LDO - market: SY wstETH
         erc5115Vaults[42_161][1] = 0x80c12D5b6Cc494632Bf11b03F09436c8B61Cc5Df;
         erc5115VaultsNames[42_161][1] = "SY wstETH";

@@ -19,6 +19,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
     event FailedXChainDeposits(uint256 indexed payloadId);
 
+    uint256 constant NATIVE_TOKEN_ID = 69_420;
+
     /// @dev counts for each chain in each testAction the number of timelocked superforms
     mapping(uint256 chainIdIndex => uint256) countTimelocked;
     uint256[][] actualAmountWithdrawnPerDst;
@@ -135,7 +137,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         address token;
         /// @dev assumption here is DAI has total supply of TOTAL_SUPPLY_DAI on all chains
         /// and similarly for USDC, WETH and ETH
-        if (action.externalToken == 3) {
+        if (action.externalToken == NATIVE_TOKEN_ID) {
             deal(users[action.user], TOTAL_SUPPLY_ETH);
         } else {
             token = getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]);
@@ -412,7 +414,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     MultiVaultCallDataArgs(
                         action.user,
                         vars.fromSrc,
-                        action.externalToken == 3
+                        action.externalToken == NATIVE_TOKEN_ID
                             ? NATIVE_TOKEN
                             : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
                         vars.toDst,
@@ -459,7 +461,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 SingleVaultCallDataArgs memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
                     action.user,
                     vars.fromSrc,
-                    action.externalToken == 3
+                    action.externalToken == NATIVE_TOKEN_ID
                         ? NATIVE_TOKEN
                         : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
                     vars.toDst[0],
@@ -1007,7 +1009,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                                             vars.multiVaultsPayloadArg.slippage,
                                             getContract(DST_CHAINS[i], UNDERLYING_TOKENS[j]),
                                             /// @dev substituting this to become the interim token
-                                            action.externalToken == 3
+                                            action.externalToken == NATIVE_TOKEN_ID
                                                 ? NATIVE_TOKEN
                                                 : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
                                             vars.underlyingSrcToken[j],
@@ -1029,7 +1031,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                                         AMOUNTS[DST_CHAINS[i]][actionIndex][0],
                                         vars.singleVaultsPayloadArg.slippage,
                                         getContract(DST_CHAINS[i], UNDERLYING_TOKENS[0]),
-                                        action.externalToken == 3
+                                        action.externalToken == NATIVE_TOKEN_ID
                                             ? NATIVE_TOKEN
                                             : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
                                         vars.underlyingSrcToken[0],
@@ -1392,7 +1394,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
         UpdateSuperformDataAmountWithPricesLocalVars memory v;
         uint256 initialFork = vm.activeFork();
 
-
         vm.selectFork(FORKS[dstChainId_]);
         v.vDecimal2 =
             underlyingOrInterimTokenDst_ != NATIVE_TOKEN ? MockERC20(underlyingOrInterimTokenDst_).decimals() : 18;
@@ -1451,8 +1452,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
             amount_ = (amount_ * uint256(v.USDPerUnderlyingToken))
                 / (uint256(v.USDPerUnderlyingOrInterimTokenDst) * 10 ** (v.vDecimal3 - v.vDecimal2));
         } else {
-
-
             amount_ = (amount_ * uint256(v.USDPerUnderlyingToken) * 10 ** (v.vDecimal2 - v.vDecimal3))
                 / uint256(v.USDPerUnderlyingOrInterimTokenDst);
         }
@@ -1486,10 +1485,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             vm.selectFork(FORKS[DST_CHAINS[0]]);
 
-            v.rescueToken = action.externalToken == 3
+            v.rescueToken = action.externalToken == NATIVE_TOKEN_ID
                 ? NATIVE_TOKEN
                 : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[0]][0][0]]);
-            v.userBalanceBefore = action.externalToken == 3
+            v.userBalanceBefore = action.externalToken == NATIVE_TOKEN_ID
                 ? users[action.user].balance
                 : MockERC20(v.rescueToken).balanceOf(users[action.user]);
             v.coreStateRegistryDst = payable(getContract(DST_CHAINS[0], "CoreStateRegistry"));
@@ -1506,10 +1505,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     action.slippage,
                     v.rescueToken,
                     /// @dev note: assuming no src swaps i.e externalToken == underlyingToken
-                    action.externalToken == 3
+                    action.externalToken == NATIVE_TOKEN_ID
                         ? NATIVE_TOKEN
                         : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
-                    action.externalToken == 3
+                    action.externalToken == NATIVE_TOKEN_ID
                         ? NATIVE_TOKEN
                         : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
                     CHAIN_0,
@@ -1564,7 +1563,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             vm.prank(deployer);
             CoreStateRegistry(v.coreStateRegistryDst).finalizeRescueFailedDeposits(payloadId);
 
-            v.userBalanceAfter = action.externalToken == 3
+            v.userBalanceAfter = action.externalToken == NATIVE_TOKEN_ID
                 ? users[action.user].balance
                 : MockERC20(v.rescueToken).balanceOf(users[action.user]);
 
@@ -2382,7 +2381,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     (finalAmount * uint256(vars.USDPerSendingTokenDst)) * 10 ** (vars.decimal2 - vars.decimal1)
                 ) / uint256(vars.USDPerReceivingTokenDst);
             }
-
         }
 
         /// @dev if test type is RevertProcessPayload, revert is further down the call chain
