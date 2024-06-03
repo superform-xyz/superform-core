@@ -16,6 +16,7 @@ contract SmokeTestStaging is MainnetBaseSetup {
 
         TARGET_DEPLOYMENT_CHAINS = chains;
         EMERGENCY_ADMIN = 0x6A5DD913fE3CB5193E09D1810a3b9ff1C0f9c0D6;
+        REWARDS_ADMIN = 0x1F05a8Ff6d895Ba04C84c5031c5d63FA1afCDA6F;
 
         super.setUp();
     }
@@ -451,6 +452,26 @@ contract SmokeTestStaging is MainnetBaseSetup {
                     );
                 }
             }
+        }
+    }
+
+    function test_rewardsDistributorStaging() public {
+        RewardsDistributor rewardsDistributor;
+        SuperRegistry superRegistry;
+        SuperRBAC superRBAC;
+
+        for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
+            uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+            vm.selectFork(FORKS[chainId]);
+            rewardsDistributor = RewardsDistributor(getContract(chainId, "RewardsDistributor"));
+            superRegistry = SuperRegistry(getContract(chainId, "SuperRegistry"));
+            superRBAC = SuperRBAC(getContract(chainId, "SuperRBAC"));
+
+            assertEq(superRBAC.getRoleAdmin(keccak256("REWARDS_ADMIN_ROLE")), superRBAC.PROTOCOL_ADMIN_ROLE());
+            assertTrue(superRBAC.hasRole(keccak256("REWARDS_ADMIN_ROLE"), REWARDS_ADMIN));
+
+            assertEq(superRegistry.getAddress(keccak256("REWARDS_DISTRIBUTOR")), address(rewardsDistributor));
+            assertEq(address(rewardsDistributor.superRegistry()), address(superRegistry));
         }
     }
 }
