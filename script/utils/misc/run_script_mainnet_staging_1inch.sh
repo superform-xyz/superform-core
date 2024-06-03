@@ -28,7 +28,7 @@ wait
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.OneInchValidator.s.sol:MainnetDeployOneInchValidator --sig "deployOneInchValidator(uint256,uint256,uint256)" 1 4 0 --rpc-url $FANTOM_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 wait
 
-echo Adding de-bridge to super registry ...
+echo Adding one-inch to super registry ...
 
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.OneInchValidator.s.sol:MainnetDeployOneInchValidator --sig "configureSuperRegistry(uint256,uint256,uint256)" 1 0 0 --rpc-url $BSC_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 wait
