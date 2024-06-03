@@ -16,14 +16,14 @@ contract SXSVW5115NativeSlippageAMB23 is ProtocolActions {
         DST_CHAINS = [OP];
 
         /// @dev "SY wstETH" vault on optimism
-        TARGET_UNDERLYINGS[OP][0] = [5];
+        TARGET_UNDERLYINGS[OP][0] = [4];
 
         TARGET_VAULTS[OP][0] = [9];
 
         TARGET_FORM_KINDS[OP][0] = [3];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[OP][1] = [5];
+        TARGET_UNDERLYINGS[OP][1] = [4];
 
         TARGET_VAULTS[OP][1] = [9];
 

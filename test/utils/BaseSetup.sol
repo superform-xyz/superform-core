@@ -4,8 +4,6 @@ pragma solidity ^0.8.23;
 /// @dev lib imports
 import "forge-std/Test.sol";
 
-import "ds-test/test.sol";
-
 import { StdInvariant } from "forge-std/StdInvariant.sol";
 
 import { LayerZeroHelper } from "pigeon/layerzero/LayerZeroHelper.sol";
@@ -94,7 +92,7 @@ import "./TestTypes.sol";
 
 import "forge-std/console.sol";
 
-abstract contract BaseSetup is DSTest, StdInvariant, Test {
+abstract contract BaseSetup is StdInvariant, Test {
     /*//////////////////////////////////////////////////////////////
                         GENERAL VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -791,19 +789,15 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
             /// @dev 8.1 - Deploy UNDERLYING_TOKENS and VAULTS
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; ++j) {
+                vm.selectFork(FORKS[vars.chainId]);
                 vars.UNDERLYING_TOKEN = UNDERLYING_EXISTING_TOKENS[vars.chainId][UNDERLYING_TOKENS[j]];
-                console.log(UNDERLYING_TOKENS[j]);
-                console.log(vars.UNDERLYING_TOKEN);
-                console.log(vars.chainId);
+
                 if (vars.UNDERLYING_TOKEN == address(0)) {
                     vars.UNDERLYING_TOKEN = address(
                         new MockERC20{ salt: salt }(UNDERLYING_TOKENS[j], UNDERLYING_TOKENS[j], deployer, hundredBilly)
                     );
                 } else {
-                    console.log("asdf");
-
                     deal(vars.UNDERLYING_TOKEN, deployer, hundredBilly);
-                    console.log("asdf");
                 }
                 contracts[vars.chainId][bytes32(bytes(UNDERLYING_TOKENS[j]))] = vars.UNDERLYING_TOKEN;
             }
@@ -1282,31 +1276,33 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             for (uint256 j = 0; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
                 if (j != 3) {
                     for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
-                        uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
+                        if (k < 3) {
+                            uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
 
-                        for (uint256 l = 0; l < lenBytecodes; l++) {
-                            address vault = vaults[chainIds[i]][FORM_IMPLEMENTATION_IDS[j]][k][l];
+                            for (uint256 l = 0; l < lenBytecodes; l++) {
+                                address vault = vaults[chainIds[i]][FORM_IMPLEMENTATION_IDS[j]][k][l];
 
-                            uint256 superformId;
-                            (superformId, vars.superform) = ISuperformFactory(
-                                contracts[chainIds[i]][bytes32(bytes("SuperformFactory"))]
-                            ).createSuperform(FORM_IMPLEMENTATION_IDS[j], vault);
+                                uint256 superformId;
+                                (superformId, vars.superform) = ISuperformFactory(
+                                    contracts[chainIds[i]][bytes32(bytes("SuperformFactory"))]
+                                ).createSuperform(FORM_IMPLEMENTATION_IDS[j], vault);
 
-                            if (FORM_IMPLEMENTATION_IDS[j] == 3) {
-                                /// mint a kycDAO Nft to the newly kycDAO superform
-                                ERC4626KYCDaoForm(vars.superform).mintKYC(1);
-                            }
+                                if (FORM_IMPLEMENTATION_IDS[j] == 3) {
+                                    /// mint a kycDAO Nft to the newly kycDAO superform
+                                    ERC4626KYCDaoForm(vars.superform).mintKYC(1);
+                                }
 
-                            contracts[chainIds[i]][bytes32(
-                                bytes(
-                                    string.concat(
-                                        UNDERLYING_TOKENS[k],
-                                        vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultKinds[l],
-                                        "Superform",
-                                        Strings.toString(FORM_IMPLEMENTATION_IDS[j])
+                                contracts[chainIds[i]][bytes32(
+                                    bytes(
+                                        string.concat(
+                                            UNDERLYING_TOKENS[k],
+                                            vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultKinds[l],
+                                            "Superform",
+                                            Strings.toString(FORM_IMPLEMENTATION_IDS[j])
+                                        )
                                     )
-                                )
-                            )] = vars.superform;
+                                )] = vars.superform;
+                            }
                         }
                     }
                 } else if (j == 3) {
@@ -1356,6 +1352,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH), also coz chainlink doesn't provide
         tokenPriceFeeds[ETH][getContract(ETH, "WETH")] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         tokenPriceFeeds[ETH][NATIVE_TOKEN] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        tokenPriceFeeds[ETH][getContract(ETH, "ezETH")] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        tokenPriceFeeds[ETH][getContract(ETH, "wstETH")] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[ETH][getContract(ETH, "USDe")] = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
 
         /// BSC
         tokenPriceFeeds[BSC][getContract(BSC, "DAI")] = 0x132d3C0B1D2cEa0BC552588063bdBb210FDeecfA;
@@ -1363,6 +1363,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
         tokenPriceFeeds[BSC][getContract(BSC, "WETH")] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
         tokenPriceFeeds[BSC][NATIVE_TOKEN] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+        tokenPriceFeeds[BSC][getContract(BSC, "ezETH")] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+        tokenPriceFeeds[BSC][getContract(BSC, "wstETH")] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[BSC][getContract(BSC, "USDe")] = 0x51597f405303C4377E36123cBc172b13269EA163;
 
         /// AVAX
         tokenPriceFeeds[AVAX][getContract(AVAX, "DAI")] = 0x51D7180edA2260cc4F6e4EebB82FEF5c3c2B8300;
@@ -1370,6 +1374,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
         tokenPriceFeeds[AVAX][getContract(AVAX, "WETH")] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
         tokenPriceFeeds[AVAX][NATIVE_TOKEN] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+        tokenPriceFeeds[AVAX][getContract(AVAX, "ezETH")] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+        tokenPriceFeeds[AVAX][getContract(AVAX, "wstETH")] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[AVAX][getContract(AVAX, "USDe")] = 0xF096872672F44d6EBA71458D74fe67F9a77a23B9;
 
         /// POLYGON
         tokenPriceFeeds[POLY][getContract(POLY, "DAI")] = 0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D;
@@ -1377,6 +1385,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
         tokenPriceFeeds[POLY][getContract(POLY, "WETH")] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         tokenPriceFeeds[POLY][NATIVE_TOKEN] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+        tokenPriceFeeds[POLY][getContract(POLY, "ezETH")] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+        tokenPriceFeeds[POLY][getContract(POLY, "wstETH")] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[POLY][getContract(POLY, "USDe")] = 0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7;
 
         /// OPTIMISM
         tokenPriceFeeds[OP][getContract(OP, "DAI")] = 0x8dBa75e83DA73cc766A7e5a0ee71F656BAb470d6;
@@ -1384,6 +1396,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
         tokenPriceFeeds[OP][getContract(OP, "WETH")] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         tokenPriceFeeds[OP][NATIVE_TOKEN] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+        tokenPriceFeeds[OP][getContract(OP, "ezETH")] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+        tokenPriceFeeds[OP][getContract(OP, "wstETH")] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[OP][getContract(OP, "USDe")] = 0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3;
 
         /// ARBITRUM
         tokenPriceFeeds[ARBI][getContract(ARBI, "DAI")] = 0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB;
@@ -1391,6 +1407,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
         tokenPriceFeeds[ARBI][getContract(ARBI, "WETH")] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         tokenPriceFeeds[ARBI][NATIVE_TOKEN] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+        tokenPriceFeeds[ARBI][getContract(ARBI, "ezETH")] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+        tokenPriceFeeds[ARBI][getContract(ARBI, "wstETH")] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[ARBI][getContract(ARBI, "USDe")] = 0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3;
 
         /// BASE
         tokenPriceFeeds[BASE][getContract(BASE, "DAI")] = 0x591e79239a7d679378eC8c847e5038150364C78F;
@@ -1398,6 +1418,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
         tokenPriceFeeds[BASE][getContract(BASE, "WETH")] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
         tokenPriceFeeds[BASE][NATIVE_TOKEN] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
+        tokenPriceFeeds[BASE][getContract(BASE, "ezETH")] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
+        tokenPriceFeeds[BASE][getContract(BASE, "wstETH")] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[BASE][getContract(BASE, "USDe")] = 0x7e860098F58bBFC8648a4311b374B1D669a2bc6B;
 
         /// FANTOM
         tokenPriceFeeds[FANTOM][getContract(FANTOM, "DAI")] = 0x91d5DEFAFfE2854C7D02F50c80FA1fdc8A721e52;
@@ -1405,6 +1429,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
         tokenPriceFeeds[FANTOM][getContract(FANTOM, "WETH")] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
         tokenPriceFeeds[FANTOM][NATIVE_TOKEN] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+        tokenPriceFeeds[FANTOM][getContract(FANTOM, "ezETH")] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+        tokenPriceFeeds[FANTOM][getContract(FANTOM, "wstETH")] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[FANTOM][getContract(FANTOM, "USDe")] = 0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c;
     }
 
     function _preDeploymentSetup(bool pinnedBlock, bool invariant) internal {
@@ -1693,7 +1721,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         existingTokens[56]["DAI"] = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
         existingTokens[56]["USDC"] = address(0);
         existingTokens[56]["WETH"] = address(0);
-        existingTokens[56]["ezETH"] = 0x2416092f143378750bb29b79eD961ab195CcEea5;
 
         existingTokens[8453]["DAI"] = 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb;
         existingTokens[8453]["USDC"] = address(0);
@@ -1760,32 +1787,32 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// @dev  pendle ethena - market: SUSDE-MAINNET-SEP2024
         /// USDe sUSDe
         erc5115Vaults[1][0] = 0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65;
-        erc5115VaultsNames[1][0] = "SUSDE-MAINNET-SEP2024";
+        erc5115VaultsNames[1][0] = "SUSDe";
 
         /// ezETH
         /// @dev pendle renzo - market:  SY ezETH
         erc5115Vaults[1][1] = 0x22E12A50e3ca49FB183074235cB1db84Fe4C716D;
-        erc5115VaultsNames[1][1] = "SY ezETH";
+        erc5115VaultsNames[1][1] = "ezETH";
 
         /// wstETH
         /// @dev pendle wrapped st ETH from LDO - market:  SY wstETH
         erc5115Vaults[10][0] = 0x96A528f4414aC3CcD21342996c93f2EcdEc24286;
-        erc5115VaultsNames[10][0] = "SY wstETH";
+        erc5115VaultsNames[10][0] = "wstETH";
 
         /// ezETH
         /// @dev pendle renzo - market: EZETH-BSC-SEP2024
         erc5115Vaults[56][0] = 0xe49269B5D31299BcE407c8CcCf241274e9A93C9A;
-        erc5115VaultsNames[56][0] = "EZETH-BSC-SEP2024";
+        erc5115VaultsNames[56][0] = "ezETH";
 
         /// USDC aARBUsdc
         /// @dev pendle aave - market: SY aUSDC
         erc5115Vaults[42_161][0] = 0x50288c30c37FA1Ec6167a31E575EA8632645dE20;
-        erc5115VaultsNames[42_161][0] = "SY aUSDC";
+        erc5115VaultsNames[42_161][0] = "USDC";
 
         /// wstETH
         /// @dev pendle wrapped st ETH from LDO - market: SY wstETH
         erc5115Vaults[42_161][1] = 0x80c12D5b6Cc494632Bf11b03F09436c8B61Cc5Df;
-        erc5115VaultsNames[42_161][1] = "SY wstETH";
+        erc5115VaultsNames[42_161][1] = "wstETH";
     }
 
     function _fundNativeTokens() internal {

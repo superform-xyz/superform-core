@@ -1742,7 +1742,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             (, v.USDPerUnderlyingOrInterimTokenDst,,,) =
                 AggregatorV3Interface(tokenPriceFeeds[args.toChainId][args.uniqueInterimToken]).latestRoundData();
-
+            console.log("args.uniqueInterimToken", args.uniqueInterimToken);
             v.decimal4 = args.underlyingTokenDst != NATIVE_TOKEN ? MockERC20(args.underlyingTokenDst).decimals() : 18;
 
             (, v.USDPerUnderlyingTokenDst,,,) =
@@ -2085,7 +2085,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         /// @dev constructs superFormIds from provided input info
         vars.superformIdsTemp = _superformIds(vars.underlyingTokens, vars.vaultIds, vars.formKinds, chain1);
-
+        console.log("superformIdsTemp", vars.superformIdsTemp[0]);
         vars.len = vars.superformIdsTemp.length;
 
         if (vars.len == 0) revert LEN_VAULTS_ZERO();
@@ -2155,6 +2155,14 @@ abstract contract ProtocolActions is CommonProtocolActions {
         /// @dev obtains superform addresses through string concatenation, notice what is done in BaseSetup to save
         /// these in contracts mapping
         for (uint256 i = 0; i < vaultIds_.length; ++i) {
+            console.log(
+                string.concat(
+                    UNDERLYING_TOKENS[underlyingTokens_[i]],
+                    VAULT_KINDS[vaultIds_[i]],
+                    "Superform",
+                    Strings.toString(FORM_IMPLEMENTATION_IDS[formKinds_[i]])
+                )
+            );
             address superform = getContract(
                 chainId_,
                 string.concat(
