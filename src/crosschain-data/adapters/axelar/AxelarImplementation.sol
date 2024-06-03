@@ -143,8 +143,6 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
             revert Error.INVALID_CHAIN_ID();
         }
 
-        return 0.01 ether;
-
         /// @dev the destinationAddress is not used in the upstream axelar contract; hence passing in zero address
         /// @dev the params is also not used; hence passing in bytes(0)
         return gasEstimator.estimateGasFee(
