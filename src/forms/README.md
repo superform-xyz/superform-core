@@ -8,7 +8,7 @@ Interaction with Superforms happens through the four implemented external functi
 
 ### In scope
 
-**ERC4626FormImplementation.sol:** Abstract implementation of a Form contract with functions that are commonly used across forms. All functions can be overriden in specific Form implementations.
+**ERC4626FormImplementation.sol:** Abstract implementation of a Form contract with functions that are commonly used across forms. All functions can be overridden in specific Form implementations.
 
 **ERC4626Form.sol:** The standard implementation of a Form contract. This Form interacts with a corresponding ERC4626 compliant vault.
 

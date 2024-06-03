@@ -3,12 +3,15 @@ pragma solidity ^0.8.23;
 
 /// @dev lib imports
 import "forge-std/Test.sol";
+
+import "ds-test/test.sol";
+
 import { StdInvariant } from "forge-std/StdInvariant.sol";
 
 import { LayerZeroHelper } from "pigeon/layerzero/LayerZeroHelper.sol";
-import { LayerZeroV2Helper } from "pigeon/layerzero-v2/LayerzeroV2Helper.sol";
+import { LayerZeroV2Helper } from "pigeon/layerzero-v2/LayerZeroV2Helper.sol";
 import { HyperlaneHelper } from "pigeon/hyperlane/HyperlaneHelper.sol";
-
+import { AxelarHelper } from "pigeon/axelar/AxelarHelper.sol";
 import { WormholeHelper } from "pigeon/wormhole/automatic-relayer/WormholeHelper.sol";
 import "pigeon/wormhole/specialized-relayer/WormholeHelper.sol" as WormholeBroadcastHelper;
 
@@ -69,6 +72,12 @@ import { WormholeARImplementation } from
     "src/crosschain-data/adapters/wormhole/automatic-relayer/WormholeARImplementation.sol";
 import { WormholeSRImplementation } from
     "src/crosschain-data/adapters/wormhole/specialized-relayer/WormholeSRImplementation.sol";
+import {
+    AxelarImplementation,
+    IAxelarGateway,
+    IAxelarGasService,
+    IInterchainGasEstimation
+} from "src/crosschain-data/adapters/axelar/AxelarImplementation.sol";
 import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
 import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
 import ".././utils/AmbParams.sol";
@@ -84,7 +93,9 @@ import { RewardsDistributor } from "src/RewardsDistributor.sol";
 import "src/types/DataTypes.sol";
 import "./TestTypes.sol";
 
-abstract contract BaseSetup is StdInvariant, Test {
+import "forge-std/console.sol";
+
+abstract contract BaseSetup is DSTest, StdInvariant, Test {
     /*//////////////////////////////////////////////////////////////
                         GENERAL VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -113,7 +124,7 @@ abstract contract BaseSetup is StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[38] public contractNames = [
+    string[40] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -122,6 +133,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         "HyperlaneImplementation",
         "WormholeARImplementation",
         "WormholeSRImplementation",
+        "AxelarImplementation",
         "LiFiValidator",
         "SocketValidator",
         "DstSwapper",
@@ -140,6 +152,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         "LayerZeroV2Helper",
         "HyperlaneHelper",
         "WormholeHelper",
+        "AxelarHelper",
         "WormholeBroadcastHelper",
         "LiFiMock",
         "DeBridgeMock",
@@ -202,9 +215,11 @@ abstract contract BaseSetup is StdInvariant, Test {
     /// @notice id 2 is hyperlane
     /// @notice id 3 is wormhole (Automatic Relayer)
     /// @notice id 4 is wormhole (Specialized Relayer)
+    /// @notice id 5 is axelar
     /// @notice id 6 is layerzero-v2
-    uint8[] public ambIds = [uint8(1), 2, 3, 4, 6];
-    bool[] public isBroadcastAMB = [false, false, false, true, false];
+
+    uint8[] public ambIds = [uint8(1), 2, 3, 4, 5, 6];
+    bool[] public isBroadcastAMB = [false, false, false, true, false, false];
 
     /*//////////////////////////////////////////////////////////////
                         AMB VARIABLES
@@ -213,6 +228,8 @@ abstract contract BaseSetup is StdInvariant, Test {
     mapping(uint64 => address) public LZ_ENDPOINTS;
     mapping(uint64 => uint16) public WORMHOLE_CHAIN_IDS;
     mapping(uint64 => address) public HYPERLANE_MAILBOXES;
+    mapping(uint64 => string) public AXELAR_CHAIN_IDS;
+    mapping(uint64 => address) public AXELAR_GATEWAYS;
 
     address public constant ETH_lzEndpoint = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
     address public constant BSC_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
@@ -267,6 +284,28 @@ abstract contract BaseSetup is StdInvariant, Test {
         0x126783A6Cb203a3E35344528B26ca3a0489a1485
     ];
 
+    address[] public axelarGateway = [
+        0x4F4495243837681061C4743b74B3eEdf548D56A5,
+        0x304acf330bbE08d1e512eefaa92F6a57871fD895,
+        0x5029C0EFf6C34351a0CEc334542cDb22c7928f78,
+        0x6f015F16De9fC8791b234eF68D486d2bF203FBA8,
+        0xe432150cce91c13a887f7D836923d5597adD8E31,
+        0xe432150cce91c13a887f7D836923d5597adD8E31,
+        0xe432150cce91c13a887f7D836923d5597adD8E31,
+        0x304acf330bbE08d1e512eefaa92F6a57871fD895
+    ];
+
+    address[] public axelarGasService = [
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712
+    ];
+
     /*//////////////////////////////////////////////////////////////
                         WORMHOLE VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -318,6 +357,8 @@ abstract contract BaseSetup is StdInvariant, Test {
     uint32[] public lz_v2_chainIds = [30_101, 30_102, 30_106, 30_109, 30_110, 30_111, 30_184, 30_112];
     uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
     uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30, 10];
+    string[] public axelar_chainIds =
+        ["Ethereum", "binance", "Avalanche", "Polygon", "arbitrum", "optimism", "base", "Fantom"];
 
     /// @dev minting enough tokens to be able to fuzz with bigger amounts (DAI's 3.6B supply etc)
     uint256 public constant hundredBilly = 100 * 1e9 * 1e18;
@@ -429,6 +470,77 @@ abstract contract BaseSetup is StdInvariant, Test {
         SetupVars memory vars;
 
         vm.startPrank(deployer);
+
+        /// @dev 1 - Pigeon helpers allow us to fullfill cross-chain messages in a manner as close to mainnet as
+        /// possible
+        vars.lzHelper = address(new LayerZeroHelper{ salt: salt }());
+        vm.allowCheatcodes(vars.lzHelper);
+        vm.makePersistent(vars.lzHelper);
+
+        vars.lzV2Helper = address(new LayerZeroV2Helper{ salt: salt }());
+        vm.allowCheatcodes(vars.lzV2Helper);
+        vm.makePersistent(vars.lzV2Helper);
+
+        vars.hyperlaneHelper = address(new HyperlaneHelper{ salt: salt }());
+        vm.allowCheatcodes(vars.hyperlaneHelper);
+        vm.makePersistent(vars.hyperlaneHelper);
+
+        vars.wormholeHelper = address(new WormholeHelper{ salt: salt }());
+        vm.allowCheatcodes(vars.wormholeHelper);
+        vm.makePersistent(vars.wormholeHelper);
+
+        vars.wormholeBroadcastHelper = address(new WormholeBroadcastHelper.WormholeHelper{ salt: salt }());
+        vm.allowCheatcodes(vars.wormholeBroadcastHelper);
+        vm.makePersistent(vars.wormholeBroadcastHelper);
+
+        vars.axelarHelper = address(new AxelarHelper{ salt: salt }());
+        vm.allowCheatcodes(vars.axelarHelper);
+        vm.makePersistent(vars.axelarHelper);
+
+        /// @dev deploy  LiFiRouterMock. This mock is a very minimal versions to allow
+        /// liquidity bridge testing
+        vars.lifiRouter = address(new LiFiMock{ salt: salt }());
+        vm.allowCheatcodes(vars.lifiRouter);
+        vm.makePersistent(vars.lifiRouter);
+
+        /// @dev deploy SocketMock. This mock is a very minimal versions to allow
+        /// liquidity bridge testing
+        vars.socketRouter = address(new SocketMock{ salt: salt }());
+        vm.allowCheatcodes(vars.socketRouter);
+        vm.makePersistent(vars.socketRouter);
+
+        /// @dev deploy SocketOneInchMock. This mock is a very minimal versions to allow
+        /// socket same chain swaps
+        vars.socketOneInch = address(new SocketOneInchMock{ salt: salt }());
+        vm.allowCheatcodes(vars.socketOneInch);
+        vm.makePersistent(vars.socketOneInch);
+
+        /// @dev deploy LiFiMockRugpull. This mock tests a behaviour where the bridge is malicious and tries
+        /// to steal tokens
+        vars.liFiMockRugpull = address(new LiFiMockRugpull{ salt: salt }());
+        vm.allowCheatcodes(vars.liFiMockRugpull);
+        vm.makePersistent(vars.liFiMockRugpull);
+
+        /// @dev deploy LiFiMockBlacklisted. This mock tests the behaviour of blacklisted selectors
+        vars.liFiMockBlacklisted = address(new LiFiMockBlacklisted{ salt: salt }());
+        vm.allowCheatcodes(vars.liFiMockBlacklisted);
+        vm.makePersistent(vars.liFiMockBlacklisted);
+
+        /// @dev deploy LiFiMockSwapToAttacker. This mock tests the behaviour of blacklisted selectors
+        vars.liFiMockSwapToAttacker = address(new LiFiMockSwapToAttacker{ salt: salt }());
+        vm.allowCheatcodes(vars.liFiMockSwapToAttacker);
+        vm.makePersistent(vars.liFiMockSwapToAttacker);
+
+        /// @dev 7.1.7 deploy DeBridgeMock. This mocks tests the behavior of debridge
+        vars.deBridgeMock = address(new DeBridgeMock{ salt: salt }());
+        vm.allowCheatcodes(vars.deBridgeMock);
+        vm.makePersistent(vars.deBridgeMock);
+
+        /// @dev 7.1.7 deploy DeBridgeForwarderMock. This mocks tests the behavior of debridge forwarder
+        vars.debridgeForwarderMock = address(new DeBridgeForwarderMock{ salt: salt }());
+        vm.allowCheatcodes(vars.debridgeForwarderMock);
+        vm.makePersistent(vars.debridgeForwarderMock);
+
         /// @dev deployments
         for (uint256 i = 0; i < chainIds.length; ++i) {
             vars.chainId = chainIds[i];
@@ -450,35 +562,23 @@ abstract contract BaseSetup is StdInvariant, Test {
 
             /// @dev 1 - Pigeon helpers allow us to fullfill cross-chain messages in a manner as close to mainnet as
             /// possible
-            /// @dev 1.1- deploy LZ Helper from Pigeon
-            vars.lzHelper = address(new LayerZeroHelper{ salt: salt }());
-            vm.allowCheatcodes(vars.lzHelper);
-
+            /// @dev 1.1.1- LZ Helper from Pigeon
             contracts[vars.chainId][bytes32(bytes("LayerZeroHelper"))] = vars.lzHelper;
 
             /// @dev 1.1.2- deploy LZ v2 Helper from Pigeon
-            vars.lzV2Helper = address(new LayerZeroV2Helper{ salt: salt }());
-            vm.allowCheatcodes(vars.lzV2Helper);
-
             contracts[vars.chainId][bytes32(bytes("LayerZeroV2Helper"))] = vars.lzV2Helper;
 
-            /// @dev 1.2- deploy Hyperlane Helper from Pigeon
-            vars.hyperlaneHelper = address(new HyperlaneHelper{ salt: salt }());
-            vm.allowCheatcodes(vars.hyperlaneHelper);
-
+            /// @dev 1.2-  Hyperlane Helper from Pigeon
             contracts[vars.chainId][bytes32(bytes("HyperlaneHelper"))] = vars.hyperlaneHelper;
 
-            /// @dev 1.3- deploy Wormhole Automatic Relayer Helper from Pigeon
-            vars.wormholeHelper = address(new WormholeHelper{ salt: salt }());
-            vm.allowCheatcodes(vars.wormholeHelper);
-
+            /// @dev 1.3-  Wormhole Automatic Relayer Helper from Pigeon
             contracts[vars.chainId][bytes32(bytes("WormholeHelper"))] = vars.wormholeHelper;
 
-            /// @dev 1.4- deploy Wormhole Specialized Relayer Helper from Pigeon
-            vars.wormholeBroadcastHelper = address(new WormholeBroadcastHelper.WormholeHelper{ salt: salt }());
-            vm.allowCheatcodes(vars.wormholeBroadcastHelper);
-
+            /// @dev 1.4-  Wormhole Specialized Relayer Helper from Pigeon
             contracts[vars.chainId][bytes32(bytes("WormholeBroadcastHelper"))] = vars.wormholeBroadcastHelper;
+
+            /// @dev 1.5- deploy axelar from Pigeon
+            contracts[vars.chainId][bytes32(bytes("AxelarHelper"))] = vars.axelarHelper;
 
             /// @dev 2 - Deploy SuperRBAC
             vars.superRBAC = address(
@@ -587,62 +687,44 @@ abstract contract BaseSetup is StdInvariant, Test {
             /// set refund chain id to wormhole chain id
             WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(wormhole_chainIds[i]);
 
-            /// @dev 6.5- deploy Wormhole Specialized Relayer Implementation
+            /// @dev 6.4- deploy Wormhole Specialized Relayer Implementation
             vars.wormholeSRImplementation = address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC, 3));
             contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
 
             WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[i]);
             WormholeSRImplementation(vars.wormholeSRImplementation).setRelayer(deployer);
 
+            /// @dev 6.5- deploy Axelar Implementation
+            vars.axelarImplementation = address(new AxelarImplementation{ salt: salt }(vars.superRegistryC));
+            contracts[vars.chainId][bytes32(bytes("AxelarImplementation"))] = vars.axelarImplementation;
+
+            AxelarImplementation(vars.axelarImplementation).setAxelarConfig(IAxelarGateway(axelarGateway[i]));
+            AxelarImplementation(vars.axelarImplementation).setAxelarGasService(
+                IAxelarGasService(axelarGasService[i]), IInterchainGasEstimation(axelarGasService[i])
+            );
+
             vars.ambAddresses[0] = vars.lzImplementation;
             vars.ambAddresses[1] = vars.hyperlaneImplementation;
             vars.ambAddresses[2] = vars.wormholeImplementation;
             vars.ambAddresses[3] = vars.wormholeSRImplementation;
-            vars.ambAddresses[4] = vars.lzV2Implementation;
+            vars.ambAddresses[4] = vars.axelarImplementation;
+            vars.ambAddresses[5] = vars.lzV2Implementation;
 
-            /// @dev 7.1.1 deploy  LiFiRouterMock. This mock is a very minimal versions to allow
-            /// liquidity bridge testing
-            vars.lifiRouter = address(new LiFiMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("LiFiMock"))] = vars.lifiRouter;
-            vm.allowCheatcodes(vars.lifiRouter);
 
-            /// @dev 7.1.2 deploy SocketMock. This mock is a very minimal versions to allow
-            /// liquidity bridge testing
-            vars.socketRouter = address(new SocketMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("SocketMock"))] = vars.socketRouter;
-            vm.allowCheatcodes(vars.socketRouter);
 
-            /// @dev 7.1.3 deploy SocketOneInchMock. This mock is a very minimal versions to allow
-            /// socket same chain swaps
-            vars.socketOneInch = address(new SocketOneInchMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("SocketOneInchMock"))] = vars.socketOneInch;
-            vm.allowCheatcodes(vars.socketOneInch);
 
-            /// @dev 7.1.4 deploy LiFiMockRugpull. This mock tests a behaviour where the bridge is malicious and tries
-            /// to steal tokens
-            vars.liFiMockRugpull = address(new LiFiMockRugpull{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("LiFiMockRugpull"))] = vars.liFiMockRugpull;
-            vm.allowCheatcodes(vars.liFiMockRugpull);
 
-            /// @dev 7.1.5 deploy LiFiMockBlacklisted. This mock tests the behaviour of blacklisted selectors
-            vars.liFiMockBlacklisted = address(new LiFiMockBlacklisted{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("LiFiMockBlacklisted"))] = vars.liFiMockBlacklisted;
-            vm.allowCheatcodes(vars.liFiMockBlacklisted);
 
-            /// @dev 7.1.6 deploy LiFiMockSwapToAttacker. This mock tests the behaviour of blacklisted selectors
-            vars.liFiMockSwapToAttacker = address(new LiFiMockSwapToAttacker{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("LiFiMockBlacklisted"))] = vars.liFiMockSwapToAttacker;
-            vm.allowCheatcodes(vars.liFiMockSwapToAttacker);
 
-            /// @dev 7.1.7 deploy DeBridgeMock. This mocks tests the behavior of debridge
-            vars.deBridgeMock = address(new DeBridgeMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("DeBridgeMock"))] = vars.deBridgeMock;
-            vm.allowCheatcodes(vars.deBridgeMock);
 
-            /// @dev 7.1.7 deploy DeBridgeForwarderMock. This mocks tests the behavior of debridge forwarder
-            vars.debridgeForwarderMock = address(new DeBridgeForwarderMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderMock"))] = vars.debridgeForwarderMock;
-            vm.allowCheatcodes(vars.debridgeForwarderMock);
 
             /// @dev 7.1.8 deploy OneInchMock. This mocks the beahvior of 1inch
             vars.oneInchMock = address(new OneInchMock{ salt: salt }());
@@ -940,6 +1022,7 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
             vars.wormholeImplementation = getContract(vars.chainId, "WormholeARImplementation");
             vars.wormholeSRImplementation = getContract(vars.chainId, "WormholeSRImplementation");
+            vars.axelarImplementation = getContract(vars.chainId, "AxelarImplementation");
             vars.superRBAC = getContract(vars.chainId, "SuperRBAC");
 
             vars.superRegistry = getContract(vars.chainId, "SuperRegistry");
@@ -963,6 +1046,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                     vars.dstWormholeARImplementation = getContract(vars.dstChainId, "WormholeARImplementation");
                     vars.dstWormholeSRImplementation = getContract(vars.dstChainId, "WormholeSRImplementation");
                     vars.dstwormholeBroadcastHelper = getContract(vars.dstChainId, "WormholeBroadcastHelper");
+                    vars.dstAxelarImplementation = getContract(vars.dstChainId, "AxelarImplementation");
 
                     LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
                         vars.dstLzChainId, abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
@@ -996,6 +1080,14 @@ abstract contract BaseSetup is StdInvariant, Test {
 
                     WormholeARImplementation(payable(vars.wormholeImplementation)).setChainId(
                         vars.dstChainId, vars.dstWormholeChainId
+                    );
+
+                    AxelarImplementation(payable(vars.axelarImplementation)).setChainId(
+                        vars.dstChainId, axelar_chainIds[j]
+                    );
+
+                    AxelarImplementation(payable(vars.axelarImplementation)).setReceiver(
+                        axelar_chainIds[j], vars.dstAxelarImplementation
                     );
 
                     WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setChainId(
@@ -1379,6 +1471,8 @@ abstract contract BaseSetup is StdInvariant, Test {
 
         for (uint256 i = 0; i < chainIds.length; ++i) {
             wormholeChainIdsStorage[chainIds[i]] = wormhole_chainIds[i];
+            AXELAR_GATEWAYS[chainIds[i]] = axelarGateway[i];
+            AXELAR_CHAIN_IDS[chainIds[i]] = axelar_chainIds[i];
         }
 
         /// price feeds on all chains, for paymentHelper: chain => asset => priceFeed (against USD)
@@ -1533,27 +1627,27 @@ abstract contract BaseSetup is StdInvariant, Test {
             UNDERLYING_EXISTING_TOKENS;
 
         existingTokens[43_114]["DAI"] = 0xd586E7F844cEa2F87f50152665BCbc2C279D8d70;
-        existingTokens[43_114]["USDC"] = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
+        existingTokens[43_114]["USDC"] = address(0);
         existingTokens[43_114]["WETH"] = 0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB;
 
         existingTokens[42_161]["DAI"] = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
-        existingTokens[42_161]["USDC"] = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
+        existingTokens[42_161]["USDC"] = address(0);
         existingTokens[42_161]["WETH"] = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
 
         existingTokens[10]["DAI"] = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
-        existingTokens[10]["USDC"] = 0x7F5c764cBc14f9669B88837ca1490cCa17c31607;
+        existingTokens[10]["USDC"] = address(0);
         existingTokens[10]["WETH"] = 0x4200000000000000000000000000000000000006;
 
         existingTokens[1]["DAI"] = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-        existingTokens[1]["USDC"] = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+        existingTokens[1]["USDC"] = address(0);
         existingTokens[1]["WETH"] = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
         existingTokens[137]["DAI"] = 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063;
-        existingTokens[137]["USDC"] = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
+        existingTokens[137]["USDC"] = address(0);
         existingTokens[137]["WETH"] = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619;
 
         existingTokens[56]["DAI"] = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
-        existingTokens[56]["USDC"] = 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d;
+        existingTokens[56]["USDC"] = address(0);
         existingTokens[56]["WETH"] = address(0);
 
         existingTokens[8453]["DAI"] = 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb;
@@ -1561,7 +1655,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         existingTokens[8453]["WETH"] = address(0);
 
         existingTokens[250]["DAI"] = 0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E;
-        existingTokens[250]["USDC"] = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
+        existingTokens[250]["USDC"] = address(0);
         existingTokens[250]["WETH"] = address(0);
 
         mapping(
@@ -1570,10 +1664,10 @@ abstract contract BaseSetup is StdInvariant, Test {
                     uint32 formImplementationId
                         => mapping(string underlying => mapping(uint256 vaultKindIndex => address realVault))
                 )
-        ) storage existingVaults = REAL_VAULT_ADDRESS;
+            ) storage existingVaults = REAL_VAULT_ADDRESS;
 
         existingVaults[43_114][1]["DAI"][0] = 0x75A8cFB425f366e424259b114CaeE5f634C07124;
-        existingVaults[43_114][1]["USDC"][0] = 0xB4001622c02F1354A3CfF995b7DaA15b1d47B0fe;
+        existingVaults[43_114][1]["USDC"][0] = address(0);
         existingVaults[43_114][1]["WETH"][0] = 0x1a225008efffB6e07D01671127c9E40f6f787c8C;
 
         existingVaults[42_161][1]["DAI"][0] = address(0);
@@ -1581,19 +1675,19 @@ abstract contract BaseSetup is StdInvariant, Test {
         existingVaults[42_161][1]["WETH"][0] = 0xe4c2A17f38FEA3Dcb3bb59CEB0aC0267416806e2;
 
         existingVaults[1][1]["DAI"][0] = address(0);
-        existingVaults[1][1]["USDC"][0] = 0x6bAD6A9BcFdA3fd60Da6834aCe5F93B8cFed9598;
+        existingVaults[1][1]["USDC"][0] = address(0);
         existingVaults[1][1]["WETH"][0] = address(0);
 
         existingVaults[10][1]["DAI"][0] = address(0);
-        existingVaults[10][1]["USDC"][0] = 0x81C9A7B55A4df39A9B7B5F781ec0e53539694873;
+        existingVaults[10][1]["USDC"][0] = address(0);
         existingVaults[10][1]["WETH"][0] = 0xc4d4500326981eacD020e20A81b1c479c161c7EF;
 
         existingVaults[137][1]["DAI"][0] = 0x4A7CfE3ccE6E88479206Fefd7b4dcD738971e723;
-        existingVaults[137][1]["USDC"][0] = 0x277ba089b4CF2AF32589D98aA839Bf8c35A30Da3;
+        existingVaults[137][1]["USDC"][0] = address(0);
         existingVaults[137][1]["WETH"][0] = 0x0D0188268D0693e2494989dc3DA5e64F0D6BA972;
 
         existingVaults[56][1]["DAI"][0] = 0x6A354D50fC2476061F378390078e30F9782C5266;
-        existingVaults[56][1]["USDC"][0] = 0x32307B89a1c59Ea4EBaB1Fde6bD37b1139D06759;
+        existingVaults[56][1]["USDC"][0] = address(0);
         existingVaults[56][1]["WETH"][0] = address(0);
 
         existingVaults[8453][1]["DAI"][0] = 0x88510ced6F82eFd3ddc4599B72ad8ac2fF172043;
@@ -1601,7 +1695,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         existingVaults[8453][1]["WETH"][0] = address(0);
 
         existingVaults[250][1]["DAI"][0] = address(0);
-        existingVaults[250][1]["USDC"][0] = 0xd55C59Da5872DE866e39b1e3Af2065330ea8Acd6;
+        existingVaults[250][1]["USDC"][0] = address(0);
         existingVaults[250][1]["WETH"][0] = address(0);
     }
 

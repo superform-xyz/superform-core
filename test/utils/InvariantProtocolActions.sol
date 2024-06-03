@@ -580,7 +580,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         internalVars.endpoints = new address[](vars.nUniqueDsts);
         internalVars.endpointsV2 = new address[](vars.nUniqueDsts);
-        
+
         internalVars.lzChainIds = new uint16[](vars.nUniqueDsts);
         internalVars.lzChainIdsV2 = new uint32[](vars.nUniqueDsts);
 
@@ -598,7 +598,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
                     internalVars.endpoints[internalVars.k] = lzEndpoints[i];
                     internalVars.endpointsV2[internalVars.k] = lzV2Endpoint;
-                    
+
                     internalVars.lzChainIds[internalVars.k] = lz_chainIds[i];
                     internalVars.lzChainIdsV2[internalVars.k] = lz_v2_chainIds[i];
 
@@ -626,12 +626,9 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                 );
             }
 
-            if(vars.AMBs[index] == 6) {
+            if (vars.AMBs[index] == 6) {
                 LayerZeroV2Helper(getContract(vars.CHAIN_0, "LayerZeroV2Helper")).help(
-                   internalVars.endpointsV2,
-                    internalVars.lzChainIdsV2,
-                    internalVars.forkIds,
-                    vars.logs
+                    internalVars.endpointsV2, internalVars.lzChainIdsV2, internalVars.forkIds, vars.logs
                 );
             }
 
@@ -1716,13 +1713,11 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             }
 
             /// @notice ID: 6 Layerzero v2
-            if(AMBs[i] == 6) {
-               LayerZeroV2Helper(getContract(TO_CHAIN, "LayerZeroV2Helper")).help(
-                    lzV2Endpoint,
-                    FORKS[FROM_CHAIN],
-                    logs
-                ); 
-            } 
+            if (AMBs[i] == 6) {
+                LayerZeroV2Helper(getContract(TO_CHAIN, "LayerZeroV2Helper")).help(
+                    lzV2Endpoint, FORKS[FROM_CHAIN], logs
+                );
+            }
 
             /// @notice ID: 2 Hyperlane
             if (AMBs[i] == 2) {

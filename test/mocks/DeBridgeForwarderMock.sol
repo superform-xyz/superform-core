@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import "forge-std/Test.sol";
 
 /// Types Imports
-import "src/vendor/debridge/IDlnSource.sol";
+import "src/vendor/deBridge/IDlnSource.sol";
 import "./MockERC20.sol";
 
 /// @title DeBridge Forwarder Mock
@@ -49,11 +49,7 @@ contract DeBridgeForwarderMock is Test {
 
     function _bridge(InternalVars memory v) internal {
         vm.selectFork(v.toChainId);
-        deal(
-            _castToAddress(v.quote.takeTokenAddress),
-            _castToAddress(v.quote.receiverDst),
-            v.quote.takeAmount
-        );
+        deal(_castToAddress(v.quote.takeTokenAddress), _castToAddress(v.quote.receiverDst), v.quote.takeAmount);
 
         vm.selectFork(v.fromChainId);
     }

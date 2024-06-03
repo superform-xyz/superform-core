@@ -6,8 +6,8 @@ import { DeBridgeError } from "src/crosschain-liquidity/debridge/libraries/DeBri
 import "test/utils/ProtocolActions.sol";
 import "src/interfaces/IBridgeValidator.sol";
 import { DeBridgeValidator } from "src/crosschain-liquidity/debridge/DeBridgeValidator.sol";
-import { DlnOrderLib } from "src/vendor/debridge/DlnOrderLib.sol";
-import { IDlnSource } from "src/vendor/debridge/IDlnSource.sol";
+import { DlnOrderLib } from "src/vendor/deBridge/DlnOrderLib.sol";
+import { IDlnSource } from "src/vendor/deBridge/IDlnSource.sol";
 
 contract DeBridgeValidatorTest is ProtocolActions {
     address constant NATIVE = address(0); // native for de-bridge is address(0)

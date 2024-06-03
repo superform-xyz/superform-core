@@ -4,9 +4,9 @@ pragma solidity ^0.8.23;
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
 import { Error } from "src/libraries/Error.sol";
 import { DeBridgeError } from "src/crosschain-liquidity/debridge/libraries/DeBridgeError.sol";
-import { IDlnSource } from "src/vendor/debridge/IDlnSource.sol";
-import { DlnOrderLib } from "src/vendor/debridge/DlnOrderLib.sol";
-import { ICrossChainForwarder } from "src/vendor/debridge/ICrossChainForwarder.sol";
+import { IDlnSource } from "src/vendor/deBridge/IDlnSource.sol";
+import { DlnOrderLib } from "src/vendor/deBridge/DlnOrderLib.sol";
+import { ICrossChainForwarder } from "src/vendor/deBridge/ICrossChainForwarder.sol";
 
 /// @title DeBridgeForwarderValidator
 /// @dev Asserts if De-Bridge swap + bridge input txData is valid
