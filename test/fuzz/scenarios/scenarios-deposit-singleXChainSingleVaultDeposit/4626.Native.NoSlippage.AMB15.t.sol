@@ -12,7 +12,7 @@ contract SXSVDNormal4626NoNativeNoSlippageAMB15 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
         AMBs = [1, 5];
 
-        CHAIN_0 = OP;
+        CHAIN_0 = ARBI;
         DST_CHAINS = [POLY];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
