@@ -15,14 +15,14 @@ contract SXSVW5115NativeSlippageAMB23 is ProtocolActions {
         CHAIN_0 = POLY;
         DST_CHAINS = [OP];
 
-        /// @dev "SY wstETH" vault on optimism
+        /// @dev "SY wstETH" vault on optimism. The base input token selected here is 4 (wstETH), but could be another supported by the vault
         TARGET_UNDERLYINGS[OP][0] = [4];
 
         TARGET_VAULTS[OP][0] = [9];
 
         TARGET_FORM_KINDS[OP][0] = [3];
 
-        /// @dev define vaults amounts and slippage for every destination chain and for every action
+        /// @dev The base output token selected here is 4 (wstETH), but could be another supported by the vault
         TARGET_UNDERLYINGS[OP][1] = [4];
 
         TARGET_VAULTS[OP][1] = [9];

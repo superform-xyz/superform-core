@@ -9,6 +9,7 @@ import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
+import { IERC5115Form } from "src/forms/interfaces/IERC5115Form.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
@@ -1906,12 +1907,28 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vm.selectFork(FORKS[args.toChainId]);
         (address superform,,) = DataLib.getSuperform(args.superformId);
 
+        address vault = IBaseForm(superform).getVaultAddress();
+
+        bytes32 vaultFormImplementationCombination =
+            keccak256(abi.encode(getContract(args.toChainId, "ERC5115Form"), vault));
+        uint256 superformId = SuperformFactory(getContract(args.toChainId, "SuperformFactory"))
+            .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
+
+        uint256 expectedAmountOfShares;
+        /// if it is a 5115
+        if (superformId == args.superformId) {
+            expectedAmountOfShares = IERC5115Form(superform).previewDeposit(args.underlyingTokenDst, v.amount);
+        } else {
+            /// if anything else
+            expectedAmountOfShares = IBaseForm(superform).previewDepositTo(v.amount);
+        }
+
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
         /// vaults without resorting to extra args, just for withdraws)
         superformData = SingleVaultSFData(
             args.superformId,
             v.amount,
-            IBaseForm(superform).previewDepositTo(v.amount),
+            expectedAmountOfShares,
             args.maxSlippage,
             v.liqReq,
             v.permit2Calldata,

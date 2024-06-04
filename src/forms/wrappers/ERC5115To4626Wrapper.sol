@@ -14,27 +14,38 @@ contract ERC5115To4626Wrapper is IStandardizedYield {
     /// @dev if receiver is this contract
     error INVALID_RECEIVER();
 
+    /// @dev if mainTokenIn is not found in the tokensIn
+    error MAIN_TOKEN_IN_NOT_FOUND();
+
     //////////////////////////////////////////////////////////////
     //                      STORAGE                             //
     //////////////////////////////////////////////////////////////
 
     address public immutable vault;
+    address public immutable asset;
     address internal constant NATIVE = address(0);
 
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address vault_) {
+    constructor(address vault_, address mainTokenIn_) {
         vault = vault_;
-    }
 
-    //////////////////////////////////////////////////////////////
-    //                OVERRIDEN 4626 function                   //
-    //////////////////////////////////////////////////////////////
+        /// @dev make this check an internal function;
+        /// @dev mainTokenIn_ will be considered the underlying asset in terms of this vault
+        /// @notice has to be validated to be present in getTokenIn
+        address[] memory tokensIn = IStandardizedYield(vault).getTokensIn();
+        uint256 len = tokensIn.length;
+        for (uint256 i = 0; i < len; ++i) {
+            if (tokensIn[i] == mainTokenIn_) {
+                asset = mainTokenIn_;
 
-    function asset() external pure returns (address assetTokenAddress) {
-        return address(0xDEAD);
+                return;
+            } else if (i == len - 1) {
+                revert MAIN_TOKEN_IN_NOT_FOUND();
+            }
+        }
     }
 
     //////////////////////////////////////////////////////////////

@@ -70,8 +70,7 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         vars.expectedChainIds = new uint256[](chainIds.length * UNDERLYING_TOKENS.length);
 
         /// @dev removed 1 from vault kinds as it corresponds to 5115
-        uint256 expectedNumberOfSuperforms =
-            UNDERLYING_TOKENS.length * (VAULT_KINDS.length - 1) + NUMBER_OF_5115S[chainId];
+        uint256 expectedNumberOfSuperforms = 3 * (VAULT_KINDS.length - 1) + NUMBER_OF_5115S[chainId];
 
         assertEq(
             SuperformFactory(getContract(chainId, "SuperformFactory")).getSuperformCount(), expectedNumberOfSuperforms
