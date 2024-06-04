@@ -4,8 +4,6 @@ pragma solidity ^0.8.23;
 /// @dev lib imports
 import "forge-std/Test.sol";
 
-import "ds-test/test.sol";
-
 import { StdInvariant } from "forge-std/StdInvariant.sol";
 
 import { LayerZeroHelper } from "pigeon/layerzero/LayerZeroHelper.sol";
@@ -79,7 +77,7 @@ import "./TestTypes.sol";
 
 import "forge-std/console.sol";
 
-abstract contract BaseSetup is DSTest, StdInvariant, Test {
+abstract contract BaseSetup is StdInvariant, Test {
     /*//////////////////////////////////////////////////////////////
                         GENERAL VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -1487,7 +1485,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                     uint32 formImplementationId
                         => mapping(string underlying => mapping(uint256 vaultKindIndex => address realVault))
                 )
-            ) storage existingVaults = REAL_VAULT_ADDRESS;
+        ) storage existingVaults = REAL_VAULT_ADDRESS;
 
         existingVaults[43_114][1]["DAI"][0] = 0x75A8cFB425f366e424259b114CaeE5f634C07124;
         existingVaults[43_114][1]["USDC"][0] = 0xB4001622c02F1354A3CfF995b7DaA15b1d47B0fe;
