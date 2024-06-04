@@ -24,6 +24,7 @@ abstract contract MainnetBaseSetup is BaseSetup {
     address public ownerAddress;
 
     address public EMERGENCY_ADMIN = 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490;
+    address public REWARDS_ADMIN = 0xf82F3D7Df94FC2994315c32322DA6238cA2A2f7f;
 
     address[] public PROTOCOL_ADMINS = [
         0xd26b38a64C812403fD3F87717624C80852cD6D61,
@@ -176,6 +177,10 @@ abstract contract MainnetBaseSetup is BaseSetup {
         /// @dev 14  vault claimer
         contracts[chainId][bytes32(bytes("VaultClaimer"))] =
             _readContract(chainNames[trueIndex], chainId, "VaultClaimer");
+
+        /// @dev 15  rewards distributor
+        contracts[chainId][bytes32(bytes("RewardsDistributor"))] =
+            _readContract(chainNames[trueIndex], chainId, "RewardsDistributor");
     }
 
     function _readContract(
