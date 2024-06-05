@@ -33,10 +33,10 @@ contract OneInchMock is Test {
 
         /// @dev if protocol is uniswap v2 or uniswap v3
         if (protocol == ProtocolLib.Protocol.UniswapV2 || protocol == ProtocolLib.Protocol.UniswapV3) {
-            toToken = IUniswapV2Pair(dex.get()).token0();
+            toToken = IUniswapPair(dex.get()).token0();
 
             if (toToken == fromToken) {
-                toToken = IUniswapV2Pair(dex.get()).token1();
+                toToken = IUniswapPair(dex.get()).token1();
             }
         }
         /// @dev if protocol is curve
@@ -53,7 +53,7 @@ contract OneInchMock is Test {
         } else if (toDecimal > fromDecimal) {
             minReturn = minReturn * 10 ** (toDecimal - fromDecimal);
         }
-        
+
         deal(toToken, receiver, minReturn);
     }
 }

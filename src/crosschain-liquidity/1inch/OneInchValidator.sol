@@ -6,11 +6,13 @@ import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { Error } from "src/libraries/Error.sol";
 import "src/vendor/1inch/IAggregationRouterV6.sol";
 
+import "forge-std/console.sol";
+
 /// @title OneInchValidator
 /// @dev Asserts OneInch txData is valid
 /// @author Zeropoint Labs
 
-/// @notice this does not import BridgeValidator as decodeSwapOutpuToken cannot have `pure` as visibility identifier
+/// @notice this does not import BridgeValidator as decodeSwapOutputToken cannot have `pure` as visibility identifier
 contract OneInchValidator {
     using AddressLib for Address;
     using ProtocolLib for Address;
@@ -19,9 +21,15 @@ contract OneInchValidator {
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
     ISuperRegistry public immutable superRegistry;
+    address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     //////////////////////////////////////////////////////////////
-    //                      CONSTRUCTOR                         //
+    //                         ERROR                            //
+    //////////////////////////////////////////////////////////////
+    error INVALID_TOKEN_PAIR();
+
+    //////////////////////////////////////////////////////////////
+    //                        CONSTRUCTOR                       //
     //////////////////////////////////////////////////////////////
 
     constructor(address superRegistry_) {
@@ -113,7 +121,7 @@ contract OneInchValidator {
         bytes4 selector = bytes4(txData_[:4]);
 
         /// @dev does not support any sequential pools with unoswap
-        /// NOTE: support UNISWAP_V2, UNISWAP_V3, CURVE, SHIBASWAP
+        /// NOTE: support UNISWAP_V2, UNISWAP_V3, CURVE and all uniswap-based forks
         if (selector == IAggregationRouterV6.unoswapTo.selector) {
             (Address receiverUint256, Address fromTokenUint256, uint256 decodedFromAmount,, Address dex) =
                 abi.decode(_parseCallData(txData_), (Address, Address, uint256, uint256, Address));
@@ -126,16 +134,26 @@ contract OneInchValidator {
 
             /// @dev if protocol is uniswap v2 or uniswap v3
             if (protocol == ProtocolLib.Protocol.UniswapV2 || protocol == ProtocolLib.Protocol.UniswapV3) {
-                toToken = IUniswapV2Pair(dex.get()).token0();
+                address token0 = IUniswapPair(dex.get()).token0();
+                address token1 = IUniswapPair(dex.get()).token1();
 
-                if (toToken == fromToken) {
-                    toToken = IUniswapV2Pair(dex.get()).token1();
+                if (token0 == fromToken) {
+                    toToken = token1;
+                } else if (token1 == fromToken) {
+                    toToken = token0;
+                } else {
+                    revert INVALID_TOKEN_PAIR();
                 }
             }
             /// @dev if protocol is curve
             else if (protocol == ProtocolLib.Protocol.Curve) {
                 uint256 toTokenIndex = (Address.unwrap(dex) >> _CURVE_TO_COINS_ARG_OFFSET) & _CURVE_TO_COINS_ARG_MASK;
                 toToken = ICurvePool(dex.get()).underlying_coins(int128(uint128(toTokenIndex)));
+            }
+
+            /// @dev remap of WETH to Native if unwrapWeth flag is true
+            if (dex.shouldUnwrapWeth()) {
+                toToken = NATIVE;
             }
         }
         /// @dev decodes the generic router call

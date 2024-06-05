@@ -91,7 +91,7 @@ library ProtocolLib {
 }
 
 /// @dev imported from https://docs.uniswap.org/contracts/v2/reference/smart-contracts/pair#token1
-interface IUniswapV2Pair {
+interface IUniswapPair {
     function token0() external view returns (address);
     function token1() external view returns (address);
 }

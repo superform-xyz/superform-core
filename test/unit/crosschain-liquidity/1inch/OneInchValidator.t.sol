@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import { Error } from "src/libraries/Error.sol";
 import "test/utils/ProtocolActions.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
+import { OneInchMock } from "test/mocks/OneInchMock.sol";
 
 contract OneInchValidatorTest is ProtocolActions {
     OneInchValidator validator;
@@ -255,5 +256,29 @@ contract OneInchValidatorTest is ProtocolActions {
 
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
         validator.validateTxData(args);
+    }
+
+    function test_decodeTxData_invalidTokenPair() public {
+        // Encode the txData with the mock Uniswap pair address and an invalid token
+        bytes memory txData = abi.encodeWithSelector(
+            OneInchMock.unoswapTo.selector,
+            uint256(uint160(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48)),
+            uint256(uint160(address(420))),
+            1e6,
+            1e18,
+            uint256(uint160(address(0x3041CbD36888bECc7bbCBc0045E3B1f144466f5f)))
+        );
+
+        vm.expectRevert(abi.encodeWithSelector(OneInchValidator.INVALID_TOKEN_PAIR.selector));
+        validator.validateReceiver(txData, address(this));
+    }
+
+    function test_decodeTxData_nativeToken() public {
+        /// @dev generated txData from
+        /// https://api.1inch.dev/swap/v6.0/1/swap?src=0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48&dst=0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee&amount=1000000&from=0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92&origin=0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92&slippage=10&protocols=UNISWAP_V2&includeTokensInfo=true&includeProtocols=true&receiver=0x8f340f5B24da38216834AaFDB61ACa747D217a92&allowPartialFill=false&disableEstimate=true&usePermit2=false
+        bytes memory txData =
+            hex"e2c95c820000000000000000000000008f340f5b24da38216834aafdb61aca747d217a92000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb4800000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000000d6453d3697bb18800000000000003b6d0340b4e16d0168e52d35cacd2c6185b44281ec28c9dc8a2be008";
+
+        assertEq(validator.decodeSwapOutputToken(txData), 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
     }
 }
