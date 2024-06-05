@@ -129,6 +129,12 @@ contract LiFiMock is Test {
         decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
         vm.selectFork(toForkId_);
         decimal2 = outputToken == NATIVE ? 18 : MockERC20(outputToken).decimals();
+        console.log("inputToken", inputToken_);
+        console.log("outputToken", outputToken);
+        console.log("decimal1", decimal1);
+        console.log("decimal2", decimal2);
+        console.log("USDPerUnderlyingToken", USDPerUnderlyingToken); // ETH DAI
+        console.log("USDPerUnderlyingTokenDst", USDPerUnderlyingTokenDst); // AVAX USDC or AVAX WETH
 
         if (decimal1 > decimal2) {
             finalAmount =
@@ -181,6 +187,8 @@ contract LiFiMock is Test {
         console.log("outputToken", outputToken_);
         console.log("decimal1", decimal1);
         console.log("decimal2", decimal2);
+        console.log("USDPerExternalToken", USDPerExternalToken);
+        console.log("USDPerUnderlyingToken", USDPerUnderlyingToken);
 
         console.log("amount pre-swap", amount_);
         /// @dev the results of this amount if there is a bridge are effectively ignored

@@ -15,9 +15,11 @@ import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol"
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ReentrancyGuard } from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 
+import "forge-std/console.sol";
 /// @title DstSwapper
 /// @dev Handles all destination chain swaps
 /// @author Zeropoint Labs
+
 contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
     using SafeERC20 for IERC20;
 
@@ -373,7 +375,8 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
         }
 
         v.balanceDiff = v.balanceAfter - v.balanceBefore;
-
+        console.log("balance diff", v.balanceDiff);
+        console.log("exp amount", v.expAmount);
         /// @dev if actual underlying is less than expAmount adjusted with maxSlippage, invariant breaks
         if (v.balanceDiff * ENTIRE_SLIPPAGE < v.expAmount * (ENTIRE_SLIPPAGE - v.maxSlippage)) {
             revert Error.SLIPPAGE_OUT_OF_BOUNDS();
