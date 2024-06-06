@@ -240,8 +240,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                         vars.chainDstIndex,
                         action.dstSwap,
                         action.action,
-                        action.slippage,
-                        new bool[](0)
+                        action.slippage
                     ),
                     action.action
                 );
@@ -291,7 +290,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     /// @dev these are just the originating and dst chain ids casted to uint256 (the liquidity bridge
                     /// chain ids)
                     action.dstSwap,
-                    false,
                     action.slippage
                 );
 
@@ -909,7 +907,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                 args.liquidityBridgeSrcChainId,
                 uint256(args.toChainId),
                 args.dstSwap,
-                false,
                 args.slippage
             );
 
@@ -958,7 +955,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             users[args.user],
             users[args.user],
             /// @dev repeat user for receiverAddressSP - not testing AA here
-            abi.encode(false)
+            ""
         );
     }
 
@@ -1174,7 +1171,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             users[args.user],
             users[args.user],
             /// @dev repeat user for receiverAddressSP - not testing AA here
-            abi.encode(false)
+            ""
         );
         vm.selectFork(v.initialFork);
     }
@@ -1289,7 +1286,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             args.receive4626,
             users[args.user],
             users[args.user],
-            abi.encode(false)
+            ""
         );
 
         vm.selectFork(initialFork);
