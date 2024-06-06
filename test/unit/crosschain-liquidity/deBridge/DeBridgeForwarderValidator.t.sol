@@ -626,6 +626,77 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
         assertTrue(isValidReceiver);
     }
 
+    function test_decodeTxData_invalidSwapPermitEnvelope() public {
+        address receiver = getContract(BSC, "CoreStateRegistry");
+        bytes memory txDataWithInvalidSwapPermitEnvelope = abi.encodeWithSelector(
+            DeBridgeForwarderMock.strictlySwapAndCall.selector,
+            address(420),
+            1e6,
+            abi.encode("invalid-swap-permit-envelope"),
+            // src swap router
+            SWAP_ROUTER,
+            /// src swap calldata
+            bytes(""),
+            address(421),
+            /// src token expected amount
+            1e6,
+            /// src token refund recipient
+            receiver,
+            /// de bridge target
+            DE_BRIDGE_SOURCE,
+            bytes("")
+        );
+
+        vm.expectRevert(DeBridgeError.INVALID_SWAP_PERMIT_ENVELOP.selector);
+        validator.validateReceiver(txDataWithInvalidSwapPermitEnvelope, receiver);
+    }
+
+    function test_validateTxData_invalidBridgeToken() public {
+        address receiver = getContract(BSC, "CoreStateRegistry");
+        address invalidBridgeToken = address(420);
+
+        bytes memory targetTxData = abi.encodeWithSelector(
+            DeBridgeMock.createSaltedOrder.selector,
+            DlnOrderLib.OrderCreation({
+                giveAmount: 100,
+                giveTokenAddress: address(421), // Invalid bridge token
+                takeAmount: 200,
+                takeTokenAddress: abi.encodePacked(address(1)),
+                receiverDst: abi.encodePacked(receiver),
+                orderAuthorityAddressDst: abi.encodePacked(deployer),
+                externalCall: new bytes(0),
+                allowedCancelBeneficiarySrc: abi.encodePacked(receiver),
+                takeChainId: uint256(BSC),
+                givePatchAuthoritySrc: address(receiver),
+                allowedTakerDst: bytes("")
+            }),
+            uint64(block.timestamp),
+            bytes(""),
+            uint32(0),
+            bytes(""),
+            bytes("")
+        );
+
+        bytes memory txData = _buildDummyDeBridgeTxData(
+            invalidBridgeToken, 100, receiver, invalidBridgeToken, ETH, BSC, bytes(""), targetTxData
+        );
+
+        vm.expectRevert(DeBridgeError.INVALID_BRIDGE_TOKEN.selector);
+        validator.validateTxData(
+            IBridgeValidator.ValidateTxDataArgs({
+                txData: txData,
+                srcChainId: ETH,
+                dstChainId: BSC,
+                liqDstChainId: BSC,
+                deposit: false,
+                superform: address(420),
+                receiverAddress: receiver,
+                liqDataToken: invalidBridgeToken,
+                liqDataInterimToken: invalidBridgeToken
+            })
+        );
+    }
+
     function _buildDummyDeBridgeTxData(
         address _inputToken,
         uint256 _inputAmount,
