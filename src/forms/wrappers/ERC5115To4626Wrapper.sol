@@ -1,11 +1,12 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.17;
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity ^0.8.23;
 
+import { IERC5115To4626Wrapper } from "../interfaces/IERC5115To4626Wrapper.sol";
 import { IStandardizedYield } from "src/vendor/pendle/IStandardizedYield.sol";
 import { IERC20Metadata, IERC20 } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract ERC5115To4626Wrapper is IStandardizedYield {
+contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
     using SafeERC20 for IERC20;
     //////////////////////////////////////////////////////////////
     //                      ERRORS                              //
@@ -14,8 +15,11 @@ contract ERC5115To4626Wrapper is IStandardizedYield {
     /// @dev if receiver is this contract
     error INVALID_RECEIVER();
 
-    /// @dev if mainTokenIn is not found in the tokensIn
+    /// @dev if asset is not found in the tokensIn
     error MAIN_TOKEN_IN_NOT_FOUND();
+
+    /// @dev if asset is not found in the tokensOut
+    error MAIN_TOKEN_OUT_NOT_FOUND();
 
     //////////////////////////////////////////////////////////////
     //                      STORAGE                             //
@@ -24,6 +28,53 @@ contract ERC5115To4626Wrapper is IStandardizedYield {
     address public immutable vault;
     address public immutable asset;
     address internal constant NATIVE = address(0);
+
+    //////////////////////////////////////////////////////////////
+    //                      MODIFIER                         //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev these modifiers help protect against undesired changes of tokenIn or out
+    modifier validateTokenIn() {
+        bool valid;
+        try this.isValidTokenIn(asset) returns (bool res) {
+            valid = res;
+        } catch {
+            address[] memory tokensIn = this.getTokensIn();
+            uint256 len = tokensIn.length;
+            for (uint256 i = 0; i < len; ++i) {
+                if (tokensIn[i] == asset) {
+                    valid = true;
+                    break;
+                } else if (i == len - 1) {
+                    valid = false;
+                }
+            }
+        }
+
+        if (!valid) revert MAIN_TOKEN_IN_NOT_FOUND();
+        _;
+    }
+
+    modifier validateTokenOut() {
+        bool valid;
+        try this.isValidTokenOut(asset) returns (bool res) {
+            valid = res;
+        } catch {
+            address[] memory tokensOut = this.getTokensOut();
+            uint256 len = tokensOut.length;
+            for (uint256 i = 0; i < len; ++i) {
+                if (tokensOut[i] == asset) {
+                    valid = true;
+                    break;
+                } else if (i == len - 1) {
+                    valid = false;
+                }
+            }
+        }
+
+        if (!valid) revert MAIN_TOKEN_OUT_NOT_FOUND();
+        _;
+    }
 
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
@@ -49,6 +100,20 @@ contract ERC5115To4626Wrapper is IStandardizedYield {
     }
 
     //////////////////////////////////////////////////////////////
+    //            5115To4626Wrapper Get Functions               //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc IERC5115To4626Wrapper
+    function getUnderlying5115Vault() external view returns (address) {
+        return vault;
+    }
+
+    /// @inheritdoc IERC5115To4626Wrapper
+    function getMainTokenIn() external view returns (address) {
+        return asset;
+    }
+
+    //////////////////////////////////////////////////////////////
     //                    5115 Implementation                   //
     //////////////////////////////////////////////////////////////
 
@@ -61,6 +126,7 @@ contract ERC5115To4626Wrapper is IStandardizedYield {
     )
         external
         payable
+        validateTokenIn
         returns (uint256 amountSharesOut)
     {
         /// @dev receiver cannot be this wrapper contract
@@ -93,6 +159,7 @@ contract ERC5115To4626Wrapper is IStandardizedYield {
         bool /*burnFromInternalBalance*/
     )
         external
+        validateTokenOut
         returns (uint256 amountTokenOut)
     {
         /// @dev receiver cannot be this wrapper contract
@@ -141,22 +208,22 @@ contract ERC5115To4626Wrapper is IStandardizedYield {
     }
 
     /// @inheritdoc IStandardizedYield
-    function getTokensIn() external view returns (address[] memory res) {
+    function getTokensIn() public view returns (address[] memory res) {
         return IStandardizedYield(vault).getTokensIn();
     }
 
     /// @inheritdoc IStandardizedYield
-    function getTokensOut() external view returns (address[] memory res) {
+    function getTokensOut() public view returns (address[] memory res) {
         return IStandardizedYield(vault).getTokensOut();
     }
 
     /// @inheritdoc IStandardizedYield
-    function isValidTokenIn(address token) external view returns (bool) {
+    function isValidTokenIn(address token) public view returns (bool) {
         return IStandardizedYield(vault).isValidTokenIn(token);
     }
 
     /// @inheritdoc IStandardizedYield
-    function isValidTokenOut(address token) external view returns (bool) {
+    function isValidTokenOut(address token) public view returns (bool) {
         return IStandardizedYield(vault).isValidTokenOut(token);
     }
 

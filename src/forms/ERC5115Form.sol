@@ -12,9 +12,11 @@ import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IStandardizedYield } from "src/vendor/pendle/IStandardizedYield.sol";
+import { IERC5115To4626Wrapper } from "src/forms/interfaces/IERC5115To4626Wrapper.sol";
 
 /// @title ERC5115Form
 /// @dev The Form implementation for ERC5115 vaults
+/// @notice vault variable refers to the wrapper address, not to the underlying 5115
 /// @notice Reference implementation of a vault:
 /// https://github.com/pendle-finance/pendle-core-v2-public/blob/main/contracts/core/StandardizedYield/SYBase.sol
 /// @author Zeropoint Labs
@@ -110,17 +112,17 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
 
     /// @inheritdoc BaseForm
     function getVaultShareBalance() public view virtual override returns (uint256) {
-        return IStandardizedYield(vault).balanceOf(address(this));
+        return IStandardizedYield(IERC5115To4626Wrapper(vault).getUnderlying5115Vault()).balanceOf(address(this));
     }
 
     /// @inheritdoc BaseForm
     function getTotalAssets() public view virtual override returns (uint256) {
-        return 0;
+        return IERC20Metadata(asset).balanceOf(IERC5115To4626Wrapper(vault).getUnderlying5115Vault());
     }
 
     /// @inheritdoc BaseForm
     function getTotalSupply() public view virtual override returns (uint256) {
-        return IERC20Metadata(vault).totalSupply();
+        return IERC20Metadata(IERC5115To4626Wrapper(vault).getUnderlying5115Vault()).totalSupply();
     }
 
     /// @inheritdoc BaseForm
@@ -129,8 +131,8 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     }
 
     /// @inheritdoc BaseForm
-    function previewDepositTo(uint256 /*assets_*/ ) public view virtual override returns (uint256) {
-        return 0;
+    function previewDepositTo(uint256 assets_) public view virtual override returns (uint256) {
+        return IStandardizedYield(vault).previewDeposit(asset, assets_);
     }
 
     /// @inheritdoc BaseForm
@@ -139,8 +141,8 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     }
 
     /// @inheritdoc BaseForm
-    function previewRedeemFrom(uint256 /*shares_*/ ) public view virtual override returns (uint256) {
-        return 0;
+    function previewRedeemFrom(uint256 shares_) public view virtual override returns (uint256) {
+        return IStandardizedYield(vault).previewRedeem(asset, shares_);
     }
 
     /// @inheritdoc BaseForm
@@ -216,32 +218,6 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
                 balances[i] = address(vault).balance;
             }
         }
-    }
-
-    /// @inheritdoc IERC5115Form
-    function previewDeposit(
-        address tokenIn,
-        uint256 amountTokenToDeposit
-    )
-        public
-        view
-        virtual
-        returns (uint256 amountSharesOut)
-    {
-        amountSharesOut = IStandardizedYield(vault).previewDeposit(tokenIn, amountTokenToDeposit);
-    }
-
-    /// @inheritdoc IERC5115Form
-    function previewRedeem(
-        address tokenOut,
-        uint256 amountSharesToRedeem
-    )
-        public
-        view
-        virtual
-        returns (uint256 amountTokenOut)
-    {
-        amountTokenOut = IStandardizedYield(vault).previewRedeem(tokenOut, amountSharesToRedeem);
     }
 
     /// @inheritdoc IERC5115Form

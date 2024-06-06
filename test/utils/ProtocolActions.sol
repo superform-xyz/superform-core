@@ -1927,12 +1927,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         v.is5115 = v.superformId == args.superformId;
 
-        if (v.is5115) {
-            v.expectedAmountOfShares = IERC5115Form(v.superform).previewDeposit(args.underlyingTokenDst, v.amount);
-        } else {
-            /// if anything else
-            v.expectedAmountOfShares = IBaseForm(v.superform).previewDepositTo(v.amount);
-        }
+        v.expectedAmountOfShares = IBaseForm(v.superform).previewDepositTo(v.amount);
 
         if (!multiVault) {
             /// @dev this data contains in each slot: empty bytes, superformId for this vault for validation, the token
@@ -2851,8 +2846,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint256[] memory superformIds,
         uint256[] memory amountsToAssert,
         bool[] memory partialWithdrawVaults,
-        bool isWithdraw,
-        address[] memory underlyingTokenDst
+        bool isWithdraw
     )
         internal
     {
@@ -2874,6 +2868,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             vm.selectFork(FORKS[chainId]);
             v.decimal1 = ERC4626Form(payable(superform)).getVaultDecimals();
             v.decimal2 = MockERC20(ERC4626Form(payable(superform)).getVaultAsset()).decimals();
+
             v.assertAmnt = amountsToAssert[i];
 
             if (!isWithdraw) {

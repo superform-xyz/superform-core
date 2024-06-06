@@ -29,22 +29,6 @@ interface IERC5115Form {
 
     function getTokensOutBalance() external view returns (address[] memory tokensOut, uint256[] memory balances);
 
-    function previewDeposit(
-        address tokenIn,
-        uint256 amountTokenToDeposit
-    )
-        external
-        view
-        returns (uint256 amountSharesOut);
-
-    function previewRedeem(
-        address tokenOut,
-        uint256 amountSharesToRedeem
-    )
-        external
-        view
-        returns (uint256 amountTokenOut);
-
     function getAssetInfo()
         external
         view
