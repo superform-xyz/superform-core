@@ -378,12 +378,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
             vars.lzEndpoints_1[i] = LZ_ENDPOINTS[DST_CHAINS[i]];
             /// @dev first the superformIds are obtained, together with token addresses for src and dst, vault addresses
             /// and information about vaults with partial withdraws (for assertions)
-            (
-                vars.targetSuperformIds,
-                vars.underlyingSrcToken,
-                vars.underlyingDstToken,
-                vars.vaultMock
-            ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
+            (vars.targetSuperformIds, vars.underlyingSrcToken, vars.underlyingDstToken, vars.vaultMock) =
+                _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
 
             vars.toDst = new address[](vars.targetSuperformIds.length);
 
@@ -494,7 +490,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     action.action == Actions.Deposit || action.action == Actions.DepositPermit2
                         || action.action == Actions.RescueFailedDeposit
                 ) {
-                    singleSuperformsData[i] = _buildSingleVaultDepositCallData(singleVaultCallDataArgs, action.action);
+                    (singleSuperformsData[i],) =
+                        _buildSingleVaultDepositCallData(singleVaultCallDataArgs, action.action, false);
                 } else {
                     singleSuperformsData[i] = _buildSingleVaultWithdrawCallData(singleVaultCallDataArgs);
                 }
@@ -1575,6 +1572,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
         bytes sig;
         bytes permit2data;
         uint256 totalAmount;
+        bytes tokenInfo;
+        address tokenInInfo;
     }
 
     /// @dev this internal function just loops over _buildSingleVaultDepositCallData or
@@ -1599,6 +1598,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         if (len == 0) revert LEN_MISMATCH();
         uint256[] memory finalAmounts = new uint256[](len);
         uint256[] memory maxSlippageTemp = new uint256[](len);
+
         address uniqueInterimToken;
         for (uint256 i = 0; i < len; ++i) {
             finalAmounts[i] = args.amounts[i];
@@ -1648,7 +1648,12 @@ abstract contract ProtocolActions is CommonProtocolActions {
             );
 
             if (args.action == Actions.Deposit || args.action == Actions.DepositPermit2) {
-                superformData = _buildSingleVaultDepositCallData(callDataArgs, args.action);
+                (superformData, v.tokenInInfo) = _buildSingleVaultDepositCallData(callDataArgs, args.action, true);
+                /// @dev first loop
+                /// decode (nVaults, bytes) (check what's encoded in MultiVaultSFData)
+                /// initiate nVaults loop
+                /// decode (bytes, uint256, address) - take address and if different than 0 and id corresponds
+                v.tokenInfo = abi.encode(v.tokenInfo, args.superformIds[i], v.tokenInInfo);
             } else if (args.action == Actions.Withdraw) {
                 superformData = _buildSingleVaultWithdrawCallData(callDataArgs);
             }
@@ -1693,7 +1698,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             users[args.user],
             users[args.user],
             /// @dev repeat user for receiverAddressSP - not testing AA here
-            ""
+            abi.encode(args.superformIds.length, v.tokenInfo)
         );
     }
 
@@ -1721,14 +1726,17 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint256 superformId;
         uint256 expectedAmountOfShares;
         bool is5115;
+        bytes extra5115Data;
+        bytes extraFormData;
     }
 
     function _buildSingleVaultDepositCallData(
         SingleVaultCallDataArgs memory args,
-        Actions action
+        Actions action,
+        bool multiVault
     )
         internal
-        returns (SingleVaultSFData memory superformData)
+        returns (SingleVaultSFData memory superformData, address tokenInInfo)
     {
         SingleVaultDepositLocalVars memory v;
         v.initialFork = vm.activeFork();
@@ -1926,14 +1934,24 @@ abstract contract ProtocolActions is CommonProtocolActions {
             /// if anything else
             v.expectedAmountOfShares = IBaseForm(v.superform).previewDepositTo(v.amount);
         }
-        address tokenIn = ERC5115S_CHOSEN_ASSET_IN[args.toChainId][v.vault];
-        console.log("superform", v.superform);
-        console.log("args.underlyingTokenDst", args.underlyingTokenDst);
 
-        console.log("tokenIn", tokenIn);
-        console.log("args.toChainId", args.toChainId);
-        console.log("v.vault", v.vault);
+        if (!multiVault) {
+            /// @dev this data contains in each slot: empty bytes, superformId for this vault for validation, the token
+            /// In
+            if (v.is5115) {
+                v.extra5115Data = abi.encode("", args.superformId, args.underlyingTokenDst);
+            } else {
+                v.extra5115Data = abi.encode("", args.superformId, address(0));
+            }
 
+            /// @dev this is the final extraFormData in case of single vaults
+            v.extraFormData = abi.encode(1, v.extra5115Data);
+        } else {
+            /// @dev in multiVaultsCase, nothing needs to be send in singleVaultSFData extraData because it is ignored
+            if (v.is5115) {
+                tokenInInfo = args.underlyingTokenDst;
+            }
+        }
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
         /// vaults without resorting to extra args, just for withdraws)
         superformData = SingleVaultSFData(
@@ -1949,7 +1967,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             users[args.user],
             /// @dev repeat user for receiverAddressSP - not testing AA here
             /// @dev encode vault token in for 5115
-            abi.encode(v.is5115 ? ERC5115S_CHOSEN_ASSET_IN[args.toChainId][v.vault] : address(0))
+            v.extraFormData
         );
 
         vm.selectFork(v.initialFork);
@@ -2109,7 +2127,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         vars.vaultIds = TARGET_VAULTS[chain1][action];
         vars.formKinds = TARGET_FORM_KINDS[chain1][action];
-
 
         /// @dev constructs superFormIds from provided input info
         vars.superformIdsTemp = _superformIds(vars.underlyingTokens, vars.vaultIds, vars.formKinds, chain1);

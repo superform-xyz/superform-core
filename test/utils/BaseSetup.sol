@@ -857,13 +857,13 @@ abstract contract BaseSetup is StdInvariant, Test {
             if (NUMBER_OF_5115S[vars.chainId] > 0) {
                 for (uint256 j = 0; j < NUMBER_OF_5115S[vars.chainId]; ++j) {
                     address assetIn = ERC5115S_CHOSEN_ASSET_IN[vars.chainId][ERC5115_VAULTS[vars.chainId][j]];
-                    address new5115WrapperVault = address(new ERC5115To4626Wrapper{ salt: salt }(
-                        ERC5115_VAULTS[vars.chainId][j],
-                        ERC5115S_CHOSEN_ASSET_IN[vars.chainId][ERC5115_VAULTS[vars.chainId][j]]
-                    ));
+                    address new5115WrapperVault = address(
+                        new ERC5115To4626Wrapper{ salt: salt }(
+                            ERC5115_VAULTS[vars.chainId][j],
+                            ERC5115S_CHOSEN_ASSET_IN[vars.chainId][ERC5115_VAULTS[vars.chainId][j]]
+                        )
+                    );
 
-                    /// link asset in of real vault to wrapper vault
-                    ERC5115S_CHOSEN_ASSET_IN[vars.chainId][new5115WrapperVault] = assetIn;
                     wrapped5115vaults[vars.chainId].push(new5115WrapperVault);
                 }
             }
