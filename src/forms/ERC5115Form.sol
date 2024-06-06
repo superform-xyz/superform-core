@@ -641,17 +641,22 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
 
         uint256 sharesBalanceBefore = v.balanceOf(sharesReceiver);
 
-        uint256 minSharesOut = singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage);
-
         if (!isValidTokenIn(vaultTokenIn_)) {
             revert INVALID_TOKEN_IN();
         }
 
-        shares = v.deposit(sharesReceiver, vaultTokenIn_, assetDifference_, minSharesOut);
+        /// @dev WARNING: validate if minSharesOut can be outputAmount (the result of previewDeposit)
+        shares = v.deposit(sharesReceiver, vaultTokenIn_, assetDifference_, singleVaultData_.outputAmount);
 
         uint256 sharesBalanceAfter = v.balanceOf(sharesReceiver);
 
-        if ((sharesBalanceAfter - sharesBalanceBefore != shares) || (ENTIRE_SLIPPAGE * shares < minSharesOut)) {
+        if (
+            (sharesBalanceAfter - sharesBalanceBefore != shares)
+                || (
+                    ENTIRE_SLIPPAGE * shares
+                        < singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)
+                )
+        ) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
     }
@@ -669,17 +674,22 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
 
         uint256 assetsBalanceBefore = IERC20(vaultTokenOut_).balanceOf(assetsReceiver);
 
-        uint256 minTokenOut = singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage);
-
         if (!isValidTokenOut(vaultTokenOut_)) {
             revert INVALID_TOKEN_OUT();
         }
 
-        assets = v_.redeem(assetsReceiver, singleVaultData_.amount, vaultTokenOut_, minTokenOut, false);
+        assets =
+            v_.redeem(assetsReceiver, singleVaultData_.amount, vaultTokenOut_, singleVaultData_.outputAmount, false);
 
         uint256 assetsBalanceAfter = IERC20(vaultTokenOut_).balanceOf(assetsReceiver);
 
-        if ((assetsBalanceAfter - assetsBalanceBefore != assets) || (ENTIRE_SLIPPAGE * assets < minTokenOut)) {
+        if (
+            (assetsBalanceAfter - assetsBalanceBefore != assets)
+                || (
+                    ENTIRE_SLIPPAGE * assets
+                        < singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)
+                )
+        ) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
 

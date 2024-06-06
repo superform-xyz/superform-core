@@ -1927,7 +1927,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         v.is5115 = v.superformId == args.superformId;
 
-        /// if it is a 5115
         if (v.is5115) {
             v.expectedAmountOfShares = IERC5115Form(v.superform).previewDeposit(args.underlyingTokenDst, v.amount);
         } else {
@@ -1952,6 +1951,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 tokenInInfo = args.underlyingTokenDst;
             }
         }
+
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
         /// vaults without resorting to extra args, just for withdraws)
         superformData = SingleVaultSFData(
@@ -2851,7 +2851,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint256[] memory superformIds,
         uint256[] memory amountsToAssert,
         bool[] memory partialWithdrawVaults,
-        bool isWithdraw
+        bool isWithdraw,
+        address[] memory underlyingTokenDst
     )
         internal
     {
