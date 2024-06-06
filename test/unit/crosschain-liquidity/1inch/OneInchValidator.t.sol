@@ -2,9 +2,11 @@
 pragma solidity ^0.8.23;
 
 import { Error } from "src/libraries/Error.sol";
-import "test/utils/ProtocolActions.sol";
+import { ProtocolActions, OneInchValidator } from "test/utils/ProtocolActions.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 import { OneInchMock } from "test/mocks/OneInchMock.sol";
+
+import { IAggregationRouterV6, IAggregationExecutor, IERC20 } from "src/vendor/1inch/IAggregationRouterV6.sol";
 
 contract OneInchValidatorTest is ProtocolActions {
     OneInchValidator validator;
@@ -280,5 +282,44 @@ contract OneInchValidatorTest is ProtocolActions {
             hex"e2c95c820000000000000000000000008f340f5b24da38216834aafdb61aca747d217a92000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb4800000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000000d6453d3697bb18800000000000003b6d0340b4e16d0168e52d35cacd2c6185b44281ec28c9dc8a2be008";
 
         assertEq(validator.decodeSwapOutputToken(txData), 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
+    }
+
+    function test_decodeTxData_invalidPermit() public {
+        /// @dev generated txData from
+        /// https://api.1inch.dev/swap/v6.0/1/swap?src=0xdac17f958d2ee523a2206206994597c13d831ec7&dst=0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48&amount=10000000&from=0xa195608C2306A26f727d5199D5A382a4508308DA&origin=0xa195608C2306A26f727d5199D5A382a4508308DA&slippage=10&receiver=0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92&allowPartialFill=false&disableEstimate=true&usePermit2=true
+        bytes memory txData =
+            hex"e2c95c8200000000000000000000000048ab8adf869ba9902ad483fb1ca2efdab6eabe92000000000000000000000000dac17f958d2ee523a2206206994597c13d831ec70000000000000000000000000000000000000000000000000000000000989680000000000000000000000000000000000000000000000000000000000088d1790c000000000000003b6d03403041cbd36888becc7bbcbc0045e3b1f144466f5f8a2be008";
+
+        vm.expectRevert(OneInchValidator.INVALID_PERMIT2_DATA.selector);
+        validator.decodeSwapOutputToken(txData);
+    }
+
+    function test_swap_invalidPermit() public {
+        /// @dev generated txData from
+        /// https://api.1inch.dev/swap/v6.0/1/swap?src=0xdac17f958d2ee523a2206206994597c13d831ec7&dst=0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48&amount=10000000&from=0xa195608C2306A26f727d5199D5A382a4508308DA&origin=0xa195608C2306A26f727d5199D5A382a4508308DA&slippage=10&includeProtocols=true&excludedProtocols=UNISWAP_V2%2CUNISWAP_V3%2CSUSHI%2CDEFISWAP&receiver=0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92&allowPartialFill=false&disableEstimate=true&usePermit2=true
+        bytes memory txData =
+            hex"07ed2379000000000000000000000000e37e799d5077682fa0a244d46e5649f71457bd09000000000000000000000000dac17f958d2ee523a2206206994597c13d831ec7000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000e37e799d5077682fa0a244d46e5649f71457bd0900000000000000000000000048ab8adf869ba9902ad483fb1ca2efdab6eabe920000000000000000000000000000000000000000000000000000000000989680000000000000000000000000000000000000000000000000000000000089548100000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000120000000000000000000000000000000000000000000000000000000000000013c00000000000000000000000000000000000000000000000000011e0000f051306146be494fee4c73540cb1c5f87536abf1452500dac17f958d2ee523a2206206994597c13d831ec7004475d39ecb000000000000000000000000111111125421ca6dc452d289314280a0f8842a6500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000fffd8963efd1fc6a506488495d951d5263988d2500000000000000000000000000000000000000000000000000000000008954810000000000000000000000000000000000000000000000000000000066680b620020d6bdbf78a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48111111125421ca6dc452d289314280a0f8842a65000000008a2be008";
+
+        vm.expectRevert(OneInchValidator.INVALID_PERMIT2_DATA.selector);
+        validator.decodeSwapOutputToken(txData);
+    }
+
+    function test_swap_invalidPartialFill() public {
+        IAggregationExecutor executor = IAggregationExecutor(address(420));
+        IAggregationRouterV6.SwapDescription memory swapDescription = IAggregationRouterV6.SwapDescription(
+            IERC20(0xdAC17F958D2ee523a2206206994597C13D831ec7),
+            IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48),
+            payable(address(320)),
+            payable(address(321)),
+            1_000_000,
+            1_000_000,
+            3
+        );
+
+        bytes memory txData =
+            abi.encodeWithSelector(IAggregationRouterV6.swap.selector, executor, swapDescription, bytes(""));
+
+        vm.expectRevert(OneInchValidator.PARTIAL_FILL_NOT_ALLOWED.selector);
+        validator.decodeSwapOutputToken(txData);
     }
 }

@@ -7,6 +7,9 @@ type Address is uint256;
 
 uint256 constant _CURVE_TO_COINS_ARG_MASK = 0xff;
 uint256 constant _CURVE_TO_COINS_ARG_OFFSET = 216;
+uint256 constant _PARTIAL_FILL = 1 << 0;
+uint256 constant _REQUIRES_EXTRA_ETH = 1 << 1;
+uint256 constant _USE_PERMIT2 = 1 << 2;
 
 library AddressLib {
     uint256 private constant _LOW_160_BIT_MASK = (1 << 160) - 1;

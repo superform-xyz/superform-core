@@ -27,6 +27,8 @@ contract OneInchValidator {
     //                         ERROR                            //
     //////////////////////////////////////////////////////////////
     error INVALID_TOKEN_PAIR();
+    error INVALID_PERMIT2_DATA();
+    error PARTIAL_FILL_NOT_ALLOWED();
 
     //////////////////////////////////////////////////////////////
     //                        CONSTRUCTOR                       //
@@ -126,14 +128,23 @@ contract OneInchValidator {
             (Address receiverUint256, Address fromTokenUint256, uint256 decodedFromAmount,, Address dex) =
                 abi.decode(_parseCallData(txData_), (Address, Address, uint256, uint256, Address));
 
+            if (dex.usePermit2()) {
+                revert INVALID_PERMIT2_DATA();
+            }
+
             fromToken = fromTokenUint256.get();
             fromAmount = decodedFromAmount;
             receiver = receiverUint256.get();
 
             ProtocolLib.Protocol protocol = dex.protocol();
 
+            /// @dev if protocol is curve
+            if (protocol == ProtocolLib.Protocol.Curve) {
+                uint256 toTokenIndex = (Address.unwrap(dex) >> _CURVE_TO_COINS_ARG_OFFSET) & _CURVE_TO_COINS_ARG_MASK;
+                toToken = ICurvePool(dex.get()).underlying_coins(int128(uint128(toTokenIndex)));
+            }
             /// @dev if protocol is uniswap v2 or uniswap v3
-            if (protocol == ProtocolLib.Protocol.UniswapV2 || protocol == ProtocolLib.Protocol.UniswapV3) {
+            else {
                 address token0 = IUniswapPair(dex.get()).token0();
                 address token1 = IUniswapPair(dex.get()).token1();
 
@@ -144,11 +155,6 @@ contract OneInchValidator {
                 } else {
                     revert INVALID_TOKEN_PAIR();
                 }
-            }
-            /// @dev if protocol is curve
-            else if (protocol == ProtocolLib.Protocol.Curve) {
-                uint256 toTokenIndex = (Address.unwrap(dex) >> _CURVE_TO_COINS_ARG_OFFSET) & _CURVE_TO_COINS_ARG_MASK;
-                toToken = ICurvePool(dex.get()).underlying_coins(int128(uint128(toTokenIndex)));
             }
 
             /// @dev remap of WETH to Native if unwrapWeth flag is true
@@ -165,6 +171,16 @@ contract OneInchValidator {
             fromAmount = swapDescription.amount;
             toToken = address(swapDescription.dstToken);
             receiver = swapDescription.dstReceiver;
+
+            /// @dev validating the flags
+            ///  @dev allows REQUIRES_EXTRA_ETH flag but blocks the USE_PERMIT2 & PARTIAL_FILL flags
+            if (swapDescription.flags & _USE_PERMIT2 != 0) {
+                revert INVALID_PERMIT2_DATA();
+            }
+
+            if (swapDescription.flags & _PARTIAL_FILL != 0) {
+                revert PARTIAL_FILL_NOT_ALLOWED();
+            }
         } else {
             /// @dev does not support clipper exchange
             revert Error.BLACKLISTED_SELECTOR();
