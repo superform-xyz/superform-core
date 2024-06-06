@@ -412,9 +412,10 @@ abstract contract BaseSetup is StdInvariant, Test {
             )
     ) public REAL_VAULT_ADDRESS;
 
-    mapping(uint64 chainId => mapping(uint256 market => address realVault)) public ERC5115_VAULTS;
     mapping(uint64 chainId => uint256 nVaults) public NUMBER_OF_5115S;
+    mapping(uint64 chainId => mapping(uint256 market => address realVault)) public ERC5115_VAULTS;
     mapping(uint64 chainId => mapping(uint256 market => string name)) public ERC5115_VAULTS_NAMES;
+    mapping(uint64 chainId => mapping(address realVault => address chosenAssetIn)) public ERC5115S_CHOSEN_ASSET_IN;
 
     string public ETHEREUM_RPC_URL = vm.envString("ETHEREUM_RPC_URL"); // Native token: ETH
     string public BSC_RPC_URL = vm.envString("BSC_RPC_URL"); // Native token: BNB
@@ -855,9 +856,15 @@ abstract contract BaseSetup is StdInvariant, Test {
 
             if (NUMBER_OF_5115S[vars.chainId] > 0) {
                 for (uint256 j = 0; j < NUMBER_OF_5115S[vars.chainId]; ++j) {
-                    wrapped5115vaults[vars.chainId].push(
-                        address(new ERC5115To4626Wrapper{ salt: salt }(ERC5115_VAULTS[vars.chainId][j]))
-                    );
+                    address assetIn = ERC5115S_CHOSEN_ASSET_IN[vars.chainId][ERC5115_VAULTS[vars.chainId][j]];
+                    address new5115WrapperVault = address(new ERC5115To4626Wrapper{ salt: salt }(
+                        ERC5115_VAULTS[vars.chainId][j],
+                        ERC5115S_CHOSEN_ASSET_IN[vars.chainId][ERC5115_VAULTS[vars.chainId][j]]
+                    ));
+
+                    /// link asset in of real vault to wrapper vault
+                    ERC5115S_CHOSEN_ASSET_IN[vars.chainId][new5115WrapperVault] = assetIn;
+                    wrapped5115vaults[vars.chainId].push(new5115WrapperVault);
                 }
             }
 
@@ -1311,10 +1318,19 @@ abstract contract BaseSetup is StdInvariant, Test {
                             uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
 
                             for (uint256 l = 0; l < lenBytecodes; l++) {
+                                /// @dev warning: the true vault for 5115 is the one underneath the wrapped version
                                 (, vars.superform) = ISuperformFactory(
                                     contracts[chainIds[i]][bytes32(bytes("SuperformFactory"))]
                                 ).createSuperform(FORM_IMPLEMENTATION_IDS[j], wrapped5115vaults[chainIds[i]][k]);
+                                if (
+                                    keccak256(abi.encodePacked((ERC5115_VAULTS_NAMES[chainIds[i]][k])))
+                                        == keccak256(abi.encodePacked(("wstETH")))
+                                ) {
+                                    console.log("vault address ", wrapped5115vaults[chainIds[i]][k]);
 
+                                    console.log("wstETH superform ", vars.superform);
+                                    console.log(chainIds[i]);
+                                }
                                 contracts[chainIds[i]][bytes32(
                                     bytes(
                                         string.concat(
@@ -1721,6 +1737,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         existingTokens[56]["DAI"] = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
         existingTokens[56]["USDC"] = 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d;
         existingTokens[56]["WETH"] = address(0);
+        existingTokens[56]["ezETH"] = 0x2416092f143378750bb29b79eD961ab195CcEea5;
 
         existingTokens[8453]["DAI"] = 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb;
         existingTokens[8453]["USDC"] = address(0);
@@ -1774,6 +1791,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         mapping(uint64 chainId => mapping(uint256 market => string name)) storage erc5115VaultsNames =
             ERC5115_VAULTS_NAMES;
         mapping(uint64 chainId => uint256 nVaults) storage numberOf5115s = NUMBER_OF_5115S;
+        mapping(uint64 chainId => mapping(address realVault => address chosenAssetIn)) storage erc5115ChosenAssetIn =
+            ERC5115S_CHOSEN_ASSET_IN;
 
         numberOf5115s[1] = 2;
         numberOf5115s[10] = 1;
@@ -1788,31 +1807,40 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// USDe sUSDe
         erc5115Vaults[1][0] = 0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65;
         erc5115VaultsNames[1][0] = "SUSDe";
-
+        erc5115ChosenAssetIn[1][0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65] = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
         /// ezETH
         /// @dev pendle renzo - market:  SY ezETH
         erc5115Vaults[1][1] = 0x22E12A50e3ca49FB183074235cB1db84Fe4C716D;
         erc5115VaultsNames[1][1] = "ezETH";
+        erc5115ChosenAssetIn[1][0x22E12A50e3ca49FB183074235cB1db84Fe4C716D] = 0xbf5495Efe5DB9ce00f80364C8B423567e58d2110;
 
         /// wstETH
         /// @dev pendle wrapped st ETH from LDO - market:  SY wstETH
         erc5115Vaults[10][0] = 0x96A528f4414aC3CcD21342996c93f2EcdEc24286;
         erc5115VaultsNames[10][0] = "wstETH";
+        erc5115ChosenAssetIn[10][0x96A528f4414aC3CcD21342996c93f2EcdEc24286] =
+            0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb;
 
         /// ezETH
         /// @dev pendle renzo - market: EZETH-BSC-SEP2024
         erc5115Vaults[56][0] = 0xe49269B5D31299BcE407c8CcCf241274e9A93C9A;
         erc5115VaultsNames[56][0] = "ezETH";
+        erc5115ChosenAssetIn[56][0xe49269B5D31299BcE407c8CcCf241274e9A93C9A] =
+            0x2416092f143378750bb29b79eD961ab195CcEea5;
 
         /// USDC aARBUsdc
         /// @dev pendle aave - market: SY aUSDC
         erc5115Vaults[42_161][0] = 0x50288c30c37FA1Ec6167a31E575EA8632645dE20;
         erc5115VaultsNames[42_161][0] = "USDC";
+        erc5115ChosenAssetIn[42_161][0x50288c30c37FA1Ec6167a31E575EA8632645dE20] =
+            0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
 
         /// wstETH
         /// @dev pendle wrapped st ETH from LDO - market: SY wstETH
         erc5115Vaults[42_161][1] = 0x80c12D5b6Cc494632Bf11b03F09436c8B61Cc5Df;
         erc5115VaultsNames[42_161][1] = "wstETH";
+        erc5115ChosenAssetIn[42_161][0x80c12D5b6Cc494632Bf11b03F09436c8B61Cc5Df] =
+            0x5979D7b546E38E414F7E9822514be443A4800529;
     }
 
     function _fundNativeTokens() internal {
