@@ -18,7 +18,7 @@ contract OneInchValidatorTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
     }
 
-    function test_validateUniswap_realData() public {
+    function test_validateUniswap_realData() public view {
         /// @dev generated the txData using
         /// https://api.1inch.dev/swap/v6.0/1/swap?src=0xdac17f958d2ee523a2206206994597c13d831ec7&dst=0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48&amount=10000000&from=0xa195608C2306A26f727d5199D5A382a4508308DA&slippage=10&receiver=0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92&disableEstimate=true
         bytes memory txData =
@@ -33,7 +33,7 @@ contract OneInchValidatorTest is ProtocolActions {
         assertEq(toToken, 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
     }
 
-    function test_validateCurve_realData() public {
+    function test_validateCurve_realData() public view {
         /// @dev generated the txData using
         /// https://api.1inch.dev/swap/v6.0/1/swap?src=0xdac17f958d2ee523a2206206994597c13d831ec7&dst=0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48&amount=10000000&from=0xa195608C2306A26f727d5199D5A382a4508308DA&slippage=0&protocols=CURVE&includeProtocols=true&receiver=0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92&allowPartialFill=false&disableEstimate=true&usePermit2=false
         bytes memory txData =
@@ -44,7 +44,7 @@ contract OneInchValidatorTest is ProtocolActions {
         assertEq(toToken, 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
     }
 
-    function test_validateReceiver_invalidReceiver() public {
+    function test_validateReceiver_invalidReceiver() public view {
         assertFalse(validator.validateReceiver(mockTxData, address(0)));
     }
 
@@ -121,7 +121,7 @@ contract OneInchValidatorTest is ProtocolActions {
         new OneInchValidator(address(0));
     }
 
-    function test_decodeTxData_swapSelector() public {
+    function test_decodeTxData_swapSelector() public view {
         /// @dev txData is imported from
         /// https://etherscan.io/tx/0xe6c6ca260d59041934097c51c42733b60f8c28cc66da93b16ef97edcbdafec29
         bytes memory txData =
@@ -173,7 +173,7 @@ contract OneInchValidatorTest is ProtocolActions {
         validator.validateTxData(args);
     }
 
-    function test_decodeTxData_unoswapTo_shibaswap() public {
+    function test_decodeTxData_unoswapTo_shibaswap() public view {
         ///  @dev txdata for shibaswap
         /// https://api.1inch.dev/swap/v6.0/1/swap?src=0xdac17f958d2ee523a2206206994597c13d831ec7&dst=0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE&amount=10000000&from=0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92&slippage=10&fee=0&includeProtocols=true&excludedProtocols=UNISWAP_V2%2CUNISWAP_V3&receiver=0x4A430607a16108994f878F2D8D8dd6a53Ae98288&allowPartialFill=false&disableEstimate=true
         bytes memory txData =
@@ -273,7 +273,7 @@ contract OneInchValidatorTest is ProtocolActions {
         validator.validateReceiver(txData, address(this));
     }
 
-    function test_decodeTxData_nativeToken() public {
+    function test_decodeTxData_nativeToken() public view {
         /// @dev generated txData from
         /// https://api.1inch.dev/swap/v6.0/1/swap?src=0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48&dst=0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee&amount=1000000&from=0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92&origin=0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92&slippage=10&protocols=UNISWAP_V2&includeTokensInfo=true&includeProtocols=true&receiver=0x8f340f5B24da38216834AaFDB61ACa747D217a92&allowPartialFill=false&disableEstimate=true&usePermit2=false
         bytes memory txData =

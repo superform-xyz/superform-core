@@ -165,6 +165,11 @@ contract OneInchValidator {
             fromAmount = swapDescription.amount;
             toToken = address(swapDescription.dstToken);
             receiver = swapDescription.dstReceiver;
+
+            /// TODO: add revert message
+            if (extCallData.length != 0) {
+                revert();
+            }
         } else {
             /// @dev does not support clipper exchange
             revert Error.BLACKLISTED_SELECTOR();

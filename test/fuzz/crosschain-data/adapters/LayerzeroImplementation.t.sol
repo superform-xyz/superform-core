@@ -95,7 +95,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         layerzeroImplementation.estimateFees(chainId, abi.encode(420), bytes(""));
     }
 
-    function test_estimateFeesWithValidChainId(uint256 chainIdSeed_) public {
+    function test_estimateFeesWithValidChainId(uint256 chainIdSeed_) public view {
         /// @dev chainIds = [1, 56, 43114, 137, 42161, 10];
         uint64 chainId = chainIds[chainIdSeed_ % chainIds.length];
         /// @dev estimating fees for same chain is invalid

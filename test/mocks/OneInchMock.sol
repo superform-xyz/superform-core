@@ -17,7 +17,7 @@ contract OneInchMock is Test {
     function unoswapTo(
         Address to,
         Address token,
-        uint256 amount,
+        uint256, /*amount*/
         uint256 minReturn,
         Address dex
     )
@@ -55,5 +55,6 @@ contract OneInchMock is Test {
         }
 
         deal(toToken, receiver, minReturn);
+        returnAmount = minReturn;
     }
 }
