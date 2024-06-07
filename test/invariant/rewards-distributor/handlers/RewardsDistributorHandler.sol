@@ -125,7 +125,6 @@ contract RewardsDistributorHandler is StdInvariant, MerkleReader {
         }
         testUsers = testUsersMem;
 
-        console.log("Handler setup done!");
     }
 
     function randomUserIndex(uint256 seed, uint256 index, uint256 periodId) internal view returns (uint256) {
