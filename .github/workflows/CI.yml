@@ -32,6 +32,7 @@ env:
   TENDERLY_ACCOUNT_ID: "superform" # your username or organization name
   FOUNDRY_EXPORTS_OVERWRITE_LATEST: "true"
   OWNER_ADDRESS: ${{ secrets.OWNER_ADDRESS }}
+  DEBUG_MODE: "false"
 
 jobs:
   build:
