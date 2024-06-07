@@ -142,7 +142,8 @@ abstract contract AbstractDeploySingle is BatchScript {
         "RewardsDistributor",
         "DeBridgeValidator",
         "DeBridgeForwarderValidator",
-        "OneInchValidator" "AxelarImplementation"
+        "OneInchValidator",
+        "AxelarImplementation"
     ];
 
     enum Chains {
@@ -711,6 +712,8 @@ abstract contract AbstractDeploySingle is BatchScript {
             /// @dev these are debridge
             bridgeIdsBase[1] = 4;
             bridgeIdsBase[2] = 5;
+
+            /// @dev this is oneinch
             bridgeIdsBase[3] = 6;
 
             address[] memory bridgeAddressesBase = new address[](4);
