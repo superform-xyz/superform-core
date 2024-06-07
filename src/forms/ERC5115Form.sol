@@ -28,6 +28,9 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     //////////////////////////////////////////////////////////////
     //                           Errors                        //
     //////////////////////////////////////////////////////////////
+    /// @dev opinionated function not part of the 5115 eip
+    error FUNCTION_NOT_IMPLEMENTED();
+
     /// @dev Error emitted when the tokenIn is not valid
     error INVALID_TOKEN_IN();
 
@@ -127,7 +130,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
 
     /// @inheritdoc BaseForm
     function getPreviewPricePerVaultShare() public view virtual override returns (uint256) {
-        return 0;
+        return IStandardizedYield(vault).exchangeRate();
     }
 
     /// @inheritdoc BaseForm
@@ -161,18 +164,30 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     }
 
     /// @inheritdoc IERC5115Form
-    function getAccruedRewards(address user) public view virtual override returns (uint256[] memory rewards) {
-        rewards = IStandardizedYield(vault).accruedRewards(user);
+    function getAccruedRewards(address user) public view virtual override returns (uint256[] memory) {
+        try IStandardizedYield(vault).accruedRewards(user) returns (uint256[] memory rewards) {
+            return rewards;
+        } catch {
+            revert FUNCTION_NOT_IMPLEMENTED();
+        }
     }
 
     /// @inheritdoc IERC5115Form
-    function getRewardIndexesStored() public view virtual override returns (uint256[] memory indexes) {
-        indexes = IStandardizedYield(vault).rewardIndexesStored();
+    function getRewardIndexesStored() public view virtual override returns (uint256[] memory) {
+        try IStandardizedYield(vault).rewardIndexesStored() returns (uint256[] memory indexes) {
+            return indexes;
+        } catch {
+            revert FUNCTION_NOT_IMPLEMENTED();
+        }
     }
 
     /// @inheritdoc IERC5115Form
-    function getRewardTokens() public view virtual override returns (address[] memory rewardTokens) {
-        rewardTokens = IStandardizedYield(vault).getRewardTokens();
+    function getRewardTokens() public view virtual override returns (address[] memory) {
+        try IStandardizedYield(vault).getRewardTokens() returns (address[] memory rewardTokens) {
+            return rewardTokens;
+        } catch {
+            revert FUNCTION_NOT_IMPLEMENTED();
+        }
     }
 
     /// @inheritdoc IERC5115Form
@@ -198,26 +213,6 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     /// @inheritdoc IERC5115Form
     function isValidTokenOut(address token) public view virtual override returns (bool) {
         return IStandardizedYield(vault).isValidTokenOut(token);
-    }
-
-    /// @inheritdoc IERC5115Form
-    function getTokensOutBalance()
-        public
-        view
-        virtual
-        returns (address[] memory tokensOut, uint256[] memory balances)
-    {
-        tokensOut = IStandardizedYield(vault).getTokensOut();
-        uint256 len = tokensOut.length;
-
-        balances = new uint256[](len);
-        for (uint256 i = 0; i < len; i++) {
-            try IERC20(tokensOut[i]).balanceOf(vault) returns (uint256 balance) {
-                balances[i] = balance;
-            } catch {
-                balances[i] = address(vault).balance;
-            }
-        }
     }
 
     /// @inheritdoc IERC5115Form
@@ -611,15 +606,13 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         internal
         returns (uint256 shares)
     {
+        _validateTokenIn(vaultTokenIn_);
+
         IStandardizedYield v = IStandardizedYield(vault);
 
         address sharesReceiver = singleVaultData_.retain4626 ? singleVaultData_.receiverAddress : address(this);
 
         uint256 sharesBalanceBefore = v.balanceOf(sharesReceiver);
-
-        if (!isValidTokenIn(vaultTokenIn_)) {
-            revert INVALID_TOKEN_IN();
-        }
 
         /// @dev WARNING: validate if minSharesOut can be outputAmount (the result of previewDeposit)
         shares = v.deposit(sharesReceiver, vaultTokenIn_, assetDifference_, singleVaultData_.outputAmount);
@@ -645,19 +638,24 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         internal
         returns (uint256 assets)
     {
+        _validateTokenOut(vaultTokenOut_);
+
         address assetsReceiver =
             singleVaultData_.liqData.txData.length == 0 ? singleVaultData_.receiverAddress : address(this);
 
         uint256 assetsBalanceBefore = IERC20(vaultTokenOut_).balanceOf(assetsReceiver);
+        IERC20 underlyingVault = IERC20(IERC5115To4626Wrapper(vault).getUnderlying5115Vault());
 
-        if (!isValidTokenOut(vaultTokenOut_)) {
-            revert INVALID_TOKEN_OUT();
-        }
+        /// @dev have to increase allowance as shares are moved to wrapper first
+        underlyingVault.safeIncreaseAllowance(vault, singleVaultData_.amount);
 
         assets =
             v_.redeem(assetsReceiver, singleVaultData_.amount, vaultTokenOut_, singleVaultData_.outputAmount, false);
 
         uint256 assetsBalanceAfter = IERC20(vaultTokenOut_).balanceOf(assetsReceiver);
+
+        /// @dev reset allowance to wrapper
+        if (underlyingVault.allowance(address(this), vault) > 0) underlyingVault.forceApprove(vault, 0);
 
         if (
             (assetsBalanceAfter - assetsBalanceBefore != assets)
@@ -670,6 +668,51 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         }
 
         if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
+    }
+
+    function _validateTokenIn(address tokenIn_) internal view {
+        try this.isValidTokenIn(tokenIn_) returns (bool isValid) {
+            if (!isValid) {
+                revert INVALID_TOKEN_IN();
+            }
+        } catch {
+            address[] memory tokensIn = this.getTokensIn();
+            bool found;
+            for (uint256 i = 0; i < tokensIn.length; i++) {
+                if (tokensIn[i] == tokenIn_) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                revert INVALID_TOKEN_IN();
+            }
+        }
+        /// @dev token in must also match the asset set in the wrapper
+        if (tokenIn_ != asset) revert INVALID_TOKEN_IN();
+    }
+
+    function _validateTokenOut(address tokenOut_) internal view {
+        try this.isValidTokenOut(tokenOut_) returns (bool isValid) {
+            if (!isValid) {
+                revert INVALID_TOKEN_OUT();
+            }
+        } catch {
+            address[] memory tokensOut = this.getTokensOut();
+            bool found;
+            for (uint256 i = 0; i < tokensOut.length; i++) {
+                if (tokensOut[i] == tokenOut_) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                revert INVALID_TOKEN_OUT();
+            }
+        }
+
+        /// @dev token out must also match the asset set in the wrapper
+        if (tokenOut_ != IERC5115To4626Wrapper(vault).getMainTokenOut()) revert INVALID_TOKEN_OUT();
     }
 
     function _isWithdrawTxDataAmountInvalid(

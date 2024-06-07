@@ -15,14 +15,15 @@ contract SXSVW5115NativeSlippageAMB23 is ProtocolActions {
         CHAIN_0 = POLY;
         DST_CHAINS = [OP];
 
-        /// @dev "SY wstETH" vault on optimism. The base input token selected here is 4 (wstETH), but could be another supported by the vault (as long as there is a wrapper for it)
+        /// @dev "SY wstETH" vault on optimism. The base input token selected here is 4 (wstETH), but could be another
+        /// supported by the vault (as long as there is a wrapper for it)
         TARGET_UNDERLYINGS[OP][0] = [4];
 
         TARGET_VAULTS[OP][0] = [9];
 
         TARGET_FORM_KINDS[OP][0] = [3];
 
-        /// @dev The base output token selected here is 4 (wstETH), but could be another supported by the vault (as long as there is a wrapper for it)
+        /// @dev The base output token selected here is 4 (wstETH), in the case of this vault it is the same as the input
         TARGET_UNDERLYINGS[OP][1] = [4];
 
         TARGET_VAULTS[OP][1] = [9];
@@ -54,7 +55,7 @@ contract SXSVW5115NativeSlippageAMB23 is ProtocolActions {
                 externalToken: 69_420 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
-        /*
+
         actions.push(
             TestAction({
                 action: Actions.Withdraw,
@@ -63,12 +64,11 @@ contract SXSVW5115NativeSlippageAMB23 is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 22, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
-        */
     }
 
     /*///////////////////////////////////////////////////////////////

@@ -1979,6 +1979,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint256 decimal1;
         uint256 decimal2;
         uint256 decimal3;
+        address vault;
+        bytes32 vaultFormImplementationCombination;
+        uint256 superformId;
+        bool is5115;
     }
 
     function _buildSingleVaultWithdrawCallData(SingleVaultCallDataArgs memory args)
@@ -2053,21 +2057,30 @@ abstract contract ProtocolActions is CommonProtocolActions {
         if (GENERATE_WITHDRAW_TX_DATA_ON_DST) {
             TX_DATA_TO_UPDATE_ON_DST[args.toChainId].push(vars.txData);
         }
+        vm.selectFork(FORKS[args.toChainId]);
+
+        vars.vault = IBaseForm(vars.superform).getVaultAddress();
+
+        vars.vaultFormImplementationCombination =
+            keccak256(abi.encode(getContract(args.toChainId, "ERC5115Form"), vars.vault));
+        vars.superformId = SuperformFactory(getContract(args.toChainId, "SuperformFactory"))
+            .vaultFormImplCombinationToSuperforms(vars.vaultFormImplementationCombination);
+
+        vars.is5115 = vars.superformId == args.superformId;
 
         /// @notice no interim token supplied as this is a withdraw
         vars.liqReq = LiqRequest(
             GENERATE_WITHDRAW_TX_DATA_ON_DST ? bytes("") : vars.txData,
             /// @dev for certain test cases, insert txData as null here
             args.externalToken,
-            address(0),
+            vars.is5115 ? args.underlyingTokenDst : address(0),
             args.liqBridge,
             args.liqDstChainId,
             0
         );
 
-        vm.selectFork(FORKS[args.toChainId]);
         (address superform,,) = DataLib.getSuperform(args.superformId);
-        console.log(superform);
+        console.log("RECEUVER; ", users[args.user]);
 
         uint256 outputAmount = IBaseForm(superform).previewRedeemFrom(args.amount);
         /// @dev extraData is currently used to send in the partialWithdraw vaults without resorting to extra args, just

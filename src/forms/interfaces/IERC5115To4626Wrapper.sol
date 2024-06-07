@@ -10,4 +10,6 @@ interface IERC5115To4626Wrapper is IStandardizedYield {
     function getUnderlying5115Vault() external view returns (address);
 
     function getMainTokenIn() external view returns (address);
+
+    function getMainTokenOut() external view returns (address);
 }

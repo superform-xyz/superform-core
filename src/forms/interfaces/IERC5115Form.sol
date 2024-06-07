@@ -27,8 +27,6 @@ interface IERC5115Form {
 
     function isValidTokenOut(address token) external view returns (bool);
 
-    function getTokensOutBalance() external view returns (address[] memory tokensOut, uint256[] memory balances);
-
     function getAssetInfo()
         external
         view

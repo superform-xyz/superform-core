@@ -24,9 +24,13 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
     //////////////////////////////////////////////////////////////
     //                      STORAGE                             //
     //////////////////////////////////////////////////////////////
-
+    /// @dev this is the real 5115 underlying vault
     address public immutable vault;
+    /// @dev this is the token in for the vault
     address public immutable asset;
+    /// @dev this is the token in for the vault
+    address public immutable mainTokenOut;
+
     address internal constant NATIVE = address(0);
 
     //////////////////////////////////////////////////////////////
@@ -39,16 +43,7 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
         try this.isValidTokenIn(asset) returns (bool res) {
             valid = res;
         } catch {
-            address[] memory tokensIn = this.getTokensIn();
-            uint256 len = tokensIn.length;
-            for (uint256 i = 0; i < len; ++i) {
-                if (tokensIn[i] == asset) {
-                    valid = true;
-                    break;
-                } else if (i == len - 1) {
-                    valid = false;
-                }
-            }
+            valid = _validateTokenIn(asset, vault);
         }
 
         if (!valid) revert MAIN_TOKEN_IN_NOT_FOUND();
@@ -60,16 +55,7 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
         try this.isValidTokenOut(asset) returns (bool res) {
             valid = res;
         } catch {
-            address[] memory tokensOut = this.getTokensOut();
-            uint256 len = tokensOut.length;
-            for (uint256 i = 0; i < len; ++i) {
-                if (tokensOut[i] == asset) {
-                    valid = true;
-                    break;
-                } else if (i == len - 1) {
-                    valid = false;
-                }
-            }
+            valid = _validateTokenOut(asset, vault);
         }
 
         if (!valid) revert MAIN_TOKEN_OUT_NOT_FOUND();
@@ -80,23 +66,13 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address vault_, address mainTokenIn_) {
+    constructor(address vault_, address tokenIn_, address tokenOut_) {
+        /// @dev validate tokens in and out
+        if (!_validateTokenIn(tokenIn_, vault_)) revert MAIN_TOKEN_IN_NOT_FOUND();
+        if (!_validateTokenOut(tokenOut_, vault_)) revert MAIN_TOKEN_OUT_NOT_FOUND();
         vault = vault_;
-
-        /// @dev make this check an internal function;
-        /// @dev mainTokenIn_ will be considered the underlying asset in terms of this vault
-        /// @notice has to be validated to be present in getTokenIn
-        address[] memory tokensIn = IStandardizedYield(vault).getTokensIn();
-        uint256 len = tokensIn.length;
-        for (uint256 i = 0; i < len; ++i) {
-            if (tokensIn[i] == mainTokenIn_) {
-                asset = mainTokenIn_;
-
-                return;
-            } else if (i == len - 1) {
-                revert MAIN_TOKEN_IN_NOT_FOUND();
-            }
-        }
+        asset = tokenIn_;
+        mainTokenOut = tokenOut_;
     }
 
     //////////////////////////////////////////////////////////////
@@ -111,6 +87,11 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
     /// @inheritdoc IERC5115To4626Wrapper
     function getMainTokenIn() external view returns (address) {
         return asset;
+    }
+
+    /// @inheritdoc IERC5115To4626Wrapper
+    function getMainTokenOut() external view returns (address) {
+        return mainTokenOut;
     }
 
     //////////////////////////////////////////////////////////////
@@ -156,7 +137,7 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
         uint256 amountSharesToRedeem,
         address tokenOut,
         uint256 minTokenOut,
-        bool /*burnFromInternalBalance*/
+        bool burnFromInternalBalance
     )
         external
         validateTokenOut
@@ -169,7 +150,9 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
         IERC20(vault).safeTransferFrom(msg.sender, address(this), amountSharesToRedeem);
 
         /// @dev redeem will burn the share from this contract
-        return IStandardizedYield(vault).redeem(receiver, amountSharesToRedeem, tokenOut, minTokenOut, false);
+        return IStandardizedYield(vault).redeem(
+            receiver, amountSharesToRedeem, tokenOut, minTokenOut, burnFromInternalBalance
+        );
     }
 
     /// @inheritdoc IStandardizedYield
@@ -208,12 +191,12 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
     }
 
     /// @inheritdoc IStandardizedYield
-    function getTokensIn() public view returns (address[] memory res) {
+    function getTokensIn() external view returns (address[] memory res) {
         return IStandardizedYield(vault).getTokensIn();
     }
 
     /// @inheritdoc IStandardizedYield
-    function getTokensOut() public view returns (address[] memory res) {
+    function getTokensOut() external view returns (address[] memory res) {
         return IStandardizedYield(vault).getTokensOut();
     }
 
@@ -299,5 +282,39 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
     function _transferIn(address token, address from, uint256 amount) internal {
         if (token == NATIVE) require(msg.value == amount, "eth mismatch");
         else if (amount != 0) IERC20(token).safeTransferFrom(from, address(this), amount);
+    }
+
+    function _validateTokenIn(address token_, address vault_) internal view returns (bool) {
+        bool valid;
+
+        address[] memory tokensIn = IStandardizedYield(vault_).getTokensIn();
+        uint256 len = tokensIn.length;
+        for (uint256 i = 0; i < len; ++i) {
+            if (tokensIn[i] == token_) {
+                valid = true;
+                break;
+            } else if (i == len - 1) {
+                valid = false;
+            }
+        }
+
+        return valid;
+    }
+
+    function _validateTokenOut(address token_, address vault_) internal view returns (bool) {
+        bool valid;
+
+        address[] memory tokensOut = IStandardizedYield(vault_).getTokensOut();
+        uint256 len = tokensOut.length;
+        for (uint256 i = 0; i < len; ++i) {
+            if (tokensOut[i] == token_) {
+                valid = true;
+                break;
+            } else if (i == len - 1) {
+                valid = false;
+            }
+        }
+
+        return valid;
     }
 }
