@@ -57,4 +57,15 @@ contract OneInchMock is Test {
         deal(toToken, receiver, minReturn);
         returnAmount = minReturn;
     }
+
+    function swap(
+        IAggregationExecutor,
+        IAggregationRouterV6.SwapDescription calldata desc,
+        bytes calldata
+    )
+        external
+        payable
+    {
+        deal(address(desc.dstToken), address(desc.dstReceiver), desc.minReturnAmount);
+    }
 }
