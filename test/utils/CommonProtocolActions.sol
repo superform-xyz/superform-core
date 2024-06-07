@@ -348,6 +348,7 @@ abstract contract CommonProtocolActions is BaseSetup {
                 targetTxData
             );
         } else if (args.liqBridgeKind == 9) {
+            /// @dev works except for fantom
             address dex = IUniswapFactory(0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f).getPair(
                 args.externalToken, args.underlyingToken
             );
@@ -471,6 +472,22 @@ abstract contract CommonProtocolActions is BaseSetup {
                 getContract(toChainId_, "CoreStateRegistry"),
                 0,
                 swapData
+            );
+        } else if (liqBridgeKind_ == 9) {
+            /// @dev works except for fantom
+            address dex = IUniswapFactory(0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f).getPair(
+                sendingTokenDst_, receivingTokenDst_
+            );
+
+            require(dex != address(0), "1inch unavailable");
+
+            txData = abi.encodeWithSelector(
+                OneInchMock.unoswapTo.selector,
+                uint256(uint160(getContract(toChainId_, "CoreStateRegistry"))),
+                uint256(uint160(sendingTokenDst_)),
+                amount_,
+                (amount_ * uint256(USDPerSendingTokenDst)) / uint256(USDPerReceivingTokenDst),
+                uint256(uint160(dex))
             );
         }
     }
