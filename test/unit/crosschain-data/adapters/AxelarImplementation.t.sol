@@ -130,7 +130,7 @@ contract AxelarImplementationTest is BaseSetup {
     function test_execute_InvalidSrcSender() public {
         bytes32 commandId = keccak256("test");
         string memory sourceChain = "source-chain";
-        string memory sourceAddress = "source-address";
+        string memory sourceAddress = "0x5849ce0f755d1c2d9e724d2e7297379991d1c3e4";
         bytes memory payload = abi.encode(commandId, sourceChain, sourceAddress, bytes(""));
 
         vm.mockCall(
