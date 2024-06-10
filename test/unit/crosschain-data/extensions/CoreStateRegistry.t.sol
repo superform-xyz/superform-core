@@ -687,15 +687,12 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         uint256 realEstimate = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
 
-        console.log("defaultEstimate: %s", defaultEstimate);
-        console.log("realEstimate: %s", realEstimate);
 
         assertEq(realEstimate, defaultEstimate);
 
         uint256 defaultEstimateNativeSrc =
             PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCostDefaultNativeSource(false, ambIds_, ETH);
 
-        console.log("defaultEstimateNativeSrc: %s", defaultEstimateNativeSrc);
     }
 
     function test_estimateWithNativeTokenPriceAsZero() public {
@@ -732,15 +729,12 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         uint256 realEstimate = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
 
-        console.log("defaultEstimate: %s", defaultEstimate);
-        console.log("realEstimate: %s", realEstimate);
 
         assertLe(realEstimate, defaultEstimate);
 
         uint256 defaultEstimateNativeSrc =
             PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCostDefaultNativeSource(true, ambIds_, ETH);
 
-        console.log("defaultEstimateNativeSrc: %s", defaultEstimateNativeSrc);
     }
 
     /*///////////////////////////////////////////////////////////////
