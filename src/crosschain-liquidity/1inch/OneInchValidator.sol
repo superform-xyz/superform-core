@@ -164,7 +164,7 @@ contract OneInchValidator {
         }
         /// @dev decodes the generic router call
         else if (selector == IAggregationRouterV6.swap.selector) {
-            (, IAggregationRouterV6.SwapDescription memory swapDescription, bytes memory extCallData) =
+            (, IAggregationRouterV6.SwapDescription memory swapDescription,) =
                 abi.decode(_parseCallData(txData_), (IAggregationExecutor, IAggregationRouterV6.SwapDescription, bytes));
 
             fromToken = address(swapDescription.srcToken);
