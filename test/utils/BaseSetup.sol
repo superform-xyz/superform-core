@@ -78,6 +78,8 @@ import "./TestTypes.sol";
 import "forge-std/console.sol";
 
 abstract contract BaseSetup is StdInvariant, Test {
+    bool public DEBUG_MODE = vm.envBool("DEBUG_MODE"); // Native token: ETH
+
     /*//////////////////////////////////////////////////////////////
                         GENERAL VARIABLES
     //////////////////////////////////////////////////////////////*/

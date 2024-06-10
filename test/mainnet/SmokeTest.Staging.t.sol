@@ -429,7 +429,6 @@ contract SmokeTestStaging is MainnetBaseSetup {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
             vm.selectFork(FORKS[chainId]);
             paymentHelper = PaymentHelper(getContract(chainId, "PaymentHelper"));
-            console.log("--Checking chain id ", chainId);
 
             for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
                 assertEq(

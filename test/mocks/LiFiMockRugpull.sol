@@ -95,7 +95,6 @@ contract LiFiMockRugpull is Test {
 
         v.amountOut = (amount_ * uint256(10_000 - v.slippage)) / 10_000;
 
-        console.log("amount pre-bridge", v.amountOut);
 
         _sendOutputTokenToReceiver(data_, inputToken_, receiver_, v.amountOut, v.prevForkId, v.toForkId);
 
@@ -135,7 +134,6 @@ contract LiFiMockRugpull is Test {
                 ((amountOut_ * USDPerUnderlyingToken) * 10 ** (decimal2 - decimal1)) / USDPerUnderlyingTokenDst;
         }
 
-        console.log("amount post-bridge", finalAmount);
 
         if (outputToken != NATIVE) {
             deal(outputToken, receiver_, MockERC20(outputToken).balanceOf(receiver_) + finalAmount);
@@ -174,14 +172,12 @@ contract LiFiMockRugpull is Test {
         uint256 decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
         uint256 decimal2 = outputToken_ == NATIVE ? 18 : MockERC20(outputToken_).decimals();
 
-        console.log("amount pre-swap", amount_);
         /// @dev the results of this amount if there is a bridge are effectively ignored
         if (decimal1 > decimal2) {
             amount_ = (amount_ * USDPerExternalToken) / (USDPerUnderlyingToken * 10 ** (decimal1 - decimal2));
         } else {
             amount_ = (amount_ * USDPerExternalToken) * 10 ** (decimal2 - decimal1) / USDPerUnderlyingToken;
         }
-        console.log("amount post-swap", amount_);
         /// @dev swap slippage if any, is applied in ProtocolActions._stage1_buildReqData() for direct
         /// actions and in ProtocolActions._buildLiqBridgeTxDataDstSwap() for dstSwaps.
         /// @dev Could allocate swap slippage share separately like for ProtocolActions.MULTI_TX_SLIPPAGE_SHARE
