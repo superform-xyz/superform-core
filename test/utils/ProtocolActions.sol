@@ -183,7 +183,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
         (multiSuperformsData, singleSuperformsData, vars) = _stage1_buildReqData(action, act);
         if (DEBUG_MODE) console.log("Stage 1 complete");
 
-        /// @dev DO NOT DELETE NEXT LINE, it is important to pass 'act' to assert functions and avoid stack too deep errors
+        /// @dev DO NOT DELETE NEXT LINE, it is important to pass 'act' to assert functions and avoid stack too deep
+        /// errors
         vars.act = act;
 
         uint256[][] memory spAmountSummed = new uint256[][](vars.nDestinations);
@@ -3283,10 +3284,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 (v.superform,,) = singleSuperformsData[i].superformId.getSuperform();
                 v.partialWithdrawVault =
                     PARTIAL[DST_CHAINS[i]][vars.act].length > 0 ? PARTIAL[DST_CHAINS[i]][vars.act][0] : false;
-                console.log("DST_CHAINS[i]", DST_CHAINS[i]);
-                console.log("c", vars.act);
-
-                console.log("Partial", v.partialWithdrawVault);
                 vm.selectFork(FORKS[DST_CHAINS[i]]);
 
                 /// @dev for withdraw singleSuperformsData[i].amount is the number of superpositions the
@@ -3458,7 +3455,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vm.selectFork(FORKS[CHAIN_0]);
 
         AssertAfterWithdrawVars memory v;
-        console.log("AAAAAAAAAAA");
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
             v.sameDst = CHAIN_0 == DST_CHAINS[i];
             v.lenRevertWithdraw = 0;
@@ -3492,7 +3488,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 v.foundRevertingWithdrawTimelocked = false;
                 v.partialWithdrawVault =
                     PARTIAL[DST_CHAINS[i]][vars.act].length > 0 ? PARTIAL[DST_CHAINS[i]][vars.act][0] : false;
-                console.log("partialWithdrawVault", v.partialWithdrawVault);
 
                 if (v.lenRevertWithdraw > 0) {
                     v.foundRevertingWithdraw = revertingWithdrawSFs[i][0] == singleSuperformsData[i].superformId;
