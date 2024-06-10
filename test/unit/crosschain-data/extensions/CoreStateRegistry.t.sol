@@ -687,12 +687,10 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         uint256 realEstimate = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
 
-
         assertEq(realEstimate, defaultEstimate);
 
         uint256 defaultEstimateNativeSrc =
             PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCostDefaultNativeSource(false, ambIds_, ETH);
-
     }
 
     function test_estimateWithNativeTokenPriceAsZero() public {
@@ -729,12 +727,10 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         uint256 realEstimate = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
 
-
         assertLe(realEstimate, defaultEstimate);
 
         uint256 defaultEstimateNativeSrc =
             PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCostDefaultNativeSource(true, ambIds_, ETH);
-
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -1177,12 +1173,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.selectFork(FORKS[AVAX]);
 
         if (vaultWithDstSwap && isFailingIndex1Vault) {
-            console.log(
-                "USDC bal of dstSwapper:",
-                IERC20(v.interimOrUnderlyingDstToken1).balanceOf(getContract(AVAX, "DstSwapper"))
-            );
             v.wethBalOfSwapper = IERC20(v.interimToken2).balanceOf(getContract(AVAX, "DstSwapper"));
-            console.log("WETH bal of dstSwapper:", IERC20(v.interimToken2).balanceOf(getContract(AVAX, "DstSwapper")));
             v.txDataPasses = _buildLiqBridgeTxDataDstSwap(
                 1,
                 v.interimOrUnderlyingDstToken1,
@@ -1313,7 +1304,6 @@ contract CoreStateRegistryTest is ProtocolActions {
             assertGt(IERC20(IBaseForm(v.superform).getVaultAddress()).balanceOf(v.superform), 0);
         } else if (!vaultWithDstSwap && isFailingIndex1Vault) {
             v.wethBalOfSwapper = IERC20(v.interimToken2).balanceOf(getContract(AVAX, "DstSwapper"));
-            console.log("WETH bal of dstSwapper:", IERC20(v.interimToken2).balanceOf(getContract(AVAX, "DstSwapper")));
 
             v.txDataFails = _buildLiqBridgeTxDataDstSwap(
                 1, v.interimToken2, getContract(AVAX, "DAI"), getContract(AVAX, "DstSwapper"), AVAX, 1e17, 0
@@ -1393,7 +1383,6 @@ contract CoreStateRegistryTest is ProtocolActions {
             );
         } else if (!vaultWithDstSwap && !isFailingIndex1Vault) {
             v.wethBalOfSwapper = IERC20(v.interimToken2).balanceOf(getContract(AVAX, "DstSwapper"));
-            console.log("WETH bal of dstSwapper:", IERC20(v.interimToken2).balanceOf(getContract(AVAX, "DstSwapper")));
 
             v.txDataPasses = _buildLiqBridgeTxDataDstSwap(
                 1,
