@@ -238,14 +238,15 @@ contract LayerzeroV2Implementation is IAmbImplementation, ILayerZeroReceiver {
     function generateExtraData(uint256 gasLimit) external pure override returns (bytes memory extraData) {
         /// generate the executor options here, since we don't use msg.value just returning encoded args
         /// refer: https://docs.layerzero.network/v2/developers/evm/gas-settings/options#lzreceive-option
-        
+
         /// @dev uses the legacy extra data option
-        /// refer: https://github.com/LayerZero-Labs/LayerZero-v2/blob/1fde89479fdc68b1a54cda7f19efa84483fcacc4/oapp/contracts/oapp/libs/OptionsBuilder.sol#L178
+        /// refer:
+        /// https://github.com/LayerZero-Labs/LayerZero-v2/blob/1fde89479fdc68b1a54cda7f19efa84483fcacc4/oapp/contracts/oapp/libs/OptionsBuilder.sol#L178
         return abi.encodePacked(OPTIONS_TYPE, gasLimit);
     }
 
     /// @notice returns the oapp version information
-    function oAppVersion() external view returns (uint64 senderVersion, uint64 receiverVersion) {
+    function oAppVersion() external pure returns (uint64 senderVersion, uint64 receiverVersion) {
         return (SENDER_VERSION, RECEIVER_VERSION);
     }
 
@@ -256,7 +257,7 @@ contract LayerzeroV2Implementation is IAmbImplementation, ILayerZeroReceiver {
 
     /// @dev the path nonce starts from 1. If 0 is returned it means that there is NO nonce ordered enforcement.
     /// @dev is required by the off-chain executor to determine the OApp expects msg execution is ordered.
-    function nextNonce(uint32, /*_srcEid*/ bytes32 /*_sender*/ ) external view override returns (uint64 nonce) {
+    function nextNonce(uint32, /*_srcEid*/ bytes32 /*_sender*/ ) external pure override returns (uint64 nonce) {
         return 0;
     }
 

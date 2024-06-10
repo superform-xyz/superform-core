@@ -2,7 +2,6 @@
 pragma solidity ^0.8.23;
 
 import "../EnvironmentUtils.s.sol";
-import "forge-std/console.sol";
 
 struct UpdateVars {
     uint64 chainId;
@@ -98,7 +97,9 @@ abstract contract AbstractDeployDeBridgeValidators is EnvironmentUtils {
 
         vars.superRegistryC =
             SuperRegistry(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry")));
-        address expectedSr = vars.chainId == 250 ? 0x7B8d68f90dAaC67C577936d3Ce451801864EF189 : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
+        address expectedSr = vars.chainId == 250
+            ? 0x7B8d68f90dAaC67C577936d3Ce451801864EF189
+            : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
         assert(address(vars.superRegistryC) == expectedSr);
 
         vars.superRegistryC.setBridgeAddresses(newBridgeids, NEW_BRIDGE_ADDRESSES[vars.chainId], bridgeValidators);

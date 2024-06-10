@@ -4,29 +4,29 @@ pragma solidity ^0.8.23;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract SXSVDNormal4626NoNativeNoSlippageAMB15 is ProtocolActions {
+contract SDSVD4626SwapTokenInputSlippageOneInch is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
-    //////////////////////////////////////////////////////////////*/
-        AMBs = [1, 5];
+       //////////////////////////////////////////////////////////////*/
+        AMBs = [2, 3];
 
-        CHAIN_0 = ARBI;
-        DST_CHAINS = [POLY];
+        CHAIN_0 = ETH;
+        DST_CHAINS = [ETH];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[POLY][0] = [0];
+        TARGET_UNDERLYINGS[ETH][0] = [2];
 
-        TARGET_VAULTS[POLY][0] = [0];
+        TARGET_VAULTS[ETH][0] = [0];
 
-        TARGET_FORM_KINDS[POLY][0] = [0];
+        TARGET_FORM_KINDS[ETH][0] = [0];
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[POLY][0] = [2];
+        LIQ_BRIDGES[ETH][0] = [9];
 
-        RECEIVE_4626[POLY][0] = [false];
+        RECEIVE_4626[ETH][0] = [false];
 
         actions.push(
             TestAction({
@@ -36,11 +36,12 @@ contract SXSVDNormal4626NoNativeNoSlippageAMB15 is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                dstSwap: true,
-                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
-             })
+                slippage: 1000, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: false,
+                externalToken: 0
+            })
         );
+        /// @dev input token != vault underlying - swap involved
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -48,8 +49,9 @@ contract SXSVDNormal4626NoNativeNoSlippageAMB15 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amount_) public {
-        amount_ = uint128(bound(amount_, 1 * 10 ** 18, TOTAL_SUPPLY_ETH));
-        AMOUNTS[POLY][0] = [amount_];
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        amount_ = uint128(bound(amount_, 2 * 10 ** 18, TOTAL_SUPPLY_DAI));
+        AMOUNTS[ETH][0] = [amount_];
 
         for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];

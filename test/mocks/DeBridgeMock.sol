@@ -15,7 +15,7 @@ contract DeBridgeMock is Test {
 
     receive() external payable { }
 
-    function globalFixedNativeFee() external returns (uint88) {
+    function globalFixedNativeFee() external pure returns (uint88) {
         return type(uint88).max;
     }
 

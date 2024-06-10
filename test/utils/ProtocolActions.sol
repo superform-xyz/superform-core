@@ -1392,7 +1392,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
         UpdateSuperformDataAmountWithPricesLocalVars memory v;
         uint256 initialFork = vm.activeFork();
 
-
         vm.selectFork(FORKS[dstChainId_]);
         v.vDecimal2 =
             underlyingOrInterimTokenDst_ != NATIVE_TOKEN ? MockERC20(underlyingOrInterimTokenDst_).decimals() : 18;
@@ -1451,8 +1450,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
             amount_ = (amount_ * uint256(v.USDPerUnderlyingToken))
                 / (uint256(v.USDPerUnderlyingOrInterimTokenDst) * 10 ** (v.vDecimal3 - v.vDecimal2));
         } else {
-
-
             amount_ = (amount_ * uint256(v.USDPerUnderlyingToken) * 10 ** (v.vDecimal2 - v.vDecimal3))
                 / uint256(v.USDPerUnderlyingOrInterimTokenDst);
         }
@@ -2382,7 +2379,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     (finalAmount * uint256(vars.USDPerSendingTokenDst)) * 10 ** (vars.decimal2 - vars.decimal1)
                 ) / uint256(vars.USDPerReceivingTokenDst);
             }
-
         }
 
         /// @dev if test type is RevertProcessPayload, revert is further down the call chain
@@ -2563,6 +2559,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
         /// @dev replace socket bridge with socket one inch impl for dst swap
         if (liqBridgeKind_ == 2) {
             liqBridgeKind_ = 3;
+        }
+        /// @dev process dstswaps for lifi using 1inch
+        else if (liqBridgeKind_ == 1) {
+            liqBridgeKind_ = 9;
         }
 
         /// @dev liqData is rebuilt here to perform to send the tokens from dstSwapProcessor to CoreStateRegistry
