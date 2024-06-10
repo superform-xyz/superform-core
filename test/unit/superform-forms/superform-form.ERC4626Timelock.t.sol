@@ -175,7 +175,8 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         InitSingleVaultData memory data = InitSingleVaultData(
@@ -237,7 +238,8 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         InitSingleVaultData memory data = InitSingleVaultData(
@@ -299,7 +301,8 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         InitSingleVaultData memory data = InitSingleVaultData(

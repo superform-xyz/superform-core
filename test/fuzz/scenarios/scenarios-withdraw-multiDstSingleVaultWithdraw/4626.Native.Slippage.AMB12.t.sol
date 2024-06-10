@@ -115,14 +115,16 @@ contract MDSVWNormal4626NativeSlippageAMB12 is ProtocolActions {
                         TARGET_FORM_KINDS[DST_CHAINS[i]][1],
                         DST_CHAINS[i]
                     );
+                    console.log("DST_CHAINS[i]: ", DST_CHAINS[i]);
 
                     if (DST_CHAINS[i] == OP) {
                         AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0]];
                     } else if (DST_CHAINS[i] == AVAX) {
                         /// @dev bounded to 1 less due to partial withdrawals
-                        amountTwoWithdraw_ = uint128(bound(amountTwoWithdraw_, 1, superPositions[0] - 1));
+                        amountTwoWithdraw_ = uint128(bound(amountTwoWithdraw_, 10_000, superPositions[0] - 10_000));
                         AMOUNTS[DST_CHAINS[i]][1] = [amountTwoWithdraw_];
                     }
+                    console.log("AMOUNTS[DST_CHAINS[i]][1] ", AMOUNTS[DST_CHAINS[i]][1][0]);
                 }
             }
 

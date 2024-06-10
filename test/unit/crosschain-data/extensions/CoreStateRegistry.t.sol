@@ -159,7 +159,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         liqReqArr[0] = LiqRequest(
@@ -467,7 +468,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         txData[0] = _buildLiqBridgeTxData(liqBridgeTxDataArgs, false);
@@ -770,7 +772,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             /// @dev assuming same price of DAI on ETH and AVAX for this test
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         SingleVaultSFData memory data = SingleVaultSFData(
@@ -917,7 +920,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         liqReqArr[0] = LiqRequest(
@@ -1094,7 +1098,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             0,
             uint256(v.USDPerExternalToken),
             uint256(v.USDPerInterimOrUnderlyingDstToken1),
-            uint256(v.USDPerUnderlyingToken1)
+            uint256(v.USDPerUnderlyingToken1),
+            address(0)
         );
 
         LiqBridgeTxDataArgs memory liqBridgeTxData2 = LiqBridgeTxDataArgs(
@@ -1116,7 +1121,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             0,
             uint256(v.USDPerExternalToken),
             uint256(v.USDPerInterimToken2),
-            uint256(v.USDPerUnderlyingToken2)
+            uint256(v.USDPerUnderlyingToken2),
+            address(0)
         );
         v.liqReqArr = new LiqRequest[](2);
         LiqRequest memory liqRequest1 = LiqRequest(
@@ -1180,7 +1186,7 @@ contract CoreStateRegistryTest is ProtocolActions {
                 getContract(AVAX, "DAI"),
                 getContract(AVAX, "DstSwapper"),
                 AVAX,
-                419_972_359,
+                419_800_730,
                 0
             );
 
@@ -1390,7 +1396,7 @@ contract CoreStateRegistryTest is ProtocolActions {
                 getContract(AVAX, "DAI"),
                 getContract(AVAX, "DstSwapper"),
                 AVAX,
-                234_296_506_866_750_873,
+                111_629_656_688_722_279,
                 0
             );
 
@@ -1412,7 +1418,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             v.finalTokens[0] = getContract(AVAX, "DAI");
             v.finalTokens[1] = getContract(AVAX, "DAI");
 
-            v.amounts[0] = 419_950_757_613_293_461_130;
+            v.amounts[0] = 419_941_560_086_336_667_640;
             v.amounts[1] = 419_972_359;
 
             vm.prank(deployer);
@@ -1539,7 +1545,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         liqReqArr[0] = LiqRequest(

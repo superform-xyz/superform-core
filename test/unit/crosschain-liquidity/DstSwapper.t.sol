@@ -187,7 +187,7 @@ contract DstSwapperTest is ProtocolActions {
         );
 
         vm.startPrank(deployer);
-        deal(getContract(ETH, "WETH"), dstSwapper, 1e18);
+        deal(getContract(ETH, "WETH"), dstSwapper, 100e18);
 
         bytes memory txData = _buildLiqBridgeTxDataDstSwap(
             1, getContract(ETH, "WETH"), getContract(ETH, "DAI"), dstSwapper, ETH, 1e17, 1001
@@ -278,7 +278,7 @@ contract DstSwapperTest is ProtocolActions {
         _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry, address(0x2222));
 
         vm.startPrank(deployer);
-        deal(weth, dstSwapper, 1e18);
+        deal(weth, dstSwapper, 2e18);
 
         vm.expectRevert(Error.ZERO_AMOUNT.selector);
         DstSwapper(dstSwapper).updateFailedTx(1, weth, 0);
@@ -404,7 +404,7 @@ contract DstSwapperTest is ProtocolActions {
         vm.expectRevert(Error.INSUFFICIENT_BALANCE.selector);
         DstSwapper(dstSwapper).updateFailedTx(1, native, 1e18);
 
-        deal(dstSwapper, 1e18);
+        deal(dstSwapper, 100e18);
 
         DstSwapper(dstSwapper).updateFailedTx(1, native, 1e18);
 
@@ -468,7 +468,7 @@ contract DstSwapperTest is ProtocolActions {
         _simulateSingleVaultExistingPayloadOnOP(coreStateRegistry, interimToken);
 
         vm.startPrank(deployer);
-        deal(interimToken, dstSwapper, 2e18);
+        deal(interimToken, dstSwapper, 100e18);
 
         address[] memory interimTokens = new address[](2);
         interimTokens[0] = interimToken;
@@ -571,7 +571,7 @@ contract DstSwapperTest is ProtocolActions {
         _simulateMultiVaultExistingPayloadOnOP(coreStateRegistry, interimToken);
         vm.startPrank(deployer);
         /// @dev simulating a failed swap in DstSwapper that leaves these tokens there
-        deal(dstSwapper, 2e18);
+        deal(dstSwapper, 100e18);
 
         address[] memory interimTokens = new address[](2);
         interimTokens[0] = interimToken;
@@ -816,7 +816,7 @@ contract DstSwapperTest is ProtocolActions {
         );
 
         vm.startPrank(deployer);
-        deal(getContract(ETH, "WETH"), dstSwapper, 1e18);
+        deal(getContract(ETH, "WETH"), dstSwapper, 100e18);
 
         bytes memory txData = _buildLiqBridgeTxDataDstSwap(
             1, getContract(ETH, "WETH"), getContract(ETH, "DAI"), dstSwapper, ETH, 1e17, 1001

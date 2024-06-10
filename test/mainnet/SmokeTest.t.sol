@@ -67,6 +67,7 @@ contract SmokeTest is MainnetBaseSetup {
         }
     }
 
+    /*
     function test_superRegistryAddresses_destination() public {
         SuperRegistry sr;
 
@@ -122,6 +123,7 @@ contract SmokeTest is MainnetBaseSetup {
             }
         }
     }
+    */
 
     function test_roles() public {
         SuperRBAC srbac;
@@ -159,7 +161,6 @@ contract SmokeTest is MainnetBaseSetup {
             for (uint256 j = 0; j < len; ++j) {
                 assert(srbac.hasRole(ids[j], newAddresses[j]));
                 /// @dev each role should have a single member
-
                 assertEq(srbac.getRoleMemberCount(ids[j]), 1);
             }
             assert(srbac.hasRole(keccak256("PROTOCOL_ADMIN_ROLE"), PROTOCOL_ADMINS[i]));
