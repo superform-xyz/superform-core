@@ -31,12 +31,6 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     /// @dev opinionated function not part of the 5115 eip
     error FUNCTION_NOT_IMPLEMENTED();
 
-    /// @dev Error emitted when the tokenIn is not valid
-    error INVALID_TOKEN_IN();
-
-    /// @dev Error emitted when the tokenOut is not valid
-    error INVALID_TOKEN_OUT();
-
     /// @dev Error emitted when the tokenIn is not encoded in the extraFormData
     error ERC5115FORM_TOKEN_IN_NOT_ENCODED();
 
@@ -606,8 +600,6 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         internal
         returns (uint256 shares)
     {
-        _validateTokenIn(vaultTokenIn_);
-
         IStandardizedYield v = IStandardizedYield(vault);
 
         address sharesReceiver = singleVaultData_.retain4626 ? singleVaultData_.receiverAddress : address(this);
@@ -638,8 +630,6 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         internal
         returns (uint256 assets)
     {
-        _validateTokenOut(vaultTokenOut_);
-
         address assetsReceiver =
             singleVaultData_.liqData.txData.length == 0 ? singleVaultData_.receiverAddress : address(this);
 
@@ -670,51 +660,6 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
     }
 
-    function _validateTokenIn(address tokenIn_) internal view {
-        try this.isValidTokenIn(tokenIn_) returns (bool isValid) {
-            if (!isValid) {
-                revert INVALID_TOKEN_IN();
-            }
-        } catch {
-            address[] memory tokensIn = this.getTokensIn();
-            bool found;
-            for (uint256 i = 0; i < tokensIn.length; i++) {
-                if (tokensIn[i] == tokenIn_) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                revert INVALID_TOKEN_IN();
-            }
-        }
-        /// @dev token in must also match the asset set in the wrapper
-        if (tokenIn_ != asset) revert INVALID_TOKEN_IN();
-    }
-
-    function _validateTokenOut(address tokenOut_) internal view {
-        try this.isValidTokenOut(tokenOut_) returns (bool isValid) {
-            if (!isValid) {
-                revert INVALID_TOKEN_OUT();
-            }
-        } catch {
-            address[] memory tokensOut = this.getTokensOut();
-            bool found;
-            for (uint256 i = 0; i < tokensOut.length; i++) {
-                if (tokensOut[i] == tokenOut_) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                revert INVALID_TOKEN_OUT();
-            }
-        }
-
-        /// @dev token out must also match the asset set in the wrapper
-        if (tokenOut_ != IERC5115To4626Wrapper(vault).getMainTokenOut()) revert INVALID_TOKEN_OUT();
-    }
-
     function _isWithdrawTxDataAmountInvalid(
         uint256 bridgeDecodedAmount_,
         uint256 redeemedAmount_,
@@ -731,7 +676,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     }
 
     function _processEmergencyWithdraw(address receiverAddress_, uint256 amount_) internal {
-        IStandardizedYield v = IStandardizedYield(vault);
+        IStandardizedYield v = IStandardizedYield(IERC5115To4626Wrapper(vault).getUnderlying5115Vault());
         if (receiverAddress_ == address(0)) revert Error.ZERO_ADDRESS();
 
         if (v.balanceOf(address(this)) < amount_) {

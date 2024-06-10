@@ -1186,7 +1186,7 @@ contract CoreStateRegistryTest is ProtocolActions {
                 getContract(AVAX, "DAI"),
                 getContract(AVAX, "DstSwapper"),
                 AVAX,
-                419_972_359,
+                419_800_730,
                 0
             );
 
@@ -1396,7 +1396,7 @@ contract CoreStateRegistryTest is ProtocolActions {
                 getContract(AVAX, "DAI"),
                 getContract(AVAX, "DstSwapper"),
                 AVAX,
-                234_296_506_866_750_873,
+                111_629_656_688_722_279,
                 0
             );
 
@@ -1418,7 +1418,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             v.finalTokens[0] = getContract(AVAX, "DAI");
             v.finalTokens[1] = getContract(AVAX, "DAI");
 
-            v.amounts[0] = 419_950_757_613_293_461_130;
+            v.amounts[0] = 419_941_560_086_336_667_640;
             v.amounts[1] = 419_972_359;
 
             vm.prank(deployer);
