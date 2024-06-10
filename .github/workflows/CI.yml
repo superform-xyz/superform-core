@@ -32,6 +32,7 @@ env:
   TENDERLY_ACCOUNT_ID: "superform" # your username or organization name
   FOUNDRY_EXPORTS_OVERWRITE_LATEST: "true"
   OWNER_ADDRESS: ${{ secrets.OWNER_ADDRESS }}
+  DEBUG_MODE: "false"
 
 jobs:
   build:
@@ -45,7 +46,7 @@ jobs:
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
         with:
-          version: "nightly-fbad377ab26a432e48444cf324feee1195a30960"
+          version: "nightly-fb86e5d3bf41f9cef3ccc7fbd04e1a422f20c29e"
 
       - name: "Show the Foundry config"
         run: "forge config"
@@ -82,7 +83,7 @@ jobs:
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
         with:
-          version: "nightly-fbad377ab26a432e48444cf324feee1195a30960"
+          version: "nightly-fb86e5d3bf41f9cef3ccc7fbd04e1a422f20c29e"
 
       - name: "Restore the cached build"
         uses: "actions/cache/restore@v4"
@@ -123,7 +124,7 @@ jobs:
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
         with:
-          version: "nightly-fbad377ab26a432e48444cf324feee1195a30960"
+          version: "nightly-fb86e5d3bf41f9cef3ccc7fbd04e1a422f20c29e"
 
       - name: "Restore the cached build"
         uses: "actions/cache/restore@v4"
@@ -159,7 +160,7 @@ jobs:
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
         with:
-          version: "nightly-fbad377ab26a432e48444cf324feee1195a30960"
+          version: "nightly-fb86e5d3bf41f9cef3ccc7fbd04e1a422f20c29e"
 
       - name: "Install Tenderly CLI"
         run: curl https://raw.githubusercontent.com/Tenderly/tenderly-cli/master/scripts/install-linux.sh | sudo sh
