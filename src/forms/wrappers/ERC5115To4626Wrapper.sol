@@ -5,6 +5,7 @@ import { IERC5115To4626Wrapper } from "../interfaces/IERC5115To4626Wrapper.sol";
 import { IStandardizedYield } from "src/vendor/pendle/IStandardizedYield.sol";
 import { IERC20Metadata, IERC20 } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { Error } from "src/libraries/Error.sol";
 
 contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
     using SafeERC20 for IERC20;
@@ -38,6 +39,8 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
     //////////////////////////////////////////////////////////////
 
     constructor(address vault_, address tokenIn_, address tokenOut_) {
+        if (vault_ == address(0) || tokenIn_ == address(0) || tokenOut_ == address(0)) revert Error.ZERO_ADDRESS();
+
         /// @dev validate tokens in and out
         _validateTokenIn(tokenIn_, vault_);
         _validateTokenOut(tokenOut_, vault_);
@@ -120,10 +123,10 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
         /// @dev receiver cannot be this wrapper contract
         if (receiver == address(this)) revert INVALID_RECEIVER();
 
-        /// @dev the share is transfered to this contract first
-        IERC20(vault).safeTransferFrom(msg.sender, address(this), amountSharesToRedeem);
+        if (burnFromInternalBalance == false) {
+            IERC20(vault).safeTransferFrom(msg.sender, address(this), amountSharesToRedeem);
+        }
 
-        /// @dev redeem will burn the share from this contract
         return IStandardizedYield(vault).redeem(
             receiver, amountSharesToRedeem, tokenOut, minTokenOut, burnFromInternalBalance
         );
@@ -276,8 +279,9 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
                 revert INVALID_TOKEN_IN();
             }
         }
-        /// @dev token in must also match the asset set in the wrapper
-        if (token_ != asset) revert INVALID_TOKEN_IN();
+
+        /// @dev after deployment of this contract, the token passed must match the inscribed one
+        if (asset != address(0) && token_ != asset) revert INVALID_TOKEN_IN();
     }
 
     function _validateTokenOut(address token_, address vault_) internal view {
@@ -299,7 +303,7 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
             }
         }
 
-        /// @dev token out must also match the asset set in the wrapper
-        if (token_ != IERC5115To4626Wrapper(vault).getMainTokenOut()) revert INVALID_TOKEN_OUT();
+        /// @dev after deployment of this contract, the token passed must match the inscribed one
+        if (mainTokenOut != address(0) && token_ != mainTokenOut) revert INVALID_TOKEN_OUT();
     }
 }
