@@ -68,7 +68,7 @@ contract SuperPositionsTest is BaseSetup {
     }
 
     /// Test support interface
-    function test_SupportsInterface() public {
+    function test_SupportsInterface() public view {
         assertEq(superPositions.supportsInterface(INTERFACE_ID_ERC165), true);
     }
 

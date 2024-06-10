@@ -33,9 +33,9 @@ contract MDSVDNormal4626NoNativeNoSlippageAMB12 is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[AVAX][0] = [1];
-        LIQ_BRIDGES[ETH][0] = [1];
-        LIQ_BRIDGES[POLY][0] = [1];
+        LIQ_BRIDGES[AVAX][0] = [2];
+        LIQ_BRIDGES[ETH][0] = [2];
+        LIQ_BRIDGES[POLY][0] = [2];
 
         RECEIVE_4626[AVAX][0] = [false];
         RECEIVE_4626[ETH][0] = [false];

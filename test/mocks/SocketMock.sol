@@ -147,14 +147,12 @@ contract SocketMock is ISocketRegistry, Test {
         uint256 decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
         uint256 decimal2 = bridgeToken_ == NATIVE ? 18 : MockERC20(bridgeToken_).decimals();
 
-        console.log("amount pre-swap", amount_);
         /// @dev the results of this amount if there is a bridge are effectively ignored
         if (decimal1 > decimal2) {
             amount_ = (amount_ * USDPerExternalToken) / (USDPerUnderlyingToken * 10 ** (decimal1 - decimal2));
         } else {
             amount_ = (amount_ * USDPerExternalToken) * 10 ** (decimal2 - decimal1) / USDPerUnderlyingToken;
         }
-        console.log("amount post-swap", amount_);
         /// @dev swap slippage if any, is applied in ProtocolActions._stage1_buildReqData() for direct
         /// actions and in ProtocolActions._buildLiqBridgeTxDataDstSwap() for dstSwaps.
         /// @dev Could allocate swap slippage share separately like for ProtocolActions.MULTI_TX_SLIPPAGE_SHARE

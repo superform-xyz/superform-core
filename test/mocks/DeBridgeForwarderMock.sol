@@ -37,7 +37,13 @@ contract DeBridgeForwarderMock is Test {
         _strictlySwapAndCall(_inputToken, _inputAmount, _targetData);
     }
 
-    function _strictlySwapAndCall(address _inputToken, uint256 _inputAmount, bytes memory _targetData) internal {
+    function _strictlySwapAndCall(
+        address, /*_inputToken*/
+        uint256, /*_inputAmount*/
+        bytes memory _targetData
+    )
+        internal
+    {
         InternalVars memory v;
 
         (v.quote,,,,, v.metadata) =

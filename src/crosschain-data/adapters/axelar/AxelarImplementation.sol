@@ -206,7 +206,7 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
-        if (keccak256(bytes(sourceAddress)) != keccak256(bytes(authorizedImpl[sourceChain].toString()))) {
+        if (sourceAddress.toAddress() != authorizedImpl[sourceChain]) {
             revert Error.INVALID_SRC_SENDER();
         }
 

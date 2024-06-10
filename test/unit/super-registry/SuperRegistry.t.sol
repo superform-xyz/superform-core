@@ -393,7 +393,7 @@ contract SuperRegistryTest is BaseSetup {
         superRegistry.setRequiredMessagingQuorum(0, 2);
     }
 
-    function test_getAmbId() public {
+    function test_getAmbId() public view {
         uint256 ambId_ = superRegistry.getAmbId(getContract(ETH, "LayerzeroImplementation"));
         assertEq(ambId_, 1);
     }

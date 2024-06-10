@@ -27,7 +27,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
 
     constructor(
         uint64[] memory chainIds_,
-        string[39] memory contractNames_,
+        string[40] memory contractNames_,
         address[][] memory coreContracts,
         address[][] memory underlyingAddresses,
         address[][][] memory vaultAddresses,
@@ -51,7 +51,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
             )
         );
 
-        console.log("Handler setup done!");
+        if (DEBUG_MODE) console.log("Handler setup done!");
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -93,7 +93,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
         public
         adjustTimestamp(timeJumpSeed)
     {
-        console.log("## Handler call direct ##");
+        if (DEBUG_MODE) console.log("## Handler call direct ##");
         HandlerLocalVars memory v;
         v.AMBs = new uint8[](2);
         v.AMBs[0] = 1;
@@ -123,18 +123,18 @@ contract VaultSharesHandler is InvariantProtocolActions {
 
         vm.selectFork(FORKS[v.CHAIN_0]);
         address input = getContract(v.CHAIN_0, UNDERLYING_TOKENS[inputToken]);
-        console.log("inputToken", input);
+        if (DEBUG_MODE) console.log("inputToken", input);
         uint256 inputDecimals = MockERC20(input).decimals();
-        console.log("A");
+        if (DEBUG_MODE) console.log("A");
         if (inputToken == 0) {
             amount1 = bound(amount1, 1 * 10 ** inputDecimals, 1 * 10 ** (inputDecimals + 2));
-            console.log("amount1 dai", amount1);
+            if (DEBUG_MODE) console.log("amount1 dai", amount1);
         } else if (inputToken == 1) {
             amount1 = bound(amount1, 12 * 10 ** inputDecimals, 12 * 10 ** (inputDecimals + 2));
-            console.log("amount1 usdc", amount1);
+            if (DEBUG_MODE) console.log("amount1 usdc", amount1);
         } else if (inputToken == 2) {
             amount1 = bound(amount1, 11 * 10 ** inputDecimals, 11 * 10 ** (inputDecimals + 2));
-            console.log("amount1 weth", amount1);
+            if (DEBUG_MODE) console.log("amount1 weth", amount1);
         }
 
         v.amountsPerDst[0] = amount1;
@@ -204,7 +204,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
         public
         adjustTimestamp(timeJumpSeed)
     {
-        console.log("## Handler call xChain ##");
+        if (DEBUG_MODE) console.log("## Handler call xChain ##");
 
         HandlerLocalVars memory v;
         v.AMBs = new uint8[](2);
@@ -241,13 +241,13 @@ contract VaultSharesHandler is InvariantProtocolActions {
         uint256 inputDecimals = MockERC20(getContract(v.CHAIN_0, UNDERLYING_TOKENS[inputToken])).decimals();
         if (inputToken == 0) {
             amount1 = bound(amount1, 1 * 10 ** inputDecimals, 1 * 10 ** (inputDecimals + 2));
-            console.log("amount1 dai", amount1);
+            if (DEBUG_MODE) console.log("amount1 dai", amount1);
         } else if (inputToken == 1) {
             amount1 = bound(amount1, 12 * 10 ** inputDecimals, 12 * 10 ** (inputDecimals + 2));
-            console.log("amount1 usdc", amount1);
+            if (DEBUG_MODE) console.log("amount1 usdc", amount1);
         } else if (inputToken == 2) {
             amount1 = bound(amount1, 11 * 10 ** inputDecimals, 11 * 10 ** (inputDecimals + 2));
-            console.log("amount1 weth", amount1);
+            if (DEBUG_MODE) console.log("amount1 weth", amount1);
         }
 
         v.amountsPerDst[0] = amount1;
@@ -309,7 +309,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
 
     struct InitHandlerSetupVars {
         uint64[] chainIds;
-        string[39] contractNames;
+        string[40] contractNames;
         address[][] coreContracts;
         address[][] underlyingAddresses;
         address[][][] vaultAddresses;

@@ -161,7 +161,6 @@ contract SmokeTest is MainnetBaseSetup {
             for (uint256 j = 0; j < len; ++j) {
                 assert(srbac.hasRole(ids[j], newAddresses[j]));
                 /// @dev each role should have a single member
-
                 assertEq(srbac.getRoleMemberCount(ids[j]), 1);
             }
             assert(srbac.hasRole(keccak256("PROTOCOL_ADMIN_ROLE"), PROTOCOL_ADMINS[i]));
@@ -461,7 +460,6 @@ contract SmokeTest is MainnetBaseSetup {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
             vm.selectFork(FORKS[chainId]);
             paymentHelper = PaymentHelper(getContract(chainId, "PaymentHelper"));
-            console.log("--Checking chain id ", chainId);
 
             for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
                 assertEq(
