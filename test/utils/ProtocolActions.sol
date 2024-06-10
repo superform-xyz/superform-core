@@ -128,7 +128,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
     )
         internal
     {
-        console.log("new-action");
+        if (DEBUG_MODE) console.log("new-action");
 
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[CHAIN_0]);
@@ -178,7 +178,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         if (action.dstSwap) MULTI_TX_SLIPPAGE_SHARE = 40;
         /// @dev builds superformRouter request data
         (multiSuperformsData, singleSuperformsData, vars) = _stage1_buildReqData(action, act);
-        console.log("Stage 1 complete");
+        if (DEBUG_MODE) console.log("Stage 1 complete");
 
         uint256[][] memory spAmountSummed = new uint256[][](vars.nDestinations);
         uint256[] memory spAmountBeforeWithdrawPerDst;
@@ -192,20 +192,20 @@ abstract contract ProtocolActions is CommonProtocolActions {
         /// @dev returns sameChainDstHasRevertingVault - this means that the request reverted, thus no payloadId
         /// increase happened nor there is any need for payload update or further assertion
         vars = _stage2_run_src_action(action, multiSuperformsData, singleSuperformsData, vars);
-        console.log("Stage 2 complete");
+        if (DEBUG_MODE) console.log("Stage 2 complete");
 
         /// @dev simulation of cross-chain message delivery (for x-chain actions)
         aV = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperformsData, singleSuperformsData);
-        console.log("Stage 3 complete");
+        if (DEBUG_MODE) console.log("Stage 3 complete");
 
         /// @dev processing of message delivery on destination   (for x-chain actions)
         success = _stage4_process_src_dst_payload(action, vars, aV, singleSuperformsData, act);
 
         if (!success) {
-            console.log("Stage 4 failed");
+            if (DEBUG_MODE) console.log("Stage 4 failed");
             return;
         } else if (action.action == Actions.Withdraw && action.testType == TestType.Pass) {
-            console.log("Stage 4 complete");
+            if (DEBUG_MODE) console.log("Stage 4 complete");
 
             /// @dev fully successful withdraws finish here and are asserted
             _assertAfterStage4Withdraw(
@@ -221,11 +221,11 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             success = _stage5_process_superPositions_mint(action, vars, multiSuperformsData);
             if (!success) {
-                console.log("Stage 5 failed");
+                if (DEBUG_MODE) console.log("Stage 5 failed");
 
                 return;
             } else if (action.testType != TestType.RevertMainAction) {
-                console.log("Stage 5 complete");
+                if (DEBUG_MODE) console.log("Stage 5 complete");
 
                 /// @dev if we don't even process main action there is nothing to assert
                 /// @dev assert superpositions mint
@@ -243,11 +243,11 @@ abstract contract ProtocolActions is CommonProtocolActions {
             bool toAssert;
             (success, toAssert) = _stage6_process_superPositions_withdraw(action, vars, multiSuperformsData);
             if (!success) {
-                console.log("Stage 6 failed");
+                if (DEBUG_MODE) console.log("Stage 6 failed");
                 return;
             } else if (toAssert) {
                 amountsToRemintPerDst = _amountsToRemintPerDst(action, vars, multiSuperformsData, singleSuperformsData);
-                console.log("Stage 6 complete - asserting");
+                if (DEBUG_MODE) console.log("Stage 6 complete - asserting");
                 /// @dev assert superpositions re-mint
                 _assertAfterFailedWithdraw(
                     action,
@@ -265,7 +265,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         if (action.action == Actions.Withdraw) {
             _stage7_finalize_timelocked_payload(vars);
 
-            console.log("Stage 7 complete");
+            if (DEBUG_MODE) console.log("Stage 7 complete");
 
             if (action.testType == TestType.Pass) {
                 /// @dev assert superpositions were burned
@@ -284,7 +284,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             /// @dev Process payload received on source from destination (withdraw callback, for failed withdraws)
             _stage8_process_failed_timelocked_xchain_remint(action, vars);
 
-            console.log("Stage 8 complete");
+            if (DEBUG_MODE) console.log("Stage 8 complete");
 
             amountsToRemintPerDst =
                 _amountsToRemintPerDstWithTimelocked(action, vars, multiSuperformsData, singleSuperformsData);
@@ -1409,7 +1409,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         /// @dev for e.g. externalToken = DAI, underlyingTokenDst = USDC, daiAmount = 100
         /// => usdcAmount = ((USDPerDai / 10e18) / (USDPerUsdc / 10e6)) * daiAmount
-        console.log("test amount pre-swap", amount_);
+        if (DEBUG_MODE) console.log("test amount pre-swap", amount_);
         /// @dev src swaps simulation if any
         if (externalToken_ != underlyingToken_) {
             vm.selectFork(FORKS[srcChainId_]);
@@ -1427,7 +1427,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 amount_ = ((amount_ * uint256(v.USDPerExternalToken)) * 10 ** (v.decimal2 - v.decimal1))
                     / uint256(v.USDPerUnderlyingToken);
             }
-            console.log("test amount post-swap", amount_);
+            if (DEBUG_MODE) console.log("test amount post-swap", amount_);
         }
 
         v.slippage = slippage_;
@@ -1437,11 +1437,11 @@ abstract contract ProtocolActions is CommonProtocolActions {
         /// @dev add just bridge slippage here (pre-dst swap)
         else {
             v.slippage = (v.slippage * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
-            console.log("applied slippage in pre dst swap");
+            if (DEBUG_MODE) console.log("applied slippage in pre dst swap");
         }
 
         amount_ = (amount_ * uint256(10_000 - v.slippage)) / 10_000;
-        console.log("test amount pre-bridge, post-slippage", amount_);
+        if (DEBUG_MODE) console.log("test amount pre-bridge, post-slippage", amount_);
 
         /// @dev if args.externalToken == underlyingToken_, USDPerExternalToken == USDPerUnderlyingToken
         /// @dev v.decimal3 = decimals of underlyingToken_ (externalToken_ too if above holds true) (src
@@ -1453,7 +1453,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             amount_ = (amount_ * uint256(v.USDPerUnderlyingToken) * 10 ** (v.vDecimal2 - v.vDecimal3))
                 / uint256(v.USDPerUnderlyingOrInterimTokenDst);
         }
-        console.log("test amount post-bridge", amount_);
+        if (DEBUG_MODE) console.log("test amount post-bridge", amount_);
         vm.selectFork(initialFork);
         return amount_;
     }
@@ -1659,7 +1659,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
             v.totalAmount += finalAmounts[i];
 
             finalAmounts[i] = superformData.amount;
+            if (DEBUG_MODE) console.log("finalAmount", finalAmounts[i]);
             args.outputAmounts[i] = superformData.outputAmount;
+            if (DEBUG_MODE) console.log("args.outputAmounts[i]", args.outputAmounts[i]);
         }
 
         if (action == Actions.DepositPermit2) {
@@ -1845,7 +1847,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         /// @dev for e.g. externalToken = DAI, underlyingTokenDst = USDC, daiAmount = 100
         /// => usdcAmount = ((USDPerDai / 10e18) / (USDPerUsdc / 10e6)) * daiAmount
-        console.log("Intent: test amount pre-swap", args.amount);
+
+        if (DEBUG_MODE) console.log("test amount pre-swap", args.amount);
+
         /// @dev src swaps simulation if any
         if (args.externalToken != args.underlyingToken) {
             vm.selectFork(FORKS[args.srcChainId]);
@@ -1863,7 +1867,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 args.amount = ((args.amount * uint256(v.USDPerExternalToken)) * 10 ** (decimal2 - decimal1))
                     / uint256(v.USDPerUnderlyingToken);
             }
-            console.log("Intent: test amount post-swap", args.amount);
+
+            if (DEBUG_MODE) console.log("test amount post-swap", args.amount);
         }
 
         /// @dev applying only bridge slippage here as dstSwap slippage is applied in _updateSingleVaultDepositPayload()
@@ -1873,7 +1878,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
         else if (args.dstSwap) slippage = (slippage * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
 
         args.amount = (args.amount * uint256(10_000 - slippage)) / 10_000;
-        console.log("Intent: test amount pre-bridge, post-slippage", args.amount);
+
+        if (DEBUG_MODE) console.log("test amount pre-bridge, post-slippage", v.amount);
 
         /// @dev if args.externalToken == args.underlyingToken, USDPerExternalToken == USDPerUnderlyingToken
         /// @dev v.decimal3 = decimals of args.underlyingToken (args.externalToken too if above holds true) (src chain),
@@ -1886,7 +1892,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 / uint256(v.USDPerUnderlyingOrInterimTokenDst);
         }
 
-        console.log("Intent: test amount post-bridge", v.amount);
+        if (DEBUG_MODE) console.log("test amount post-bridge", v.amount);
 
         /// @dev extra step to convert interim token on dst to underlying token on dst (if there is a dst Swap)
         if (args.uniqueInterimToken != address(0)) {
@@ -1899,7 +1905,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             }
         }
 
-        console.log("Intent: test amount post-dst swap --", v.amount);
+        if (DEBUG_MODE) console.log("test amount post-dst swap --", v.amount);
 
         vm.selectFork(FORKS[args.toChainId]);
         (address superform,,) = DataLib.getSuperform(args.superformId);
@@ -2022,9 +2028,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         vm.selectFork(FORKS[args.toChainId]);
         (address superform,,) = DataLib.getSuperform(args.superformId);
-        console.log(superform);
 
         uint256 outputAmount = IBaseForm(superform).previewRedeemFrom(args.amount);
+
         /// @dev extraData is currently used to send in the partialWithdraw vaults without resorting to extra args, just
         /// for withdraws
         superformData = SingleVaultSFData(
@@ -3454,7 +3460,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 }
             }
         }
-        console.log("Asserted after withdraw");
+        if (DEBUG_MODE) console.log("Asserted after withdraw");
     }
 
     function _assertAfterStage7Withdraw(
@@ -3547,7 +3553,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 }
             }
         }
-        console.log("Asserted after stage7 timelock withdraw");
+        if (DEBUG_MODE) console.log("Asserted after stage7 timelock withdraw");
     }
 
     function _assertAfterFailedWithdraw(
@@ -3595,7 +3601,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 }
             }
         }
-        console.log("Asserted after failed withdraw");
+        if (DEBUG_MODE) console.log("Asserted after failed withdraw");
     }
 
     struct AssertAfterTimelockFailedWithdraw {
@@ -3659,7 +3665,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 }
             }
         }
-        console.log("Asserted after failed timelock withdraw");
+        if (DEBUG_MODE) console.log("Asserted after failed timelock withdraw");
     }
 
     function _successfulDepositXChain(
