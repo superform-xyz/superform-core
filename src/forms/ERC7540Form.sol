@@ -11,8 +11,9 @@ import { Error } from "src/libraries/Error.sol";
 import { InitSingleVaultData, LiqRequest } from "src/types/DataTypes.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IERC7540 } from "./interfaces/IERC7540.sol";
+import { IERC7540, IERC7540Deposit, IERC7540Redeem } from "src/vendor/centrifuge/IERC7540.sol";
 import { IERC7540FormBase } from "./interfaces/IERC7540Form.sol";
+import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 
 /// @title ERC7540Form
 /// @dev Form implementation to handle async 7540 vaults
@@ -41,14 +42,20 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
     //////////////////////////////////////////////////////////////
     error NOT_ASYNC_STATE_REGISTRY();
 
+    error ERC_165_INTERFACE_DEPOSIT_CALL_FAILED();
+
+    error ERC_165_INTERFACE_REDEEM_CALL_FAILED();
+
     //////////////////////////////////////////////////////////////
-    //                         CONSTANTS                         //
+    //                         STORAGE                         //
     //////////////////////////////////////////////////////////////
 
     uint8 constant stateRegistryId = 2; // AsyncStateRegistry
 
+    VaultKind private _vaultKind;
+
     //////////////////////////////////////////////////////////////
-    //                           STRUCTS                         //
+    //                  STRUCTS  and ENUMS                      //
     //////////////////////////////////////////////////////////////
 
     struct ClaimWithdrawLocalVars {
@@ -61,6 +68,13 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         LiqRequest liqData;
     }
 
+    enum VaultKind {
+        UNSET,
+        DEPOSIT_ASYNC,
+        REDEEM_ASYNC,
+        FULLY_ASYNC,
+        SYNC
+    }
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
     //////////////////////////////////////////////////////////////
@@ -267,12 +281,20 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         override
         returns (uint256 shares)
     {
-        (uint256 assetsToDeposit, uint256 requestId) = _requestDirectDeposit(singleVaultData_);
+        if (_vaultKind == VaultKind.UNSET) {
+            _vaultKind = _vaultKindCheck();
+        }
+        if (_vaultKind == VaultKind.DEPOSIT_ASYNC || _vaultKind == VaultKind.FULLY_ASYNC) {
+            (uint256 assetsToDeposit, uint256 requestId) = _requestDirectDeposit(singleVaultData_);
 
-        /// @dev state registry for re-processing at a later date
-        _storeDepositPayload(0, CHAIN_ID, assetsToDeposit, requestId, singleVaultData_);
+            /// @dev state registry for re-processing at a later date
+            _storeDepositPayload(0, CHAIN_ID, assetsToDeposit, requestId, singleVaultData_);
+            shares = 0;
+        } else {
+            shares = _processDirectDeposit(singleVaultData_);
+        }
 
-        return 0;
+        return shares;
     }
 
     /// @inheritdoc BaseForm
@@ -286,22 +308,30 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         override
         returns (uint256 shares)
     {
-        /// @dev state registry for re-processing at a later date
-        _storeDepositPayload(
-            1,
-            srcChainId_,
-            singleVaultData_.amount,
-            _requestXChainDeposit(singleVaultData_, srcChainId_),
-            singleVaultData_
-        );
+        if (_vaultKind == VaultKind.UNSET) {
+            _vaultKind = _vaultKindCheck();
+        }
+        if (_vaultKind == VaultKind.DEPOSIT_ASYNC || _vaultKind == VaultKind.FULLY_ASYNC) {
+            /// @dev state registry for re-processing at a later date
+            _storeDepositPayload(
+                1,
+                srcChainId_,
+                singleVaultData_.amount,
+                _requestXChainDeposit(singleVaultData_, srcChainId_),
+                singleVaultData_
+            );
+            shares = 0;
+        } else {
+            shares = _processXChainDeposit(singleVaultData_, srcChainId_);
+        }
 
-        return 0;
+        return shares;
     }
 
     /// @inheritdoc BaseForm
     /// @dev this is the step-1 for async form withdraw, direct case
     /// @dev will mandatorily process unlock unless the retain4626 flag is set
-    /// @return shares is always 0
+    /// @return assets
     function _directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address /*srcSender_*/
@@ -309,9 +339,12 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         internal
         virtual
         override
-        returns (uint256)
+        returns (uint256 assets)
     {
-        if (!_isPaused(singleVaultData_.superformId)) {
+        if (_vaultKind == VaultKind.UNSET) {
+            _vaultKind = _vaultKindCheck();
+        }
+        if (_vaultKind == VaultKind.REDEEM_ASYNC || _vaultKind == VaultKind.FULLY_ASYNC) {
             if (!singleVaultData_.retain4626) {
                 /// @dev state registry for re-processing at a later date
                 _storeWithdrawPayload(0, CHAIN_ID, _requestRedeem(singleVaultData_, CHAIN_ID), singleVaultData_);
@@ -319,16 +352,18 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
                 /// @dev transfer shares to user and do not redeem shares for assets
                 IERC20(IERC7540(vault).share()).safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
             }
+
+            assets = 0;
         } else {
-            IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(singleVaultData_);
+            assets = _processDirectWithdraw(singleVaultData_);
         }
-        return 0;
+        return assets;
     }
 
     /// @inheritdoc BaseForm
     /// @dev this is the step-1 for async form withdraw, xchain case
     /// @dev will mandatorily process unlock unless the retain4626 flag is set
-    /// @return shares is always 0
+    /// @return assets
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address, /*srcSender_*/
@@ -337,31 +372,25 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         internal
         virtual
         override
-        returns (uint256)
+        returns (uint256 assets)
     {
-        if (srcChainId_ != 0 && srcChainId_ != CHAIN_ID) {
-            if (!_isPaused(singleVaultData_.superformId)) {
-                if (!singleVaultData_.retain4626) {
-                    /// @dev state registry for re-processing at a later date
-                    _storeWithdrawPayload(
-                        1, srcChainId_, _requestRedeem(singleVaultData_, srcChainId_), singleVaultData_
-                    );
-                } else {
-                    /// @dev transfer shares to user and do not redeem shares for assets
-                    IERC20(IERC7540(vault).share()).safeTransfer(
-                        singleVaultData_.receiverAddress, singleVaultData_.amount
-                    );
-                }
+        if (_vaultKind == VaultKind.UNSET) {
+            _vaultKind = _vaultKindCheck();
+        }
+        if (_vaultKind == VaultKind.REDEEM_ASYNC || _vaultKind == VaultKind.FULLY_ASYNC) {
+            if (!singleVaultData_.retain4626) {
+                /// @dev state registry for re-processing at a later date
+                _storeWithdrawPayload(1, srcChainId_, _requestRedeem(singleVaultData_, srcChainId_), singleVaultData_);
             } else {
-                IEmergencyQueue(superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"))).queueWithdrawal(
-                    singleVaultData_
-                );
+                /// @dev transfer shares to user and do not redeem shares for assets
+                IERC20(IERC7540(vault).share()).safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
             }
+            assets = 0;
         } else {
-            revert Error.INVALID_CHAIN_ID();
+            assets = _processXChainWithdraw(singleVaultData_, srcChainId_);
         }
 
-        return 0;
+        return assets;
     }
 
     /// @inheritdoc BaseForm
@@ -478,7 +507,7 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
 
         /// ERC7540 logic
         /// @dev if receiver address is a contract it needs to have a onERC7540DepositReceived() function
-        requestId = v.requestDeposit(assetsToDeposit, singleVaultData_.receiverAddress, address(this), "");
+        requestId = v.requestDeposit(assetsToDeposit, singleVaultData_.receiverAddress, address(this));
 
         emit RequestProcessed(
             CHAIN_ID, CHAIN_ID, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc, requestId
@@ -512,7 +541,7 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
 
         /// ERC7540 logic
         /// @dev if receiver address is a contract it needs to have a onERC7540DepositReceived() function
-        requestId = v.requestDeposit(singleVaultData_.amount, singleVaultData_.receiverAddress, address(this), "");
+        requestId = v.requestDeposit(singleVaultData_.amount, singleVaultData_.receiverAddress, address(this));
 
         emit RequestProcessed(
             srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc, requestId
@@ -534,8 +563,7 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
 
         IERC7540 v = IERC7540(vault);
 
-        uint256 requestId =
-            v.requestRedeem(singleVaultData_.amount, singleVaultData_.receiverAddress, address(this), "");
+        uint256 requestId = v.requestRedeem(singleVaultData_.amount, singleVaultData_.receiverAddress, address(this));
 
         emit RequestProcessed(
             srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault, requestId
@@ -571,5 +599,32 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY"))).receiveWithdrawPayload(
             type_, srcChainId_, requestId_, data_
         );
+    }
+
+    function _vaultKindCheck() public view returns (VaultKind kind) {
+        bool depositSupported;
+        bool redeemSupported;
+
+        /// @dev ideally the check is made at the selector level
+        try IERC165(vault).supportsInterface(type(IERC7540Deposit).interfaceId) returns (bool depositSupported_) {
+            depositSupported = depositSupported_;
+            try IERC165(vault).supportsInterface(type(IERC7540Redeem).interfaceId) returns (bool redeemSupported_) {
+                redeemSupported = redeemSupported_;
+            } catch {
+                revert ERC_165_INTERFACE_REDEEM_CALL_FAILED();
+            }
+        } catch {
+            revert ERC_165_INTERFACE_DEPOSIT_CALL_FAILED();
+        }
+
+        if (depositSupported && redeemSupported) {
+            return VaultKind.FULLY_ASYNC;
+        } else if (depositSupported) {
+            return VaultKind.DEPOSIT_ASYNC;
+        } else if (redeemSupported) {
+            return VaultKind.REDEEM_ASYNC;
+        } else {
+            return VaultKind.SYNC;
+        }
     }
 }

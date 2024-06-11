@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.23;
+pragma solidity >=0.5.0;
 
 /**
  * @dev Interface of the ERC165 standard, as defined in the
@@ -242,7 +242,9 @@ interface IERC7575 is IERC165 {
     function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets);
 }
 
-interface IERC7575Share {
+interface IERC7575Share is IERC165 {
+    event VaultUpdate(address indexed asset, address vault);
+
     /**
      * @dev Returns the address of the Vault for the given asset.
      *
