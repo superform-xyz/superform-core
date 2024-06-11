@@ -4,9 +4,18 @@ pragma solidity ^0.8.23;
 import { ICoreStateRegistry } from "src/interfaces/ICoreStateRegistry.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import { IERC1155 } from "openzeppelin-contracts/contracts/interfaces/IERC1155.sol";
 import { IERC1155Receiver } from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
-import { PayloadState, AMBMessage } from "src/types/DataTypes.sol";
+import {
+    PayloadState,
+    AMBMessage,
+    CallbackType,
+    TransactionType,
+    ReturnSingleData,
+    ReturnMultiData
+} from "src/types/DataTypes.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
 
 interface ICoreStateRegistryExtended is ICoreStateRegistry {
     function payloadsCount() external view returns (uint256);
@@ -16,12 +25,15 @@ interface ICoreStateRegistryExtended is ICoreStateRegistry {
 }
 
 contract SuperformRouterWrapper is IERC1155Receiver {
+    using DataLib for uint256;
+
     //////////////////////////////////////////////////////////////
     //                       CONSTANTS                          //
     //////////////////////////////////////////////////////////////
 
     ICoreStateRegistryExtended public immutable CORE_STATE_REGISTRY;
     address public immutable SUPERFORM_ROUTER;
+    address public immutable SUPER_POSITIONS;
 
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
@@ -34,8 +46,9 @@ contract SuperformRouterWrapper is IERC1155Receiver {
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address superformRouter_, ICoreStateRegistryExtended coreStateRegistry_) {
+    constructor(address superformRouter_, address superPositions_, ICoreStateRegistryExtended coreStateRegistry_) {
         SUPERFORM_ROUTER = superformRouter_;
+        SUPER_POSITIONS = superPositions_;
         CORE_STATE_REGISTRY = coreStateRegistry_;
     }
 
@@ -129,11 +142,34 @@ contract SuperformRouterWrapper is IERC1155Receiver {
     }
 
     /// @dev this is callback payload id
-    function completeDisbursement(uint256 payloadId) external {
-        AMBMessage memory message_ =
-            AMBMessage(CORE_STATE_REGISTRY.payloadHeader(payloadId), CORE_STATE_REGISTRY.payloadBody(payloadId));
+    function completeDisbursement(uint256 returnPayloadId) external {
+        uint256 txInfo = CORE_STATE_REGISTRY.payloadHeader(returnPayloadId);
 
-        /// make sure the callback type is return
+        (uint256 returnTxType, uint256 callbackType, uint8 multi,,,) = txInfo.decodeTxInfo();
+
+        if (returnTxType != uint256(TransactionType.DEPOSIT) || callbackType != uint256(CallbackType.RETURN)) {
+            revert();
+        }
+
+        uint256 payloadId;
+        if (multi != 0) {
+            ReturnMultiData memory returnData =
+                abi.decode(CORE_STATE_REGISTRY.payloadBody(returnPayloadId), (ReturnMultiData));
+
+            payloadId = returnData.payloadId;
+            IERC1155(SUPER_POSITIONS).safeBatchTransferFrom(
+                address(this), msgSenderMap[payloadId], returnData.superformIds, returnData.amounts, ""
+            );
+        } else {
+            ReturnSingleData memory returnData =
+                abi.decode(CORE_STATE_REGISTRY.payloadBody(returnPayloadId), (ReturnSingleData));
+
+            payloadId = returnData.payloadId;
+            IERC1155(SUPER_POSITIONS).safeTransferFrom(
+                address(this), msgSenderMap[payloadId], returnData.superformId, returnData.amount, ""
+            );
+        }
+
         if (statusMap[payloadId]) {
             revert();
         }
