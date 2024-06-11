@@ -26,7 +26,7 @@ abstract contract MerkleReader is StdCheats, BaseSetup {
 
     string private proofQueryAppend = "].proof";
 
-    address USDC = 0x81C9A7B55A4df39A9B7B5F781ec0e53539694873;
+    address USDC = 0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85;
     address DAI = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
 
     address[] tokenTypes = [USDC, DAI];

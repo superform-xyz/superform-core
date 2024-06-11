@@ -4,8 +4,8 @@ pragma solidity ^0.8.23;
 import { AbstractDeployRewardsDistributor } from "./Abstract.Deploy.RewardsDistributor.s.sol";
 
 contract MainnetDeployRewardsDistributor is AbstractDeployRewardsDistributor {
-    function deployRewardsDistributor(uint256 env, uint256 selectedChainIndex) external {
-        _setEnvironment(env, false);
+    function deployRewardsDistributor(uint256 env, uint256 selectedChainIndex, uint256 useNewSalt) external {
+        _setEnvironment(env, useNewSalt == 1 ? true : false);
 
         uint256 trueIndex;
         for (uint256 i = 0; i < chainIds.length; i++) {

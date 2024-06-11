@@ -4,8 +4,6 @@ pragma solidity ^0.8.23;
 /// @dev lib imports
 import "forge-std/Test.sol";
 
-import "ds-test/test.sol";
-
 import { StdInvariant } from "forge-std/StdInvariant.sol";
 
 import { LayerZeroHelper } from "pigeon/layerzero/LayerZeroHelper.sol";
@@ -26,6 +24,7 @@ import { LiFiMockBlacklisted } from "../mocks/LiFiMockBlacklisted.sol";
 import { LiFiMockSwapToAttacker } from "../mocks/LiFiMockSwapToAttacker.sol";
 import { DeBridgeMock } from "../mocks/DeBridgeMock.sol";
 import { DeBridgeForwarderMock } from "../mocks/DeBridgeForwarderMock.sol";
+import { OneInchMock } from "../mocks/OneInchMock.sol";
 
 import { MockERC20 } from "../mocks/MockERC20.sol";
 import { VaultMock } from "../mocks/VaultMock.sol";
@@ -55,6 +54,8 @@ import { SuperformFactory } from "src/SuperformFactory.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
 import { ERC4626TimelockForm } from "src/forms/ERC4626TimelockForm.sol";
 import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
+import { ERC5115Form } from "src/forms/ERC5115Form.sol";
+import { ERC5115To4626Wrapper } from "src/forms/wrappers/ERC5115To4626Wrapper.sol";
 import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
 import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator.sol";
@@ -62,6 +63,8 @@ import { DeBridgeValidator } from "src/crosschain-liquidity/debridge/DeBridgeVal
 import { DeBridgeForwarderValidator } from "src/crosschain-liquidity/debridge/DeBridgeForwarderValidator.sol";
 
 import { SocketOneInchValidator } from "src/crosschain-liquidity/socket/SocketOneInchValidator.sol";
+import { OneInchValidator } from "src/crosschain-liquidity/1inch/OneInchValidator.sol";
+
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { LayerzeroV2Implementation } from "src/crosschain-data/adapters/layerzero-v2/LayerzeroV2Implementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
@@ -92,7 +95,9 @@ import "./TestTypes.sol";
 
 import "forge-std/console.sol";
 
-abstract contract BaseSetup is DSTest, StdInvariant, Test {
+abstract contract BaseSetup is StdInvariant, Test {
+    bool public DEBUG_MODE = vm.envBool("DEBUG_MODE"); // Native token: ETH
+
     /*//////////////////////////////////////////////////////////////
                         GENERAL VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -121,7 +126,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[39] public contractNames = [
+    string[40] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -158,6 +163,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         "CanonicalPermit2",
         "EmergencyQueue",
         "SocketOneInchValidator",
+        "OneInchValidator",
         "DeBridgeValidator",
         "DeBridgeForwarderValidator",
         "RewardsDistributor"
@@ -167,11 +173,11 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                         PROTOCOL VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev we should fork these instead of mocking
-    string[] public UNDERLYING_TOKENS = ["DAI", "USDC", "WETH"];
+    /// @dev we should fork these instead of mocking.
+    string[] public UNDERLYING_TOKENS = ["DAI", "USDC", "WETH", "ezETH", "wstETH", "sUSDe"];
 
-    /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm
-    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(2), uint32(3)];
+    /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm, 4 = ERC511§5
+    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(2), uint32(3), uint32(4)];
 
     /// @dev WARNING!! THESE VAULT NAMES MUST BE THE EXACT NAMES AS FILLED IN vaultKinds
     string[] public VAULT_KINDS = [
@@ -183,7 +189,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         "ERC4626TimelockMockRevertDeposit",
         "kycDAO4626RevertDeposit",
         "kycDAO4626RevertWithdraw",
-        "VaultMockRevertWithdraw"
+        "VaultMockRevertWithdraw",
+        "ERC5115"
     ];
 
     struct VaultInfo {
@@ -195,7 +202,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
     mapping(uint256 vaultId => string[] names) VAULT_NAMES;
 
-    mapping(uint64 chainId => mapping(uint32 formImplementationId => IERC4626[][] vaults)) public vaults;
+    mapping(uint64 chainId => mapping(uint32 formImplementationId => address[][] vaults)) public vaults;
+    mapping(uint64 chainId => address[] wrapped5115vaults) public wrapped5115vaults;
     mapping(uint64 chainId => uint256 payloadId) PAYLOAD_ID;
     mapping(uint64 chainId => uint256 payloadId) TIMELOCK_PAYLOAD_ID;
 
@@ -410,6 +418,17 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             )
     ) public REAL_VAULT_ADDRESS;
 
+    mapping(uint64 chainId => uint256 nVaults) public NUMBER_OF_5115S;
+    mapping(uint64 chainId => mapping(uint256 market => address realVault)) public ERC5115_VAULTS;
+    mapping(uint64 chainId => mapping(uint256 market => string name)) public ERC5115_VAULTS_NAMES;
+
+    struct ChosenAssets {
+        address assetIn;
+        address assetOut;
+    }
+
+    mapping(uint64 chainId => mapping(address realVault => ChosenAssets chosenAssets)) public ERC5115S_CHOSEN_ASSETS;
+
     string public ETHEREUM_RPC_URL = vm.envString("ETHEREUM_RPC_URL"); // Native token: ETH
     string public BSC_RPC_URL = vm.envString("BSC_RPC_URL"); // Native token: BNB
     string public AVALANCHE_RPC_URL = vm.envString("AVALANCHE_RPC_URL"); // Native token: AVAX
@@ -536,6 +555,11 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         vars.debridgeForwarderMock = address(new DeBridgeForwarderMock{ salt: salt }());
         vm.allowCheatcodes(vars.debridgeForwarderMock);
         vm.makePersistent(vars.debridgeForwarderMock);
+
+        /// @dev 7.1.8 deploy OneInchMock. This mocks the beahvior of 1inch
+        vars.oneInchMock = address(new OneInchMock{ salt: salt }());
+        vm.allowCheatcodes(vars.oneInchMock);
+        vm.makePersistent(vars.oneInchMock);
 
         /// @dev deployments
         for (uint256 i = 0; i < chainIds.length; ++i) {
@@ -722,6 +746,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
             contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderMock"))] = vars.debridgeForwarderMock;
 
+            contracts[vars.chainId][bytes32(bytes("OneInchMock"))] = vars.debridgeForwarderMock;
+
             /// @dev 7.2.1- deploy  lifi validator
             vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
@@ -759,6 +785,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.debridgeForwarderValidator = address(new DeBridgeForwarderValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderValidator"))] = vars.debridgeForwarderValidator;
 
+            /// @dev 7.2.6- deploy socket one inch validator
+            vars.oneInchValidator = address(new OneInchValidator{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("OneInchValidator"))] = vars.oneInchValidator;
+
             /// @dev 7.3- kycDAO NFT used to test kycDAO vaults
             vars.kycDAOMock = address(new KYCDaoNFTMock{ salt: salt }());
             contracts[vars.chainId][bytes32(bytes("KYCDAOMock"))] = vars.kycDAOMock;
@@ -771,6 +801,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             bridgeAddresses.push(vars.liFiMockSwapToAttacker);
             bridgeAddresses.push(vars.deBridgeMock);
             bridgeAddresses.push(vars.debridgeForwarderMock);
+            bridgeAddresses.push(vars.oneInchMock);
 
             bridgeValidators.push(vars.lifiValidator);
             bridgeValidators.push(vars.socketValidator);
@@ -780,9 +811,11 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             bridgeValidators.push(vars.lifiValidator);
             bridgeValidators.push(vars.debridgeValidator);
             bridgeValidators.push(vars.debridgeForwarderValidator);
+            bridgeValidators.push(vars.oneInchValidator);
 
             /// @dev 8.1 - Deploy UNDERLYING_TOKENS and VAULTS
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; ++j) {
+                vm.selectFork(FORKS[vars.chainId]);
                 vars.UNDERLYING_TOKEN = UNDERLYING_EXISTING_TOKENS[vars.chainId][UNDERLYING_TOKENS[j]];
 
                 if (vars.UNDERLYING_TOKEN == address(0)) {
@@ -794,52 +827,70 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
                 }
                 contracts[vars.chainId][bytes32(bytes(UNDERLYING_TOKENS[j]))] = vars.UNDERLYING_TOKEN;
             }
+
             bytes memory bytecodeWithArgs;
             /// NOTE: This loop deploys all vaults on all chainIds with all of the UNDERLYING TOKENS (id x form) x
             /// chainId
             for (uint32 j = 0; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
-                IERC4626[][] memory doubleVaults = new IERC4626[][](UNDERLYING_TOKENS.length);
+                /// @dev don't do this for 5115
+                if (j != 3) {
+                    address[][] memory doubleVaults = new address[][](UNDERLYING_TOKENS.length);
 
-                for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
-                    uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
-                    IERC4626[] memory vaultsT = new IERC4626[](lenBytecodes);
-                    for (uint256 l = 0; l < lenBytecodes; l++) {
-                        vars.vault =
-                            REAL_VAULT_ADDRESS[vars.chainId][FORM_IMPLEMENTATION_IDS[j]][UNDERLYING_TOKENS[k]][l];
+                    for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
+                        uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
+                        address[] memory vaultsT = new address[](lenBytecodes);
+                        for (uint256 l = 0; l < lenBytecodes; l++) {
+                            vars.vault =
+                                REAL_VAULT_ADDRESS[vars.chainId][FORM_IMPLEMENTATION_IDS[j]][UNDERLYING_TOKENS[k]][l];
 
-                        if (vars.vault == address(0)) {
-                            /// @dev 8.2 - Deploy mock Vault
-                            if (j != 2) {
-                                bytecodeWithArgs = abi.encodePacked(
-                                    vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode[l],
-                                    abi.encode(
-                                        MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])),
-                                        VAULT_NAMES[l][k],
-                                        VAULT_NAMES[l][k]
-                                    )
-                                );
+                            if (vars.vault == address(0)) {
+                                /// @dev 8.2 - Deploy mock Vault
+                                if (j != 2) {
+                                    bytecodeWithArgs = abi.encodePacked(
+                                        vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode[l],
+                                        abi.encode(
+                                            MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])),
+                                            VAULT_NAMES[l][k],
+                                            VAULT_NAMES[l][k]
+                                        )
+                                    );
 
-                                vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
-                            } else {
-                                /// deploy the kycDAOVault wrapper with different args
-                                bytecodeWithArgs = abi.encodePacked(
-                                    vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode[l],
-                                    abi.encode(
-                                        MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])), vars.kycDAOMock
-                                    )
-                                );
+                                    vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
+                                } else {
+                                    /// deploy the kycDAOVault wrapper with different args
+                                    bytecodeWithArgs = abi.encodePacked(
+                                        vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode[l],
+                                        abi.encode(
+                                            MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])), vars.kycDAOMock
+                                        )
+                                    );
 
-                                vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
+                                    vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
+                                }
                             }
-                        }
 
-                        /// @dev Add VaultMock
-                        contracts[vars.chainId][bytes32(bytes(string.concat(VAULT_NAMES[l][k])))] = vars.vault;
-                        vaultsT[l] = IERC4626(vars.vault);
+                            /// @dev Add VaultMock
+                            contracts[vars.chainId][bytes32(bytes(string.concat(VAULT_NAMES[l][k])))] = vars.vault;
+                            vaultsT[l] = vars.vault;
+                        }
+                        doubleVaults[k] = vaultsT;
                     }
-                    doubleVaults[k] = vaultsT;
+                    vaults[vars.chainId][FORM_IMPLEMENTATION_IDS[j]] = doubleVaults;
                 }
-                vaults[vars.chainId][FORM_IMPLEMENTATION_IDS[j]] = doubleVaults;
+            }
+
+            if (NUMBER_OF_5115S[vars.chainId] > 0) {
+                for (uint256 j = 0; j < NUMBER_OF_5115S[vars.chainId]; ++j) {
+                    address new5115WrapperVault = address(
+                        new ERC5115To4626Wrapper{ salt: salt }(
+                            ERC5115_VAULTS[vars.chainId][j],
+                            ERC5115S_CHOSEN_ASSETS[vars.chainId][ERC5115_VAULTS[vars.chainId][j]].assetIn,
+                            ERC5115S_CHOSEN_ASSETS[vars.chainId][ERC5115_VAULTS[vars.chainId][j]].assetOut
+                        )
+                    );
+
+                    wrapped5115vaults[vars.chainId].push(new5115WrapperVault);
+                }
             }
 
             /// @dev 9 - Deploy SuperformFactory
@@ -862,6 +913,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.kycDao4626Form = address(new ERC4626KYCDaoForm{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
 
+            // Pendle ERC5115 Form
+            vars.erc5115form = address(new ERC5115Form{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("ERC5115Form"))] = vars.erc5115form;
+
             /// @dev 11 - Add newly deployed form implementations to Factory
             ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0], 1);
 
@@ -870,6 +925,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             );
 
             ISuperformFactory(vars.factory).addFormImplementation(vars.kycDao4626Form, FORM_IMPLEMENTATION_IDS[2], 1);
+
+            ISuperformFactory(vars.factory).addFormImplementation(vars.erc5115form, FORM_IMPLEMENTATION_IDS[3], 1);
 
             /// @dev 12 - Deploy SuperformRouter
             vars.superformRouter = address(new SuperformRouter{ salt: salt }(vars.superRegistry));
@@ -914,26 +971,29 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             /// @dev 17 - Super Registry extra setters
             /// @dev BASE does not have SocketV1 available
             if (vars.chainId == BASE) {
-                uint8[] memory bridgeIdsBase = new uint8[](5);
+                uint8[] memory bridgeIdsBase = new uint8[](6);
                 bridgeIdsBase[0] = bridgeIds[0];
                 bridgeIdsBase[1] = bridgeIds[3];
                 bridgeIdsBase[2] = bridgeIds[4];
                 bridgeIdsBase[3] = bridgeIds[5];
                 bridgeIdsBase[4] = bridgeIds[6];
+                bridgeIdsBase[5] = bridgeIds[7];
 
-                address[] memory bridgeAddressesBase = new address[](5);
+                address[] memory bridgeAddressesBase = new address[](6);
                 bridgeAddressesBase[0] = bridgeAddresses[0];
                 bridgeAddressesBase[1] = bridgeAddresses[3];
                 bridgeAddressesBase[2] = bridgeAddresses[4];
                 bridgeAddressesBase[3] = bridgeAddresses[5];
                 bridgeAddressesBase[4] = bridgeAddresses[6];
+                bridgeAddressesBase[5] = bridgeAddresses[7];
 
-                address[] memory bridgeValidatorsBase = new address[](5);
+                address[] memory bridgeValidatorsBase = new address[](6);
                 bridgeValidatorsBase[0] = bridgeValidators[0];
                 bridgeValidatorsBase[1] = bridgeValidators[3];
                 bridgeValidatorsBase[2] = bridgeValidators[4];
                 bridgeValidatorsBase[3] = bridgeValidators[5];
                 bridgeValidatorsBase[4] = bridgeValidators[6];
+                bridgeValidatorsBase[5] = bridgeValidators[7];
 
                 vars.superRegistryC.setBridgeAddresses(bridgeIdsBase, bridgeAddressesBase, bridgeValidatorsBase);
             } else {
@@ -1249,32 +1309,68 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             /// @dev 18 - create test superforms when the whole state registry is configured
 
             for (uint256 j = 0; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
-                for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
-                    uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
+                if (j != 3) {
+                    for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
+                        if (k < 3) {
+                            uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
 
-                    for (uint256 l = 0; l < lenBytecodes; l++) {
-                        address vault = address(vaults[chainIds[i]][FORM_IMPLEMENTATION_IDS[j]][k][l]);
+                            for (uint256 l = 0; l < lenBytecodes; l++) {
+                                address vault = vaults[chainIds[i]][FORM_IMPLEMENTATION_IDS[j]][k][l];
 
-                        uint256 superformId;
-                        (superformId, vars.superform) = ISuperformFactory(
-                            contracts[chainIds[i]][bytes32(bytes("SuperformFactory"))]
-                        ).createSuperform(FORM_IMPLEMENTATION_IDS[j], vault);
+                                uint256 superformId;
+                                (superformId, vars.superform) = ISuperformFactory(
+                                    contracts[chainIds[i]][bytes32(bytes("SuperformFactory"))]
+                                ).createSuperform(FORM_IMPLEMENTATION_IDS[j], vault);
 
-                        if (FORM_IMPLEMENTATION_IDS[j] == 3) {
-                            /// mint a kycDAO Nft to the newly kycDAO superform
-                            ERC4626KYCDaoForm(vars.superform).mintKYC(1);
+                                if (FORM_IMPLEMENTATION_IDS[j] == 3) {
+                                    /// mint a kycDAO Nft to the newly kycDAO superform
+                                    ERC4626KYCDaoForm(vars.superform).mintKYC(1);
+                                }
+
+                                contracts[chainIds[i]][bytes32(
+                                    bytes(
+                                        string.concat(
+                                            UNDERLYING_TOKENS[k],
+                                            vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultKinds[l],
+                                            "Superform",
+                                            Strings.toString(FORM_IMPLEMENTATION_IDS[j])
+                                        )
+                                    )
+                                )] = vars.superform;
+                            }
                         }
+                    }
+                } else if (j == 3) {
+                    if (NUMBER_OF_5115S[chainIds[i]] > 0) {
+                        for (uint256 k = 0; k < NUMBER_OF_5115S[chainIds[i]]; ++k) {
+                            uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
 
-                        contracts[chainIds[i]][bytes32(
-                            bytes(
-                                string.concat(
-                                    UNDERLYING_TOKENS[k],
-                                    vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultKinds[l],
-                                    "Superform",
-                                    Strings.toString(FORM_IMPLEMENTATION_IDS[j])
-                                )
-                            )
-                        )] = vars.superform;
+                            for (uint256 l = 0; l < lenBytecodes; l++) {
+                                /// @dev warning: the true vault for 5115 is the one underneath the wrapped version
+                                (, vars.superform) = ISuperformFactory(
+                                    contracts[chainIds[i]][bytes32(bytes("SuperformFactory"))]
+                                ).createSuperform(FORM_IMPLEMENTATION_IDS[j], wrapped5115vaults[chainIds[i]][k]);
+                                if (
+                                    keccak256(abi.encodePacked((ERC5115_VAULTS_NAMES[chainIds[i]][k])))
+                                        == keccak256(abi.encodePacked(("wstETH")))
+                                ) {
+                                    console.log("vault address ", wrapped5115vaults[chainIds[i]][k]);
+
+                                    console.log("wstETH superform ", vars.superform);
+                                    console.log(chainIds[i]);
+                                }
+                                contracts[chainIds[i]][bytes32(
+                                    bytes(
+                                        string.concat(
+                                            ERC5115_VAULTS_NAMES[chainIds[i]][k],
+                                            vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultKinds[l],
+                                            "Superform",
+                                            Strings.toString(FORM_IMPLEMENTATION_IDS[j])
+                                        )
+                                    )
+                                )] = vars.superform;
+                            }
+                        }
                     }
                 }
             }
@@ -1300,6 +1396,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH), also coz chainlink doesn't provide
         tokenPriceFeeds[ETH][getContract(ETH, "WETH")] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         tokenPriceFeeds[ETH][NATIVE_TOKEN] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        tokenPriceFeeds[ETH][getContract(ETH, "ezETH")] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        tokenPriceFeeds[ETH][getContract(ETH, "wstETH")] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[ETH][getContract(ETH, "sUSDe")] = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
 
         /// BSC
         tokenPriceFeeds[BSC][getContract(BSC, "DAI")] = 0x132d3C0B1D2cEa0BC552588063bdBb210FDeecfA;
@@ -1307,6 +1407,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
         tokenPriceFeeds[BSC][getContract(BSC, "WETH")] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
         tokenPriceFeeds[BSC][NATIVE_TOKEN] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+        tokenPriceFeeds[BSC][getContract(BSC, "ezETH")] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+        tokenPriceFeeds[BSC][getContract(BSC, "wstETH")] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[BSC][getContract(BSC, "sUSDe")] = 0x51597f405303C4377E36123cBc172b13269EA163;
 
         /// AVAX
         tokenPriceFeeds[AVAX][getContract(AVAX, "DAI")] = 0x51D7180edA2260cc4F6e4EebB82FEF5c3c2B8300;
@@ -1314,6 +1418,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
         tokenPriceFeeds[AVAX][getContract(AVAX, "WETH")] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
         tokenPriceFeeds[AVAX][NATIVE_TOKEN] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+        tokenPriceFeeds[AVAX][getContract(AVAX, "ezETH")] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+        tokenPriceFeeds[AVAX][getContract(AVAX, "wstETH")] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[AVAX][getContract(AVAX, "sUSDe")] = 0xF096872672F44d6EBA71458D74fe67F9a77a23B9;
 
         /// POLYGON
         tokenPriceFeeds[POLY][getContract(POLY, "DAI")] = 0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D;
@@ -1321,6 +1429,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
         tokenPriceFeeds[POLY][getContract(POLY, "WETH")] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         tokenPriceFeeds[POLY][NATIVE_TOKEN] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+        tokenPriceFeeds[POLY][getContract(POLY, "ezETH")] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+        tokenPriceFeeds[POLY][getContract(POLY, "wstETH")] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[POLY][getContract(POLY, "sUSDe")] = 0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7;
 
         /// OPTIMISM
         tokenPriceFeeds[OP][getContract(OP, "DAI")] = 0x8dBa75e83DA73cc766A7e5a0ee71F656BAb470d6;
@@ -1328,6 +1440,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
         tokenPriceFeeds[OP][getContract(OP, "WETH")] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         tokenPriceFeeds[OP][NATIVE_TOKEN] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+        tokenPriceFeeds[OP][getContract(OP, "ezETH")] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+        tokenPriceFeeds[OP][getContract(OP, "wstETH")] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[OP][getContract(OP, "sUSDe")] = 0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3;
 
         /// ARBITRUM
         tokenPriceFeeds[ARBI][getContract(ARBI, "DAI")] = 0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB;
@@ -1335,6 +1451,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
         tokenPriceFeeds[ARBI][getContract(ARBI, "WETH")] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         tokenPriceFeeds[ARBI][NATIVE_TOKEN] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+        tokenPriceFeeds[ARBI][getContract(ARBI, "ezETH")] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+        tokenPriceFeeds[ARBI][getContract(ARBI, "wstETH")] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[ARBI][getContract(ARBI, "sUSDe")] = 0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3;
 
         /// BASE
         tokenPriceFeeds[BASE][getContract(BASE, "DAI")] = 0x591e79239a7d679378eC8c847e5038150364C78F;
@@ -1342,6 +1462,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
         tokenPriceFeeds[BASE][getContract(BASE, "WETH")] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
         tokenPriceFeeds[BASE][NATIVE_TOKEN] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
+        tokenPriceFeeds[BASE][getContract(BASE, "ezETH")] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
+        tokenPriceFeeds[BASE][getContract(BASE, "wstETH")] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[BASE][getContract(BASE, "sUSDe")] = 0x7e860098F58bBFC8648a4311b374B1D669a2bc6B;
 
         /// FANTOM
         tokenPriceFeeds[FANTOM][getContract(FANTOM, "DAI")] = 0x91d5DEFAFfE2854C7D02F50c80FA1fdc8A721e52;
@@ -1349,22 +1473,26 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
         tokenPriceFeeds[FANTOM][getContract(FANTOM, "WETH")] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
         tokenPriceFeeds[FANTOM][NATIVE_TOKEN] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+        tokenPriceFeeds[FANTOM][getContract(FANTOM, "ezETH")] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+        tokenPriceFeeds[FANTOM][getContract(FANTOM, "wstETH")] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[FANTOM][getContract(FANTOM, "sUSDe")] = 0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c;
     }
 
     function _preDeploymentSetup(bool pinnedBlock, bool invariant) internal {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
         if (!invariant) {
-            forks[ETH] = pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 19_293_715) : vm.createFork(ETHEREUM_RPC_URL_QN);
-            forks[BSC] = pinnedBlock ? vm.createFork(BSC_RPC_URL, 32_899_049) : vm.createFork(BSC_RPC_URL_QN);
+            forks[ETH] = pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 20_017_840) : vm.createFork(ETHEREUM_RPC_URL_QN);
+            forks[BSC] = pinnedBlock ? vm.createFork(BSC_RPC_URL, 39_315_701) : vm.createFork(BSC_RPC_URL_QN);
             forks[AVAX] =
-                pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 43_845_494) : vm.createFork(AVALANCHE_RPC_URL_QN);
-            forks[POLY] = pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 56_710_026) : vm.createFork(POLYGON_RPC_URL_QN);
+                pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 46_289_230) : vm.createFork(AVALANCHE_RPC_URL_QN);
+            forks[POLY] = pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 57_754_395) : vm.createFork(POLYGON_RPC_URL_QN);
             forks[ARBI] =
-                pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 175_504_761) : vm.createFork(ARBITRUM_RPC_URL_QN);
-            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 116_353_583) : vm.createFork(OPTIMISM_RPC_URL_QN);
+                pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 218_289_569) : vm.createFork(ARBITRUM_RPC_URL_QN);
+            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 120_950_600) : vm.createFork(OPTIMISM_RPC_URL_QN);
             forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL_QN);
-            forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 78_945_396) : vm.createFork(FANTOM_RPC_URL_QN);
+            forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 82_228_344) : vm.createFork(FANTOM_RPC_URL_QN);
         }
 
         mapping(uint64 => string) storage rpcURLs = RPC_URLS;
@@ -1549,6 +1677,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         /// 6 is lifi swap to attacker
         /// 7 is debridge
         /// 8 is debridge forwarder
+        /// 9 is one inch
 
         bridgeIds.push(1);
         bridgeIds.push(2);
@@ -1558,6 +1687,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         bridgeIds.push(6);
         bridgeIds.push(7);
         bridgeIds.push(8);
+        bridgeIds.push(9);
 
         /// @dev setup users
         userKeys.push(1);
@@ -1595,6 +1725,10 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         vaultBytecodes2[3].vaultBytecode.push(type(kycDAO4626RevertWithdraw).creationCode);
         vaultBytecodes2[3].vaultKinds.push("kycDAO4626RevertWithdraw");
 
+        /// @dev form 4 (pendle 5115)
+        vaultBytecodes2[4].vaultBytecode.push(type(ERC5115To4626Wrapper).creationCode);
+        vaultBytecodes2[4].vaultKinds.push("ERC5115");
+
         /// @dev populate VAULT_NAMES state arg with tokenNames + vaultKinds names
         string[] memory underlyingTokens = UNDERLYING_TOKENS;
         for (uint256 i = 0; i < VAULT_KINDS.length; ++i) {
@@ -1607,35 +1741,40 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             UNDERLYING_EXISTING_TOKENS;
 
         existingTokens[43_114]["DAI"] = 0xd586E7F844cEa2F87f50152665BCbc2C279D8d70;
-        existingTokens[43_114]["USDC"] = address(0);
+        existingTokens[43_114]["USDC"] = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
         existingTokens[43_114]["WETH"] = 0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB;
 
         existingTokens[42_161]["DAI"] = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
-        existingTokens[42_161]["USDC"] = address(0);
+        existingTokens[42_161]["USDC"] = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
         existingTokens[42_161]["WETH"] = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+        existingTokens[42_161]["wstETH"] = 0x5979D7b546E38E414F7E9822514be443A4800529;
 
         existingTokens[10]["DAI"] = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
-        existingTokens[10]["USDC"] = address(0);
+        existingTokens[10]["USDC"] = 0x7F5c764cBc14f9669B88837ca1490cCa17c31607;
         existingTokens[10]["WETH"] = 0x4200000000000000000000000000000000000006;
+        existingTokens[10]["wstETH"] = 0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb;
 
         existingTokens[1]["DAI"] = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-        existingTokens[1]["USDC"] = address(0);
+        existingTokens[1]["USDC"] = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
         existingTokens[1]["WETH"] = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+        existingTokens[1]["sUSDe"] = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
+        existingTokens[1]["ezETH"] = 0xbf5495Efe5DB9ce00f80364C8B423567e58d2110;
 
         existingTokens[137]["DAI"] = 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063;
-        existingTokens[137]["USDC"] = address(0);
+        existingTokens[137]["USDC"] = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
         existingTokens[137]["WETH"] = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619;
 
         existingTokens[56]["DAI"] = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
-        existingTokens[56]["USDC"] = address(0);
+        existingTokens[56]["USDC"] = 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d;
         existingTokens[56]["WETH"] = address(0);
+        existingTokens[56]["ezETH"] = 0x2416092f143378750bb29b79eD961ab195CcEea5;
 
         existingTokens[8453]["DAI"] = 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb;
         existingTokens[8453]["USDC"] = address(0);
         existingTokens[8453]["WETH"] = address(0);
 
         existingTokens[250]["DAI"] = 0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E;
-        existingTokens[250]["USDC"] = address(0);
+        existingTokens[250]["USDC"] = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
         existingTokens[250]["WETH"] = address(0);
 
         mapping(
@@ -1647,7 +1786,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         ) storage existingVaults = REAL_VAULT_ADDRESS;
 
         existingVaults[43_114][1]["DAI"][0] = 0x75A8cFB425f366e424259b114CaeE5f634C07124;
-        existingVaults[43_114][1]["USDC"][0] = address(0);
+        existingVaults[43_114][1]["USDC"][0] = 0xB4001622c02F1354A3CfF995b7DaA15b1d47B0fe;
         existingVaults[43_114][1]["WETH"][0] = 0x1a225008efffB6e07D01671127c9E40f6f787c8C;
 
         existingVaults[42_161][1]["DAI"][0] = address(0);
@@ -1655,19 +1794,19 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         existingVaults[42_161][1]["WETH"][0] = 0xe4c2A17f38FEA3Dcb3bb59CEB0aC0267416806e2;
 
         existingVaults[1][1]["DAI"][0] = address(0);
-        existingVaults[1][1]["USDC"][0] = address(0);
+        existingVaults[1][1]["USDC"][0] = 0x6bAD6A9BcFdA3fd60Da6834aCe5F93B8cFed9598;
         existingVaults[1][1]["WETH"][0] = address(0);
 
         existingVaults[10][1]["DAI"][0] = address(0);
         existingVaults[10][1]["USDC"][0] = address(0);
-        existingVaults[10][1]["WETH"][0] = 0xc4d4500326981eacD020e20A81b1c479c161c7EF;
+        existingVaults[10][1]["WETH"][0] = address(0);
 
         existingVaults[137][1]["DAI"][0] = 0x4A7CfE3ccE6E88479206Fefd7b4dcD738971e723;
-        existingVaults[137][1]["USDC"][0] = address(0);
+        existingVaults[137][1]["USDC"][0] = 0x277ba089b4CF2AF32589D98aA839Bf8c35A30Da3;
         existingVaults[137][1]["WETH"][0] = 0x0D0188268D0693e2494989dc3DA5e64F0D6BA972;
 
         existingVaults[56][1]["DAI"][0] = 0x6A354D50fC2476061F378390078e30F9782C5266;
-        existingVaults[56][1]["USDC"][0] = address(0);
+        existingVaults[56][1]["USDC"][0] = 0x32307B89a1c59Ea4EBaB1Fde6bD37b1139D06759;
         existingVaults[56][1]["WETH"][0] = address(0);
 
         existingVaults[8453][1]["DAI"][0] = 0x88510ced6F82eFd3ddc4599B72ad8ac2fF172043;
@@ -1675,8 +1814,87 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         existingVaults[8453][1]["WETH"][0] = address(0);
 
         existingVaults[250][1]["DAI"][0] = address(0);
-        existingVaults[250][1]["USDC"][0] = address(0);
+        existingVaults[250][1]["USDC"][0] = 0xd55C59Da5872DE866e39b1e3Af2065330ea8Acd6;
         existingVaults[250][1]["WETH"][0] = address(0);
+
+        mapping(uint64 chainId => mapping(uint256 market => address realVault)) storage erc5115Vaults = ERC5115_VAULTS;
+        mapping(uint64 chainId => mapping(uint256 market => string name)) storage erc5115VaultsNames =
+            ERC5115_VAULTS_NAMES;
+        mapping(uint64 chainId => uint256 nVaults) storage numberOf5115s = NUMBER_OF_5115S;
+        mapping(uint64 chainId => mapping(address realVault => ChosenAssets chosenAssets)) storage erc5115ChosenAssets =
+            ERC5115S_CHOSEN_ASSETS;
+
+        numberOf5115s[1] = 2;
+        numberOf5115s[10] = 1;
+        numberOf5115s[42_161] = 2;
+        numberOf5115s[56] = 1;
+        numberOf5115s[8453] = 0;
+        numberOf5115s[250] = 0;
+        numberOf5115s[137] = 0;
+        numberOf5115s[43_114] = 0;
+
+        /// @dev  pendle ethena - market: SUSDE-MAINNET-SEP2024
+        /// sUSDe sUSDe
+        erc5115Vaults[1][0] = 0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65;
+        erc5115VaultsNames[1][0] = "SUSDe";
+        erc5115ChosenAssets[1][0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65].assetIn =
+            0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
+        erc5115ChosenAssets[1][0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65].assetOut =
+            0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
+
+        /// ezETH
+        /// @dev pendle renzo - market:  SY ezETH
+        erc5115Vaults[1][1] = 0x22E12A50e3ca49FB183074235cB1db84Fe4C716D;
+        erc5115VaultsNames[1][1] = "ezETH";
+        erc5115ChosenAssets[1][0x22E12A50e3ca49FB183074235cB1db84Fe4C716D].assetIn =
+            0xbf5495Efe5DB9ce00f80364C8B423567e58d2110;
+        erc5115ChosenAssets[1][0x22E12A50e3ca49FB183074235cB1db84Fe4C716D].assetOut =
+            0xbf5495Efe5DB9ce00f80364C8B423567e58d2110;
+
+        /// ezETH
+        /// @dev pendle aave usdt - market:  SY aUSDT
+        erc5115Vaults[1][2] = 0x8c28D28bAd669afadC37b034A8070D6d7B9dFB74;
+        erc5115VaultsNames[1][2] = "aUSDT";
+        erc5115ChosenAssets[1][0x8c28D28bAd669afadC37b034A8070D6d7B9dFB74].assetIn =
+            0xdAC17F958D2ee523a2206206994597C13D831ec7;
+        erc5115ChosenAssets[1][0x8c28D28bAd669afadC37b034A8070D6d7B9dFB74].assetOut =
+            0x23878914EFE38d27C4D67Ab83ed1b93A74D4086a;
+
+        /// wstETH
+        /// @dev pendle wrapped st ETH from LDO - market:  SY wstETH
+        erc5115Vaults[10][0] = 0x96A528f4414aC3CcD21342996c93f2EcdEc24286;
+        erc5115VaultsNames[10][0] = "wstETH";
+        erc5115ChosenAssets[10][0x96A528f4414aC3CcD21342996c93f2EcdEc24286].assetIn =
+            0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb;
+        erc5115ChosenAssets[10][0x96A528f4414aC3CcD21342996c93f2EcdEc24286].assetOut =
+            0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb;
+
+        /// ezETH
+        /// @dev pendle renzo - market: EZETH-BSC-SEP2024
+        erc5115Vaults[56][0] = 0xe49269B5D31299BcE407c8CcCf241274e9A93C9A;
+        erc5115VaultsNames[56][0] = "ezETH";
+        erc5115ChosenAssets[56][0xe49269B5D31299BcE407c8CcCf241274e9A93C9A].assetIn =
+            0x2416092f143378750bb29b79eD961ab195CcEea5;
+        erc5115ChosenAssets[56][0xe49269B5D31299BcE407c8CcCf241274e9A93C9A].assetOut =
+            0x2416092f143378750bb29b79eD961ab195CcEea5;
+
+        /// USDC aARBUsdc
+        /// @dev pendle aave - market: SY aUSDC
+        erc5115Vaults[42_161][0] = 0x50288c30c37FA1Ec6167a31E575EA8632645dE20;
+        erc5115VaultsNames[42_161][0] = "USDC";
+        erc5115ChosenAssets[42_161][0x50288c30c37FA1Ec6167a31E575EA8632645dE20].assetIn =
+            0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
+        erc5115ChosenAssets[42_161][0x50288c30c37FA1Ec6167a31E575EA8632645dE20].assetOut =
+            0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
+
+        /// wstETH
+        /// @dev pendle wrapped st ETH from LDO - market: SY wstETH
+        erc5115Vaults[42_161][1] = 0x80c12D5b6Cc494632Bf11b03F09436c8B61Cc5Df;
+        erc5115VaultsNames[42_161][1] = "wstETH";
+        erc5115ChosenAssets[42_161][0x80c12D5b6Cc494632Bf11b03F09436c8B61Cc5Df].assetIn =
+            0x5979D7b546E38E414F7E9822514be443A4800529;
+        erc5115ChosenAssets[42_161][0x80c12D5b6Cc494632Bf11b03F09436c8B61Cc5Df].assetOut =
+            0x5979D7b546E38E414F7E9822514be443A4800529;
     }
 
     function _fundNativeTokens() internal {

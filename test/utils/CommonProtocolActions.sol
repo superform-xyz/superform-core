@@ -15,6 +15,10 @@ import { DataLib } from "src/libraries/DataLib.sol";
 
 import "forge-std/console.sol";
 
+interface IUniswapFactory {
+    function getPair(address tokenA, address tokenB) external view returns (address pair);
+}
+
 abstract contract CommonProtocolActions is BaseSetup {
     /// @dev percentage of total slippage that is used for dstSwap
     uint256 MULTI_TX_SLIPPAGE_SHARE;
@@ -343,6 +347,21 @@ abstract contract CommonProtocolActions is BaseSetup {
                 0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
                 targetTxData
             );
+        } else if (args.liqBridgeKind == 9) {
+            /// @dev works except for fantom
+            address dex = IUniswapFactory(0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f).getPair(
+                args.externalToken, args.underlyingToken
+            );
+
+            require(dex != address(0), "1inch unavailable");
+            txData = abi.encodeWithSelector(
+                OneInchMock.unoswapTo.selector,
+                uint256(uint160(args.toDst)),
+                uint256(uint160(args.externalToken)),
+                args.amount,
+                (args.amount * uint256(args.USDPerExternalToken)) / uint256(args.USDPerUnderlyingToken),
+                uint256(uint160(dex))
+            );
         }
     }
 
@@ -453,6 +472,22 @@ abstract contract CommonProtocolActions is BaseSetup {
                 getContract(toChainId_, "CoreStateRegistry"),
                 0,
                 swapData
+            );
+        } else if (liqBridgeKind_ == 9) {
+            /// @dev works except for fantom
+            address dex = IUniswapFactory(0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f).getPair(
+                sendingTokenDst_, receivingTokenDst_
+            );
+
+            require(dex != address(0), "1inch unavailable");
+
+            txData = abi.encodeWithSelector(
+                OneInchMock.unoswapTo.selector,
+                uint256(uint160(getContract(toChainId_, "CoreStateRegistry"))),
+                uint256(uint160(sendingTokenDst_)),
+                amount_,
+                (amount_ * uint256(USDPerSendingTokenDst)) / uint256(USDPerReceivingTokenDst),
+                uint256(uint160(dex))
             );
         }
     }

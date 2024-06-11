@@ -57,7 +57,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 69_420 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
 
@@ -223,8 +223,6 @@ contract PayloadHelperSingleTest is ProtocolActions {
         assertEq(v.receiverAddress, users[0]);
 
         for (uint256 i = 0; i < v.slippages.length; ++i) {
-            console.log("v.amounts[i]: %s", v.amounts[i]);
-            console.log("AMOUNTS[POLY][0][i]: %s", AMOUNTS[POLY][0][i]);
             /// @dev TODO: fix this assertion considering exchange rates
             // assertLe(v.amounts[i], AMOUNTS[POLY][0][i]);
             assertEq(v.slippages[i], MAX_SLIPPAGE);

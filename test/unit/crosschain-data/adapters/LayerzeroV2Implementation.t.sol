@@ -101,7 +101,7 @@ contract LayerzeroV2ImplementationTest is BaseSetup {
         layerzeroImpl.dispatchPayload{ value: fees }(stateRegistry, chainId, message, optionEncoded);
     }
 
-    function testEstimateFees() public {
+    function testEstimateFees() public view {
         uint256 gas = 200_000;
         bytes memory optionEncoded = layerzeroImpl.generateExtraData(gas);
         bytes memory message = abi.encode(AMBMessage(DataLib.packTxInfo(0, 0, 0, 0, address(0), 0), new bytes(0)));
@@ -109,7 +109,7 @@ contract LayerzeroV2ImplementationTest is BaseSetup {
         assertGt(fees, 0);
     }
 
-    function testGenerateExtraData() public {
+    function testGenerateExtraData() public view {
         uint256 gasLimit = 100_000;
         bytes memory extraData = layerzeroImpl.generateExtraData(gasLimit);
 
@@ -289,26 +289,27 @@ contract LayerzeroV2ImplementationTest is BaseSetup {
         layerzeroImpl.dispatchPayload(stateRegistry, chainId, message, optionEncoded);
     }
 
-    function testOAppVersion() public {
+    function testOAppVersion() public view {
         (uint64 senderVersion, uint64 receiverVersion) = layerzeroImpl.oAppVersion();
         assertEq(senderVersion, 1);
         assertEq(receiverVersion, 2);
     }
 
-    function testAllowInitializePath() public {
+    function testAllowInitializePath() public view {
         Origin memory origin = Origin(eid, bytes32(uint256(uint160(address(layerzeroImpl)))), 0);
         bool allowPath = layerzeroImpl.allowInitializePath(origin);
         assertTrue(allowPath);
     }
 
-    function testNextNonce() public {
+    function testNextNonce() public view {
         uint64 nonce = layerzeroImpl.nextNonce(30_101, bytes32(uint256(uint160(address(layerzeroImpl)))));
         assertEq(nonce, 0);
     }
 
-    function testIsComposeMessage() public {
+    function testIsComposeMessage() public view {
         Origin memory origin = Origin(eid, bytes32(uint256(uint160(address(layerzeroImpl)))), 0);
         bool isComposer = layerzeroImpl.isComposeMsgSender(origin, bytes(""), address(layerzeroImpl));
+        assertTrue(isComposer);
     }
 
     function testRevertRetryMessage() public {

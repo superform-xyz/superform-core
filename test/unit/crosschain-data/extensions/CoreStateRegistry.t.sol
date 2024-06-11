@@ -689,15 +689,9 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         uint256 realEstimate = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
 
-        console.log("defaultEstimate: %s", defaultEstimate);
-        console.log("realEstimate: %s", realEstimate);
-
         assertEq(realEstimate, defaultEstimate);
 
-        uint256 defaultEstimateNativeSrc =
-            PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCostDefaultNativeSource(false, ambIds_, ETH);
-
-        console.log("defaultEstimateNativeSrc: %s", defaultEstimateNativeSrc);
+        PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCostDefaultNativeSource(false, ambIds_, ETH);
     }
 
     function test_estimateWithNativeTokenPriceAsZero() public {
@@ -734,15 +728,9 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         uint256 realEstimate = PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCost(1);
 
-        console.log("defaultEstimate: %s", defaultEstimate);
-        console.log("realEstimate: %s", realEstimate);
-
         assertLe(realEstimate, defaultEstimate);
 
-        uint256 defaultEstimateNativeSrc =
-            PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCostDefaultNativeSource(true, ambIds_, ETH);
-
-        console.log("defaultEstimateNativeSrc: %s", defaultEstimateNativeSrc);
+        PaymentHelper(getContract(AVAX, "PaymentHelper")).estimateAckCostDefaultNativeSource(true, ambIds_, ETH);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -969,6 +957,485 @@ contract CoreStateRegistryTest is ProtocolActions {
             FORKS[AVAX],
             vm.getRecordedLogs()
         );
+    }
+
+    function test_FailingIndex1VaultAllDstSwap() public {
+        uint8[] memory ambIds_ = new uint8[](2);
+        ambIds_[0] = 1;
+        ambIds_[1] = 2;
+
+        _successfulMultiDepositWithDstSwapShowcase(ambIds_, true, true);
+    }
+
+    function test_FailingIndex1VaultOneDstSwap() public {
+        uint8[] memory ambIds_ = new uint8[](2);
+        ambIds_[0] = 1;
+        ambIds_[1] = 2;
+
+        /// @notice, this is similar to the issue with
+        /// https://dashboard.tenderly.co/superform/v1/simulator/eaa8d796-81df-45d2-9cc9-d7bfc958d947
+
+        _successfulMultiDepositWithDstSwapShowcase(ambIds_, false, true);
+    }
+
+    function test_DstSwapIndex0DirectToCSRIndex1() public {
+        uint8[] memory ambIds_ = new uint8[](2);
+        ambIds_[0] = 1;
+        ambIds_[1] = 2;
+
+        /// @notice, this is similar to the issue with
+        /// https://dashboard.tenderly.co/superform/v1/simulator/eaa8d796-81df-45d2-9cc9-d7bfc958d947
+
+        _successfulMultiDepositWithDstSwapShowcase(ambIds_, false, false);
+    }
+
+    struct MultiDepositDstSwapSpecialCaseVars {
+        uint256[] superformIds;
+        uint256[] amounts;
+        uint256[] uint256MemArr;
+        LiqRequest[] liqReqArr;
+        bool[] hasDstSwaps;
+        bool[] hasSrcSwaps;
+        address superform;
+        address superformRouter;
+        address externalToken;
+        address underlyingToken1;
+        address underlyingToken2;
+        address interimOrUnderlyingDstToken1;
+        address interimToken2;
+        int256 USDPerExternalToken;
+        int256 USDPerUnderlyingToken1;
+        int256 USDPerUnderlyingToken2;
+        int256 USDPerInterimOrUnderlyingDstToken1;
+        int256 USDPerInterimToken2;
+        bytes txDataPasses;
+        bytes txDataFails;
+        uint256[] indices;
+        uint8[] bridgeIds_;
+        bytes[] txDataArr;
+        address[] interimTokens;
+        address[] finalTokens;
+        uint256 wethBalOfSwapper;
+    }
+
+    function _successfulMultiDepositWithDstSwapShowcase(
+        uint8[] memory ambIds_,
+        bool vaultWithDstSwap,
+        bool isFailingIndex1Vault
+    )
+        internal
+        returns (uint256 superformId)
+    {
+        MultiDepositDstSwapSpecialCaseVars memory v;
+        /// scenario: user deposits with his own token and has approved enough tokens
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        v.superform = getContract(
+            AVAX, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        superformId = DataLib.packSuperform(v.superform, FORM_IMPLEMENTATION_IDS[0], AVAX);
+
+        v.superformRouter = getContract(ETH, "SuperformRouter");
+
+        v.superformIds = new uint256[](2);
+        v.superformIds[0] = superformId;
+        v.superformIds[1] = superformId;
+
+        v.uint256MemArr = new uint256[](2);
+        v.uint256MemArr[0] = 420;
+        v.uint256MemArr[1] = 420;
+
+        v.amounts = new uint256[](2);
+
+        /// this should fail as it is larger than the balance difference (result of swapping 0.1 WETH (1e17 in in
+        /// txDataFails) to DAI )
+        v.amounts[0] = isFailingIndex1Vault ? 419_972_359 : 419_950_757_613_293_461_130;
+
+        v.amounts[1] = isFailingIndex1Vault ? 1e21 : 419_972_359;
+
+        v.externalToken = getContract(ETH, "DAI");
+        v.underlyingToken1 = getContract(ETH, "DAI");
+        v.underlyingToken2 = getContract(ETH, "DAI");
+        v.interimOrUnderlyingDstToken1 = vaultWithDstSwap ? getContract(AVAX, "USDC") : getContract(AVAX, "DAI");
+        v.interimToken2 = getContract(AVAX, "WETH");
+
+        vm.selectFork(FORKS[ETH]);
+
+        (, v.USDPerExternalToken,,,) = AggregatorV3Interface(tokenPriceFeeds[ETH][v.externalToken]).latestRoundData();
+        (, v.USDPerUnderlyingToken1,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[ETH][v.underlyingToken1]).latestRoundData();
+        (, v.USDPerUnderlyingToken2,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[ETH][v.underlyingToken2]).latestRoundData();
+
+        vm.selectFork(FORKS[AVAX]);
+
+        (, v.USDPerInterimOrUnderlyingDstToken1,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[AVAX][v.interimOrUnderlyingDstToken1]).latestRoundData();
+        (, v.USDPerInterimToken2,,,) = AggregatorV3Interface(tokenPriceFeeds[AVAX][v.interimToken2]).latestRoundData();
+
+        vm.selectFork(FORKS[ETH]);
+
+        LiqBridgeTxDataArgs memory liqBridgeTxData1 = LiqBridgeTxDataArgs(
+            1,
+            v.externalToken,
+            v.externalToken,
+            v.interimOrUnderlyingDstToken1,
+            v.superformRouter,
+            ETH,
+            AVAX,
+            AVAX,
+            vaultWithDstSwap,
+            vaultWithDstSwap ? getContract(AVAX, "DstSwapper") : getContract(AVAX, "CoreStateRegistry"),
+            uint256(AVAX),
+            420e18,
+            //420,
+            false,
+            /// @dev placeholder value, not used
+            0,
+            uint256(v.USDPerExternalToken),
+            uint256(v.USDPerInterimOrUnderlyingDstToken1),
+            uint256(v.USDPerUnderlyingToken1),
+            address(0)
+        );
+
+        LiqBridgeTxDataArgs memory liqBridgeTxData2 = LiqBridgeTxDataArgs(
+            1,
+            v.externalToken,
+            v.externalToken,
+            v.interimToken2,
+            v.superformRouter,
+            ETH,
+            AVAX,
+            AVAX,
+            true,
+            getContract(AVAX, "DstSwapper"),
+            uint256(AVAX),
+            420e18,
+            //420,
+            false,
+            /// @dev placeholder value, not used
+            0,
+            uint256(v.USDPerExternalToken),
+            uint256(v.USDPerInterimToken2),
+            uint256(v.USDPerUnderlyingToken2),
+            address(0)
+        );
+        v.liqReqArr = new LiqRequest[](2);
+        LiqRequest memory liqRequest1 = LiqRequest(
+            _buildLiqBridgeTxData(liqBridgeTxData1, false),
+            v.externalToken,
+            vaultWithDstSwap ? v.interimOrUnderlyingDstToken1 : address(0),
+            1,
+            AVAX,
+            0
+        );
+
+        LiqRequest memory liqRequest2 =
+            LiqRequest(_buildLiqBridgeTxData(liqBridgeTxData2, false), v.externalToken, v.interimToken2, 1, AVAX, 0);
+
+        /// @notice interim token will be address 0 anyway if not dstSwap (superRouter overrides)
+        v.liqReqArr[0] = isFailingIndex1Vault ? liqRequest1 : liqRequest2;
+
+        v.liqReqArr[1] = isFailingIndex1Vault ? liqRequest2 : liqRequest1;
+
+        v.hasDstSwaps = new bool[](2);
+        v.hasDstSwaps[0] = isFailingIndex1Vault ? vaultWithDstSwap : true;
+        v.hasDstSwaps[1] = isFailingIndex1Vault ? true : vaultWithDstSwap;
+
+        MultiVaultSFData memory data = MultiVaultSFData(
+            v.superformIds,
+            v.amounts,
+            v.uint256MemArr,
+            v.uint256MemArr,
+            v.liqReqArr,
+            bytes(""),
+            v.hasDstSwaps,
+            new bool[](2),
+            receiverAddress,
+            receiverAddress,
+            bytes("")
+        );
+        /// @dev approves before call
+        MockERC20(getContract(ETH, "DAI")).approve(v.superformRouter, 1000e18);
+
+        vm.recordLogs();
+        SuperformRouter(payable(v.superformRouter)).singleXChainMultiVaultDeposit{ value: 2 ether }(
+            SingleXChainMultiVaultStateReq(ambIds_, AVAX, data)
+        );
+        vm.stopPrank();
+
+        /// @dev mocks the cross-chain payload delivery
+        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).helpWithEstimates(
+            LZ_ENDPOINTS[AVAX],
+            5_000_000,
+            /// note: using some max limit
+            FORKS[AVAX],
+            vm.getRecordedLogs()
+        );
+        vm.selectFork(FORKS[AVAX]);
+
+        if (vaultWithDstSwap && isFailingIndex1Vault) {
+            v.wethBalOfSwapper = IERC20(v.interimToken2).balanceOf(getContract(AVAX, "DstSwapper"));
+            v.txDataPasses = _buildLiqBridgeTxDataDstSwap(
+                1,
+                v.interimOrUnderlyingDstToken1,
+                getContract(AVAX, "DAI"),
+                getContract(AVAX, "DstSwapper"),
+                AVAX,
+                419_800_730,
+                0
+            );
+
+            v.txDataFails = _buildLiqBridgeTxDataDstSwap(
+                1, v.interimToken2, getContract(AVAX, "DAI"), getContract(AVAX, "DstSwapper"), AVAX, 1e17, 0
+            );
+
+            v.indices = new uint256[](2);
+            v.indices[0] = 0;
+            v.indices[1] = 1;
+
+            v.bridgeIds_ = new uint8[](2);
+            v.bridgeIds_[0] = 1;
+            v.bridgeIds_[1] = 1;
+
+            v.txDataArr = new bytes[](2);
+            v.txDataArr[0] = v.txDataPasses;
+            v.txDataArr[1] = v.txDataFails;
+
+            /// @dev first this calls batchProcessTx with both the index that would pass and the one that would fail
+            vm.prank(deployer);
+            vm.expectRevert(Error.SLIPPAGE_OUT_OF_BOUNDS.selector);
+            DstSwapper(payable(getContract(AVAX, "DstSwapper"))).batchProcessTx(1, v.indices, v.bridgeIds_, v.txDataArr);
+
+            v.indices = new uint256[](1);
+            v.indices[0] = 0;
+
+            v.bridgeIds_ = new uint8[](1);
+            v.bridgeIds_[0] = 1;
+
+            v.txDataArr = new bytes[](1);
+            v.txDataArr[0] = v.txDataPasses;
+
+            /// @dev then calls just batchProcessTx with one that will pass
+            vm.prank(deployer);
+            DstSwapper(payable(getContract(AVAX, "DstSwapper"))).batchProcessTx(1, v.indices, v.bridgeIds_, v.txDataArr);
+
+            v.indices = new uint256[](1);
+            v.indices[0] = 1;
+
+            v.interimTokens = new address[](1);
+            v.interimTokens[0] = v.interimToken2;
+
+            v.amounts = new uint256[](1);
+            v.amounts[0] = v.wethBalOfSwapper;
+
+            /// @dev try to call batchUpdateFailedTx, assert that it will fail due to indexes issue!
+            vm.prank(deployer);
+            vm.expectRevert(stdError.indexOOBError);
+            DstSwapper(payable(getContract(AVAX, "DstSwapper"))).batchUpdateFailedTx(
+                1, v.indices, v.interimTokens, v.amounts
+            );
+
+            /// @dev assert that it is possible to recover from this situation by marking index 0 as failed, although it
+            /// was processed to csr earlier
+            /// WARNING: This is only possible because all were DST swap so indexes are cleanly passed insided
+            /// dstSwapper and the bug is avoided
+            v.indices = new uint256[](2);
+            v.indices[0] = 0;
+            v.indices[1] = 1;
+
+            v.interimTokens = new address[](2);
+            v.interimTokens[0] = v.interimOrUnderlyingDstToken1;
+            v.interimTokens[1] = v.interimToken2;
+
+            /// @dev mark index 0 with amount as failed 1 (symbolic value)
+            v.amounts = new uint256[](2);
+            v.amounts[0] = 1;
+            v.amounts[1] = v.wethBalOfSwapper;
+
+            /// @dev Potential Problem: How to grab this balance and transfer it
+            /// @dev ALWAYS have to have a minimum of 1 for this to work (will be lost)
+            vm.prank(deployer);
+            IERC20(v.interimOrUnderlyingDstToken1).transfer(getContract(AVAX, "DstSwapper"), 1);
+
+            /// @dev try to call batchUpdateFailedTx, assert that it will pass
+            vm.prank(deployer);
+            DstSwapper(payable(getContract(AVAX, "DstSwapper"))).batchUpdateFailedTx(
+                1, v.indices, v.interimTokens, v.amounts
+            );
+
+            /// @dev try performing updateDeposit and assert that index 0 will succeed and index 1 will go to failed
+            /// queue
+            v.finalTokens = new address[](2);
+            v.finalTokens[0] = getContract(AVAX, "DAI");
+            v.finalTokens[1] = v.interimToken2;
+
+            v.amounts[0] = 419_972_359;
+            v.amounts[1] = v.wethBalOfSwapper;
+
+            vm.prank(deployer);
+            SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
+
+            vm.prank(deployer);
+            CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(
+                1, v.finalTokens, v.amounts
+            );
+
+            /// @dev assert only 1 superform is in failed deposit
+            (uint256[] memory failedSuperFormIds,,) =
+                CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).getFailedDeposits(1);
+
+            assertEq(failedSuperFormIds.length, 1);
+
+            /// @dev check that propose / rescue queue works just for the one that failed
+            v.amounts = new uint256[](1);
+            v.amounts[0] = v.wethBalOfSwapper;
+
+            vm.prank(deployer);
+            CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).proposeRescueFailedDeposits(1, v.amounts);
+
+            vm.warp(block.timestamp + 2 days);
+            vm.prank(deployer);
+            CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).finalizeRescueFailedDeposits(1);
+            uint256 nativeFee = PaymentHelper(getContract(ETH, "PaymentHelper")).estimateAckCost(1);
+
+            /// @dev check that processing works for the one that passed
+            vm.prank(deployer);
+            CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: nativeFee }(1);
+
+            assertGt(IERC20(IBaseForm(v.superform).getVaultAddress()).balanceOf(v.superform), 0);
+        } else if (!vaultWithDstSwap && isFailingIndex1Vault) {
+            v.wethBalOfSwapper = IERC20(v.interimToken2).balanceOf(getContract(AVAX, "DstSwapper"));
+
+            v.txDataFails = _buildLiqBridgeTxDataDstSwap(
+                1, v.interimToken2, getContract(AVAX, "DAI"), getContract(AVAX, "DstSwapper"), AVAX, 1e17, 0
+            );
+
+            v.indices = new uint256[](1);
+            v.indices[0] = 1;
+
+            v.bridgeIds_ = new uint8[](1);
+            v.bridgeIds_[0] = 1;
+
+            v.txDataArr = new bytes[](1);
+            v.txDataArr[0] = v.txDataFails;
+
+            /// @dev calling batchProcessTx with the problematic txData
+            vm.prank(deployer);
+            vm.expectRevert(Error.SLIPPAGE_OUT_OF_BOUNDS.selector);
+            DstSwapper(payable(getContract(AVAX, "DstSwapper"))).batchProcessTx(1, v.indices, v.bridgeIds_, v.txDataArr);
+
+            v.indices = new uint256[](1);
+            v.indices[0] = 1;
+
+            v.interimTokens = new address[](1);
+            v.interimTokens[0] = v.interimToken2;
+
+            v.amounts = new uint256[](1);
+            v.amounts[0] = v.wethBalOfSwapper;
+
+            /// @dev try to call batchUpdateFailedTx, assert that it will fail due to indexes issue!
+            vm.prank(deployer);
+            vm.expectRevert(stdError.indexOOBError);
+            DstSwapper(payable(getContract(AVAX, "DstSwapper"))).batchUpdateFailedTx(
+                1, v.indices, v.interimTokens, v.amounts
+            );
+
+            /// @dev assert that it is impossible to recover from this  due to the fact that the interimToken was not
+            /// set
+            v.indices = new uint256[](2);
+            v.indices[0] = 0;
+            v.indices[1] = 1;
+
+            v.interimTokens = new address[](2);
+            v.interimTokens[0] = v.interimOrUnderlyingDstToken1;
+            /// DAI
+            v.interimTokens[1] = v.interimToken2;
+
+            /// @dev mark index 0 with amount as failed 1 (symbolic value)
+            v.amounts = new uint256[](2);
+            v.amounts[0] = 1;
+            v.amounts[1] = v.wethBalOfSwapper;
+
+            /// @dev try to call batchUpdateFailedTx, assert that it will fail and this will be impossible to recover
+            /// due to
+            /// INVALID_INTERIM_TOKEN
+            vm.prank(deployer);
+            vm.expectRevert(Error.INVALID_INTERIM_TOKEN.selector);
+            DstSwapper(payable(getContract(AVAX, "DstSwapper"))).batchUpdateFailedTx(
+                1, v.indices, v.interimTokens, v.amounts
+            );
+
+            /// @dev do update deposit to assert it is impossible to continue
+            v.finalTokens = new address[](2);
+            v.finalTokens[0] = getContract(AVAX, "DAI");
+            v.finalTokens[1] = v.interimToken2;
+
+            v.amounts[0] = 419_972_359;
+            v.amounts[1] = v.wethBalOfSwapper;
+
+            vm.prank(deployer);
+            SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
+
+            /// @dev it cannot proceed because nothing was marked as failed
+            vm.prank(deployer);
+            vm.expectRevert(Error.INVALID_DST_SWAPPER_FAILED_SWAP.selector);
+            CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(
+                1, v.finalTokens, v.amounts
+            );
+        } else if (!vaultWithDstSwap && !isFailingIndex1Vault) {
+            v.wethBalOfSwapper = IERC20(v.interimToken2).balanceOf(getContract(AVAX, "DstSwapper"));
+
+            v.txDataPasses = _buildLiqBridgeTxDataDstSwap(
+                1,
+                v.interimToken2,
+                getContract(AVAX, "DAI"),
+                getContract(AVAX, "DstSwapper"),
+                AVAX,
+                111_629_656_688_722_279,
+                0
+            );
+
+            v.indices = new uint256[](1);
+            v.indices[0] = 0;
+
+            v.bridgeIds_ = new uint8[](1);
+            v.bridgeIds_[0] = 1;
+
+            v.txDataArr = new bytes[](1);
+            v.txDataArr[0] = v.txDataPasses;
+
+            /// @dev calling batchProcessTx will pass
+            vm.prank(deployer);
+            DstSwapper(payable(getContract(AVAX, "DstSwapper"))).batchProcessTx(1, v.indices, v.bridgeIds_, v.txDataArr);
+
+            /// @dev do update deposit to assert it continues normally
+            v.finalTokens = new address[](2);
+            v.finalTokens[0] = getContract(AVAX, "DAI");
+            v.finalTokens[1] = getContract(AVAX, "DAI");
+
+            v.amounts[0] = 419_941_560_086_336_667_640;
+            v.amounts[1] = 419_972_359;
+
+            vm.prank(deployer);
+            SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
+
+            /// @dev it cannot proceed because nothing was marked as failed
+            vm.prank(deployer);
+            CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(
+                1, v.finalTokens, v.amounts
+            );
+
+            uint256 nativeFee = PaymentHelper(getContract(ETH, "PaymentHelper")).estimateAckCost(1);
+
+            /// @dev check that processing works for the one that passed
+            vm.prank(deployer);
+            CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: nativeFee }(1);
+
+            assertGt(IERC20(IBaseForm(v.superform).getVaultAddress()).balanceOf(v.superform), 0);
+        }
     }
 
     function _successfulMultiWithdrawal(uint8[] memory ambIds_) internal returns (uint256 superformId) {

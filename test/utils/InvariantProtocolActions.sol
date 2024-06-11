@@ -47,7 +47,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
     )
         internal
     {
-        console.log("--new-action");
+        if (DEBUG_MODE) console.log("--new-action");
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[vars.CHAIN_0]);
 
@@ -91,26 +91,26 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         if (action.dstSwap) MULTI_TX_SLIPPAGE_SHARE = 40;
         /// @dev builds superformRouter request data
         (multiSuperformsData, singleSuperformsData, vars) = _stage1_buildReqData(action, vars);
-        console.log("Stage 1 complete");
+        if (DEBUG_MODE) console.log("Stage 1 complete");
 
         uint256 msgValue;
         /// @dev passes request data and performs initial call
         /// @dev returns sameChainDstHasRevertingVault - this means that the request reverted, thus no payloadId
         /// increase happened nor there is any need for payload update or further assertion
         (vars, msgValue) = _stage2_run_src_action(action, multiSuperformsData, singleSuperformsData, vars);
-        console.log("Stage 2 complete");
+        if (DEBUG_MODE) console.log("Stage 2 complete");
         UniqueDSTInfo[] memory usedDsts;
         /// @dev simulation of cross-chain message delivery (for x-chain actions) (With no assertions)
         (aV, usedDsts) = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperformsData, singleSuperformsData);
-        console.log("Stage 3 complete");
+        if (DEBUG_MODE) console.log("Stage 3 complete");
 
         /// @dev processing of message delivery on destination   (for x-chain actions)
         success = _stage4_process_src_dst_payload(action, vars, aV, singleSuperformsData, usedDsts);
         if (!success) {
-            console.log("Stage 4 failed");
+            if (DEBUG_MODE) console.log("Stage 4 failed");
             return;
         } else {
-            console.log("Stage 4 complete");
+            if (DEBUG_MODE) console.log("Stage 4 complete");
         }
 
         if (
@@ -121,17 +121,17 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
             success = _stage5_process_superPositions_mint(action, vars);
             if (!success) {
-                console.log("Stage 5 failed");
+                if (DEBUG_MODE) console.log("Stage 5 failed");
 
                 return;
             } else if (action.testType != TestType.RevertMainAction) {
-                console.log("Stage 5 complete");
+                if (DEBUG_MODE) console.log("Stage 5 complete");
             }
         }
 
         MULTI_TX_SLIPPAGE_SHARE = 0;
 
-        console.log("Done -");
+        if (DEBUG_MODE) console.log("Done -");
     }
 
     /// @dev STEP 1: Build Request Data for SuperformRouter
@@ -240,8 +240,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                         vars.chainDstIndex,
                         action.dstSwap,
                         action.action,
-                        action.slippage,
-                        new bool[](0)
+                        action.slippage
                     ),
                     action.action
                 );
@@ -291,7 +290,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     /// @dev these are just the originating and dst chain ids casted to uint256 (the liquidity bridge
                     /// chain ids)
                     action.dstSwap,
-                    false,
                     action.slippage
                 );
 
@@ -909,7 +907,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                 args.liquidityBridgeSrcChainId,
                 uint256(args.toChainId),
                 args.dstSwap,
-                false,
                 args.slippage
             );
 
@@ -958,7 +955,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             users[args.user],
             users[args.user],
             /// @dev repeat user for receiverAddressSP - not testing AA here
-            abi.encode(false)
+            ""
         );
     }
 
@@ -1113,7 +1110,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         /// @dev for e.g. externalToken = DAI, underlyingTokenDst = USDC, daiAmount = 100
         /// => usdcAmount = ((USDPerDai / 10e18) / (USDPerUsdc / 10e6)) * daiAmount
-        console.log("test amount pre-swap", args.amount);
+        if (DEBUG_MODE) console.log("test amount pre-swap", args.amount);
         /// @dev src swaps simulation if any
         if (args.externalToken != args.underlyingToken) {
             vm.selectFork(FORKS[args.srcChainId]);
@@ -1131,7 +1128,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                 args.amount = ((args.amount * uint256(v.USDPerExternalToken)) * 10 ** (decimal2 - decimal1))
                     / uint256(v.USDPerUnderlyingToken);
             }
-            console.log("test amount post-swap", args.amount);
+            if (DEBUG_MODE) console.log("test amount post-swap", args.amount);
         }
 
         /// @dev applying only bridge slippage here as dstSwap slippage is applied in _updateSingleVaultDepositPayload()
@@ -1142,7 +1139,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         // else if (args.dstSwap) slippage = (slippage * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
 
         args.amount = (args.amount * uint256(10_000 - slippage)) / 10_000;
-        console.log("test amount pre-bridge, post-slippage", v.amount);
+        if (DEBUG_MODE) console.log("test amount pre-bridge, post-slippage", v.amount);
 
         /// @dev if args.externalToken == args.underlyingToken, USDPerExternalToken == USDPerUnderlyingToken
         /// @dev v.decimal3 = decimals of args.underlyingToken (args.externalToken too if above holds true) (src chain),
@@ -1155,7 +1152,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                 / uint256(v.USDPerUnderlyingOrInterimTokenDst);
         }
 
-        console.log("test amount post-bridge", v.amount);
+        if (DEBUG_MODE) console.log("test amount post-bridge", v.amount);
 
         vm.selectFork(FORKS[args.toChainId]);
         (address superform,,) = DataLib.getSuperform(args.superformId);
@@ -1174,7 +1171,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             users[args.user],
             users[args.user],
             /// @dev repeat user for receiverAddressSP - not testing AA here
-            abi.encode(false)
+            ""
         );
         vm.selectFork(v.initialFork);
     }
@@ -1289,7 +1286,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             args.receive4626,
             users[args.user],
             users[args.user],
-            abi.encode(false)
+            ""
         );
 
         vm.selectFork(initialFork);

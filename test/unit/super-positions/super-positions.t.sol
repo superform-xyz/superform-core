@@ -17,7 +17,7 @@ contract SuperPositionsTest is BaseSetup {
     SuperPositions public superPositions;
     address formImplementation;
     address vault;
-    uint32 formImplementationId = 4;
+    uint32 formImplementationId = 444;
 
     address receiverAddress = deployer;
 
@@ -68,7 +68,7 @@ contract SuperPositionsTest is BaseSetup {
     }
 
     /// Test support interface
-    function test_SupportsInterface() public {
+    function test_SupportsInterface() public view {
         assertEq(superPositions.supportsInterface(INTERFACE_ID_ERC165), true);
     }
 

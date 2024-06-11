@@ -78,7 +78,7 @@ abstract contract AbstractDeployAxelar is EnvironmentUtils {
             uint8[] memory bridgeIds = new uint8[](1);
 
             /// axelar
-            bridgeIds[0] = 8;
+            bridgeIds[0] = 9;
 
             address[] memory bridgeAddress = new address[](1);
             bridgeAddress[0] = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "AxelarImplementation");
@@ -95,7 +95,7 @@ abstract contract AbstractDeployAxelar is EnvironmentUtils {
             uint8[] memory bridgeIds = new uint8[](1);
 
             /// axelar
-            bridgeIds[0] = 8;
+            bridgeIds[0] = 9;
 
             address[] memory bridgeAddress = new address[](1);
             bridgeAddress[0] = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "AxelarImplementation");
@@ -171,7 +171,7 @@ abstract contract AbstractDeployAxelar is EnvironmentUtils {
         uint256 env,
         uint256 i,
         uint256 trueIndex,
-        Cycle cycle,
+        Cycle, /*cycle*/
         uint64[] memory s_superFormChainIds
     )
         internal

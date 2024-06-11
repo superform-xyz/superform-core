@@ -378,7 +378,6 @@ contract SuperRBACTest is BaseSetup {
             _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
             vm.stopPrank();
 
-            console.log("has role on eth", superRBAC.hasRole(superRBACRole_, memberAddress));
             /// @dev role revoked on ETH
             assertFalse(superRBAC.hasRole(superRBACRole_, memberAddress));
 
@@ -394,13 +393,11 @@ contract SuperRBACTest is BaseSetup {
                     superRBAC_ = SuperRBAC(getContract(chainIds[i], "SuperRBAC"));
 
                     assertTrue(superRBAC_.hasRole(superRBACRole_, memberAddress));
-                    console.log("has role on other chain b4", superRBAC_.hasRole(superRBACRole_, memberAddress));
 
                     vm.prank(deployer);
                     BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(1);
                     assertFalse(superRBAC_.hasRole(superRBACRole_, memberAddress));
 
-                    console.log("has role on other chain after", superRBAC_.hasRole(superRBACRole_, memberAddress));
                 }
             }
 
