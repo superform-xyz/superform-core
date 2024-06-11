@@ -6,9 +6,9 @@ concurrency:
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, v1]
   pull_request:
-    branches: [main, develop]
+    branches: [main, develop, v1]
 
 env:
   BSC_RPC_URL: ${{ secrets.BSC_RPC_URL_VNET }}
