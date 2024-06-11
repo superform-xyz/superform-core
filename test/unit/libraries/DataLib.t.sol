@@ -31,7 +31,7 @@ contract DataLibTest is Test {
         dataLib = new DataLibUser();
     }
 
-    function test_packSuperform() external {
+    function test_packSuperform() public view {
         /// generates the exp superform id with shift
         uint256 superformId = _legacySuperformPackWithShift();
 
