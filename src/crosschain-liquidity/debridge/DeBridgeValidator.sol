@@ -128,7 +128,7 @@ contract DeBridgeValidator is BridgeValidator {
 
     /// @notice supports both `createOrder` and `createSaltedOrder` functions for bridging using dln source
     function _decodeTxData(bytes calldata txData_)
-        internal
+        public
         pure
         returns (DlnOrderLib.OrderCreation memory deBridgeQuote)
     {

@@ -16,6 +16,7 @@ import {
     ReturnMultiData
 } from "src/types/DataTypes.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
+import { SuperPositions } from "src/SuperPositions.sol";
 
 interface ICoreStateRegistryExtended is ICoreStateRegistry {
     function payloadsCount() external view returns (uint256);
@@ -56,11 +57,23 @@ contract SuperformRouterWrapper is IERC1155Receiver {
     //                  EXTERNAL WRITE FUNCTIONS                //
     //////////////////////////////////////////////////////////////
 
+    /// NOTE: add function for same chain action
+    /// NOTE: handle the multidst case
+
+    /// NOTE: just 4626 shares
     /// @dev helps user deposit 4626 vault shares into superform
     /// @param vault_ the 4626 vault to redeem from
     /// @param amount_ the 4626 vault share amount to redeem
     /// @param callData_ the encoded superform router request
-    function deposit4626(IERC4626 vault_, uint256 amount_, bytes memory callData_) external payable {
+    function deposit4626(
+        IERC4626 vault_,
+        uint256 amount_,
+        address receiver_,
+        bytes memory callData_
+    )
+        external
+        payable
+    {
         uint256 payloadStartCount = CORE_STATE_REGISTRY.payloadsCount();
 
         IERC20 asset = IERC20(IERC4626(vault_).asset());
@@ -93,7 +106,7 @@ contract SuperformRouterWrapper is IERC1155Receiver {
 
         if (payloadEndCount - payloadStartCount > 0) {
             for (uint256 i = payloadStartCount; i < payloadEndCount; i++) {
-                msgSenderMap[i] = msg.sender;
+                msgSenderMap[i] = receiver_;
             }
         }
 
@@ -105,7 +118,7 @@ contract SuperformRouterWrapper is IERC1155Receiver {
     /// @param asset_ the ERC20 asset to deposit
     /// @param amount_ the ERC20 amount to deposit
     /// @param callData_ the encoded superform router deposit request
-    function deposit20(IERC20 asset_, uint256 amount_, bytes memory callData_) external payable {
+    function deposit20(IERC20 asset_, uint256 amount_, address receiver_, bytes memory callData_) external payable {
         uint256 payloadStartCount = CORE_STATE_REGISTRY.payloadsCount();
 
         /// @dev moves user tokens to this address
@@ -133,12 +146,35 @@ contract SuperformRouterWrapper is IERC1155Receiver {
 
         if (payloadEndCount - payloadStartCount > 0) {
             for (uint256 i = payloadStartCount; i < payloadEndCount; i++) {
-                msgSenderMap[i] = msg.sender;
+                msgSenderMap[i] = receiver_;
             }
         }
 
         /// @dev refund any unused funds
         _processRefunds(asset_);
+    }
+
+    /// @dev helps user rebalance their superpositions
+    function rebalancePositions(
+        uint256 id_,
+        uint256 amount_,
+        address receiver_,
+        bytes calldata callData_
+    )
+        external
+        payable
+    {
+        SuperPositions(SUPER_POSITIONS).safeTransferFrom(msg.sender, address(this), id_, amount_, "");
+        SuperPositions(SUPER_POSITIONS).setApprovalForOne(SUPERFORM_ROUTER, id_, amount_);
+
+        /// @dev processes the deposit to a random superform
+        /// @notice no need to store info here as receiverSP will be user address
+        (bool success,) = SUPERFORM_ROUTER.call{ value: msg.value }(callData_);
+
+        /// @dev revert if not `success`
+        if (!success) {
+            revert();
+        }
     }
 
     /// @dev this is callback payload id
@@ -179,13 +215,14 @@ contract SuperformRouterWrapper is IERC1155Receiver {
 
     /// @dev overrides receive functions
     function onERC1155Received(
-        address operator,
-        address from,
-        uint256 id,
-        uint256 value,
-        bytes calldata data
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes calldata
     )
         external
+        pure
         override
         returns (bytes4)
     {
@@ -193,20 +230,21 @@ contract SuperformRouterWrapper is IERC1155Receiver {
     }
 
     function onERC1155BatchReceived(
-        address operator,
-        address from,
-        uint256[] calldata ids,
-        uint256[] calldata values,
-        bytes calldata data
+        address,
+        address,
+        uint256[] calldata,
+        uint256[] calldata,
+        bytes calldata
     )
         external
+        pure
         override
         returns (bytes4)
     {
         return this.onERC1155BatchReceived.selector;
     }
 
-    function supportsInterface(bytes4 interfaceId) external view override returns (bool) {
+    function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
         return interfaceId == type(IERC165).interfaceId;
     }
 
