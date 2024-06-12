@@ -118,56 +118,42 @@ contract ERC7540Mock is IERC7540, IAuthorizeOperator {
 
     // --- Asynchronous cancellation methods ---
     /// @inheritdoc IERC7540CancelDeposit
-    function cancelDepositRequest(uint256, address controller) external {
+    function cancelDepositRequest(uint256, address) external pure {
         revert();
     }
 
     /// @inheritdoc IERC7540CancelDeposit
-    function pendingCancelDepositRequest(uint256, address controller) public view returns (bool isPending) {
+    function pendingCancelDepositRequest(uint256, address) public pure returns (bool) {
         revert();
     }
 
     /// @inheritdoc IERC7540CancelDeposit
-    function claimableCancelDepositRequest(uint256, address controller) public view returns (uint256 claimableAssets) {
+    function claimableCancelDepositRequest(uint256, address) public pure returns (uint256) {
         revert();
     }
 
     /// @inheritdoc IERC7540CancelDeposit
-    function claimCancelDepositRequest(
-        uint256,
-        address receiver,
-        address controller
-    )
-        external
-        returns (uint256 assets)
-    {
+    function claimCancelDepositRequest(uint256, address, address) external pure returns (uint256) {
         revert();
     }
 
     /// @inheritdoc IERC7540CancelRedeem
-    function cancelRedeemRequest(uint256, address controller) external {
+    function cancelRedeemRequest(uint256, address) external pure {
         revert();
     }
 
     /// @inheritdoc IERC7540CancelRedeem
-    function pendingCancelRedeemRequest(uint256, address controller) public view returns (bool isPending) {
+    function pendingCancelRedeemRequest(uint256, address) public pure returns (bool) {
         revert();
     }
 
     /// @inheritdoc IERC7540CancelRedeem
-    function claimableCancelRedeemRequest(uint256, address controller) public view returns (uint256 claimableShares) {
+    function claimableCancelRedeemRequest(uint256, address) public pure returns (uint256) {
         revert();
     }
 
     /// @inheritdoc IERC7540CancelRedeem
-    function claimCancelRedeemRequest(
-        uint256,
-        address receiver,
-        address controller
-    )
-        external
-        returns (uint256 shares)
-    {
+    function claimCancelRedeemRequest(uint256, address, address) external pure returns (uint256) {
         revert();
     }
 
@@ -242,7 +228,7 @@ contract ERC7540Mock is IERC7540, IAuthorizeOperator {
     }
 
     /// @inheritdoc IERC7575
-    function maxDeposit(address controller) public view returns (uint256 maxAssets) {
+    function maxDeposit(address) public pure returns (uint256 maxAssets) {
         return type(uint256).max;
     }
 
@@ -263,27 +249,27 @@ contract ERC7540Mock is IERC7540, IAuthorizeOperator {
     }
 
     /// @inheritdoc IERC7575
-    function maxMint(address controller) public view returns (uint256 maxShares) {
+    function maxMint(address) public pure returns (uint256 maxShares) {
         return type(uint256).max;
     }
 
     /// @inheritdoc IERC7540
-    function mint(uint256 shares, address receiver, address controller) public returns (uint256 assets) {
+    function mint(uint256, address, address) public pure returns (uint256) {
         revert();
     }
 
     /// @inheritdoc IERC7575
-    function mint(uint256 shares, address receiver) public returns (uint256 assets) {
+    function mint(uint256, address) public pure returns (uint256) {
         revert();
     }
 
     /// @inheritdoc IERC7575
-    function maxWithdraw(address controller) public view returns (uint256 maxAssets) {
+    function maxWithdraw(address) public pure returns (uint256) {
         revert();
     }
 
     /// @inheritdoc IERC7575
-    function withdraw(uint256 assets, address receiver, address controller) public returns (uint256 shares) {
+    function withdraw(uint256, address, address) public pure returns (uint256) {
         revert();
     }
 
