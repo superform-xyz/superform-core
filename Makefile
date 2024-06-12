@@ -28,7 +28,7 @@ install:; forge install
 update:; forge update
 
 # Build & test
-build :; FOUNDRY_PROFILE=production forge build
+build :; FOUNDRY_PROFILE=production forge build 
 build-unoptimized :; FOUNDRY_PROFILE=localdev forge build
 build-sizes :; FOUNDRY_PROFILE=production forge build --sizes
 test-vvv   :; forge test --match-contract SDMVW0TokenInputNoSlippageAMB1323 -vv --evm-version cancun
