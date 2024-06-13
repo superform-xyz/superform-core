@@ -6,7 +6,7 @@ import { SignatureLib } from "./7540MockUtils/SignatureLib.sol";
 import { SafeTransferLib } from "./7540MockUtils/SafeTransferLib.sol";
 import { IERC20Metadata } from "./7540MockUtils/IERC20.sol";
 import {
-    IERC7540,
+    IERC7540Vault as IERC7540,
     IERC7540Deposit,
     IERC7540Redeem,
     IERC7540Operator,
@@ -19,7 +19,7 @@ import { ERC7575Mock } from "./ERC7575Mock.sol";
 
 /// @title  ERC7540FullyAsyncMock
 /// @notice Asynchronous Tokenized Vault Mock
-contract ERC7540FullyAsyncMock is IERC7540Deposit, IERC7540Redeem, IERC7540Operator, IAuthorizeOperator, IERC7575 {
+contract ERC7540FullyAsyncMock is IERC7540Deposit, IERC7540Redeem, IAuthorizeOperator, IERC7575 {
     using Math for uint256;
 
     address public immutable asset;

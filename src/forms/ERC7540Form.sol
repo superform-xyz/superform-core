@@ -11,7 +11,7 @@ import { Error } from "src/libraries/Error.sol";
 import { InitSingleVaultData, LiqRequest } from "src/types/DataTypes.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IERC7540, IERC7540Deposit, IERC7540Redeem } from "src/vendor/centrifuge/IERC7540.sol";
+import { IERC7540Vault as IERC7540, IERC7540Deposit, IERC7540Redeem } from "src/vendor/centrifuge/IERC7540.sol";
 import { IERC7540FormBase } from "./interfaces/IERC7540Form.sol";
 import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 

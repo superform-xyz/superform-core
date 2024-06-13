@@ -5,7 +5,12 @@ import { EIP712Lib } from "./7540MockUtils/EIP712Lib.sol";
 import { SignatureLib } from "./7540MockUtils/SignatureLib.sol";
 import { SafeTransferLib } from "./7540MockUtils/SafeTransferLib.sol";
 import { IERC20Metadata } from "./7540MockUtils/IERC20.sol";
-import { IERC7540, IERC7540Redeem, IERC7540Operator, IAuthorizeOperator } from "src/vendor/centrifuge/IERC7540.sol";
+import {
+    IERC7540Vault as IERC7540,
+    IERC7540Redeem,
+    IERC7540Operator,
+    IAuthorizeOperator
+} from "src/vendor/centrifuge/IERC7540.sol";
 import { IERC7575, IERC165 } from "src/vendor/centrifuge/IERC7575.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { Math } from "openzeppelin-contracts/contracts/utils/math/Math.sol";
@@ -13,7 +18,7 @@ import { ERC7575Mock } from "./ERC7575Mock.sol";
 
 /// @title  ERC7540AsyncRedeemRevertMock
 /// @notice Asynchronous Tokenized Vault Mock
-contract ERC7540AsyncRedeemRevertMock is IERC7540Redeem, IERC7540Operator, IAuthorizeOperator, IERC7575 {
+contract ERC7540AsyncRedeemRevertMock is IERC7540Redeem, IAuthorizeOperator, IERC7575 {
     using Math for uint256;
 
     address public immutable asset;
