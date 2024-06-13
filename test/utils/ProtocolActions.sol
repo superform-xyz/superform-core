@@ -2030,6 +2030,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         (vars.superform,,) = args.superformId.getSuperform();
         vars.actualWithdrawAmount = IBaseForm(vars.superform).previewRedeemFrom(args.amount);
 
+        console.log("AAA");
         vm.selectFork(initialFork);
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
@@ -2216,6 +2217,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
         /// @dev obtains superform addresses through string concatenation, notice what is done in BaseSetup to save
         /// these in contracts mapping
         for (uint256 i = 0; i < vaultIds_.length; ++i) {
+            console.log("UNDERLYING_TOKENS[underlyingTokens_[i]]", UNDERLYING_TOKENS[underlyingTokens_[i]]);
+            console.log("VAULT_KINDS[vaultIds_[i]]", VAULT_KINDS[vaultIds_[i]]);
+            console.log("FORM_IMPLEMENTATION_IDS[formKinds_[i]", FORM_IMPLEMENTATION_IDS[formKinds_[i]]);
+
             address superform = getContract(
                 chainId_,
                 string.concat(
