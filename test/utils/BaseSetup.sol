@@ -1481,7 +1481,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
         if (!invariant) {
-            forks[ETH] = pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 20_017_840) : vm.createFork(ETHEREUM_RPC_URL_QN);
+            forks[ETH] =
+                pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL_QN, 20_083_652) : vm.createFork(ETHEREUM_RPC_URL_QN);
             forks[BSC] = pinnedBlock ? vm.createFork(BSC_RPC_URL, 39_315_701) : vm.createFork(BSC_RPC_URL_QN);
             forks[AVAX] =
                 pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 46_289_230) : vm.createFork(AVALANCHE_RPC_URL_QN);

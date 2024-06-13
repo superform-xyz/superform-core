@@ -11,9 +11,9 @@ contract SXSVW4626NativeSlippagePseudoAsyncAMB23 is ProtocolActions {
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        // AMBs = [2, 3];
+        AMBs = [2, 3];
 
-        CHAIN_0 = ETH;
+        CHAIN_0 = POLY;
         DST_CHAINS = [ETH];
 
         TARGET_UNDERLYINGS[ETH][0] = [6];
@@ -96,7 +96,6 @@ contract SXSVW4626NativeSlippagePseudoAsyncAMB23 is ProtocolActions {
                 );
 
                 AMOUNTS[ETH][1] = [superPositions[0]];
-                console.log("SUPER POSITIONS BEING WITHDRAWN: ", AMOUNTS[ETH][1][0]);
             }
 
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);

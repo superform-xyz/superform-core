@@ -158,7 +158,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             for (uint256 i = 0; i < DST_CHAINS.length; ++i) {
                 vm.selectFork(FORKS[DST_CHAINS[i]]);
 
-                vars.superformIds = _superformIds(
+                (vars.superformIds, vars.potentialRealVaults) = _superformIds(
                     TARGET_UNDERLYINGS[DST_CHAINS[i]][act],
                     TARGET_VAULTS[DST_CHAINS[i]][act],
                     TARGET_FORM_KINDS[DST_CHAINS[i]][act],
@@ -168,7 +168,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     token = getContract(DST_CHAINS[i], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[i]][act][j]]);
                     (vars.superformT,,) = vars.superformIds[j].getSuperform();
                     /// @dev grabs amounts in deposits (assumes deposit is action 0)
-                    deal(token, IBaseForm(vars.superformT).getVaultAddress(), AMOUNTS[DST_CHAINS[i]][0][j]);
+
+                    if (vars.potentialRealVaults[j] == address(0)) {
+                        deal(token, IBaseForm(vars.superformT).getVaultAddress(), AMOUNTS[DST_CHAINS[i]][0][j]);
+                    }
                 }
 
                 actualAmountWithdrawnPerDst.push(
@@ -651,7 +654,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         }
 
                         vm.prank(users[action.user]);
-                        console.log("Inside Protocol Actions", users[action.user]);
                         /// @dev the actual call to the entry point
                         superformRouter.singleXChainSingleVaultDeposit{ value: msgValue }(
                             vars.singleXChainSingleVaultStateReq
@@ -841,7 +843,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vars.logs = vm.getRecordedLogs();
 
         for (uint256 index; index < AMBs.length; index++) {
-            console.log(AMBs[index]);
             if (AMBs[index] == 1) {
                 LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper")).help(
                     internalVars.endpoints,
@@ -854,7 +855,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
             }
 
             if (AMBs[index] == 6) {
-                console.log("6 6 6");
                 LayerZeroV2Helper(getContract(CHAIN_0, "LayerZeroV2Helper")).help(
                     internalVars.endpointsV2, internalVars.lzChainIdsV2, internalVars.forkIds, vars.logs
                 );
@@ -1758,7 +1758,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             (, v.USDPerUnderlyingOrInterimTokenDst,,,) =
                 AggregatorV3Interface(tokenPriceFeeds[args.toChainId][args.uniqueInterimToken]).latestRoundData();
-            console.log("args.uniqueInterimToken", args.uniqueInterimToken);
             v.decimal4 = args.underlyingTokenDst != NATIVE_TOKEN ? MockERC20(args.underlyingTokenDst).decimals() : 18;
 
             (, v.USDPerUnderlyingTokenDst,,,) =
@@ -2030,7 +2029,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
         (vars.superform,,) = args.superformId.getSuperform();
         vars.actualWithdrawAmount = IBaseForm(vars.superform).previewRedeemFrom(args.amount);
 
-        console.log("AAA");
         vm.selectFork(initialFork);
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
@@ -2146,7 +2144,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vars.formKinds = TARGET_FORM_KINDS[chain1][action];
 
         /// @dev constructs superFormIds from provided input info
-        vars.superformIdsTemp = _superformIds(vars.underlyingTokens, vars.vaultIds, vars.formKinds, chain1);
+        (vars.superformIdsTemp,) = _superformIds(vars.underlyingTokens, vars.vaultIds, vars.formKinds, chain1);
 
         vars.len = vars.superformIdsTemp.length;
 
@@ -2205,9 +2203,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
     )
         internal
         view
-        returns (uint256[] memory)
+        returns (uint256[] memory superformIds_, address[] memory potentialRealVaults)
     {
-        uint256[] memory superformIds_ = new uint256[](vaultIds_.length);
+        superformIds_ = new uint256[](vaultIds_.length);
+        potentialRealVaults = new address[](vaultIds_.length);
         /// @dev test sanity checks
         if (vaultIds_.length != formKinds_.length) revert INVALID_TARGETS();
         if (vaultIds_.length != underlyingTokens_.length) {
@@ -2217,10 +2216,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
         /// @dev obtains superform addresses through string concatenation, notice what is done in BaseSetup to save
         /// these in contracts mapping
         for (uint256 i = 0; i < vaultIds_.length; ++i) {
-            console.log("UNDERLYING_TOKENS[underlyingTokens_[i]]", UNDERLYING_TOKENS[underlyingTokens_[i]]);
-            console.log("VAULT_KINDS[vaultIds_[i]]", VAULT_KINDS[vaultIds_[i]]);
-            console.log("FORM_IMPLEMENTATION_IDS[formKinds_[i]", FORM_IMPLEMENTATION_IDS[formKinds_[i]]);
-
             address superform = getContract(
                 chainId_,
                 string.concat(
@@ -2232,9 +2227,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
             );
             /// @dev superformids are built here
             superformIds_[i] = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[formKinds_[i]], chainId_);
+            potentialRealVaults[i] = REAL_VAULT_ADDRESS[chainId_][FORM_IMPLEMENTATION_IDS[formKinds_[i]]][UNDERLYING_TOKENS[underlyingTokens_[i]]][vaultIds_[i]];
         }
 
-        return superformIds_;
+        return (superformIds_, potentialRealVaults);
     }
 
     function _getSuperpositionsForDstChain(
@@ -2247,7 +2243,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         internal
         returns (uint256[] memory superPositionBalances)
     {
-        uint256[] memory superformIds = _superformIds(underlyingTokens_, vaultIds_, formKinds_, dstChain);
+        (uint256[] memory superformIds,) = _superformIds(underlyingTokens_, vaultIds_, formKinds_, dstChain);
         address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
         vm.selectFork(FORKS[CHAIN_0]);
 
@@ -2293,7 +2289,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             (address superform,,) = superformIds[i].getSuperform();
             vm.selectFork(FORKS[dstChain]);
+
             previewRedeemAmounts[i] = IBaseForm(superform).previewRedeemFrom(superPositionBalances[i]) / nRepetitions;
+
         }
     }
 
