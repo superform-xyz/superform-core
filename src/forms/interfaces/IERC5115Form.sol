@@ -17,6 +17,8 @@ interface IERC5115Form {
 
     function getRewardTokens() external view returns (address[] memory rewardTokens);
 
+    function claimRewardTokens() external;
+
     function getYieldToken() external view returns (address yieldToken);
 
     function getTokensIn() external view returns (address[] memory tokensIn);

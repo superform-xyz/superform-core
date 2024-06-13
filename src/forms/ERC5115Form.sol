@@ -185,6 +185,30 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     }
 
     /// @inheritdoc IERC5115Form
+    function claimRewardTokens() external virtual override {
+        address[] memory rewardTokens = getRewardTokens();
+
+        /// @dev claim all reward tokens
+        try IStandardizedYield(vault).claimRewards(address(this)) returns (uint256[] memory rewardAmounts) {
+            if (rewardAmounts.length != rewardTokens.length) {
+                revert Error.ARRAY_LENGTH_MISMATCH();
+            }
+        } catch {
+            revert FUNCTION_NOT_IMPLEMENTED();
+        }
+
+        address rewardsDistributor = superRegistry.getAddress(keccak256("REWARDS_DISTIBUTOR"));
+        if (rewardsDistributor == address(0)) revert Error.ZERO_ADDRESS();
+
+        /// @dev forwards token to rewards distributor
+        IERC20 rewardToken;
+        for (uint256 i; i < rewardTokens.length; ++i) {
+            rewardToken = IERC20(rewardTokens[i]);
+            rewardToken.safeTransfer(rewardsDistributor, rewardToken.balanceOf(address(this)));
+        }
+    }
+
+    /// @inheritdoc IERC5115Form
     function getYieldToken() public view virtual override returns (address yieldToken) {
         yieldToken = IStandardizedYield(vault).yieldToken();
     }
