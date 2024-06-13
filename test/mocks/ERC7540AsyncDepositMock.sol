@@ -9,18 +9,17 @@ import {
     IERC7540,
     IERC7540Deposit,
     IERC7540Redeem,
-    IAuthorizeOperator,
-    IERC7540CancelDeposit,
-    IERC7540CancelRedeem
+    IERC7540Operator,
+    IAuthorizeOperator
 } from "src/vendor/centrifuge/IERC7540.sol";
 import { IERC7575, IERC165 } from "src/vendor/centrifuge/IERC7575.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { Math } from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import { ERC7575Mock } from "./ERC7575Mock.sol";
 
-/// @title  ERC7540Mock
+/// @title  ERC7540AsyncDepositMock
 /// @notice Asynchronous Tokenized Vault Mock
-contract ERC7540Mock is IERC7540, IAuthorizeOperator {
+contract ERC7540AsyncDepositMock is IERC7540Deposit, IERC7540Operator, IAuthorizeOperator, IERC7575 {
     using Math for uint256;
 
     address public immutable asset;
@@ -48,7 +47,7 @@ contract ERC7540Mock is IERC7540, IAuthorizeOperator {
     mapping(address controller => mapping(uint256 requestId => mapping(uint8 state => uint256 shareBalance)))
         shareBalances;
 
-    /// @inheritdoc IERC7540
+    /// @inheritdoc IERC7540Operator
     mapping(address => mapping(address => bool)) public isOperator;
 
     constructor(address asset_, bool requestIdFungible) {
@@ -99,83 +98,7 @@ contract ERC7540Mock is IERC7540, IAuthorizeOperator {
         assetBalances[controller][requestId][0] = 0;
     }
 
-    /// @inheritdoc IERC7540Redeem
-    function requestRedeem(uint256 shares, address controller, address owner) public returns (uint256) {
-        require(IERC20(share).balanceOf(owner) >= shares, "ERC7540Vault/insufficient-balance");
-
-        ERC7575Mock(share).burn(owner, shares);
-        uint256 requestId = REQUEST_IDS;
-
-        shareBalances[controller][requestId][0] = shares;
-
-        if (REQUEST_ID_FUNGIBLE) ++REQUEST_IDS;
-
-        return requestId;
-    }
-
-    /// @inheritdoc IERC7540Redeem
-    function pendingRedeemRequest(uint256 requestId, address controller) public view returns (uint256 pendingShares) {
-        return shareBalances[controller][requestId][0];
-    }
-
-    /// @inheritdoc IERC7540Redeem
-    function claimableRedeemRequest(
-        uint256 requestId,
-        address controller
-    )
-        external
-        view
-        returns (uint256 claimableShares)
-    {
-        return shareBalances[controller][requestId][1];
-    }
-
-    function moveSharesToClaimable(uint256 requestId, address controller) public {
-        shareBalances[controller][requestId][1] = shareBalances[controller][requestId][0];
-        shareBalances[controller][requestId][0] = 0;
-    }
-
-    /// @inheritdoc IERC7540CancelDeposit
-    function cancelDepositRequest(uint256, address) external pure {
-        revert();
-    }
-
-    /// @inheritdoc IERC7540CancelDeposit
-    function pendingCancelDepositRequest(uint256, address) public pure returns (bool) {
-        revert();
-    }
-
-    /// @inheritdoc IERC7540CancelDeposit
-    function claimableCancelDepositRequest(uint256, address) public pure returns (uint256) {
-        revert();
-    }
-
-    /// @inheritdoc IERC7540CancelDeposit
-    function claimCancelDepositRequest(uint256, address, address) external pure returns (uint256) {
-        revert();
-    }
-
-    /// @inheritdoc IERC7540CancelRedeem
-    function cancelRedeemRequest(uint256, address) external pure {
-        revert();
-    }
-
-    /// @inheritdoc IERC7540CancelRedeem
-    function pendingCancelRedeemRequest(uint256, address) public pure returns (bool) {
-        revert();
-    }
-
-    /// @inheritdoc IERC7540CancelRedeem
-    function claimableCancelRedeemRequest(uint256, address) public pure returns (uint256) {
-        revert();
-    }
-
-    /// @inheritdoc IERC7540CancelRedeem
-    function claimCancelRedeemRequest(uint256, address, address) external pure returns (uint256) {
-        revert();
-    }
-
-    /// @inheritdoc IERC7540
+    /// @inheritdoc IERC7540Operator
     function setOperator(address operator, bool approved) public virtual returns (bool) {
         isOperator[msg.sender][operator] = approved;
         return true;
@@ -223,7 +146,7 @@ contract ERC7540Mock is IERC7540, IAuthorizeOperator {
 
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
-        return interfaceId == type(IERC7540Deposit).interfaceId || interfaceId == type(IERC7540Redeem).interfaceId
+        return interfaceId == type(IERC7540Deposit).interfaceId || interfaceId == type(IERC7540Operator).interfaceId
             || interfaceId == type(IERC7575).interfaceId || interfaceId == type(IAuthorizeOperator).interfaceId
             || interfaceId == type(IERC165).interfaceId;
     }
@@ -248,7 +171,7 @@ contract ERC7540Mock is IERC7540, IAuthorizeOperator {
         return type(uint256).max;
     }
 
-    /// @inheritdoc IERC7540
+    /// @inheritdoc IERC7540Deposit
     function deposit(uint256 assets, address receiver, address controller) public returns (uint256 shares) {
         if (REQUEST_ID_FUNGIBLE) revert("ERC7540Vault/invalid-deposit-rid-fungible");
         validateController(controller);
@@ -280,17 +203,16 @@ contract ERC7540Mock is IERC7540, IAuthorizeOperator {
         ERC7575Mock(share).mint(receiver, shares);
     }
 
-    /// @inheritdoc IERC7575
     function deposit(uint256 assets, address receiver) external returns (uint256 shares) {
         shares = deposit(assets, receiver, msg.sender);
     }
 
     /// @inheritdoc IERC7575
-    function maxMint(address) public pure returns (uint256 maxShares) {
-        return type(uint256).max;
+    function maxMint(address) public pure returns (uint256) {
+        revert();
     }
 
-    /// @inheritdoc IERC7540
+    /// @inheritdoc IERC7540Deposit
     function mint(uint256, address, address) public pure returns (uint256) {
         revert();
     }
@@ -317,37 +239,15 @@ contract ERC7540Mock is IERC7540, IAuthorizeOperator {
 
     /// @inheritdoc IERC7575
     function redeem(uint256 shares, address receiver, address controller) external returns (uint256 assets) {
-        if (REQUEST_ID_FUNGIBLE) revert("ERC7540Vault/invalid-deposit-rid-fungible");
-
-        validateController(controller);
-        require(shares == shareBalances[controller][0][1], "ERC7540Vault/invalid-redeem-claim");
-
-        shareBalances[controller][0][1] = 0;
+        require(IERC20(share).balanceOf(controller) >= shares, "ERC7540Vault/insufficient-balance");
 
         assets = convertToAssets(shares);
 
-        SafeTransferLib.safeTransfer(asset, receiver, assets);
-    }
-
-    function redeem(
-        uint256 shares,
-        address receiver,
-        address controller,
-        uint256 requestId
-    )
-        external
-        returns (uint256 assets)
-    {
-        if (!REQUEST_ID_FUNGIBLE) revert("ERC7540Vault/invalid-deposit-rid-non-fungible");
-
-        validateController(controller);
-        require(shares == shareBalances[controller][requestId][1], "ERC7540Vault/invalid-redeem-claim");
-
-        shareBalances[controller][requestId][1] = 0;
-
-        assets = convertToAssets(shares);
+        ERC7575Mock(share).burn(controller, shares);
 
         SafeTransferLib.safeTransfer(asset, receiver, assets);
+
+        return assets;
     }
 
     /// @dev Preview functions for ERC-7540 vaults revert

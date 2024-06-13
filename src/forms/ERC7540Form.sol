@@ -540,7 +540,6 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         IERC20(asset).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
 
         /// ERC7540 logic
-        /// @dev if receiver address is a contract it needs to have a onERC7540DepositReceived() function
         requestId = v.requestDeposit(singleVaultData_.amount, singleVaultData_.receiverAddress, address(this));
 
         emit RequestProcessed(

@@ -53,6 +53,22 @@ interface IERC7540Deposit {
         external
         view
         returns (uint256 claimableAssets);
+
+    /**
+     * @dev Mints shares Vault shares to receiver by claiming the Request of the controller.
+     *
+     * - MUST emit the Deposit event.
+     * - controller MUST equal msg.sender unless the controller has approved the msg.sender as an operator.
+     */
+    function deposit(uint256 assets, address receiver, address controller) external returns (uint256 shares);
+
+    /**
+     * @dev Mints exactly shares Vault shares to receiver by claiming the Request of the controller.
+     *
+     * - MUST emit the Deposit event.
+     * - controller MUST equal msg.sender unless the controller has approved the msg.sender as an operator.
+     */
+    function mint(uint256 shares, address receiver, address controller) external returns (uint256 assets);
 }
 
 interface IERC7540Redeem {
@@ -233,35 +249,6 @@ interface IAuthorizeOperator {
     )
         external
         returns (bool);
-}
-
-/**
- * @title  IERC7540
- * @dev    Interface of the ERC7540 "Asynchronous Tokenized Vault Standard", as defined in
- *         https://eips.ethereum.org/EIPS/eip-7540
- * @dev    The claimable events are not included in the standard.
- */
-interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC7540CancelDeposit, IERC7540CancelRedeem, IERC7575 {
-    event DepositClaimable(address indexed controller, uint256 indexed requestId, uint256 assets, uint256 shares);
-    event RedeemClaimable(address indexed controller, uint256 indexed requestId, uint256 assets, uint256 shares);
-    event CancelDepositClaimable(address indexed controller, uint256 indexed requestId, uint256 assets);
-    event CancelRedeemClaimable(address indexed controller, uint256 indexed requestId, uint256 shares);
-
-    /**
-     * @dev Mints shares Vault shares to receiver by claiming the Request of the controller.
-     *
-     * - MUST emit the Deposit event.
-     * - controller MUST equal msg.sender unless the controller has approved the msg.sender as an operator.
-     */
-    function deposit(uint256 assets, address receiver, address controller) external returns (uint256 shares);
-
-    /**
-     * @dev Mints exactly shares Vault shares to receiver by claiming the Request of the controller.
-     *
-     * - MUST emit the Deposit event.
-     * - controller MUST equal msg.sender unless the controller has approved the msg.sender as an operator.
-     */
-    function mint(uint256 shares, address receiver, address controller) external returns (uint256 assets);
 
     /**
      * @dev The event emitted when an operator is set.
@@ -271,7 +258,9 @@ interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC7540CancelDeposit, IE
      * @param approved The approval status.
      */
     event OperatorSet(address indexed controller, address indexed operator, bool approved);
+}
 
+interface IERC7540Operator {
     /**
      * @dev Sets or removes an operator for the caller.
      *
@@ -288,4 +277,24 @@ interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC7540CancelDeposit, IE
      * @return status The approval status
      */
     function isOperator(address controller, address operator) external returns (bool status);
+}
+
+/**
+ * @title  IERC7540
+ * @dev    Interface of the ERC7540 "Asynchronous Tokenized Vault Standard", as defined in
+ *         https://eips.ethereum.org/EIPS/eip-7540
+ * @dev    The claimable events are not included in the standard.
+ */
+interface IERC7540 is
+    IERC7540Deposit,
+    IERC7540Redeem,
+    IERC7540Operator,
+    IERC7540CancelDeposit,
+    IERC7540CancelRedeem,
+    IERC7575
+{
+    event DepositClaimable(address indexed controller, uint256 indexed requestId, uint256 assets, uint256 shares);
+    event RedeemClaimable(address indexed controller, uint256 indexed requestId, uint256 assets, uint256 shares);
+    event CancelDepositClaimable(address indexed controller, uint256 indexed requestId, uint256 assets);
+    event CancelRedeemClaimable(address indexed controller, uint256 indexed requestId, uint256 shares);
 }

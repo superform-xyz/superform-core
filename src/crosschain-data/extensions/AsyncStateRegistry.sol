@@ -170,7 +170,12 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
     }
 
     /// @inheritdoc IAsyncStateRegistry
-    function finalizeDepositPayload(uint256 asyncPayloadId_) external payable override onlyAsyncStateRegistryProcessor {
+    function finalizeDepositPayload(uint256 asyncPayloadId_)
+        external
+        payable
+        override
+        onlyAsyncStateRegistryProcessor
+    {
         AsyncDepositPayload storage p = asyncDepositPayload[asyncPayloadId_];
         if (p.status != AsyncStatus.PENDING) {
             revert Error.INVALID_PAYLOAD_STATUS();
@@ -222,9 +227,9 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
         }
 
         /// @dev restoring state for gas saving
-        /// @dev should this be done ? considering we'd want to mark this as forever not possible to process in case of
+        /// TODO should this be done ? considering we'd want to mark this as forever not possible to process in case of
         /// failure?
-        /// @dev or maybe the form is momentarily paused and we'd want the keeper to try again later when it's
+        /// TODO or maybe the form is momentarily paused and we'd want the keeper to try again later when it's
         /// unpaused...
         delete asyncDepositPayload[asyncPayloadId_];
     }
@@ -298,9 +303,9 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
         superform.claimWithdraw(p);
 
         /// @dev restoring state for gas saving
-        /// @dev should this be done ? considering we'd want to mark this as forever not possible to process in case of
+        /// TODO: should this be done ? considering we'd want to mark this as forever not possible to process in case of
         /// failure?
-        /// @dev or maybe the form is momentarily paused and we'd want the keeper to try again later when it's
+        /// TODO: or maybe the form is momentarily paused and we'd want the keeper to try again later when it's
         /// unpaused...
         delete asyncWithdrawPayload[asyncPayloadId_];
     }

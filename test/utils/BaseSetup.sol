@@ -182,13 +182,13 @@ abstract contract BaseSetup is StdInvariant, Test {
     /// @dev WARNING!! THESE VAULT NAMES MUST BE THE EXACT NAMES AS FILLED IN vaultKinds
     string[] public VAULT_KINDS = [
         "VaultMock",
-        "ERC4626TimelockMock",
+        "ERC4626TimelockMock", // 7540 async withdraw (this is current timelocked)
         "kycDAO4626",
         "VaultMockRevertDeposit",
-        "ERC4626TimelockMockRevertWithdrawal",
-        "ERC4626TimelockMockRevertDeposit",
-        "kycDAO4626RevertDeposit",
-        "kycDAO4626RevertWithdraw",
+        "ERC4626TimelockMockRevertWithdrawal", // async withdraw revert withdraw
+        "ERC4626TimelockMockRevertDeposit", // async deposit revert deposit
+        "kycDAO4626RevertDeposit", 
+        "kycDAO4626RevertWithdraw", 
         "VaultMockRevertWithdraw",
         "ERC5115"
     ];
