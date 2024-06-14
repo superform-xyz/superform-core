@@ -75,6 +75,7 @@ struct StagesLocalVars {
     uint256[] underlyingWithBridgeSlippages;
     uint256[] amountsBeforeCSR;
     uint256[] finalAmountsThatReachedCSR;
+    address[] potentialRealVaults;
 }
 
 struct MessagingAssertVars {

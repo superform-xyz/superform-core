@@ -183,7 +183,7 @@ abstract contract BaseSetup is StdInvariant, Test {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev we should fork these instead of mocking.
-    string[] public UNDERLYING_TOKENS = ["DAI", "USDC", "WETH", "ezETH", "wstETH", "sUSDe"];
+    string[] public UNDERLYING_TOKENS = ["DAI", "USDC", "WETH", "ezETH", "wstETH", "sUSDe", "USDe"];
 
     /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm, 4 = ERC511§5, 5 = ERC7540
     uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(2), uint32(3), uint32(4), uint32(5)];
@@ -1357,33 +1357,31 @@ abstract contract BaseSetup is StdInvariant, Test {
             for (uint256 j = 0; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
                 if (j != 3) {
                     for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
-                        if (k < 3) {
-                            uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
+                        uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
 
-                            for (uint256 l = 0; l < lenBytecodes; l++) {
-                                address vault = vaults[chainIds[i]][FORM_IMPLEMENTATION_IDS[j]][k][l];
+                        for (uint256 l = 0; l < lenBytecodes; l++) {
+                            address vault = vaults[chainIds[i]][FORM_IMPLEMENTATION_IDS[j]][k][l];
 
-                                uint256 superformId;
-                                (superformId, vars.superform) = ISuperformFactory(
-                                    contracts[chainIds[i]][bytes32(bytes("SuperformFactory"))]
-                                ).createSuperform(FORM_IMPLEMENTATION_IDS[j], vault);
+                            uint256 superformId;
+                            (superformId, vars.superform) = ISuperformFactory(
+                                contracts[chainIds[i]][bytes32(bytes("SuperformFactory"))]
+                            ).createSuperform(FORM_IMPLEMENTATION_IDS[j], vault);
 
-                                if (FORM_IMPLEMENTATION_IDS[j] == 3) {
-                                    /// mint a kycDAO Nft to the newly kycDAO superform
-                                    ERC4626KYCDaoForm(vars.superform).mintKYC(1);
-                                }
-
-                                contracts[chainIds[i]][bytes32(
-                                    bytes(
-                                        string.concat(
-                                            UNDERLYING_TOKENS[k],
-                                            vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultKinds[l],
-                                            "Superform",
-                                            Strings.toString(FORM_IMPLEMENTATION_IDS[j])
-                                        )
-                                    )
-                                )] = vars.superform;
+                            if (FORM_IMPLEMENTATION_IDS[j] == 3) {
+                                /// mint a kycDAO Nft to the newly kycDAO superform
+                                ERC4626KYCDaoForm(vars.superform).mintKYC(1);
                             }
+
+                            contracts[chainIds[i]][bytes32(
+                                bytes(
+                                    string.concat(
+                                        UNDERLYING_TOKENS[k],
+                                        vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultKinds[l],
+                                        "Superform",
+                                        Strings.toString(FORM_IMPLEMENTATION_IDS[j])
+                                    )
+                                )
+                            )] = vars.superform;
                         }
                     }
                 } else if (j == 3) {
@@ -1438,6 +1436,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         tokenPriceFeeds[ETH][getContract(ETH, "wstETH")] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         /// @dev using USDC price feed
         tokenPriceFeeds[ETH][getContract(ETH, "sUSDe")] = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
+        tokenPriceFeeds[ETH][getContract(ETH, "USDe")] = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
 
         /// BSC
         tokenPriceFeeds[BSC][getContract(BSC, "DAI")] = 0x132d3C0B1D2cEa0BC552588063bdBb210FDeecfA;
@@ -1449,6 +1448,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         tokenPriceFeeds[BSC][getContract(BSC, "wstETH")] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
         /// @dev using USDC price feed
         tokenPriceFeeds[BSC][getContract(BSC, "sUSDe")] = 0x51597f405303C4377E36123cBc172b13269EA163;
+        tokenPriceFeeds[BSC][getContract(BSC, "USDe")] = 0x51597f405303C4377E36123cBc172b13269EA163;
 
         /// AVAX
         tokenPriceFeeds[AVAX][getContract(AVAX, "DAI")] = 0x51D7180edA2260cc4F6e4EebB82FEF5c3c2B8300;
@@ -1460,6 +1460,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         tokenPriceFeeds[AVAX][getContract(AVAX, "wstETH")] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
         /// @dev using USDC price feed
         tokenPriceFeeds[AVAX][getContract(AVAX, "sUSDe")] = 0xF096872672F44d6EBA71458D74fe67F9a77a23B9;
+        tokenPriceFeeds[AVAX][getContract(AVAX, "USDe")] = 0xF096872672F44d6EBA71458D74fe67F9a77a23B9;
 
         /// POLYGON
         tokenPriceFeeds[POLY][getContract(POLY, "DAI")] = 0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D;
@@ -1471,6 +1472,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         tokenPriceFeeds[POLY][getContract(POLY, "wstETH")] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         /// @dev using USDC price feed
         tokenPriceFeeds[POLY][getContract(POLY, "sUSDe")] = 0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7;
+        tokenPriceFeeds[POLY][getContract(POLY, "USDe")] = 0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7;
 
         /// OPTIMISM
         tokenPriceFeeds[OP][getContract(OP, "DAI")] = 0x8dBa75e83DA73cc766A7e5a0ee71F656BAb470d6;
@@ -1482,6 +1484,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         tokenPriceFeeds[OP][getContract(OP, "wstETH")] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         /// @dev using USDC price feed
         tokenPriceFeeds[OP][getContract(OP, "sUSDe")] = 0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3;
+        tokenPriceFeeds[OP][getContract(OP, "USDe")] = 0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3;
 
         /// ARBITRUM
         tokenPriceFeeds[ARBI][getContract(ARBI, "DAI")] = 0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB;
@@ -1493,6 +1496,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         tokenPriceFeeds[ARBI][getContract(ARBI, "wstETH")] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         /// @dev using USDC price feed
         tokenPriceFeeds[ARBI][getContract(ARBI, "sUSDe")] = 0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3;
+        tokenPriceFeeds[ARBI][getContract(ARBI, "USDe")] = 0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3;
 
         /// BASE
         tokenPriceFeeds[BASE][getContract(BASE, "DAI")] = 0x591e79239a7d679378eC8c847e5038150364C78F;
@@ -1504,6 +1508,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         tokenPriceFeeds[BASE][getContract(BASE, "wstETH")] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
         /// @dev using USDC price feed
         tokenPriceFeeds[BASE][getContract(BASE, "sUSDe")] = 0x7e860098F58bBFC8648a4311b374B1D669a2bc6B;
+        tokenPriceFeeds[BASE][getContract(BASE, "USDe")] = 0x7e860098F58bBFC8648a4311b374B1D669a2bc6B;
 
         /// FANTOM
         tokenPriceFeeds[FANTOM][getContract(FANTOM, "DAI")] = 0x91d5DEFAFfE2854C7D02F50c80FA1fdc8A721e52;
@@ -1515,6 +1520,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         tokenPriceFeeds[FANTOM][getContract(FANTOM, "wstETH")] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
         /// @dev using USDC price feed
         tokenPriceFeeds[FANTOM][getContract(FANTOM, "sUSDe")] = 0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c;
+        tokenPriceFeeds[FANTOM][getContract(FANTOM, "USDe")] = 0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c;
     }
 
     function _preDeploymentSetup(bool pinnedBlock, bool invariant) internal {
@@ -1809,6 +1815,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         existingTokens[1]["WETH"] = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
         existingTokens[1]["sUSDe"] = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
         existingTokens[1]["ezETH"] = 0xbf5495Efe5DB9ce00f80364C8B423567e58d2110;
+        existingTokens[1]["USDe"] = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
 
         existingTokens[137]["DAI"] = 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063;
         existingTokens[137]["USDC"] = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
@@ -1846,6 +1853,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         existingVaults[1][1]["DAI"][0] = address(0);
         existingVaults[1][1]["USDC"][0] = 0x6bAD6A9BcFdA3fd60Da6834aCe5F93B8cFed9598;
         existingVaults[1][1]["WETH"][0] = address(0);
+        existingVaults[1][1]["USDe"][0] = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
 
         existingVaults[10][1]["DAI"][0] = address(0);
         existingVaults[10][1]["USDC"][0] = address(0);
