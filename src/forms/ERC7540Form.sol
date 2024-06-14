@@ -40,6 +40,8 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
     //////////////////////////////////////////////////////////////
     //                         ERRORS                         //
     //////////////////////////////////////////////////////////////
+    error VAULT_KIND_NOT_SET();
+
     error NOT_ASYNC_STATE_REGISTRY();
 
     error ERC_165_INTERFACE_DEPOSIT_CALL_FAILED();
@@ -49,8 +51,9 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
     //////////////////////////////////////////////////////////////
     //                         STORAGE                         //
     //////////////////////////////////////////////////////////////
-
-    uint8 constant stateRegistryId = 2; // AsyncStateRegistry
+    /// @dev The id of the state registry
+    /// TODO TEMPORARY AS THIS SHOULD BECOME ID 2
+    uint8 constant stateRegistryId = 4; // AsyncStateRegistry
 
     VaultKind private _vaultKind;
 
@@ -173,14 +176,12 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         address sharesReceiver = p_.data.retain4626 ? p_.data.receiverAddress : address(this);
 
         uint256 sharesBalanceBefore = share.balanceOf(sharesReceiver);
+
         shares = v.deposit(p_.assetsToDeposit, sharesReceiver, p_.data.receiverAddress);
+
         uint256 sharesBalanceAfter = share.balanceOf(sharesReceiver);
-        if (
-            (sharesBalanceAfter - sharesBalanceBefore != shares)
-                || (ENTIRE_SLIPPAGE * shares < ((p_.data.outputAmount * (ENTIRE_SLIPPAGE - p_.data.maxSlippage))))
-        ) {
-            revert Error.VAULT_IMPLEMENTATION_FAILED();
-        }
+
+        _slippageValidation(sharesBalanceBefore, sharesBalanceAfter, shares, p_.data.outputAmount, p_.data.maxSlippage);
     }
 
     /// @inheritdoc IERC7540FormBase
@@ -220,19 +221,14 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         assets = v.redeem(p_.data.amount, vars.receiver, p_.data.receiverAddress);
         uint256 assetsBalanceAfter = assetERC.balanceOf(vars.receiver);
 
-        if (
-            (assetsBalanceAfter - assetsBalanceBefore != assets)
-                || (assets * ENTIRE_SLIPPAGE < p_.data.outputAmount * (ENTIRE_SLIPPAGE - p_.data.maxSlippage))
-        ) {
-            revert Error.VAULT_IMPLEMENTATION_FAILED();
-        }
+        _slippageValidation(assetsBalanceBefore, assetsBalanceAfter, assets, p_.data.outputAmount, p_.data.maxSlippage);
 
         if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
         /// @dev validate and dispatches the tokens
         if (vars.len1 != 0) {
-            vars.bridgeValidator = superRegistry.getBridgeValidator(vars.liqData.bridgeId);
-            vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(vars.liqData.txData, false);
+            vars.bridgeValidator = _getBridgeValidator(vars.liqData.bridgeId);
+            vars.amount = _decodeAmountIn(vars.bridgeValidator, vars.liqData.txData);
 
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
             if (_isWithdrawTxDataAmountInvalid(vars.amount, assets, p_.data.maxSlippage)) {
@@ -243,7 +239,7 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
             vars.chainId = CHAIN_ID;
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
-            IBridgeValidator(superRegistry.getBridgeValidator(vars.liqData.bridgeId)).validateTxData(
+            IBridgeValidator(vars.bridgeValidator).validateTxData(
                 IBridgeValidator.ValidateTxDataArgs(
                     vars.liqData.txData,
                     vars.chainId,
@@ -281,9 +277,8 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         override
         returns (uint256 shares)
     {
-        if (_vaultKind == VaultKind.UNSET) {
-            _vaultKind = _vaultKindCheck();
-        }
+        if (_vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
+
         if (_vaultKind == VaultKind.DEPOSIT_ASYNC || _vaultKind == VaultKind.FULLY_ASYNC) {
             (uint256 assetsToDeposit, uint256 requestId) = _requestDirectDeposit(singleVaultData_);
 
@@ -308,9 +303,8 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         override
         returns (uint256 shares)
     {
-        if (_vaultKind == VaultKind.UNSET) {
-            _vaultKind = _vaultKindCheck();
-        }
+        if (_vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
+
         if (_vaultKind == VaultKind.DEPOSIT_ASYNC || _vaultKind == VaultKind.FULLY_ASYNC) {
             /// @dev state registry for re-processing at a later date
             _storeDepositPayload(
@@ -341,9 +335,8 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         override
         returns (uint256 assets)
     {
-        if (_vaultKind == VaultKind.UNSET) {
-            _vaultKind = _vaultKindCheck();
-        }
+        if (_vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
+
         if (_vaultKind == VaultKind.REDEEM_ASYNC || _vaultKind == VaultKind.FULLY_ASYNC) {
             if (!singleVaultData_.retain4626) {
                 /// @dev state registry for re-processing at a later date
@@ -374,9 +367,8 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         override
         returns (uint256 assets)
     {
-        if (_vaultKind == VaultKind.UNSET) {
-            _vaultKind = _vaultKindCheck();
-        }
+        if (_vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
+
         if (_vaultKind == VaultKind.REDEEM_ASYNC || _vaultKind == VaultKind.FULLY_ASYNC) {
             if (!singleVaultData_.retain4626) {
                 /// @dev state registry for re-processing at a later date
@@ -411,6 +403,10 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
 
     /// @inheritdoc BaseForm
     function _forwardDustToPaymaster(address token_) internal override {
+        /// @dev call made here to avoid polluting other functions with this setter
+        if (_vaultKind == VaultKind.UNSET) {
+            _vaultKind = _vaultKindCheck();
+        }
         _processForwardDustToPaymaster(token_);
     }
 
@@ -443,12 +439,11 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         /// @dev non empty txData means there is a swap needed before depositing (input asset not the same as vault
         /// asset)
         if (singleVaultData_.liqData.txData.length != 0) {
-            vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
+            vars.bridgeValidator = _getBridgeValidator(singleVaultData_.liqData.bridgeId);
 
             vars.chainId = CHAIN_ID;
 
-            vars.inputAmount =
-                IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
+            vars.inputAmount = _decodeAmountIn(vars.bridgeValidator, singleVaultData_.liqData.txData);
 
             if (address(token) != NATIVE) {
                 /// @dev checks the allowance before transfer from router
@@ -625,5 +620,31 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         } else {
             return VaultKind.SYNC;
         }
+    }
+
+    function _slippageValidation(
+        uint256 amountBefore,
+        uint256 amountAfter,
+        uint256 actualOutputAmount,
+        uint256 expectedOutputAmount,
+        uint256 maxSlippage
+    )
+        internal
+        pure
+    {
+        if (
+            (amountAfter - amountBefore != actualOutputAmount)
+                || (actualOutputAmount * ENTIRE_SLIPPAGE < expectedOutputAmount * (ENTIRE_SLIPPAGE - maxSlippage))
+        ) {
+            revert Error.VAULT_IMPLEMENTATION_FAILED();
+        }
+    }
+
+    function _getBridgeValidator(uint8 bridgeId) internal view returns (address) {
+        return superRegistry.getBridgeValidator(bridgeId);
+    }
+
+    function _decodeAmountIn(address bridgeValidator, bytes memory txData) internal view returns (uint256 amount) {
+        return IBridgeValidator(bridgeValidator).decodeAmountIn(txData, false);
     }
 }
