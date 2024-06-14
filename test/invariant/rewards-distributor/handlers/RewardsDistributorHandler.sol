@@ -63,7 +63,7 @@ contract RewardsDistributorHandler is StdInvariant, MerkleReader {
 
     constructor(
         uint64[] memory chainIds_,
-        string[40] memory contractNames_,
+        string[43] memory contractNames_,
         address[][] memory coreContracts,
         uint256[] memory forksArray,
         RewardsDistributorStore _rewardsDistributorStore
@@ -126,7 +126,6 @@ contract RewardsDistributorHandler is StdInvariant, MerkleReader {
             testUsersMem[i] = testUsersMem2;
         }
         testUsers = testUsersMem;
-
     }
 
     function randomUserIndex(uint256 seed, uint256 index, uint256 periodId) internal view returns (uint256) {
@@ -304,7 +303,7 @@ contract RewardsDistributorHandler is StdInvariant, MerkleReader {
 
     struct InitHandlerSetupVars {
         uint64[] chainIds;
-        string[40] contractNames;
+        string[43] contractNames;
         address[][] coreContracts;
         uint256[] forksArray;
     }

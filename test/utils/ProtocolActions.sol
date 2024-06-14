@@ -1955,6 +1955,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
             }
         }
 
+        console.log("amount", v.amount);
+        console.log("outputAmount", v.expectedAmountOfShares);
+
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
         /// vaults without resorting to extra args, just for withdraws)
         superformData = SingleVaultSFData(

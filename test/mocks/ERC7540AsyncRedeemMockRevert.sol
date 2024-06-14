@@ -18,7 +18,7 @@ import { ERC7575Mock } from "./ERC7575Mock.sol";
 
 /// @title  ERC7540AsyncRedeemRevertMock
 /// @notice Asynchronous Tokenized Vault Mock
-contract ERC7540AsyncRedeemRevertMock is IERC7540Redeem, IAuthorizeOperator, IERC7575 {
+contract ERC7540AsyncRedeemMockRevert is IERC7540Redeem, IAuthorizeOperator, IERC7575 {
     using Math for uint256;
 
     address public immutable asset;

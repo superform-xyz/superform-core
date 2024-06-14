@@ -17,9 +17,9 @@ import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { Math } from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import { ERC7575Mock } from "./ERC7575Mock.sol";
 
-/// @title  ERC7540AsyncDepositRevertMock
+/// @title  ERC7540AsyncDepositMockRevert
 /// @notice Asynchronous Tokenized Vault Mock
-contract ERC7540AsyncDepositRevertMock is IERC7540Deposit, IAuthorizeOperator, IERC7575 {
+contract ERC7540AsyncDepositMockRevert is IERC7540Deposit, IAuthorizeOperator, IERC7575 {
     using Math for uint256;
 
     address public immutable asset;

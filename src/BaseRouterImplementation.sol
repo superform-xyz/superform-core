@@ -35,6 +35,7 @@ import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/Sa
 import { IERC1155Receiver } from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 import { IERC1155Errors } from "openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
+import "forge-std/console.sol";
 
 /// @title BaseRouterImplementation
 /// @dev Extends BaseRouter with standard internal execution functions
@@ -860,17 +861,21 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             return false;
         }
 
+        console.log("a");
         /// @dev the dstChainId_ (in the state request) must match the superforms' chainId (superform must exist on
         /// destination)
         (, uint32 formImplementationId, uint64 sfDstChainId) = superformId_.getSuperform();
 
         if (dstChainId_ != sfDstChainId) return false;
+        console.log("b");
 
         /// @dev 10000 = 100% slippage
         if (maxSlippage_ > ENTIRE_SLIPPAGE) return false;
+        console.log("c");
 
         /// @dev amounts can't be 0
         if (amount_ == 0 || outputAmount_ == 0) return false;
+        console.log("d");
 
         /// @dev only validate this for non multi case (multi case is validated in _validateSuperformsData)
         /// @dev ensure that receiver address is set always
@@ -880,6 +885,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (!multi_ && receiverAddress_ == address(0)) {
             return false;
         }
+        console.log("e");
 
         /// @dev redundant check on same chain, but helpful on xchain actions to halt deposits earlier
         if (isDeposit_) {
