@@ -322,7 +322,25 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         /// @dev Warning: This must be validated by a keeper to be the token received in CSR for the given payload, as
         /// this can be forged by the user
         /// @dev and it's not possible to validate on chain the final token post bridging/swapping
-        vars.vaultTokenIn = abi.decode(singleVaultData_.extraFormData, (address));
+        (uint256 nVaults, bytes memory extra5115Data) = abi.decode(singleVaultData_.extraFormData, (uint256, bytes));
+
+        bytes memory recursion5115Data;
+        uint256 superformId;
+        bool found5115;
+
+        for (uint256 i = 0; i < nVaults; ++i) {
+            (recursion5115Data, superformId, vars.vaultTokenIn) =
+                abi.decode(i == 0 ? extra5115Data : recursion5115Data, (bytes, uint256, address));
+
+            /// @dev notice that by validating it like this, it will deny any tokenIn that is native (sometimes
+            /// addressed as
+            /// address 0)
+            if (superformId == singleVaultData_.superformId && vars.vaultTokenIn != address(0)) {
+                found5115 = true;
+                break;
+            }
+        }
+        if (!found5115) revert ERC5115FORM_TOKEN_IN_NOT_ENCODED();
 
         /// @dev notice that by validating it like this, it will deny any tokenIn that is native (sometimes addressed as
         /// address 0)
