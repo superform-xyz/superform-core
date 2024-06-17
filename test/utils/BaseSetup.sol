@@ -1370,6 +1370,11 @@ abstract contract BaseSetup is StdInvariant, Test {
                             if (FORM_IMPLEMENTATION_IDS[j] == 3) {
                                 /// mint a kycDAO Nft to the newly kycDAO superform
                                 ERC4626KYCDaoForm(vars.superform).mintKYC(1);
+                            } else if (FORM_IMPLEMENTATION_IDS[j] == 5) {
+                                // triggers _vaultKindCheck to set async type
+                                ERC7540Form(vars.superform).forwardDustToPaymaster(
+                                    ERC7540Form(vars.superform).getVaultAsset()
+                                );
                             }
 
                             contracts[chainIds[i]][bytes32(

@@ -24,6 +24,13 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
     /// @dev counts for each chain in each testAction the number of timelocked superforms
     mapping(uint256 chainIdIndex => uint256) countTimelocked;
+
+    /// @dev counts for each chain in each testAction the number of async deposit superforms
+    mapping(uint256 chainIdIndex => uint256) countAsyncDeposit;
+
+    /// @dev counts for each chain in each testAction the number of async redeem superforms
+    mapping(uint256 chainIdIndex => uint256) countAsyncRedeem;
+
     uint256[][] actualAmountWithdrawnPerDst;
 
     /// @dev array of ambIds
@@ -50,11 +57,15 @@ abstract contract ProtocolActions is CommonProtocolActions {
     uint256[][] public revertingDepositSFs;
     uint256[][] public revertingWithdrawSFs;
     uint256[][] public revertingWithdrawTimelockedSFs;
+    uint256[][] public revertingAsyncDepositSFs;
+    uint256[][] public revertingAsyncRedeemSFs;
 
     /// @dev dynamic arrays to insert in the double array above
     uint256[] public revertingDepositSFsPerDst;
     uint256[] public revertingWithdrawSFsPerDst;
     uint256[] public revertingWithdrawTimelockedSFsPerDst;
+    uint256[] public revertingAsyncDepositSFsPerDst;
+    uint256[] public revertingAsyncRedeemSFsPerDst;
 
     /// @dev for multiDst tests with repeating destinations
     struct UniqueDSTInfo {
@@ -80,6 +91,12 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
     /// @dev used to detect which forms are timelocked
     mapping(uint64 chainId => mapping(uint256 timelockId => uint256 index)) public timeLockedIndexes;
+
+    /// @dev used to detect which forms are async deposit
+    mapping(uint64 chainId => mapping(uint256 asyncDepositId => uint256 index)) public asyncDepositIndexes;
+
+    /// @dev used to detect which forms are async withdraw
+    mapping(uint64 chainId => mapping(uint256 asyncWithdrawId => uint256 index)) public asyncRedeemIndexes;
 
     /// @dev all target underlyings used to build superforms
     mapping(uint64 chainId => mapping(uint256 action => uint256[] underlyingTokenIds)) public TARGET_UNDERLYINGS;
@@ -312,10 +329,14 @@ abstract contract ProtocolActions is CommonProtocolActions {
         delete revertingDepositSFs;
         delete revertingWithdrawSFs;
         delete revertingWithdrawTimelockedSFs;
+        delete revertingAsyncDepositSFs;
+        delete revertingAsyncRedeemSFs;
         delete sameChainDstHasRevertingVault;
 
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
             delete countTimelocked[i];
+            delete countAsyncDeposit[i];
+            delete countAsyncRedeem[i];
             delete TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]];
         }
         MULTI_TX_SLIPPAGE_SHARE = 0;
@@ -2173,6 +2194,12 @@ abstract contract ProtocolActions is CommonProtocolActions {
             if (vars.vaultIds[i] == 4) {
                 revertingWithdrawTimelockedSFsPerDst.push(vars.superformIdsTemp[i]);
             }
+            if (vars.vaultIds[i] == 13) {
+                revertingAsyncDepositSFsPerDst.push(vars.superformIdsTemp[i]);
+            }
+            if (vars.vaultIds[i] == 14) {
+                revertingAsyncRedeemSFsPerDst.push(vars.superformIdsTemp[i]);
+            }
             if (vars.vaultIds[i] == 7 || vars.vaultIds[i] == 8) {
                 revertingWithdrawSFsPerDst.push(vars.superformIdsTemp[i]);
             }
@@ -2183,18 +2210,24 @@ abstract contract ProtocolActions is CommonProtocolActions {
         revertingDepositSFs.push(revertingDepositSFsPerDst);
         revertingWithdrawSFs.push(revertingWithdrawSFsPerDst);
         revertingWithdrawTimelockedSFs.push(revertingWithdrawTimelockedSFsPerDst);
+        revertingAsyncDepositSFs.push(revertingAsyncDepositSFsPerDst);
+        revertingAsyncRedeemSFs.push(revertingAsyncRedeemSFsPerDst);
 
         delete revertingDepositSFsPerDst;
         delete revertingWithdrawSFsPerDst;
         delete revertingWithdrawTimelockedSFsPerDst;
+        delete revertingAsyncDepositSFsPerDst;
+        delete revertingAsyncRedeemSFsPerDst;
 
         /// @dev detects timelocked forms in scenario and counts them
         for (uint256 j; j < vars.formKinds.length; ++j) {
             if (vars.formKinds[j] == 1) ++countTimelocked[dst];
-            // 0 1 1
-            // j = 1
-            // j = 2
+            if (vars.formKinds[j] == 4 && (vars.vaultIds[j] == 11 || vars.vaultIds[j] == 13)) ++countAsyncDeposit[dst];
+            if (vars.formKinds[j] == 4 && (vars.vaultIds[j] == 12 || vars.vaultIds[j] == 14)) ++countAsyncRedeem[dst];
+
             timeLockedIndexes[chain1][countTimelocked[dst]] = j;
+            asyncDepositIndexes[chain1][countAsyncDeposit[dst]] = j;
+            asyncRedeemIndexes[chain1][countAsyncRedeem[dst]] = j;
         }
     }
 
@@ -2294,7 +2327,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
             vm.selectFork(FORKS[dstChain]);
 
             previewRedeemAmounts[i] = IBaseForm(superform).previewRedeemFrom(superPositionBalances[i]) / nRepetitions;
-
         }
     }
 

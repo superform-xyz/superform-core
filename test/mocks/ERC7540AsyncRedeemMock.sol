@@ -157,12 +157,12 @@ contract ERC7540AsyncRedeemMock is IERC7540Redeem, IAuthorizeOperator, IERC7575 
 
     /// @inheritdoc IERC7575
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
-        return assets.mulDiv(IERC20Metadata(share).totalSupply(), totalAssets() + 1, Math.Rounding.Floor);
+        return assets.mulDiv(IERC20Metadata(share).totalSupply() + 1, totalAssets() + 1, Math.Rounding.Floor);
     }
 
     /// @inheritdoc IERC7575
     function convertToAssets(uint256 shares) public view returns (uint256 assets) {
-        return shares.mulDiv(totalAssets() + 1, IERC20Metadata(share).totalSupply(), Math.Rounding.Floor);
+        return shares.mulDiv(totalAssets() + 1, IERC20Metadata(share).totalSupply() + 1, Math.Rounding.Floor);
     }
 
     /// @inheritdoc IERC7575
