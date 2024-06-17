@@ -40,13 +40,20 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
     //////////////////////////////////////////////////////////////
     //                         ERRORS                         //
     //////////////////////////////////////////////////////////////
+    /// @dev Vault must be set by calling forward dust to paymaster once
     error VAULT_KIND_NOT_SET();
 
+    /// @dev Only async state registry can perform this operation
     error NOT_ASYNC_STATE_REGISTRY();
 
+    /// @dev Error thrown if the check to erc165 async deposit interface failed
     error ERC_165_INTERFACE_DEPOSIT_CALL_FAILED();
 
+    /// @dev Error thrown if the check to erc165 async redeem interface failed
     error ERC_165_INTERFACE_REDEEM_CALL_FAILED();
+
+    /// @dev Error thrown if the vault does not support async deposit nor redeem
+    error VAULT_NOT_SUPPORTED();
 
     //////////////////////////////////////////////////////////////
     //                         STORAGE                         //
@@ -585,7 +592,7 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         } else if (redeemSupported) {
             return VaultKind.REDEEM_ASYNC;
         } else {
-            return VaultKind.SYNC;
+            revert VAULT_NOT_SUPPORTED();
         }
     }
 
