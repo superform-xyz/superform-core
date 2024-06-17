@@ -1946,8 +1946,12 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 v.extra5115Data = abi.encode("", args.superformId, address(0));
             }
 
-            /// @dev this is the final extraFormData in case of single vaults
-            v.extraFormData = abi.encode(1, v.extra5115Data);
+            if (args.srcChainId == args.toChainId) {
+                v.extraFormData = abi.encode(args.underlyingTokenDst);
+            } else {
+                /// @dev this is the final extraFormData in case of single vaults
+                v.extraFormData = abi.encode(1, v.extra5115Data);
+            }
         } else {
             /// @dev in multiVaultsCase, nothing needs to be send in singleVaultSFData extraData because it is ignored
             if (v.is5115) {

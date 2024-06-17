@@ -96,7 +96,8 @@ contract SuperformERC5115FormTest is ProtocolActions {
 
     /// @dev Test Preview Withdraw From
     function test_superformPreviewWithdrawERC5115() public view {
-        assertEq(targetSuperform.previewWithdrawFrom(100_000_000), 0);
+        uint256 previewWithdrawReturnValue = targetSuperform.previewWithdrawFrom(100_000_000);
+        assertEq(previewWithdrawReturnValue, 0);
     }
 
     /// @dev Test Get Yield Token
