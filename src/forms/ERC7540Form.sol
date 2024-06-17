@@ -171,15 +171,14 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         }
 
         IERC7540 v = IERC7540(vault);
-        IERC20 share = IERC20(v.share());
 
         address sharesReceiver = p_.data.retain4626 ? p_.data.receiverAddress : address(this);
 
-        uint256 sharesBalanceBefore = share.balanceOf(sharesReceiver);
+        uint256 sharesBalanceBefore;
+        uint256 sharesBalanceAfter;
 
-        shares = v.deposit(p_.assetsToDeposit, sharesReceiver, p_.data.receiverAddress);
-
-        uint256 sharesBalanceAfter = share.balanceOf(sharesReceiver);
+        (sharesBalanceBefore, sharesBalanceAfter, shares) =
+            _claim(v, v.share(), p_.data.amount, sharesReceiver, p_.data.receiverAddress, true);
 
         _slippageValidation(sharesBalanceBefore, sharesBalanceAfter, shares, p_.data.outputAmount, p_.data.maxSlippage);
     }
@@ -214,12 +213,12 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
 
         /// @dev redeem from vault
         vars.asset = asset;
-        IERC20 assetERC = IERC20(vars.asset);
 
-        uint256 assetsBalanceBefore = assetERC.balanceOf(vars.receiver);
+        uint256 assetsBalanceBefore;
+        uint256 assetsBalanceAfter;
 
-        assets = v.redeem(p_.data.amount, vars.receiver, p_.data.receiverAddress);
-        uint256 assetsBalanceAfter = assetERC.balanceOf(vars.receiver);
+        (assetsBalanceBefore, assetsBalanceAfter, assets) =
+            _claim(v, vars.asset, p_.data.amount, vars.receiver, p_.data.receiverAddress, false);
 
         _slippageValidation(assetsBalanceBefore, assetsBalanceAfter, assets, p_.data.outputAmount, p_.data.maxSlippage);
 
@@ -227,19 +226,21 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
 
         /// @dev validate and dispatches the tokens
         if (vars.len1 != 0) {
-            vars.bridgeValidator = _getBridgeValidator(vars.liqData.bridgeId);
-            vars.amount = _decodeAmountIn(vars.bridgeValidator, vars.liqData.txData);
+            vars.chainId = CHAIN_ID;
 
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
-            if (_isWithdrawTxDataAmountInvalid(vars.amount, assets, p_.data.maxSlippage)) {
+            if (
+                _isWithdrawTxDataAmountInvalid(
+                    _decodeAmountIn(vars.bridgeValidator, vars.liqData.txData), assets, p_.data.maxSlippage
+                )
+            ) {
                 if (p_.isXChain == 1) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
                 revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
             }
 
-            vars.chainId = CHAIN_ID;
-
-            /// @dev validate and perform the swap to desired output token and send to beneficiary
-            IBridgeValidator(vars.bridgeValidator).validateTxData(
+            _swapAssetsInOrOut(
+                vars.liqData.bridgeId,
+                vars.liqData.txData,
                 IBridgeValidator.ValidateTxDataArgs(
                     vars.liqData.txData,
                     vars.chainId,
@@ -250,15 +251,10 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
                     p_.data.receiverAddress,
                     vars.asset,
                     address(0)
-                )
-            );
-
-            _dispatchTokens(
-                superRegistry.getBridgeAddress(vars.liqData.bridgeId),
-                vars.liqData.txData,
+                ),
+                vars.liqData.nativeAmount,
                 vars.asset,
-                vars.amount,
-                vars.liqData.nativeAmount
+                false
             );
         }
     }
@@ -343,7 +339,7 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
                 _storeWithdrawPayload(0, CHAIN_ID, _requestRedeem(singleVaultData_, CHAIN_ID), singleVaultData_);
             } else {
                 /// @dev transfer shares to user and do not redeem shares for assets
-                IERC20(IERC7540(vault).share()).safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
+                _shareTransferOut(singleVaultData_.receiverAddress, singleVaultData_.amount);
             }
 
             assets = 0;
@@ -375,7 +371,7 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
                 _storeWithdrawPayload(1, srcChainId_, _requestRedeem(singleVaultData_, srcChainId_), singleVaultData_);
             } else {
                 /// @dev transfer shares to user and do not redeem shares for assets
-                IERC20(IERC7540(vault).share()).safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
+                _shareTransferOut(singleVaultData_.receiverAddress, singleVaultData_.amount);
             }
             assets = 0;
         } else {
@@ -395,8 +391,7 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         if (share.balanceOf(address(this)) < amount_) {
             revert Error.INSUFFICIENT_BALANCE();
         }
-
-        share.safeTransfer(receiverAddress_, amount_);
+        _shareTransferOut(receiverAddress_, amount_);
 
         emit EmergencyWithdrawalProcessed(receiverAddress_, amount_);
     }
@@ -427,35 +422,17 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
             /// @dev this is only valid if token == asset (no txData)
             if (singleVaultData_.liqData.token != vars.asset) revert Error.DIFFERENT_TOKENS();
 
-            /// @dev handles the asset token transfers.
-            if (token.allowance(msg.sender, address(this)) < singleVaultData_.amount) {
-                revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
-            }
-
-            /// @dev transfers input token, which is the same as vault asset, to the form
-            token.safeTransferFrom(msg.sender, address(this), singleVaultData_.amount);
+            _assetTransferIn(address(token), singleVaultData_.amount);
         }
 
         /// @dev non empty txData means there is a swap needed before depositing (input asset not the same as vault
         /// asset)
         if (singleVaultData_.liqData.txData.length != 0) {
-            vars.bridgeValidator = _getBridgeValidator(singleVaultData_.liqData.bridgeId);
-
             vars.chainId = CHAIN_ID;
 
-            vars.inputAmount = _decodeAmountIn(vars.bridgeValidator, singleVaultData_.liqData.txData);
-
-            if (address(token) != NATIVE) {
-                /// @dev checks the allowance before transfer from router
-                if (token.allowance(msg.sender, address(this)) < vars.inputAmount) {
-                    revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
-                }
-
-                /// @dev transfers input token, which is different from the vault asset, to the form
-                token.safeTransferFrom(msg.sender, address(this), vars.inputAmount);
-            }
-
-            IBridgeValidator(vars.bridgeValidator).validateTxData(
+            _swapAssetsInOrOut(
+                singleVaultData_.liqData.bridgeId,
+                singleVaultData_.liqData.txData,
                 IBridgeValidator.ValidateTxDataArgs(
                     singleVaultData_.liqData.txData,
                     vars.chainId,
@@ -466,15 +443,10 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
                     msg.sender,
                     address(token),
                     address(0)
-                )
-            );
-
-            _dispatchTokens(
-                superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
-                singleVaultData_.liqData.txData,
+                ),
+                singleVaultData_.liqData.nativeAmount,
                 address(token),
-                vars.inputAmount,
-                singleVaultData_.liqData.nativeAmount
+                true
             );
 
             if (
@@ -524,12 +496,7 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
 
         IERC7540 v = IERC7540(vaultLoc);
 
-        if (IERC20(asset).allowance(msg.sender, address(this)) < singleVaultData_.amount) {
-            revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
-        }
-
-        /// @dev pulling from sender (CSR), to auto-send tokens back in case of failed deposits / reverts
-        IERC20(asset).safeTransferFrom(msg.sender, address(this), singleVaultData_.amount);
+        _assetTransferIn(asset, singleVaultData_.amount);
 
         /// @dev allowance is modified inside of the IERC20.transferFrom() call
         IERC20(asset).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
@@ -646,5 +613,67 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
 
     function _decodeAmountIn(address bridgeValidator, bytes memory txData) internal view returns (uint256 amount) {
         return IBridgeValidator(bridgeValidator).decodeAmountIn(txData, false);
+    }
+
+    function _validateTxData(address bridgeValidator, IBridgeValidator.ValidateTxDataArgs memory args) internal view {
+        IBridgeValidator(bridgeValidator).validateTxData(args);
+    }
+
+    function _shareTransferOut(address receiver, uint256 amount) internal {
+        IERC20(IERC7540(vault).share()).safeTransfer(receiver, amount);
+    }
+
+    function _assetTransferIn(address token, uint256 amount) internal {
+        if (IERC20(token).allowance(msg.sender, address(this)) < amount) {
+            revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
+        }
+
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+    }
+
+    function _swapAssetsInOrOut(
+        uint8 bridgeId,
+        bytes memory txData,
+        IBridgeValidator.ValidateTxDataArgs memory args,
+        uint256 nativeAmount,
+        address asset,
+        bool deposit
+    )
+        internal
+    {
+        address bridgeValidator = _getBridgeValidator(bridgeId);
+
+        uint64 chainId = CHAIN_ID;
+
+        uint256 amountIn = _decodeAmountIn(bridgeValidator, txData);
+
+        if (deposit && asset != NATIVE) {
+            _assetTransferIn(asset, amountIn);
+        }
+
+        _validateTxData(bridgeValidator, args);
+
+        _dispatchTokens(bridgeValidator, txData, asset, amountIn, nativeAmount);
+    }
+
+    function _claim(
+        IERC7540 v,
+        address tokenOut,
+        uint256 amountToClaim,
+        address receiver,
+        address controller,
+        bool deposit
+    )
+        internal
+        returns (uint256 balanceBefore, uint256 balanceAfter, uint256 tokensReceived)
+    {
+        IERC20 token = IERC20(tokenOut);
+
+        balanceBefore = token.balanceOf(receiver);
+
+        tokensReceived =
+            deposit ? v.deposit(amountToClaim, receiver, controller) : v.redeem(amountToClaim, receiver, controller);
+
+        balanceAfter = token.balanceOf(receiver);
     }
 }

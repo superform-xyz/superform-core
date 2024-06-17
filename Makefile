@@ -30,7 +30,7 @@ update:; forge update
 # Build & test
 build :; FOUNDRY_PROFILE=production forge build 
 build-unoptimized :; FOUNDRY_PROFILE=localdev forge build
-build-sizes :; FOUNDRY_PROFILE=production forge build --sizes
+build-sizes :; FOUNDRY_PROFILE=production forge build --sizes --evm-version cancun
 test-vvv   :; forge test --match-contract SXSVW7540NativeSlippageAMB23 -vvv --evm-version cancun
 ftest   :; forge test --evm-version cancun
 test-ci :; forge test --no-match-path "test/invariant/**/*.sol" --evm-version cancun
