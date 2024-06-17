@@ -643,8 +643,6 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
     {
         address bridgeValidator = _getBridgeValidator(bridgeId);
 
-        uint64 chainId = CHAIN_ID;
-
         uint256 amountIn = _decodeAmountIn(bridgeValidator, txData);
 
         if (deposit && asset != NATIVE) {
