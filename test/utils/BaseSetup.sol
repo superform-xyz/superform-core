@@ -87,6 +87,8 @@ import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
 import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
 import ".././utils/AmbParams.sol";
 import { IPermit2 } from "src/vendor/dragonfly-xyz/IPermit2.sol";
+
+import { IAuthorizeOperator } from "src/vendor/centrifuge/IERC7540.sol";
 import { TimelockStateRegistry } from "src/crosschain-data/extensions/TimelockStateRegistry.sol";
 import { AsyncStateRegistry } from "src/crosschain-data/extensions/AsyncStateRegistry.sol";
 import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
@@ -111,7 +113,9 @@ abstract contract BaseSetup is StdInvariant, Test {
     bytes32 constant PERMIT_TRANSFER_FROM_TYPEHASH = keccak256(
         "PermitTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline)TokenPermissions(address token,uint256 amount)"
     );
-
+    bytes32 constant AUTHORIZE_OPERATOR_TYPEHASH = keccak256(
+        "AuthorizeOperator(address controller,address operator,bool approved,uint256 validAfter,uint256 validBefore,uint256 nonce)"
+    );
     /// @dev ETH mainnet values as on 22nd Aug, 2023
     uint256 public constant TOTAL_SUPPLY_DAI = 3_961_541_270_138_222_277_363_935_051;
     uint256 public constant TOTAL_SUPPLY_USDC = 23_581_451_089_110_212;
@@ -678,6 +682,10 @@ abstract contract BaseSetup is StdInvariant, Test {
             contracts[vars.chainId][bytes32(bytes("AsyncStateRegistry"))] = vars.asyncStateRegistry;
 
             vars.superRegistryC.setAddress(keccak256("ASYNC_STATE_REGISTRY"), vars.asyncStateRegistry, vars.chainId);
+            vars.superRBACC.setRoleAdmin(
+                keccak256("ASYNC_STATE_REGISTRY_PROCESSOR_ROLE"), vars.superRBACC.PROTOCOL_ADMIN_ROLE()
+            );
+            vars.superRBACC.grantRole(keccak256("ASYNC_STATE_REGISTRY_PROCESSOR_ROLE"), deployer);
 
             /// TODO: REPLACE TIMELOCK STATE REGISTRY EVERYWHERE WITH ASYNC ONE
 
@@ -2055,13 +2063,13 @@ abstract contract BaseSetup is StdInvariant, Test {
         view
         returns (bytes memory sig)
     {
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerKey, _getEIP712Hash(permit, spender, chainId));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerKey, _getPermitEIP712Hash(permit, spender, chainId));
         return abi.encodePacked(r, s, v);
     }
 
     // Compute the EIP712 hash of the permit object.
     // Normally this would be implemented off-chain.
-    function _getEIP712Hash(
+    function _getPermitEIP712Hash(
         IPermit2.PermitTransferFrom memory permit,
         address spender,
         uint64 chainId
@@ -2083,6 +2091,56 @@ abstract contract BaseSetup is StdInvariant, Test {
                         spender,
                         permit.nonce,
                         permit.deadline
+                    )
+                )
+            )
+        );
+    }
+
+    struct AuthorizeOperator {
+        address controller;
+        address operator;
+        bool approved;
+        uint256 deadline;
+        uint256 nonce;
+    }
+    // Generate a signature for an authorize operator message.
+
+    function _signAuthorizeOperator(
+        AuthorizeOperator memory authorizeOperator,
+        address vault,
+        uint256 signerKey
+    )
+        internal
+        view
+        returns (bytes memory sig)
+    {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerKey, _getAuthorizeOperatorEIP712Hash(authorizeOperator, vault));
+        return abi.encodePacked(r, s, v);
+    }
+
+    // Compute the EIP712 hash of the authorize operator arguments
+    // Normally this would be implemented off-chain.
+    function _getAuthorizeOperatorEIP712Hash(
+        AuthorizeOperator memory authorizeOperator,
+        address vault
+    )
+        internal
+        view
+        returns (bytes32 h)
+    {
+        return keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                IAuthorizeOperator(vault).DOMAIN_SEPARATOR(),
+                keccak256(
+                    abi.encode(
+                        AUTHORIZE_OPERATOR_TYPEHASH,
+                        authorizeOperator.controller,
+                        authorizeOperator.operator,
+                        authorizeOperator.approved,
+                        authorizeOperator.deadline,
+                        authorizeOperator.nonce
                     )
                 )
             )

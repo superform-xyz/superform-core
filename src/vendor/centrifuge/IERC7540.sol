@@ -265,11 +265,13 @@ interface IAuthorizeOperator {
         address operator,
         bool approved,
         uint256 deadline,
-        bytes32 nonce,
+        uint256 nonce,
         bytes memory signature
     )
         external
         returns (bool);
+
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
 }
 
 /**

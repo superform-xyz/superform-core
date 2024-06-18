@@ -55,6 +55,9 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
     /// @dev Error thrown if the vault does not support async deposit nor redeem
     error VAULT_NOT_SUPPORTED();
 
+    /// @dev Error thrown if the vault kind is invalid for the operation
+    error INVALID_VAULT_KIND();
+
     //////////////////////////////////////////////////////////////
     //                         STORAGE                         //
     //////////////////////////////////////////////////////////////

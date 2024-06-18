@@ -17,6 +17,8 @@ import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { Math } from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import { ERC7575Mock } from "./ERC7575Mock.sol";
 
+import "forge-std/console.sol";
+
 /// @title  ERC7540FullyAsyncMock
 /// @notice Asynchronous Tokenized Vault Mock
 contract ERC7540FullyAsyncMock is IERC7540Deposit, IERC7540Redeem, IAuthorizeOperator, IERC7575 {
@@ -34,10 +36,10 @@ contract ERC7540FullyAsyncMock is IERC7540Deposit, IERC7540Redeem, IAuthorizeOpe
     uint256 public immutable deploymentChainId;
     bytes32 private immutable _DOMAIN_SEPARATOR;
     bytes32 public constant AUTHORIZE_OPERATOR_TYPEHASH = keccak256(
-        "AuthorizeOperator(address controller,address operator,bool approved,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
+        "AuthorizeOperator(address controller,address operator,bool approved,uint256 validAfter,uint256 validBefore,uint256 nonce)"
     );
 
-    mapping(address controller => mapping(bytes32 nonce => bool used)) authorizations;
+    mapping(address controller => mapping(uint256 nonce => bool used)) authorizations;
 
     /// @dev state 0 is for pending, state 1 is claimable, state 2 is claimed
     mapping(address controller => mapping(uint256 requestId => mapping(uint8 state => uint256 assetBalance)))
@@ -152,7 +154,7 @@ contract ERC7540FullyAsyncMock is IERC7540Deposit, IERC7540Redeem, IAuthorizeOpe
         address operator,
         bool approved,
         uint256 deadline,
-        bytes32 nonce,
+        uint256 nonce,
         bytes memory signature
     )
         external
@@ -194,6 +196,12 @@ contract ERC7540FullyAsyncMock is IERC7540Deposit, IERC7540Redeem, IAuthorizeOpe
 
     /// @inheritdoc IERC7575
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
+        console.log("assets", assets);
+        console.log("totalSupply", IERC20Metadata(share).totalSupply());
+        console.log("totalAssets", totalAssets());
+        console.log(
+            "result", assets.mulDiv(IERC20Metadata(share).totalSupply() + 1, totalAssets() + 1, Math.Rounding.Floor)
+        );
         return assets.mulDiv(IERC20Metadata(share).totalSupply() + 1, totalAssets() + 1, Math.Rounding.Floor);
     }
 
