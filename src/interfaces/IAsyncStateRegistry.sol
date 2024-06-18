@@ -54,6 +54,9 @@ interface IAsyncStateRegistry {
     /// @dev is emitted when any deposit fails
     event FailedDeposit(uint256 indexed payloadId);
 
+    /// @dev is emitted when any deposit is successful with shares == 0
+    event FailedAsyncDepositZeroShares(uint256 indexed payloadId);
+
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////

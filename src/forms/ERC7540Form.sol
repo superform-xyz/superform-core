@@ -11,6 +11,7 @@ import { Error } from "src/libraries/Error.sol";
 import { InitSingleVaultData, LiqRequest } from "src/types/DataTypes.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20Metadata } from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { IERC7540Vault as IERC7540, IERC7540Deposit, IERC7540Redeem } from "src/vendor/centrifuge/IERC7540.sol";
 import { IERC7540FormBase } from "./interfaces/IERC7540Form.sol";
 import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
@@ -163,6 +164,16 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         return IERC7540(vault).claimableRedeemRequest(requestId, owner);
     }
 
+    /// @inheritdoc BaseForm
+    function superformYieldTokenName() external view virtual override returns (string memory) {
+        return string(abi.encodePacked(IERC20Metadata(_share()).name(), " SuperPosition"));
+    }
+
+    /// @inheritdoc BaseForm
+    function superformYieldTokenSymbol() external view virtual override returns (string memory) {
+        return string(abi.encodePacked("sp-", IERC20Metadata(_share()).symbol()));
+    }
+
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
@@ -191,7 +202,7 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         uint256 sharesBalanceAfter;
 
         (sharesBalanceBefore, sharesBalanceAfter, shares) =
-            _claim(v, v.share(), p_.data.amount, sharesReceiver, p_.data.receiverAddress, true);
+            _claim(v, _share(), p_.data.amount, sharesReceiver, p_.data.receiverAddress, true);
 
         _slippageValidation(sharesBalanceBefore, sharesBalanceAfter, shares, p_.data.outputAmount, p_.data.maxSlippage);
     }
@@ -400,12 +411,9 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
 
     /// @inheritdoc BaseForm
     function _emergencyWithdraw(address receiverAddress_, uint256 amount_) internal virtual override {
-        IERC7540 v = IERC7540(vault);
-        IERC20 share = IERC20(v.share());
-
         if (receiverAddress_ == address(0)) revert Error.ZERO_ADDRESS();
 
-        if (share.balanceOf(address(this)) < amount_) {
+        if (_balanceOf(_share(), address(this)) < amount_) {
             revert Error.INSUFFICIENT_BALANCE();
         }
         _shareTransferOut(receiverAddress_, amount_);
@@ -431,8 +439,8 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
 
         address vaultLoc = vault;
         IERC7540 v = IERC7540(vaultLoc);
-        vars.asset = address(asset);
-        vars.balanceBefore = IERC20(vars.asset).balanceOf(address(this));
+        vars.asset = asset;
+        vars.balanceBefore = _balanceOf(vars.asset, address(this));
         IERC20 token = IERC20(singleVaultData_.liqData.token);
 
         if (address(token) != NATIVE && singleVaultData_.liqData.txData.length == 0) {
@@ -640,7 +648,7 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
     }
 
     function _shareTransferOut(address receiver, uint256 amount) internal {
-        IERC20(IERC7540(vault).share()).safeTransfer(receiver, amount);
+        IERC20(_share()).safeTransfer(receiver, amount);
     }
 
     function _assetTransferIn(address token, uint256 amount) internal {
@@ -685,13 +693,19 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         internal
         returns (uint256 balanceBefore, uint256 balanceAfter, uint256 tokensReceived)
     {
-        IERC20 token = IERC20(tokenOut);
-
-        balanceBefore = token.balanceOf(receiver);
+        balanceBefore = _balanceOf(tokenOut, receiver);
 
         tokensReceived =
             deposit ? v.deposit(amountToClaim, receiver, controller) : v.redeem(amountToClaim, receiver, controller);
 
-        balanceAfter = token.balanceOf(receiver);
+        balanceAfter = _balanceOf(tokenOut, receiver);
+    }
+
+    function _balanceOf(address token, address account) internal view returns (uint256) {
+        return IERC20(token).balanceOf(account);
+    }
+
+    function _share() internal view returns (address) {
+        return IERC7540(vault).share();
     }
 }

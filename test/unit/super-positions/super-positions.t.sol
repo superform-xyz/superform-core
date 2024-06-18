@@ -136,7 +136,7 @@ contract SuperPositionsTest is BaseSetup {
         );
 
         /// non existent form implementation id so the get form state registry id returns 0
-        uint256 superformId = DataLib.packSuperform(superform, 5, ETH);
+        uint256 superformId = DataLib.packSuperform(superform, 555, ETH);
 
         ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, superformId, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));

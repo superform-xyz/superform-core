@@ -3166,7 +3166,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
         }
 
         vm.selectFork(FORKS[CHAIN_0]);
-        // 2. Perform your assertion logic
+
+        // 2. Perform the assertion logic
         for (uint256 i = 0; i < superformIds.length; ++i) {
             v.currentAmount = amounts[superformIds[i]];
             v.currentBalanceOfSp = superPositions.balanceOf(users[user], superformIds[i]);
@@ -3723,7 +3724,13 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
             uint256 repetitions = usedDSTs[DST_CHAINS[i]].nRepetitions;
+
+            v.lenRevertDeposit = 0;
             uint256 lenRevertAsyncDeposit = 0;
+
+            if (revertingDepositSFs.length > 0) {
+                v.lenRevertDeposit = revertingDepositSFs[i].length;
+            }
             if (revertingAsyncDepositSFs.length > 0) {
                 lenRevertAsyncDeposit = revertingAsyncDepositSFs[i].length;
             }
@@ -3749,7 +3756,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 v.totalSpAmountAllDestinations += v.totalSpAmount;
                 v.token = multiSuperformsData[0].liqRequests[0].token;
 
-                if (CHAIN_0 == DST_CHAINS[i] && (v.lenRevertDeposit > 0)) {
+                if (CHAIN_0 == DST_CHAINS[i] && v.lenRevertDeposit > 0 && lenRevertAsyncDeposit == 0) {
                     /// @dev assert spToken Balance to zero if one of the multi vaults is reverting or async deposit in
                     /// same chain
                     /// (entire call is reverted)
@@ -3760,7 +3767,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         new bool[](multiSuperformsData[i].superformIds.length),
                         false
                     );
-                } else {
+                } else if (CHAIN_0 == DST_CHAINS[i] && v.lenRevertDeposit == 0 && lenRevertAsyncDeposit > 0) {
                     /// @dev assert spToken Balance
                     _assertMultiVaultBalance(
                         action.user,
@@ -3772,6 +3779,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 }
             } else {
                 v.foundRevertingOrAsyncDeposit = false;
+
+                if (v.lenRevertDeposit > 0) {
+                    v.foundRevertingOrAsyncDeposit = revertingDepositSFs[i][0] == singleSuperformsData[i].superformId;
+                }
 
                 if (lenRevertAsyncDeposit > 0) {
                     v.foundRevertingOrAsyncDeposit =

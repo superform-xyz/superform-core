@@ -215,6 +215,8 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
                         p.data.receiverAddress, p.data.superformId, shares
                     );
                 }
+            } else if (shares == 0) {
+                emit FailedAsyncDepositZeroShares(asyncPayloadId_);
             }
         } catch {
             /// @dev In case of a deposit actual failure (at the vault level, or returned shares level in the form),
