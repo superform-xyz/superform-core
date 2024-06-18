@@ -82,8 +82,7 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         UNSET,
         DEPOSIT_ASYNC,
         REDEEM_ASYNC,
-        FULLY_ASYNC,
-        SYNC
+        FULLY_ASYNC
     }
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
@@ -167,6 +166,10 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
 
     /// @inheritdoc IERC7540FormBase
     function claimDeposit(AsyncDepositPayload memory p_) external onlyAsyncStateRegistry returns (uint256 shares) {
+        if (_vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
+
+        if (_vaultKind == VaultKind.REDEEM_ASYNC) revert INVALID_VAULT_KIND();
+
         if (p_.data.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
 
         if (_isPaused(p_.data.superformId)) {
@@ -192,6 +195,10 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
 
     /// @inheritdoc IERC7540FormBase
     function claimWithdraw(AsyncWithdrawPayload memory p_) external onlyAsyncStateRegistry returns (uint256 assets) {
+        if (_vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
+
+        if (_vaultKind == VaultKind.DEPOSIT_ASYNC) revert INVALID_VAULT_KIND();
+
         if (p_.data.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
 
         if (_isPaused(p_.data.superformId)) {
@@ -576,24 +583,27 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         /// @dev ideally the check is made at the selector level
         try IERC165(vault).supportsInterface(type(IERC7540Deposit).interfaceId) returns (bool depositSupported_) {
             depositSupported = depositSupported_;
-            try IERC165(vault).supportsInterface(type(IERC7540Redeem).interfaceId) returns (bool redeemSupported_) {
-                redeemSupported = redeemSupported_;
-            } catch {
-                revert ERC_165_INTERFACE_REDEEM_CALL_FAILED();
-            }
         } catch {
             revert ERC_165_INTERFACE_DEPOSIT_CALL_FAILED();
         }
 
+        try IERC165(vault).supportsInterface(type(IERC7540Redeem).interfaceId) returns (bool redeemSupported_) {
+            redeemSupported = redeemSupported_;
+        } catch {
+            revert ERC_165_INTERFACE_REDEEM_CALL_FAILED();
+        }
+
         if (depositSupported && redeemSupported) {
             return VaultKind.FULLY_ASYNC;
-        } else if (depositSupported) {
-            return VaultKind.DEPOSIT_ASYNC;
-        } else if (redeemSupported) {
-            return VaultKind.REDEEM_ASYNC;
-        } else {
-            revert VAULT_NOT_SUPPORTED();
         }
+        if (depositSupported) {
+            return VaultKind.DEPOSIT_ASYNC;
+        }
+        if (redeemSupported) {
+            return VaultKind.REDEEM_ASYNC;
+        }
+
+        revert VAULT_NOT_SUPPORTED();
     }
 
     function _slippageValidation(

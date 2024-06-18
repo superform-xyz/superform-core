@@ -187,8 +187,8 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
 
         uint256 claimableDeposit = superform.getClaimableDepositRequest(p.requestId, p.data.receiverAddress);
         if (
-            p.requestId == 0 && claimableDeposit < p.assetsToDeposit
-                || p.requestId != 0 && claimableDeposit != p.assetsToDeposit
+            (p.requestId == 0 && claimableDeposit < p.assetsToDeposit)
+                || (p.requestId != 0 && claimableDeposit != p.assetsToDeposit)
         ) {
             revert NOT_READY_TO_CLAIM();
         }
@@ -255,8 +255,10 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
 
         uint256 claimableRedeem = superform.getClaimableRedeemRequest(p.requestId, p.data.receiverAddress);
 
-        if (p.requestId == 0 && claimableRedeem < p.data.amount || p.requestId != 0 && claimableRedeem != p.data.amount)
-        {
+        if (
+            (p.requestId == 0 && claimableRedeem < p.data.amount)
+                || (p.requestId != 0 && claimableRedeem != p.data.amount)
+        ) {
             revert NOT_READY_TO_CLAIM();
         }
 
