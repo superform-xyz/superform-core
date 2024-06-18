@@ -22,6 +22,8 @@ import { ERC7575Mock } from "./ERC7575Mock.sol";
 contract ERC7540AsyncDepositMock is IERC7540Deposit, IAuthorizeOperator, IERC7575 {
     using Math for uint256;
 
+    uint128 public constant defaultPrice = 1.1 * 10 ** 18;
+
     address public immutable asset;
     address public immutable share;
     uint8 public immutable shareDecimals;
@@ -157,13 +159,13 @@ contract ERC7540AsyncDepositMock is IERC7540Deposit, IAuthorizeOperator, IERC757
     }
 
     /// @inheritdoc IERC7575
-    function convertToShares(uint256 assets) public view returns (uint256 shares) {
-        return assets.mulDiv(IERC20Metadata(share).totalSupply() + 1, totalAssets() + 1, Math.Rounding.Floor);
+    function convertToShares(uint256 assets) public pure returns (uint256 shares) {
+        return assets.mulDiv(10 ** 18, defaultPrice, Math.Rounding.Floor);
     }
 
     /// @inheritdoc IERC7575
-    function convertToAssets(uint256 shares) public view returns (uint256 assets) {
-        return shares.mulDiv(totalAssets() + 1, IERC20Metadata(share).totalSupply() + 1, Math.Rounding.Floor);
+    function convertToAssets(uint256 shares) public pure returns (uint256 assets) {
+        return shares.mulDiv(defaultPrice, 10 ** 18, Math.Rounding.Floor);
     }
 
     /// @inheritdoc IERC7575

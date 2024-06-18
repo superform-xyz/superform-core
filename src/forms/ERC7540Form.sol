@@ -63,7 +63,7 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
     //////////////////////////////////////////////////////////////
     /// @dev The id of the state registry
     /// TODO TEMPORARY AS THIS SHOULD BECOME ID 2
-    uint8 constant stateRegistryId = 4; // AsyncStateRegistry
+    uint8 constant stateRegistryId = 5; // AsyncStateRegistry
 
     VaultKind private _vaultKind;
 

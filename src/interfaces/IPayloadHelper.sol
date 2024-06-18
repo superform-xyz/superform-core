@@ -5,7 +5,6 @@ pragma solidity ^0.8.23;
 /// @dev Interface for PayloadHelper
 /// @author ZeroPoint Labs
 interface IPayloadHelper {
-
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
     //////////////////////////////////////////////////////////////
@@ -100,9 +99,30 @@ interface IPayloadHelper {
         view
         returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
 
+    /// @dev returns decoded async deposit form payloads
+    /// @param asyncDepositPayloadId_ is the unique identifier of payload in async deposit state registry
+    function decodeAsyncDepositPayload(uint256 asyncDepositPayloadId_)
+        external
+        view
+        returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
+
+    /// @dev returns decoded async withdraw form payloads
+    /// @param asyncWithdrawPayloadId_ is the unique identifier of payload in async withdraw state registry
+    function decodeAsyncWithdrawPayload(uint256 asyncWithdrawPayloadId_)
+        external
+        view
+        returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
+
     /// @dev returns decoded failed timelock form payloads
     /// @param timelockPayloadId_ is the unique identifier of payload in timelock state registry
     function decodeTimeLockFailedPayload(uint256 timelockPayloadId_)
+        external
+        view
+        returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
+
+    /// @dev returns decoded successful async deposit payloads
+    /// @param payloadId_ is the unique identifier of payload in async state registry
+    function decodeAsyncDepositAckPayload(uint256 payloadId_)
         external
         view
         returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);

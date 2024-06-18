@@ -24,6 +24,8 @@ import "forge-std/console.sol";
 contract ERC7540FullyAsyncMock is IERC7540Deposit, IERC7540Redeem, IAuthorizeOperator, IERC7575 {
     using Math for uint256;
 
+    uint128 public constant defaultPrice = 1.1 * 10 ** 18;
+
     address public immutable asset;
     address public immutable share;
     uint8 public immutable shareDecimals;
@@ -195,19 +197,13 @@ contract ERC7540FullyAsyncMock is IERC7540Deposit, IERC7540Redeem, IAuthorizeOpe
     }
 
     /// @inheritdoc IERC7575
-    function convertToShares(uint256 assets) public view returns (uint256 shares) {
-        console.log("assets", assets);
-        console.log("totalSupply", IERC20Metadata(share).totalSupply());
-        console.log("totalAssets", totalAssets());
-        console.log(
-            "result", assets.mulDiv(IERC20Metadata(share).totalSupply() + 1, totalAssets() + 1, Math.Rounding.Floor)
-        );
-        return assets.mulDiv(IERC20Metadata(share).totalSupply() + 1, totalAssets() + 1, Math.Rounding.Floor);
+    function convertToShares(uint256 assets) public pure returns (uint256 shares) {
+        return assets.mulDiv(10 ** 18, defaultPrice, Math.Rounding.Floor);
     }
 
     /// @inheritdoc IERC7575
-    function convertToAssets(uint256 shares) public view returns (uint256 assets) {
-        return shares.mulDiv(totalAssets() + 1, IERC20Metadata(share).totalSupply() + 1, Math.Rounding.Floor);
+    function convertToAssets(uint256 shares) public pure returns (uint256 assets) {
+        return shares.mulDiv(defaultPrice, 10 ** 18, Math.Rounding.Floor);
     }
 
     /// @inheritdoc IERC7575

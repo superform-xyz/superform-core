@@ -224,6 +224,7 @@ abstract contract BaseSetup is StdInvariant, Test {
     mapping(uint64 chainId => address[] wrapped5115vaults) public wrapped5115vaults;
     mapping(uint64 chainId => uint256 payloadId) PAYLOAD_ID;
     mapping(uint64 chainId => uint256 payloadId) TIMELOCK_PAYLOAD_ID;
+    mapping(uint64 chainId => uint256 payloadId) ASYNC_DEPOSIT_PAYLOAD_ID;
 
     /// @dev liquidity bridge ids
     uint8[] bridgeIds;
@@ -699,7 +700,8 @@ abstract contract BaseSetup is StdInvariant, Test {
             registryIds[0] = 1;
             registryIds[1] = 2;
             registryIds[2] = 3;
-            registryIds[3] = 4;
+            /// @dev  TODO temporarily as id 5 to match 7540 form implementation id. later this will change to 2
+            registryIds[3] = 5;
 
             vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
 
@@ -961,6 +963,7 @@ abstract contract BaseSetup is StdInvariant, Test {
 
             //  ERC7540 Form
             vars.erc7540form = address(new ERC7540Form{ salt: salt }(vars.superRegistry));
+
             contracts[vars.chainId][bytes32(bytes("ERC7540Form"))] = vars.erc7540form;
 
             /// @dev 11 - Add newly deployed form implementations to Factory
@@ -974,7 +977,8 @@ abstract contract BaseSetup is StdInvariant, Test {
 
             ISuperformFactory(vars.factory).addFormImplementation(vars.erc5115form, FORM_IMPLEMENTATION_IDS[3], 1);
 
-            ISuperformFactory(vars.factory).addFormImplementation(vars.erc7540form, FORM_IMPLEMENTATION_IDS[4], 3);
+            /// @dev TODO temporarily as id 5, to become id 2
+            ISuperformFactory(vars.factory).addFormImplementation(vars.erc7540form, FORM_IMPLEMENTATION_IDS[4], 5);
 
             /// @dev 12 - Deploy SuperformRouter
             vars.superformRouter = address(new SuperformRouter{ salt: salt }(vars.superRegistry));
@@ -2170,8 +2174,7 @@ abstract contract BaseSetup is StdInvariant, Test {
     }
 
     /// @dev Generates the acknowledgement amb params for the entire action
-    /// @dev TODO - Sujith to comment further
-    function _generateAckGasFeesAndParamsForTimeLock(
+    function _generateAckGasFeesAndParamsForTimelockRegistryCallback(
         bytes memory chainIds_,
         uint8[] memory selectedAmbIds,
         uint256 timelockPayloadId
@@ -2191,6 +2194,34 @@ abstract contract BaseSetup is StdInvariant, Test {
 
         (,, uint256 payloadId, uint256 superformId, uint256 amount) =
             vars.payloadHelper.decodeTimeLockPayload(timelockPayloadId);
+
+        vars.message =
+            abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superformId, amount))));
+
+        (msgValue,) = vars.paymentHelper.calculateAMBData(vars.srcChainId, selectedAmbIds, vars.message);
+    }
+
+    /// @dev Generates the acknowledgement amb params for the async deposit action
+    function _generateAckGasFeesAndParamsForAsyncDepositCallback(
+        bytes memory chainIds_,
+        uint8[] memory selectedAmbIds,
+        uint256 asyncDepositPayloadId
+    )
+        internal
+        view
+        returns (uint256 msgValue)
+    {
+        LocalAckVars memory vars;
+        (vars.srcChainId, vars.dstChainId) = abi.decode(chainIds_, (uint64, uint64));
+
+        address _paymentHelper = contracts[vars.dstChainId][bytes32(bytes("PaymentHelper"))];
+        vars.paymentHelper = PaymentHelper(_paymentHelper);
+
+        address _payloadHelper = contracts[vars.dstChainId][bytes32(bytes("PayloadHelper"))];
+        vars.payloadHelper = PayloadHelper(_payloadHelper);
+
+        (,, uint256 payloadId, uint256 superformId, uint256 amount) =
+            vars.payloadHelper.decodeAsyncDepositPayload(asyncDepositPayloadId);
 
         vars.message =
             abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superformId, amount))));

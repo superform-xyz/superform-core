@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.sol";
+import { IAsyncStateRegistry, AsyncDepositPayload, AsyncWithdrawPayload } from "src/interfaces/IAsyncStateRegistry.sol";
 import { IPayloadHelper } from "src/interfaces/IPayloadHelper.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
@@ -24,7 +25,6 @@ import {
 /// @dev Helps decode payload data for off-chain purposes
 /// @author ZeroPoint Labs
 contract PayloadHelper is IPayloadHelper {
-
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
@@ -175,6 +175,56 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     /// @inheritdoc IPayloadHelper
+    function decodeAsyncDepositPayload(uint256 asyncDepositPayloadId_)
+        external
+        view
+        override
+        returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
+    {
+        IAsyncStateRegistry asyncStateRegistry =
+            IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY")));
+
+        if (asyncDepositPayloadId_ > asyncStateRegistry.asyncDepositPayloadCounter()) {
+            revert Error.INVALID_PAYLOAD_ID();
+        }
+
+        AsyncDepositPayload memory payload = asyncStateRegistry.getAsyncDepositPayload(asyncDepositPayloadId_);
+
+        return (
+            payload.data.receiverAddress,
+            payload.srcChainId,
+            payload.data.payloadId,
+            payload.data.superformId,
+            payload.assetsToDeposit
+        );
+    }
+
+    /// @inheritdoc IPayloadHelper
+    function decodeAsyncWithdrawPayload(uint256 asyncWithdrawPayloadId_)
+        external
+        view
+        override
+        returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
+    {
+        IAsyncStateRegistry asyncStateRegistry =
+            IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY")));
+
+        if (asyncWithdrawPayloadId_ > asyncStateRegistry.asyncWithdrawPayloadCounter()) {
+            revert Error.INVALID_PAYLOAD_ID();
+        }
+
+        AsyncWithdrawPayload memory payload = asyncStateRegistry.getAsyncWithdrawPayload(asyncWithdrawPayloadId_);
+
+        return (
+            payload.data.receiverAddress,
+            payload.srcChainId,
+            payload.data.payloadId,
+            payload.data.superformId,
+            payload.data.amount
+        );
+    }
+
+    /// @inheritdoc IPayloadHelper
     function getDstPayloadProof(uint256 dstPayloadId_) external view override returns (bytes32) {
         IBaseStateRegistry coreStateRegistry =
             IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
@@ -203,6 +253,37 @@ contract PayloadHelper is IPayloadHelper {
 
         /// @dev callback type can never be INIT / RETURN
         if (callbackType_ == uint256(CallbackType.FAIL)) {
+            ReturnSingleData memory rsd = abi.decode(payloadBody, (ReturnSingleData));
+            amount = rsd.amount;
+            superformId = rsd.superformId;
+            srcPayloadId = rsd.payloadId;
+        } else {
+            revert Error.INVALID_PAYLOAD();
+        }
+
+        srcSender = srcSender_;
+        srcChainId = srcChainId_;
+    }
+
+        /// @inheritdoc IPayloadHelper
+    function decodeAsyncDepositAckPayload(uint256 payloadId_)
+        external
+        view
+        override
+        returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
+    {
+        IBaseStateRegistry asyncStateRegistry =
+            IBaseStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY")));
+
+        _isValidPayloadId(payloadId_, asyncStateRegistry);
+
+        bytes memory payloadBody = asyncStateRegistry.payloadBody(payloadId_);
+        uint256 payloadHeader = asyncStateRegistry.payloadHeader(payloadId_);
+
+        (, uint8 callbackType_,,, address srcSender_, uint64 srcChainId_) = payloadHeader.decodeTxInfo();
+
+        /// @dev callback type can never be INIT / FAIL
+        if (callbackType_ == uint256(CallbackType.RETURN)) {
             ReturnSingleData memory rsd = abi.decode(payloadBody, (ReturnSingleData));
             amount = rsd.amount;
             superformId = rsd.superformId;
