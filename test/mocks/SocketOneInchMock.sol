@@ -57,7 +57,6 @@ contract SocketOneInchMock is ISocketOneInchImpl, Test {
         }
 
         console.log("finalAmount", vars.finalAmount);
-        console.log("toToken", toToken);
 
         deal(toToken, receiver, MockERC20(toToken).balanceOf(receiver) + vars.finalAmount);
     }
