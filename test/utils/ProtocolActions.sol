@@ -841,7 +841,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vars.logs = vm.getRecordedLogs();
 
         for (uint256 index; index < AMBs.length; index++) {
-            console.log(AMBs[index]);
             if (AMBs[index] == 1) {
                 LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper")).help(
                     internalVars.endpoints,
@@ -854,7 +853,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
             }
 
             if (AMBs[index] == 6) {
-                console.log("6 6 6");
                 LayerZeroV2Helper(getContract(CHAIN_0, "LayerZeroV2Helper")).help(
                     internalVars.endpointsV2, internalVars.lzChainIdsV2, internalVars.forkIds, vars.logs
                 );
@@ -1758,7 +1756,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             (, v.USDPerUnderlyingOrInterimTokenDst,,,) =
                 AggregatorV3Interface(tokenPriceFeeds[args.toChainId][args.uniqueInterimToken]).latestRoundData();
-            console.log("args.uniqueInterimToken", args.uniqueInterimToken);
             v.decimal4 = args.underlyingTokenDst != NATIVE_TOKEN ? MockERC20(args.underlyingTokenDst).decimals() : 18;
 
             (, v.USDPerUnderlyingTokenDst,,,) =
@@ -2030,11 +2027,22 @@ abstract contract ProtocolActions is CommonProtocolActions {
         (vars.superform,,) = args.superformId.getSuperform();
         vars.actualWithdrawAmount = IBaseForm(vars.superform).previewRedeemFrom(args.amount);
 
+        vars.vault = IBaseForm(vars.superform).getVaultAddress();
+
+        vars.vaultFormImplementationCombination =
+            keccak256(abi.encode(getContract(args.toChainId, "ERC5115Form"), vars.vault));
+        vars.superformId = SuperformFactory(getContract(args.toChainId, "SuperformFactory"))
+            .vaultFormImplCombinationToSuperforms(vars.vaultFormImplementationCombination);
+
+        vars.is5115 = vars.superformId == args.superformId;
+
         vm.selectFork(initialFork);
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             args.liqBridge,
-            args.underlyingTokenDst,
+            vars.is5115
+                ? ERC5115S_CHOSEN_ASSETS[args.toChainId][ERC5115To4626Wrapper(vars.vault).vault()].assetOut
+                : args.underlyingTokenDst,
             /// @dev notice the switch of underlyingTokenDst with external token, because external token is meant to be
             /// received in the end after a withdraw
             args.underlyingToken,
@@ -2065,23 +2073,17 @@ abstract contract ProtocolActions is CommonProtocolActions {
         if (GENERATE_WITHDRAW_TX_DATA_ON_DST) {
             TX_DATA_TO_UPDATE_ON_DST[args.toChainId].push(vars.txData);
         }
+
         vm.selectFork(FORKS[args.toChainId]);
-
-        vars.vault = IBaseForm(vars.superform).getVaultAddress();
-
-        vars.vaultFormImplementationCombination =
-            keccak256(abi.encode(getContract(args.toChainId, "ERC5115Form"), vars.vault));
-        vars.superformId = SuperformFactory(getContract(args.toChainId, "SuperformFactory"))
-            .vaultFormImplCombinationToSuperforms(vars.vaultFormImplementationCombination);
-
-        vars.is5115 = vars.superformId == args.superformId;
 
         /// @notice no interim token supplied as this is a withdraw
         vars.liqReq = LiqRequest(
             GENERATE_WITHDRAW_TX_DATA_ON_DST ? bytes("") : vars.txData,
             /// @dev for certain test cases, insert txData as null here
             args.externalToken,
-            vars.is5115 ? args.underlyingTokenDst : address(0),
+            vars.is5115
+                ? ERC5115S_CHOSEN_ASSETS[args.toChainId][ERC5115To4626Wrapper(vars.vault).vault()].assetOut
+                : address(0),
             args.liqBridge,
             args.liqDstChainId,
             0

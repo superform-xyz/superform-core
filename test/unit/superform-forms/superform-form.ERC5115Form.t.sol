@@ -4,10 +4,62 @@ pragma solidity ^0.8.23;
 import "test/utils/ProtocolActions.sol";
 import { IStandardizedYield } from "src/vendor/pendle/IStandardizedYield.sol";
 
+contract Mock5115VaultWithNoRewards is Test {
+    address public constant asset = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
+}
+
+contract Mock5115VaultWithRewards is Test {
+    address public constant asset = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
+
+    address constant USDT = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
+    address constant USDC = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
+
+    function getRewardTokens() external view returns (address[] memory) {
+        address[] memory rewardTokens = new address[](2);
+        rewardTokens[0] = USDT;
+        rewardTokens[1] = USDC;
+
+        return rewardTokens;
+    }
+
+    function claimRewards(address user) external returns (uint256[] memory rewardAmounts) {
+        deal(USDT, user, 1e6);
+        deal(USDC, user, 2e6);
+
+        rewardAmounts = new uint256[](2);
+        rewardAmounts[0] = 1e6;
+        rewardAmounts[1] = 2e6;
+    }
+
+    function accruedRewards(address user) external view returns (uint256[] memory rewardAmounts) {
+        rewardAmounts = new uint256[](2);
+        rewardAmounts[0] = 1e6;
+        rewardAmounts[1] = 2e6;
+    }
+
+    function rewardIndexesStored() external view returns (uint256[] memory indices) {
+        indices = new uint256[](2);
+        indices[0] = 1;
+        indices[1] = 2;
+    }
+
+    function isValidTokenIn(address token) external view returns (bool isValid) {
+        isValid = true;
+    }
+}
+
 contract SuperformERC5115FormTest is ProtocolActions {
     uint64 internal chainId = ARBI;
+    uint32 FORM_ID = 4;
+
     ERC5115Form targetSuperform;
     IStandardizedYield targetVault;
+
+    Mock5115VaultWithNoRewards noRewards;
+    Mock5115VaultWithRewards rewards;
+
+    ERC5115Form noRewardsSuperform;
+    ERC5115Form rewardsSuperform;
 
     function setUp() public override {
         super.setUp();
@@ -15,6 +67,17 @@ contract SuperformERC5115FormTest is ProtocolActions {
         vm.selectFork(FORKS[chainId]);
         targetSuperform = ERC5115Form(getContract(chainId, "wstETHERC5115Superform4"));
         targetVault = IStandardizedYield(targetSuperform.vault());
+
+        noRewards = new Mock5115VaultWithNoRewards();
+        rewards = new Mock5115VaultWithRewards();
+
+        (, address superformCreated) =
+            ISuperformFactory(getContract(ARBI, "SuperformFactory")).createSuperform(FORM_ID, address(noRewards));
+        noRewardsSuperform = ERC5115Form(superformCreated);
+
+        (, superformCreated) =
+            ISuperformFactory(getContract(ARBI, "SuperformFactory")).createSuperform(FORM_ID, address(rewards));
+        rewardsSuperform = ERC5115Form(superformCreated);
     }
 
     /// @dev Test Vault Symbol
@@ -149,5 +212,103 @@ contract SuperformERC5115FormTest is ProtocolActions {
         assertEq(uint256(assetType), 0);
         assertEq(assetDecimals, 18);
         assertEq(assetAddress, 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
+    }
+
+    /// @dev Test Revert Claim Reward Tokens
+    function test_superformRevertClaimRewardTokensERC5115() public {
+        vm.expectRevert(ERC5115Form.FUNCTION_NOT_IMPLEMENTED.selector);
+        noRewardsSuperform.claimRewardTokens();
+    }
+
+    /// @dev Test Revert Get Accrued Rewards
+    function test_superformRevertGetAccruedRewardsERC5115() public {
+        vm.expectRevert(ERC5115Form.FUNCTION_NOT_IMPLEMENTED.selector);
+        noRewardsSuperform.getAccruedRewards(address(this));
+    }
+
+    /// @dev Test Revert Get Reward Indexes Stored
+    function test_superformRevertGetRewardIndexesStoredERC5115() public {
+        vm.expectRevert(ERC5115Form.FUNCTION_NOT_IMPLEMENTED.selector);
+        noRewardsSuperform.getRewardIndexesStored();
+    }
+
+    /// @dev Test Revert Get Reward Tokens
+    function test_superformRevertGetRewardTokensERC5115() public {
+        vm.expectRevert(ERC5115Form.FUNCTION_NOT_IMPLEMENTED.selector);
+        noRewardsSuperform.getRewardTokens();
+    }
+
+    /// @dev Test Claim Reward Tokens
+    function test_superformClaimRewardTokensERC5115() public {
+        uint256[] memory rewardsBalanceBefore = new uint256[](rewardsSuperform.getRewardTokens().length);
+        for (uint256 i; i < rewardsBalanceBefore.length; ++i) {
+            rewardsBalanceBefore[i] = IERC20(rewardsSuperform.getRewardTokens()[i]).balanceOf(address(this));
+        }
+
+        rewardsSuperform.claimRewardTokens();
+
+        for (uint256 i; i < rewardsBalanceBefore.length; ++i) {
+            uint256 rewardsBalanceAfter = IERC20(rewardsSuperform.getRewardTokens()[i]).balanceOf(address(this));
+            assertGe(rewardsBalanceAfter, rewardsBalanceBefore[i]);
+        }
+    }
+
+    /// @dev Test Get Accrued Rewards
+    function test_superformGetAccruedRewardsERC5115() public view {
+        uint256[] memory accruedRewards = rewardsSuperform.getAccruedRewards(address(this));
+        assertGt(accruedRewards.length, 0);
+        for (uint256 i; i < accruedRewards.length; ++i) {
+            assertGe(accruedRewards[i], 0);
+        }
+    }
+
+    /// @dev Test Get Reward Indexes Stored
+    function test_superformGetRewardIndexesStoredERC5115() public view {
+        uint256[] memory rewardIndexes = rewardsSuperform.getRewardIndexesStored();
+        assertGt(rewardIndexes.length, 0);
+        for (uint256 i; i < rewardIndexes.length; ++i) {
+            assertGe(rewardIndexes[i], 0);
+        }
+    }
+
+    /// @dev Test Get Reward Tokens
+    function test_superformGetRewardTokensERC5115() public view {
+        address[] memory rewardTokens = rewardsSuperform.getRewardTokens();
+        assertGt(rewardTokens.length, 0);
+        for (uint256 i; i < rewardTokens.length; ++i) {
+            assertFalse(rewardTokens[i] == address(0));
+        }
+    }
+
+    /// @dev Test Forwarding Dust To Paymaster
+    function test_forwardDustToPaymaster() public {
+        address superform = address(targetSuperform);
+
+        deal(getContract(ARBI, "WETH"), superform, 1e18);
+        uint256 balanceBefore = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
+        assertGt(balanceBefore, 0);
+        IBaseForm(superform).forwardDustToPaymaster(getContract(ARBI, "WETH"));
+        uint256 balanceAfter = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
+
+        assertEq(balanceAfter, 0);
+    }
+
+    /// @dev Test Forwarding No Dust To Paymaster
+    function test_forwardDustToPaymasterNoDust() public {
+        address superform = address(targetSuperform);
+
+        uint256 balanceBefore = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
+        assertEq(balanceBefore, 0);
+        IBaseForm(superform).forwardDustToPaymaster(getContract(ARBI, "WETH"));
+        uint256 balanceAfter = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
+
+        assertEq(balanceAfter, 0);
+    }
+
+    /// @dev Test emergency queue
+    function test_emergencyWithdraw_NotEmergencyQueue() public {
+        vm.prank(address(1));
+        vm.expectRevert(Error.NOT_EMERGENCY_QUEUE.selector);
+        targetSuperform.emergencyWithdraw(address(0), 0);
     }
 }
