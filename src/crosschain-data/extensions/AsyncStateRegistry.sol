@@ -34,6 +34,8 @@ import {
 } from "src/types/DataTypes.sol";
 import { ReentrancyGuard } from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 
+import { IERC7575 } from "src/vendor/centrifuge/IERC7540.sol";
+
 /// @title AsyncStateRegistry
 /// @dev Handles communication in 7540 forms
 /// @author Zeropoint Labs
@@ -242,7 +244,6 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
         bytes memory txData_
     )
         external
-        payable
         override
         onlyAsyncStateRegistryProcessor
     {
@@ -290,9 +291,13 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
             );
 
             finalAmount = bridgeValidator.decodeAmountIn(txData_, false);
+            /// @dev Validate if it is safe to use convertToAssets here given previewRedeem is not available
+            /// TODO
             if (
                 !PayloadUpdaterLib.validateSlippage(
-                    finalAmount, superform.previewRedeemFrom(p.data.amount), p.data.maxSlippage
+                    finalAmount,
+                    IERC7575(IBaseForm(superformAddress).getVaultAddress()).convertToAssets(p.data.amount),
+                    p.data.maxSlippage
                 )
             ) {
                 revert Error.SLIPPAGE_OUT_OF_BOUNDS();

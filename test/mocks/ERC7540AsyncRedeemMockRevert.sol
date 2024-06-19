@@ -21,7 +21,7 @@ import { ERC7575Mock } from "./ERC7575Mock.sol";
 contract ERC7540AsyncRedeemMockRevert is IERC7540Redeem, IAuthorizeOperator, IERC7575 {
     using Math for uint256;
 
-    uint128 public constant defaultPrice = 1.1 * 10 ** 18;
+    uint128 public constant defaultPrice = 1_014_955_188_668_023_222;
 
     address public immutable asset;
     address public immutable share;

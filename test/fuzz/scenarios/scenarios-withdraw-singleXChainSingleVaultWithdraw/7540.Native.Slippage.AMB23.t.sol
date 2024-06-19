@@ -52,7 +52,7 @@ contract SXSVW7540NativeSlippageAMB23 is ProtocolActions {
                 externalToken: 69_420 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
-        /*
+
         actions.push(
             TestAction({
                 action: Actions.Withdraw,
@@ -65,7 +65,7 @@ contract SXSVW7540NativeSlippageAMB23 is ProtocolActions {
                 dstSwap: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
              })
-        )*/
+        );
     }
 
     /*///////////////////////////////////////////////////////////////

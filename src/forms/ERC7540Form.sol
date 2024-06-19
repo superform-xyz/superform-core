@@ -12,7 +12,9 @@ import { InitSingleVaultData, LiqRequest } from "src/types/DataTypes.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import { IERC7540Vault as IERC7540, IERC7540Deposit, IERC7540Redeem } from "src/vendor/centrifuge/IERC7540.sol";
+import {
+    IERC7540Vault as IERC7540, IERC7540Deposit, IERC7540Redeem, IERC7575
+} from "src/vendor/centrifuge/IERC7540.sol";
 import { IERC7540FormBase } from "./interfaces/IERC7540Form.sol";
 import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 
@@ -259,7 +261,9 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
             if (
                 _isWithdrawTxDataAmountInvalid(
-                    _decodeAmountIn(vars.bridgeValidator, vars.liqData.txData), assets, p_.data.maxSlippage
+                    _decodeAmountIn(_getBridgeValidator(vars.liqData.bridgeId), vars.liqData.txData),
+                    assets,
+                    p_.data.maxSlippage
                 )
             ) {
                 if (p_.isXChain == 1) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
@@ -547,9 +551,12 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
     {
         (,, uint64 dstChainId) = singleVaultData_.superformId.getSuperform();
 
-        IERC7540 v = IERC7540(vault);
+        IERC20(_share()).safeIncreaseAllowance(vault, singleVaultData_.amount);
 
-        uint256 requestId = v.requestRedeem(singleVaultData_.amount, singleVaultData_.receiverAddress, address(this));
+        uint256 requestId =
+            IERC7540(vault).requestRedeem(singleVaultData_.amount, singleVaultData_.receiverAddress, address(this));
+
+        if (IERC20(_share()).allowance(address(this), vault) > 0) IERC20(_share()).forceApprove(vault, 0);
 
         emit RequestProcessed(
             srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault, requestId
