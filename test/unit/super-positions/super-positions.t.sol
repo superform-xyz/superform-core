@@ -29,7 +29,8 @@ contract SuperPositionsTest is BaseSetup {
         address superRegistry = getContract(ETH, "SuperRegistry");
 
         formImplementation = address(new ERC4626Form(superRegistry));
-        vault = getContract(ETH, VAULT_NAMES[0][0]);
+
+        vault = getContract(ETH, "DAIVaultMock");
         vm.prank(deployer);
         SuperformFactory(getContract(ETH, "SuperformFactory")).addFormImplementation(
             formImplementation, formImplementationId, 1
@@ -270,7 +271,7 @@ contract SuperPositionsTest is BaseSetup {
         (uint256 superformId,) =
             SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
         uint8[] memory srId = new uint8[](1);
-        srId[0] = 5;
+        srId[0] = 8;
 
         address newSr = address(new CoreStateRegistry(ISuperRegistry(getContract(ETH, "SuperRegistry"))));
 
@@ -286,10 +287,11 @@ contract SuperPositionsTest is BaseSetup {
     }
 
     function test_mintBatch_NOT_MINTER() public {
-        address timelockVault = getContract(ETH, VAULT_NAMES[1][0]);
+        address superform = getContract(
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
+        );
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[1], ETH);
 
-        (uint256 superformId,) =
-            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(2, timelockVault);
         uint256[] memory superformIds = new uint256[](1);
         superformIds[0] = superformId;
 
@@ -297,7 +299,7 @@ contract SuperPositionsTest is BaseSetup {
         amounts[0] = 1;
 
         uint8[] memory srId = new uint8[](1);
-        srId[0] = 5;
+        srId[0] = 8;
 
         address newSr = address(new CoreStateRegistry(ISuperRegistry(getContract(ETH, "SuperRegistry"))));
 

@@ -912,9 +912,14 @@ abstract contract BaseSetup is StdInvariant, Test {
                                     vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
                                 }
                             }
-
                             /// @dev Add VaultMock
-                            contracts[vars.chainId][bytes32(bytes(string.concat(VAULT_NAMES[l][k])))] = vars.vault;
+                            contracts[vars.chainId][bytes32(
+                                bytes(
+                                    string.concat(
+                                        UNDERLYING_TOKENS[k], vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultKinds[l]
+                                    )
+                                )
+                            )] = vars.vault;
                             vaultsT[l] = vars.vault;
                         }
                         doubleVaults[k] = vaultsT;
