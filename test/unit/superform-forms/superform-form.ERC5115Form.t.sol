@@ -91,6 +91,10 @@ contract Mock5115VaultWithRewards is Test {
     function isValidTokenIn(address) external pure returns (bool isValid) {
         isValid = true;
     }
+
+    function isValidTokenOut(address) external pure returns (bool isValid) {
+        isValid = true;
+    }
 }
 
 contract SuperformERC5115FormTest is ProtocolActions {
@@ -98,10 +102,14 @@ contract SuperformERC5115FormTest is ProtocolActions {
     uint32 FORM_ID = 4;
 
     ERC5115Form targetSuperform;
+    ERC5115To4626Wrapper targetWrapper;
+
     IStandardizedYield targetVault;
 
     Mock5115VaultWithNoRewards noRewards;
     Mock5115VaultWithRewards rewards;
+    ERC5115To4626Wrapper rewardsWrapper;
+
     MaliciousVault mal;
     MaliciousWithdrawVault malWithdraw;
 
@@ -118,10 +126,15 @@ contract SuperformERC5115FormTest is ProtocolActions {
 
         vm.selectFork(FORKS[chainId]);
         targetSuperform = ERC5115Form(getContract(chainId, "wstETHERC5115Superform4"));
+        targetWrapper = ERC5115To4626Wrapper(targetSuperform.vault());
         targetVault = IStandardizedYield(targetSuperform.vault());
 
         noRewards = new Mock5115VaultWithNoRewards();
         rewards = new Mock5115VaultWithRewards();
+        rewardsWrapper = new ERC5115To4626Wrapper(
+            address(rewards), 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9, 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9
+        );
+
         mal = new MaliciousVault();
         malWithdraw = new MaliciousWithdrawVault();
 
@@ -1014,4 +1027,93 @@ contract SuperformERC5115FormTest is ProtocolActions {
             SingleDirectSingleVaultStateReq(sfData)
         );
     }
+
+    /// @dev Test get main token in / out
+    function test_5115getMainTokenInOut() public {
+        address exptToken = 0x5979D7b546E38E414F7E9822514be443A4800529;
+        address tokenIn = targetWrapper.getMainTokenIn();
+        address tokenOut = targetWrapper.getMainTokenOut();
+
+        assertEq(tokenIn, exptToken);
+        assertEq(tokenOut, exptToken);
+    }
+
+    /// @dev Test all claim related functions in wrapper
+    function test_5115WrapperClaim() public {
+        uint256[] memory returnArr = targetWrapper.claimRewards(address(420));
+        assertEq(returnArr.length, 0);
+
+        returnArr = targetWrapper.rewardIndexesStored();
+        assertEq(returnArr.length, 0);
+
+        returnArr = targetWrapper.rewardIndexesCurrent();
+        assertEq(returnArr.length, 0);
+
+        returnArr = targetWrapper.accruedRewards(address(420));
+        assertEq(returnArr.length, 0);
+
+        address[] memory returnArr2 = targetWrapper.getRewardTokens();
+        assertEq(returnArr2.length, 0);
+    }
+
+    /// @dev Test get total supply
+    function test_5115getTotalSupplyOnWrapper() public {
+        uint256 vaultSupply = targetWrapper.totalSupply();
+        assertGt(vaultSupply, 0);
+    }
+
+    /// @dev Test balance and transfer properties of wrapper
+    // function test_5115BalanceAndTransfer() public {
+    //     address vault = targetSuperform.getVaultAddress();
+
+    //     bytes32 vaultFormImplementationCombination = keccak256(abi.encode(getContract(ARBI, "ERC5115Form"), vault));
+    //     uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
+    //         .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
+
+    //     bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+
+    //     LiqRequest memory liqRequest = LiqRequest(
+    //         bytes(""),
+    //         0x5979D7b546E38E414F7E9822514be443A4800529,
+    //         0x5979D7b546E38E414F7E9822514be443A4800529,
+    //         0,
+    //         ARBI,
+    //         0
+    //     );
+
+    //     SingleVaultSFData memory sfData = SingleVaultSFData(
+    //         superformId,
+    //         1e6,
+    //         1e6,
+    //         0,
+    //         liqRequest,
+    //         bytes(""),
+    //         false,
+    //         true,
+    //         deployer,
+    //         deployer,
+    //         abi.encode(1, extra5115Data)
+    //     );
+
+    //     vm.startPrank(deployer);
+    //     IERC20(0x5979D7b546E38E414F7E9822514be443A4800529).approve(getContract(ARBI, "SuperformRouter"), 1e6);
+
+    //     SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))).singleDirectSingleVaultDeposit(
+    //         SingleDirectSingleVaultStateReq(sfData)
+    //     );
+
+    //     uint256 balance = targetWrapper.balanceOf(deployer);
+    //     targetWrapper.transfer(address(10), balance / 2);
+
+    //     assertEq(targetWrapper.balanceOf(address(10)), balance / 2);
+
+    //     targetWrapper.approve(address(11), balance / 2);
+
+    //     uint256 allowanceAfter = targetWrapper.allowance(deployer, address(11));
+    //     assertEq(allowanceAfter, balance / 2);
+
+    //     vm.startPrank(address(11));
+    //     targetWrapper.transferFrom(deployer, address(11), balance / 2);
+    //     assertEq(targetWrapper.balanceOf(address(11)), balance / 2);
+    // }
 }
