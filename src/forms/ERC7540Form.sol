@@ -78,7 +78,6 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         uint256 len1;
         address bridgeValidator;
         uint64 chainId;
-        address receiver;
         address asset;
         uint256 amount;
         LiqRequest liqData;
@@ -196,15 +195,16 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
             return 0;
         }
 
-        IERC7540 v = IERC7540(vault);
-
-        address sharesReceiver = p_.data.retain4626 ? p_.data.receiverAddress : address(this);
-
         uint256 sharesBalanceBefore;
         uint256 sharesBalanceAfter;
 
-        (sharesBalanceBefore, sharesBalanceAfter, shares) =
-            _claim(v, _share(), p_.data.amount, sharesReceiver, p_.data.receiverAddress, true);
+        (sharesBalanceBefore, sharesBalanceAfter, shares) = _claim(
+            _share(),
+            p_.data.amount,
+            p_.data.retain4626 ? p_.data.receiverAddress : address(this),
+            p_.data.receiverAddress,
+            true
+        );
 
         _slippageValidation(sharesBalanceBefore, sharesBalanceAfter, shares, p_.data.outputAmount, p_.data.maxSlippage);
     }
@@ -226,8 +226,6 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         }
         ClaimWithdrawLocalVars memory vars;
 
-        IERC7540 v = IERC7540(vault);
-
         vars.liqData = p_.data.liqData;
         vars.len1 = vars.liqData.txData.length;
 
@@ -238,17 +236,21 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
             revert Error.WITHDRAW_TOKEN_NOT_UPDATED();
         }
 
-        /// @dev if the txData is empty, the tokens are sent directly to the sender, otherwise sent first to this form
-        vars.receiver = vars.len1 == 0 ? p_.data.receiverAddress : address(this);
-
         /// @dev redeem from vault
         vars.asset = asset;
 
         uint256 assetsBalanceBefore;
         uint256 assetsBalanceAfter;
 
-        (assetsBalanceBefore, assetsBalanceAfter, assets) =
-            _claim(v, vars.asset, p_.data.amount, vars.receiver, p_.data.receiverAddress, false);
+        (assetsBalanceBefore, assetsBalanceAfter, assets) = _claim(
+            vars.asset,
+            p_.data.amount,
+            /// @dev if the txData is empty, the tokens are sent directly to the sender, otherwise sent first to this
+            /// form
+            vars.len1 == 0 ? p_.data.receiverAddress : address(this),
+            p_.data.receiverAddress,
+            false
+        );
 
         _slippageValidation(assetsBalanceBefore, assetsBalanceAfter, assets, p_.data.outputAmount, p_.data.maxSlippage);
 
@@ -540,7 +542,7 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         return requestId;
     }
 
-    /// @dev calls the vault to request unlock
+    /// @dev calls the vault to request redeem
     /// @notice superPositions are already burned at this point
     function _requestRedeem(
         InitSingleVaultData memory singleVaultData_,
@@ -551,12 +553,14 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
     {
         (,, uint64 dstChainId) = singleVaultData_.superformId.getSuperform();
 
-        IERC20(_share()).safeIncreaseAllowance(vault, singleVaultData_.amount);
+        address share = _share();
+
+        IERC20(share).safeIncreaseAllowance(vault, singleVaultData_.amount);
 
         uint256 requestId =
             IERC7540(vault).requestRedeem(singleVaultData_.amount, singleVaultData_.receiverAddress, address(this));
 
-        if (IERC20(_share()).allowance(address(this), vault) > 0) IERC20(_share()).forceApprove(vault, 0);
+        if (IERC20(share).allowance(address(this), vault) > 0) IERC20(share).forceApprove(vault, 0);
 
         emit RequestProcessed(
             srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault, requestId
@@ -690,7 +694,6 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
     }
 
     function _claim(
-        IERC7540 v,
         address tokenOut,
         uint256 amountToClaim,
         address receiver,
@@ -700,6 +703,8 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         internal
         returns (uint256 balanceBefore, uint256 balanceAfter, uint256 tokensReceived)
     {
+        IERC7540 v = IERC7540(vault);
+
         balanceBefore = _balanceOf(tokenOut, receiver);
 
         tokensReceived =
