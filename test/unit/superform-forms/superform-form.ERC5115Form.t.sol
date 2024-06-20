@@ -1063,57 +1063,56 @@ contract SuperformERC5115FormTest is ProtocolActions {
     }
 
     /// @dev Test balance and transfer properties of wrapper
-    // function test_5115BalanceAndTransfer() public {
-    //     address vault = targetSuperform.getVaultAddress();
+    function test_5115BalanceAndTransfer() public {
+        address vault = targetSuperform.getVaultAddress();
 
-    //     bytes32 vaultFormImplementationCombination = keccak256(abi.encode(getContract(ARBI, "ERC5115Form"), vault));
-    //     uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
-    //         .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
+        bytes32 vaultFormImplementationCombination = keccak256(abi.encode(getContract(ARBI, "ERC5115Form"), vault));
+        uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
+            .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
 
-    //     bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
 
-    //     LiqRequest memory liqRequest = LiqRequest(
-    //         bytes(""),
-    //         0x5979D7b546E38E414F7E9822514be443A4800529,
-    //         0x5979D7b546E38E414F7E9822514be443A4800529,
-    //         0,
-    //         ARBI,
-    //         0
-    //     );
+        LiqRequest memory liqRequest = LiqRequest(
+            bytes(""),
+            0x5979D7b546E38E414F7E9822514be443A4800529,
+            0x5979D7b546E38E414F7E9822514be443A4800529,
+            0,
+            ARBI,
+            0
+        );
 
-    //     SingleVaultSFData memory sfData = SingleVaultSFData(
-    //         superformId,
-    //         1e6,
-    //         1e6,
-    //         0,
-    //         liqRequest,
-    //         bytes(""),
-    //         false,
-    //         true,
-    //         deployer,
-    //         deployer,
-    //         abi.encode(1, extra5115Data)
-    //     );
+        SingleVaultSFData memory sfData = SingleVaultSFData(
+            superformId,
+            1e6,
+            1e6,
+            0,
+            liqRequest,
+            bytes(""),
+            false,
+            true,
+            deployer,
+            deployer,
+            abi.encode(1, extra5115Data)
+        );
 
-    //     vm.startPrank(deployer);
-    //     IERC20(0x5979D7b546E38E414F7E9822514be443A4800529).approve(getContract(ARBI, "SuperformRouter"), 1e6);
+        vm.startPrank(deployer);
+        IERC20(0x5979D7b546E38E414F7E9822514be443A4800529).approve(getContract(ARBI, "SuperformRouter"), 1e6);
 
-    //     SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))).singleDirectSingleVaultDeposit(
-    //         SingleDirectSingleVaultStateReq(sfData)
-    //     );
+        SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))).singleDirectSingleVaultDeposit(
+            SingleDirectSingleVaultStateReq(sfData)
+        );
 
-    //     uint256 balance = targetWrapper.balanceOf(deployer);
-    //     targetWrapper.transfer(address(10), balance / 2);
+        uint256 balance = targetWrapper.balanceOf(deployer);
+        uint256 allowance = targetWrapper.allowance(deployer, address(11));
+        assertEq(allowance, 0);
 
-    //     assertEq(targetWrapper.balanceOf(address(10)), balance / 2);
+        vm.expectRevert(Error.NOT_IMPLEMENTED.selector);
+        targetWrapper.approve(address(10), balance);
 
-    //     targetWrapper.approve(address(11), balance / 2);
+        vm.expectRevert(Error.NOT_IMPLEMENTED.selector);
+        targetWrapper.transfer(address(11), balance);
 
-    //     uint256 allowanceAfter = targetWrapper.allowance(deployer, address(11));
-    //     assertEq(allowanceAfter, balance / 2);
-
-    //     vm.startPrank(address(11));
-    //     targetWrapper.transferFrom(deployer, address(11), balance / 2);
-    //     assertEq(targetWrapper.balanceOf(address(11)), balance / 2);
-    // }
+        vm.expectRevert(Error.NOT_IMPLEMENTED.selector);
+        targetWrapper.transferFrom(address(targetWrapper), address(100), balance);
+    }
 }

@@ -222,7 +222,7 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
     }
 
     function approve(address spender, uint256 value) external returns (bool) {
-        return IStandardizedYield(vault).approve(spender, value);
+        revert Error.NOT_IMPLEMENTED();
     }
 
     function balanceOf(address account) external view returns (uint256) {
@@ -246,11 +246,11 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
     }
 
     function transfer(address to, uint256 value) external returns (bool) {
-        return IStandardizedYield(vault).transfer(to, value);
+        revert Error.NOT_IMPLEMENTED();
     }
 
     function transferFrom(address from, address to, uint256 value) external returns (bool) {
-        return IStandardizedYield(vault).transferFrom(from, to, value);
+        revert Error.NOT_IMPLEMENTED();
     }
 
     //////////////////////////////////////////////////////////////
