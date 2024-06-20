@@ -8,35 +8,45 @@ import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 contract MaliciousVault {
     address public constant asset = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
 
-    function deposit(
-        address receiver,
-        address tokenIn,
-        uint256 amountTokenToDeposit,
-        uint256 minSharesOut
-    )
-        external
-        payable
-        returns (uint256 amountSharesOut)
-    {
+    function deposit(address, address, uint256, uint256) external payable returns (uint256 amountSharesOut) {
         return 10e6;
     }
 
-    function redeem(
-        address receiver,
-        uint256 amountSharesToRedeem,
-        address tokenOut,
-        uint256 minTokenOut,
-        bool burnFromInternalBalance
-    )
-        external
-        returns (uint256 amountTokenOut)
-    {
+    function redeem(address, uint256, address, uint256, bool) external pure returns (uint256 amountTokenOut) {
         return 10e6;
     }
 
-    function balanceOf(address user) external view returns (uint256) {
+    function balanceOf(address) external pure returns (uint256) {
         return 0;
     }
+}
+
+contract MaliciousWithdrawVault {
+    address public constant asset = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
+    uint256 _balance;
+
+    function deposit(address, address, uint256, uint256 minSharesOut) external payable returns (uint256) {
+        _balance = minSharesOut;
+        return minSharesOut;
+    }
+
+    function redeem(address, uint256, address, uint256, bool) external pure returns (uint256) {
+        return 0;
+    }
+
+    function balanceOf(address) external view returns (uint256) {
+        return _balance;
+    }
+
+    function getUnderlying5115Vault() external view returns (address) {
+        return address(this);
+    }
+
+    function allowance(address, address) external view returns (uint256) {
+        return _balance;
+    }
+
+    function approve(address, uint256) external pure { }
 }
 
 contract Mock5115VaultWithNoRewards is Test {
@@ -49,7 +59,7 @@ contract Mock5115VaultWithRewards is Test {
     address constant USDT = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
     address constant USDC = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
 
-    function getRewardTokens() external view returns (address[] memory) {
+    function getRewardTokens() external pure returns (address[] memory) {
         address[] memory rewardTokens = new address[](2);
         rewardTokens[0] = USDT;
         rewardTokens[1] = USDC;
@@ -66,19 +76,19 @@ contract Mock5115VaultWithRewards is Test {
         rewardAmounts[1] = 2e6;
     }
 
-    function accruedRewards(address user) external view returns (uint256[] memory rewardAmounts) {
+    function accruedRewards(address) external pure returns (uint256[] memory rewardAmounts) {
         rewardAmounts = new uint256[](2);
         rewardAmounts[0] = 1e6;
         rewardAmounts[1] = 2e6;
     }
 
-    function rewardIndexesStored() external view returns (uint256[] memory indices) {
+    function rewardIndexesStored() external pure returns (uint256[] memory indices) {
         indices = new uint256[](2);
         indices[0] = 1;
         indices[1] = 2;
     }
 
-    function isValidTokenIn(address token) external view returns (bool isValid) {
+    function isValidTokenIn(address) external pure returns (bool isValid) {
         isValid = true;
     }
 }
@@ -93,12 +103,15 @@ contract SuperformERC5115FormTest is ProtocolActions {
     Mock5115VaultWithNoRewards noRewards;
     Mock5115VaultWithRewards rewards;
     MaliciousVault mal;
+    MaliciousWithdrawVault malWithdraw;
 
     ERC5115Form noRewardsSuperform;
     ERC5115Form rewardsSuperform;
     ERC5115Form malSuperform;
+    ERC5115Form malWithdrawSuperform;
 
     uint256 malSuperformId;
+    uint256 malWithdrawSuperformId;
 
     function setUp() public override {
         super.setUp();
@@ -110,6 +123,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
         noRewards = new Mock5115VaultWithNoRewards();
         rewards = new Mock5115VaultWithRewards();
         mal = new MaliciousVault();
+        malWithdraw = new MaliciousWithdrawVault();
 
         (, address superformCreated) =
             ISuperformFactory(getContract(ARBI, "SuperformFactory")).createSuperform(FORM_ID, address(noRewards));
@@ -122,6 +136,10 @@ contract SuperformERC5115FormTest is ProtocolActions {
         (malSuperformId, superformCreated) =
             ISuperformFactory(getContract(ARBI, "SuperformFactory")).createSuperform(FORM_ID, address(mal));
         malSuperform = ERC5115Form(superformCreated);
+
+        (malWithdrawSuperformId, superformCreated) =
+            ISuperformFactory(getContract(ARBI, "SuperformFactory")).createSuperform(FORM_ID, address(malWithdraw));
+        malWithdrawSuperform = ERC5115Form(superformCreated);
     }
 
     /// @dev Test Vault Symbol
@@ -876,9 +894,6 @@ contract SuperformERC5115FormTest is ProtocolActions {
 
         bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
 
-        ISocketRegistry.BridgeRequest memory bridgeRequest;
-        ISocketRegistry.MiddlewareRequest memory middlewareRequest;
-
         LiqRequest memory liqRequest = LiqRequest(
             abi.encodeWithSelector(
                 SocketOneInchMock.performDirectAction.selector,
@@ -951,6 +966,51 @@ contract SuperformERC5115FormTest is ProtocolActions {
 
         vm.expectRevert(Error.VAULT_IMPLEMENTATION_FAILED.selector);
         SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))).singleDirectSingleVaultDeposit(
+            SingleDirectSingleVaultStateReq(sfData)
+        );
+    }
+
+    /// @dev Test xchain slippage validation checks
+    function test_5115WithdrawSlippageValidation() public {
+        deal(0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9, 0x7121207b118BbaCF0340A989527474Bd4495c3C6, 1e6);
+        bytes memory extra5115Data = abi.encode("", malWithdrawSuperformId, 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9);
+
+        LiqRequest memory liqRequest = LiqRequest(
+            bytes(""),
+            0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9,
+            0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9,
+            0,
+            ARBI,
+            0
+        );
+
+        SingleVaultSFData memory sfData = SingleVaultSFData(
+            malWithdrawSuperformId,
+            1e6,
+            1e6,
+            0,
+            liqRequest,
+            bytes(""),
+            false,
+            false,
+            deployer,
+            deployer,
+            abi.encode(1, extra5115Data)
+        );
+
+        vm.startPrank(deployer);
+        IERC20(0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9).approve(getContract(ARBI, "SuperformRouter"), 1e6);
+
+        SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))).singleDirectSingleVaultDeposit(
+            SingleDirectSingleVaultStateReq(sfData)
+        );
+
+        SuperPositions(getContract(ARBI, "SuperPositions")).setApprovalForAll(
+            getContract(ARBI, "SuperformRouter"), true
+        );
+
+        vm.expectRevert(Error.VAULT_IMPLEMENTATION_FAILED.selector);
+        SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))).singleDirectSingleVaultWithdraw(
             SingleDirectSingleVaultStateReq(sfData)
         );
     }
