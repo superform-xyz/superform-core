@@ -127,6 +127,7 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
             IERC20(vault).safeTransferFrom(msg.sender, address(this), amountSharesToRedeem);
         }
 
+        /// @dev ERC5115 form always uses `false` for burnFromInternalBalance
         return IStandardizedYield(vault).redeem(
             receiver, amountSharesToRedeem, tokenOut, minTokenOut, burnFromInternalBalance
         );
