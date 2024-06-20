@@ -686,7 +686,7 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
 
         _validateTxData(bridgeValidator, args);
 
-        _dispatchTokens(bridgeValidator, txData, asset, amountIn, nativeAmount);
+        _dispatchTokens(superRegistry.getBridgeAddress(bridgeId), txData, asset, amountIn, nativeAmount);
     }
 
     function _claim(

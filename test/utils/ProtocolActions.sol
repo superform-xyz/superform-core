@@ -337,7 +337,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             _stage7_finalize_asyncWithdraw_payload(action, vars);
 
             if (DEBUG_MODE) console.log("Stage 7 async withdraw complete");
-            /*
+
             if (action.testType == TestType.Pass) {
                 /// @dev assert superpositions were burned
                 _assertAfterStage7Withdraw(
@@ -349,7 +349,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     spAmountBeforeWithdrawPerDst
                 );
             }
-            */
         }
 
         if (action.action == Actions.Withdraw) {
