@@ -549,7 +549,9 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
             }
         } else {
             /// @dev transfer shares to user and do not redeem shares for assets
-            v.safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
+            IERC20(IERC5115To4626Wrapper(address(v)).getUnderlying5115Vault()).safeTransfer(
+                singleVaultData_.receiverAddress, singleVaultData_.amount
+            );
             return 0;
         }
     }
@@ -627,7 +629,9 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
             }
         } else {
             /// @dev transfer shares to user and do not redeem shares for assets
-            v.safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
+            IERC20(IERC5115To4626Wrapper(address(v)).getUnderlying5115Vault()).safeTransfer(
+                singleVaultData_.receiverAddress, singleVaultData_.amount
+            );
             return 0;
         }
 
