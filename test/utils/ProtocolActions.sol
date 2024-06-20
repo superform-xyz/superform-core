@@ -2035,14 +2035,15 @@ abstract contract ProtocolActions is CommonProtocolActions {
             .vaultFormImplCombinationToSuperforms(vars.vaultFormImplementationCombination);
 
         vars.is5115 = vars.superformId == args.superformId;
+        args.underlyingTokenDst = vars.is5115
+            ? ERC5115S_CHOSEN_ASSETS[args.toChainId][ERC5115To4626Wrapper(vars.vault).vault()].assetOut
+            : args.underlyingTokenDst;
 
         vm.selectFork(initialFork);
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             args.liqBridge,
-            vars.is5115
-                ? ERC5115S_CHOSEN_ASSETS[args.toChainId][ERC5115To4626Wrapper(vars.vault).vault()].assetOut
-                : args.underlyingTokenDst,
+            args.underlyingTokenDst,
             /// @dev notice the switch of underlyingTokenDst with external token, because external token is meant to be
             /// received in the end after a withdraw
             args.underlyingToken,
@@ -2081,9 +2082,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             GENERATE_WITHDRAW_TX_DATA_ON_DST ? bytes("") : vars.txData,
             /// @dev for certain test cases, insert txData as null here
             args.externalToken,
-            vars.is5115
-                ? ERC5115S_CHOSEN_ASSETS[args.toChainId][ERC5115To4626Wrapper(vars.vault).vault()].assetOut
-                : address(0),
+            vars.is5115 ? args.underlyingTokenDst : address(0),
             args.liqBridge,
             args.liqDstChainId,
             0
