@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract SXSVW7540NativeSlippageAMB23 is ProtocolActions {
+contract SXSVW7540FAsyncNativeSlippageAMB23 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
