@@ -383,6 +383,13 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
                 sendingToken.safeTransferFrom(msg.sender, address(this), vars.inputAmount);
             }
 
+            if (
+                IBridgeValidator(vars.bridgeValidator).decodeSwapOutputToken(singleVaultData_.liqData.txData)
+                    != vars.vaultTokenIn
+            ) {
+                revert Error.DIFFERENT_TOKENS();
+            }
+
             IBridgeValidator(vars.bridgeValidator).validateTxData(
                 IBridgeValidator.ValidateTxDataArgs(
                     singleVaultData_.liqData.txData,
@@ -404,13 +411,6 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
                 vars.inputAmount,
                 singleVaultData_.liqData.nativeAmount
             );
-
-            if (
-                IBridgeValidator(vars.bridgeValidator).decodeSwapOutputToken(singleVaultData_.liqData.txData)
-                    != vars.vaultTokenIn
-            ) {
-                revert Error.DIFFERENT_TOKENS();
-            }
         }
 
         vars.assetDifference = IERC20(vars.vaultTokenIn).balanceOf(address(this)) - vars.balanceBefore;
