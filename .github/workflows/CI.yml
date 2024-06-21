@@ -45,8 +45,6 @@ jobs:
 
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
-        with:
-          version: "nightly-588a1d7cd887d17986066f7c3a641f85c9d6c743"
 
       - name: "Show the Foundry config"
         run: "forge config"
@@ -123,8 +121,6 @@ jobs:
           submodules: "recursive"
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
-        with:
-          version: "nightly-588a1d7cd887d17986066f7c3a641f85c9d6c743"
 
       - name: "Restore the cached build"
         uses: "actions/cache/restore@v4"
@@ -159,8 +155,6 @@ jobs:
 
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
-        with:
-          version: "nightly-588a1d7cd887d17986066f7c3a641f85c9d6c743"
 
       - name: "Install Tenderly CLI"
         run: curl https://raw.githubusercontent.com/Tenderly/tenderly-cli/master/scripts/install-linux.sh | sudo sh
