@@ -262,6 +262,8 @@ abstract contract BaseSetup is StdInvariant, Test {
     address public constant OP_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
     address public constant BASE_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
     address public constant FANTOM_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
+    address public constant SEPOLIA_lzEndpoint = 0xae92d5aD7583AD66E49A0c67BAd18F6ba52dDDc1;
+    address public constant BSC_TESTNET_lzEndpoint = 0x6Fcb97553D41516Cb228ac03FdC8B9a0a9df04A1;
 
     address[] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
@@ -271,7 +273,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         0x3c2269811836af69497E5F486A85D7316753cf62,
         0x3c2269811836af69497E5F486A85D7316753cf62,
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7,
-        0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7
+        0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7,
+        0xae92d5aD7583AD66E49A0c67BAd18F6ba52dDDc1,
+        0x6Fcb97553D41516Cb228ac03FdC8B9a0a9df04A1
     ];
 
     address[] public hyperlaneMailboxes = [
@@ -282,7 +286,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         0x979Ca5202784112f4738403dBec5D0F3B9daabB9,
         0xd4C1905BB1D26BC93DAC913e13CaCC278CdCC80D,
         0xeA87ae93Fa0019a82A727bfd3eBd1cFCa8f64f1D,
-        address(0)
+        address(0),
+        0xfFAEF09B3cd11D9b20d1a19bECca54EEC2884766,
+        0xF9F6F5646F478d5ab4e20B0F910C92F1CCC9Cc6D
     ];
 
     address[] public hyperlanePaymasters = [
@@ -293,7 +299,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         0x3b6044acd6767f017e99318AA6Ef93b7B06A5a22,
         0xD8A76C4D91fCbB7Cc8eA795DFDF870E48368995C,
         0xc3F23848Ed2e04C0c6d41bd7804fa8f89F940B94,
-        address(0)
+        address(0),
+        0x6f2756380FD49228ae25Aa7F2817993cB74Ecc56,
+        0x0dD20e410bdB95404f71c5a4e7Fa67B892A5f949
     ];
 
     address[] public wormholeCore = [
@@ -304,7 +312,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         0xa5f208e072434bC67592E4C49C1B991BA79BCA46,
         0xEe91C335eab126dF5fDB3797EA9d6aD93aeC9722,
         0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6,
-        0x126783A6Cb203a3E35344528B26ca3a0489a1485
+        0x126783A6Cb203a3E35344528B26ca3a0489a1485,
+        0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78,
+        0x68605AD7b15c732a30b1BbC62BE8F2A509D74b4D
     ];
 
     address[] public axelarGateway = [
@@ -315,7 +325,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         0xe432150cce91c13a887f7D836923d5597adD8E31,
         0xe432150cce91c13a887f7D836923d5597adD8E31,
         0xe432150cce91c13a887f7D836923d5597adD8E31,
-        0x304acf330bbE08d1e512eefaa92F6a57871fD895
+        0x304acf330bbE08d1e512eefaa92F6a57871fD895,
+        0xe432150cce91c13a887f7D836923d5597adD8E31,
+        0x4D147dCb984e6affEEC47e44293DA442580A3Ec0
     ];
 
     address[] public axelarGasService = [
@@ -326,7 +338,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         0x2d5d7d31F671F86C782533cc367F14109a082712,
         0x2d5d7d31F671F86C782533cc367F14109a082712,
         0x2d5d7d31F671F86C782533cc367F14109a082712,
-        0x2d5d7d31F671F86C782533cc367F14109a082712
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6,
+        0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6
     ];
 
     /*//////////////////////////////////////////////////////////////
@@ -351,6 +365,8 @@ abstract contract BaseSetup is StdInvariant, Test {
     uint32 public constant LZ_V2_OP = 30_111;
     uint32 public constant LZ_V2_BASE = 30_184;
     uint32 public constant LZ_V2_FANTOM = 30_112;
+    uint32 public constant LZ_V2_SEPOLIA = 40_161;
+    uint32 public constant LZ_V2_BSC_TESTNET = 40_102;
 
     /*//////////////////////////////////////////////////////////////
                         HYPERLANE VARIABLES
@@ -363,8 +379,10 @@ abstract contract BaseSetup is StdInvariant, Test {
     uint64 public constant OP = 10;
     uint64 public constant BASE = 8453;
     uint64 public constant FANTOM = 250;
+    uint64 public constant SEPOLIA = 11_155_111;
+    uint64 public constant BSC_TESTNET = 97;
 
-    uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
+    uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 11_155_111, 97];
 
     /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
     uint16 public constant LZ_ETH = 101;
@@ -375,13 +393,25 @@ abstract contract BaseSetup is StdInvariant, Test {
     uint16 public constant LZ_OP = 111;
     uint16 public constant LZ_BASE = 184;
     uint16 public constant LZ_FANTOM = 112;
+    uint16 public constant LZ_SEPOLIA = 10_161;
+    uint16 public constant LZ_BSC_TESTNET = 10_102;
 
-    uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111, 184, 112];
-    uint32[] public lz_v2_chainIds = [30_101, 30_102, 30_106, 30_109, 30_110, 30_111, 30_184, 30_112];
-    uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
-    uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30, 10];
-    string[] public axelar_chainIds =
-        ["Ethereum", "binance", "Avalanche", "Polygon", "arbitrum", "optimism", "base", "Fantom"];
+    uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111, 184, 112, 10_161, 10_102];
+    uint32[] public lz_v2_chainIds = [30_101, 30_102, 30_106, 30_109, 30_110, 30_111, 30_184, 30_112, 40_161, 40_102];
+    uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 11_155_111, 97];
+    uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30, 10, 10_002, 4];
+    string[] public axelar_chainIds = [
+        "Ethereum",
+        "binance",
+        "Avalanche",
+        "Polygon",
+        "arbitrum",
+        "optimism",
+        "base",
+        "Fantom",
+        "ethereum-sepolia",
+        "binance"
+    ];
 
     /// @dev minting enough tokens to be able to fuzz with bigger amounts (DAI's 3.6B supply etc)
     uint256 public constant hundredBilly = 100 * 1e9 * 1e18;
@@ -398,7 +428,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         100_000_000, // ARBI
         4_000_000, // OP
         1_000_000, // BASE
-        4 * 10e9 // FANTOM
+        4 * 10e9, // FANTOM
+        50_000_000_000, // SEPOLIA
+        3_000_000_000 // BSC
     ];
 
     /// @dev !WARNING: update these for Fantom
@@ -411,7 +443,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         253_400_000_000, // ARBI
         253_400_000_000, // OP
         253_400_000_000, // BASE
-        4 * 10e9 // FANTOM
+        4 * 10e9, // FANTOM
+        253_400_000_000, // SEPOLIA
+        31_439_000_000 // BSC
     ];
 
     /*//////////////////////////////////////////////////////////////
@@ -454,8 +488,10 @@ abstract contract BaseSetup is StdInvariant, Test {
     string public POLYGON_RPC_URL = vm.envString("POLYGON_RPC_URL"); // Native token: MATIC
     string public ARBITRUM_RPC_URL = vm.envString("ARBITRUM_RPC_URL"); // Native token: ETH
     string public OPTIMISM_RPC_URL = vm.envString("OPTIMISM_RPC_URL"); // Native token: ETH
-    string public BASE_RPC_URL = vm.envString("BASE_RPC_URL"); // Native token: BASE
-    string public FANTOM_RPC_URL = vm.envString("FANTOM_RPC_URL"); // Native token: BASE
+    string public BASE_RPC_URL = vm.envString("BASE_RPC_URL"); // Native token: ETH
+    string public FANTOM_RPC_URL = vm.envString("FANTOM_RPC_URL"); // Native token: FTM
+    string public SEPOLIA_RPC_URL = vm.envString("SEPOLIA_RPC_URL"); // Native token: ETH
+    string public BSC_TESTNET_RPC_URL = vm.envString("BSC_TESTNET_RPC_URL"); // Native token: BNB
 
     string public ETHEREUM_RPC_URL_QN = vm.envString("ETHEREUM_RPC_URL_QN"); // Native token: ETH
     string public BSC_RPC_URL_QN = vm.envString("BSC_RPC_URL_QN"); // Native token: BNB
@@ -463,8 +499,10 @@ abstract contract BaseSetup is StdInvariant, Test {
     string public POLYGON_RPC_URL_QN = vm.envString("POLYGON_RPC_URL_QN"); // Native token: MATIC
     string public ARBITRUM_RPC_URL_QN = vm.envString("ARBITRUM_RPC_URL_QN"); // Native token: ETH
     string public OPTIMISM_RPC_URL_QN = vm.envString("OPTIMISM_RPC_URL_QN"); // Native token: ETH
-    string public BASE_RPC_URL_QN = vm.envString("BASE_RPC_URL_QN"); // Native token: BASE
-    string public FANTOM_RPC_URL_QN = vm.envString("FANTOM_RPC_URL_QN"); // Native token: BASE
+    string public BASE_RPC_URL_QN = vm.envString("BASE_RPC_URL_QN"); // Native token: ETH
+    string public FANTOM_RPC_URL_QN = vm.envString("FANTOM_RPC_URL_QN"); // Native token: FTM
+    string public SEPOLIA_RPC_URL_QN = vm.envString("SEPOLIA_RPC_URL_QN"); // Native token: ETH
+    string public BSC_TESTNET_RPC_URL_QN = vm.envString("BSC_TESTNET_RPC_URL_QN"); // Native token: BNB
 
     /*//////////////////////////////////////////////////////////////
                         KYC DAO VALIDITY VARIABLES
@@ -1543,6 +1581,30 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[FANTOM][getContract(FANTOM, "sUSDe")] = 0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c;
         tokenPriceFeeds[FANTOM][getContract(FANTOM, "USDe")] = 0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c;
+
+        /// SEPOLIA
+        tokenPriceFeeds[SEPOLIA][getContract(SEPOLIA, "DAI")] = 0x14866185B1962B63C3Ea9E03Bc1da838bab34C19;
+        tokenPriceFeeds[SEPOLIA][getContract(SEPOLIA, "USDC")] = 0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E;
+        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
+        tokenPriceFeeds[SEPOLIA][getContract(SEPOLIA, "WETH")] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        tokenPriceFeeds[SEPOLIA][NATIVE_TOKEN] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        tokenPriceFeeds[SEPOLIA][getContract(SEPOLIA, "ezETH")] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        tokenPriceFeeds[SEPOLIA][getContract(SEPOLIA, "wstETH")] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[SEPOLIA][getContract(SEPOLIA, "sUSDe")] = 0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E;
+        tokenPriceFeeds[SEPOLIA][getContract(SEPOLIA, "USDe")] = 0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E;
+
+        /// BSC_TESTNET
+        tokenPriceFeeds[BSC_TESTNET][getContract(BSC_TESTNET, "DAI")] = 0xE4eE17114774713d2De0eC0f035d4F7665fc025D;
+        tokenPriceFeeds[BSC_TESTNET][getContract(BSC_TESTNET, "USDC")] = 0x90c069C4538adAc136E051052E14c1cD799C41B7;
+        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
+        tokenPriceFeeds[BSC_TESTNET][getContract(BSC_TESTNET, "WETH")] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
+        tokenPriceFeeds[BSC_TESTNET][NATIVE_TOKEN] = 0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526;
+        tokenPriceFeeds[BSC_TESTNET][getContract(BSC_TESTNET, "ezETH")] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
+        tokenPriceFeeds[BSC_TESTNET][getContract(BSC_TESTNET, "wstETH")] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[BSC_TESTNET][getContract(BSC_TESTNET, "sUSDe")] = 0x90c069C4538adAc136E051052E14c1cD799C41B7;
+        tokenPriceFeeds[BSC_TESTNET][getContract(BSC_TESTNET, "USDe")] = 0x90c069C4538adAc136E051052E14c1cD799C41B7;
     }
 
     function _preDeploymentSetup(bool pinnedBlock, bool invariant) internal {
@@ -1559,6 +1621,9 @@ abstract contract BaseSetup is StdInvariant, Test {
             forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 120_950_600) : vm.createFork(OPTIMISM_RPC_URL_QN);
             forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL_QN);
             forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 82_228_344) : vm.createFork(FANTOM_RPC_URL_QN);
+            forks[SEPOLIA] = pinnedBlock ? vm.createFork(SEPOLIA_RPC_URL) : vm.createFork(SEPOLIA_RPC_URL_QN);
+            forks[BSC_TESTNET] =
+                pinnedBlock ? vm.createFork(BSC_TESTNET_RPC_URL) : vm.createFork(BSC_TESTNET_RPC_URL_QN);
         }
 
         mapping(uint64 => string) storage rpcURLs = RPC_URLS;
@@ -1570,6 +1635,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         rpcURLs[OP] = OPTIMISM_RPC_URL;
         rpcURLs[BASE] = BASE_RPC_URL;
         rpcURLs[FANTOM] = FANTOM_RPC_URL;
+        rpcURLs[SEPOLIA] = SEPOLIA_RPC_URL;
+        rpcURLs[BSC_TESTNET] = BSC_TESTNET_RPC_URL;
 
         mapping(uint64 => mapping(uint256 => bytes)) storage gasUsed = GAS_USED;
 
@@ -1582,6 +1649,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[ARBI][3] = abi.encode(2_500_000);
         gasUsed[BASE][3] = abi.encode(600_000);
         gasUsed[FANTOM][3] = abi.encode(643_315);
+        gasUsed[SEPOLIA][3] = abi.encode(400_000);
+        gasUsed[BSC_TESTNET][3] = abi.encode(650_000);
 
         // updateDepositGasUsed == 4 (only used on deposits for now)
         gasUsed[ETH][4] = abi.encode(225_000);
@@ -1592,6 +1661,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[ARBI][4] = abi.encode(1_400_000);
         gasUsed[BASE][4] = abi.encode(200_000);
         gasUsed[FANTOM][4] = abi.encode(734_757);
+        gasUsed[SEPOLIA][4] = abi.encode(225_000);
+        gasUsed[BSC_TESTNET][4] = abi.encode(225_000);
 
         // withdrawGasUsed == 6
         gasUsed[ETH][6] = abi.encode(1_272_330);
@@ -1602,6 +1673,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[ARBI][6] = abi.encode(1_654_955);
         gasUsed[BASE][6] = abi.encode(1_178_778);
         gasUsed[FANTOM][6] = abi.encode(567_881);
+        gasUsed[SEPOLIA][6] = abi.encode(1_272_330);
+        gasUsed[BSC_TESTNET][6] = abi.encode(837_167);
 
         // updateWithdrawGasUsed == 13
         /*
@@ -1622,6 +1695,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[ARBI][13] = abi.encode(1_366_122);
         gasUsed[BASE][13] = abi.encode(919_466);
         gasUsed[FANTOM][13] = abi.encode(2_003_157);
+        gasUsed[SEPOLIA][13] = abi.encode(356_828);
+        gasUsed[BSC_TESTNET][13] = abi.encode(900_085);
 
         mapping(uint64 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
         lzEndpointsStorage[ETH] = ETH_lzEndpoint;
@@ -1632,6 +1707,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         lzEndpointsStorage[OP] = OP_lzEndpoint;
         lzEndpointsStorage[BASE] = BASE_lzEndpoint;
         lzEndpointsStorage[FANTOM] = FANTOM_lzEndpoint;
+        lzEndpointsStorage[SEPOLIA] = SEPOLIA_lzEndpoint;
+        lzEndpointsStorage[BSC_TESTNET] = BSC_TESTNET_lzEndpoint;
 
         mapping(uint64 => address) storage hyperlaneMailboxesStorage = HYPERLANE_MAILBOXES;
         hyperlaneMailboxesStorage[ETH] = hyperlaneMailboxes[0];
@@ -1642,6 +1719,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         hyperlaneMailboxesStorage[OP] = hyperlaneMailboxes[5];
         hyperlaneMailboxesStorage[BASE] = hyperlaneMailboxes[6];
         hyperlaneMailboxesStorage[FANTOM] = hyperlaneMailboxes[7];
+        hyperlaneMailboxesStorage[SEPOLIA] = hyperlaneMailboxes[8];
+        hyperlaneMailboxesStorage[BSC_TESTNET] = hyperlaneMailboxes[9];
 
         mapping(uint64 => uint16) storage wormholeChainIdsStorage = WORMHOLE_CHAIN_IDS;
 
@@ -1663,6 +1742,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[ETH][ARBI] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][BASE] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][FANTOM] = address(0);
+        priceFeeds[ETH][SEPOLIA] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        priceFeeds[ETH][BSC_TESTNET] = 0x14e613AC84a31f709eadbdF89C6CC390fDc9540A;
 
         /// BSC
         priceFeeds[BSC][BSC] = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
@@ -1673,6 +1754,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[BSC][ARBI] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
         priceFeeds[BSC][BASE] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
         priceFeeds[BSC][FANTOM] = 0xe2A47e87C0f4134c8D06A41975F6860468b2F925;
+        priceFeeds[BSC][SEPOLIA] = address(0);
+        priceFeeds[BSC][BSC_TESTNET] = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
 
         /// AVAX
         priceFeeds[AVAX][AVAX] = 0x0A77230d17318075983913bC2145DB16C7366156;
@@ -1683,6 +1766,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[AVAX][ARBI] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
         priceFeeds[AVAX][BASE] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
         priceFeeds[AVAX][FANTOM] = 0x2dD517B2f9ba49CedB0573131FD97a5AC19ff648;
+        priceFeeds[AVAX][SEPOLIA] = address(0);
+        priceFeeds[AVAX][BSC_TESTNET] = address(0);
 
         /// POLYGON
         priceFeeds[POLY][POLY] = 0xAB594600376Ec9fD91F8e885dADF0CE036862dE0;
@@ -1693,6 +1778,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[POLY][ARBI] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][BASE] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][FANTOM] = 0x58326c0F831b2Dbf7234A4204F28Bba79AA06d5f;
+        priceFeeds[POLY][SEPOLIA] = address(0);
+        priceFeeds[POLY][BSC_TESTNET] = 0x82a6c4AF830caa6c97bb504425f6A66165C2c26e;
 
         /// OPTIMISM
         priceFeeds[OP][OP] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
@@ -1703,6 +1790,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[OP][ARBI] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         priceFeeds[OP][BASE] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         priceFeeds[OP][FANTOM] = 0xc19d58652d6BfC6Db6FB3691eDA6Aa7f3379E4E9;
+        priceFeeds[OP][SEPOLIA] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+        priceFeeds[OP][BSC_TESTNET] = 0xD38579f7cBD14c22cF1997575eA8eF7bfe62ca2c;
 
         /// ARBITRUM
         priceFeeds[ARBI][ARBI] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
@@ -1713,6 +1802,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[ARBI][ETH] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         priceFeeds[ARBI][BASE] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         priceFeeds[ARBI][FANTOM] = 0xFeaC1A3936514746e70170c0f539e70b23d36F19;
+        priceFeeds[ARBI][SEPOLIA] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+        priceFeeds[ARBI][BSC_TESTNET] = 0x6970460aabF80C5BE983C6b74e5D06dEDCA95D4A;
 
         /// BASE
         priceFeeds[BASE][BASE] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
@@ -1723,6 +1814,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[BASE][ETH] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
         priceFeeds[BASE][ARBI] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
         priceFeeds[BASE][FANTOM] = address(0);
+        priceFeeds[BASE][SEPOLIA] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
+        priceFeeds[BASE][BSC_TESTNET] = 0x4b7836916781CAAfbb7Bd1E5FDd20ED544B453b1;
 
         /// FANTOM
         priceFeeds[FANTOM][FANTOM] = 0xf4766552D15AE4d256Ad41B6cf2933482B0680dc;
@@ -1733,6 +1826,32 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[FANTOM][ETH] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
         priceFeeds[FANTOM][BASE] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
         priceFeeds[FANTOM][ARBI] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+        priceFeeds[FANTOM][SEPOLIA] = address(0);
+        priceFeeds[FANTOM][BSC_TESTNET] = 0x6dE70f4791C4151E00aD02e969bD900DC961f92a;
+
+        /// FANTOM
+        priceFeeds[SEPOLIA][SEPOLIA] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        priceFeeds[SEPOLIA][FANTOM] = address(0);
+        priceFeeds[SEPOLIA][OP] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        priceFeeds[SEPOLIA][POLY] = address(0);
+        priceFeeds[SEPOLIA][AVAX] = address(0);
+        priceFeeds[SEPOLIA][BSC] = address(0);
+        priceFeeds[SEPOLIA][ETH] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        priceFeeds[SEPOLIA][BASE] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        priceFeeds[SEPOLIA][ARBI] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        priceFeeds[SEPOLIA][BSC_TESTNET] = address(0);
+
+        /// BSC_TESTNET
+        priceFeeds[BSC_TESTNET][BSC_TESTNET] = 0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526;
+        priceFeeds[BSC_TESTNET][SEPOLIA] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
+        priceFeeds[BSC_TESTNET][FANTOM] = address(0);
+        priceFeeds[BSC_TESTNET][OP] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
+        priceFeeds[BSC_TESTNET][POLY] = address(0);
+        priceFeeds[BSC_TESTNET][AVAX] = address(0);
+        priceFeeds[BSC_TESTNET][BSC] = 0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526;
+        priceFeeds[BSC_TESTNET][ETH] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
+        priceFeeds[BSC_TESTNET][BASE] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
+        priceFeeds[BSC_TESTNET][ARBI] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
 
         /// @dev setup bridges.
         /// 1 is lifi
@@ -1855,6 +1974,10 @@ abstract contract BaseSetup is StdInvariant, Test {
         existingTokens[250]["DAI"] = 0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E;
         existingTokens[250]["USDC"] = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
         existingTokens[250]["WETH"] = address(0);
+
+        existingTokens[11_155_111]["DAI"] = address(0);
+        existingTokens[11_155_111]["USDC"] = address(0);
+        existingTokens[11_155_111]["WETH"] = address(0);
 
         mapping(
             uint64 chainId
