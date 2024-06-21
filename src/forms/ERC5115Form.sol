@@ -328,8 +328,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         bool found5115;
 
         for (uint256 i = 0; i < nVaults; ++i) {
-            (extra5115Data, superformId, vars.vaultTokenIn) =
-                abi.decode(i == 0 ? extra5115Data : extra5115Data, (bytes, uint256, address));
+            (extra5115Data, superformId, vars.vaultTokenIn) = abi.decode(extra5115Data, (bytes, uint256, address));
 
             /// @dev notice that by validating it like this, it will deny any tokenIn that is native (sometimes
             /// addressed as
@@ -453,8 +452,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         bool found5115;
 
         for (uint256 i = 0; i < nVaults; ++i) {
-            (extra5115Data, superformId, vaultTokenIn) =
-                abi.decode(i == 0 ? extra5115Data : extra5115Data, (bytes, uint256, address));
+            (extra5115Data, superformId, vaultTokenIn) = abi.decode(extra5115Data, (bytes, uint256, address));
 
             /// @dev notice that by validating it like this, it will deny any tokenIn that is native (sometimes
             /// addressed as
