@@ -62,6 +62,8 @@ arbitrum = "${ARBITRUM_RPC_URL}"
 optimism = "${OPTIMISM_RPC_URL}"
 base = "${BASE_RPC_URL}"
 fantom = "${FANTOM_RPC_URL}"
+sepolia = "${SEPOLIA_RPC_URL}"
+bsc_testnet = "${BSC_TESTNET_RPC_URL}"
 
 [fuzz]
 max_test_rejects = 1_000_000 # Number of times `vm.assume` can fail
