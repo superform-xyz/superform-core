@@ -1029,7 +1029,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
     }
 
     /// @dev Test get main token in / out
-    function test_5115getMainTokenInOut() public {
+    function test_5115getMainTokenInOut() public view {
         address exptToken = 0x5979D7b546E38E414F7E9822514be443A4800529;
         address tokenIn = targetWrapper.getMainTokenIn();
         address tokenOut = targetWrapper.getMainTokenOut();
@@ -1057,7 +1057,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
     }
 
     /// @dev Test get total supply
-    function test_5115getTotalSupplyOnWrapper() public {
+    function test_5115getTotalSupplyOnWrapper() public view {
         uint256 vaultSupply = targetWrapper.totalSupply();
         assertGt(vaultSupply, 0);
     }

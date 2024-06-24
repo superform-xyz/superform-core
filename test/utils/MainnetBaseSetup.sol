@@ -185,6 +185,9 @@ abstract contract MainnetBaseSetup is BaseSetup {
         /// @dev 15  rewards distributor
         contracts[chainId][bytes32(bytes("RewardsDistributor"))] =
             _readContract(chainNames[trueIndex], chainId, "RewardsDistributor");
+
+        /// @dev 15  5115Form
+        contracts[chainId][bytes32(bytes("ERC5115Form"))] = _readContract(chainNames[trueIndex], chainId, "ERC5115Form");
     }
 
     function _readContract(
