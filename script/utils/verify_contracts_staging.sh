@@ -45,6 +45,7 @@ file_names=(
     "src/crosschain-data/extensions/CoreStateRegistry.sol"
     "src/crosschain-liquidity/DstSwapper.sol"
     "src/forms/ERC4626Form.sol"
+    "src/forms/ERC5115Form.sol"
     "src/EmergencyQueue.sol"
     "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol"
     "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol"
@@ -72,6 +73,7 @@ contract_names=(
     "CoreStateRegistry"
     "DstSwapper"
     "ERC4626Form"
+    "ERC5115Form"
     "EmergencyQueue"
     "HyperlaneImplementation"
     "LayerzeroImplementation"
@@ -99,6 +101,7 @@ contract_addresses=(
     0x80AAb0eA1243817E22D6ad76ebe06385900e906d
     0xAACA228C3fca21c41C4Ea82EBb2d8843bd830B3b
     0xB2f32B62B7537304b830dE6575Fe73c41ea52991
+    0x710Feae4819138A3bB2DB13b93A6791d10f5Bd7f
     0x7FE59421D6b85afa86d982E3186a74c72f6c4c03
     0x207BFE0Fb040F17cC61B67e4aaDfC59C9e170671
     0x1863862794cD8ec60daBF8B473fcA928B78cE563
@@ -126,6 +129,7 @@ contract_addresses_fantom=(
     0xa87976e23401FC5c22dD44C14FCEb19AA164AB54
     0x57e009dfc2C5ff3FD3c4627222EF15d3cF9E38d6
     0x45e2ff7EA8d0f03edFfCceE1467528D1d76672b1
+    0x645ba514E56406eB2308AB5f5FAFb3AAED1280eF
     0xE49a5d6fA3bF4489D751CA5f93B2a7f475011bac
     0x0000000000000000000000000000000000000000
     0x9061774Bd32D9C4552c540a822823949Fad006D9
@@ -164,6 +168,7 @@ constructor_args=(
     $super_constructor_arg
     $super_constructor_arg
     $super_constructor_arg
+    $super_constructor_arg
     $superposition_constructor_arg
     $superregistry_constructor_arg
     $super_rbac_arg
@@ -176,6 +181,7 @@ constructor_args=(
 )
 
 constructor_args_fantom=(
+    $super_constructor_arg_ftm
     $super_constructor_arg_ftm
     $super_constructor_arg_ftm
     $super_constructor_arg_ftm

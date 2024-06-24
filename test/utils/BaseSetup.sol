@@ -1885,7 +1885,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         erc5115ChosenAssets[42_161][0x50288c30c37FA1Ec6167a31E575EA8632645dE20].assetIn =
             0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
         erc5115ChosenAssets[42_161][0x50288c30c37FA1Ec6167a31E575EA8632645dE20].assetOut =
-            0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
+            0x724dc807b04555b71ed48a6896b6F41593b8C637;
 
         /// wstETH
         /// @dev pendle wrapped st ETH from LDO - market: SY wstETH
