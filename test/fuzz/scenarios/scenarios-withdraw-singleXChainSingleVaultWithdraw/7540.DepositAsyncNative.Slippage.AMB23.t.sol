@@ -7,9 +7,12 @@ import "../../../utils/ProtocolActions.sol";
 contract SXSVW7540DepositAsyncNativeSlippageAMB23 is ProtocolActions {
     function setUp() public override {
         super.setUp();
+        /// On 7540 it is impossible to do update withdraws on destination for Async Deposit
+        /// vaults due to a check we have in core state registry that is impossible to avoid
+        /// https://superformlabs.slack.com/archives/C076CMAMEQG/p1718979161190539
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
-    //////////////////////////////////////////////////////////////*/
+        //////////////////////////////////////////////////////////////*/
         AMBs = [2, 3];
 
         CHAIN_0 = POLY;
