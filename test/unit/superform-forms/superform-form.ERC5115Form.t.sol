@@ -97,18 +97,65 @@ contract Mock5115VaultWithRewards is Test {
     }
 }
 
+contract Mock5115VaultWithRewardsAsVaultToken is Test {
+    address public constant asset = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
+
+    address constant USDT = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
+    address immutable USDC;
+
+    constructor() {
+        USDC = address(this);
+    }
+
+    function getRewardTokens() external view returns (address[] memory) {
+        address[] memory rewardTokens = new address[](2);
+        rewardTokens[0] = USDT;
+        rewardTokens[1] = USDC;
+
+        return rewardTokens;
+    }
+
+    function claimRewards(address) external pure returns (uint256[] memory rewardAmounts) {
+        rewardAmounts = new uint256[](2);
+        rewardAmounts[0] = 1e6;
+        rewardAmounts[1] = 2e6;
+    }
+
+    function accruedRewards(address) external pure returns (uint256[] memory rewardAmounts) {
+        rewardAmounts = new uint256[](2);
+        rewardAmounts[0] = 1e6;
+        rewardAmounts[1] = 2e6;
+    }
+
+    function rewardIndexesStored() external pure returns (uint256[] memory indices) {
+        indices = new uint256[](2);
+        indices[0] = 1;
+        indices[1] = 2;
+    }
+
+    function isValidTokenIn(address) external pure returns (bool isValid) {
+        isValid = true;
+    }
+
+    function isValidTokenOut(address) external pure returns (bool isValid) {
+        isValid = true;
+    }
+}
+
 contract SuperformERC5115FormTest is ProtocolActions {
     uint64 internal chainId = ARBI;
     uint32 FORM_ID = 4;
 
     ERC5115Form targetSuperform;
     ERC5115To4626Wrapper targetWrapper;
+    ERC5115To4626Wrapper malRewardWrapper;
 
     IStandardizedYield targetVault;
 
     Mock5115VaultWithNoRewards noRewards;
     Mock5115VaultWithRewards rewards;
     ERC5115To4626Wrapper rewardsWrapper;
+    Mock5115VaultWithRewardsAsVaultToken rewardsWrapperVaultToken;
 
     MaliciousVault mal;
     MaliciousWithdrawVault malWithdraw;
@@ -117,9 +164,11 @@ contract SuperformERC5115FormTest is ProtocolActions {
     ERC5115Form rewardsSuperform;
     ERC5115Form malSuperform;
     ERC5115Form malWithdrawSuperform;
+    ERC5115Form malSuperformVaultTokenReward;
 
     uint256 malSuperformId;
     uint256 malWithdrawSuperformId;
+    uint256 malRewardsSuperformId;
 
     function setUp() public override {
         super.setUp();
@@ -131,8 +180,15 @@ contract SuperformERC5115FormTest is ProtocolActions {
 
         noRewards = new Mock5115VaultWithNoRewards();
         rewards = new Mock5115VaultWithRewards();
+        address vaultWithMalRewardToken = address(new Mock5115VaultWithRewardsAsVaultToken());
+
         rewardsWrapper = new ERC5115To4626Wrapper(
             address(rewards), 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9, 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9
+        );
+        malRewardWrapper = new ERC5115To4626Wrapper(
+            address(vaultWithMalRewardToken),
+            0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9,
+            0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9
         );
 
         mal = new MaliciousVault();
@@ -153,6 +209,16 @@ contract SuperformERC5115FormTest is ProtocolActions {
         (malWithdrawSuperformId, superformCreated) =
             ISuperformFactory(getContract(ARBI, "SuperformFactory")).createSuperform(FORM_ID, address(malWithdraw));
         malWithdrawSuperform = ERC5115Form(superformCreated);
+
+        (malRewardsSuperformId, superformCreated) = ISuperformFactory(getContract(ARBI, "SuperformFactory"))
+            .createSuperform(FORM_ID, address(vaultWithMalRewardToken));
+        malSuperformVaultTokenReward = ERC5115Form(superformCreated);
+    }
+
+    /// @dev Test malicious rewards claim
+    function test_malicious_rewardClaim() public {
+        vm.expectRevert(Error.CANNOT_FORWARD_4646_TOKEN.selector);
+        malSuperformVaultTokenReward.claimRewardTokens();
     }
 
     /// @dev Test Vault Symbol

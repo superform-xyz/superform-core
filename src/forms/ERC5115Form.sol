@@ -204,6 +204,8 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         IERC20 rewardToken;
         for (uint256 i; i < rewardTokens.length; ++i) {
             rewardToken = IERC20(rewardTokens[i]);
+            if (address(rewardToken) == vault) revert Error.CANNOT_FORWARD_4646_TOKEN();
+
             rewardToken.safeTransfer(rewardsDistributor, rewardToken.balanceOf(address(this)));
         }
     }
