@@ -36,7 +36,7 @@ env:
 
 jobs:
   build:
-    runs-on: SuperformCore2
+    runs-on: SuperformCore3
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v4"
@@ -71,7 +71,7 @@ jobs:
 
   test:
     needs: ["build"]
-    runs-on: SuperformCore2
+    runs-on: SuperformCore3
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v4"
@@ -111,7 +111,7 @@ jobs:
 
   deploy-tenderly-devnets:
     needs: ["build"]
-    runs-on: SuperformCore2
+    runs-on: SuperformCore3
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v4"
@@ -143,7 +143,7 @@ jobs:
           echo "✅ Deployed to Tenderly Devnet" >> $GITHUB_STEP_SUMMARY
 
   coverage:
-    runs-on: SuperformCore2
+    runs-on: SuperformCore3
     needs: ["test"]
     steps:
       - name: "Check out the repo"
