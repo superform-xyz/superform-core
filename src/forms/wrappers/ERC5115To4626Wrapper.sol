@@ -113,7 +113,7 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
         uint256 amountSharesToRedeem,
         address tokenOut,
         uint256 minTokenOut,
-        bool burnFromInternalBalance
+        bool /*burnFromInternalBalance*/
     )
         external
         returns (uint256 amountTokenOut)
@@ -123,14 +123,10 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
         /// @dev receiver cannot be this wrapper contract
         if (receiver == address(this)) revert INVALID_RECEIVER();
 
-        if (burnFromInternalBalance == false) {
-            IERC20(vault).safeTransferFrom(msg.sender, address(this), amountSharesToRedeem);
-        }
+        IERC20(vault).safeTransferFrom(msg.sender, address(this), amountSharesToRedeem);
 
-        /// @dev ERC5115 form always uses `false` for burnFromInternalBalance
-        return IStandardizedYield(vault).redeem(
-            receiver, amountSharesToRedeem, tokenOut, minTokenOut, burnFromInternalBalance
-        );
+        /// @dev burnFromInternalBalance is always passed in as `false`
+        return IStandardizedYield(vault).redeem(receiver, amountSharesToRedeem, tokenOut, minTokenOut, false);
     }
 
     /// @inheritdoc IStandardizedYield
