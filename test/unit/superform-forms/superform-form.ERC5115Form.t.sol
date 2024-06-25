@@ -434,6 +434,14 @@ contract SuperformERC5115FormTest is ProtocolActions {
         assertEq(balanceAfter, 0);
     }
 
+    /// @dev Test forward to address(0)
+    function test_5115forwardZeroToken() public {
+        address superform = address(targetSuperform);
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        IBaseForm(superform).forwardDustToPaymaster(address(0));
+    }
+
     /// @dev Test Forwarding No Dust To Paymaster
     function test_5115forwardDustToPaymasterNoDust() public {
         address superform = address(targetSuperform);
@@ -509,7 +517,53 @@ contract SuperformERC5115FormTest is ProtocolActions {
         targetSuperform.emergencyWithdraw(deployer, 2e6);
 
         vm.startPrank(SuperRegistry(getContract(ARBI, "SuperRegistry")).getAddress(keccak256("EMERGENCY_QUEUE")));
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        targetSuperform.emergencyWithdraw(address(0), 1e6);
+
+        vm.startPrank(SuperRegistry(getContract(ARBI, "SuperRegistry")).getAddress(keccak256("EMERGENCY_QUEUE")));
         targetSuperform.emergencyWithdraw(deployer, 1e6);
+    }
+
+    /// @dev Test emergency withdraw
+    function test_5115FormTokenInNotEncoded() public {
+        address vault = targetSuperform.getVaultAddress();
+
+        bytes32 vaultFormImplementationCombination = keccak256(abi.encode(getContract(ARBI, "ERC5115Form"), vault));
+        uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
+            .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
+
+        bytes memory extra5115Data = abi.encode("", superformId, address(0));
+
+        LiqRequest memory liqRequest = LiqRequest(
+            bytes(""),
+            0x5979D7b546E38E414F7E9822514be443A4800529,
+            0x5979D7b546E38E414F7E9822514be443A4800529,
+            0,
+            ARBI,
+            0
+        );
+
+        SingleVaultSFData memory sfData = SingleVaultSFData(
+            superformId,
+            1e6,
+            1e6,
+            100,
+            liqRequest,
+            bytes(""),
+            false,
+            false,
+            deployer,
+            deployer,
+            abi.encode(1, extra5115Data)
+        );
+
+        vm.startPrank(deployer);
+        IERC20(0x5979D7b546E38E414F7E9822514be443A4800529).approve(getContract(ARBI, "SuperformRouter"), 1e6);
+
+        vm.expectRevert(ERC5115Form.ERC5115FORM_TOKEN_IN_NOT_ENCODED.selector);
+        SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))).singleDirectSingleVaultDeposit(
+            SingleDirectSingleVaultStateReq(sfData)
+        );
     }
 
     /// @dev Test emergency withdraw
@@ -556,6 +610,50 @@ contract SuperformERC5115FormTest is ProtocolActions {
         );
 
         sfData.retain4626 = true;
+        SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))).singleDirectSingleVaultWithdraw(
+            SingleDirectSingleVaultStateReq(sfData)
+        );
+    }
+
+    /// @dev Test emergency withdraw token out not set
+    function test_5115directWithdrawTokenOutNotSet() public {
+        address vault = targetSuperform.getVaultAddress();
+
+        bytes32 vaultFormImplementationCombination = keccak256(abi.encode(getContract(ARBI, "ERC5115Form"), vault));
+        uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
+            .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
+
+        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+
+        LiqRequest memory liqRequest =
+            LiqRequest(bytes(""), 0x5979D7b546E38E414F7E9822514be443A4800529, address(0), 0, ARBI, 0);
+
+        SingleVaultSFData memory sfData = SingleVaultSFData(
+            superformId,
+            1e6,
+            1e6,
+            100,
+            liqRequest,
+            bytes(""),
+            false,
+            false,
+            deployer,
+            deployer,
+            abi.encode(1, extra5115Data)
+        );
+
+        vm.startPrank(deployer);
+        IERC20(0x5979D7b546E38E414F7E9822514be443A4800529).approve(getContract(ARBI, "SuperformRouter"), 1e6);
+        SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))).singleDirectSingleVaultDeposit(
+            SingleDirectSingleVaultStateReq(sfData)
+        );
+
+        SuperPositions(getContract(ARBI, "SuperPositions")).setApprovalForAll(
+            getContract(ARBI, "SuperformRouter"), true
+        );
+
+        sfData.retain4626 = true;
+        vm.expectRevert(ERC5115Form.ERC5115FORM_TOKEN_OUT_NOT_SET.selector);
         SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))).singleDirectSingleVaultWithdraw(
             SingleDirectSingleVaultStateReq(sfData)
         );
@@ -760,6 +858,34 @@ contract SuperformERC5115FormTest is ProtocolActions {
 
         vm.startPrank(SuperRegistry(getContract(ARBI, "SuperRegistry")).getAddress(keccak256("CORE_STATE_REGISTRY")));
         vm.expectRevert(Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT.selector);
+        targetSuperform.xChainDepositIntoVault(sfData, deployer, OP);
+    }
+
+    /// @dev Test xchain deposit without token encoding
+    function test_5115xChainDepositWithoutTokenEncoding() public {
+        address vault = targetSuperform.getVaultAddress();
+
+        bytes32 vaultFormImplementationCombination = keccak256(abi.encode(getContract(ARBI, "ERC5115Form"), vault));
+        uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
+            .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
+
+        bytes memory extra5115Data = abi.encode("", superformId, address(0));
+
+        LiqRequest memory liqRequest = LiqRequest(
+            bytes(""),
+            0x5979D7b546E38E414F7E9822514be443A4800529,
+            0x5979D7b546E38E414F7E9822514be443A4800529,
+            0,
+            ARBI,
+            0
+        );
+
+        InitSingleVaultData memory sfData = InitSingleVaultData(
+            1, superformId, 2e6, 2e6, 100, liqRequest, false, false, deployer, abi.encode(1, extra5115Data)
+        );
+
+        vm.startPrank(SuperRegistry(getContract(ARBI, "SuperRegistry")).getAddress(keccak256("CORE_STATE_REGISTRY")));
+        vm.expectRevert(ERC5115Form.ERC5115FORM_TOKEN_IN_NOT_ENCODED.selector);
         targetSuperform.xChainDepositIntoVault(sfData, deployer, OP);
     }
 
@@ -1126,6 +1252,17 @@ contract SuperformERC5115FormTest is ProtocolActions {
     function test_5115getTotalSupplyOnWrapper() public view {
         uint256 vaultSupply = targetWrapper.totalSupply();
         assertGt(vaultSupply, 0);
+    }
+
+    /// @dev Test claim rewards to zero rewards distributor
+    function test_5115claimRewardsZeroAddress() public {
+        bytes32 rewardsId = keccak256("REWARDS_DISTRIBUTOR");
+
+        vm.startPrank(deployer);
+        SuperRegistry(getContract(ARBI, "SuperRegistry")).setAddress(rewardsId, address(0), ARBI);
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        rewardsSuperform.claimRewardTokens();
     }
 
     /// @dev Test balance and transfer properties of wrapper

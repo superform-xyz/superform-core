@@ -198,7 +198,6 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         }
 
         address rewardsDistributor = superRegistry.getAddress(keccak256("REWARDS_DISTRIBUTOR"));
-        if (rewardsDistributor == address(0)) revert Error.ZERO_ADDRESS();
 
         /// @dev forwards token to rewards distributor
         IERC20 rewardToken;
