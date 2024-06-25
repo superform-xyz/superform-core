@@ -33,7 +33,7 @@ update:; forge update
 build :; FOUNDRY_PROFILE=production forge build 
 build-unoptimized :; FOUNDRY_PROFILE=localdev forge build
 build-sizes :; FOUNDRY_PROFILE=production forge build --sizes --evm-version cancun
-test-vvv   :; forge test --match-contract SDiMVW0TokenInputNoSlippageAMB13 -vvvvv --evm-version cancun  --show-progress
+test-vvv   :; forge test --match-test test_receiveMessage -vvv --evm-version cancun 
 ftest   :; forge test --evm-version cancun
 ftest-capped   :; forge test --evm-version cancun  --show-progress  --max-threads 8
 test-ci :; forge test --no-match-path "test/invariant/**/*.sol" --evm-version cancun  --show-progress

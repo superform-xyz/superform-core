@@ -43,6 +43,13 @@ struct AsyncWithdrawPayload {
     AsyncStatus status;
 }
 
+/// @dev holds information about a sync withdraw txdata payload
+struct SyncWithdrawTxDataPayload {
+    uint64 srcChainId;
+    InitSingleVaultData data;
+    AsyncStatus status;
+}
+
 /// @title IAsyncCoreStateRegistry
 /// @dev Interface for AsyncStateRegistry
 /// @author ZeroPoint Labs
@@ -77,11 +84,22 @@ interface IAsyncStateRegistry {
         view
         returns (AsyncWithdrawPayload memory asyncWithdrawPayload_);
 
+    /// @dev allows users to read the syncWithdrawTxDataPayload stored per payloadId_
+    /// @param payloadId_ is the unique payload identifier allocated on the destination chain
+    /// @return syncWithdrawTxDataPayload_ the syncWithdrawTxData payload stored
+    function getSyncWithdrawTxDataPayload(uint256 payloadId_)
+        external
+        view
+        returns (SyncWithdrawTxDataPayload memory syncWithdrawTxDataPayload_);
+
     /// @dev allows users to read the asyncDepositPayloadCounter
     function asyncDepositPayloadCounter() external view returns (uint256);
 
     /// @dev allows users to read the asyncWithdrawPayloadCounter
     function asyncWithdrawPayloadCounter() external view returns (uint256);
+
+    /// @dev allows users to read the syncWithdrawTxDataPayloadCounter
+    function syncWithdrawTxDataPayloadCounter() external view returns (uint256);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
@@ -117,6 +135,11 @@ interface IAsyncStateRegistry {
     )
         external;
 
+    /// @notice Receives the off-chain generated transaction data for the sync withdraw tx
+    /// @param srcChainId_ is the chainId of the source chain
+    /// @param data_ is the basic information of the action intent
+    function receiveSyncWithdrawTxDataPayload(uint64 srcChainId_, InitSingleVaultData memory data_) external;
+
     /// @notice Form Keeper finalizes deposit payload to process the async action fully.
     /// @param payloadId_ is the id of the payload to finalize
     function finalizeDepositPayload(uint256 payloadId_) external payable;
@@ -125,4 +148,9 @@ interface IAsyncStateRegistry {
     /// @param payloadId_ is the id of the payload to finalize
     /// @param txData_ is the off-chain generated transaction data
     function finalizeWithdrawPayload(uint256 payloadId_, bytes memory txData_) external;
+
+    /// @notice Form Keeper finalizes sync withdraw tx data payload to process the action fully.
+    /// @param payloadId_ is the id of the payload to finalize
+    /// @param txData_ is the off-chain generated transaction data
+    function finalizeSyncWithdrawTxDataPayload(uint256 payloadId_, bytes memory txData_) external;
 }

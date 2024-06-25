@@ -1609,16 +1609,20 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
         if (!invariant) {
-            forks[ETH] = pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 20_017_840) : vm.createFork(ETHEREUM_RPC_URL_QN);
-            forks[BSC] = pinnedBlock ? vm.createFork(BSC_RPC_URL, 39_315_701) : vm.createFork(BSC_RPC_URL_QN);
+            forks[ETH] =
+                pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL_QN, 20_017_840) : vm.createFork(ETHEREUM_RPC_URL_QN);
+            forks[BSC] = pinnedBlock ? vm.createFork(BSC_RPC_URL_QN, 39_315_701) : vm.createFork(BSC_RPC_URL_QN);
             forks[AVAX] =
-                pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 46_289_230) : vm.createFork(AVALANCHE_RPC_URL_QN);
-            forks[POLY] = pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 57_754_395) : vm.createFork(POLYGON_RPC_URL_QN);
+                pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL_QN, 46_289_230) : vm.createFork(AVALANCHE_RPC_URL_QN);
+            forks[POLY] =
+                pinnedBlock ? vm.createFork(POLYGON_RPC_URL_QN, 57_754_395) : vm.createFork(POLYGON_RPC_URL_QN);
             forks[ARBI] =
-                pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 218_289_569) : vm.createFork(ARBITRUM_RPC_URL_QN);
-            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 120_950_600) : vm.createFork(OPTIMISM_RPC_URL_QN);
-            forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL_QN);
-            forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 82_228_344) : vm.createFork(FANTOM_RPC_URL_QN);
+                pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL_QN, 218_289_569) : vm.createFork(ARBITRUM_RPC_URL_QN);
+            forks[OP] =
+                pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL_QN, 120_950_600) : vm.createFork(OPTIMISM_RPC_URL_QN);
+            forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL_QN) : vm.createFork(BASE_RPC_URL_QN);
+            forks[FANTOM] =
+                pinnedBlock ? vm.createFork(FANTOM_RPC_URL_QN, 82_228_344) : vm.createFork(FANTOM_RPC_URL_QN);
             forks[SEPOLIA] = pinnedBlock ? vm.createFork(SEPOLIA_RPC_URL_QN) : vm.createFork(SEPOLIA_RPC_URL_QN);
             forks[BSC_TESTNET] =
                 pinnedBlock ? vm.createFork(BSC_TESTNET_RPC_URL_QN) : vm.createFork(BSC_TESTNET_RPC_URL_QN);
@@ -1675,16 +1679,6 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[BSC_TESTNET][6] = abi.encode(837_167);
 
         // updateWithdrawGasUsed == 13
-        /*
-        2049183 / 1.5 = 1366122 ARB
-        535243 / 1.5 = 356828  MAINNET
-        973861 / 1.5 = 649240 OP
-        901119  / 1.5 = 600746 AVAX
-        896967 / 1.5 = 597978 MATIC
-        1350127 / 1.5 = 900085 BSC
-        1379199 / 1.5 = 919466 BASE
-        */
-
         gasUsed[ETH][13] = abi.encode(356_828);
         gasUsed[BSC][13] = abi.encode(900_085);
         gasUsed[AVAX][13] = abi.encode(600_746);

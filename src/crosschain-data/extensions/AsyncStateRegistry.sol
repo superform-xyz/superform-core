@@ -13,6 +13,7 @@ import {
     IAsyncStateRegistry,
     AsyncDepositPayload,
     AsyncWithdrawPayload,
+    SyncWithdrawTxDataPayload,
     NOT_ASYNC_SUPERFORM,
     NOT_READY_TO_CLAIM
 } from "src/interfaces/IAsyncStateRegistry.sol";
@@ -53,9 +54,13 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
     /// @dev tracks the total async withdraw payloads
     uint256 public asyncWithdrawPayloadCounter;
 
+    /// @dev tracks the total sync withdraw txData payloads
+    uint256 public syncWithdrawTxDataPayloadCounter;
+
     /// @dev stores the async  payloads
     mapping(uint256 asyncPayloadId => AsyncDepositPayload) public asyncDepositPayload;
     mapping(uint256 asyncPayloadId => AsyncWithdrawPayload) public asyncWithdrawPayload;
+    mapping(uint256 syncPayloadId => SyncWithdrawTxDataPayload) public syncWithdrawTxDataPayload;
 
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
@@ -128,6 +133,15 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
         return asyncWithdrawPayload[payloadId_];
     }
 
+    /// @inheritdoc IAsyncStateRegistry
+    function getSyncWithdrawTxDataPayload(uint256 payloadId_)
+        external
+        view
+        returns (SyncWithdrawTxDataPayload memory syncWithdrawTxDataPayload_)
+    {
+        return syncWithdrawTxDataPayload[payloadId_];
+    }
+
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
@@ -169,6 +183,23 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
 
         asyncWithdrawPayload[asyncWithdrawPayloadCounter] =
             AsyncWithdrawPayload(type_, srcChainId_, requestId_, data_, AsyncStatus.PENDING);
+    }
+
+    /// @inheritdoc IAsyncStateRegistry
+    function receiveSyncWithdrawTxDataPayload(
+        uint64 srcChainId_,
+        InitSingleVaultData memory data_
+    )
+        external
+        override
+        onlyAsyncSuperform(data_.superformId)
+    {
+        if (data_.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
+
+        ++syncWithdrawTxDataPayloadCounter;
+
+        syncWithdrawTxDataPayload[syncWithdrawTxDataPayloadCounter] =
+            SyncWithdrawTxDataPayload(srcChainId_, data_, AsyncStatus.PENDING);
     }
 
     /// @inheritdoc IAsyncStateRegistry
@@ -265,43 +296,12 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
             revert NOT_READY_TO_CLAIM();
         }
 
-        IBridgeValidator bridgeValidator = IBridgeValidator(superRegistry.getBridgeValidator(p.data.liqData.bridgeId));
-
         /// @dev set status here to prevent re-entrancy
         p.status = AsyncStatus.PROCESSED;
 
         /// @dev this step is used to feed txData in case user wants to receive assets in a different way
         if (txData_.length != 0) {
-            uint256 finalAmount;
-
-            PayloadUpdaterLib.validateLiqReq(p.data.liqData);
-            /// @dev validate the incoming tx data
-            bridgeValidator.validateTxData(
-                IBridgeValidator.ValidateTxDataArgs(
-                    txData_,
-                    CHAIN_ID,
-                    p.srcChainId,
-                    p.data.liqData.liqDstChainId,
-                    false,
-                    superformAddress,
-                    p.data.receiverAddress,
-                    superform.getVaultAsset(),
-                    address(0)
-                )
-            );
-
-            finalAmount = bridgeValidator.decodeAmountIn(txData_, false);
-            /// @dev Validate if it is safe to use convertToAssets here given previewRedeem is not available
-            /// TODO
-            if (
-                !PayloadUpdaterLib.validateSlippage(
-                    finalAmount,
-                    IERC7575(IBaseForm(superformAddress).getVaultAddress()).convertToAssets(p.data.amount),
-                    p.data.maxSlippage
-                )
-            ) {
-                revert Error.SLIPPAGE_OUT_OF_BOUNDS();
-            }
+            _validateTxData(true, p.srcChainId, txData_, p.data, superformAddress);
 
             p.data.liqData.txData = txData_;
         }
@@ -317,6 +317,52 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
         /// TODO: or maybe the form is momentarily paused and we'd want the keeper to try again later when it's
         /// unpaused...
         delete asyncWithdrawPayload[asyncPayloadId_];
+    }
+
+    /// @inheritdoc IAsyncStateRegistry
+    function finalizeSyncWithdrawTxDataPayload(
+        uint256 payloadId_,
+        bytes memory txData_
+    )
+        external
+        override
+        onlyAsyncStateRegistryProcessor
+    {
+        SyncWithdrawTxDataPayload storage p = syncWithdrawTxDataPayload[payloadId_];
+        if (p.status != AsyncStatus.PENDING) {
+            revert Error.INVALID_PAYLOAD_STATUS();
+        }
+
+        /// @dev set status here to prevent re-entrancy
+        p.status = AsyncStatus.PROCESSED;
+
+        (address superformAddress,,) = p.data.superformId.getSuperform();
+
+        /// @dev this step is used to feed txData in case user wants to receive assets in a different way
+        if (txData_.length != 0) {
+            _validateTxData(false, p.srcChainId, txData_, p.data, superformAddress);
+
+            p.data.liqData.txData = txData_;
+        }
+        try IERC7540Form(superformAddress).syncWithdrawTxData(p) { }
+        catch {
+            /// @dev dispatch acknowledgement to mint superPositions back because of failure
+
+            (uint256 payloadId,) = abi.decode(p.data.extraFormData, (uint256, uint256));
+
+            _dispatchAcknowledgement(
+                p.srcChainId,
+                _getDeliveryAMB(payloadId),
+                _constructSingleWithdrawReturnData(p.data.receiverAddress, p.data)
+            );
+        }
+
+        /// @dev restoring state for gas saving
+        /// TODO: should this be done ? considering we'd want to mark this as forever not possible to process in case of
+        /// failure?
+        /// TODO: or maybe the form is momentarily paused and we'd want the keeper to try again later when it's
+        /// unpaused...
+        delete syncWithdrawTxDataPayload[payloadId_];
     }
 
     /// @inheritdoc BaseStateRegistry
@@ -348,7 +394,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
             revert Error.INSUFFICIENT_QUORUM();
         }
 
-        if (callbackType == uint256(CallbackType.RETURN)) {
+        if (callbackType == uint256(CallbackType.FAIL) || callbackType == uint256(CallbackType.RETURN)) {
             ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).stateSync(_message);
         }
     }
@@ -356,6 +402,49 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
     //////////////////////////////////////////////////////////////
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
+
+    function _validateTxData(
+        bool async_,
+        uint64 srcChainId_,
+        bytes memory txData_,
+        InitSingleVaultData memory data_,
+        address superformAddress_
+    )
+        internal
+    {
+        IBaseForm superform = IBaseForm(superformAddress_);
+        PayloadUpdaterLib.validateLiqReq(data_.liqData);
+
+        IBridgeValidator bridgeValidator = IBridgeValidator(superRegistry.getBridgeValidator(data_.liqData.bridgeId));
+
+        bridgeValidator.validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                txData_,
+                CHAIN_ID,
+                srcChainId_,
+                data_.liqData.liqDstChainId,
+                false,
+                superformAddress_,
+                data_.receiverAddress,
+                superform.getVaultAsset(),
+                address(0)
+            )
+        );
+
+        /// @dev Validate if it is safe to use convertToAssets in full async or async redeem given previewRedeem is not
+        /// available
+        if (
+            !PayloadUpdaterLib.validateSlippage(
+                bridgeValidator.decodeAmountIn(txData_, false),
+                async_
+                    ? IERC7575(superform.getVaultAddress()).convertToAssets(data_.amount)
+                    : superform.previewRedeemFrom(data_.amount),
+                data_.maxSlippage
+            )
+        ) {
+            revert Error.SLIPPAGE_OUT_OF_BOUNDS();
+        }
+    }
 
     /// @dev returns the required quorum for the src chain id from super registry
     /// @param chainId is the src chain id
@@ -396,6 +485,35 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
                     CHAIN_ID
                 ),
                 abi.encode(ReturnSingleData(singleVaultData_.payloadId, singleVaultData_.superformId, shares_))
+            )
+        );
+    }
+
+    /// @notice CoreStateRegistry-like function for build message back to the source. In regular flow called after
+    /// xChainWithdraw succeeds.
+    /// @dev Constructs return message in case of a FAILURE to perform redemption of already unlocked assets
+    function _constructSingleWithdrawReturnData(
+        address receiverAddress_,
+        InitSingleVaultData memory singleVaultData_
+    )
+        internal
+        view
+        returns (bytes memory returnMessage)
+    {
+        /// @notice Send Data to Source to issue superform positions.
+        return abi.encode(
+            AMBMessage(
+                DataLib.packTxInfo(
+                    uint8(TransactionType.WITHDRAW),
+                    uint8(CallbackType.FAIL),
+                    0,
+                    superRegistry.getStateRegistryId(address(this)),
+                    receiverAddress_,
+                    CHAIN_ID
+                ),
+                abi.encode(
+                    ReturnSingleData(singleVaultData_.payloadId, singleVaultData_.superformId, singleVaultData_.amount)
+                )
             )
         );
     }

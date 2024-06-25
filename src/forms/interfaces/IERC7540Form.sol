@@ -3,7 +3,11 @@ pragma solidity ^0.8.23;
 
 import { IERC4626Form } from "./IERC4626Form.sol";
 import { InitSingleVaultData, TimelockPayload } from "../../types/DataTypes.sol";
-import { AsyncWithdrawPayload, AsyncDepositPayload } from "../../interfaces/IAsyncStateRegistry.sol";
+import {
+    AsyncWithdrawPayload,
+    AsyncDepositPayload,
+    SyncWithdrawTxDataPayload
+} from "../../interfaces/IAsyncStateRegistry.sol";
 
 /// @title IERC7540FormBase
 /// @author Zeropoint Labs
@@ -49,6 +53,11 @@ interface IERC7540FormBase {
     /// @param p_ the payload data
     /// @return assets the amount of assets withdrawn
     function claimWithdraw(AsyncWithdrawPayload memory p_) external returns (uint256 assets);
+
+    /// @dev this function is called when txData has been updated for asyncDeposit forms wheneve required
+    /// @param p_ the payload data
+    /// @return assets the amount of assets redeemed
+    function syncWithdrawTxData(SyncWithdrawTxDataPayload memory p_) external returns (uint256 assets);
 }
 
 /// @title IERC7540Form

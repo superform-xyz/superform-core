@@ -4,7 +4,12 @@ pragma solidity ^0.8.23;
 import { ERC4626FormImplementation } from "src/forms/ERC4626FormImplementation.sol";
 import { BaseForm } from "src/BaseForm.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
-import { IAsyncStateRegistry, AsyncWithdrawPayload, AsyncDepositPayload } from "src/interfaces/IAsyncStateRegistry.sol";
+import {
+    IAsyncStateRegistry,
+    AsyncWithdrawPayload,
+    AsyncDepositPayload,
+    SyncWithdrawTxDataPayload
+} from "src/interfaces/IAsyncStateRegistry.sol";
 import { IEmergencyQueue } from "src/interfaces/IEmergencyQueue.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { Error } from "src/libraries/Error.sol";
@@ -293,6 +298,17 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         }
     }
 
+    /// @inheritdoc IERC7540FormBase
+    function syncWithdrawTxData(SyncWithdrawTxDataPayload memory p_)
+        external
+        onlyAsyncStateRegistry
+        returns (uint256 assets)
+    {
+        /// @dev txData must be updated at this point, otherwise it will revert and go into catch mode to remint
+        /// superPositions
+        assets = _processXChainWithdraw(p_.data, p_.srcChainId);
+    }
+
     //////////////////////////////////////////////////////////////
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
@@ -409,7 +425,17 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
             }
             assets = 0;
         } else {
-            assets = _processXChainWithdraw(singleVaultData_, srcChainId_);
+            /// @dev if txData is meant to be updated
+            if (singleVaultData_.liqData.token != address(0) && singleVaultData_.liqData.txData.length == 0) {
+                // send info to async state registry for txData update
+                IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY")))
+                    .receiveSyncWithdrawTxDataPayload(srcChainId_, singleVaultData_);
+
+                assets = 0;
+            } else {
+                // assume update not needed, process imediately
+                assets = _processXChainWithdraw(singleVaultData_, srcChainId_);
+            }
         }
 
         return assets;
