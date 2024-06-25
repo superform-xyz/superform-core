@@ -114,7 +114,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         "PermitTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline)TokenPermissions(address token,uint256 amount)"
     );
     bytes32 constant AUTHORIZE_OPERATOR_TYPEHASH = keccak256(
-        "AuthorizeOperator(address controller,address operator,bool approved,uint256 validAfter,uint256 validBefore,uint256 nonce)"
+        "AuthorizeOperator(address controller,address operator,bool approved,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
     );
     /// @dev ETH mainnet values as on 22nd Aug, 2023
     uint256 public constant TOTAL_SUPPLY_DAI = 3_961_541_270_138_222_277_363_935_051;
@@ -490,8 +490,6 @@ abstract contract BaseSetup is StdInvariant, Test {
     string public OPTIMISM_RPC_URL = vm.envString("OPTIMISM_RPC_URL"); // Native token: ETH
     string public BASE_RPC_URL = vm.envString("BASE_RPC_URL"); // Native token: ETH
     string public FANTOM_RPC_URL = vm.envString("FANTOM_RPC_URL"); // Native token: FTM
-    string public SEPOLIA_RPC_URL = vm.envString("SEPOLIA_RPC_URL"); // Native token: ETH
-    string public BSC_TESTNET_RPC_URL = vm.envString("BSC_TESTNET_RPC_URL"); // Native token: BNB
 
     string public ETHEREUM_RPC_URL_QN = vm.envString("ETHEREUM_RPC_URL_QN"); // Native token: ETH
     string public BSC_RPC_URL_QN = vm.envString("BSC_RPC_URL_QN"); // Native token: BNB
@@ -1611,20 +1609,16 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
         if (!invariant) {
-            forks[ETH] =
-                pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL_QN, 20_017_840) : vm.createFork(ETHEREUM_RPC_URL_QN);
-            forks[BSC] = pinnedBlock ? vm.createFork(BSC_RPC_URL_QN, 39_315_701) : vm.createFork(BSC_RPC_URL_QN);
+            forks[ETH] = pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 20_017_840) : vm.createFork(ETHEREUM_RPC_URL_QN);
+            forks[BSC] = pinnedBlock ? vm.createFork(BSC_RPC_URL, 39_315_701) : vm.createFork(BSC_RPC_URL_QN);
             forks[AVAX] =
-                pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL_QN, 46_289_230) : vm.createFork(AVALANCHE_RPC_URL_QN);
-            forks[POLY] =
-                pinnedBlock ? vm.createFork(POLYGON_RPC_URL_QN, 57_754_395) : vm.createFork(POLYGON_RPC_URL_QN);
+                pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 46_289_230) : vm.createFork(AVALANCHE_RPC_URL_QN);
+            forks[POLY] = pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 57_754_395) : vm.createFork(POLYGON_RPC_URL_QN);
             forks[ARBI] =
-                pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL_QN, 218_289_569) : vm.createFork(ARBITRUM_RPC_URL_QN);
-            forks[OP] =
-                pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL_QN, 120_950_600) : vm.createFork(OPTIMISM_RPC_URL_QN);
-            forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL_QN) : vm.createFork(BASE_RPC_URL_QN);
-            forks[FANTOM] =
-                pinnedBlock ? vm.createFork(FANTOM_RPC_URL_QN, 82_228_344) : vm.createFork(FANTOM_RPC_URL_QN);
+                pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 218_289_569) : vm.createFork(ARBITRUM_RPC_URL_QN);
+            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 120_950_600) : vm.createFork(OPTIMISM_RPC_URL_QN);
+            forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL_QN);
+            forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 82_228_344) : vm.createFork(FANTOM_RPC_URL_QN);
             forks[SEPOLIA] = pinnedBlock ? vm.createFork(SEPOLIA_RPC_URL_QN) : vm.createFork(SEPOLIA_RPC_URL_QN);
             forks[BSC_TESTNET] =
                 pinnedBlock ? vm.createFork(BSC_TESTNET_RPC_URL_QN) : vm.createFork(BSC_TESTNET_RPC_URL_QN);
@@ -1639,8 +1633,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         rpcURLs[OP] = OPTIMISM_RPC_URL;
         rpcURLs[BASE] = BASE_RPC_URL;
         rpcURLs[FANTOM] = FANTOM_RPC_URL;
-        rpcURLs[SEPOLIA] = SEPOLIA_RPC_URL;
-        rpcURLs[BSC_TESTNET] = BSC_TESTNET_RPC_URL;
+        rpcURLs[SEPOLIA] = SEPOLIA_RPC_URL_QN;
+        rpcURLs[BSC_TESTNET] = BSC_TESTNET_RPC_URL_QN;
 
         mapping(uint64 => mapping(uint256 => bytes)) storage gasUsed = GAS_USED;
 
@@ -2238,7 +2232,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         address operator;
         bool approved;
         uint256 deadline;
-        uint256 nonce;
+        bytes32 nonce;
     }
     // Generate a signature for an authorize operator message.
 

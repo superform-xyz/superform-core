@@ -21,6 +21,8 @@ ifeq ($(ENVIRONMENT), local)
 	export OPTIMISM_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/OPTIMISM_RPC_URL/credential)
 	export BASE_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/BASE_RPC_URL/credential)
 	export FANTOM_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/FANTOM_RPC_URL/credential)
+	export SEPOLIA_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/SEPOLIA_RPC_URL/credential)
+	export BSC_TESTNET_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/BSC_TESTNET_RPC_URL/credential)
 endif
 
 # deps
@@ -31,14 +33,15 @@ update:; forge update
 build :; FOUNDRY_PROFILE=production forge build 
 build-unoptimized :; FOUNDRY_PROFILE=localdev forge build
 build-sizes :; FOUNDRY_PROFILE=production forge build --sizes --evm-version cancun
-test-vvv   :; forge test --match-contract SXSVW7540DepositAsyncNativeSlippageAMB23 -vvvvv --evm-version cancun
+test-vvv   :; forge test --match-contract SDiMVW0TokenInputNoSlippageAMB13 -vvvvv --evm-version cancun  --show-progress
 ftest   :; forge test --evm-version cancun
-test-ci :; forge test --no-match-path "test/invariant/**/*.sol" --evm-version cancun
-coverage :; FOUNDRY_PROFILE=coverage forge coverage --no-match-path "test/invariant/**/*.sol" --no-match-contract SmokeTest --evm-version cancun --report lcov
-coverage-t :; FOUNDRY_PROFILE=coverage forge coverage --match-contract RewardsDistributorTests --evm-version cancun --report lcov
-smoke-test   :; forge test --match-contract SmokeTest -vvv
-invariant   :; forge test --match-path "test/invariant/**/*.sol" --evm-version cancun -vvv
-invariant-rewards   :; forge test --match-test invariant_tokenBalances --evm-version cancun -vvv
+ftest-capped   :; forge test --evm-version cancun  --show-progress  --max-threads 8
+test-ci :; forge test --no-match-path "test/invariant/**/*.sol" --evm-version cancun  --show-progress
+coverage :; FOUNDRY_PROFILE=coverage forge coverage --no-match-path "test/invariant/**/*.sol" --no-match-contract SmokeTest --evm-version cancun --report lcov --show-progress --max-threads 8
+coverage-t :; FOUNDRY_PROFILE=coverage forge coverage --match-contract RewardsDistributorTests --evm-version cancun --report lcov  --show-progress
+smoke-test   :; forge test --match-contract SmokeTest -vvv  --show-progress
+invariant   :; forge test --match-path "test/invariant/**/*.sol" --evm-version cancun -vvv  --show-progress
+invariant-rewards   :; forge test --match-test invariant_tokenBalances --evm-version cancun -vvv  --show-progress
 clean  :; forge clean
 snapshot :; forge snapshot
 fmt    :; forge fmt && forge fmt test/

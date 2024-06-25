@@ -1268,7 +1268,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint256 currentDepositPayloadCounter;
         address superform;
         address vault;
-        uint256 nonce;
+        bytes32 nonce;
         uint256 asyncDepositPerformed;
         IAsyncStateRegistry asyncStateRegistry;
         Vm.Log[] logs;
@@ -1294,7 +1294,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         (v.superform,,) = asyncDepositSFs[i][j].getSuperform();
                         v.vault = IBaseForm(v.superform).getVaultAddress();
                         if (!IERC7540(v.vault).isOperator(users[action.user], v.superform)) {
-                            v.nonce = _randomUint256();
+                            v.nonce = _randomBytes32();
                             IAuthorizeOperator(v.vault).authorizeOperator(
                                 users[action.user],
                                 v.superform,

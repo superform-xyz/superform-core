@@ -265,7 +265,7 @@ interface IAuthorizeOperator {
         address operator,
         bool approved,
         uint256 deadline,
-        uint256 nonce,
+        bytes32 nonce,
         bytes memory signature
     )
         external
