@@ -185,6 +185,32 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     }
 
     /// @inheritdoc IERC5115Form
+    function claimRewardTokens() external virtual override {
+        address[] memory rewardTokens = getRewardTokens();
+
+        /// @dev claim all reward tokens
+        try IStandardizedYield(vault).claimRewards(address(this)) returns (uint256[] memory rewardAmounts) {
+            if (rewardAmounts.length != rewardTokens.length) {
+                revert Error.ARRAY_LENGTH_MISMATCH();
+            }
+        } catch {
+            revert FUNCTION_NOT_IMPLEMENTED();
+        }
+
+        address rewardsDistributor = superRegistry.getAddress(keccak256("REWARDS_DISTRIBUTOR"));
+        if (rewardsDistributor == address(0)) revert Error.ZERO_ADDRESS();
+
+        /// @dev forwards token to rewards distributor
+        IERC20 rewardToken;
+        for (uint256 i; i < rewardTokens.length; ++i) {
+            rewardToken = IERC20(rewardTokens[i]);
+            if (address(rewardToken) == vault) revert Error.CANNOT_FORWARD_4646_TOKEN();
+
+            rewardToken.safeTransfer(rewardsDistributor, rewardToken.balanceOf(address(this)));
+        }
+    }
+
+    /// @inheritdoc IERC5115Form
     function getYieldToken() public view virtual override returns (address yieldToken) {
         yieldToken = IStandardizedYield(vault).yieldToken();
     }
@@ -298,7 +324,23 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         /// @dev Warning: This must be validated by a keeper to be the token received in CSR for the given payload, as
         /// this can be forged by the user
         /// @dev and it's not possible to validate on chain the final token post bridging/swapping
-        vars.vaultTokenIn = abi.decode(singleVaultData_.extraFormData, (address));
+        (uint256 nVaults, bytes memory extra5115Data) = abi.decode(singleVaultData_.extraFormData, (uint256, bytes));
+
+        uint256 superformId;
+        bool found5115;
+
+        for (uint256 i = 0; i < nVaults; ++i) {
+            (extra5115Data, superformId, vars.vaultTokenIn) = abi.decode(extra5115Data, (bytes, uint256, address));
+
+            /// @dev notice that by validating it like this, it will deny any tokenIn that is native (sometimes
+            /// addressed as
+            /// address 0)
+            if (superformId == singleVaultData_.superformId && vars.vaultTokenIn != address(0)) {
+                found5115 = true;
+                break;
+            }
+        }
+        if (!found5115) revert ERC5115FORM_TOKEN_IN_NOT_ENCODED();
 
         /// @dev notice that by validating it like this, it will deny any tokenIn that is native (sometimes addressed as
         /// address 0)
@@ -341,6 +383,13 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
                 sendingToken.safeTransferFrom(msg.sender, address(this), vars.inputAmount);
             }
 
+            if (
+                IBridgeValidator(vars.bridgeValidator).decodeSwapOutputToken(singleVaultData_.liqData.txData)
+                    != vars.vaultTokenIn
+            ) {
+                revert Error.DIFFERENT_TOKENS();
+            }
+
             IBridgeValidator(vars.bridgeValidator).validateTxData(
                 IBridgeValidator.ValidateTxDataArgs(
                     singleVaultData_.liqData.txData,
@@ -362,13 +411,6 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
                 vars.inputAmount,
                 singleVaultData_.liqData.nativeAmount
             );
-
-            if (
-                IBridgeValidator(vars.bridgeValidator).decodeSwapOutputToken(singleVaultData_.liqData.txData)
-                    != vars.vaultTokenIn
-            ) {
-                revert Error.DIFFERENT_TOKENS();
-            }
         }
 
         vars.assetDifference = IERC20(vars.vaultTokenIn).balanceOf(address(this)) - vars.balanceBefore;
@@ -407,14 +449,12 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         /// @dev and it's not possible to validate on chain the final token post bridging/swapping
         (uint256 nVaults, bytes memory extra5115Data) = abi.decode(singleVaultData_.extraFormData, (uint256, bytes));
 
-        bytes memory recursion5115Data;
         address vaultTokenIn;
         uint256 superformId;
         bool found5115;
 
         for (uint256 i = 0; i < nVaults; ++i) {
-            (recursion5115Data, superformId, vaultTokenIn) =
-                abi.decode(i == 0 ? extra5115Data : recursion5115Data, (bytes, uint256, address));
+            (extra5115Data, superformId, vaultTokenIn) = abi.decode(extra5115Data, (bytes, uint256, address));
 
             /// @dev notice that by validating it like this, it will deny any tokenIn that is native (sometimes
             /// addressed as
@@ -507,7 +547,9 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
             }
         } else {
             /// @dev transfer shares to user and do not redeem shares for assets
-            v.safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
+            IERC20(IERC5115To4626Wrapper(address(v)).getUnderlying5115Vault()).safeTransfer(
+                singleVaultData_.receiverAddress, singleVaultData_.amount
+            );
             return 0;
         }
     }
@@ -585,7 +627,9 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
             }
         } else {
             /// @dev transfer shares to user and do not redeem shares for assets
-            v.safeTransfer(singleVaultData_.receiverAddress, singleVaultData_.amount);
+            IERC20(IERC5115To4626Wrapper(address(v)).getUnderlying5115Vault()).safeTransfer(
+                singleVaultData_.receiverAddress, singleVaultData_.amount
+            );
             return 0;
         }
 

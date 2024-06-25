@@ -35,13 +35,12 @@ build-unoptimized :; FOUNDRY_PROFILE=localdev forge build
 build-sizes :; FOUNDRY_PROFILE=production forge build --sizes --evm-version cancun
 test-vvv   :; forge test --match-test test_receiveMessage -vvv --evm-version cancun 
 ftest   :; forge test --evm-version cancun
-ftest-capped   :; forge test --evm-version cancun  --show-progress  --max-threads 8
-test-ci :; forge test --no-match-path "test/invariant/**/*.sol" --evm-version cancun  --show-progress
-coverage :; FOUNDRY_PROFILE=coverage forge coverage --no-match-path "test/invariant/**/*.sol" --no-match-contract SmokeTest --evm-version cancun --report lcov --show-progress --max-threads 8
-coverage-t :; FOUNDRY_PROFILE=coverage forge coverage --match-contract RewardsDistributorTests --evm-version cancun --report lcov  --show-progress
-smoke-test   :; forge test --match-contract SmokeTest -vvv  --show-progress
-invariant   :; forge test --match-path "test/invariant/**/*.sol" --evm-version cancun -vvv  --show-progress
-invariant-rewards   :; forge test --match-test invariant_tokenBalances --evm-version cancun -vvv  --show-progress
+test-ci :; forge test --no-match-path "test/invariant/**/*.sol" --evm-version cancun
+coverage :; FOUNDRY_PROFILE=coverage forge coverage --no-match-path "test/invariant/**/*.sol" --no-match-contract SmokeTest --evm-version cancun --report lcov
+coverage-t :; FOUNDRY_PROFILE=coverage forge coverage --match-contract 5115 --evm-version cancun --report lcov
+smoke-test   :; forge test --match-contract SmokeTest -vvv
+invariant   :; forge test --match-path "test/invariant/**/*.sol" --evm-version cancun -vvv
+invariant-rewards   :; forge test --match-test invariant_tokenBalances --evm-version cancun -vvv
 clean  :; forge clean
 snapshot :; forge snapshot
 fmt    :; forge fmt && forge fmt test/

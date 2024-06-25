@@ -2307,6 +2307,18 @@ abstract contract ProtocolActions is CommonProtocolActions {
             }
         }
 
+        vars.vault = IBaseForm(vars.superform).getVaultAddress();
+
+        vars.vaultFormImplementationCombination =
+            keccak256(abi.encode(getContract(args.toChainId, "ERC5115Form"), vars.vault));
+        vars.superformId = SuperformFactory(getContract(args.toChainId, "SuperformFactory"))
+            .vaultFormImplCombinationToSuperforms(vars.vaultFormImplementationCombination);
+
+        vars.is5115 = vars.superformId == args.superformId;
+        args.underlyingTokenDst = vars.is5115
+            ? ERC5115S_CHOSEN_ASSETS[args.toChainId][ERC5115To4626Wrapper(vars.vault).vault()].assetOut
+            : args.underlyingTokenDst;
+
         vm.selectFork(initialFork);
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
@@ -2342,16 +2354,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
         if (GENERATE_WITHDRAW_TX_DATA_ON_DST) {
             TX_DATA_TO_UPDATE_ON_DST[args.toChainId].push(vars.txData);
         }
+
         vm.selectFork(FORKS[args.toChainId]);
-
-        vars.vault = IBaseForm(vars.superform).getVaultAddress();
-
-        vars.vaultFormImplementationCombination =
-            keccak256(abi.encode(getContract(args.toChainId, "ERC5115Form"), vars.vault));
-        vars.superformId = SuperformFactory(getContract(args.toChainId, "SuperformFactory"))
-            .vaultFormImplCombinationToSuperforms(vars.vaultFormImplementationCombination);
-
-        vars.is5115 = vars.superformId == args.superformId;
 
         /// @notice no interim token supplied as this is a withdraw
         vars.liqReq = LiqRequest(

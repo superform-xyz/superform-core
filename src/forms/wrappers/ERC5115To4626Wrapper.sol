@@ -113,7 +113,7 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
         uint256 amountSharesToRedeem,
         address tokenOut,
         uint256 minTokenOut,
-        bool burnFromInternalBalance
+        bool /*burnFromInternalBalance*/
     )
         external
         returns (uint256 amountTokenOut)
@@ -123,13 +123,10 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
         /// @dev receiver cannot be this wrapper contract
         if (receiver == address(this)) revert INVALID_RECEIVER();
 
-        if (burnFromInternalBalance == false) {
-            IERC20(vault).safeTransferFrom(msg.sender, address(this), amountSharesToRedeem);
-        }
+        IERC20(vault).safeTransferFrom(msg.sender, address(this), amountSharesToRedeem);
 
-        return IStandardizedYield(vault).redeem(
-            receiver, amountSharesToRedeem, tokenOut, minTokenOut, burnFromInternalBalance
-        );
+        /// @dev burnFromInternalBalance is always passed in as `false`
+        return IStandardizedYield(vault).redeem(receiver, amountSharesToRedeem, tokenOut, minTokenOut, false);
     }
 
     /// @inheritdoc IStandardizedYield
@@ -220,8 +217,8 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
         return IStandardizedYield(vault).allowance(owner, spender);
     }
 
-    function approve(address spender, uint256 value) external returns (bool) {
-        return IStandardizedYield(vault).approve(spender, value);
+    function approve(address, uint256) external pure returns (bool) {
+        revert Error.NOT_IMPLEMENTED();
     }
 
     function balanceOf(address account) external view returns (uint256) {
@@ -244,12 +241,12 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
         return IStandardizedYield(vault).totalSupply();
     }
 
-    function transfer(address to, uint256 value) external returns (bool) {
-        return IStandardizedYield(vault).transfer(to, value);
+    function transfer(address, uint256) external pure returns (bool) {
+        revert Error.NOT_IMPLEMENTED();
     }
 
-    function transferFrom(address from, address to, uint256 value) external returns (bool) {
-        return IStandardizedYield(vault).transferFrom(from, to, value);
+    function transferFrom(address, address, uint256) external pure returns (bool) {
+        revert Error.NOT_IMPLEMENTED();
     }
 
     //////////////////////////////////////////////////////////////
