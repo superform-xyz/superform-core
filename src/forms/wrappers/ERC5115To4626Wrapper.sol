@@ -288,8 +288,6 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
                 revert INVALID_TOKEN_IN();
             }
         }
-
-        if (asset != address(0) && token_ != asset) revert INVALID_TOKEN_IN();
     }
 
     /// @dev Validates if the given token is a valid output token for the vault
@@ -313,7 +311,5 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
                 revert INVALID_TOKEN_OUT();
             }
         }
-
-        if (mainTokenOut != address(0) && token_ != mainTokenOut) revert INVALID_TOKEN_OUT();
     }
 }

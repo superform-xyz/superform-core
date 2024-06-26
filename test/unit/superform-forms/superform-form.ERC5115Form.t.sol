@@ -8,11 +8,11 @@ import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 contract MaliciousVault {
     address public constant asset = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
 
-    function deposit(address, address, uint256, uint256) external payable returns (uint256 amountSharesOut) {
+    function deposit(address, uint256, uint256) external payable returns (uint256 amountSharesOut) {
         return 10e6;
     }
 
-    function redeem(address, uint256, address, uint256, bool) external pure returns (uint256 amountTokenOut) {
+    function redeem(address, uint256, uint256) external pure returns (uint256 amountTokenOut) {
         return 10e6;
     }
 
@@ -21,16 +21,47 @@ contract MaliciousVault {
     }
 }
 
+contract VaultThatDontSpendApprovals {
+    address public constant asset = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
+    uint256 _balance;
+
+    function deposit(
+        address,
+        address,
+        uint256,
+        uint256 minSharesOut
+    )
+        external
+        payable
+        returns (uint256 amountSharesOut)
+    {
+        _balance = minSharesOut;
+        return 10e6;
+    }
+
+    function balanceOf(address) external view returns (uint256) {
+        return _balance;
+    }
+
+    function isValidTokenIn(address) external pure returns (bool) {
+        return true;
+    }
+
+    function isValidTokenOut(address) external pure returns (bool) {
+        return true;
+    }
+}
+
 contract MaliciousWithdrawVault {
     address public constant asset = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
     uint256 _balance;
 
-    function deposit(address, address, uint256, uint256 minSharesOut) external payable returns (uint256) {
+    function deposit(address, uint256, uint256 minSharesOut) external payable returns (uint256) {
         _balance = minSharesOut;
         return minSharesOut;
     }
 
-    function redeem(address, uint256, address, uint256, bool) external pure returns (uint256) {
+    function redeem(address, uint256, uint256) external pure returns (uint256) {
         return 0;
     }
 
@@ -155,10 +186,12 @@ contract SuperformERC5115FormTest is ProtocolActions {
     Mock5115VaultWithNoRewards noRewards;
     Mock5115VaultWithRewards rewards;
     ERC5115To4626Wrapper rewardsWrapper;
+    ERC5115To4626Wrapper noSpendWrapper;
     Mock5115VaultWithRewardsAsVaultToken rewardsWrapperVaultToken;
 
     MaliciousVault mal;
     MaliciousWithdrawVault malWithdraw;
+    VaultThatDontSpendApprovals noSpendVault;
 
     ERC5115Form noRewardsSuperform;
     ERC5115Form rewardsSuperform;
@@ -182,8 +215,15 @@ contract SuperformERC5115FormTest is ProtocolActions {
         rewards = new Mock5115VaultWithRewards();
         address vaultWithMalRewardToken = address(new Mock5115VaultWithRewardsAsVaultToken());
 
+        noSpendVault = new VaultThatDontSpendApprovals();
+
         rewardsWrapper = new ERC5115To4626Wrapper(
             address(rewards), 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9, 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9
+        );
+        noSpendWrapper = new ERC5115To4626Wrapper(
+            address(noSpendVault),
+            0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9,
+            0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9
         );
         malRewardWrapper = new ERC5115To4626Wrapper(
             address(vaultWithMalRewardToken),
@@ -1138,6 +1178,15 @@ contract SuperformERC5115FormTest is ProtocolActions {
         );
     }
 
+    /// @dev Test if force approve resets approval
+    function test_5115ForceApprovalReset() public {
+        vm.startPrank(deployer);
+        deal(0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9, deployer, 10e6);
+        IERC20(0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9).approve(address(noSpendWrapper), 10e6);
+
+        noSpendWrapper.deposit(deployer, 10e6, 10e6);
+    }
+
     /// @dev Test slippage validation checks
     function test_5115SlippageValidation() public {
         deal(0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9, 0x7121207b118BbaCF0340A989527474Bd4495c3C6, 1e6);
@@ -1333,32 +1382,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
 
     /// @dev Test INVALID_RECEIVER in redeem
     function test_redeem5115InvalidReceiver() external {
-        address tokenOut = targetWrapper.mainTokenOut();
         vm.expectRevert(ERC5115To4626Wrapper.INVALID_RECEIVER.selector);
         targetWrapper.redeem(address(targetWrapper), 1e6, 0);
-    }
-
-    /// @dev Test INVALID_TOKEN_IN in constructor
-    function test_constructor5115InvalidTokenIn() external {
-        ERC5115To4626Wrapper wrapper = new ERC5115To4626Wrapper(address(rewards), address(1), address(2));
-
-        vm.expectRevert(ERC5115To4626Wrapper.INVALID_TOKEN_IN.selector);
-        wrapper.deposit(address(420), 1e6, 0);
-    }
-
-    /// @dev Test INVALID_TOKEN_OUT in constructor
-    function test_constructor5115InvalidTokenOut() external {
-        ERC5115To4626Wrapper wrapper = new ERC5115To4626Wrapper(address(rewards), address(1), address(2));
-
-        vm.expectRevert(ERC5115To4626Wrapper.INVALID_TOKEN_OUT.selector);
-        wrapper.redeem(address(420), 1e6, 1e6);
-    }
-
-    /// @dev Test NATIVE token deposit
-    function test_deposit5115Native() external {
-        ERC5115To4626Wrapper wrapper = new ERC5115To4626Wrapper(
-            address(rewards), 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9, 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9
-        );
-        wrapper.deposit(address(420), 1e6, 0);
     }
 }
