@@ -1527,16 +1527,17 @@ abstract contract ProtocolActions is CommonProtocolActions {
     function _stage7_finalize_asyncWithdraw_payload(TestAction memory action, StagesLocalVars memory vars) internal {
         uint256 initialFork;
         uint256 currentWithdrawPayloadCounter;
+        uint256 currentSyncWithdrawTxDataPayloadCounter;
 
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
+            initialFork = vm.activeFork();
+
+            vm.selectFork(FORKS[DST_CHAINS[i]]);
+
+            IAsyncStateRegistry asyncStateRegistry =
+                IAsyncStateRegistry(contracts[DST_CHAINS[i]][bytes32(bytes("AsyncStateRegistry"))]);
+
             if (countAsyncWithdraw[i] > 0) {
-                initialFork = vm.activeFork();
-
-                vm.selectFork(FORKS[DST_CHAINS[i]]);
-
-                IAsyncStateRegistry asyncStateRegistry =
-                    IAsyncStateRegistry(contracts[DST_CHAINS[i]][bytes32(bytes("AsyncStateRegistry"))]);
-
                 currentWithdrawPayloadCounter = asyncStateRegistry.asyncWithdrawPayloadCounter();
                 if (currentWithdrawPayloadCounter > 0) {
                     /// @dev set 7540 operator and move vault to claimable
@@ -1569,6 +1570,35 @@ abstract contract ProtocolActions is CommonProtocolActions {
                                 : bytes("")
                         );
                         ++asyncWithdrawPerformed;
+                    }
+                }
+            }
+            if (countAsyncDeposit[i] > 0) {
+                currentSyncWithdrawTxDataPayloadCounter = asyncStateRegistry.syncWithdrawTxDataPayloadCounter();
+                if (currentSyncWithdrawTxDataPayloadCounter > 0) {
+                    uint256 syncWithdrawPerformed;
+                    /// @dev perform the calls from beginning to last because of easiness in passing unlock id
+                    for (uint256 j = countAsyncDeposit[i]; j > 0; j--) {
+                        vm.prank(deployer);
+                        console.log("asyncDepositIndexes[DST_CHAINS[i]][j]", asyncDepositIndexes[DST_CHAINS[i]][j]);
+                        console.log("DST_CHAINS[i]", DST_CHAINS[i]);
+                        asyncStateRegistry.finalizeSyncWithdrawTxDataPayload(
+                            currentSyncWithdrawTxDataPayloadCounter - syncWithdrawPerformed,
+                            GENERATE_WITHDRAW_TX_DATA_ON_DST
+                                ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][asyncDepositIndexes[DST_CHAINS[i]][j]]
+                                : bytes("")
+                        );
+
+                        /// @dev tries to process already finalized payload
+                        vm.prank(deployer);
+                        vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
+                        asyncStateRegistry.finalizeSyncWithdrawTxDataPayload(
+                            currentSyncWithdrawTxDataPayloadCounter - syncWithdrawPerformed,
+                            GENERATE_WITHDRAW_TX_DATA_ON_DST
+                                ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][asyncDepositIndexes[DST_CHAINS[i]][j]]
+                                : bytes("")
+                        );
+                        ++syncWithdrawPerformed;
                     }
                 }
             }
@@ -2348,6 +2378,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
             uint256(USDPerUnderlyingToken),
             users[args.user]
         );
+        console.log("liqDstChainId", args.liqDstChainId);
+        console.log("args.toChainId", args.toChainId);
 
         vars.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, args.toChainId == args.liqDstChainId);
 

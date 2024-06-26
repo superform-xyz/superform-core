@@ -411,6 +411,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
         address superformAddress_
     )
         internal
+        view
     {
         IBaseForm superform = IBaseForm(superformAddress_);
         PayloadUpdaterLib.validateLiqReq(data_.liqData);
