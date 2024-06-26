@@ -66,6 +66,9 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
     /// @dev Error thrown if the vault kind is invalid for the operation
     error INVALID_VAULT_KIND();
 
+    /// @dev Error thrown if trying to forward share token
+    error CANNOT_FORWARD_SHARES();
+
     //////////////////////////////////////////////////////////////
     //                         STORAGE                         //
     //////////////////////////////////////////////////////////////
@@ -304,9 +307,15 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         onlyAsyncStateRegistry
         returns (uint256 assets)
     {
+        address share = _share();
+
+        IERC20(share).safeIncreaseAllowance(vault, p_.data.amount);
+
         /// @dev txData must be updated at this point, otherwise it will revert and go into catch mode to remint
         /// superPositions
         assets = _processXChainWithdraw(p_.data, p_.srcChainId);
+
+        if (IERC20(share).allowance(address(this), vault) > 0) IERC20(share).forceApprove(vault, 0);
     }
 
     //////////////////////////////////////////////////////////////
@@ -459,6 +468,7 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         if (_vaultKind == VaultKind.UNSET) {
             _vaultKind = _vaultKindCheck();
         }
+        if (token_ == _share()) revert CANNOT_FORWARD_SHARES();
         _processForwardDustToPaymaster(token_);
     }
 

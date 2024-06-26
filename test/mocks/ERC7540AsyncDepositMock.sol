@@ -268,8 +268,8 @@ contract ERC7540AsyncDepositMock is IERC7540Deposit, IAuthorizeOperator, IERC757
     }
 
     /// @dev Preview functions for ERC-7540 vaults revert
-    function previewRedeem(uint256) external pure returns (uint256) {
-        revert();
+    function previewRedeem(uint256 shares) external pure returns (uint256) {
+        return shares.mulDiv(defaultPrice, 10 ** 18, Math.Rounding.Floor);
     }
 
     function validateController(address controller) internal view {
