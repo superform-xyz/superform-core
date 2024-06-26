@@ -100,6 +100,8 @@ contract LayerzeroImplementationTest is BaseSetup {
         uint64 chainId = chainIds[chainIdSeed_ % chainIds.length];
         /// @dev estimating fees for same chain is invalid
         vm.assume(chainId != 1);
+        vm.assume(chainId != 97);
+        vm.assume(chainId != 11_155_111);
         uint256 fees = layerzeroImplementation.estimateFees(chainId, abi.encode(420), bytes(""));
         assertGt(fees, 0);
     }

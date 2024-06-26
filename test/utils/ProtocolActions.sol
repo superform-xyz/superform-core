@@ -939,6 +939,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             }
 
             if (AMBs[index] == 3) {
+                console.log("wormhole helper here");
                 WormholeHelper(getContract(CHAIN_0, "WormholeHelper")).help(
                     WORMHOLE_CHAIN_IDS[CHAIN_0],
                     internalVars.forkIds,

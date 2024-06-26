@@ -24,7 +24,7 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
 
         for (uint256 i = 0; i < chainIds.length; ++i) {
-            if (chainIds[i] != ETH) {
+            if (chainIds[i] != ETH && chainIds[i] != SEPOLIA && chainIds[i] != BSC_TESTNET) {
                 vm.selectFork(FORKS[chainIds[i]]);
 
                 bool statusBefore = SuperformFactory(getContract(chainIds[i], "SuperformFactory"))
@@ -46,7 +46,7 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
 
         /// try processing the same payload again
         for (uint256 i = 0; i < chainIds.length; ++i) {
-            if (chainIds[i] != ETH) {
+            if (chainIds[i] != ETH && chainIds[i] != SEPOLIA && chainIds[i] != BSC_TESTNET) {
                 vm.selectFork(FORKS[chainIds[i]]);
 
                 vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
@@ -56,7 +56,7 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
 
         /// try processing not available payload id
         for (uint256 i = 0; i < chainIds.length; ++i) {
-            if (chainIds[i] != ETH) {
+            if (chainIds[i] != ETH && chainIds[i] != SEPOLIA && chainIds[i] != BSC_TESTNET) {
                 vm.selectFork(FORKS[chainIds[i]]);
 
                 vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);

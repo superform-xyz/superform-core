@@ -399,7 +399,7 @@ abstract contract BaseSetup is StdInvariant, Test {
     uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111, 184, 112, 10_161, 10_102];
     uint32[] public lz_v2_chainIds = [30_101, 30_102, 30_106, 30_109, 30_110, 30_111, 30_184, 30_112, 40_161, 40_102];
     uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 11_155_111, 97];
-    uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30, 10, 10_002, 4];
+    uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30, 10, 10_002, 10_003];
     string[] public axelar_chainIds = [
         "Ethereum",
         "binance",
@@ -410,7 +410,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         "base",
         "Fantom",
         "ethereum-sepolia",
-        "binance"
+        "binance-testnet"
     ];
 
     /// @dev minting enough tokens to be able to fuzz with bigger amounts (DAI's 3.6B supply etc)
@@ -2127,24 +2127,26 @@ abstract contract BaseSetup is StdInvariant, Test {
     function _broadcastPayloadHelper(uint64 currentChainId, Vm.Log[] memory logs) internal {
         vm.stopPrank();
 
-        address[] memory dstTargets = new address[](chainIds.length - 1);
-        address[] memory dstWormhole = new address[](chainIds.length - 1);
+        address[] memory dstTargets = new address[](chainIds.length - 3);
+        address[] memory dstWormhole = new address[](chainIds.length - 3);
 
-        uint256[] memory forkIds = new uint256[](chainIds.length - 1);
+        uint256[] memory forkIds = new uint256[](chainIds.length - 3);
 
         uint16 currWormholeChainId;
 
         uint256 j;
         for (uint256 i = 0; i < chainIds.length; ++i) {
-            if (chainIds[i] != currentChainId) {
-                dstWormhole[j] = wormholeCore[i];
-                dstTargets[j] = getContract(chainIds[i], "WormholeSRImplementation");
+            if (chainIds[i] != BSC_TESTNET && chainIds[i] != SEPOLIA) {
+                if (chainIds[i] != currentChainId) {
+                    dstWormhole[j] = wormholeCore[i];
+                    dstTargets[j] = getContract(chainIds[i], "WormholeSRImplementation");
 
-                forkIds[j] = FORKS[chainIds[i]];
+                    forkIds[j] = FORKS[chainIds[i]];
 
-                ++j;
-            } else {
-                currWormholeChainId = wormhole_chainIds[i];
+                    ++j;
+                } else {
+                    currWormholeChainId = wormhole_chainIds[i];
+                }
             }
         }
 
