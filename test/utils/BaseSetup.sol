@@ -1003,7 +1003,8 @@ abstract contract BaseSetup is StdInvariant, Test {
             contracts[vars.chainId][bytes32(bytes("ERC5115Form"))] = vars.erc5115form;
 
             //  ERC7540 Form
-            vars.erc7540form = address(new ERC7540Form{ salt: salt }(vars.superRegistry));
+            /// @dev TODO: change id of form to 2
+            vars.erc7540form = address(new ERC7540Form{ salt: salt }(vars.superRegistry, 5));
 
             contracts[vars.chainId][bytes32(bytes("ERC7540Form"))] = vars.erc7540form;
 

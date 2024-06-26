@@ -33,14 +33,12 @@ import {
     PayloadState,
     ReturnSingleData
 } from "src/types/DataTypes.sol";
-import { ReentrancyGuard } from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
-
 import { IERC7575 } from "src/vendor/centrifuge/IERC7540.sol";
 
 /// @title AsyncStateRegistry
 /// @dev Handles communication in 7540 forms
 /// @author Zeropoint Labs
-contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, ReentrancyGuard {
+contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     using DataLib for uint256;
     using ProofLib for AMBMessage;
 
@@ -68,7 +66,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
 
     modifier onlyAsyncStateRegistryProcessor() {
         bytes32 role = keccak256("ASYNC_STATE_REGISTRY_PROCESSOR_ROLE");
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(role, msg.sender)) {
+        if (!ISuperRBAC(_getSuperRegistryAddress(keccak256("SUPER_RBAC"))).hasRole(role, msg.sender)) {
             revert Error.NOT_PRIVILEGED_CALLER(role);
         }
         _;
@@ -83,13 +81,13 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
     /// @dev ensures only an async superform can write to this state registry
     /// @param superformId_ is the superformId of the superform to check
     modifier onlyAsyncSuperform(uint256 superformId_) {
-        if (!ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId_)) {
+        if (!ISuperformFactory(_getSuperRegistryAddress(keccak256("SUPERFORM_FACTORY"))).isSuperform(superformId_)) {
             revert Error.SUPERFORM_ID_NONEXISTENT();
         }
         (address superform,,) = superformId_.getSuperform();
         if (msg.sender != superform) revert Error.NOT_SUPERFORM();
 
-        if (IBaseForm(superform).getStateRegistryId() != superRegistry.getStateRegistryId(address(this))) {
+        if (IBaseForm(superform).getStateRegistryId() != _getStateRegistryId()) {
             revert NOT_ASYNC_SUPERFORM();
         }
 
@@ -110,7 +108,6 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
     //////////////////////////////////////////////////////////////
 
     constructor(ISuperRegistry superRegistry_) BaseStateRegistry(superRegistry_) { }
-
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
@@ -141,7 +138,6 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
     {
         return syncWithdrawTxDataPayload[payloadId_];
     }
-
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
@@ -161,9 +157,12 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
         if (data_.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
 
         ++asyncDepositPayloadCounter;
+        uint256 payloadId = asyncDepositPayloadCounter;
 
-        asyncDepositPayload[asyncDepositPayloadCounter] =
+        asyncDepositPayload[payloadId] =
             AsyncDepositPayload(type_, srcChainId_, assetsToDeposit_, requestId_, data_, AsyncStatus.PENDING);
+
+        emit ReceivedAsyncDepositPayload(payloadId);
     }
 
     /// @inheritdoc IAsyncStateRegistry
@@ -180,9 +179,12 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
         if (data_.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
 
         ++asyncWithdrawPayloadCounter;
+        uint256 payloadId = asyncWithdrawPayloadCounter;
 
-        asyncWithdrawPayload[asyncWithdrawPayloadCounter] =
+        asyncWithdrawPayload[payloadId] =
             AsyncWithdrawPayload(type_, srcChainId_, requestId_, data_, AsyncStatus.PENDING);
+
+        emit ReceivedAsyncWithdrawPayload(payloadId);
     }
 
     /// @inheritdoc IAsyncStateRegistry
@@ -197,9 +199,11 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
         if (data_.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
 
         ++syncWithdrawTxDataPayloadCounter;
+        uint256 payloadId = syncWithdrawTxDataPayloadCounter;
 
-        syncWithdrawTxDataPayload[syncWithdrawTxDataPayloadCounter] =
-            SyncWithdrawTxDataPayload(srcChainId_, data_, AsyncStatus.PENDING);
+        syncWithdrawTxDataPayload[payloadId] = SyncWithdrawTxDataPayload(srcChainId_, data_, AsyncStatus.PENDING);
+
+        emit ReceivedSyncWithdrawTxDataPayload(payloadId);
     }
 
     /// @inheritdoc IAsyncStateRegistry
@@ -238,13 +242,25 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
                     _dispatchAcknowledgement(
                         p.srcChainId,
                         _getDeliveryAMB(payloadId),
-                        _constructSingleDepositReturnData(p.data.receiverAddress, p.data, shares)
+                        abi.encode(
+                            AMBMessage(
+                                DataLib.packTxInfo(
+                                    uint8(TransactionType.DEPOSIT),
+                                    uint8(CallbackType.RETURN),
+                                    0,
+                                    _getStateRegistryId(),
+                                    p.data.receiverAddress,
+                                    CHAIN_ID
+                                ),
+                                abi.encode(ReturnSingleData(p.data.payloadId, p.data.superformId, shares))
+                            )
+                        )
                     );
                 }
 
                 /// @dev for direct chain, superPositions are minted directly
                 if (p.isXChain == 0) {
-                    ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintSingle(
+                    ISuperPositions(_getSuperRegistryAddress(keccak256("SUPER_POSITIONS"))).mintSingle(
                         p.data.receiverAddress, p.data.superformId, shares
                     );
                 }
@@ -262,11 +278,9 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
         }
 
         /// @dev restoring state for gas saving
-        /// TODO should this be done ? considering we'd want to mark this as forever not possible to process in case of
-        /// failure?
-        /// TODO or maybe the form is momentarily paused and we'd want the keeper to try again later when it's
-        /// unpaused...
         delete asyncDepositPayload[asyncPayloadId_];
+
+        emit FinalizedAsyncDepositPayload(asyncPayloadId_);
     }
 
     /// @inheritdoc IAsyncStateRegistry
@@ -312,11 +326,9 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
         superform.claimWithdraw(p);
 
         /// @dev restoring state for gas saving
-        /// TODO: should this be done ? considering we'd want to mark this as forever not possible to process in case of
-        /// failure?
-        /// TODO: or maybe the form is momentarily paused and we'd want the keeper to try again later when it's
-        /// unpaused...
         delete asyncWithdrawPayload[asyncPayloadId_];
+
+        emit FinalizedAsyncWithdrawPayload(asyncPayloadId_);
     }
 
     /// @inheritdoc IAsyncStateRegistry
@@ -347,22 +359,32 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
         try IERC7540Form(superformAddress).syncWithdrawTxData(p) { }
         catch {
             /// @dev dispatch acknowledgement to mint superPositions back because of failure
-
+            /// @dev this case is only for xchain withdraws as sync direct withdraws don't pass through this contract
             (uint256 payloadId,) = abi.decode(p.data.extraFormData, (uint256, uint256));
 
             _dispatchAcknowledgement(
                 p.srcChainId,
                 _getDeliveryAMB(payloadId),
-                _constructSingleWithdrawReturnData(p.data.receiverAddress, p.data)
+                abi.encode(
+                    AMBMessage(
+                        DataLib.packTxInfo(
+                            uint8(TransactionType.WITHDRAW),
+                            uint8(CallbackType.FAIL),
+                            0,
+                            _getStateRegistryId(),
+                            p.data.receiverAddress,
+                            CHAIN_ID
+                        ),
+                        abi.encode(ReturnSingleData(p.data.payloadId, p.data.superformId, p.data.amount))
+                    )
+                )
             );
         }
 
         /// @dev restoring state for gas saving
-        /// TODO: should this be done ? considering we'd want to mark this as forever not possible to process in case of
-        /// failure?
-        /// TODO: or maybe the form is momentarily paused and we'd want the keeper to try again later when it's
-        /// unpaused...
         delete syncWithdrawTxDataPayload[payloadId_];
+
+        emit FinalizedSyncWithdrawTxDataPayload(payloadId_);
     }
 
     /// @inheritdoc BaseStateRegistry
@@ -382,20 +404,17 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
         uint256 _payloadHeader = payloadHeader[payloadId_];
-        bytes memory _payloadBody = payloadBody[payloadId_];
 
         (, uint256 callbackType,,,, uint64 srcChainId) = _payloadHeader.decodeTxInfo();
-        AMBMessage memory _message = AMBMessage(_payloadHeader, _payloadBody);
+        AMBMessage memory _message = AMBMessage(_payloadHeader, payloadBody[payloadId_]);
 
         /// @dev validates quorum
-        bytes32 _proof = _message.computeProof();
-
-        if (messageQuorum[_proof] < _getRequiredMessagingQuorum(srcChainId)) {
+        if (messageQuorum[_message.computeProof()] < _getRequiredMessagingQuorum(srcChainId)) {
             revert Error.INSUFFICIENT_QUORUM();
         }
 
         if (callbackType == uint256(CallbackType.FAIL) || callbackType == uint256(CallbackType.RETURN)) {
-            ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).stateSync(_message);
+            ISuperPositions(_getSuperRegistryAddress(keccak256("SUPER_POSITIONS"))).stateSync(_message);
         }
     }
 
@@ -431,15 +450,13 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
                 address(0)
             )
         );
-
+        address vault = superform.getVaultAddress();
         /// @dev Validate if it is safe to use convertToAssets in full async or async redeem given previewRedeem is not
         /// available
         if (
             !PayloadUpdaterLib.validateSlippage(
                 bridgeValidator.decodeAmountIn(txData_, false),
-                async_
-                    ? IERC7575(superform.getVaultAddress()).convertToAssets(data_.amount)
-                    : superform.previewRedeemFrom(data_.amount),
+                async_ ? IERC7575(vault).convertToAssets(data_.amount) : IERC7575(vault).previewRedeem(data_.amount),
                 data_.maxSlippage
             )
         ) {
@@ -457,74 +474,25 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry, Reentranc
     /// @dev allows users to read the ids of ambs that delivered a payload
     function _getDeliveryAMB(uint256 payloadId_) internal view returns (uint8[] memory ambIds_) {
         IBaseStateRegistry coreStateRegistry =
-            IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
+            IBaseStateRegistry(_getSuperRegistryAddress(keccak256("CORE_STATE_REGISTRY")));
 
         ambIds_ = coreStateRegistry.getMessageAMB(payloadId_);
-    }
-
-    /// @notice CoreStateRegistry-like function for build message back to the source. In regular flow called after
-    /// xChainDeposit succeeds.
-    /// @dev Constructs return message in case of a SUCCESS in depositing assets to the vault
-    function _constructSingleDepositReturnData(
-        address receiverAddress_,
-        InitSingleVaultData memory singleVaultData_,
-        uint256 shares_
-    )
-        internal
-        view
-        returns (bytes memory returnMessage)
-    {
-        /// @notice Send Data to Source to issue superform positions.
-        return abi.encode(
-            AMBMessage(
-                DataLib.packTxInfo(
-                    uint8(TransactionType.DEPOSIT),
-                    uint8(CallbackType.RETURN),
-                    0,
-                    superRegistry.getStateRegistryId(address(this)),
-                    receiverAddress_,
-                    CHAIN_ID
-                ),
-                abi.encode(ReturnSingleData(singleVaultData_.payloadId, singleVaultData_.superformId, shares_))
-            )
-        );
-    }
-
-    /// @notice CoreStateRegistry-like function for build message back to the source. In regular flow called after
-    /// xChainWithdraw succeeds.
-    /// @dev Constructs return message in case of a FAILURE to perform redemption of already unlocked assets
-    function _constructSingleWithdrawReturnData(
-        address receiverAddress_,
-        InitSingleVaultData memory singleVaultData_
-    )
-        internal
-        view
-        returns (bytes memory returnMessage)
-    {
-        /// @notice Send Data to Source to issue superform positions.
-        return abi.encode(
-            AMBMessage(
-                DataLib.packTxInfo(
-                    uint8(TransactionType.WITHDRAW),
-                    uint8(CallbackType.FAIL),
-                    0,
-                    superRegistry.getStateRegistryId(address(this)),
-                    receiverAddress_,
-                    CHAIN_ID
-                ),
-                abi.encode(
-                    ReturnSingleData(singleVaultData_.payloadId, singleVaultData_.superformId, singleVaultData_.amount)
-                )
-            )
-        );
     }
 
     /// @notice In regular flow, BaseStateRegistry function for messaging back to the source
     /// @notice Use constructed earlier return message to send acknowledgment (msg) back to the source
     function _dispatchAcknowledgement(uint64 dstChainId_, uint8[] memory ambIds_, bytes memory message_) internal {
-        (, bytes memory extraData) = IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER")))
+        (, bytes memory extraData) = IPaymentHelper(_getSuperRegistryAddress(keccak256("PAYMENT_HELPER")))
             .calculateAMBData(dstChainId_, ambIds_, message_);
 
         _dispatchPayload(msg.sender, ambIds_, dstChainId_, message_, extraData);
+    }
+
+    function _getStateRegistryId() internal view returns (uint8) {
+        return superRegistry.getStateRegistryId(address(this));
+    }
+
+    function _getSuperRegistryAddress(bytes32 id) internal view returns (address) {
+        return superRegistry.getAddress(id);
     }
 }

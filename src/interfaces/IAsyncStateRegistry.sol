@@ -64,6 +64,24 @@ interface IAsyncStateRegistry {
     /// @dev is emitted when any deposit is successful with shares == 0
     event FailedAsyncDepositZeroShares(uint256 indexed payloadId);
 
+    /// @dev is emitted when an async deposit payload is received
+    event ReceivedAsyncDepositPayload(uint256 indexed payloadId);
+
+    /// @dev is emitted when an async deposit payload is finalized
+    event FinalizedAsyncDepositPayload(uint256 indexed payloadId);
+
+    /// @dev is emitted when an async withdraw payload is received
+    event ReceivedAsyncWithdrawPayload(uint256 indexed payloadId);
+
+    /// @dev is emitted when an async withdraw payload is finalized
+    event FinalizedAsyncWithdrawPayload(uint256 indexed payloadId);
+
+    /// @dev is emitted when a sync withdraw tx data payload is received
+    event ReceivedSyncWithdrawTxDataPayload(uint256 indexed payloadId);
+
+    /// @dev is emitted when a sync withdraw tx data payload is finalized
+    event FinalizedSyncWithdrawTxDataPayload(uint256 indexed payloadId);
+
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { ERC4626FormImplementation } from "src/forms/ERC4626FormImplementation.sol";
 import { BaseForm } from "src/BaseForm.sol";
+import { LiquidityHandler } from "src/crosschain-liquidity/LiquidityHandler.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 import {
     IAsyncStateRegistry,
@@ -26,7 +26,7 @@ import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IE
 /// @title ERC7540Form
 /// @dev Form implementation to handle async 7540 vaults
 /// @author Zeropoint Labs
-contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
+contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
     using SafeERC20 for IERC20;
     using SafeERC20 for IERC7540;
     using DataLib for uint256;
@@ -69,14 +69,21 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
     /// @dev Error thrown if trying to forward share token
     error CANNOT_FORWARD_SHARES();
 
+    /// @dev If functions not implemented within the ERC7540 Standard
+    error NOT_IMPLEMENTED();
+
+    /// @dev If redeemed assets fell off slippage in redeem 2nd step
+    error REDEEM_INVALID_LIQ_REQUEST();
+
     //////////////////////////////////////////////////////////////
     //                         STORAGE                         //
     //////////////////////////////////////////////////////////////
     /// @dev The id of the state registry
     /// TODO TEMPORARY AS THIS SHOULD BECOME ID 2
-    uint8 constant stateRegistryId = 5; // AsyncStateRegistry
+    uint8 internal immutable STATE_REGISTRY_ID;
+    uint256 internal constant ENTIRE_SLIPPAGE = 10_000;
 
-    VaultKind private _vaultKind;
+    VaultKind public vaultKind;
 
     //////////////////////////////////////////////////////////////
     //                  STRUCTS  and ENUMS                      //
@@ -89,6 +96,23 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         address asset;
         uint256 amount;
         LiqRequest liqData;
+    }
+
+    struct DirectDepositLocalVars {
+        uint64 chainId;
+        address asset;
+        uint256 balanceBefore;
+    }
+
+    struct DirectWithdrawLocalVars {
+        uint64 chainId;
+        address asset;
+        uint256 amount;
+    }
+
+    struct XChainWithdrawLocalVars {
+        uint64 dstChainId;
+        address asset;
     }
 
     enum VaultKind {
@@ -112,7 +136,11 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_, stateRegistryId) { }
+    constructor(address superRegistry_, uint8 stateRegistryId_) BaseForm(superRegistry_) {
+        superRegistry.getStateRegistry(stateRegistryId_);
+
+        STATE_REGISTRY_ID = stateRegistryId_;
+    }
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
@@ -174,6 +202,62 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
     }
 
     /// @inheritdoc BaseForm
+    function getVaultName() public view virtual override returns (string memory) {
+        return IERC20Metadata(_share()).name();
+    }
+
+    /// @inheritdoc BaseForm
+    function getVaultSymbol() public view virtual override returns (string memory) {
+        return IERC20Metadata(_share()).symbol();
+    }
+
+    /// @inheritdoc BaseForm
+    function getVaultDecimals() public view virtual override returns (uint256) {
+        return IERC20Metadata(_share()).decimals();
+    }
+
+    /// @inheritdoc BaseForm
+    function getPricePerVaultShare() public view virtual override returns (uint256) {
+        uint256 shareDecimals = IERC20Metadata(_share()).decimals();
+        return IERC7540(vault).convertToAssets(10 ** shareDecimals);
+    }
+
+    /// @inheritdoc BaseForm
+    function getVaultShareBalance() public view virtual override returns (uint256) {
+        return IERC20Metadata(_share()).balanceOf(address(this));
+    }
+
+    /// @inheritdoc BaseForm
+    function getTotalAssets() public view virtual override returns (uint256) {
+        return IERC7575(vault).totalAssets();
+    }
+
+    /// @inheritdoc BaseForm
+    function getTotalSupply() public view virtual override returns (uint256) {
+        return IERC20Metadata(_share()).totalSupply();
+    }
+
+    /// @inheritdoc BaseForm
+    function getPreviewPricePerVaultShare() public view virtual override returns (uint256) {
+        revert NOT_IMPLEMENTED();
+    }
+
+    /// @inheritdoc BaseForm
+    function previewDepositTo(uint256 assets_) public view virtual override returns (uint256) {
+        return IERC7540(vault).convertToShares(assets_);
+    }
+
+    /// @inheritdoc BaseForm
+    function previewWithdrawFrom(uint256) public view virtual override returns (uint256) {
+        revert NOT_IMPLEMENTED();
+    }
+
+    /// @inheritdoc BaseForm
+    function previewRedeemFrom(uint256) public view virtual override returns (uint256) {
+        revert NOT_IMPLEMENTED();
+    }
+
+    /// @inheritdoc BaseForm
     function superformYieldTokenName() external view virtual override returns (string memory) {
         return string(abi.encodePacked(IERC20Metadata(_share()).name(), " SuperPosition"));
     }
@@ -183,15 +267,20 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         return string(abi.encodePacked("sp-", IERC20Metadata(_share()).symbol()));
     }
 
+    /// @inheritdoc BaseForm
+    function getStateRegistryId() external view override returns (uint8) {
+        return STATE_REGISTRY_ID;
+    }
+
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IERC7540FormBase
     function claimDeposit(AsyncDepositPayload memory p_) external onlyAsyncStateRegistry returns (uint256 shares) {
-        if (_vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
+        if (vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
 
-        if (_vaultKind == VaultKind.REDEEM_ASYNC) revert INVALID_VAULT_KIND();
+        if (vaultKind == VaultKind.REDEEM_ASYNC) revert INVALID_VAULT_KIND();
 
         if (p_.data.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
 
@@ -219,9 +308,9 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
 
     /// @inheritdoc IERC7540FormBase
     function claimWithdraw(AsyncWithdrawPayload memory p_) external onlyAsyncStateRegistry returns (uint256 assets) {
-        if (_vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
+        if (vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
 
-        if (_vaultKind == VaultKind.DEPOSIT_ASYNC) revert INVALID_VAULT_KIND();
+        if (vaultKind == VaultKind.DEPOSIT_ASYNC) revert INVALID_VAULT_KIND();
 
         if (p_.data.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
 
@@ -269,6 +358,9 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
             vars.chainId = CHAIN_ID;
 
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
+            /// @dev if less it should be within the slippage limit specified by the user
+            /// @dev important to maintain so that the keeper cannot update with malicious data after successful
+            /// withdraw
             if (
                 _isWithdrawTxDataAmountInvalid(
                     _decodeAmountIn(_getBridgeValidator(vars.liqData.bridgeId), vars.liqData.txData),
@@ -276,10 +368,10 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
                     p_.data.maxSlippage
                 )
             ) {
-                if (p_.isXChain == 1) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
-                revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+                revert REDEEM_INVALID_LIQ_REQUEST();
             }
 
+            /// @dev validate and perform the swap to desired output token and send to beneficiary
             _swapAssetsInOrOut(
                 vars.liqData.bridgeId,
                 vars.liqData.txData,
@@ -307,19 +399,13 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         onlyAsyncStateRegistry
         returns (uint256 assets)
     {
-        address share = _share();
-
-        IERC20(share).safeIncreaseAllowance(vault, p_.data.amount);
-
         /// @dev txData must be updated at this point, otherwise it will revert and go into catch mode to remint
         /// superPositions
         assets = _processXChainWithdraw(p_.data, p_.srcChainId);
-
-        if (IERC20(share).allowance(address(this), vault) > 0) IERC20(share).forceApprove(vault, 0);
     }
 
     //////////////////////////////////////////////////////////////
-    //                  INTERNAL FUNCTIONS                      //
+    //              DIRECT DEPOSIT INTERNAL FUNCTIONS           //
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc BaseForm
@@ -332,9 +418,9 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         override
         returns (uint256 shares)
     {
-        if (_vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
+        if (vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
 
-        if (_vaultKind == VaultKind.DEPOSIT_ASYNC || _vaultKind == VaultKind.FULLY_ASYNC) {
+        if (vaultKind == VaultKind.DEPOSIT_ASYNC || vaultKind == VaultKind.FULLY_ASYNC) {
             (uint256 assetsToDeposit, uint256 requestId) = _requestDirectDeposit(singleVaultData_);
 
             /// @dev state registry for re-processing at a later date
@@ -347,140 +433,34 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         return shares;
     }
 
-    /// @inheritdoc BaseForm
-    function _xChainDepositIntoVault(
-        InitSingleVaultData memory singleVaultData_,
-        address, /*srcSender_*/
-        uint64 srcChainId_
-    )
-        internal
-        virtual
-        override
-        returns (uint256 shares)
-    {
-        if (_vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
-
-        if (_vaultKind == VaultKind.DEPOSIT_ASYNC || _vaultKind == VaultKind.FULLY_ASYNC) {
-            /// @dev state registry for re-processing at a later date
-            _storeDepositPayload(
-                1,
-                srcChainId_,
-                singleVaultData_.amount,
-                _requestXChainDeposit(singleVaultData_, srcChainId_),
-                singleVaultData_
-            );
-            shares = 0;
-        } else {
-            shares = _processXChainDeposit(singleVaultData_, srcChainId_);
-        }
-
-        return shares;
-    }
-
-    /// @inheritdoc BaseForm
-    /// @dev this is the step-1 for async form withdraw, direct case
-    /// @dev will mandatorily process unlock unless the retain4626 flag is set
-    /// @return assets
-    function _directWithdrawFromVault(
-        InitSingleVaultData memory singleVaultData_,
-        address /*srcSender_*/
-    )
-        internal
-        virtual
-        override
-        returns (uint256 assets)
-    {
-        if (_vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
-
-        if (_vaultKind == VaultKind.REDEEM_ASYNC || _vaultKind == VaultKind.FULLY_ASYNC) {
-            if (!singleVaultData_.retain4626) {
-                /// @dev state registry for re-processing at a later date
-                _storeWithdrawPayload(0, CHAIN_ID, _requestRedeem(singleVaultData_, CHAIN_ID), singleVaultData_);
-            } else {
-                /// @dev transfer shares to user and do not redeem shares for assets
-                _shareTransferOut(singleVaultData_.receiverAddress, singleVaultData_.amount);
-            }
-
-            assets = 0;
-        } else {
-            assets = _processDirectWithdraw(singleVaultData_);
-        }
-        return assets;
-    }
-
-    /// @inheritdoc BaseForm
-    /// @dev this is the step-1 for async form withdraw, xchain case
-    /// @dev will mandatorily process unlock unless the retain4626 flag is set
-    /// @return assets
-    function _xChainWithdrawFromVault(
-        InitSingleVaultData memory singleVaultData_,
-        address, /*srcSender_*/
-        uint64 srcChainId_
-    )
-        internal
-        virtual
-        override
-        returns (uint256 assets)
-    {
-        if (_vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
-
-        if (_vaultKind == VaultKind.REDEEM_ASYNC || _vaultKind == VaultKind.FULLY_ASYNC) {
-            if (!singleVaultData_.retain4626) {
-                /// @dev state registry for re-processing at a later date
-                _storeWithdrawPayload(1, srcChainId_, _requestRedeem(singleVaultData_, srcChainId_), singleVaultData_);
-            } else {
-                /// @dev transfer shares to user and do not redeem shares for assets
-                _shareTransferOut(singleVaultData_.receiverAddress, singleVaultData_.amount);
-            }
-            assets = 0;
-        } else {
-            /// @dev if txData is meant to be updated
-            if (singleVaultData_.liqData.token != address(0) && singleVaultData_.liqData.txData.length == 0) {
-                // send info to async state registry for txData update
-                IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY")))
-                    .receiveSyncWithdrawTxDataPayload(srcChainId_, singleVaultData_);
-
-                assets = 0;
-            } else {
-                // assume update not needed, process imediately
-                assets = _processXChainWithdraw(singleVaultData_, srcChainId_);
-            }
-        }
-
-        return assets;
-    }
-
-    /// @inheritdoc BaseForm
-    function _emergencyWithdraw(address receiverAddress_, uint256 amount_) internal virtual override {
-        if (receiverAddress_ == address(0)) revert Error.ZERO_ADDRESS();
-
-        if (_balanceOf(_share(), address(this)) < amount_) {
-            revert Error.INSUFFICIENT_BALANCE();
-        }
-        _shareTransferOut(receiverAddress_, amount_);
-
-        emit EmergencyWithdrawalProcessed(receiverAddress_, amount_);
-    }
-
-    /// @inheritdoc BaseForm
-    function _forwardDustToPaymaster(address token_) internal override {
-        /// @dev call made here to avoid polluting other functions with this setter
-        if (_vaultKind == VaultKind.UNSET) {
-            _vaultKind = _vaultKindCheck();
-        }
-        if (token_ == _share()) revert CANNOT_FORWARD_SHARES();
-        _processForwardDustToPaymaster(token_);
-    }
-
-    /// @dev calls the vault to request deposit
+    /// @dev calls the vault to request direct async deposit
     function _requestDirectDeposit(InitSingleVaultData memory singleVaultData_)
         internal
         returns (uint256 assetsToDeposit, uint256 requestId)
     {
+        assetsToDeposit = _directMoveTokensIn(singleVaultData_);
+
+        requestId = _requestDeposit(assetsToDeposit, singleVaultData_.receiverAddress);
+
+        emit RequestProcessed(CHAIN_ID, CHAIN_ID, singleVaultData_.payloadId, assetsToDeposit, vault, requestId);
+
+        return (assetsToDeposit, requestId);
+    }
+
+    /// @dev calls the vault to process direct sync deposit
+    function _processDirectDeposit(InitSingleVaultData memory singleVaultData_) internal returns (uint256 shares) {
+        uint256 assetsToDeposit = _directMoveTokensIn(singleVaultData_);
+
+        /// @dev deposit assets for shares and add extra validation check to ensure intended ERC4626 behavior
+        shares = _depositAndValidate(singleVaultData_, assetsToDeposit);
+    }
+
+    function _directMoveTokensIn(InitSingleVaultData memory singleVaultData_)
+        internal
+        returns (uint256 assetsToDeposit)
+    {
         DirectDepositLocalVars memory vars;
 
-        address vaultLoc = vault;
-        IERC7540 v = IERC7540(vaultLoc);
         vars.asset = asset;
         vars.balanceBefore = _balanceOf(vars.asset, address(this));
         IERC20 token = IERC20(singleVaultData_.liqData.token);
@@ -497,6 +477,7 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         if (singleVaultData_.liqData.txData.length != 0) {
             vars.chainId = CHAIN_ID;
 
+            /// @dev validate and perform the swap of input token to send to this form
             _swapAssetsInOrOut(
                 singleVaultData_.liqData.bridgeId,
                 singleVaultData_.liqData.txData,
@@ -517,8 +498,9 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
             );
 
             if (
-                IBridgeValidator(vars.bridgeValidator).decodeSwapOutputToken(singleVaultData_.liqData.txData)
-                    != vars.asset
+                IBridgeValidator(_getBridgeValidator(singleVaultData_.liqData.bridgeId)).decodeSwapOutputToken(
+                    singleVaultData_.liqData.txData
+                ) != vars.asset
             ) {
                 revert Error.DIFFERENT_TOKENS();
             }
@@ -534,23 +516,43 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         ) {
             revert Error.DIRECT_DEPOSIT_SWAP_FAILED();
         }
-
-        /// @dev notice that assetsToDeposit is deposited regardless if txData exists or not
-        /// @dev this presumes no dust is left in the superform
-        IERC20(vars.asset).safeIncreaseAllowance(vaultLoc, assetsToDeposit);
-
-        /// ERC7540 logic
-        /// @dev if receiver address is a contract it needs to have a onERC7540DepositReceived() function
-        requestId = v.requestDeposit(assetsToDeposit, singleVaultData_.receiverAddress, address(this));
-
-        emit RequestProcessed(
-            CHAIN_ID, CHAIN_ID, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc, requestId
-        );
-
-        return (assetsToDeposit, requestId);
     }
 
-    /// @dev calls the vault to request deposit
+    //////////////////////////////////////////////////////////////
+    //              XCHAIN DEPOSIT INTERNAL FUNCTIONS           //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc BaseForm
+    function _xChainDepositIntoVault(
+        InitSingleVaultData memory singleVaultData_,
+        address, /*srcSender_*/
+        uint64 srcChainId_
+    )
+        internal
+        virtual
+        override
+        returns (uint256 shares)
+    {
+        if (vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
+
+        if (vaultKind == VaultKind.DEPOSIT_ASYNC || vaultKind == VaultKind.FULLY_ASYNC) {
+            /// @dev state registry for re-processing at a later date
+            _storeDepositPayload(
+                1,
+                srcChainId_,
+                singleVaultData_.amount,
+                _requestXChainDeposit(singleVaultData_, srcChainId_),
+                singleVaultData_
+            );
+            shares = 0;
+        } else {
+            shares = _processXChainDeposit(singleVaultData_, srcChainId_);
+        }
+
+        return shares;
+    }
+
+    /// @dev calls the vault to request xchain async deposit
     function _requestXChainDeposit(
         InitSingleVaultData memory singleVaultData_,
         uint64 srcChainId_
@@ -559,33 +561,267 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         returns (uint256 requestId)
     {
         (,, uint64 dstChainId) = singleVaultData_.superformId.getSuperform();
-        address vaultLoc = vault;
-
-        IERC7540 v = IERC7540(vaultLoc);
 
         _assetTransferIn(asset, singleVaultData_.amount);
 
-        /// @dev allowance is modified inside of the IERC20.transferFrom() call
-        IERC20(asset).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
-
-        /// ERC7540 logic
-        requestId = v.requestDeposit(singleVaultData_.amount, singleVaultData_.receiverAddress, address(this));
+        requestId = _requestDeposit(singleVaultData_.amount, singleVaultData_.receiverAddress);
 
         emit RequestProcessed(
-            srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc, requestId
+            srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault, requestId
         );
-
-        return requestId;
     }
 
-    /// @dev calls the vault to request redeem
+    /// @dev calls the vault to process xchain direct deposit
+    function _processXChainDeposit(
+        InitSingleVaultData memory singleVaultData_,
+        uint64 srcChainId_
+    )
+        internal
+        returns (uint256 shares)
+    {
+        (,, uint64 dstChainId) = singleVaultData_.superformId.getSuperform();
+
+        _assetTransferIn(asset, singleVaultData_.amount);
+
+        /// @dev deposit assets for shares and add extra validation check to ensure intended ERC4626 behavior
+        shares = _depositAndValidate(singleVaultData_, singleVaultData_.amount);
+
+        emit Processed(srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              DIRECT WITHDRAW INTERNAL FUNCTIONS           //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc BaseForm
+    /// @dev this is the step-1 for async form withdraw, direct case
+    /// @dev will mandatorily process unlock unless the retain4626 flag is set
+    /// @return assets
+    function _directWithdrawFromVault(
+        InitSingleVaultData memory singleVaultData_,
+        address /*srcSender_*/
+    )
+        internal
+        virtual
+        override
+        returns (uint256 assets)
+    {
+        if (vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
+
+        if (vaultKind == VaultKind.REDEEM_ASYNC || vaultKind == VaultKind.FULLY_ASYNC) {
+            if (!singleVaultData_.retain4626) {
+                /// @dev state registry for re-processing at a later date
+                _storeWithdrawPayload(0, CHAIN_ID, _requestRedeem(singleVaultData_, CHAIN_ID), singleVaultData_);
+            } else {
+                /// @dev transfer shares to user and do not redeem shares for assets
+                _shareTransferOut(singleVaultData_.receiverAddress, singleVaultData_.amount);
+            }
+
+            assets = 0;
+        } else {
+            assets = _processDirectWithdraw(singleVaultData_);
+        }
+        return assets;
+    }
+
+    /// @dev calls the vault to request direct sync redeem
+    function _processDirectWithdraw(InitSingleVaultData memory singleVaultData_) internal returns (uint256 assets) {
+        DirectWithdrawLocalVars memory vars;
+
+        if (!singleVaultData_.retain4626) {
+            vars.asset = asset;
+
+            /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
+            assets = _withdrawAndValidate(singleVaultData_);
+
+            if (singleVaultData_.liqData.txData.length != 0) {
+                vars.chainId = CHAIN_ID;
+
+                /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
+                if (
+                    _isWithdrawTxDataAmountInvalid(
+                        _decodeAmountIn(
+                            _getBridgeValidator(singleVaultData_.liqData.bridgeId), singleVaultData_.liqData.txData
+                        ),
+                        assets,
+                        singleVaultData_.maxSlippage
+                    )
+                ) {
+                    revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+                }
+
+                /// @dev validate and perform the swap to desired output token and send to beneficiary
+                _swapAssetsInOrOut(
+                    singleVaultData_.liqData.bridgeId,
+                    singleVaultData_.liqData.txData,
+                    IBridgeValidator.ValidateTxDataArgs(
+                        singleVaultData_.liqData.txData,
+                        vars.chainId,
+                        vars.chainId,
+                        singleVaultData_.liqData.liqDstChainId,
+                        false,
+                        address(this),
+                        singleVaultData_.receiverAddress,
+                        vars.asset,
+                        address(0)
+                    ),
+                    singleVaultData_.liqData.nativeAmount,
+                    vars.asset,
+                    false
+                );
+            }
+        } else {
+            /// @dev transfer shares to user and do not redeem shares for assets
+            _shareTransferOut(singleVaultData_.receiverAddress, singleVaultData_.amount);
+            return 0;
+        }
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              XCHAIN WITHDRAW INTERNAL FUNCTIONS           //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc BaseForm
+    /// @dev this is the step-1 for async form withdraw, xchain case
+    /// @dev will mandatorily process unlock unless the retain4626 flag is set
+    /// @return assets
+    function _xChainWithdrawFromVault(
+        InitSingleVaultData memory singleVaultData_,
+        address, /*srcSender_*/
+        uint64 srcChainId_
+    )
+        internal
+        virtual
+        override
+        returns (uint256 assets)
+    {
+        if (vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
+
+        if (vaultKind == VaultKind.REDEEM_ASYNC || vaultKind == VaultKind.FULLY_ASYNC) {
+            if (!singleVaultData_.retain4626) {
+                /// @dev state registry for re-processing at a later date
+                _storeWithdrawPayload(1, srcChainId_, _requestRedeem(singleVaultData_, srcChainId_), singleVaultData_);
+            } else {
+                /// @dev transfer shares to user and do not redeem shares for assets
+                _shareTransferOut(singleVaultData_.receiverAddress, singleVaultData_.amount);
+            }
+            assets = 0;
+        } else {
+            /// @dev if txData is meant to be updated
+            if (singleVaultData_.liqData.token != address(0) && singleVaultData_.liqData.txData.length == 0) {
+                _storeSyncWithdrawPayload(srcChainId_, singleVaultData_);
+
+                assets = 0;
+            } else {
+                // assume update not needed, process imediately
+                assets = _processXChainWithdraw(singleVaultData_, srcChainId_);
+            }
+        }
+
+        return assets;
+    }
+
+    function _processXChainWithdraw(
+        InitSingleVaultData memory singleVaultData_,
+        uint64 srcChainId_
+    )
+        internal
+        returns (uint256 assets)
+    {
+        XChainWithdrawLocalVars memory vars;
+
+        uint256 len = singleVaultData_.liqData.txData.length;
+        /// @dev a case where the withdraw req liqData has a valid token and tx data is not updated by the keeper
+        if (singleVaultData_.liqData.token != address(0) && len == 0) {
+            revert Error.WITHDRAW_TX_DATA_NOT_UPDATED();
+        } else if (singleVaultData_.liqData.token == address(0) && len != 0) {
+            revert Error.WITHDRAW_TOKEN_NOT_UPDATED();
+        }
+
+        (,, vars.dstChainId) = singleVaultData_.superformId.getSuperform();
+
+        if (!singleVaultData_.retain4626) {
+            vars.asset = asset;
+
+            /// @dev redeem shares for assets and add extra validation check to ensure intended ERC4626 behavior
+            assets = _withdrawAndValidate(singleVaultData_);
+
+            if (len != 0) {
+                /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
+                /// @dev if less it should be within the slippage limit specified by the user
+                /// @dev important to maintain so that the keeper cannot update with malicious data after successful
+                /// withdraw
+                if (
+                    _isWithdrawTxDataAmountInvalid(
+                        _decodeAmountIn(
+                            _getBridgeValidator(singleVaultData_.liqData.bridgeId), singleVaultData_.liqData.txData
+                        ),
+                        assets,
+                        singleVaultData_.maxSlippage
+                    )
+                ) {
+                    revert REDEEM_INVALID_LIQ_REQUEST();
+                }
+
+                /// @dev validate and perform the swap to desired output token and send to beneficiary
+                _swapAssetsInOrOut(
+                    singleVaultData_.liqData.bridgeId,
+                    singleVaultData_.liqData.txData,
+                    IBridgeValidator.ValidateTxDataArgs(
+                        singleVaultData_.liqData.txData,
+                        vars.dstChainId,
+                        srcChainId_,
+                        singleVaultData_.liqData.liqDstChainId,
+                        false,
+                        address(this),
+                        singleVaultData_.receiverAddress,
+                        vars.asset,
+                        address(0)
+                    ),
+                    singleVaultData_.liqData.nativeAmount,
+                    vars.asset,
+                    false
+                );
+            }
+        } else {
+            /// @dev transfer shares to user and do not redeem shares for assets
+            _shareTransferOut(singleVaultData_.receiverAddress, singleVaultData_.amount);
+            return 0;
+        }
+
+        emit Processed(srcChainId_, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
+    }
+
+    //////////////////////////////////////////////////////////////
+    //  DIRECT/ XCHAIN DEPOSIT  COMMON INTERNAL FUNCTIONS       //
+    //////////////////////////////////////////////////////////////
+
+    function _requestDeposit(uint256 amount, address receiverAddress) internal returns (uint256 requestId) {
+        address vaultLoc = vault;
+
+        /// @dev allowance is modified inside of the IERC20.transferFrom() call
+        IERC20(asset).safeIncreaseAllowance(vaultLoc, amount);
+
+        /// ERC7540 logic
+        requestId = IERC7540(vaultLoc).requestDeposit(amount, receiverAddress, address(this));
+
+        if (IERC20(asset).allowance(address(this), vaultLoc) > 0) IERC20(asset).forceApprove(vaultLoc, 0);
+
+        /// @notice RequestProcessed emited in the upper internal functions due to difference between direct and xchain
+        /// deposit
+    }
+
+    //////////////////////////////////////////////////////////////
+    //  DIRECT/ XCHAIN WITHDRAW  COMMON INTERNAL FUNCTIONS       //
+    //////////////////////////////////////////////////////////////
+    /// @dev calls the vault to request direct/xchain async redeem
     /// @notice superPositions are already burned at this point
     function _requestRedeem(
         InitSingleVaultData memory singleVaultData_,
         uint64 srcChainId_
     )
         internal
-        returns (uint256 requestId_)
+        returns (uint256 requestId)
     {
         (,, uint64 dstChainId) = singleVaultData_.superformId.getSuperform();
 
@@ -593,7 +829,7 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
 
         IERC20(share).safeIncreaseAllowance(vault, singleVaultData_.amount);
 
-        uint256 requestId =
+        requestId =
             IERC7540(vault).requestRedeem(singleVaultData_.amount, singleVaultData_.receiverAddress, address(this));
 
         if (IERC20(share).allowance(address(this), vault) > 0) IERC20(share).forceApprove(vault, 0);
@@ -601,8 +837,89 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         emit RequestProcessed(
             srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault, requestId
         );
+    }
 
-        return requestId;
+    //////////////////////////////////////////////////////////////
+    //                   HELPER INTERNAL FUNCTIONS              //
+    //////////////////////////////////////////////////////////////
+
+    function _depositAndValidate(
+        InitSingleVaultData memory singleVaultData_,
+        uint256 assetDifference
+    )
+        internal
+        returns (uint256 shares)
+    {
+        address sharesReceiver = singleVaultData_.retain4626 ? singleVaultData_.receiverAddress : address(this);
+
+        address vaultLoc = vault;
+        address assetLoc = asset;
+        /// @dev allowance is modified inside of the IERC20.transferFrom() call
+        IERC20(assetLoc).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
+
+        uint256 sharesBalanceBefore = _balanceOf(vaultLoc, sharesReceiver);
+
+        shares = IERC7540(vault).deposit(assetDifference, sharesReceiver);
+
+        uint256 sharesBalanceAfter = _balanceOf(vaultLoc, sharesReceiver);
+
+        if (IERC20(assetLoc).allowance(address(this), vaultLoc) > 0) IERC20(assetLoc).forceApprove(vaultLoc, 0);
+
+        if (
+            (sharesBalanceAfter - sharesBalanceBefore != shares)
+                || (
+                    ENTIRE_SLIPPAGE * shares
+                        < ((singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)))
+                )
+        ) {
+            revert Error.VAULT_IMPLEMENTATION_FAILED();
+        }
+    }
+
+    function _withdrawAndValidate(InitSingleVaultData memory singleVaultData_) internal returns (uint256 assets) {
+        address assetsReceiver =
+            singleVaultData_.liqData.txData.length == 0 ? singleVaultData_.receiverAddress : address(this);
+
+        address share = _share();
+
+        address vaultLoc = vault;
+
+        IERC20(share).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
+
+        uint256 assetsBalanceBefore = _balanceOf(asset, assetsReceiver);
+
+        assets = IERC7540(vaultLoc).redeem(singleVaultData_.amount, assetsReceiver, address(this));
+
+        uint256 assetsBalanceAfter = _balanceOf(asset, assetsReceiver);
+
+        if (IERC20(share).allowance(address(this), vaultLoc) > 0) IERC20(share).forceApprove(vaultLoc, 0);
+
+        if (
+            (assetsBalanceAfter - assetsBalanceBefore != assets)
+                || (
+                    ENTIRE_SLIPPAGE * assets
+                        < ((singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)))
+                )
+        ) {
+            revert Error.VAULT_IMPLEMENTATION_FAILED();
+        }
+
+        if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
+    }
+
+    function _isWithdrawTxDataAmountInvalid(
+        uint256 bridgeDecodedAmount_,
+        uint256 redeemedAmount_,
+        uint256 slippage_
+    )
+        internal
+        pure
+        returns (bool isInvalid)
+    {
+        if (
+            bridgeDecodedAmount_ > redeemedAmount_
+                || ((bridgeDecodedAmount_ * ENTIRE_SLIPPAGE) < (redeemedAmount_ * (ENTIRE_SLIPPAGE - slippage_)))
+        ) return true;
     }
 
     /// @dev stores the deposit payload
@@ -634,7 +951,34 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         );
     }
 
-    function _vaultKindCheck() public view returns (VaultKind kind) {
+    /// @dev stores the sync withdraw payload
+    function _storeSyncWithdrawPayload(uint64 srcChainId_, InitSingleVaultData memory data_) internal {
+        // send info to async state registry for txData update
+        IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY")))
+            .receiveSyncWithdrawTxDataPayload(srcChainId_, data_);
+    }
+
+    function _claim(
+        address tokenOut,
+        uint256 amountToClaim,
+        address receiver,
+        address controller,
+        bool deposit
+    )
+        internal
+        returns (uint256 balanceBefore, uint256 balanceAfter, uint256 tokensReceived)
+    {
+        IERC7540 v = IERC7540(vault);
+
+        balanceBefore = _balanceOf(tokenOut, receiver);
+
+        tokensReceived =
+            deposit ? v.deposit(amountToClaim, receiver, controller) : v.redeem(amountToClaim, receiver, controller);
+
+        balanceAfter = _balanceOf(tokenOut, receiver);
+    }
+
+    function _vaultKindCheck() internal view returns (VaultKind kind) {
         bool depositSupported;
         bool redeemSupported;
 
@@ -682,6 +1026,37 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
         }
     }
 
+    /// @inheritdoc BaseForm
+    function _emergencyWithdraw(address receiverAddress_, uint256 amount_) internal virtual override {
+        if (receiverAddress_ == address(0)) revert Error.ZERO_ADDRESS();
+
+        if (_balanceOf(_share(), address(this)) < amount_) {
+            revert Error.INSUFFICIENT_BALANCE();
+        }
+        _shareTransferOut(receiverAddress_, amount_);
+
+        emit EmergencyWithdrawalProcessed(receiverAddress_, amount_);
+    }
+
+    /// @inheritdoc BaseForm
+    function _forwardDustToPaymaster(address token_) internal override {
+        /// @dev call made here to avoid polluting other functions with this setter
+        if (vaultKind == VaultKind.UNSET) {
+            vaultKind = _vaultKindCheck();
+        }
+        if (token_ == _share()) revert CANNOT_FORWARD_SHARES();
+        if (token_ == address(0)) revert Error.ZERO_ADDRESS();
+
+        address paymaster = superRegistry.getAddress(keccak256("PAYMASTER"));
+        IERC20 token = IERC20(token_);
+
+        uint256 dust = token.balanceOf(address(this));
+        if (dust != 0) {
+            token.safeTransfer(paymaster, dust);
+            emit FormDustForwardedToPaymaster(token_, dust);
+        }
+    }
+
     function _getBridgeValidator(uint8 bridgeId) internal view returns (address) {
         return superRegistry.getBridgeValidator(bridgeId);
     }
@@ -707,46 +1082,26 @@ contract ERC7540Form is IERC7540FormBase, ERC4626FormImplementation {
     }
 
     function _swapAssetsInOrOut(
-        uint8 bridgeId,
-        bytes memory txData,
-        IBridgeValidator.ValidateTxDataArgs memory args,
-        uint256 nativeAmount,
-        address asset,
-        bool deposit
+        uint8 bridgeId_,
+        bytes memory txData_,
+        IBridgeValidator.ValidateTxDataArgs memory args_,
+        uint256 nativeAmount_,
+        address asset_,
+        bool deposit_
     )
         internal
     {
-        address bridgeValidator = _getBridgeValidator(bridgeId);
+        address bridgeValidator = _getBridgeValidator(bridgeId_);
 
-        uint256 amountIn = _decodeAmountIn(bridgeValidator, txData);
+        uint256 amountIn = _decodeAmountIn(bridgeValidator, txData_);
 
-        if (deposit && asset != NATIVE) {
-            _assetTransferIn(asset, amountIn);
+        if (deposit_ && asset_ != NATIVE) {
+            _assetTransferIn(asset_, amountIn);
         }
 
-        _validateTxData(bridgeValidator, args);
+        _validateTxData(bridgeValidator, args_);
 
-        _dispatchTokens(superRegistry.getBridgeAddress(bridgeId), txData, asset, amountIn, nativeAmount);
-    }
-
-    function _claim(
-        address tokenOut,
-        uint256 amountToClaim,
-        address receiver,
-        address controller,
-        bool deposit
-    )
-        internal
-        returns (uint256 balanceBefore, uint256 balanceAfter, uint256 tokensReceived)
-    {
-        IERC7540 v = IERC7540(vault);
-
-        balanceBefore = _balanceOf(tokenOut, receiver);
-
-        tokensReceived =
-            deposit ? v.deposit(amountToClaim, receiver, controller) : v.redeem(amountToClaim, receiver, controller);
-
-        balanceAfter = _balanceOf(tokenOut, receiver);
+        _dispatchTokens(superRegistry.getBridgeAddress(bridgeId_), txData_, asset_, amountIn, nativeAmount_);
     }
 
     function _balanceOf(address token, address account) internal view returns (uint256) {
