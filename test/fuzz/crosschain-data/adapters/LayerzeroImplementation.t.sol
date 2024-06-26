@@ -331,7 +331,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
         vm.assume(
             malice_ != getContract(ETH, "CoreStateRegistry") && malice_ != getContract(ETH, "TimelockStateRegistry")
-                && malice_ != getContract(ETH, "BroadcastRegistry")
+                && malice_ != getContract(ETH, "BroadcastRegistry") && malice_ != getContract(ETH, "AsyncStateRegistry")
         );
         vm.deal(malice_, 100 ether);
         vm.prank(malice_);
