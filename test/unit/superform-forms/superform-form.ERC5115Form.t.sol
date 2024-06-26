@@ -1327,16 +1327,15 @@ contract SuperformERC5115FormTest is ProtocolActions {
 
     /// @dev Test INVALID_RECEIVER in deposit
     function test_deposit115InvalidReceiver() external {
-        address asset = targetWrapper.asset();
         vm.expectRevert(ERC5115To4626Wrapper.INVALID_RECEIVER.selector);
-        targetWrapper.deposit(address(targetWrapper), asset, 1e6, 0);
+        targetWrapper.deposit(address(targetWrapper), 1e6, 0);
     }
 
     /// @dev Test INVALID_RECEIVER in redeem
     function test_redeem5115InvalidReceiver() external {
         address tokenOut = targetWrapper.mainTokenOut();
         vm.expectRevert(ERC5115To4626Wrapper.INVALID_RECEIVER.selector);
-        targetWrapper.redeem(address(targetWrapper), 1e6, tokenOut, 0, false);
+        targetWrapper.redeem(address(targetWrapper), 1e6, 0);
     }
 
     /// @dev Test INVALID_TOKEN_IN in constructor
@@ -1344,7 +1343,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
         ERC5115To4626Wrapper wrapper = new ERC5115To4626Wrapper(address(rewards), address(1), address(2));
 
         vm.expectRevert(ERC5115To4626Wrapper.INVALID_TOKEN_IN.selector);
-        wrapper.deposit(address(420), address(2), 1e6, 0);
+        wrapper.deposit(address(420), 1e6, 0);
     }
 
     /// @dev Test INVALID_TOKEN_OUT in constructor
@@ -1352,13 +1351,14 @@ contract SuperformERC5115FormTest is ProtocolActions {
         ERC5115To4626Wrapper wrapper = new ERC5115To4626Wrapper(address(rewards), address(1), address(2));
 
         vm.expectRevert(ERC5115To4626Wrapper.INVALID_TOKEN_OUT.selector);
-        wrapper.redeem(address(420), 1e6, address(1), 1e6, false);
+        wrapper.redeem(address(420), 1e6, 1e6);
     }
 
     /// @dev Test NATIVE token deposit
-    // function test_deposit5115Native() external {
-    //     ERC5115To4626Wrapper wrapper =
-    //         new ERC5115To4626Wrapper(address(rewards), address(0), 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9);
-    //     wrapper.deposit(address(420), address(0), 1e6, 0);
-    // }
+    function test_deposit5115Native() external {
+        ERC5115To4626Wrapper wrapper = new ERC5115To4626Wrapper(
+            address(rewards), 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9, 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9
+        );
+        wrapper.deposit(address(420), 1e6, 0);
+    }
 }
