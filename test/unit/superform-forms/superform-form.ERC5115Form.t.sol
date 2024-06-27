@@ -699,6 +699,55 @@ contract SuperformERC5115FormTest is ProtocolActions {
         );
     }
 
+    /// @dev Test emergency withdraw token out not set
+    function test_5115xChainWithdrawTokenOutNotSet() public {
+        address vault = targetSuperform.getVaultAddress();
+
+        bytes32 vaultFormImplementationCombination = keccak256(abi.encode(getContract(ARBI, "ERC5115Form"), vault));
+        uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
+            .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
+
+        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+        bytes memory extra5115ZeroData = abi.encode("", superformId, address(0));
+
+        LiqRequest memory liqRequest =
+            LiqRequest(bytes(""), 0x5979D7b546E38E414F7E9822514be443A4800529, address(0), 0, ARBI, 0);
+
+        SingleVaultSFData memory sfData = SingleVaultSFData(
+            superformId,
+            1e6,
+            1e6,
+            100,
+            liqRequest,
+            bytes(""),
+            false,
+            false,
+            deployer,
+            deployer,
+            abi.encode(1, extra5115Data)
+        );
+
+        vm.startPrank(deployer);
+        IERC20(0x5979D7b546E38E414F7E9822514be443A4800529).approve(getContract(ARBI, "SuperformRouter"), 1e6);
+        SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))).singleDirectSingleVaultDeposit(
+            SingleDirectSingleVaultStateReq(sfData)
+        );
+
+        SuperPositions(getContract(ARBI, "SuperPositions")).setApprovalForAll(
+            getContract(ARBI, "SuperformRouter"), true
+        );
+
+        LiqRequest memory withdrawLiqRequest = LiqRequest(bytes(""), address(0), address(0), 0, ARBI, 0);
+
+        InitSingleVaultData memory withdrawSfData = InitSingleVaultData(
+            1, superformId, 1e6, 1e6, 100, withdrawLiqRequest, false, true, deployer, abi.encode(1, extra5115ZeroData)
+        );
+
+        vm.startPrank(getContract(ARBI, "CoreStateRegistry"));
+        vm.expectRevert(ERC5115Form.ERC5115FORM_TOKEN_OUT_NOT_SET.selector);
+        targetSuperform.xChainWithdrawFromVault(withdrawSfData, deployer, OP);
+    }
+
     /// @dev Test emergency withdraw xChain
     function test_5115xChainWithdrawRetain() public {
         address vault = targetSuperform.getVaultAddress();
