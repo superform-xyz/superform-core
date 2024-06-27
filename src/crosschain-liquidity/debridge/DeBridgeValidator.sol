@@ -12,6 +12,11 @@ import { DlnOrderLib } from "src/vendor/deBridge/DlnOrderLib.sol";
 /// @author Zeropoint Labs
 contract DeBridgeValidator is BridgeValidator {
     //////////////////////////////////////////////////////////////
+    //                       CONSTANTS                          //
+    //////////////////////////////////////////////////////////////
+    bytes private constant NATIVE_IN_BYTES = abi.encodePacked(NATIVE);
+
+    //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
@@ -150,6 +155,12 @@ contract DeBridgeValidator is BridgeValidator {
 
         if (permitEnvelope.length > 0) {
             revert DeBridgeError.INVALID_PERMIT_ENVELOP();
+        }
+
+        /// @dev casting native tokens
+        if (deBridgeQuote.giveTokenAddress == address(0)) deBridgeQuote.giveTokenAddress = NATIVE;
+        if (_castToAddress(deBridgeQuote.takeTokenAddress) == address(0)) {
+            deBridgeQuote.takeTokenAddress = NATIVE_IN_BYTES;
         }
     }
 
