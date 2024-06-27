@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.sol";
-import { IAsyncStateRegistry, AsyncDepositPayload, AsyncWithdrawPayload } from "src/interfaces/IAsyncStateRegistry.sol";
+import { IAsyncStateRegistry, AsyncDepositPayload, AsyncWithdrawPayload, SyncWithdrawTxDataPayload } from "src/interfaces/IAsyncStateRegistry.sol";
 import { IPayloadHelper } from "src/interfaces/IPayloadHelper.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
@@ -225,6 +225,31 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     /// @inheritdoc IPayloadHelper
+    function decodeSyncWithdrawPayload(uint256 syncWithdrawPayloadId_)
+        external
+        view
+        override
+        returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
+    {
+        IAsyncStateRegistry asyncStateRegistry =
+            IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY")));
+
+        if (syncWithdrawPayloadId_ > asyncStateRegistry.syncWithdrawTxDataPayloadCounter()) {
+            revert Error.INVALID_PAYLOAD_ID();
+        }
+
+        SyncWithdrawTxDataPayload memory payload = asyncStateRegistry.getSyncWithdrawTxDataPayload(syncWithdrawPayloadId_);
+
+        return (
+            payload.data.receiverAddress,
+            payload.srcChainId,
+            payload.data.payloadId,
+            payload.data.superformId,
+            payload.data.amount
+        );
+    }
+
+    /// @inheritdoc IPayloadHelper
     function getDstPayloadProof(uint256 dstPayloadId_) external view override returns (bytes32) {
         IBaseStateRegistry coreStateRegistry =
             IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
@@ -265,8 +290,8 @@ contract PayloadHelper is IPayloadHelper {
         srcChainId = srcChainId_;
     }
 
-        /// @inheritdoc IPayloadHelper
-    function decodeAsyncDepositAckPayload(uint256 payloadId_)
+    /// @inheritdoc IPayloadHelper
+    function decodeAsyncAckPayload(uint256 payloadId_)
         external
         view
         override
@@ -282,8 +307,8 @@ contract PayloadHelper is IPayloadHelper {
 
         (, uint8 callbackType_,,, address srcSender_, uint64 srcChainId_) = payloadHeader.decodeTxInfo();
 
-        /// @dev callback type can never be INIT / FAIL
-        if (callbackType_ == uint256(CallbackType.RETURN)) {
+        /// @dev callback type can never be INIT
+        if (callbackType_ == uint256(CallbackType.RETURN) || callbackType_ == uint256(CallbackType.FAIL)) {
             ReturnSingleData memory rsd = abi.decode(payloadBody, (ReturnSingleData));
             amount = rsd.amount;
             superformId = rsd.superformId;

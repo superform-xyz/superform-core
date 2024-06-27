@@ -67,6 +67,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
     uint256[][] public revertingWithdrawTimelockedSFs;
     uint256[][] public revertingAsyncDepositSFs;
     uint256[][] public revertingAsyncWithdrawSFs;
+    uint256[][] public revertingRedeemAsyncDepositSFs;
 
     /// @dev dynamic arrays to insert in the double array above
     uint256[] public asyncDepositSFsPerDst;
@@ -76,6 +77,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
     uint256[] public revertingWithdrawTimelockedSFsPerDst;
     uint256[] public revertingAsyncDepositSFsPerDst;
     uint256[] public revertingAsyncWithdrawSFsPerDst;
+    uint256[] public revertingRedeemAsyncDepositSFsPerDst;
 
     /// @dev for multiDst tests with repeating destinations
     struct UniqueDSTInfo {
@@ -370,6 +372,26 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 amountsToRemintPerDst
             );
         }
+
+        if (action.action == Actions.Withdraw) {
+            /// @dev Process payload received on source from destination (withdraw callback, for failed withdraws)
+            _stage8_process_failed_syncWithdraw_xchain_remint(action, vars);
+
+            if (DEBUG_MODE) console.log("Stage 8 sync redeem remint complete");
+
+            amountsToRemintPerDst =
+                _amountsToRemintPerDstWithSyncWithdraw(action, vars, multiSuperformsData, singleSuperformsData);
+            /// @dev assert superpositions were re-minted
+            _assertAfterSyncWithdrawFailedWithdraw(
+                action,
+                multiSuperformsData,
+                singleSuperformsData,
+                vars,
+                spAmountSummed,
+                spAmountBeforeWithdrawPerDst,
+                amountsToRemintPerDst
+            );
+        }
         delete asyncDepositSFs;
         delete asyncWithdrawSFs;
         delete revertingDepositSFs;
@@ -377,6 +399,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
         delete revertingWithdrawTimelockedSFs;
         delete revertingAsyncDepositSFs;
         delete revertingAsyncWithdrawSFs;
+        delete revertingRedeemAsyncDepositSFs;
+
         delete sameChainDstHasRevertingVault;
 
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
@@ -469,7 +493,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         : payable(getContract(DST_CHAINS[i], "CoreStateRegistry"));
                 }
             }
-
             vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
 
             vars.outputAmounts = vars.amounts;
@@ -939,7 +962,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
             }
 
             if (AMBs[index] == 3) {
-                console.log("wormhole helper here");
                 WormholeHelper(getContract(CHAIN_0, "WormholeHelper")).help(
                     WORMHOLE_CHAIN_IDS[CHAIN_0],
                     internalVars.forkIds,
@@ -1275,45 +1297,52 @@ abstract contract ProtocolActions is CommonProtocolActions {
         Vm.Log[] logs;
     }
 
+    function _authorizeOperatorAndMoveToClaimable(address superform, uint256 user) internal {
+        address vault = IBaseForm(superform).getVaultAddress();
+        if (!IERC7540(vault).isOperator(users[user], superform)) {
+            bytes32 nonce = _randomBytes32();
+            IAuthorizeOperator(vault).authorizeOperator(
+                users[user],
+                superform,
+                true,
+                block.timestamp + 30 days,
+                nonce,
+                _signAuthorizeOperator(
+                    AuthorizeOperator(users[user], superform, true, block.timestamp + 30 days, nonce),
+                    vault,
+                    userKeys[user]
+                )
+            );
+        }
+
+        ISetClaimable(vault).moveAssetsToClaimable(0, users[user]);
+    }
+
     /// @dev STEP 5_1 DIRECT AND X-CHAIN: Finalize async deposit payload
     function _stage5_1_finalize_asyncDeposit_payload(TestAction memory action, StagesLocalVars memory vars) internal {
         Stage51ASyncDeposit memory v;
 
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
+            v.initialFork = vm.activeFork();
+
+            vm.selectFork(FORKS[DST_CHAINS[i]]);
+
+            v.asyncStateRegistry = IAsyncStateRegistry(contracts[DST_CHAINS[i]][bytes32(bytes("AsyncStateRegistry"))]);
+
+            v.currentDepositPayloadCounter = v.asyncStateRegistry.asyncDepositPayloadCounter();
             if (countAsyncDeposit[i] > 0) {
-                v.initialFork = vm.activeFork();
+                /// @dev set 7540 operator and move vault to claimable
+                for (uint256 j = 0; j < asyncDepositSFs[i].length; j++) {
+                    (v.superform,,) = asyncDepositSFs[i][j].getSuperform();
+                    _authorizeOperatorAndMoveToClaimable(v.superform, action.user);
+                }
 
-                vm.selectFork(FORKS[DST_CHAINS[i]]);
+                for (uint256 j = 0; j < revertingRedeemAsyncDepositSFs[i].length; j++) {
+                    (v.superform,,) = revertingRedeemAsyncDepositSFs[i][j].getSuperform();
+                    _authorizeOperatorAndMoveToClaimable(v.superform, action.user);
+                }
 
-                v.asyncStateRegistry =
-                    IAsyncStateRegistry(contracts[DST_CHAINS[i]][bytes32(bytes("AsyncStateRegistry"))]);
-
-                v.currentDepositPayloadCounter = v.asyncStateRegistry.asyncDepositPayloadCounter();
                 if (v.currentDepositPayloadCounter > 0) {
-                    /// @dev set 7540 operator and move vault to claimable
-                    for (uint256 j = 0; j < asyncDepositSFs[i].length; j++) {
-                        (v.superform,,) = asyncDepositSFs[i][j].getSuperform();
-                        v.vault = IBaseForm(v.superform).getVaultAddress();
-                        if (!IERC7540(v.vault).isOperator(users[action.user], v.superform)) {
-                            v.nonce = _randomBytes32();
-                            IAuthorizeOperator(v.vault).authorizeOperator(
-                                users[action.user],
-                                v.superform,
-                                true,
-                                block.timestamp + 30 days,
-                                v.nonce,
-                                _signAuthorizeOperator(
-                                    AuthorizeOperator(
-                                        users[action.user], v.superform, true, block.timestamp + 30 days, v.nonce
-                                    ),
-                                    v.vault,
-                                    userKeys[action.user]
-                                )
-                            );
-                        }
-
-                        ISetClaimable(v.vault).moveAssetsToClaimable(0, users[action.user]);
-                    }
                     vm.recordLogs();
 
                     /// @dev perform the calls from beginning to last because of easiness in passing unlock id
@@ -1360,7 +1389,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vm.selectFork(FORKS[CHAIN_0]);
 
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
-            if (CHAIN_0 != DST_CHAINS[i] && asyncDepositSFs[i].length > 0) {
+            if (
+                CHAIN_0 != DST_CHAINS[i]
+                    && (asyncDepositSFs[i].length > 0 || revertingRedeemAsyncDepositSFs[i].length > 0)
+            ) {
                 /// @dev if a payload exists to be processed, process it
                 if (
                     _payload(getContract(CHAIN_0, "AsyncStateRegistry"), CHAIN_0, ASYNC_DEPOSIT_PAYLOAD_ID[CHAIN_0] + 1)
@@ -1383,21 +1415,19 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     );
 
                     vm.expectRevert(Error.INVALID_PAYLOAD.selector);
-                    PayloadHelper(getContract(CHAIN_0, "PayloadHelper")).decodeAsyncDepositAckPayload(
+                    PayloadHelper(getContract(CHAIN_0, "PayloadHelper")).decodeAsyncAckPayload(
                         ASYNC_DEPOSIT_PAYLOAD_ID[CHAIN_0]
                     );
 
                     vm.clearMockedCalls();
 
                     (address srcSender, uint64 srcChainId,,,) = PayloadHelper(getContract(CHAIN_0, "PayloadHelper"))
-                        .decodeAsyncDepositAckPayload(ASYNC_DEPOSIT_PAYLOAD_ID[CHAIN_0]);
+                        .decodeAsyncAckPayload(ASYNC_DEPOSIT_PAYLOAD_ID[CHAIN_0]);
 
                     assertEq(srcChainId, DST_CHAINS[i]);
                     assertEq(srcSender, users[action.user]);
 
-                    success = _processAsyncPayload(
-                        ASYNC_DEPOSIT_PAYLOAD_ID[CHAIN_0], DST_CHAINS[i], CHAIN_0, action.testType, action.revertError
-                    );
+                    success = _processAsyncPayload(ASYNC_DEPOSIT_PAYLOAD_ID[CHAIN_0], DST_CHAINS[i], CHAIN_0);
                 }
             }
         }
@@ -1576,13 +1606,18 @@ abstract contract ProtocolActions is CommonProtocolActions {
             if (countAsyncDeposit[i] > 0) {
                 currentSyncWithdrawTxDataPayloadCounter = asyncStateRegistry.syncWithdrawTxDataPayloadCounter();
                 if (currentSyncWithdrawTxDataPayloadCounter > 0) {
+                    vm.recordLogs();
+
                     uint256 syncWithdrawPerformed;
                     /// @dev perform the calls from beginning to last because of easiness in passing unlock id
                     for (uint256 j = countAsyncDeposit[i]; j > 0; j--) {
+                        uint256 nativeFee = _generateAckGasFeesAndParamsForSyncWithdrawCallback(
+                            abi.encode(CHAIN_0, DST_CHAINS[i]),
+                            AMBs,
+                            currentSyncWithdrawTxDataPayloadCounter - syncWithdrawPerformed
+                        );
                         vm.prank(deployer);
-                        console.log("asyncDepositIndexes[DST_CHAINS[i]][j]", asyncDepositIndexes[DST_CHAINS[i]][j]);
-                        console.log("DST_CHAINS[i]", DST_CHAINS[i]);
-                        asyncStateRegistry.finalizeSyncWithdrawTxDataPayload(
+                        asyncStateRegistry.finalizeSyncWithdrawTxDataPayload{ value: nativeFee }(
                             currentSyncWithdrawTxDataPayloadCounter - syncWithdrawPerformed,
                             GENERATE_WITHDRAW_TX_DATA_ON_DST
                                 ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][asyncDepositIndexes[DST_CHAINS[i]][j]]
@@ -1600,6 +1635,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         );
                         ++syncWithdrawPerformed;
                     }
+                    /// @dev deliver the message for the given destination
+                    Vm.Log[] memory logs = vm.getRecordedLogs();
+                    _payloadDeliveryHelper(CHAIN_0, DST_CHAINS[i], logs);
                 }
             }
         }
@@ -1657,6 +1695,64 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     success = _processTimelockPayload(
                         TIMELOCK_PAYLOAD_ID[CHAIN_0], DST_CHAINS[i], CHAIN_0, action.testType, action.revertError
                     );
+                }
+            }
+        }
+    }
+
+    /// @dev STEP 8 X-CHAIN: to process failed messages from  async state registry, sync withdraws
+    function _stage8_process_failed_syncWithdraw_xchain_remint(
+        TestAction memory action,
+        StagesLocalVars memory vars
+    )
+        internal
+        returns (bool success)
+    {
+        /// @dev assume it will pass by default
+        success = true;
+        vm.selectFork(FORKS[CHAIN_0]);
+
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
+            if (CHAIN_0 != DST_CHAINS[i] && revertingRedeemAsyncDepositSFs[i].length > 0) {
+                /// @dev if a payload exists to be processed, process it
+                if (
+                    _payload(
+                        getContract(CHAIN_0, "AsyncStateRegistry"),
+                        CHAIN_0,
+                        SYNC_WITHDRAW_PAYLOAD_ID[CHAIN_0] + ASYNC_DEPOSIT_PAYLOAD_ID[CHAIN_0] + 1
+                    ).length > 0
+                ) {
+                    SYNC_WITHDRAW_PAYLOAD_ID[CHAIN_0] =
+                        SYNC_WITHDRAW_PAYLOAD_ID[CHAIN_0] + ASYNC_DEPOSIT_PAYLOAD_ID[CHAIN_0] + 1;
+
+                    IBaseStateRegistry asyncStateRegistry = IBaseStateRegistry(
+                        ISuperRegistry(getContract(CHAIN_0, "SuperRegistry")).getAddress(
+                            keccak256("ASYNC_STATE_REGISTRY")
+                        )
+                    );
+
+                    vm.mockCall(
+                        address(asyncStateRegistry),
+                        abi.encodeWithSelector(
+                            asyncStateRegistry.payloadHeader.selector, SYNC_WITHDRAW_PAYLOAD_ID[CHAIN_0]
+                        ),
+                        abi.encode(0)
+                    );
+
+                    vm.expectRevert(Error.INVALID_PAYLOAD.selector);
+                    PayloadHelper(getContract(CHAIN_0, "PayloadHelper")).decodeAsyncAckPayload(
+                        SYNC_WITHDRAW_PAYLOAD_ID[CHAIN_0]
+                    );
+
+                    vm.clearMockedCalls();
+
+                    (address srcSender, uint64 srcChainId,,,) = PayloadHelper(getContract(CHAIN_0, "PayloadHelper"))
+                        .decodeAsyncAckPayload(SYNC_WITHDRAW_PAYLOAD_ID[CHAIN_0]);
+
+                    assertEq(srcChainId, DST_CHAINS[i]);
+                    assertEq(srcSender, users[action.user]);
+
+                    success = _processAsyncPayload(SYNC_WITHDRAW_PAYLOAD_ID[CHAIN_0], DST_CHAINS[i], CHAIN_0);
                 }
             }
         }
@@ -2378,8 +2474,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
             uint256(USDPerUnderlyingToken),
             users[args.user]
         );
-        console.log("liqDstChainId", args.liqDstChainId);
-        console.log("args.toChainId", args.toChainId);
 
         vars.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, args.toChainId == args.liqDstChainId);
 
@@ -2465,7 +2559,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
         underlyingSrcTokensMem = new address[](vars.len);
         underlyingDstTokensMem = new address[](vars.len);
         vaultMocksMem = new address[](vars.len);
-
         /// @dev this loop assigns the information in the correct output arrays the best way possible
         for (uint256 i = 0; i < vars.len; ++i) {
             vars.underlyingToken = UNDERLYING_TOKENS[vars.underlyingTokens[i]]; // 1
@@ -2497,6 +2590,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
             if (vars.vaultIds[i] == 14) {
                 revertingAsyncWithdrawSFsPerDst.push(vars.superformIdsTemp[i]);
             }
+            if (vars.vaultIds[i] == 15) {
+                revertingRedeemAsyncDepositSFsPerDst.push(vars.superformIdsTemp[i]);
+            }
         }
         /// @dev info for async sfs
         asyncDepositSFs.push(asyncDepositSFsPerDst);
@@ -2510,17 +2606,22 @@ abstract contract ProtocolActions is CommonProtocolActions {
         revertingWithdrawTimelockedSFs.push(revertingWithdrawTimelockedSFsPerDst);
         revertingAsyncDepositSFs.push(revertingAsyncDepositSFsPerDst);
         revertingAsyncWithdrawSFs.push(revertingAsyncWithdrawSFsPerDst);
+        revertingRedeemAsyncDepositSFs.push(revertingRedeemAsyncDepositSFsPerDst);
 
         delete revertingDepositSFsPerDst;
         delete revertingWithdrawSFsPerDst;
         delete revertingWithdrawTimelockedSFsPerDst;
         delete revertingAsyncDepositSFsPerDst;
         delete revertingAsyncWithdrawSFsPerDst;
+        delete revertingRedeemAsyncDepositSFsPerDst;
 
         /// @dev detects timelocked forms in scenario and counts them
         for (uint256 j; j < vars.formKinds.length; ++j) {
             if (vars.formKinds[j] == 1) ++countTimelocked[dst];
-            if (vars.formKinds[j] == 4 && (vars.vaultIds[j] == 10 || vars.vaultIds[j] == 11)) ++countAsyncDeposit[dst];
+            if (vars.formKinds[j] == 4 && (vars.vaultIds[j] == 10 || vars.vaultIds[j] == 11 || vars.vaultIds[j] == 15))
+            {
+                ++countAsyncDeposit[dst];
+            }
             if (vars.formKinds[j] == 4 && (vars.vaultIds[j] == 10 || vars.vaultIds[j] == 12)) ++countAsyncWithdraw[dst];
 
             timeLockedIndexes[chain1][countTimelocked[dst]] = j;
@@ -2954,9 +3055,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
     function _processAsyncPayload(
         uint256 payloadId_,
         uint64 srcChainId_,
-        uint64 targetChainId_,
-        TestType, /*testType*/
-        bytes4
+        uint64 targetChainId_
     )
         internal
         returns (bool)
@@ -3195,6 +3294,58 @@ abstract contract ProtocolActions is CommonProtocolActions {
         }
     }
 
+    function _amountsToRemintPerDstWithSyncWithdraw(
+        TestAction memory action,
+        StagesLocalVars memory vars,
+        MultiVaultSFData[] memory multiSuperformsData,
+        SingleVaultSFData[] memory singleSuperformsData
+    )
+        internal
+        view
+        returns (uint256[][] memory amountsToRemintPerDst)
+    {
+        amountsToRemintPerDst = new uint256[][](vars.nDestinations);
+
+        uint256[] memory amountsToRemint;
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
+            if (action.multiVaults) {
+                amountsToRemint = new uint256[](multiSuperformsData[i].superformIds.length);
+
+                for (uint256 j = 0; j < multiSuperformsData[i].superformIds.length; ++j) {
+                    amountsToRemint[j] = multiSuperformsData[i].amounts[j];
+                    bool found = false;
+                    for (uint256 k = 0; k < revertingRedeemAsyncDepositSFs[i].length; ++k) {
+                        if (revertingRedeemAsyncDepositSFs[i][k] == multiSuperformsData[i].superformIds[j]) {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        amountsToRemint[j] = 0;
+                        found = false;
+                    }
+                }
+            } else {
+                amountsToRemint = new uint256[](1);
+                amountsToRemint[0] = singleSuperformsData[i].amount;
+                bool found;
+
+                for (uint256 k = 0; k < revertingRedeemAsyncDepositSFs[i].length; ++k) {
+                    if (revertingRedeemAsyncDepositSFs[i][k] == singleSuperformsData[i].superformId) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    amountsToRemint[0] = 0;
+                }
+            }
+            amountsToRemintPerDst[i] = amountsToRemint;
+        }
+    }
+
     function _amountsToRemintPerDst(
         TestAction memory action,
         StagesLocalVars memory vars,
@@ -3403,6 +3554,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint256 repetitions;
         uint256 lenRevertDeposit;
         uint256 lenAsyncDeposit;
+        uint256 lenRevertingRedeemAsyncDeposit;
         uint256 lenRevertAsyncDeposit;
         uint256 dstIndex;
         bool isdstSwap;
@@ -3441,6 +3593,15 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     for (v.k = 0; v.k < args.lenAsyncDeposit; ++v.k) {
                         v.foundRevertingOrAsyncDeposit =
                             asyncDepositSFs[args.dstIndex][v.k] == args.multiSuperformsData.superformIds[v.i];
+                        if (v.foundRevertingOrAsyncDeposit) break;
+                    }
+                }
+
+                /// @dev find if a superform is an async deposit
+                if (args.lenRevertingRedeemAsyncDeposit > 0) {
+                    for (v.k = 0; v.k < args.lenRevertingRedeemAsyncDeposit; ++v.k) {
+                        v.foundRevertingOrAsyncDeposit = revertingRedeemAsyncDepositSFs[args.dstIndex][v.k]
+                            == args.multiSuperformsData.superformIds[v.i];
                         if (v.foundRevertingOrAsyncDeposit) break;
                     }
                 }
@@ -3666,7 +3827,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 /// @dev obtain amounts to assert
                 (emptyAmount, v.spAmountSummedPerDst,) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
                     SpAmountsMultiBeforeActionOrAfterSuccessDepositArgs(
-                        multiSuperformsData[i], false, 0, false, 1, 0, 0, 0, i, action.dstSwap
+                        multiSuperformsData[i], false, 0, false, 1, 0, 0, 0, 0, i, action.dstSwap
                     )
                 );
 
@@ -3723,6 +3884,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
     struct AssertAfterDepositLocalVars {
         uint256 lenRevertDeposit;
         uint256 lenAsyncDeposit;
+        uint256 lenRevertingRedeemAsyncDeposit;
         uint256[] spAmountSummed;
         uint256 totalSpAmount;
         uint256 totalSpAmountAllDestinations;
@@ -3746,11 +3908,16 @@ abstract contract ProtocolActions is CommonProtocolActions {
             uint256 repetitions = usedDSTs[DST_CHAINS[i]].nRepetitions;
             v.lenRevertDeposit = 0;
             v.lenAsyncDeposit = 0;
+            v.lenRevertingRedeemAsyncDeposit = 0;
+
             if (revertingDepositSFs.length > 0) {
                 v.lenRevertDeposit = revertingDepositSFs[i].length;
             }
             if (asyncDepositSFs.length > 0) {
                 v.lenAsyncDeposit = asyncDepositSFs[i].length;
+            }
+            if (revertingRedeemAsyncDepositSFs.length > 0) {
+                v.lenRevertingRedeemAsyncDeposit = revertingRedeemAsyncDepositSFs[i].length;
             }
 
             if (action.multiVaults) {
@@ -3764,6 +3931,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         repetitions,
                         v.lenRevertDeposit,
                         v.lenAsyncDeposit,
+                        v.lenRevertingRedeemAsyncDeposit,
                         0,
                         i,
                         action.dstSwap
@@ -3803,6 +3971,11 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
                 if (v.lenAsyncDeposit > 0) {
                     v.foundRevertingOrAsyncDeposit = asyncDepositSFs[i][0] == singleSuperformsData[i].superformId;
+                }
+
+                if (v.lenRevertingRedeemAsyncDeposit > 0) {
+                    v.foundRevertingOrAsyncDeposit =
+                        revertingRedeemAsyncDepositSFs[i][0] == singleSuperformsData[i].superformId;
                 }
 
                 v.totalSpAmountAllDestinations += singleSuperformsData[i].amount;
@@ -3882,6 +4055,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         action.slippage,
                         CHAIN_0 == DST_CHAINS[i],
                         repetitions,
+                        0,
                         0,
                         0,
                         lenRevertAsyncDeposit,
@@ -4203,7 +4377,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         if (DEBUG_MODE) console.log("Asserted after failed withdraw");
     }
 
-    struct AssertAfterTimelockFailedWithdraw {
+    struct AssertAfterAsyncWithdrawFailedWithdraw {
         uint256[] spAmountFinal;
         bool partialWithdrawVault;
         bool[] partialWithdrawVaults;
@@ -4224,7 +4398,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
     {
         vm.selectFork(FORKS[CHAIN_0]);
 
-        AssertAfterTimelockFailedWithdraw memory v;
+        AssertAfterAsyncWithdrawFailedWithdraw memory v;
 
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
             if (!(CHAIN_0 == DST_CHAINS[i] && revertingWithdrawSFs[i].length > 0)) {
@@ -4266,6 +4440,63 @@ abstract contract ProtocolActions is CommonProtocolActions {
             }
         }
         if (DEBUG_MODE) console.log("Asserted after failed timelock withdraw");
+    }
+
+    function _assertAfterSyncWithdrawFailedWithdraw(
+        TestAction memory action,
+        MultiVaultSFData[] memory multiSuperformsData,
+        SingleVaultSFData[] memory singleSuperformsData,
+        StagesLocalVars memory vars,
+        uint256[][] memory spAmountsBeforeWithdraw,
+        uint256[] memory spAmountBeforeWithdrawPerDst,
+        uint256[][] memory amountsToRemintPerDst
+    )
+        internal
+    {
+        vm.selectFork(FORKS[CHAIN_0]);
+
+        AssertAfterAsyncWithdrawFailedWithdraw memory v;
+
+        for (uint256 i = 0; i < vars.nDestinations; ++i) {
+            if (!(CHAIN_0 == DST_CHAINS[i] && revertingRedeemAsyncDepositSFs[i].length > 0)) {
+                if (revertingRedeemAsyncDepositSFs[i].length > 0) {
+                    if (action.multiVaults) {
+                        v.partialWithdrawVaults = PARTIAL[DST_CHAINS[i]][vars.act];
+                        /// @dev this obtains amounts that failed from returned data obtained as a return from process
+                        /// payload
+
+                        /// @dev obtains final amounts to assert considering the amounts that failed to be withdrawn
+                        v.spAmountFinal = _spAmountsMultiAfterFailedWithdraw(
+                            multiSuperformsData[i], action.user, spAmountsBeforeWithdraw[i], amountsToRemintPerDst[i]
+                        );
+
+                        /// @dev asserts
+                        _assertMultiVaultBalance(
+                            action.user,
+                            multiSuperformsData[i].superformIds,
+                            v.spAmountFinal,
+                            v.partialWithdrawVaults,
+                            true
+                        );
+                    } else {
+                        v.partialWithdrawVault =
+                            PARTIAL[DST_CHAINS[i]][vars.act].length > 0 ? PARTIAL[DST_CHAINS[i]][vars.act][0] : false;
+                        if (!v.partialWithdrawVault) {
+                            /// @dev this assertion assumes the withdraw is happening on the same superformId as the
+                            /// previous deposit
+                            _assertSingleVaultBalance(
+                                action.user, singleSuperformsData[i].superformId, spAmountBeforeWithdrawPerDst[i], true
+                            );
+                        } else {
+                            _assertSingleVaultPartialWithdrawBalance(
+                                action.user, singleSuperformsData[i].superformId, spAmountBeforeWithdrawPerDst[i]
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        if (DEBUG_MODE) console.log("Asserted after failed sync withdraw");
     }
 
     function _successfulDepositXChain(

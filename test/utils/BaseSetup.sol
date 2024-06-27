@@ -40,6 +40,8 @@ import { Permit2Clone } from "../mocks/Permit2Clone.sol";
 import { KYCDaoNFTMock } from "../mocks/KYCDaoNFTMock.sol";
 import { ERC7540AsyncDepositMock } from "../mocks/ERC7540AsyncDepositMock.sol";
 import { ERC7540AsyncDepositMockRevert } from "../mocks/ERC7540AsyncDepositMockRevert.sol";
+import { ERC7540AsyncDepositMockRedeemRevert } from "../mocks/ERC7540AsyncDepositMockRedeemRevert.sol";
+
 import { ERC7540AsyncRedeemMock } from "../mocks/ERC7540AsyncRedeemMock.sol";
 import { ERC7540AsyncRedeemMockRevert } from "../mocks/ERC7540AsyncRedeemMockRevert.sol";
 import { ERC7540FullyAsyncMock } from "../mocks/ERC7540FullyAsyncMock.sol";
@@ -208,7 +210,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         "ERC7540AsyncDepositMock",
         "ERC7540AsyncRedeemMock",
         "ERC7540AsyncDepositMockRevert",
-        "ERC7540AsyncRedeemMockRevert"
+        "ERC7540AsyncRedeemMockRevert",
+        "ERC7540AsyncDepositMockRedeemRevert"
     ];
 
     struct VaultInfo {
@@ -225,6 +228,7 @@ abstract contract BaseSetup is StdInvariant, Test {
     mapping(uint64 chainId => uint256 payloadId) PAYLOAD_ID;
     mapping(uint64 chainId => uint256 payloadId) TIMELOCK_PAYLOAD_ID;
     mapping(uint64 chainId => uint256 payloadId) ASYNC_DEPOSIT_PAYLOAD_ID;
+    mapping(uint64 chainId => uint256 payloadId) SYNC_WITHDRAW_PAYLOAD_ID;
 
     /// @dev liquidity bridge ids
     uint8[] bridgeIds;
@@ -1918,6 +1922,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         vaultBytecodes2[5].vaultKinds.push("ERC7540AsyncDepositMockRevert");
         vaultBytecodes2[5].vaultBytecode.push(type(ERC7540AsyncRedeemMockRevert).creationCode);
         vaultBytecodes2[5].vaultKinds.push("ERC7540AsyncRedeemMockRevert");
+        vaultBytecodes2[5].vaultBytecode.push(type(ERC7540AsyncDepositMockRedeemRevert).creationCode);
+        vaultBytecodes2[5].vaultKinds.push("ERC7540AsyncDepositMockRedeemRevert");
 
         /// @dev populate VAULT_NAMES state arg with tokenNames + vaultKinds names
         string[] memory underlyingTokens = UNDERLYING_TOKENS;
@@ -2345,6 +2351,34 @@ abstract contract BaseSetup is StdInvariant, Test {
 
         (,, uint256 payloadId, uint256 superformId, uint256 amount) =
             vars.payloadHelper.decodeAsyncDepositPayload(asyncDepositPayloadId);
+
+        vars.message =
+            abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superformId, amount))));
+
+        (msgValue,) = vars.paymentHelper.calculateAMBData(vars.srcChainId, selectedAmbIds, vars.message);
+    }
+
+      /// @dev Generates the acknowledgement amb params for the sync deposit action
+    function _generateAckGasFeesAndParamsForSyncWithdrawCallback(
+        bytes memory chainIds_,
+        uint8[] memory selectedAmbIds,
+        uint256 asyncDepositPayloadId
+    )
+        internal
+        view
+        returns (uint256 msgValue)
+    {
+        LocalAckVars memory vars;
+        (vars.srcChainId, vars.dstChainId) = abi.decode(chainIds_, (uint64, uint64));
+
+        address _paymentHelper = contracts[vars.dstChainId][bytes32(bytes("PaymentHelper"))];
+        vars.paymentHelper = PaymentHelper(_paymentHelper);
+
+        address _payloadHelper = contracts[vars.dstChainId][bytes32(bytes("PayloadHelper"))];
+        vars.payloadHelper = PayloadHelper(_payloadHelper);
+
+        (,, uint256 payloadId, uint256 superformId, uint256 amount) =
+            vars.payloadHelper.decodeSyncWithdrawPayload(asyncDepositPayloadId);
 
         vars.message =
             abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superformId, amount))));

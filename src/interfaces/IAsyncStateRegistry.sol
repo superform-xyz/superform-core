@@ -170,5 +170,5 @@ interface IAsyncStateRegistry {
     /// @notice Form Keeper finalizes sync withdraw tx data payload to process the action fully.
     /// @param payloadId_ is the id of the payload to finalize
     /// @param txData_ is the off-chain generated transaction data
-    function finalizeSyncWithdrawTxDataPayload(uint256 payloadId_, bytes memory txData_) external;
+    function finalizeSyncWithdrawTxDataPayload(uint256 payloadId_, bytes memory txData_) external payable;
 }

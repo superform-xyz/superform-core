@@ -337,6 +337,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         bytes memory txData_
     )
         external
+        payable
         override
         onlyAsyncStateRegistryProcessor
     {

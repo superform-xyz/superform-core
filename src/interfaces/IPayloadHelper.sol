@@ -100,15 +100,22 @@ interface IPayloadHelper {
         returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
 
     /// @dev returns decoded async deposit form payloads
-    /// @param asyncDepositPayloadId_ is the unique identifier of payload in async deposit state registry
+    /// @param asyncDepositPayloadId_ is the unique identifier of payload in async state registry
     function decodeAsyncDepositPayload(uint256 asyncDepositPayloadId_)
         external
         view
         returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
 
     /// @dev returns decoded async withdraw form payloads
-    /// @param asyncWithdrawPayloadId_ is the unique identifier of payload in async withdraw state registry
+    /// @param asyncWithdrawPayloadId_ is the unique identifier of payload in async state registry
     function decodeAsyncWithdrawPayload(uint256 asyncWithdrawPayloadId_)
+        external
+        view
+        returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
+
+    /// @dev returns decoded sync withdraw form payloads
+    /// @param syncWithdrawPayloadId_ is the unique identifier of payload in async state registry
+    function decodeSyncWithdrawPayload(uint256 syncWithdrawPayloadId_)
         external
         view
         returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
@@ -120,9 +127,9 @@ interface IPayloadHelper {
         view
         returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
 
-    /// @dev returns decoded successful async deposit payloads
+    /// @dev returns decoded successful async payloads
     /// @param payloadId_ is the unique identifier of payload in async state registry
-    function decodeAsyncDepositAckPayload(uint256 payloadId_)
+    function decodeAsyncAckPayload(uint256 payloadId_)
         external
         view
         returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
