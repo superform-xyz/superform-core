@@ -10,7 +10,7 @@ import { DlnOrderLib } from "src/vendor/deBridge/DlnOrderLib.sol";
 import { IDlnSource } from "src/vendor/deBridge/IDlnSource.sol";
 
 contract DeBridgeValidatorTest is ProtocolActions {
-    address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE; // native for de-bridge is address(0)
+    address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     function setUp() public override {
         super.setUp();
