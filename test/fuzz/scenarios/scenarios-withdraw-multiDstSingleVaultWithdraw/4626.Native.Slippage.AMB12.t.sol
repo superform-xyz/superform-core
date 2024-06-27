@@ -68,7 +68,7 @@ contract MDSVWNormal4626NativeSlippageAMB12 is ProtocolActions {
                 revertRole: "",
                 slippage: 111, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 69_420 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
 
@@ -115,7 +115,6 @@ contract MDSVWNormal4626NativeSlippageAMB12 is ProtocolActions {
                         TARGET_FORM_KINDS[DST_CHAINS[i]][1],
                         DST_CHAINS[i]
                     );
-                    console.log("DST_CHAINS[i]: ", DST_CHAINS[i]);
 
                     if (DST_CHAINS[i] == OP) {
                         AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0]];
@@ -124,7 +123,6 @@ contract MDSVWNormal4626NativeSlippageAMB12 is ProtocolActions {
                         amountTwoWithdraw_ = uint128(bound(amountTwoWithdraw_, 10_000, superPositions[0] - 10_000));
                         AMOUNTS[DST_CHAINS[i]][1] = [amountTwoWithdraw_];
                     }
-                    console.log("AMOUNTS[DST_CHAINS[i]][1] ", AMOUNTS[DST_CHAINS[i]][1][0]);
                 }
             }
 

@@ -512,4 +512,18 @@ contract SmokeTestStaging is MainnetBaseSetup {
             assertEq(address(rewardsDistributor.superRegistry()), address(superRegistry));
         }
     }
+
+    function test_5115FormStaging() public {
+        SuperformFactory superFactory;
+
+        for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
+            uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+            vm.selectFork(FORKS[chainId]);
+            superFactory = SuperformFactory(getContract(chainId, "SuperformFactory"));
+
+            assertEq(superFactory.getFormImplementation(2), getContract(chainId, "ERC5115Form"));
+            assertEq(superFactory.getFormCount(), 2);
+            assertEq(superFactory.getFormStateRegistryId(2), 1);
+        }
+    }
 }

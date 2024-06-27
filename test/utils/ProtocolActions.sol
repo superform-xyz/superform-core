@@ -9,6 +9,7 @@ import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
+import { IERC5115Form } from "src/forms/interfaces/IERC5115Form.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
@@ -18,6 +19,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
     using DataLib for uint256;
 
     event FailedXChainDeposits(uint256 indexed payloadId);
+
+    uint256 constant NATIVE_TOKEN_ID = 69_420;
 
     /// @dev counts for each chain in each testAction the number of timelocked superforms
     mapping(uint256 chainIdIndex => uint256) countTimelocked;
@@ -135,7 +138,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         address token;
         /// @dev assumption here is DAI has total supply of TOTAL_SUPPLY_DAI on all chains
         /// and similarly for USDC, WETH and ETH
-        if (action.externalToken == 3) {
+        if (action.externalToken == NATIVE_TOKEN_ID) {
             deal(users[action.user], TOTAL_SUPPLY_ETH);
         } else {
             token = getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]);
@@ -155,7 +158,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             for (uint256 i = 0; i < DST_CHAINS.length; ++i) {
                 vm.selectFork(FORKS[DST_CHAINS[i]]);
 
-                vars.superformIds = _superformIds(
+                (vars.superformIds, vars.potentialRealVaults) = _superformIds(
                     TARGET_UNDERLYINGS[DST_CHAINS[i]][act],
                     TARGET_VAULTS[DST_CHAINS[i]][act],
                     TARGET_FORM_KINDS[DST_CHAINS[i]][act],
@@ -165,7 +168,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     token = getContract(DST_CHAINS[i], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[i]][act][j]]);
                     (vars.superformT,,) = vars.superformIds[j].getSuperform();
                     /// @dev grabs amounts in deposits (assumes deposit is action 0)
-                    deal(token, IBaseForm(vars.superformT).getVaultAddress(), AMOUNTS[DST_CHAINS[i]][0][j]);
+
+                    if (vars.potentialRealVaults[j] == address(0)) {
+                        deal(token, IBaseForm(vars.superformT).getVaultAddress(), AMOUNTS[DST_CHAINS[i]][0][j]);
+                    }
                 }
 
                 actualAmountWithdrawnPerDst.push(
@@ -180,10 +186,13 @@ abstract contract ProtocolActions is CommonProtocolActions {
         (multiSuperformsData, singleSuperformsData, vars) = _stage1_buildReqData(action, act);
         if (DEBUG_MODE) console.log("Stage 1 complete");
 
+        /// @dev DO NOT DELETE NEXT LINE, it is important to pass 'act' to assert functions and avoid stack too deep
+        /// errors
+        vars.act = act;
+
         uint256[][] memory spAmountSummed = new uint256[][](vars.nDestinations);
         uint256[] memory spAmountBeforeWithdrawPerDst;
         uint256 inputBalanceBefore;
-
         /// @dev asserts superPosition balances before calling superFormRouter
         (, spAmountSummed, spAmountBeforeWithdrawPerDst, inputBalanceBefore) =
             _assertBeforeAction(action, multiSuperformsData, singleSuperformsData, vars);
@@ -374,13 +383,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
             vars.lzEndpoints_1[i] = LZ_ENDPOINTS[DST_CHAINS[i]];
             /// @dev first the superformIds are obtained, together with token addresses for src and dst, vault addresses
             /// and information about vaults with partial withdraws (for assertions)
-            (
-                vars.targetSuperformIds,
-                vars.underlyingSrcToken,
-                vars.underlyingDstToken,
-                vars.vaultMock,
-                vars.partialWithdrawVaults
-            ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
+            (vars.targetSuperformIds, vars.underlyingSrcToken, vars.underlyingDstToken, vars.vaultMock) =
+                _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
 
             vars.toDst = new address[](vars.targetSuperformIds.length);
 
@@ -412,7 +416,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     MultiVaultCallDataArgs(
                         action.user,
                         vars.fromSrc,
-                        action.externalToken == 3
+                        action.externalToken == NATIVE_TOKEN_ID
                             ? NATIVE_TOKEN
                             : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
                         vars.toDst,
@@ -432,8 +436,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         vars.chainDstIndex,
                         action.dstSwap,
                         action.action,
-                        action.slippage,
-                        vars.partialWithdrawVaults
+                        action.slippage
                     ),
                     action.action
                 );
@@ -459,7 +462,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 SingleVaultCallDataArgs memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
                     action.user,
                     vars.fromSrc,
-                    action.externalToken == 3
+                    action.externalToken == NATIVE_TOKEN_ID
                         ? NATIVE_TOKEN
                         : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
                     vars.toDst[0],
@@ -485,7 +488,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     /// @dev these are just the originating and dst chain ids casted to uint256 (the liquidity bridge
                     /// chain ids)
                     action.dstSwap,
-                    vars.partialWithdrawVaults.length > 0 ? vars.partialWithdrawVaults[0] : false,
                     action.slippage
                 );
 
@@ -493,7 +495,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     action.action == Actions.Deposit || action.action == Actions.DepositPermit2
                         || action.action == Actions.RescueFailedDeposit
                 ) {
-                    singleSuperformsData[i] = _buildSingleVaultDepositCallData(singleVaultCallDataArgs, action.action);
+                    (singleSuperformsData[i],) =
+                        _buildSingleVaultDepositCallData(singleVaultCallDataArgs, action.action, false);
                 } else {
                     singleSuperformsData[i] = _buildSingleVaultWithdrawCallData(singleVaultCallDataArgs);
                 }
@@ -651,7 +654,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         }
 
                         vm.prank(users[action.user]);
-                        console.log("Inside Protocol Actions", users[action.user]);
                         /// @dev the actual call to the entry point
                         superformRouter.singleXChainSingleVaultDeposit{ value: msgValue }(
                             vars.singleXChainSingleVaultStateReq
@@ -841,7 +843,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vars.logs = vm.getRecordedLogs();
 
         for (uint256 index; index < AMBs.length; index++) {
-            console.log(AMBs[index]);
             if (AMBs[index] == 1) {
                 LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper")).help(
                     internalVars.endpoints,
@@ -854,7 +855,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
             }
 
             if (AMBs[index] == 6) {
-                console.log("6 6 6");
                 LayerZeroV2Helper(getContract(CHAIN_0, "LayerZeroV2Helper")).help(
                     internalVars.endpointsV2, internalVars.lzChainIdsV2, internalVars.forkIds, vars.logs
                 );
@@ -992,7 +992,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                             if (action.dstSwap) {
                                 /// @dev calling state variables again to obtain fresh memory values corresponding to
                                 /// DST
-                                (, vars.underlyingSrcToken, vars.underlyingDstToken,,) =
+                                (, vars.underlyingSrcToken, vars.underlyingDstToken,) =
                                     _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
                                 vars.liqBridges = LIQ_BRIDGES[DST_CHAINS[i]][actionIndex];
 
@@ -1007,7 +1007,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                                             vars.multiVaultsPayloadArg.slippage,
                                             getContract(DST_CHAINS[i], UNDERLYING_TOKENS[j]),
                                             /// @dev substituting this to become the interim token
-                                            action.externalToken == 3
+                                            action.externalToken == NATIVE_TOKEN_ID
                                                 ? NATIVE_TOKEN
                                                 : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
                                             vars.underlyingSrcToken[j],
@@ -1029,7 +1029,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                                         AMOUNTS[DST_CHAINS[i]][actionIndex][0],
                                         vars.singleVaultsPayloadArg.slippage,
                                         getContract(DST_CHAINS[i], UNDERLYING_TOKENS[0]),
-                                        action.externalToken == 3
+                                        action.externalToken == NATIVE_TOKEN_ID
                                             ? NATIVE_TOKEN
                                             : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
                                         vars.underlyingSrcToken[0],
@@ -1483,10 +1483,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             vm.selectFork(FORKS[DST_CHAINS[0]]);
 
-            v.rescueToken = action.externalToken == 3
+            v.rescueToken = action.externalToken == NATIVE_TOKEN_ID
                 ? NATIVE_TOKEN
                 : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[0]][0][0]]);
-            v.userBalanceBefore = action.externalToken == 3
+            v.userBalanceBefore = action.externalToken == NATIVE_TOKEN_ID
                 ? users[action.user].balance
                 : MockERC20(v.rescueToken).balanceOf(users[action.user]);
             v.coreStateRegistryDst = payable(getContract(DST_CHAINS[0], "CoreStateRegistry"));
@@ -1503,10 +1503,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     action.slippage,
                     v.rescueToken,
                     /// @dev note: assuming no src swaps i.e externalToken == underlyingToken
-                    action.externalToken == 3
+                    action.externalToken == NATIVE_TOKEN_ID
                         ? NATIVE_TOKEN
                         : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
-                    action.externalToken == 3
+                    action.externalToken == NATIVE_TOKEN_ID
                         ? NATIVE_TOKEN
                         : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
                     CHAIN_0,
@@ -1561,7 +1561,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             vm.prank(deployer);
             CoreStateRegistry(v.coreStateRegistryDst).finalizeRescueFailedDeposits(payloadId);
 
-            v.userBalanceAfter = action.externalToken == 3
+            v.userBalanceAfter = action.externalToken == NATIVE_TOKEN_ID
                 ? users[action.user].balance
                 : MockERC20(v.rescueToken).balanceOf(users[action.user]);
 
@@ -1574,6 +1574,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
         bytes sig;
         bytes permit2data;
         uint256 totalAmount;
+        bytes tokenInfo;
+        address tokenInInfo;
     }
 
     /// @dev this internal function just loops over _buildSingleVaultDepositCallData or
@@ -1598,6 +1600,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         if (len == 0) revert LEN_MISMATCH();
         uint256[] memory finalAmounts = new uint256[](len);
         uint256[] memory maxSlippageTemp = new uint256[](len);
+
         address uniqueInterimToken;
         for (uint256 i = 0; i < len; ++i) {
             finalAmounts[i] = args.amounts[i];
@@ -1643,12 +1646,16 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 args.liquidityBridgeSrcChainId,
                 uint256(args.toChainId),
                 args.dstSwap,
-                args.partialWithdrawVaults.length > 0 ? args.partialWithdrawVaults[i] : false,
                 args.slippage
             );
 
             if (args.action == Actions.Deposit || args.action == Actions.DepositPermit2) {
-                superformData = _buildSingleVaultDepositCallData(callDataArgs, args.action);
+                (superformData, v.tokenInInfo) = _buildSingleVaultDepositCallData(callDataArgs, args.action, true);
+                /// @dev first loop
+                /// decode (nVaults, bytes) (check what's encoded in MultiVaultSFData)
+                /// initiate nVaults loop
+                /// decode (bytes, uint256, address) - take address and if different than 0 and id corresponds
+                v.tokenInfo = abi.encode(v.tokenInfo, args.superformIds[i], v.tokenInInfo);
             } else if (args.action == Actions.Withdraw) {
                 superformData = _buildSingleVaultWithdrawCallData(callDataArgs);
             }
@@ -1695,7 +1702,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             users[args.user],
             users[args.user],
             /// @dev repeat user for receiverAddressSP - not testing AA here
-            abi.encode(args.partialWithdrawVaults)
+            abi.encode(args.superformIds.length, v.tokenInfo)
         );
     }
 
@@ -1717,14 +1724,23 @@ abstract contract ProtocolActions is CommonProtocolActions {
         int256 USDPerExternalToken;
         int256 USDPerUnderlyingToken;
         LiqRequest liqReq;
+        address superform;
+        address vault;
+        bytes32 vaultFormImplementationCombination;
+        uint256 superformId;
+        uint256 expectedAmountOfShares;
+        bool is5115;
+        bytes extra5115Data;
+        bytes extraFormData;
     }
 
     function _buildSingleVaultDepositCallData(
         SingleVaultCallDataArgs memory args,
-        Actions action
+        Actions action,
+        bool multiVault
     )
         internal
-        returns (SingleVaultSFData memory superformData)
+        returns (SingleVaultSFData memory superformData, address tokenInInfo)
     {
         SingleVaultDepositLocalVars memory v;
         v.initialFork = vm.activeFork();
@@ -1742,7 +1758,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             (, v.USDPerUnderlyingOrInterimTokenDst,,,) =
                 AggregatorV3Interface(tokenPriceFeeds[args.toChainId][args.uniqueInterimToken]).latestRoundData();
-
             v.decimal4 = args.underlyingTokenDst != NATIVE_TOKEN ? MockERC20(args.underlyingTokenDst).decimals() : 18;
 
             (, v.USDPerUnderlyingTokenDst,,,) =
@@ -1908,14 +1923,43 @@ abstract contract ProtocolActions is CommonProtocolActions {
         if (DEBUG_MODE) console.log("test amount post-dst swap --", v.amount);
 
         vm.selectFork(FORKS[args.toChainId]);
-        (address superform,,) = DataLib.getSuperform(args.superformId);
+        (v.superform,,) = DataLib.getSuperform(args.superformId);
+
+        v.vault = IBaseForm(v.superform).getVaultAddress();
+
+        v.vaultFormImplementationCombination =
+            keccak256(abi.encode(getContract(args.toChainId, "ERC5115Form"), v.vault));
+        v.superformId = SuperformFactory(getContract(args.toChainId, "SuperformFactory"))
+            .vaultFormImplCombinationToSuperforms(v.vaultFormImplementationCombination);
+
+        v.is5115 = v.superformId == args.superformId;
+
+        v.expectedAmountOfShares = IBaseForm(v.superform).previewDepositTo(v.amount);
+
+        if (!multiVault) {
+            /// @dev this data contains in each slot: empty bytes, superformId for this vault for validation, the token
+            /// In
+            if (v.is5115) {
+                v.extra5115Data = abi.encode("", args.superformId, args.underlyingTokenDst);
+            } else {
+                v.extra5115Data = abi.encode("", args.superformId, address(0));
+            }
+
+            /// @dev this is the final extraFormData in case of single vaults
+            v.extraFormData = abi.encode(1, v.extra5115Data);
+        } else {
+            /// @dev in multiVaultsCase, nothing needs to be send in singleVaultSFData extraData because it is ignored
+            if (v.is5115) {
+                tokenInInfo = args.underlyingTokenDst;
+            }
+        }
 
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
         /// vaults without resorting to extra args, just for withdraws)
         superformData = SingleVaultSFData(
             args.superformId,
             v.amount,
-            IBaseForm(superform).previewDepositTo(v.amount),
+            v.expectedAmountOfShares,
             args.maxSlippage,
             v.liqReq,
             v.permit2Calldata,
@@ -1924,8 +1968,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
             users[args.user],
             users[args.user],
             /// @dev repeat user for receiverAddressSP - not testing AA here
-            abi.encode(false)
+            /// @dev encode vault token in for 5115
+            v.extraFormData
         );
+
         vm.selectFork(v.initialFork);
     }
 
@@ -1940,6 +1986,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint256 decimal1;
         uint256 decimal2;
         uint256 decimal3;
+        address vault;
+        bytes32 vaultFormImplementationCombination;
+        uint256 superformId;
+        bool is5115;
     }
 
     function _buildSingleVaultWithdrawCallData(SingleVaultCallDataArgs memory args)
@@ -1979,6 +2029,18 @@ abstract contract ProtocolActions is CommonProtocolActions {
         (vars.superform,,) = args.superformId.getSuperform();
         vars.actualWithdrawAmount = IBaseForm(vars.superform).previewRedeemFrom(args.amount);
 
+        vars.vault = IBaseForm(vars.superform).getVaultAddress();
+
+        vars.vaultFormImplementationCombination =
+            keccak256(abi.encode(getContract(args.toChainId, "ERC5115Form"), vars.vault));
+        vars.superformId = SuperformFactory(getContract(args.toChainId, "SuperformFactory"))
+            .vaultFormImplCombinationToSuperforms(vars.vaultFormImplementationCombination);
+
+        vars.is5115 = vars.superformId == args.superformId;
+        args.underlyingTokenDst = vars.is5115
+            ? ERC5115S_CHOSEN_ASSETS[args.toChainId][ERC5115To4626Wrapper(vars.vault).vault()].assetOut
+            : args.underlyingTokenDst;
+
         vm.selectFork(initialFork);
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
@@ -2015,18 +2077,19 @@ abstract contract ProtocolActions is CommonProtocolActions {
             TX_DATA_TO_UPDATE_ON_DST[args.toChainId].push(vars.txData);
         }
 
+        vm.selectFork(FORKS[args.toChainId]);
+
         /// @notice no interim token supplied as this is a withdraw
         vars.liqReq = LiqRequest(
             GENERATE_WITHDRAW_TX_DATA_ON_DST ? bytes("") : vars.txData,
             /// @dev for certain test cases, insert txData as null here
             args.externalToken,
-            address(0),
+            vars.is5115 ? args.underlyingTokenDst : address(0),
             args.liqBridge,
             args.liqDstChainId,
             0
         );
 
-        vm.selectFork(FORKS[args.toChainId]);
         (address superform,,) = DataLib.getSuperform(args.superformId);
 
         uint256 outputAmount = IBaseForm(superform).previewRedeemFrom(args.amount);
@@ -2045,7 +2108,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             users[args.user],
             users[args.user],
             /// @dev repeat user for receiverAddressSP - not testing AA here
-            abi.encode(args.partialWithdrawVault)
+            ""
         );
 
         vm.selectFork(initialFork);
@@ -2075,8 +2138,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             uint256[] memory targetSuperformsMem,
             address[] memory underlyingSrcTokensMem,
             address[] memory underlyingDstTokensMem,
-            address[] memory vaultMocksMem,
-            bool[] memory partialWithdrawVaults
+            address[] memory vaultMocksMem
         )
     {
         TargetVaultsVars memory vars;
@@ -2085,10 +2147,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vars.vaultIds = TARGET_VAULTS[chain1][action];
         vars.formKinds = TARGET_FORM_KINDS[chain1][action];
 
-        partialWithdrawVaults = PARTIAL[chain1][action];
-
         /// @dev constructs superFormIds from provided input info
-        vars.superformIdsTemp = _superformIds(vars.underlyingTokens, vars.vaultIds, vars.formKinds, chain1);
+        (vars.superformIdsTemp,) = _superformIds(vars.underlyingTokens, vars.vaultIds, vars.formKinds, chain1);
 
         vars.len = vars.superformIdsTemp.length;
 
@@ -2147,9 +2207,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
     )
         internal
         view
-        returns (uint256[] memory)
+        returns (uint256[] memory superformIds_, address[] memory potentialRealVaults)
     {
-        uint256[] memory superformIds_ = new uint256[](vaultIds_.length);
+        superformIds_ = new uint256[](vaultIds_.length);
+        potentialRealVaults = new address[](vaultIds_.length);
         /// @dev test sanity checks
         if (vaultIds_.length != formKinds_.length) revert INVALID_TARGETS();
         if (vaultIds_.length != underlyingTokens_.length) {
@@ -2170,9 +2231,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
             );
             /// @dev superformids are built here
             superformIds_[i] = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[formKinds_[i]], chainId_);
+            potentialRealVaults[i] = REAL_VAULT_ADDRESS[chainId_][FORM_IMPLEMENTATION_IDS[formKinds_[i]]][UNDERLYING_TOKENS[underlyingTokens_[i]]][vaultIds_[i]];
         }
 
-        return superformIds_;
+        return (superformIds_, potentialRealVaults);
     }
 
     function _getSuperpositionsForDstChain(
@@ -2185,7 +2247,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         internal
         returns (uint256[] memory superPositionBalances)
     {
-        uint256[] memory superformIds = _superformIds(underlyingTokens_, vaultIds_, formKinds_, dstChain);
+        (uint256[] memory superformIds,) = _superformIds(underlyingTokens_, vaultIds_, formKinds_, dstChain);
         address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
         vm.selectFork(FORKS[CHAIN_0]);
 
@@ -2231,7 +2293,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             (address superform,,) = superformIds[i].getSuperform();
             vm.selectFork(FORKS[dstChain]);
+
             previewRedeemAmounts[i] = IBaseForm(superform).previewRedeemFrom(superPositionBalances[i]) / nRepetitions;
+
         }
     }
 
@@ -2836,6 +2900,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             vm.selectFork(FORKS[chainId]);
             v.decimal1 = ERC4626Form(payable(superform)).getVaultDecimals();
             v.decimal2 = MockERC20(ERC4626Form(payable(superform)).getVaultAsset()).decimals();
+
             v.assertAmnt = amountsToAssert[i];
 
             if (!isWithdraw) {
@@ -3166,6 +3231,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
         address superform;
         uint256[] spAmountSummedPerDst;
     }
+    // also in _assertAfterStage4Withdraw,  _assertAfterStage7Withdraw, _assertAfterFailedWithdraw,
+    // _assertAfterTimelockFailedWithdraw
 
     function _assertBeforeAction(
         TestAction memory action,
@@ -3192,7 +3259,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             spAmountSummed = new uint256[][](vars.nDestinations);
 
             for (uint256 i = 0; i < vars.nDestinations; ++i) {
-                v.partialWithdrawVaults = abi.decode(multiSuperformsData[i].extraFormData, (bool[]));
+                v.partialWithdrawVaults = PARTIAL[DST_CHAINS[i]][vars.act];
                 /// @dev obtain amounts to assert
                 (emptyAmount, v.spAmountSummedPerDst,) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
                     SpAmountsMultiBeforeActionOrAfterSuccessDepositArgs(
@@ -3222,7 +3289,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
             spAmountBeforeWithdrawPerDestination = new uint256[](vars.nDestinations);
             for (uint256 i = 0; i < vars.nDestinations; ++i) {
                 (v.superform,,) = singleSuperformsData[i].superformId.getSuperform();
-                v.partialWithdrawVault = abi.decode(singleSuperformsData[i].extraFormData, (bool));
+                v.partialWithdrawVault =
+                    PARTIAL[DST_CHAINS[i]][vars.act].length > 0 ? PARTIAL[DST_CHAINS[i]][vars.act][0] : false;
                 vm.selectFork(FORKS[DST_CHAINS[i]]);
 
                 /// @dev for withdraw singleSuperformsData[i].amount is the number of superpositions the
@@ -3394,7 +3462,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
         vm.selectFork(FORKS[CHAIN_0]);
 
         AssertAfterWithdrawVars memory v;
-
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
             v.sameDst = CHAIN_0 == DST_CHAINS[i];
             v.lenRevertWithdraw = 0;
@@ -3408,7 +3475,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             }
 
             if (action.multiVaults) {
-                v.partialWithdrawVaults = abi.decode(multiSuperformsData[i].extraFormData, (bool[]));
+                v.partialWithdrawVaults = PARTIAL[DST_CHAINS[i]][vars.act];
                 /// @dev obtain amounts to assert
                 v.spAmountFinal = _spAmountsMultiAfterWithdraw(
                     multiSuperformsData[i],
@@ -3426,7 +3493,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
             } else {
                 v.foundRevertingWithdraw = false;
                 v.foundRevertingWithdrawTimelocked = false;
-                v.partialWithdrawVault = abi.decode(singleSuperformsData[i].extraFormData, (bool));
+                v.partialWithdrawVault =
+                    PARTIAL[DST_CHAINS[i]][vars.act].length > 0 ? PARTIAL[DST_CHAINS[i]][vars.act][0] : false;
 
                 if (v.lenRevertWithdraw > 0) {
                     v.foundRevertingWithdraw = revertingWithdrawSFs[i][0] == singleSuperformsData[i].superformId;
@@ -3491,7 +3559,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             if (action.multiVaults) {
                 if (!(v.sameDst && v.lenRevertWithdraw > 0)) {
-                    v.partialWithdrawVaults = abi.decode(multiSuperformsData[i].extraFormData, (bool[]));
+                    v.partialWithdrawVaults = PARTIAL[DST_CHAINS[i]][vars.act];
                     /// @dev obtain amounts to assert
 
                     v.spAmountFinal = _spAmountsMultiAfterStage7Withdraw(
@@ -3511,7 +3579,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
             } else {
                 v.foundRevertingWithdraw = false;
                 v.foundRevertingWithdrawTimelocked = false;
-                v.partialWithdrawVault = abi.decode(singleSuperformsData[i].extraFormData, (bool));
+                v.partialWithdrawVault =
+                    PARTIAL[DST_CHAINS[i]][vars.act].length > 0 ? PARTIAL[DST_CHAINS[i]][vars.act][0] : false;
 
                 if (v.lenRevertWithdraw > 0) {
                     v.foundRevertingWithdraw = revertingWithdrawSFs[i][0] == singleSuperformsData[i].superformId;
@@ -3574,7 +3643,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
             if (action.multiVaults && amountsToRemintPerDst[i].length > 0) {
-                partialWithdrawVaults = abi.decode(multiSuperformsData[i].extraFormData, (bool[]));
+                partialWithdrawVaults = PARTIAL[DST_CHAINS[i]][vars.act];
                 /// @dev obtain amounts to assert
                 spAmountFinal = _spAmountsMultiAfterFailedWithdraw(
                     multiSuperformsData[i], action.user, spAmountsBeforeWithdraw[i], amountsToRemintPerDst[i]
@@ -3585,7 +3654,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     action.user, multiSuperformsData[i].superformIds, spAmountFinal, partialWithdrawVaults, true
                 );
             } else if (!action.multiVaults) {
-                partialWithdrawVault = abi.decode(singleSuperformsData[i].extraFormData, (bool));
+                partialWithdrawVault =
+                    PARTIAL[DST_CHAINS[i]][vars.act].length > 0 ? PARTIAL[DST_CHAINS[i]][vars.act][0] : false;
                 if (amountsToRemintPerDst[i].length > 0 && amountsToRemintPerDst[i][0] != 0) {
                     if (!partialWithdrawVault) {
                         /// @dev this assertion assumes the withdraw is happening on the same superformId as the
@@ -3631,7 +3701,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             if (!(CHAIN_0 == DST_CHAINS[i] && revertingWithdrawSFs[i].length > 0)) {
                 if (revertingWithdrawTimelockedSFs[i].length > 0) {
                     if (action.multiVaults) {
-                        v.partialWithdrawVaults = abi.decode(multiSuperformsData[i].extraFormData, (bool[]));
+                        v.partialWithdrawVaults = PARTIAL[DST_CHAINS[i]][vars.act];
                         /// @dev this obtains amounts that failed from returned data obtained as a return from process
                         /// payload
 
@@ -3649,7 +3719,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
                             true
                         );
                     } else {
-                        v.partialWithdrawVault = abi.decode(singleSuperformsData[i].extraFormData, (bool));
+                        v.partialWithdrawVault =
+                            PARTIAL[DST_CHAINS[i]][vars.act].length > 0 ? PARTIAL[DST_CHAINS[i]][vars.act][0] : false;
                         if (!v.partialWithdrawVault) {
                             /// @dev this assertion assumes the withdraw is happening on the same superformId as the
                             /// previous deposit

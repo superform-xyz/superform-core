@@ -56,8 +56,6 @@ contract SocketOneInchMock is ISocketOneInchImpl, Test {
                 / vars.USDPerUnderlyingTokenDst;
         }
 
-        console.log("finalAmount", vars.finalAmount);
-
         deal(toToken, receiver, MockERC20(toToken).balanceOf(receiver) + vars.finalAmount);
     }
 }
