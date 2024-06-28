@@ -54,6 +54,7 @@ contract ERC5115To4626WrapperFactory is IERC5115To4626WrapperFactory {
     //////////////////////////////////////////////////////////////
     //                  EXTERNAL  FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
+
     /// @inheritdoc IERC5115To4626WrapperFactory
     function createWrapper(
         address underlyingVaultAddress_,
@@ -67,7 +68,6 @@ contract ERC5115To4626WrapperFactory is IERC5115To4626WrapperFactory {
         bytes32 wrapperKey = keccak256(abi.encodePacked(underlyingVaultAddress_, tokenIn_, tokenOut_));
 
         WrapperMetadata storage metadata = wrappers[wrapperKey];
-
         if (metadata.wrapper != address(0)) revert WRAPPER_ALREADY_EXISTS();
 
         wrapper = address(new ERC5115To4626Wrapper(underlyingVaultAddress_, tokenIn_, tokenOut_));
@@ -95,13 +95,11 @@ contract ERC5115To4626WrapperFactory is IERC5115To4626WrapperFactory {
         bytes32 wrapperKey = keccak256(abi.encodePacked(underlyingVaultAddress_, tokenIn_, tokenOut_));
 
         WrapperMetadata storage metadata = wrappers[wrapperKey];
-
         if (metadata.wrapper != address(0)) revert WRAPPER_ALREADY_EXISTS();
 
         ISuperformFactory sf = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
 
         address formImplementation = sf.getFormImplementation(formImplementationId_);
-
         if (formImplementation == address(0)) revert Error.FORM_DOES_NOT_EXIST();
 
         wrapper = address(new ERC5115To4626Wrapper(underlyingVaultAddress_, tokenIn_, tokenOut_));
@@ -129,15 +127,12 @@ contract ERC5115To4626WrapperFactory is IERC5115To4626WrapperFactory {
         WrapperMetadata memory metadata = wrappers[wrapperKey];
 
         if (metadata.wrapper == address(0)) revert WRAPPER_DOES_NOT_EXIST();
-
         ISuperformFactory sf = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
 
         address formImplementation = sf.getFormImplementation(formImplementationId_);
-
         if (formImplementation == address(0)) revert Error.FORM_DOES_NOT_EXIST();
 
         (superformId, superform) = sf.createSuperform(formImplementationId_, metadata.wrapper);
-
         emit CreatedSuperformForExistingWrapper(metadata.wrapper, wrapperKey, superformId, superform);
     }
 
@@ -153,12 +148,16 @@ contract ERC5115To4626WrapperFactory is IERC5115To4626WrapperFactory {
         if (wrapperKeys.length != formImplementationIds.length) revert Error.ARRAY_LENGTH_MISMATCH();
         ISuperformFactory sf = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
 
+        address newFormImpl;
         for (uint256 i = 0; i < wrapperKeys.length; i++) {
             WrapperMetadata storage metadata = wrappers[wrapperKeys[i]];
 
             if (metadata.formImplementation == address(0)) revert WRAPPER_DOES_NOT_EXIST();
 
-            metadata.formImplementation = sf.getFormImplementation(formImplementationIds[i]);
+            newFormImpl = sf.getFormImplementation(formImplementationIds[i]);
+            if (newFormImpl == address(0)) revert Error.FORM_DOES_NOT_EXIST();
+
+            metadata.formImplementation = newFormImpl;
         }
     }
 }

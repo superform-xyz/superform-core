@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
+
 //////////////////////////////////////////////////////////////
 //                          STRUCTS                          //
 //////////////////////////////////////////////////////////////
@@ -12,6 +13,9 @@ struct WrapperMetadata {
     address wrapper;
 }
 
+/// @title IERC5115To4626WrapperFactory
+/// @dev Interface for 5115 to 4626 wrapper factory
+/// @author ZeroPoint Labs
 interface IERC5115To4626WrapperFactory {
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
