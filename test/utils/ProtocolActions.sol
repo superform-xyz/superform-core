@@ -585,7 +585,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     action.action == Actions.Deposit || action.action == Actions.DepositPermit2
                         || action.action == Actions.RescueFailedDeposit
                 ) {
-                    (singleSuperformsData[i],) =
+                    (singleSuperformsData[i],,) =
                         _buildSingleVaultDepositCallData(singleVaultCallDataArgs, action.action, false);
                 } else {
                     singleSuperformsData[i] = _buildSingleVaultWithdrawCallData(singleVaultCallDataArgs);
@@ -1968,7 +1968,11 @@ abstract contract ProtocolActions is CommonProtocolActions {
         bytes permit2data;
         uint256 totalAmount;
         bytes tokenInfo;
+        bool is5115;
+        bool is7540;
         address tokenInInfo;
+        bytes[] encodedDatas;
+        bytes empty;
     }
 
     /// @dev this internal function just loops over _buildSingleVaultDepositCallData or
@@ -1995,6 +1999,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint256[] memory maxSlippageTemp = new uint256[](len);
 
         address uniqueInterimToken;
+
+        v.encodedDatas = new bytes[](len);
+
         for (uint256 i = 0; i < len; ++i) {
             finalAmounts[i] = args.amounts[i];
             if (i < 3 && args.dstSwap && args.action != Actions.Withdraw) {
@@ -2043,12 +2050,16 @@ abstract contract ProtocolActions is CommonProtocolActions {
             );
 
             if (args.action == Actions.Deposit || args.action == Actions.DepositPermit2) {
-                (superformData, v.tokenInInfo) = _buildSingleVaultDepositCallData(callDataArgs, args.action, true);
-                /// @dev first loop
-                /// decode (nVaults, bytes) (check what's encoded in MultiVaultSFData)
-                /// initiate nVaults loop
-                /// decode (bytes, uint256, address) - take address and if different than 0 and id corresponds
-                v.tokenInfo = abi.encode(v.tokenInfo, args.superformIds[i], v.tokenInInfo);
+                (superformData, v.is5115, v.is7540) = _buildSingleVaultDepositCallData(callDataArgs, args.action, true);
+
+                if (v.is5115) {
+                    v.encodedDatas[i] = abi.encode(args.superformIds[i], abi.encode(args.underlyingTokensDst[i]));
+                } else if (v.is7540) {
+                    v.encodedDatas[i] = abi.encode(args.superformIds[i], abi.encode(AMBs));
+                } else {
+                    /// @dev for all other forms this must be encoded
+                    v.encodedDatas[i] = abi.encode(args.superformIds[i], v.empty);
+                }
             } else if (args.action == Actions.Withdraw) {
                 superformData = _buildSingleVaultWithdrawCallData(callDataArgs);
             }
@@ -2082,7 +2093,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 hasDstSwap[i] = true;
             }
         }
-
+  
         superformsData = MultiVaultSFData(
             args.superformIds,
             finalAmounts,
@@ -2095,7 +2106,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
             users[args.user],
             users[args.user],
             /// @dev repeat user for receiverAddressSP - not testing AA here
-            abi.encode(args.superformIds.length, v.tokenInfo)
+            args.action == Actions.Deposit || args.action == Actions.DepositPermit2
+                ? abi.encode(args.superformIds.length, v.encodedDatas)
+                : v.empty
         );
     }
 
@@ -2119,12 +2132,11 @@ abstract contract ProtocolActions is CommonProtocolActions {
         LiqRequest liqReq;
         address superform;
         address vault;
-        bytes32 vaultFormImplementationCombination;
-        uint256 superformId;
+        uint256 superformId5115;
+        uint256 superformId7540;
         uint256 expectedAmountOfShares;
-        bool is5115;
-        bytes extra5115Data;
         bytes extraFormData;
+        bytes[] encodedDatas;
     }
 
     function _buildSingleVaultDepositCallData(
@@ -2133,7 +2145,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         bool multiVault
     )
         internal
-        returns (SingleVaultSFData memory superformData, address tokenInInfo)
+        returns (SingleVaultSFData memory superformData, bool is5115, bool is7540)
     {
         SingleVaultDepositLocalVars memory v;
         v.initialFork = vm.activeFork();
@@ -2320,30 +2332,43 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         v.vault = IBaseForm(v.superform).getVaultAddress();
 
-        v.vaultFormImplementationCombination =
-            keccak256(abi.encode(getContract(args.toChainId, "ERC5115Form"), v.vault));
-        v.superformId = SuperformFactory(getContract(args.toChainId, "SuperformFactory"))
-            .vaultFormImplCombinationToSuperforms(v.vaultFormImplementationCombination);
+        v.superformId5115 = SuperformFactory(getContract(args.toChainId, "SuperformFactory"))
+            .vaultFormImplCombinationToSuperforms(
+            keccak256(abi.encode(getContract(args.toChainId, "ERC5115Form"), v.vault))
+        );
 
-        v.is5115 = v.superformId == args.superformId;
+        v.superformId7540 = SuperformFactory(getContract(args.toChainId, "SuperformFactory"))
+            .vaultFormImplCombinationToSuperforms(
+            keccak256(abi.encode(getContract(args.toChainId, "ERC7540Form"), v.vault))
+        );
+
+        is5115 = v.superformId5115 == args.superformId;
+
+        is7540 = v.superformId7540 == args.superformId;
+
+        if (is5115 && is7540) revert("SAME ID TWO DIFFERENT IMPL");
 
         v.expectedAmountOfShares = IBaseForm(v.superform).previewDepositTo(v.amount);
+        /// data structure to encode: number of vaults encoded [] array of encoded datas
+        /// encoded datas:
+        /// for 5115 - (uint256 superformId, address vaultTokenIn)
+        /// for 7540 - (uint256 superformId, uint8[] ambIds)
+
+        v.encodedDatas = new bytes[](1);
 
         if (!multiVault) {
             /// @dev this data contains in each slot: empty bytes, superformId for this vault for validation, the token
             /// In
-            if (v.is5115) {
-                v.extra5115Data = abi.encode("", args.superformId, args.underlyingTokenDst);
+            if (is5115) {
+                v.encodedDatas[0] = abi.encode(args.superformId, abi.encode(args.underlyingTokenDst));
+            } else if (is7540) {
+                v.encodedDatas[0] = abi.encode(args.superformId, abi.encode(AMBs));
             } else {
-                v.extra5115Data = abi.encode("", args.superformId, address(0));
+                v.encodedDatas[0] = abi.encode(args.superformId, v.encodedDatas[0]);
             }
-
-            /// @dev this is the final extraFormData in case of single vaults
-            v.extraFormData = abi.encode(1, v.extra5115Data);
-        } else {
-            /// @dev in multiVaultsCase, nothing needs to be send in singleVaultSFData extraData because it is ignored
-            if (v.is5115) {
-                tokenInInfo = args.underlyingTokenDst;
+            if (is5115 || is7540) {
+                /// @dev this is the final extraFormData in case of single vaults
+                v.extraFormData = abi.encode(1, v.encodedDatas);
             }
         }
 

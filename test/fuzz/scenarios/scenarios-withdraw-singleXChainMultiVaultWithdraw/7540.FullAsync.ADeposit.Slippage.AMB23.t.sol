@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract SXMVW7540FullAsyncAsyncDepositDstSwapSlippageAMB23 is ProtocolActions {
+contract SXMVW7540FullAsync5115DstSwapSlippageAMB23 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /// On 7540 it is impossible to do update withdraws on destination for Async Deposit
@@ -18,17 +18,17 @@ contract SXMVW7540FullAsyncAsyncDepositDstSwapSlippageAMB23 is ProtocolActions {
         CHAIN_0 = OP;
         DST_CHAINS = [ETH];
 
-        TARGET_UNDERLYINGS[ETH][0] = [0, 1];
+        TARGET_UNDERLYINGS[ETH][0] = [0, 4];
 
-        TARGET_VAULTS[ETH][0] = [10, 11];
+        TARGET_VAULTS[ETH][0] = [10, 9];
 
-        TARGET_FORM_KINDS[ETH][0] = [4, 4];
+        TARGET_FORM_KINDS[ETH][0] = [4, 3];
 
-        TARGET_UNDERLYINGS[ETH][1] = [0, 1];
+        TARGET_UNDERLYINGS[ETH][1] = [0, 4];
 
-        TARGET_VAULTS[ETH][1] = [10, 11];
+        TARGET_VAULTS[ETH][1] = [10, 9];
 
-        TARGET_FORM_KINDS[ETH][1] = [4, 4];
+        TARGET_FORM_KINDS[ETH][1] = [4, 3];
 
         MAX_SLIPPAGE = 1000;
 
