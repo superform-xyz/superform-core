@@ -8,11 +8,11 @@ import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 contract MaliciousVault {
     address public constant asset = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
 
-    function deposit(address, address, uint256, uint256) external payable returns (uint256 amountSharesOut) {
+    function deposit(address, uint256, uint256) external payable returns (uint256 amountSharesOut) {
         return 10e6;
     }
 
-    function redeem(address, uint256, address, uint256, bool) external pure returns (uint256 amountTokenOut) {
+    function redeem(address, uint256, uint256) external pure returns (uint256 amountTokenOut) {
         return 10e6;
     }
 
@@ -21,16 +21,47 @@ contract MaliciousVault {
     }
 }
 
+contract VaultThatDontSpendApprovals {
+    address public constant asset = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
+    uint256 _balance;
+
+    function deposit(
+        address,
+        address,
+        uint256,
+        uint256 minSharesOut
+    )
+        external
+        payable
+        returns (uint256 amountSharesOut)
+    {
+        _balance = minSharesOut;
+        return 10e6;
+    }
+
+    function balanceOf(address) external view returns (uint256) {
+        return _balance;
+    }
+
+    function isValidTokenIn(address) external pure returns (bool) {
+        return true;
+    }
+
+    function isValidTokenOut(address) external pure returns (bool) {
+        return true;
+    }
+}
+
 contract MaliciousWithdrawVault {
     address public constant asset = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
     uint256 _balance;
 
-    function deposit(address, address, uint256, uint256 minSharesOut) external payable returns (uint256) {
+    function deposit(address, uint256, uint256 minSharesOut) external payable returns (uint256) {
         _balance = minSharesOut;
         return minSharesOut;
     }
 
-    function redeem(address, uint256, address, uint256, bool) external pure returns (uint256) {
+    function redeem(address, uint256, uint256) external pure returns (uint256) {
         return 0;
     }
 
@@ -155,10 +186,12 @@ contract SuperformERC5115FormTest is ProtocolActions {
     Mock5115VaultWithNoRewards noRewards;
     Mock5115VaultWithRewards rewards;
     ERC5115To4626Wrapper rewardsWrapper;
+    ERC5115To4626Wrapper noSpendWrapper;
     Mock5115VaultWithRewardsAsVaultToken rewardsWrapperVaultToken;
 
     MaliciousVault mal;
     MaliciousWithdrawVault malWithdraw;
+    VaultThatDontSpendApprovals noSpendVault;
 
     ERC5115Form noRewardsSuperform;
     ERC5115Form rewardsSuperform;
@@ -182,8 +215,15 @@ contract SuperformERC5115FormTest is ProtocolActions {
         rewards = new Mock5115VaultWithRewards();
         address vaultWithMalRewardToken = address(new Mock5115VaultWithRewardsAsVaultToken());
 
+        noSpendVault = new VaultThatDontSpendApprovals();
+
         rewardsWrapper = new ERC5115To4626Wrapper(
             address(rewards), 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9, 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9
+        );
+        noSpendWrapper = new ERC5115To4626Wrapper(
+            address(noSpendVault),
+            0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9,
+            0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9
         );
         malRewardWrapper = new ERC5115To4626Wrapper(
             address(vaultWithMalRewardToken),
@@ -434,6 +474,14 @@ contract SuperformERC5115FormTest is ProtocolActions {
         assertEq(balanceAfter, 0);
     }
 
+    /// @dev Test forward to address(0)
+    function test_5115forwardZeroToken() public {
+        address superform = address(targetSuperform);
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        IBaseForm(superform).forwardDustToPaymaster(address(0));
+    }
+
     /// @dev Test Forwarding No Dust To Paymaster
     function test_5115forwardDustToPaymasterNoDust() public {
         address superform = address(targetSuperform);
@@ -509,7 +557,53 @@ contract SuperformERC5115FormTest is ProtocolActions {
         targetSuperform.emergencyWithdraw(deployer, 2e6);
 
         vm.startPrank(SuperRegistry(getContract(ARBI, "SuperRegistry")).getAddress(keccak256("EMERGENCY_QUEUE")));
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        targetSuperform.emergencyWithdraw(address(0), 1e6);
+
+        vm.startPrank(SuperRegistry(getContract(ARBI, "SuperRegistry")).getAddress(keccak256("EMERGENCY_QUEUE")));
         targetSuperform.emergencyWithdraw(deployer, 1e6);
+    }
+
+    /// @dev Test emergency withdraw
+    function test_5115FormTokenInNotEncoded() public {
+        address vault = targetSuperform.getVaultAddress();
+
+        bytes32 vaultFormImplementationCombination = keccak256(abi.encode(getContract(ARBI, "ERC5115Form"), vault));
+        uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
+            .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
+
+        bytes memory extra5115Data = abi.encode("", superformId, address(0));
+
+        LiqRequest memory liqRequest = LiqRequest(
+            bytes(""),
+            0x5979D7b546E38E414F7E9822514be443A4800529,
+            0x5979D7b546E38E414F7E9822514be443A4800529,
+            0,
+            ARBI,
+            0
+        );
+
+        SingleVaultSFData memory sfData = SingleVaultSFData(
+            superformId,
+            1e6,
+            1e6,
+            100,
+            liqRequest,
+            bytes(""),
+            false,
+            false,
+            deployer,
+            deployer,
+            abi.encode(1, extra5115Data)
+        );
+
+        vm.startPrank(deployer);
+        IERC20(0x5979D7b546E38E414F7E9822514be443A4800529).approve(getContract(ARBI, "SuperformRouter"), 1e6);
+
+        vm.expectRevert(ERC5115Form.ERC5115FORM_TOKEN_IN_NOT_ENCODED.selector);
+        SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))).singleDirectSingleVaultDeposit(
+            SingleDirectSingleVaultStateReq(sfData)
+        );
     }
 
     /// @dev Test emergency withdraw
@@ -559,6 +653,99 @@ contract SuperformERC5115FormTest is ProtocolActions {
         SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))).singleDirectSingleVaultWithdraw(
             SingleDirectSingleVaultStateReq(sfData)
         );
+    }
+
+    /// @dev Test emergency withdraw token out not set
+    function test_5115directWithdrawTokenOutNotSet() public {
+        address vault = targetSuperform.getVaultAddress();
+
+        bytes32 vaultFormImplementationCombination = keccak256(abi.encode(getContract(ARBI, "ERC5115Form"), vault));
+        uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
+            .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
+
+        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+
+        LiqRequest memory liqRequest =
+            LiqRequest(bytes(""), 0x5979D7b546E38E414F7E9822514be443A4800529, address(0), 0, ARBI, 0);
+
+        SingleVaultSFData memory sfData = SingleVaultSFData(
+            superformId,
+            1e6,
+            1e6,
+            100,
+            liqRequest,
+            bytes(""),
+            false,
+            false,
+            deployer,
+            deployer,
+            abi.encode(1, extra5115Data)
+        );
+
+        vm.startPrank(deployer);
+        IERC20(0x5979D7b546E38E414F7E9822514be443A4800529).approve(getContract(ARBI, "SuperformRouter"), 1e6);
+        SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))).singleDirectSingleVaultDeposit(
+            SingleDirectSingleVaultStateReq(sfData)
+        );
+
+        SuperPositions(getContract(ARBI, "SuperPositions")).setApprovalForAll(
+            getContract(ARBI, "SuperformRouter"), true
+        );
+
+        sfData.retain4626 = true;
+        vm.expectRevert(ERC5115Form.ERC5115FORM_TOKEN_OUT_NOT_SET.selector);
+        SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))).singleDirectSingleVaultWithdraw(
+            SingleDirectSingleVaultStateReq(sfData)
+        );
+    }
+
+    /// @dev Test emergency withdraw token out not set
+    function test_5115xChainWithdrawTokenOutNotSet() public {
+        address vault = targetSuperform.getVaultAddress();
+
+        bytes32 vaultFormImplementationCombination = keccak256(abi.encode(getContract(ARBI, "ERC5115Form"), vault));
+        uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
+            .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
+
+        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+        bytes memory extra5115ZeroData = abi.encode("", superformId, address(0));
+
+        LiqRequest memory liqRequest =
+            LiqRequest(bytes(""), 0x5979D7b546E38E414F7E9822514be443A4800529, address(0), 0, ARBI, 0);
+
+        SingleVaultSFData memory sfData = SingleVaultSFData(
+            superformId,
+            1e6,
+            1e6,
+            100,
+            liqRequest,
+            bytes(""),
+            false,
+            false,
+            deployer,
+            deployer,
+            abi.encode(1, extra5115Data)
+        );
+
+        vm.startPrank(deployer);
+        IERC20(0x5979D7b546E38E414F7E9822514be443A4800529).approve(getContract(ARBI, "SuperformRouter"), 1e6);
+        SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))).singleDirectSingleVaultDeposit(
+            SingleDirectSingleVaultStateReq(sfData)
+        );
+
+        SuperPositions(getContract(ARBI, "SuperPositions")).setApprovalForAll(
+            getContract(ARBI, "SuperformRouter"), true
+        );
+
+        LiqRequest memory withdrawLiqRequest = LiqRequest(bytes(""), address(0), address(0), 0, ARBI, 0);
+
+        InitSingleVaultData memory withdrawSfData = InitSingleVaultData(
+            1, superformId, 1e6, 1e6, 100, withdrawLiqRequest, false, true, deployer, abi.encode(1, extra5115ZeroData)
+        );
+
+        vm.startPrank(getContract(ARBI, "CoreStateRegistry"));
+        vm.expectRevert(ERC5115Form.ERC5115FORM_TOKEN_OUT_NOT_SET.selector);
+        targetSuperform.xChainWithdrawFromVault(withdrawSfData, deployer, OP);
     }
 
     /// @dev Test emergency withdraw xChain
@@ -760,6 +947,34 @@ contract SuperformERC5115FormTest is ProtocolActions {
 
         vm.startPrank(SuperRegistry(getContract(ARBI, "SuperRegistry")).getAddress(keccak256("CORE_STATE_REGISTRY")));
         vm.expectRevert(Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT.selector);
+        targetSuperform.xChainDepositIntoVault(sfData, deployer, OP);
+    }
+
+    /// @dev Test xchain deposit without token encoding
+    function test_5115xChainDepositWithoutTokenEncoding() public {
+        address vault = targetSuperform.getVaultAddress();
+
+        bytes32 vaultFormImplementationCombination = keccak256(abi.encode(getContract(ARBI, "ERC5115Form"), vault));
+        uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
+            .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
+
+        bytes memory extra5115Data = abi.encode("", superformId, address(0));
+
+        LiqRequest memory liqRequest = LiqRequest(
+            bytes(""),
+            0x5979D7b546E38E414F7E9822514be443A4800529,
+            0x5979D7b546E38E414F7E9822514be443A4800529,
+            0,
+            ARBI,
+            0
+        );
+
+        InitSingleVaultData memory sfData = InitSingleVaultData(
+            1, superformId, 2e6, 2e6, 100, liqRequest, false, false, deployer, abi.encode(1, extra5115Data)
+        );
+
+        vm.startPrank(SuperRegistry(getContract(ARBI, "SuperRegistry")).getAddress(keccak256("CORE_STATE_REGISTRY")));
+        vm.expectRevert(ERC5115Form.ERC5115FORM_TOKEN_IN_NOT_ENCODED.selector);
         targetSuperform.xChainDepositIntoVault(sfData, deployer, OP);
     }
 
@@ -1012,6 +1227,15 @@ contract SuperformERC5115FormTest is ProtocolActions {
         );
     }
 
+    /// @dev Test if force approve resets approval
+    function test_5115ForceApprovalReset() public {
+        vm.startPrank(deployer);
+        deal(0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9, deployer, 10e6);
+        IERC20(0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9).approve(address(noSpendWrapper), 10e6);
+
+        noSpendWrapper.deposit(deployer, 10e6, 10e6);
+    }
+
     /// @dev Test slippage validation checks
     function test_5115SlippageValidation() public {
         deal(0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9, 0x7121207b118BbaCF0340A989527474Bd4495c3C6, 1e6);
@@ -1128,6 +1352,17 @@ contract SuperformERC5115FormTest is ProtocolActions {
         assertGt(vaultSupply, 0);
     }
 
+    /// @dev Test claim rewards to zero rewards distributor
+    function test_5115claimRewardsZeroAddress() public {
+        bytes32 rewardsId = keccak256("REWARDS_DISTRIBUTOR");
+
+        vm.startPrank(deployer);
+        SuperRegistry(getContract(ARBI, "SuperRegistry")).setAddress(rewardsId, address(0), ARBI);
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        rewardsSuperform.claimRewardTokens();
+    }
+
     /// @dev Test balance and transfer properties of wrapper
     function test_5115BalanceAndTransfer() public {
         address vault = targetSuperform.getVaultAddress();
@@ -1180,5 +1415,23 @@ contract SuperformERC5115FormTest is ProtocolActions {
 
         vm.expectRevert(Error.NOT_IMPLEMENTED.selector);
         targetWrapper.transferFrom(address(targetWrapper), address(100), balance);
+    }
+
+    /// @dev Test ZERO_ADDRESS in constructor
+    function test_constructor5115ZeroAddress() external {
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        new ERC5115To4626Wrapper(address(0), address(0), address(0));
+    }
+
+    /// @dev Test INVALID_RECEIVER in deposit
+    function test_deposit115InvalidReceiver() external {
+        vm.expectRevert(ERC5115To4626Wrapper.INVALID_RECEIVER.selector);
+        targetWrapper.deposit(address(targetWrapper), 1e6, 0);
+    }
+
+    /// @dev Test INVALID_RECEIVER in redeem
+    function test_redeem5115InvalidReceiver() external {
+        vm.expectRevert(ERC5115To4626Wrapper.INVALID_RECEIVER.selector);
+        targetWrapper.redeem(address(targetWrapper), 1e6, 0);
     }
 }

@@ -23,7 +23,8 @@ contract SXSVW5115NativeSlippageAMB23 is ProtocolActions {
 
         TARGET_FORM_KINDS[OP][0] = [3];
 
-        /// @dev The base output token selected here is 4 (wstETH), in the case of this vault it is the same as the input
+        /// @dev The base output token selected here is 4 (wstETH), in the case of this vault it is the same as the
+        /// input
         TARGET_UNDERLYINGS[OP][1] = [4];
 
         TARGET_VAULTS[OP][1] = [9];

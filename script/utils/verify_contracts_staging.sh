@@ -46,6 +46,8 @@ file_names=(
     "src/crosschain-liquidity/DstSwapper.sol"
     "src/forms/ERC4626Form.sol"
     "src/forms/ERC5115Form.sol"
+    "src/crosschain-liquidity/debridge/DeBridgeForwarderValidator.sol"
+    "src/crosschain-liquidity/debridge/DeBridgeValidator.sol"
     "src/EmergencyQueue.sol"
     "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol"
     "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol"
@@ -67,6 +69,7 @@ file_names=(
     "src/RewardsDistributor.sol"
     "src/crosschain-data/adapters/axelar/AxelarImplementation.sol"
     "src/crosschain-liquidity/1inch/OneInchValidator.sol"
+    "src/forms/wrappers/ERC5115To4626WrapperFactory.sol"
     # Add more file names here if needed
 )
 
@@ -75,6 +78,8 @@ contract_names=(
     "DstSwapper"
     "ERC4626Form"
     "ERC5115Form"
+    "DeBridgeForwarderValidator"
+    "DeBridgeValidator"
     "EmergencyQueue"
     "HyperlaneImplementation"
     "LayerzeroImplementation"
@@ -95,7 +100,8 @@ contract_names=(
     "SocketOneInchValidator"
     "RewardsDistributor",
     "AxelarImplementation"
-    OneInchValidator
+    "OneInchValidator"
+    ERC5115To4626WrapperFactory
     # Add more contract names here if needed
 )
 
@@ -103,7 +109,9 @@ contract_addresses=(
     0x80AAb0eA1243817E22D6ad76ebe06385900e906d
     0xAACA228C3fca21c41C4Ea82EBb2d8843bd830B3b
     0xB2f32B62B7537304b830dE6575Fe73c41ea52991
-    0x710Feae4819138A3bB2DB13b93A6791d10f5Bd7f
+    0x03f3D348284Fc689961bF9A588ADc186b32B3846
+    0xC89Fc12EB01284D0d5a48782622Da21b16451018
+    0x37ED41BfB4e10B87610097B37303170599B512bc
     0x7FE59421D6b85afa86d982E3186a74c72f6c4c03
     0x207BFE0Fb040F17cC61B67e4aaDfC59C9e170671
     0x1863862794cD8ec60daBF8B473fcA928B78cE563
@@ -125,6 +133,7 @@ contract_addresses=(
     0xCE0D4e1c23CD166f84e5746c6833e8bc762F3456
     0x25372FEEB7f007C21Cd7d65C94C7E1B789E49c84
     0x480140a26c3eb10F0F17e56495CE588320f45Cfe
+    0x7c6f64b6E0b7c8f32C4600C491C8799E6eD3b444
     # Add more addresses here if needed
 )
 
@@ -132,7 +141,9 @@ contract_addresses_fantom=(
     0xa87976e23401FC5c22dD44C14FCEb19AA164AB54
     0x57e009dfc2C5ff3FD3c4627222EF15d3cF9E38d6
     0x45e2ff7EA8d0f03edFfCceE1467528D1d76672b1
-    0x645ba514E56406eB2308AB5f5FAFb3AAED1280eF
+    0xbd950aCb639123bcc2DE05a20889be245F88b421
+    0xa20411b1dC2037E6F2110b20894eD3c036a22496
+    0xe3bE76eC427fb470360fAA0E3499fc4F483089B1
     0xE49a5d6fA3bF4489D751CA5f93B2a7f475011bac
     0x0000000000000000000000000000000000000000
     0x9061774Bd32D9C4552c540a822823949Fad006D9
@@ -154,10 +165,13 @@ contract_addresses_fantom=(
     0x92C0A5f9DF2c9DD99DCC27801aa75b0634689e53
     0x5849Ce0F755D1C2D9e724D2E7297379991D1C3e4
     0x16e9f8549c2b6a026dc2706d746beA76CeFF4098
+    0xB97c81B9628900F769D00E4723dFcB8F5982B327
     # Add more addresses here if needed
 )
 
 constructor_args=(
+    $super_constructor_arg
+    $super_constructor_arg
     $super_constructor_arg
     $super_constructor_arg
     $super_constructor_arg
@@ -183,9 +197,12 @@ constructor_args=(
     $super_constructor_arg
     $super_constructor_arg
     $super_constructor_arg
+    $super_constructor_arg
 )
 
 constructor_args_fantom=(
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
     $super_constructor_arg_ftm
     $super_constructor_arg_ftm
     $super_constructor_arg_ftm
@@ -207,6 +224,7 @@ constructor_args_fantom=(
     $empty_constructor_arg
     $super_constructor_arg_ftm
     $wormhole_sr_arg_ftm
+    $super_constructor_arg_ftm
     $super_constructor_arg_ftm
     $super_constructor_arg_ftm
     $super_constructor_arg_ftm

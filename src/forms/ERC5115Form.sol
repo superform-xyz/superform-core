@@ -11,77 +11,73 @@ import { InitSingleVaultData } from "src/types/DataTypes.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IStandardizedYield } from "src/vendor/pendle/IStandardizedYield.sol";
-import { IERC5115To4626Wrapper } from "src/forms/interfaces/IERC5115To4626Wrapper.sol";
+import { IERC5115To4626Wrapper, IStandardizedYield } from "src/forms/interfaces/IERC5115To4626Wrapper.sol";
 
 /// @title ERC5115Form
-/// @dev The Form implementation for ERC5115 vaults
-/// @notice vault variable refers to the wrapper address, not to the underlying 5115
-/// @notice Reference implementation of a vault:
-/// https://github.com/pendle-finance/pendle-core-v2-public/blob/main/contracts/core/StandardizedYield/SYBase.sol
+/// @dev Implementation of the Form contract for ERC5115 vaults
+/// @notice The vault variable refers to the wrapper address, not the underlying 5115
 /// @author Zeropoint Labs
 contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     using SafeERC20 for IERC20;
-    using SafeERC20 for IStandardizedYield;
+    using SafeERC20 for IERC5115To4626Wrapper;
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
-    //                           Errors                        //
+    //                           ERRORS                         //
     //////////////////////////////////////////////////////////////
-    /// @dev opinionated function not part of the 5115 eip
+
+    /// @dev Thrown when a function not part of the EIP-5115 is called
     error FUNCTION_NOT_IMPLEMENTED();
 
-    /// @dev Error emitted when the tokenIn is not encoded in the extraFormData
+    /// @dev Thrown when the tokenIn is not encoded in the extraFormData
     error ERC5115FORM_TOKEN_IN_NOT_ENCODED();
 
-    /// @dev Error emitted when the tokenOut is not set as the interimToken
+    /// @dev Thrown when the tokenOut is not set as the interimToken
     error ERC5115FORM_TOKEN_OUT_NOT_SET();
 
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                         //
     //////////////////////////////////////////////////////////////
 
-    uint8 constant stateRegistryId = 1; // CoreStateRegistry
+    /// @dev Identifier for the CoreStateRegistry
+    uint8 constant stateRegistryId = 1;
+
+    /// @dev Represents 100% in basis points
     uint256 internal constant ENTIRE_SLIPPAGE = 10_000;
-
-    //////////////////////////////////////////////////////////////
-    //                           STRUCTS                        //
-    //////////////////////////////////////////////////////////////
-
-    struct DirectDepositLocalVars {
-        uint64 chainId;
-        address vaultTokenIn;
-        address bridgeValidator;
-        uint256 shares;
-        uint256 balanceBefore;
-        uint256 assetDifference;
-        uint256 nonce;
-        uint256 deadline;
-        uint256 inputAmount;
-        bytes signature;
-    }
-
-    struct DirectWithdrawLocalVars {
-        uint64 chainId;
-        address vaultTokenOut;
-        address bridgeValidator;
-        uint256 amount;
-    }
-
-    struct XChainWithdrawLocalVars {
-        uint64 dstChainId;
-        address vaultTokenOut;
-        address bridgeValidator;
-        uint256 balanceBefore;
-        uint256 balanceAfter;
-        uint256 amount;
-    }
 
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
+    /// @param superRegistry_ The address of the super registry contract
     constructor(address superRegistry_) BaseForm(superRegistry_) { }
+
+    //////////////////////////////////////////////////////////////
+    //                  EXTERNAL FUNCTIONS                      //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc IERC5115Form
+    function claimRewardTokens() external virtual override {
+        address[] memory rewardTokens = getRewardTokens();
+
+        try IERC5115To4626Wrapper(vault).claimRewards(address(this)) returns (uint256[] memory rewardAmounts) {
+            if (rewardAmounts.length != rewardTokens.length) {
+                revert Error.ARRAY_LENGTH_MISMATCH();
+            }
+        } catch {
+            revert FUNCTION_NOT_IMPLEMENTED();
+        }
+
+        address rewardsDistributor = superRegistry.getAddress(keccak256("REWARDS_DISTRIBUTOR"));
+
+        IERC20 rewardToken;
+        for (uint256 i; i < rewardTokens.length; ++i) {
+            rewardToken = IERC20(rewardTokens[i]);
+            if (address(rewardToken) == vault) revert Error.CANNOT_FORWARD_4646_TOKEN();
+
+            rewardToken.safeTransfer(rewardsDistributor, rewardToken.balanceOf(address(this)));
+        }
+    }
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
@@ -89,27 +85,27 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
 
     /// @inheritdoc BaseForm
     function getVaultName() public view virtual override returns (string memory) {
-        return IStandardizedYield(vault).name();
+        return IERC5115To4626Wrapper(vault).name();
     }
 
     /// @inheritdoc BaseForm
     function getVaultSymbol() public view virtual override returns (string memory) {
-        return IStandardizedYield(vault).symbol();
+        return IERC5115To4626Wrapper(vault).symbol();
     }
 
     /// @inheritdoc BaseForm
     function getVaultDecimals() public view virtual override returns (uint256) {
-        return uint256(IStandardizedYield(vault).decimals());
+        return uint256(IERC5115To4626Wrapper(vault).decimals());
     }
 
     /// @inheritdoc BaseForm
     function getPricePerVaultShare() public view virtual override returns (uint256) {
-        return IStandardizedYield(vault).exchangeRate();
+        return IERC5115To4626Wrapper(vault).exchangeRate();
     }
 
     /// @inheritdoc BaseForm
     function getVaultShareBalance() public view virtual override returns (uint256) {
-        return IStandardizedYield(IERC5115To4626Wrapper(vault).getUnderlying5115Vault()).balanceOf(address(this));
+        return IERC5115To4626Wrapper(IERC5115To4626Wrapper(vault).getUnderlying5115Vault()).balanceOf(address(this));
     }
 
     /// @inheritdoc BaseForm
@@ -124,12 +120,12 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
 
     /// @inheritdoc BaseForm
     function getPreviewPricePerVaultShare() public view virtual override returns (uint256) {
-        return IStandardizedYield(vault).exchangeRate();
+        return IERC5115To4626Wrapper(vault).exchangeRate();
     }
 
     /// @inheritdoc BaseForm
     function previewDepositTo(uint256 assets_) public view virtual override returns (uint256) {
-        return IStandardizedYield(vault).previewDeposit(asset, assets_);
+        return IERC5115To4626Wrapper(vault).previewDeposit(asset, assets_);
     }
 
     /// @inheritdoc BaseForm
@@ -139,7 +135,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
 
     /// @inheritdoc BaseForm
     function previewRedeemFrom(uint256 shares_) public view virtual override returns (uint256) {
-        return IStandardizedYield(vault).previewRedeem(asset, shares_);
+        return IERC5115To4626Wrapper(vault).previewRedeem(asset, shares_);
     }
 
     /// @inheritdoc BaseForm
@@ -159,7 +155,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
 
     /// @inheritdoc IERC5115Form
     function getAccruedRewards(address user) public view virtual override returns (uint256[] memory) {
-        try IStandardizedYield(vault).accruedRewards(user) returns (uint256[] memory rewards) {
+        try IERC5115To4626Wrapper(vault).accruedRewards(user) returns (uint256[] memory rewards) {
             return rewards;
         } catch {
             revert FUNCTION_NOT_IMPLEMENTED();
@@ -168,7 +164,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
 
     /// @inheritdoc IERC5115Form
     function getRewardIndexesStored() public view virtual override returns (uint256[] memory) {
-        try IStandardizedYield(vault).rewardIndexesStored() returns (uint256[] memory indexes) {
+        try IERC5115To4626Wrapper(vault).rewardIndexesStored() returns (uint256[] memory indexes) {
             return indexes;
         } catch {
             revert FUNCTION_NOT_IMPLEMENTED();
@@ -177,7 +173,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
 
     /// @inheritdoc IERC5115Form
     function getRewardTokens() public view virtual override returns (address[] memory) {
-        try IStandardizedYield(vault).getRewardTokens() returns (address[] memory rewardTokens) {
+        try IERC5115To4626Wrapper(vault).getRewardTokens() returns (address[] memory rewardTokens) {
             return rewardTokens;
         } catch {
             revert FUNCTION_NOT_IMPLEMENTED();
@@ -185,54 +181,28 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     }
 
     /// @inheritdoc IERC5115Form
-    function claimRewardTokens() external virtual override {
-        address[] memory rewardTokens = getRewardTokens();
-
-        /// @dev claim all reward tokens
-        try IStandardizedYield(vault).claimRewards(address(this)) returns (uint256[] memory rewardAmounts) {
-            if (rewardAmounts.length != rewardTokens.length) {
-                revert Error.ARRAY_LENGTH_MISMATCH();
-            }
-        } catch {
-            revert FUNCTION_NOT_IMPLEMENTED();
-        }
-
-        address rewardsDistributor = superRegistry.getAddress(keccak256("REWARDS_DISTRIBUTOR"));
-        if (rewardsDistributor == address(0)) revert Error.ZERO_ADDRESS();
-
-        /// @dev forwards token to rewards distributor
-        IERC20 rewardToken;
-        for (uint256 i; i < rewardTokens.length; ++i) {
-            rewardToken = IERC20(rewardTokens[i]);
-            if (address(rewardToken) == vault) revert Error.CANNOT_FORWARD_4646_TOKEN();
-
-            rewardToken.safeTransfer(rewardsDistributor, rewardToken.balanceOf(address(this)));
-        }
-    }
-
-    /// @inheritdoc IERC5115Form
     function getYieldToken() public view virtual override returns (address yieldToken) {
-        yieldToken = IStandardizedYield(vault).yieldToken();
+        yieldToken = IERC5115To4626Wrapper(vault).yieldToken();
     }
 
     /// @inheritdoc IERC5115Form
     function getTokensIn() public view virtual override returns (address[] memory tokensIn) {
-        tokensIn = IStandardizedYield(vault).getTokensIn();
+        tokensIn = IERC5115To4626Wrapper(vault).getTokensIn();
     }
 
     /// @inheritdoc IERC5115Form
     function getTokensOut() public view virtual override returns (address[] memory tokensOut) {
-        tokensOut = IStandardizedYield(vault).getTokensOut();
+        tokensOut = IERC5115To4626Wrapper(vault).getTokensOut();
     }
 
     /// @inheritdoc IERC5115Form
     function isValidTokenIn(address token) public view virtual override returns (bool) {
-        return IStandardizedYield(vault).isValidTokenIn(token);
+        return IERC5115To4626Wrapper(vault).isValidTokenIn(token);
     }
 
     /// @inheritdoc IERC5115Form
     function isValidTokenOut(address token) public view virtual override returns (bool) {
-        return IStandardizedYield(vault).isValidTokenOut(token);
+        return IERC5115To4626Wrapper(vault).isValidTokenOut(token);
     }
 
     /// @inheritdoc IERC5115Form
@@ -242,7 +212,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         virtual
         returns (IStandardizedYield.AssetType assetType, address assetAddress, uint8 assetDecimals)
     {
-        (assetType, assetAddress, assetDecimals) = IStandardizedYield(vault).assetInfo();
+        (assetType, assetAddress, assetDecimals) = IERC5115To4626Wrapper(vault).assetInfo();
     }
 
     //////////////////////////////////////////////////////////////
@@ -429,7 +399,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         IERC20(vars.vaultTokenIn).safeIncreaseAllowance(vault, vars.assetDifference);
 
         /// @dev deposit assets for shares and add extra validation check to ensure intended ERC5115 behavior
-        shares = _depositAndValidate(singleVaultData_, vars.assetDifference, vars.vaultTokenIn);
+        shares = _depositAndValidate(singleVaultData_, vars.assetDifference);
     }
 
     function _processXChainDeposit(
@@ -477,7 +447,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         IERC20(vaultTokenIn).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
 
         /// @dev deposit vaultTokenIn for shares and add extra validation check to ensure intended ERC5115 behavior
-        shares = _depositAndValidate(singleVaultData_, singleVaultData_.amount, vaultTokenIn);
+        shares = _depositAndValidate(singleVaultData_, singleVaultData_.amount);
 
         emit Processed(srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
     }
@@ -492,7 +462,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         /// @dev if there is no txData, on withdraws the receiver is receiverAddress, otherwise it
         /// is this contract (before swap)
 
-        IStandardizedYield v = IStandardizedYield(vault);
+        IERC5115To4626Wrapper v = IERC5115To4626Wrapper(vault);
 
         /// @dev for withdraws interimToken is used as tokenOut (as extraFormData is overriden in CSR, so cannot be used
         /// to send this intent)
@@ -583,7 +553,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
 
         (,, vars.dstChainId) = singleVaultData_.superformId.getSuperform();
 
-        IStandardizedYield v = IStandardizedYield(vault);
+        IERC5115To4626Wrapper v = IERC5115To4626Wrapper(vault);
 
         if (!singleVaultData_.retain4626) {
             /// @dev redeem shares for assets and add extra validation check to ensure intended ERC5115 behavior
@@ -638,20 +608,19 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
 
     function _depositAndValidate(
         InitSingleVaultData memory singleVaultData_,
-        uint256 assetDifference_,
-        address vaultTokenIn_
+        uint256 assetDifference_
     )
         internal
         returns (uint256 shares)
     {
-        IStandardizedYield v = IStandardizedYield(vault);
+        IERC5115To4626Wrapper v = IERC5115To4626Wrapper(vault);
 
         address sharesReceiver = singleVaultData_.retain4626 ? singleVaultData_.receiverAddress : address(this);
 
         uint256 sharesBalanceBefore = v.balanceOf(sharesReceiver);
 
         /// @dev WARNING: validate if minSharesOut can be outputAmount (the result of previewDeposit)
-        shares = v.deposit(sharesReceiver, vaultTokenIn_, assetDifference_, singleVaultData_.outputAmount);
+        shares = v.deposit(sharesReceiver, assetDifference_, singleVaultData_.outputAmount);
 
         uint256 sharesBalanceAfter = v.balanceOf(sharesReceiver);
 
@@ -668,7 +637,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
 
     function _withdrawAndValidate(
         InitSingleVaultData memory singleVaultData_,
-        IStandardizedYield v_,
+        IERC5115To4626Wrapper v_,
         address vaultTokenOut_
     )
         internal
@@ -683,8 +652,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         /// @dev have to increase allowance as shares are moved to wrapper first
         underlyingVault.safeIncreaseAllowance(vault, singleVaultData_.amount);
 
-        assets =
-            v_.redeem(assetsReceiver, singleVaultData_.amount, vaultTokenOut_, singleVaultData_.outputAmount, false);
+        assets = v_.redeem(assetsReceiver, singleVaultData_.amount, singleVaultData_.outputAmount);
 
         uint256 assetsBalanceAfter = IERC20(vaultTokenOut_).balanceOf(assetsReceiver);
 
@@ -720,7 +688,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     }
 
     function _processEmergencyWithdraw(address receiverAddress_, uint256 amount_) internal {
-        IStandardizedYield v = IStandardizedYield(IERC5115To4626Wrapper(vault).getUnderlying5115Vault());
+        IERC5115To4626Wrapper v = IERC5115To4626Wrapper(IERC5115To4626Wrapper(vault).getUnderlying5115Vault());
         if (receiverAddress_ == address(0)) revert Error.ZERO_ADDRESS();
 
         if (v.balanceOf(address(this)) < amount_) {

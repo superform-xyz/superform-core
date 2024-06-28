@@ -15,6 +15,7 @@ import { ERC4626Form } from "src/forms/ERC4626Form.sol";
 import { ERC4626TimelockForm } from "src/forms/ERC4626TimelockForm.sol";
 import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
 import { ERC5115Form } from "src/forms/ERC5115Form.sol";
+import { ERC5115To4626WrapperFactory } from "src/forms/wrappers/ERC5115To4626WrapperFactory.sol";
 import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
 import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator.sol";
@@ -71,6 +72,7 @@ struct SetupVars {
     address erc4626Form;
     address erc4626TimelockForm;
     address erc5115Form;
+    address erc5115To4626WrapperFactory;
     address timelockStateRegistry;
     address broadcastRegistry;
     address coreStateRegistry;
@@ -116,7 +118,7 @@ abstract contract AbstractDeploySingle is BatchScript {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[27] public contractNames = [
+    string[28] public contractNames = [
         "CoreStateRegistry",
         //"TimelockStateRegistry",
         "BroadcastRegistry",
@@ -146,7 +148,8 @@ abstract contract AbstractDeploySingle is BatchScript {
         "DeBridgeForwarderValidator",
         "OneInchValidator",
         "AxelarImplementation",
-        "ERC5115Form"
+        "ERC5115Form",
+        "ERC5115To4626WrapperFactory"
     ];
 
     enum Chains {
@@ -650,6 +653,10 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// @dev 8.1 - Deploy 5115Form implementation
         vars.erc5115Form = address(new ERC5115Form{ salt: salt }(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("ERC5115Form"))] = vars.erc5115Form;
+
+        /// @dev 8.1.1 Deploy 5115 wrapper factory
+        vars.erc5115To4626WrapperFactory = address(new ERC5115To4626WrapperFactory{ salt: salt }(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("ERC5115To4626WrapperFactory"))] = vars.erc5115To4626WrapperFactory;
 
         // Timelock + ERC4626 Form
         //vars.erc4626TimelockForm = address(new ERC4626TimelockForm{ salt: salt }(vars.superRegistry));

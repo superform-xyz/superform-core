@@ -27,7 +27,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
 
     constructor(
         uint64[] memory chainIds_,
-        string[43] memory contractNames_,
+        string[44] memory contractNames_,
         address[][] memory coreContracts,
         address[][] memory underlyingAddresses,
         address[][][] memory vaultAddresses,
@@ -309,7 +309,7 @@ contract VaultSharesHandler is InvariantProtocolActions {
 
     struct InitHandlerSetupVars {
         uint64[] chainIds;
-        string[43] contractNames;
+        string[44] contractNames;
         address[][] coreContracts;
         address[][] underlyingAddresses;
         address[][][] vaultAddresses;
