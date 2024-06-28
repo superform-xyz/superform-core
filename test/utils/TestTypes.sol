@@ -182,6 +182,7 @@ struct SetupVars {
     address debridgeValidator;
     address debridgeForwarderValidator;
     address rewardsDistributor;
+    address eRC5115To4626WrapperFactory;
     Vm.Log[] logs;
     address superPositions;
     address kycDAOMock;
