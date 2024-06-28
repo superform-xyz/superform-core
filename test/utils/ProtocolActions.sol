@@ -475,7 +475,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             /// @dev first the superformIds are obtained, together with token addresses for src and dst, vault addresses
             /// and information about vaults with partial withdraws (for assertions)
             (vars.targetSuperformIds, vars.underlyingSrcToken, vars.underlyingDstToken, vars.vaultMock) =
-                _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
+                _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i, true);
 
             vars.toDst = new address[](vars.targetSuperformIds.length);
 
@@ -1083,7 +1083,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                                 /// @dev calling state variables again to obtain fresh memory values corresponding to
                                 /// DST
                                 (, vars.underlyingSrcToken, vars.underlyingDstToken,) =
-                                    _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
+                                    _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i, false);
                                 vars.liqBridges = LIQ_BRIDGES[DST_CHAINS[i]][actionIndex];
 
                                 vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
@@ -1152,7 +1152,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                                     vars.underlyingDstToken
                                 );
                             }
-
                             vm.recordLogs();
 
                             /// @dev payload processing. This performs the action down to the form level and builds any
@@ -2532,7 +2531,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
         uint64 chain0,
         uint64 chain1,
         uint256 action,
-        uint256 dst
+        uint256 dst,
+        bool firstPass
     )
         internal
         returns (
@@ -2567,66 +2567,75 @@ abstract contract ProtocolActions is CommonProtocolActions {
             underlyingSrcTokensMem[i] = getContract(chain0, vars.underlyingToken);
             underlyingDstTokensMem[i] = getContract(chain1, vars.underlyingToken);
             vaultMocksMem[i] = getContract(chain1, VAULT_NAMES[vars.vaultIds[i]][vars.underlyingTokens[i]]);
+            if (firstPass) {
+                if (vars.vaultIds[i] == 3 || vars.vaultIds[i] == 5 || vars.vaultIds[i] == 6) {
+                    revertingDepositSFsPerDst.push(vars.superformIdsTemp[i]);
+                }
+                if (vars.vaultIds[i] == 4) {
+                    revertingWithdrawTimelockedSFsPerDst.push(vars.superformIdsTemp[i]);
+                }
+                if (vars.vaultIds[i] == 7 || vars.vaultIds[i] == 8) {
+                    revertingWithdrawSFsPerDst.push(vars.superformIdsTemp[i]);
+                }
+                if (vars.vaultIds[i] == 10 || vars.vaultIds[i] == 11) {
+                    asyncDepositSFsPerDst.push(vars.superformIdsTemp[i]);
+                }
+                if (vars.vaultIds[i] == 10 || vars.vaultIds[i] == 12) {
+                    asyncWithdrawSFsPerDst.push(vars.superformIdsTemp[i]);
+                }
 
-            if (vars.vaultIds[i] == 3 || vars.vaultIds[i] == 5 || vars.vaultIds[i] == 6) {
-                revertingDepositSFsPerDst.push(vars.superformIdsTemp[i]);
-            }
-            if (vars.vaultIds[i] == 4) {
-                revertingWithdrawTimelockedSFsPerDst.push(vars.superformIdsTemp[i]);
-            }
-            if (vars.vaultIds[i] == 7 || vars.vaultIds[i] == 8) {
-                revertingWithdrawSFsPerDst.push(vars.superformIdsTemp[i]);
-            }
-            if (vars.vaultIds[i] == 10 || vars.vaultIds[i] == 11) {
-                asyncDepositSFsPerDst.push(vars.superformIdsTemp[i]);
-            }
-            if (vars.vaultIds[i] == 10 || vars.vaultIds[i] == 12) {
-                asyncWithdrawSFsPerDst.push(vars.superformIdsTemp[i]);
-            }
-
-            if (vars.vaultIds[i] == 13) {
-                revertingAsyncDepositSFsPerDst.push(vars.superformIdsTemp[i]);
-            }
-            if (vars.vaultIds[i] == 14) {
-                revertingAsyncWithdrawSFsPerDst.push(vars.superformIdsTemp[i]);
-            }
-            if (vars.vaultIds[i] == 15) {
-                revertingRedeemAsyncDepositSFsPerDst.push(vars.superformIdsTemp[i]);
+                if (vars.vaultIds[i] == 13) {
+                    revertingAsyncDepositSFsPerDst.push(vars.superformIdsTemp[i]);
+                }
+                if (vars.vaultIds[i] == 14) {
+                    revertingAsyncWithdrawSFsPerDst.push(vars.superformIdsTemp[i]);
+                }
+                if (vars.vaultIds[i] == 15) {
+                    revertingRedeemAsyncDepositSFsPerDst.push(vars.superformIdsTemp[i]);
+                }
             }
         }
-        /// @dev info for async sfs
-        asyncDepositSFs.push(asyncDepositSFsPerDst);
-        delete asyncDepositSFsPerDst;
-        asyncWithdrawSFs.push(asyncWithdrawSFsPerDst);
-        delete asyncWithdrawSFsPerDst;
-        /// @dev this is used to have info on all reverting superforms in all destinations. Storage access is used for
-        /// easiness of pushing
-        revertingDepositSFs.push(revertingDepositSFsPerDst);
-        revertingWithdrawSFs.push(revertingWithdrawSFsPerDst);
-        revertingWithdrawTimelockedSFs.push(revertingWithdrawTimelockedSFsPerDst);
-        revertingAsyncDepositSFs.push(revertingAsyncDepositSFsPerDst);
-        revertingAsyncWithdrawSFs.push(revertingAsyncWithdrawSFsPerDst);
-        revertingRedeemAsyncDepositSFs.push(revertingRedeemAsyncDepositSFsPerDst);
 
-        delete revertingDepositSFsPerDst;
-        delete revertingWithdrawSFsPerDst;
-        delete revertingWithdrawTimelockedSFsPerDst;
-        delete revertingAsyncDepositSFsPerDst;
-        delete revertingAsyncWithdrawSFsPerDst;
-        delete revertingRedeemAsyncDepositSFsPerDst;
+        if (firstPass) {
+            /// @dev info for async sfs
+            asyncDepositSFs.push(asyncDepositSFsPerDst);
+            delete asyncDepositSFsPerDst;
+            asyncWithdrawSFs.push(asyncWithdrawSFsPerDst);
+            delete asyncWithdrawSFsPerDst;
+            /// @dev this is used to have info on all reverting superforms in all destinations. Storage access is used
+            /// for
+            /// easiness of pushing
+            revertingDepositSFs.push(revertingDepositSFsPerDst);
+            revertingWithdrawSFs.push(revertingWithdrawSFsPerDst);
+            revertingWithdrawTimelockedSFs.push(revertingWithdrawTimelockedSFsPerDst);
+            revertingAsyncDepositSFs.push(revertingAsyncDepositSFsPerDst);
+            revertingAsyncWithdrawSFs.push(revertingAsyncWithdrawSFsPerDst);
+            revertingRedeemAsyncDepositSFs.push(revertingRedeemAsyncDepositSFsPerDst);
 
-        /// @dev detects timelocked forms in scenario and counts them
-        for (uint256 j; j < vars.formKinds.length; ++j) {
-            if (vars.formKinds[j] == 1) ++countTimelocked[dst];
-            if (vars.formKinds[j] == 4 && (vars.vaultIds[j] == 10 || vars.vaultIds[j] == 11 || vars.vaultIds[j] == 15))
-            {
-                ++countAsyncDeposit[dst];
+            delete revertingDepositSFsPerDst;
+            delete revertingWithdrawSFsPerDst;
+            delete revertingWithdrawTimelockedSFsPerDst;
+            delete revertingAsyncDepositSFsPerDst;
+            delete revertingAsyncWithdrawSFsPerDst;
+            delete revertingRedeemAsyncDepositSFsPerDst;
+
+            /// @dev detects timelocked forms in scenario and counts them
+            for (uint256 j; j < vars.formKinds.length; ++j) {
+                if (vars.formKinds[j] == 1) ++countTimelocked[dst];
+                if (
+                    vars.formKinds[j] == 4
+                        && (vars.vaultIds[j] == 10 || vars.vaultIds[j] == 11 || vars.vaultIds[j] == 15)
+                ) {
+                    ++countAsyncDeposit[dst];
+                }
+                if (vars.formKinds[j] == 4 && (vars.vaultIds[j] == 10 || vars.vaultIds[j] == 12)) {
+                    ++countAsyncWithdraw[dst];
+                }
+
+                timeLockedIndexes[chain1][countTimelocked[dst]] = j;
+                asyncDepositIndexes[chain1][countAsyncDeposit[dst]] = j;
+                asyncRedeemIndexes[chain1][countAsyncWithdraw[dst]] = j;
             }
-            if (vars.formKinds[j] == 4 && (vars.vaultIds[j] == 10 || vars.vaultIds[j] == 12)) ++countAsyncWithdraw[dst];
-
-            timeLockedIndexes[chain1][countTimelocked[dst]] = j;
-            asyncDepositIndexes[chain1][countAsyncDeposit[dst]] = j;
-            asyncRedeemIndexes[chain1][countAsyncWithdraw[dst]] = j;
         }
     }
 

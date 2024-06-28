@@ -237,6 +237,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
             if (shares != 0 && !p.data.retain4626) {
                 /// @dev dispatch acknowledgement to mint superPositions
                 if (p.isXChain == 1) {
+                    /// @dev this was never encoded in deposits
                     (uint256 payloadId,) = abi.decode(p.data.extraFormData, (uint256, uint256));
 
                     _dispatchAcknowledgement(
