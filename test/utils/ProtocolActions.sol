@@ -1581,7 +1581,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     /// @dev perform the calls from beginning to last because of easiness in passing unlock id
                     for (uint256 j = countAsyncWithdraw[i]; j > 0; j--) {
                         vm.prank(deployer);
-
                         asyncStateRegistry.finalizeWithdrawPayload(
                             currentWithdrawPayloadCounter - asyncWithdrawPerformed,
                             GENERATE_WITHDRAW_TX_DATA_ON_DST
@@ -1973,6 +1972,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
         address tokenInInfo;
         bytes[] encodedDatas;
         bytes empty;
+        uint256[] finalAmounts;
+        uint256[] maxSlippageTemp;
     }
 
     /// @dev this internal function just loops over _buildSingleVaultDepositCallData or
@@ -1995,15 +1996,15 @@ abstract contract ProtocolActions is CommonProtocolActions {
         v.totalAmount;
 
         if (len == 0) revert LEN_MISMATCH();
-        uint256[] memory finalAmounts = new uint256[](len);
-        uint256[] memory maxSlippageTemp = new uint256[](len);
+        v.finalAmounts = new uint256[](len);
+        v.maxSlippageTemp = new uint256[](len);
 
         address uniqueInterimToken;
 
         v.encodedDatas = new bytes[](len);
 
         for (uint256 i = 0; i < len; ++i) {
-            finalAmounts[i] = args.amounts[i];
+            v.finalAmounts[i] = args.amounts[i];
             if (i < 3 && args.dstSwap && args.action != Actions.Withdraw) {
                 /// @dev hack to support unique interim tokens -assuming dst swap scenario cases have less than 3 vaults
                 uniqueInterimToken = getContract(args.toChainId, UNDERLYING_TOKENS[i]);
@@ -2018,7 +2019,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                             && (args.action == Actions.Deposit || args.action == Actions.DepositPermit2)
                     )
             ) {
-                finalAmounts[i] = (args.amounts[i] * (10_000 - uint256(args.slippage))) / 10_000;
+                v.finalAmounts[i] = (args.amounts[i] * (10_000 - uint256(args.slippage))) / 10_000;
             }
 
             /// @dev re-assign to attach final destination chain id for withdraws (used for liqData generation)
@@ -2034,8 +2035,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 args.underlyingTokensDst[i],
                 uniqueInterimToken,
                 args.superformIds[i],
-                finalAmounts[i],
-                finalAmounts[i],
+                v.finalAmounts[i],
+                v.finalAmounts[i],
                 args.liqBridges[i],
                 args.receive4626[i],
                 args.maxSlippage,
@@ -2066,11 +2067,11 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             liqRequests[i] = superformData.liqRequest;
             if (args.dstSwap && args.action != Actions.Withdraw) liqRequests[i].interimToken = uniqueInterimToken;
-            maxSlippageTemp[i] = args.maxSlippage;
-            v.totalAmount += finalAmounts[i];
+            v.maxSlippageTemp[i] = args.maxSlippage;
+            v.totalAmount += v.finalAmounts[i];
 
-            finalAmounts[i] = superformData.amount;
-            if (DEBUG_MODE) console.log("finalAmount", finalAmounts[i]);
+            v.finalAmounts[i] = superformData.amount;
+            if (DEBUG_MODE) console.log("finalAmount", v.finalAmounts[i]);
             args.outputAmounts[i] = superformData.outputAmount;
             if (DEBUG_MODE) console.log("args.outputAmounts[i]", args.outputAmounts[i]);
         }
@@ -2093,12 +2094,12 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 hasDstSwap[i] = true;
             }
         }
-  
+
         superformsData = MultiVaultSFData(
             args.superformIds,
-            finalAmounts,
+            v.finalAmounts,
             args.outputAmounts,
-            maxSlippageTemp,
+            v.maxSlippageTemp,
             liqRequests,
             v.permit2data,
             hasDstSwap,
@@ -2328,6 +2329,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         if (DEBUG_MODE) console.log("test amount post-dst swap --", v.amount);
 
         vm.selectFork(FORKS[args.toChainId]);
+
         (v.superform,,) = DataLib.getSuperform(args.superformId);
 
         v.vault = IBaseForm(v.superform).getVaultAddress();
@@ -2646,20 +2648,21 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             /// @dev detects timelocked forms in scenario and counts them
             for (uint256 j; j < vars.formKinds.length; ++j) {
-                if (vars.formKinds[j] == 1) ++countTimelocked[dst];
+                if (vars.formKinds[j] == 1) {
+                    ++countTimelocked[dst];
+                    timeLockedIndexes[chain1][countTimelocked[dst]] = j;
+                }
                 if (
                     vars.formKinds[j] == 4
                         && (vars.vaultIds[j] == 10 || vars.vaultIds[j] == 11 || vars.vaultIds[j] == 15)
                 ) {
                     ++countAsyncDeposit[dst];
+                    asyncDepositIndexes[chain1][countAsyncDeposit[dst]] = j;
                 }
                 if (vars.formKinds[j] == 4 && (vars.vaultIds[j] == 10 || vars.vaultIds[j] == 12)) {
                     ++countAsyncWithdraw[dst];
+                    asyncRedeemIndexes[chain1][countAsyncWithdraw[dst]] = j;
                 }
-
-                timeLockedIndexes[chain1][countTimelocked[dst]] = j;
-                asyncDepositIndexes[chain1][countAsyncDeposit[dst]] = j;
-                asyncRedeemIndexes[chain1][countAsyncWithdraw[dst]] = j;
             }
         }
     }
