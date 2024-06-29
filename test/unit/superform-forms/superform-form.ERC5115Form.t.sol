@@ -509,7 +509,9 @@ contract SuperformERC5115FormTest is ProtocolActions {
         uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
             .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
 
-        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(superformId, abi.encode(0x5979D7b546E38E414F7E9822514be443A4800529));
 
         LiqRequest memory liqRequest = LiqRequest(
             bytes(""),
@@ -572,7 +574,9 @@ contract SuperformERC5115FormTest is ProtocolActions {
         uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
             .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
 
-        bytes memory extra5115Data = abi.encode("", superformId, address(0));
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(superformId, abi.encode(address(0)));
 
         LiqRequest memory liqRequest = LiqRequest(
             bytes(""),
@@ -614,7 +618,9 @@ contract SuperformERC5115FormTest is ProtocolActions {
         uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
             .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
 
-        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(superformId, abi.encode(0x5979D7b546E38E414F7E9822514be443A4800529));
 
         LiqRequest memory liqRequest = LiqRequest(
             bytes(""),
@@ -663,7 +669,9 @@ contract SuperformERC5115FormTest is ProtocolActions {
         uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
             .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
 
-        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(superformId, abi.encode(0x5979D7b546E38E414F7E9822514be443A4800529));
 
         LiqRequest memory liqRequest =
             LiqRequest(bytes(""), 0x5979D7b546E38E414F7E9822514be443A4800529, address(0), 0, ARBI, 0);
@@ -707,8 +715,9 @@ contract SuperformERC5115FormTest is ProtocolActions {
         uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
             .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
 
-        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
-        bytes memory extra5115ZeroData = abi.encode("", superformId, address(0));
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(superformId, abi.encode(0x5979D7b546E38E414F7E9822514be443A4800529));
 
         LiqRequest memory liqRequest =
             LiqRequest(bytes(""), 0x5979D7b546E38E414F7E9822514be443A4800529, address(0), 0, ARBI, 0);
@@ -727,6 +736,8 @@ contract SuperformERC5115FormTest is ProtocolActions {
             abi.encode(1, extra5115Data)
         );
 
+        extra5115Data[0] = abi.encode(superformId, abi.encode(address(0)));
+
         vm.startPrank(deployer);
         IERC20(0x5979D7b546E38E414F7E9822514be443A4800529).approve(getContract(ARBI, "SuperformRouter"), 1e6);
         SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))).singleDirectSingleVaultDeposit(
@@ -740,7 +751,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
         LiqRequest memory withdrawLiqRequest = LiqRequest(bytes(""), address(0), address(0), 0, ARBI, 0);
 
         InitSingleVaultData memory withdrawSfData = InitSingleVaultData(
-            1, superformId, 1e6, 1e6, 100, withdrawLiqRequest, false, true, deployer, abi.encode(1, extra5115ZeroData)
+            1, superformId, 1e6, 1e6, 100, withdrawLiqRequest, false, true, deployer, abi.encode(1, extra5115Data)
         );
 
         vm.startPrank(getContract(ARBI, "CoreStateRegistry"));
@@ -756,7 +767,9 @@ contract SuperformERC5115FormTest is ProtocolActions {
         uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
             .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
 
-        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(superformId, abi.encode(0x5979D7b546E38E414F7E9822514be443A4800529));
 
         LiqRequest memory liqRequest = LiqRequest(
             bytes(""),
@@ -810,7 +823,9 @@ contract SuperformERC5115FormTest is ProtocolActions {
         uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
             .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
 
-        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(superformId, abi.encode(0x5979D7b546E38E414F7E9822514be443A4800529));
 
         LiqRequest memory liqRequest = LiqRequest(
             bytes(""),
@@ -868,7 +883,9 @@ contract SuperformERC5115FormTest is ProtocolActions {
         uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
             .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
 
-        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(superformId, abi.encode(0x5979D7b546E38E414F7E9822514be443A4800529));
 
         LiqRequest memory liqRequest = LiqRequest(
             bytes(""),
@@ -896,7 +913,9 @@ contract SuperformERC5115FormTest is ProtocolActions {
         uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
             .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
 
-        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(superformId, abi.encode(0x5979D7b546E38E414F7E9822514be443A4800529));
 
         ISocketRegistry.BridgeRequest memory bridgeRequest;
         ISocketRegistry.MiddlewareRequest memory middlewareRequest;
@@ -930,7 +949,9 @@ contract SuperformERC5115FormTest is ProtocolActions {
         uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
             .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
 
-        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(superformId, abi.encode(0x5979D7b546E38E414F7E9822514be443A4800529));
 
         LiqRequest memory liqRequest = LiqRequest(
             bytes(""),
@@ -958,7 +979,9 @@ contract SuperformERC5115FormTest is ProtocolActions {
         uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
             .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
 
-        bytes memory extra5115Data = abi.encode("", superformId, address(0));
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(superformId, abi.encode(address(0)));
 
         LiqRequest memory liqRequest = LiqRequest(
             bytes(""),
@@ -986,7 +1009,9 @@ contract SuperformERC5115FormTest is ProtocolActions {
         uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
             .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
 
-        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(superformId, abi.encode(0x5979D7b546E38E414F7E9822514be443A4800529));
 
         LiqRequest memory liqRequest = LiqRequest(
             bytes(""),
@@ -1014,7 +1039,9 @@ contract SuperformERC5115FormTest is ProtocolActions {
         uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
             .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
 
-        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(superformId, abi.encode(0x5979D7b546E38E414F7E9822514be443A4800529));
 
         LiqRequest memory liqRequest =
             LiqRequest(bytes("invalid-random-data"), address(0), 0x5979D7b546E38E414F7E9822514be443A4800529, 0, ARBI, 0);
@@ -1036,7 +1063,9 @@ contract SuperformERC5115FormTest is ProtocolActions {
         uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
             .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
 
-        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(superformId, abi.encode(0x5979D7b546E38E414F7E9822514be443A4800529));
 
         LiqRequest memory liqRequest = LiqRequest(
             bytes(""),
@@ -1103,7 +1132,9 @@ contract SuperformERC5115FormTest is ProtocolActions {
         uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
             .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
 
-        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(superformId, abi.encode(0x5979D7b546E38E414F7E9822514be443A4800529));
 
         LiqRequest memory liqRequest =
             LiqRequest(bytes(""), getContract(ARBI, "DAI"), 0x5979D7b546E38E414F7E9822514be443A4800529, 0, ARBI, 0);
@@ -1138,7 +1169,9 @@ contract SuperformERC5115FormTest is ProtocolActions {
         uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
             .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
 
-        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(superformId, abi.encode(0x5979D7b546E38E414F7E9822514be443A4800529));
 
         LiqRequest memory liqRequest = LiqRequest(
             abi.encodeWithSelector(
@@ -1186,7 +1219,9 @@ contract SuperformERC5115FormTest is ProtocolActions {
         uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
             .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
 
-        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(superformId, abi.encode(0x5979D7b546E38E414F7E9822514be443A4800529));
 
         LiqRequest memory liqRequest = LiqRequest(
             abi.encodeWithSelector(
@@ -1239,7 +1274,9 @@ contract SuperformERC5115FormTest is ProtocolActions {
     /// @dev Test slippage validation checks
     function test_5115SlippageValidation() public {
         deal(0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9, 0x7121207b118BbaCF0340A989527474Bd4495c3C6, 1e6);
-        bytes memory extra5115Data = abi.encode("", malSuperformId, 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9);
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(malSuperformId, abi.encode(0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9));
 
         LiqRequest memory liqRequest = LiqRequest(
             bytes(""),
@@ -1276,7 +1313,9 @@ contract SuperformERC5115FormTest is ProtocolActions {
     /// @dev Test xchain slippage validation checks
     function test_5115WithdrawSlippageValidation() public {
         deal(0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9, 0x7121207b118BbaCF0340A989527474Bd4495c3C6, 1e6);
-        bytes memory extra5115Data = abi.encode("", malWithdrawSuperformId, 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9);
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(malWithdrawSuperformId, abi.encode(0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9));
 
         LiqRequest memory liqRequest = LiqRequest(
             bytes(""),
@@ -1370,8 +1409,9 @@ contract SuperformERC5115FormTest is ProtocolActions {
         bytes32 vaultFormImplementationCombination = keccak256(abi.encode(getContract(ARBI, "ERC5115Form"), vault));
         uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
             .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
+        bytes[] memory extra5115Data = new bytes[](1);
 
-        bytes memory extra5115Data = abi.encode("", superformId, 0x5979D7b546E38E414F7E9822514be443A4800529);
+        extra5115Data[0] = abi.encode(superformId, abi.encode(0x5979D7b546E38E414F7E9822514be443A4800529));
 
         LiqRequest memory liqRequest = LiqRequest(
             bytes(""),

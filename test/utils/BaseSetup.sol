@@ -1847,7 +1847,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev  pendle ethena - market: SUSDE-MAINNET-SEP2024
         /// sUSDe sUSDe
         erc5115Vaults[1][0] = 0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65;
-        erc5115VaultsNames[1][0] = "SUSDe";
+        erc5115VaultsNames[1][0] = "sUSDe";
         erc5115ChosenAssets[1][0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65].assetIn =
             0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
         erc5115ChosenAssets[1][0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65].assetOut =
