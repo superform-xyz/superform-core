@@ -3,15 +3,13 @@ pragma solidity ^0.8.23;
 
 import { BaseForm } from "src/BaseForm.sol";
 import { LiquidityHandler } from "src/crosschain-liquidity/LiquidityHandler.sol";
-import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
-import { IERC5115Form } from "src/forms/interfaces/IERC5115Form.sol";
+import { IERC5115Form, IStandardizedYield, IBridgeValidator, IERC20 } from "src/forms/interfaces/IERC5115Form.sol";
 import { Error } from "src/libraries/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { InitSingleVaultData } from "src/types/DataTypes.sol";
-import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IERC5115To4626Wrapper, IStandardizedYield } from "src/forms/interfaces/IERC5115To4626Wrapper.sol";
+import { IERC5115To4626Wrapper } from "src/forms/interfaces/IERC5115To4626Wrapper.sol";
 
 /// @title ERC5115Form
 /// @dev Implementation of the Form contract for ERC5115 vaults
@@ -21,19 +19,6 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     using SafeERC20 for IERC20;
     using SafeERC20 for IERC5115To4626Wrapper;
     using DataLib for uint256;
-
-    //////////////////////////////////////////////////////////////
-    //                           ERRORS                         //
-    //////////////////////////////////////////////////////////////
-
-    /// @dev Thrown when a function not part of the EIP-5115 is called
-    error FUNCTION_NOT_IMPLEMENTED();
-
-    /// @dev Thrown when the tokenIn is not encoded in the extraFormData
-    error ERC5115FORM_TOKEN_IN_NOT_ENCODED();
-
-    /// @dev Thrown when the tokenOut is not set as the interimToken
-    error ERC5115FORM_TOKEN_OUT_NOT_SET();
 
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                         //
@@ -229,7 +214,79 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         override
         returns (uint256 shares)
     {
-        shares = _processDirectDeposit(singleVaultData_);
+        DirectDepositLocalVars memory vars;
+
+        /// @dev gets a snapshot of vault token in
+        vars.vaultTokenIn =
+            IERC20(_decode5115ExtraFormData(singleVaultData_.superformId, singleVaultData_.extraFormData));
+
+        vars.balanceBefore = vars.vaultTokenIn.balanceOf(address(this));
+        vars.sendingToken = IERC20(singleVaultData_.liqData.token);
+
+        /// @dev swaps the input token to vaultTokenIn (where tx data is present)
+        if (singleVaultData_.liqData.txData.length != 0) {
+            vars.bridgeValidator = IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId));
+
+            if (
+                vars.bridgeValidator.decodeSwapOutputToken(singleVaultData_.liqData.txData)
+                    != address(vars.vaultTokenIn)
+            ) {
+                revert Error.DIFFERENT_TOKENS();
+            }
+
+            vars.inputAmount = vars.bridgeValidator.decodeAmountIn(singleVaultData_.liqData.txData, false);
+
+            if (address(vars.sendingToken) != NATIVE) {
+                _checkAllowanceAndTransferIn(vars.sendingToken, vars.inputAmount);
+            }
+
+            vars.bridgeValidator.validateTxData(
+                IBridgeValidator.ValidateTxDataArgs(
+                    singleVaultData_.liqData.txData,
+                    vars.chainId,
+                    vars.chainId,
+                    vars.chainId,
+                    true,
+                    address(this),
+                    msg.sender,
+                    address(vars.sendingToken),
+                    address(0)
+                )
+            );
+
+            _dispatchTokens(
+                superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
+                singleVaultData_.liqData.txData,
+                address(vars.sendingToken),
+                vars.inputAmount,
+                singleVaultData_.liqData.nativeAmount
+            );
+        } else {
+            /// @dev transfers in token if no swap is needed
+            if (address(vars.sendingToken) != NATIVE) {
+                /// @notice if no swap is present, then the vaultTokenIn should be transferred in by the user
+                if (address(vars.sendingToken) != address(vars.vaultTokenIn)) revert Error.DIFFERENT_TOKENS();
+                _checkAllowanceAndTransferIn(vars.sendingToken, singleVaultData_.amount);
+            }
+        }
+
+        /// @dev validates the swap
+        vars.assetDifference = vars.vaultTokenIn.balanceOf(address(this)) - vars.balanceBefore;
+
+        /// @dev validates slippage post swap
+        if (
+            vars.assetDifference * ENTIRE_SLIPPAGE
+                < singleVaultData_.amount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)
+        ) {
+            revert Error.DIRECT_DEPOSIT_SWAP_FAILED();
+        }
+
+        /// @notice vars.assetDifference is deposited regardless if txData exists
+        /// @dev no dust is left in the superform
+        vars.vaultTokenIn.safeIncreaseAllowance(vault, vars.assetDifference);
+
+        /// @dev deposit assets for shares and add extra validation check to ensure intended ERC5115 behavior
+        shares = _depositAndValidate(singleVaultData_, vars.assetDifference);
     }
 
     /// @inheritdoc BaseForm
@@ -243,168 +300,8 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         override
         returns (uint256 shares)
     {
-        shares = _processXChainDeposit(singleVaultData_, srcChainId_);
-    }
-
-    /// @inheritdoc BaseForm
-    function _directWithdrawFromVault(
-        InitSingleVaultData memory singleVaultData_,
-        address /*srcSender_*/
-    )
-        internal
-        virtual
-        override
-        returns (uint256 assets)
-    {
-        assets = _processDirectWithdraw(singleVaultData_);
-    }
-
-    /// @inheritdoc BaseForm
-    function _xChainWithdrawFromVault(
-        InitSingleVaultData memory singleVaultData_,
-        address, /*srcSender_*/
-        uint64 srcChainId_
-    )
-        internal
-        virtual
-        override
-        returns (uint256 assets)
-    {
-        assets = _processXChainWithdraw(singleVaultData_, srcChainId_);
-    }
-
-    /// @inheritdoc BaseForm
-    function _emergencyWithdraw(address receiverAddress_, uint256 amount_) internal virtual override {
-        _processEmergencyWithdraw(receiverAddress_, amount_);
-    }
-
-    /// @inheritdoc BaseForm
-    function _forwardDustToPaymaster(address token_) internal virtual override {
-        _processForwardDustToPaymaster(token_);
-    }
-
-    function _processDirectDeposit(InitSingleVaultData memory singleVaultData_)
-        internal
-        virtual
-        returns (uint256 shares)
-    {
-        DirectDepositLocalVars memory vars;
-
-        bool found5115;
-
-        (found5115, vars.vaultTokenIn) =
-            _decode5115ExtraFormData(singleVaultData_.superformId, singleVaultData_.extraFormData);
-
-        if (!found5115) revert ERC5115FORM_TOKEN_IN_NOT_ENCODED();
-
-        /// @dev notice that by validating it like this, it will deny any tokenIn that is native (sometimes addressed as
-        /// address 0)
-        if (vars.vaultTokenIn == address(0)) revert ERC5115FORM_TOKEN_IN_NOT_ENCODED();
-
-        vars.balanceBefore = IERC20(vars.vaultTokenIn).balanceOf(address(this));
-        address sendingTokenAddress = singleVaultData_.liqData.token;
-        IERC20 sendingToken = IERC20(sendingTokenAddress);
-
-        if (sendingTokenAddress != NATIVE && singleVaultData_.liqData.txData.length == 0) {
-            /// @dev this is only valid if sendingTokenAddress == vaultTokenIn (no txData)
-            if (sendingTokenAddress != vars.vaultTokenIn) revert Error.DIFFERENT_TOKENS();
-
-            /// @dev handles the vaultTokenIn token transfers.
-            if (sendingToken.allowance(msg.sender, address(this)) < singleVaultData_.amount) {
-                revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
-            }
-
-            /// @dev transfers sendingToken to the form
-            sendingToken.safeTransferFrom(msg.sender, address(this), singleVaultData_.amount);
-        }
-
-        /// @dev non empty txData means there is a swap needed before depositing (input asset not the same as vault
-        /// asset)
-        if (singleVaultData_.liqData.txData.length != 0) {
-            vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
-
-            vars.chainId = CHAIN_ID;
-
-            vars.inputAmount =
-                IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
-
-            if (sendingTokenAddress != NATIVE) {
-                /// @dev checks the allowance before transfer from router
-                if (sendingToken.allowance(msg.sender, address(this)) < vars.inputAmount) {
-                    revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
-                }
-
-                /// @dev transfers sendingToken, which is different from the vault asset, to the form
-                sendingToken.safeTransferFrom(msg.sender, address(this), vars.inputAmount);
-            }
-
-            if (
-                IBridgeValidator(vars.bridgeValidator).decodeSwapOutputToken(singleVaultData_.liqData.txData)
-                    != vars.vaultTokenIn
-            ) {
-                revert Error.DIFFERENT_TOKENS();
-            }
-
-            IBridgeValidator(vars.bridgeValidator).validateTxData(
-                IBridgeValidator.ValidateTxDataArgs(
-                    singleVaultData_.liqData.txData,
-                    vars.chainId,
-                    vars.chainId,
-                    vars.chainId,
-                    true,
-                    address(this),
-                    msg.sender,
-                    sendingTokenAddress,
-                    address(0)
-                )
-            );
-
-            _dispatchTokens(
-                superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
-                singleVaultData_.liqData.txData,
-                sendingTokenAddress,
-                vars.inputAmount,
-                singleVaultData_.liqData.nativeAmount
-            );
-        }
-
-        vars.assetDifference = IERC20(vars.vaultTokenIn).balanceOf(address(this)) - vars.balanceBefore;
-
-        /// @dev the difference in vault tokens, ready to be deposited, is compared with the amount inscribed in the
-        /// superform data
-        if (
-            vars.assetDifference * ENTIRE_SLIPPAGE
-                < singleVaultData_.amount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)
-        ) {
-            revert Error.DIRECT_DEPOSIT_SWAP_FAILED();
-        }
-
-        /// @dev notice that vars.assetDifference is deposited regardless if txData exists or not
-        /// @dev this presumes no dust is left in the superform
-        IERC20(vars.vaultTokenIn).safeIncreaseAllowance(vault, vars.assetDifference);
-
-        /// @dev deposit assets for shares and add extra validation check to ensure intended ERC5115 behavior
-        shares = _depositAndValidate(singleVaultData_, vars.assetDifference);
-    }
-
-    function _processXChainDeposit(
-        InitSingleVaultData memory singleVaultData_,
-        uint64 srcChainId_
-    )
-        internal
-        virtual
-        returns (uint256 shares)
-    {
-        (,, uint64 dstChainId) = singleVaultData_.superformId.getSuperform();
         address vaultLoc = vault;
-
-        address vaultTokenIn;
-        bool found5115;
-
-        (found5115, vaultTokenIn) =
-            _decode5115ExtraFormData(singleVaultData_.superformId, singleVaultData_.extraFormData);
-
-        if (!found5115) revert ERC5115FORM_TOKEN_IN_NOT_ENCODED();
+        address vaultTokenIn = _decode5115ExtraFormData(singleVaultData_.superformId, singleVaultData_.extraFormData);
 
         if (IERC20(vaultTokenIn).allowance(msg.sender, address(this)) < singleVaultData_.amount) {
             revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
@@ -419,60 +316,59 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         /// @dev deposit vaultTokenIn for shares and add extra validation check to ensure intended ERC5115 behavior
         shares = _depositAndValidate(singleVaultData_, singleVaultData_.amount);
 
+        (,, uint64 dstChainId) = singleVaultData_.superformId.getSuperform();
         emit Processed(srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
     }
 
-    function _processDirectWithdraw(InitSingleVaultData memory singleVaultData_)
+    /// @inheritdoc BaseForm
+    function _directWithdrawFromVault(
+        InitSingleVaultData memory singleVaultData_,
+        address /*srcSender_*/
+    )
         internal
         virtual
+        override
         returns (uint256 assets)
     {
-        DirectWithdrawLocalVars memory vars;
-
-        /// @dev if there is no txData, on withdraws the receiver is receiverAddress, otherwise it
-        /// is this contract (before swap)
-
-        IERC5115To4626Wrapper v = IERC5115To4626Wrapper(vault);
-
         /// @dev for withdraws interimToken is used as tokenOut (as extraFormData is overriden in CSR, so cannot be used
         /// to send this intent)
-
-        vars.vaultTokenOut = singleVaultData_.liqData.interimToken;
+        IERC20 vaultTokenOut = IERC20(singleVaultData_.liqData.interimToken);
 
         /// @dev notice that by validating it like this, it will deny any tokenOut that is native (sometimes addressed
         /// as address 0)
-        if (vars.vaultTokenOut == address(0)) revert ERC5115FORM_TOKEN_OUT_NOT_SET();
+        if (address(vaultTokenOut) == address(0)) revert ERC5115FORM_TOKEN_OUT_NOT_SET();
 
         if (!singleVaultData_.retain4626) {
             /// @dev redeem shares for assets and add extra validation check to ensure intended ERC5115 behavior
-            assets = _withdrawAndValidate(singleVaultData_, v, vars.vaultTokenOut);
+            assets = _withdrawAndValidate(singleVaultData_, IERC5115To4626Wrapper(vault), address(vaultTokenOut));
 
             if (singleVaultData_.liqData.txData.length != 0) {
-                vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
-                vars.amount =
-                    IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
+                IBridgeValidator bridgeValidator =
+                    IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId));
+
+                uint256 amount = bridgeValidator.decodeAmountIn(singleVaultData_.liqData.txData, false);
 
                 /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
                 /// @dev if less it should be within the slippage limit specified by the user
                 /// @dev important to maintain so that the keeper cannot update with malicious data after successful
                 /// withdraw
-                if (_isWithdrawTxDataAmountInvalid(vars.amount, assets, singleVaultData_.maxSlippage)) {
+                if (_isWithdrawTxDataAmountInvalid(amount, assets, singleVaultData_.maxSlippage)) {
                     revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
                 }
 
-                vars.chainId = CHAIN_ID;
+                uint64 chainId = CHAIN_ID;
 
                 /// @dev validate and perform the swap to desired output token and send to beneficiary
-                IBridgeValidator(vars.bridgeValidator).validateTxData(
+                bridgeValidator.validateTxData(
                     IBridgeValidator.ValidateTxDataArgs(
                         singleVaultData_.liqData.txData,
-                        vars.chainId,
-                        vars.chainId,
+                        chainId,
+                        chainId,
                         singleVaultData_.liqData.liqDstChainId,
                         false,
                         address(this),
                         singleVaultData_.receiverAddress,
-                        vars.vaultTokenOut,
+                        address(vaultTokenOut),
                         address(0)
                     )
                 );
@@ -480,40 +376,40 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
                 _dispatchTokens(
                     superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                     singleVaultData_.liqData.txData,
-                    vars.vaultTokenOut,
-                    vars.amount,
+                    address(vaultTokenOut),
+                    amount,
                     singleVaultData_.liqData.nativeAmount
                 );
             }
         } else {
             /// @dev transfer shares to user and do not redeem shares for assets
-            IERC20(IERC5115To4626Wrapper(address(v)).getUnderlying5115Vault()).safeTransfer(
+            IERC20(IERC5115To4626Wrapper(vault).getUnderlying5115Vault()).safeTransfer(
                 singleVaultData_.receiverAddress, singleVaultData_.amount
             );
-            return 0;
         }
     }
 
-    function _processXChainWithdraw(
+    /// @inheritdoc BaseForm
+    function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
+        address, /*srcSender_*/
         uint64 srcChainId_
     )
         internal
         virtual
+        override
         returns (uint256 assets)
     {
-        XChainWithdrawLocalVars memory vars;
-
         /// @dev for withdraws interimToken is used as tokenOut (as extraFormData is overriden in CSR, so cannot be used
         /// to send this intent)
-
-        vars.vaultTokenOut = singleVaultData_.liqData.interimToken;
+        IERC20 vaultTokenOut = IERC20(singleVaultData_.liqData.interimToken);
 
         /// @dev notice that by validating it like this, it will deny any tokenOut that is native (sometimes addressed
         /// as address 0)
-        if (vars.vaultTokenOut == address(0)) revert ERC5115FORM_TOKEN_OUT_NOT_SET();
+        if (address(vaultTokenOut) == address(0)) revert ERC5115FORM_TOKEN_OUT_NOT_SET();
 
         uint256 len = singleVaultData_.liqData.txData.length;
+
         /// @dev a case where the withdraw req liqData has a valid token and tx data is not updated by the keeper
         if (singleVaultData_.liqData.token != address(0) && len == 0) {
             revert Error.WITHDRAW_TX_DATA_NOT_UPDATED();
@@ -521,38 +417,36 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
             revert Error.WITHDRAW_TOKEN_NOT_UPDATED();
         }
 
-        (,, vars.dstChainId) = singleVaultData_.superformId.getSuperform();
-
-        IERC5115To4626Wrapper v = IERC5115To4626Wrapper(vault);
+        (,, uint64 dstChainId) = singleVaultData_.superformId.getSuperform();
 
         if (!singleVaultData_.retain4626) {
             /// @dev redeem shares for assets and add extra validation check to ensure intended ERC5115 behavior
-            assets = _withdrawAndValidate(singleVaultData_, v, vars.vaultTokenOut);
+            assets = _withdrawAndValidate(singleVaultData_, IERC5115To4626Wrapper(vault), address(vaultTokenOut));
 
             if (len != 0) {
-                vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
-                vars.amount =
-                    IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
+                IBridgeValidator bridgeValidator =
+                    IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId));
+                uint256 amount = bridgeValidator.decodeAmountIn(singleVaultData_.liqData.txData, false);
 
                 /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
                 /// @dev if less it should be within the slippage limit specified by the user
                 /// @dev important to maintain so that the keeper cannot update with malicious data after successful
                 /// withdraw
-                if (_isWithdrawTxDataAmountInvalid(vars.amount, assets, singleVaultData_.maxSlippage)) {
+                if (_isWithdrawTxDataAmountInvalid(amount, assets, singleVaultData_.maxSlippage)) {
                     revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
                 }
 
                 /// @dev validate and perform the swap to desired output token and send to beneficiary
-                IBridgeValidator(vars.bridgeValidator).validateTxData(
+                bridgeValidator.validateTxData(
                     IBridgeValidator.ValidateTxDataArgs(
                         singleVaultData_.liqData.txData,
-                        vars.dstChainId,
+                        dstChainId,
                         srcChainId_,
                         singleVaultData_.liqData.liqDstChainId,
                         false,
                         address(this),
                         singleVaultData_.receiverAddress,
-                        vars.vaultTokenOut,
+                        address(vaultTokenOut),
                         address(0)
                     )
                 );
@@ -560,22 +454,50 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
                 _dispatchTokens(
                     superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                     singleVaultData_.liqData.txData,
-                    vars.vaultTokenOut,
-                    vars.amount,
+                    address(vaultTokenOut),
+                    amount,
                     singleVaultData_.liqData.nativeAmount
                 );
             }
         } else {
             /// @dev transfer shares to user and do not redeem shares for assets
-            IERC20(IERC5115To4626Wrapper(address(v)).getUnderlying5115Vault()).safeTransfer(
+            IERC20(IERC5115To4626Wrapper(vault).getUnderlying5115Vault()).safeTransfer(
                 singleVaultData_.receiverAddress, singleVaultData_.amount
             );
-            return 0;
         }
 
-        emit Processed(srcChainId_, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
+        emit Processed(srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
     }
 
+    /// @inheritdoc BaseForm
+    function _emergencyWithdraw(address receiverAddress_, uint256 amount_) internal virtual override {
+        IERC5115To4626Wrapper v = IERC5115To4626Wrapper(IERC5115To4626Wrapper(vault).getUnderlying5115Vault());
+        if (receiverAddress_ == address(0)) revert Error.ZERO_ADDRESS();
+
+        if (v.balanceOf(address(this)) < amount_) {
+            revert Error.INSUFFICIENT_BALANCE();
+        }
+
+        v.safeTransfer(receiverAddress_, amount_);
+
+        emit EmergencyWithdrawalProcessed(receiverAddress_, amount_);
+    }
+
+    /// @inheritdoc BaseForm
+    function _forwardDustToPaymaster(address token_) internal virtual override {
+        if (token_ == address(0)) revert Error.ZERO_ADDRESS();
+
+        address paymaster = superRegistry.getAddress(keccak256("PAYMASTER"));
+        IERC20 token = IERC20(token_);
+
+        uint256 dust = token.balanceOf(address(this));
+        if (dust != 0) {
+            token.safeTransfer(paymaster, dust);
+            emit FormDustForwardedToPaymaster(token_, dust);
+        }
+    }
+
+    /// @dev helper to deposit to a 5115 vault
     function _depositAndValidate(
         InitSingleVaultData memory singleVaultData_,
         uint256 assetDifference_
@@ -584,14 +506,11 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         returns (uint256 shares)
     {
         IERC5115To4626Wrapper v = IERC5115To4626Wrapper(vault);
-
         address sharesReceiver = singleVaultData_.retain4626 ? singleVaultData_.receiverAddress : address(this);
 
         uint256 sharesBalanceBefore = v.balanceOf(sharesReceiver);
-
         /// @dev WARNING: validate if minSharesOut can be outputAmount (the result of previewDeposit)
         shares = v.deposit(sharesReceiver, assetDifference_, singleVaultData_.outputAmount);
-
         uint256 sharesBalanceAfter = v.balanceOf(sharesReceiver);
 
         if (
@@ -605,6 +524,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         }
     }
 
+    /// @dev helper to withdraw from a 5115 vault
     function _withdrawAndValidate(
         InitSingleVaultData memory singleVaultData_,
         IERC5115To4626Wrapper v_,
@@ -613,12 +533,14 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         internal
         returns (uint256 assets)
     {
+        /// @dev if there is no txData, on withdraws the receiver is receiverAddress, otherwise it
+        /// is this contract (before swap)
         address assetsReceiver =
             singleVaultData_.liqData.txData.length == 0 ? singleVaultData_.receiverAddress : address(this);
 
         uint256 assetsBalanceBefore = IERC20(vaultTokenOut_).balanceOf(assetsReceiver);
-        IERC20 underlyingVault = IERC20(IERC5115To4626Wrapper(vault).getUnderlying5115Vault());
 
+        IERC20 underlyingVault = IERC20(IERC5115To4626Wrapper(vault).getUnderlying5115Vault());
         /// @dev have to increase allowance as shares are moved to wrapper first
         underlyingVault.safeIncreaseAllowance(vault, singleVaultData_.amount);
 
@@ -642,6 +564,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
     }
 
+    /// @dev helper to validate the withdrawal amount
     function _isWithdrawTxDataAmountInvalid(
         uint256 bridgeDecodedAmount_,
         uint256 redeemedAmount_,
@@ -657,45 +580,20 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         ) return true;
     }
 
-    function _processEmergencyWithdraw(address receiverAddress_, uint256 amount_) internal {
-        IERC5115To4626Wrapper v = IERC5115To4626Wrapper(IERC5115To4626Wrapper(vault).getUnderlying5115Vault());
-        if (receiverAddress_ == address(0)) revert Error.ZERO_ADDRESS();
-
-        if (v.balanceOf(address(this)) < amount_) {
-            revert Error.INSUFFICIENT_BALANCE();
-        }
-
-        v.safeTransfer(receiverAddress_, amount_);
-
-        emit EmergencyWithdrawalProcessed(receiverAddress_, amount_);
-    }
-
-    function _processForwardDustToPaymaster(address token_) internal {
-        if (token_ == address(0)) revert Error.ZERO_ADDRESS();
-
-        address paymaster = superRegistry.getAddress(keccak256("PAYMASTER"));
-        IERC20 token = IERC20(token_);
-
-        uint256 dust = token.balanceOf(address(this));
-        if (dust != 0) {
-            token.safeTransfer(paymaster, dust);
-            emit FormDustForwardedToPaymaster(token_, dust);
-        }
-    }
-
+    /// @dev helper to decode extra form data
     function _decode5115ExtraFormData(
         uint256 superformId_,
         bytes memory extraFormData_
     )
         internal
         pure
-        returns (bool found5115, address vaultTokenIn)
+        returns (address vaultTokenIn)
     {
+        bool found5115;
         /// @dev for deposits tokenIn must be decoded from extraFormData as interimToken may be in use
         /// @dev Warning: This must be validated by a keeper to be the token received in CSR for the given payload, as
         /// this can be forged by the user
         /// @dev and it's not possible to validate on chain the final token post bridging/swapping
-
         (uint256 nVaults, bytes[] memory encodedDatas) = abi.decode(extraFormData_, (uint256, bytes[]));
 
         for (uint256 i = 0; i < nVaults; ++i) {
@@ -711,5 +609,18 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
                 }
             }
         }
+
+        if (!found5115) revert ERC5115FORM_TOKEN_IN_NOT_ENCODED();
+    }
+
+    /// @dev helper to transfer tokens from sender to address(this)
+    function _checkAllowanceAndTransferIn(IERC20 token_, uint256 amount_) internal {
+        /// @dev checks the allowance to process the transfer in
+        if (token_.allowance(msg.sender, address(this)) < amount_) {
+            revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
+        }
+
+        /// @dev transfers token_ to this address
+        token_.safeTransferFrom(msg.sender, address(this), amount_);
     }
 }

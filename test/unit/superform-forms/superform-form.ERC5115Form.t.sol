@@ -397,25 +397,25 @@ contract SuperformERC5115FormTest is ProtocolActions {
 
     /// @dev Test Revert Claim Reward Tokens
     function test_superformRevertClaimRewardTokensERC5115() public {
-        vm.expectRevert(ERC5115Form.FUNCTION_NOT_IMPLEMENTED.selector);
+        vm.expectRevert(IERC5115Form.FUNCTION_NOT_IMPLEMENTED.selector);
         noRewardsSuperform.claimRewardTokens();
     }
 
     /// @dev Test Revert Get Accrued Rewards
     function test_superformRevertGetAccruedRewardsERC5115() public {
-        vm.expectRevert(ERC5115Form.FUNCTION_NOT_IMPLEMENTED.selector);
+        vm.expectRevert(IERC5115Form.FUNCTION_NOT_IMPLEMENTED.selector);
         noRewardsSuperform.getAccruedRewards(address(this));
     }
 
     /// @dev Test Revert Get Reward Indexes Stored
     function test_superformRevertGetRewardIndexesStoredERC5115() public {
-        vm.expectRevert(ERC5115Form.FUNCTION_NOT_IMPLEMENTED.selector);
+        vm.expectRevert(IERC5115Form.FUNCTION_NOT_IMPLEMENTED.selector);
         noRewardsSuperform.getRewardIndexesStored();
     }
 
     /// @dev Test Revert Get Reward Tokens
     function test_superformRevertGetRewardTokensERC5115() public {
-        vm.expectRevert(ERC5115Form.FUNCTION_NOT_IMPLEMENTED.selector);
+        vm.expectRevert(IERC5115Form.FUNCTION_NOT_IMPLEMENTED.selector);
         noRewardsSuperform.getRewardTokens();
     }
 
@@ -604,7 +604,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
         vm.startPrank(deployer);
         IERC20(0x5979D7b546E38E414F7E9822514be443A4800529).approve(getContract(ARBI, "SuperformRouter"), 1e6);
 
-        vm.expectRevert(ERC5115Form.ERC5115FORM_TOKEN_IN_NOT_ENCODED.selector);
+        vm.expectRevert(IERC5115Form.ERC5115FORM_TOKEN_IN_NOT_ENCODED.selector);
         SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))).singleDirectSingleVaultDeposit(
             SingleDirectSingleVaultStateReq(sfData)
         );
@@ -701,7 +701,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
         );
 
         sfData.retain4626 = true;
-        vm.expectRevert(ERC5115Form.ERC5115FORM_TOKEN_OUT_NOT_SET.selector);
+        vm.expectRevert(IERC5115Form.ERC5115FORM_TOKEN_OUT_NOT_SET.selector);
         SuperformRouter(payable(getContract(ARBI, "SuperformRouter"))).singleDirectSingleVaultWithdraw(
             SingleDirectSingleVaultStateReq(sfData)
         );
@@ -755,7 +755,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
         );
 
         vm.startPrank(getContract(ARBI, "CoreStateRegistry"));
-        vm.expectRevert(ERC5115Form.ERC5115FORM_TOKEN_OUT_NOT_SET.selector);
+        vm.expectRevert(IERC5115Form.ERC5115FORM_TOKEN_OUT_NOT_SET.selector);
         targetSuperform.xChainWithdrawFromVault(withdrawSfData, deployer, OP);
     }
 
@@ -917,13 +917,14 @@ contract SuperformERC5115FormTest is ProtocolActions {
 
         extra5115Data[0] = abi.encode(superformId, abi.encode(0x5979D7b546E38E414F7E9822514be443A4800529));
 
-        ISocketRegistry.BridgeRequest memory bridgeRequest;
-        ISocketRegistry.MiddlewareRequest memory middlewareRequest;
-
         LiqRequest memory liqRequest = LiqRequest(
             abi.encodeWithSelector(
-                SocketMock.outboundTransferTo.selector,
-                ISocketRegistry.UserRequest(deployer, ARBI, 5e6, middlewareRequest, bridgeRequest)
+                SocketOneInchMock.performDirectAction.selector,
+                0x5979D7b546E38E414F7E9822514be443A4800529,
+                0x5979D7b546E38E414F7E9822514be443A4800529,
+                address(targetSuperform),
+                1e6,
+                ""
             ),
             0x5979D7b546E38E414F7E9822514be443A4800529,
             0x5979D7b546E38E414F7E9822514be443A4800529,
@@ -997,7 +998,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
         );
 
         vm.startPrank(SuperRegistry(getContract(ARBI, "SuperRegistry")).getAddress(keccak256("CORE_STATE_REGISTRY")));
-        vm.expectRevert(ERC5115Form.ERC5115FORM_TOKEN_IN_NOT_ENCODED.selector);
+        vm.expectRevert(IERC5115Form.ERC5115FORM_TOKEN_IN_NOT_ENCODED.selector);
         targetSuperform.xChainDepositIntoVault(sfData, deployer, OP);
     }
 

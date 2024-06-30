@@ -2,42 +2,39 @@
 pragma solidity ^0.8.23;
 
 import { IStandardizedYield } from "src/vendor/pendle/IStandardizedYield.sol";
+import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 
 /// @title IERC5115Form
 /// @dev Interface for ERC5115 Form
 /// @author Zeropoint Labs
 interface IERC5115Form {
     //////////////////////////////////////////////////////////////
+    //                           ERRORS                         //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev Thrown when a function not part of the EIP-5115 is called
+    error FUNCTION_NOT_IMPLEMENTED();
+
+    /// @dev Thrown when the tokenIn is not encoded in the extraFormData
+    error ERC5115FORM_TOKEN_IN_NOT_ENCODED();
+
+    /// @dev Thrown when the tokenOut is not set as the interimToken
+    error ERC5115FORM_TOKEN_OUT_NOT_SET();
+
+    //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
     //////////////////////////////////////////////////////////////
 
     struct DirectDepositLocalVars {
+        IERC20 vaultTokenIn;
+        IERC20 sendingToken;
+        IBridgeValidator bridgeValidator;
         uint64 chainId;
-        address vaultTokenIn;
-        address bridgeValidator;
         uint256 shares;
         uint256 balanceBefore;
         uint256 assetDifference;
-        uint256 nonce;
-        uint256 deadline;
         uint256 inputAmount;
-        bytes signature;
-    }
-
-    struct DirectWithdrawLocalVars {
-        uint64 chainId;
-        address vaultTokenOut;
-        address bridgeValidator;
-        uint256 amount;
-    }
-
-    struct XChainWithdrawLocalVars {
-        uint64 dstChainId;
-        address vaultTokenOut;
-        address bridgeValidator;
-        uint256 balanceBefore;
-        uint256 balanceAfter;
-        uint256 amount;
     }
 
     //////////////////////////////////////////////////////////////
