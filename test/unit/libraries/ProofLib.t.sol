@@ -31,7 +31,7 @@ contract ProofLibTest is Test {
         proofLib = new ProofLibUser();
     }
 
-    function test_castLiqRequestToArray() external {
+    function test_castLiqRequestToArray() public view {
         AMBMessage memory message = AMBMessage(1, "");
 
         bytes memory msgBytes = abi.encode(message);

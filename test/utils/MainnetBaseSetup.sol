@@ -134,6 +134,10 @@ abstract contract MainnetBaseSetup is BaseSetup {
         contracts[chainId][bytes32(bytes("WormholeSRImplementation"))] =
             _readContract(chainNames[trueIndex], chainId, "WormholeSRImplementation");
 
+        /// @dev 4.5-  Axelar Implementation
+        contracts[chainId][bytes32(bytes("AxelarImplementation"))] =
+            _readContract(chainNames[trueIndex], chainId, "AxelarImplementation");
+
         /// @dev 5-  liquidity validators
         contracts[chainId][bytes32(bytes("LiFiValidator"))] =
             _readContract(chainNames[trueIndex], chainId, "LiFiValidator");
@@ -181,6 +185,9 @@ abstract contract MainnetBaseSetup is BaseSetup {
         /// @dev 15  rewards distributor
         contracts[chainId][bytes32(bytes("RewardsDistributor"))] =
             _readContract(chainNames[trueIndex], chainId, "RewardsDistributor");
+
+        /// @dev 15  5115Form
+        contracts[chainId][bytes32(bytes("ERC5115Form"))] = _readContract(chainNames[trueIndex], chainId, "ERC5115Form");
     }
 
     function _readContract(

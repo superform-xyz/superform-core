@@ -2,9 +2,25 @@
 pragma solidity ^0.8.23;
 
 import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
-
+import { OneInchMock } from "test/mocks/OneInchMock.sol";
+import { IAggregationRouterV6, IERC20 } from "src/vendor/1inch/IAggregationRouterV6.sol";
 import { Error } from "src/libraries/Error.sol";
-import "test/utils/ProtocolActions.sol";
+import {
+    ProtocolActions,
+    SuperRegistry,
+    PayMaster,
+    LiqRequest,
+    AMBMessage,
+    BroadCastAMBExtraData,
+    SingleVaultSFData,
+    DataLib,
+    Strings,
+    HyperlaneImplementation,
+    SingleDirectSingleVaultStateReq,
+    MockERC20,
+    PaymentHelper,
+    SuperformRouter
+} from "test/utils/ProtocolActions.sol";
 
 contract KeeperMock is ERC1155Holder {
     receive() external payable { }
@@ -325,6 +341,31 @@ contract PayMasterTest is ProtocolActions {
             txUpdaterARBI.balance,
             _updateAmountWithPricedSwapsAndSlippage(1 ether, totalSlippage, NATIVE, NATIVE, NATIVE, ETH, ARBI)
         );
+    }
+
+    function test_rebalanceTo_usingOneInch() public {
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address feeCollector = getContract(ETH, "PayMaster");
+        address receiver = getContract(ETH, "CoreStateRegistry");
+        address usdc = getContract(ETH, "USDC");
+
+        PayMaster(payable(feeCollector)).makePayment{ value: 1 ether }(deployer);
+
+        /// @dev should always use only the `swap` selector
+        bytes memory txData = abi.encodeWithSelector(
+            OneInchMock.swap.selector,
+            address(0),
+            IAggregationRouterV6.SwapDescription(
+                IERC20(NATIVE), IERC20(usdc), payable(receiver), payable(receiver), 1 ether, 4000 * 1e6, 0
+            ),
+            bytes("")
+        );
+        PayMaster(payable(feeCollector)).rebalanceTo(
+            keccak256("CORE_STATE_REGISTRY"), LiqRequest(txData, NATIVE, address(0), 9, ARBI, 1 ether), ETH
+        );
+        assertEq(IERC20(usdc).balanceOf(receiver), 4000 * 1e6);
     }
 
     function test_treatAMB() public {

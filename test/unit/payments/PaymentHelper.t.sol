@@ -304,7 +304,7 @@ contract PaymentHelperTest is ProtocolActions {
         assertGt(fees, 0);
     }
 
-    function test_estimateSingleXChainMultiVault_retain4626() public {
+    function test_estimateSingleXChainMultiVault_retain4626() public view {
         uint8[] memory ambIds = new uint8[](1);
 
         ambIds[0] = 1;
@@ -347,7 +347,7 @@ contract PaymentHelperTest is ProtocolActions {
         assertGt(fees, 0);
     }
 
-    function test_estimateSingleXChainMultiVault_sameDst_deposit() public {
+    function test_estimateSingleXChainMultiVault_sameDst_deposit() public view {
         uint8[] memory ambIds = new uint8[](1);
 
         ambIds[0] = 1;
@@ -513,7 +513,7 @@ contract PaymentHelperTest is ProtocolActions {
         assertGt(fees, 0);
     }
 
-    function test_estimateAMBFees_differentChainId() public {
+    function test_estimateAMBFees_differentChainId() public view {
         // Define ambIds_, dstChainId_, message_, and extraData_
         uint8[] memory ambIds_ = new uint8[](2);
         ambIds_[0] = 1;
@@ -534,7 +534,7 @@ contract PaymentHelperTest is ProtocolActions {
         assertGt(totalFees, 0);
     }
 
-    function test_estimateSingleDirectSingleVault() public {
+    function test_estimateSingleDirectSingleVault() public view {
         /// @dev scenario: single vault withdrawal involving timelock
         /// expected fees to be greater than zero
         bytes memory emptyBytes;
@@ -605,7 +605,7 @@ contract PaymentHelperTest is ProtocolActions {
         assertEq(fees3, 0);
     }
 
-    function test_estimateSingleDirectMultiVault() public {
+    function test_estimateSingleDirectMultiVault() public view {
         /// @dev scenario: single vault withdrawal involving timelock
         /// expected fees to be greater than zero
         bytes memory emptyBytes;

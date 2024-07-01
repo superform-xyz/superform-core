@@ -1799,7 +1799,8 @@ contract SuperformRouterTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         v.liqReqs = new LiqRequest[](2);
@@ -1826,7 +1827,8 @@ contract SuperformRouterTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         v.liqReqs[1] = LiqRequest(
@@ -2032,7 +2034,8 @@ contract SuperformRouterTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         v.liqReqs = new LiqRequest[](2);
@@ -2059,7 +2062,8 @@ contract SuperformRouterTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         v.liqReqs[1] = LiqRequest(
@@ -2153,7 +2157,8 @@ contract SuperformRouterTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         v.liqReqs = new LiqRequest[](2);
@@ -2185,7 +2190,8 @@ contract SuperformRouterTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         v.liqReqs[1] = LiqRequest(
@@ -2282,7 +2288,8 @@ contract SuperformRouterTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         v.liqReqs = new LiqRequest[](2);
@@ -2309,7 +2316,8 @@ contract SuperformRouterTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         v.liqReqs[1] = LiqRequest(
@@ -2410,7 +2418,8 @@ contract SuperformRouterTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         v.liqReqs = new LiqRequest[](2);
@@ -2437,7 +2446,8 @@ contract SuperformRouterTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         v.liqReqs[1] = LiqRequest(
@@ -2540,7 +2550,8 @@ contract SuperformRouterTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         v.liqReqs = new LiqRequest[](2);
@@ -2567,7 +2578,8 @@ contract SuperformRouterTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         v.liqReqs[1] = LiqRequest(
@@ -2668,7 +2680,8 @@ contract SuperformRouterTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         v.liqReqs = new LiqRequest[](2);
@@ -2695,7 +2708,8 @@ contract SuperformRouterTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         v.liqReqs[1] = LiqRequest(
@@ -2790,7 +2804,8 @@ contract SuperformRouterTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         v.liqReqs = new LiqRequest[](2);
@@ -2817,7 +2832,8 @@ contract SuperformRouterTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         v.liqReqs[1] = LiqRequest(
@@ -3204,7 +3220,8 @@ contract SuperformRouterTest is ProtocolActions {
                         0,
                         1,
                         1,
-                        1
+                        1,
+                        address(0)
                     ),
                     false
                 ),
@@ -3381,7 +3398,8 @@ contract SuperformRouterTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         LiqRequest[] memory liqReqs = new LiqRequest[](2);
@@ -3408,7 +3426,8 @@ contract SuperformRouterTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         liqReqs[1] = LiqRequest(
