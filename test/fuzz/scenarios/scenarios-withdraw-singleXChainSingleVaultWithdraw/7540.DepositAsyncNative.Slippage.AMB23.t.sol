@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract SXSVW7540DepositAsyncNativeSlippageAMB23 is ProtocolActions {
+contract SXSVW7540DepositAsyncNativeDstSwapSlippageAMB23 is ProtocolActions {
     function setUp() public override {
         super.setUp();
 
@@ -30,8 +30,8 @@ contract SXSVW7540DepositAsyncNativeSlippageAMB23 is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[OP][0] = [1];
-        LIQ_BRIDGES[OP][1] = [1];
+        LIQ_BRIDGES[OP][0] = [2];
+        LIQ_BRIDGES[OP][1] = [2];
 
         RECEIVE_4626[OP][0] = [false];
         RECEIVE_4626[OP][1] = [false];
@@ -49,7 +49,7 @@ contract SXSVW7540DepositAsyncNativeSlippageAMB23 is ProtocolActions {
                 revertError: "",
                 revertRole: "",
                 slippage: 444, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                dstSwap: false,
+                dstSwap: true,
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
