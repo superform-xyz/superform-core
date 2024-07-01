@@ -2002,7 +2002,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
         address uniqueInterimToken;
 
         v.encodedDatas = new bytes[](len);
-
         for (uint256 i = 0; i < len; ++i) {
             v.finalAmounts[i] = args.amounts[i];
             if (i < 3 && args.dstSwap && args.action != Actions.Withdraw) {
@@ -2351,6 +2350,13 @@ abstract contract ProtocolActions is CommonProtocolActions {
         if (is5115 && is7540) revert("SAME ID TWO DIFFERENT IMPL");
 
         v.expectedAmountOfShares = IBaseForm(v.superform).previewDepositTo(v.amount);
+        /// data structure to encode: number of vaults encoded [] array of encoded datas
+        /// encoded datas:
+        /// for 5115 - (uint256 superformId, address vaultTokenIn)
+        /// for 7540 - (uint256 superformId, uint8[] ambIds)
+
+        v.encodedDatas = new bytes[](1);
+
         /// data structure to encode: number of vaults encoded [] array of encoded datas
         /// encoded datas:
         /// for 5115 - (uint256 superformId, address vaultTokenIn)
