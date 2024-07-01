@@ -30,6 +30,9 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     /// @dev Represents 100% in basis points
     uint256 internal constant ENTIRE_SLIPPAGE = 10_000;
 
+    /// @dev Represents zero address
+    address internal constant ZERO_ADDRESS = address(0);
+
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
@@ -250,7 +253,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
                     address(this),
                     msg.sender,
                     address(vars.sendingToken),
-                    address(0)
+                    ZERO_ADDRESS
                 )
             );
 
@@ -336,7 +339,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
 
         /// @dev notice that by validating it like this, it will deny any tokenOut that is native (sometimes addressed
         /// as address 0)
-        if (address(vaultTokenOut) == address(0)) revert ERC5115FORM_TOKEN_OUT_NOT_SET();
+        if (address(vaultTokenOut) == ZERO_ADDRESS) revert ERC5115FORM_TOKEN_OUT_NOT_SET();
 
         if (!singleVaultData_.retain4626) {
             /// @dev redeem shares for assets and add extra validation check to ensure intended ERC5115 behavior
@@ -369,7 +372,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
                         address(this),
                         singleVaultData_.receiverAddress,
                         address(vaultTokenOut),
-                        address(0)
+                        ZERO_ADDRESS
                     )
                 );
 
@@ -386,6 +389,8 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
             IERC20(IERC5115To4626Wrapper(vault).getUnderlying5115Vault()).safeTransfer(
                 singleVaultData_.receiverAddress, singleVaultData_.amount
             );
+
+            emit Retain4626();
         }
     }
 
@@ -406,14 +411,14 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
 
         /// @dev notice that by validating it like this, it will deny any tokenOut that is native (sometimes addressed
         /// as address 0)
-        if (address(vaultTokenOut) == address(0)) revert ERC5115FORM_TOKEN_OUT_NOT_SET();
+        if (address(vaultTokenOut) == ZERO_ADDRESS) revert ERC5115FORM_TOKEN_OUT_NOT_SET();
 
         uint256 len = singleVaultData_.liqData.txData.length;
 
         /// @dev a case where the withdraw req liqData has a valid token and tx data is not updated by the keeper
-        if (singleVaultData_.liqData.token != address(0) && len == 0) {
+        if (singleVaultData_.liqData.token != ZERO_ADDRESS && len == 0) {
             revert Error.WITHDRAW_TX_DATA_NOT_UPDATED();
-        } else if (singleVaultData_.liqData.token == address(0) && len != 0) {
+        } else if (singleVaultData_.liqData.token == ZERO_ADDRESS && len != 0) {
             revert Error.WITHDRAW_TOKEN_NOT_UPDATED();
         }
 
@@ -447,7 +452,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
                         address(this),
                         singleVaultData_.receiverAddress,
                         address(vaultTokenOut),
-                        address(0)
+                        ZERO_ADDRESS
                     )
                 );
 
@@ -464,6 +469,8 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
             IERC20(IERC5115To4626Wrapper(vault).getUnderlying5115Vault()).safeTransfer(
                 singleVaultData_.receiverAddress, singleVaultData_.amount
             );
+
+            emit Retain4626();
         }
 
         emit Processed(srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
@@ -472,7 +479,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     /// @inheritdoc BaseForm
     function _emergencyWithdraw(address receiverAddress_, uint256 amount_) internal virtual override {
         IERC5115To4626Wrapper v = IERC5115To4626Wrapper(IERC5115To4626Wrapper(vault).getUnderlying5115Vault());
-        if (receiverAddress_ == address(0)) revert Error.ZERO_ADDRESS();
+        if (receiverAddress_ == ZERO_ADDRESS) revert Error.ZERO_ADDRESS();
 
         if (v.balanceOf(address(this)) < amount_) {
             revert Error.INSUFFICIENT_BALANCE();
@@ -485,7 +492,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
 
     /// @inheritdoc BaseForm
     function _forwardDustToPaymaster(address token_) internal virtual override {
-        if (token_ == address(0)) revert Error.ZERO_ADDRESS();
+        if (token_ == ZERO_ADDRESS) revert Error.ZERO_ADDRESS();
 
         address paymaster = superRegistry.getAddress(keccak256("PAYMASTER"));
         IERC20 token = IERC20(token_);
@@ -521,6 +528,10 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
                 )
         ) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
+        }
+
+        if (singleVaultData_.retain4626) {
+            emit Retain4626();
         }
     }
 
@@ -603,7 +614,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
             /// addressed as address 0)
             if (decodedSuperformId == superformId_) {
                 (vaultTokenIn) = abi.decode(encodedSfData, (address));
-                if (vaultTokenIn != address(0)) {
+                if (vaultTokenIn != ZERO_ADDRESS) {
                     found5115 = true;
                     break;
                 }
