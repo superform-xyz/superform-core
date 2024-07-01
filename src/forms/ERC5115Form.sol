@@ -290,26 +290,11 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     {
         DirectDepositLocalVars memory vars;
 
-        /// @dev for deposits tokenIn must be decoded from extraFormData as interimToken may be in use
-        /// @dev Warning: This must be validated by a keeper to be the token received in CSR for the given payload, as
-        /// this can be forged by the user
-        /// @dev and it's not possible to validate on chain the final token post bridging/swapping
-        (uint256 nVaults, bytes memory extra5115Data) = abi.decode(singleVaultData_.extraFormData, (uint256, bytes));
-
-        uint256 superformId;
         bool found5115;
 
-        for (uint256 i = 0; i < nVaults; ++i) {
-            (extra5115Data, superformId, vars.vaultTokenIn) = abi.decode(extra5115Data, (bytes, uint256, address));
+        (found5115, vars.vaultTokenIn) =
+            _decode5115ExtraFormData(singleVaultData_.superformId, singleVaultData_.extraFormData);
 
-            /// @dev notice that by validating it like this, it will deny any tokenIn that is native (sometimes
-            /// addressed as
-            /// address 0)
-            if (superformId == singleVaultData_.superformId && vars.vaultTokenIn != address(0)) {
-                found5115 = true;
-                break;
-            }
-        }
         if (!found5115) revert ERC5115FORM_TOKEN_IN_NOT_ENCODED();
 
         /// @dev notice that by validating it like this, it will deny any tokenIn that is native (sometimes addressed as
@@ -413,27 +398,12 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         (,, uint64 dstChainId) = singleVaultData_.superformId.getSuperform();
         address vaultLoc = vault;
 
-        /// @dev for deposits tokenIn must be decoded from extraFormData as interimToken may be in use
-        /// @dev Warning: This must be validated by a keeper to be the token received in CSR for the given payload, as
-        /// this can be forged by the user
-        /// @dev and it's not possible to validate on chain the final token post bridging/swapping
-        (uint256 nVaults, bytes memory extra5115Data) = abi.decode(singleVaultData_.extraFormData, (uint256, bytes));
-
         address vaultTokenIn;
-        uint256 superformId;
         bool found5115;
 
-        for (uint256 i = 0; i < nVaults; ++i) {
-            (extra5115Data, superformId, vaultTokenIn) = abi.decode(extra5115Data, (bytes, uint256, address));
+        (found5115, vaultTokenIn) =
+            _decode5115ExtraFormData(singleVaultData_.superformId, singleVaultData_.extraFormData);
 
-            /// @dev notice that by validating it like this, it will deny any tokenIn that is native (sometimes
-            /// addressed as
-            /// address 0)
-            if (superformId == singleVaultData_.superformId && vaultTokenIn != address(0)) {
-                found5115 = true;
-                break;
-            }
-        }
         if (!found5115) revert ERC5115FORM_TOKEN_IN_NOT_ENCODED();
 
         if (IERC20(vaultTokenIn).allowance(msg.sender, address(this)) < singleVaultData_.amount) {
@@ -710,6 +680,36 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         if (dust != 0) {
             token.safeTransfer(paymaster, dust);
             emit FormDustForwardedToPaymaster(token_, dust);
+        }
+    }
+
+    function _decode5115ExtraFormData(
+        uint256 superformId_,
+        bytes memory extraFormData_
+    )
+        internal
+        pure
+        returns (bool found5115, address vaultTokenIn)
+    {
+        /// @dev for deposits tokenIn must be decoded from extraFormData as interimToken may be in use
+        /// @dev Warning: This must be validated by a keeper to be the token received in CSR for the given payload, as
+        /// this can be forged by the user
+        /// @dev and it's not possible to validate on chain the final token post bridging/swapping
+
+        (uint256 nVaults, bytes[] memory encodedDatas) = abi.decode(extraFormData_, (uint256, bytes[]));
+
+        for (uint256 i = 0; i < nVaults; ++i) {
+            (uint256 decodedSuperformId, bytes memory encodedSfData) = abi.decode(encodedDatas[i], (uint256, bytes));
+
+            /// @dev notice that by validating it like this, it will deny any tokenIn that is native (sometimes
+            /// addressed as address 0)
+            if (decodedSuperformId == superformId_) {
+                (vaultTokenIn) = abi.decode(encodedSfData, (address));
+                if (vaultTokenIn != address(0)) {
+                    found5115 = true;
+                    break;
+                }
+            }
         }
     }
 }

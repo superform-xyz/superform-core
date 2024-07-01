@@ -15,7 +15,8 @@ import {
     AsyncWithdrawPayload,
     SyncWithdrawTxDataPayload,
     NOT_ASYNC_SUPERFORM,
-    NOT_READY_TO_CLAIM
+    NOT_READY_TO_CLAIM,
+    ERC7540_AMBIDS_NOT_ENCODED
 } from "src/interfaces/IAsyncStateRegistry.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
@@ -206,26 +207,34 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         emit ReceivedSyncWithdrawTxDataPayload(payloadId);
     }
 
+    struct FinalizeDepositPayloadLocalVars {
+        bool is7540;
+        address superformAddress;
+        uint256 claimableDeposit;
+        uint8[] ambIds;
+    }
     /// @inheritdoc IAsyncStateRegistry
+
     function finalizeDepositPayload(uint256 asyncPayloadId_)
         external
         payable
         override
         onlyAsyncStateRegistryProcessor
     {
+        FinalizeDepositPayloadLocalVars memory v;
         AsyncDepositPayload storage p = asyncDepositPayload[asyncPayloadId_];
         if (p.status != AsyncStatus.PENDING) {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
 
-        (address superformAddress,,) = p.data.superformId.getSuperform();
+        (v.superformAddress,,) = p.data.superformId.getSuperform();
 
-        IERC7540Form superform = IERC7540Form(superformAddress);
+        IERC7540Form superform = IERC7540Form(v.superformAddress);
 
-        uint256 claimableDeposit = superform.getClaimableDepositRequest(p.requestId, p.data.receiverAddress);
+        v.claimableDeposit = superform.getClaimableDepositRequest(p.requestId, p.data.receiverAddress);
         if (
-            (p.requestId == 0 && claimableDeposit < p.assetsToDeposit)
-                || (p.requestId != 0 && claimableDeposit != p.assetsToDeposit)
+            (p.requestId == 0 && v.claimableDeposit < p.assetsToDeposit)
+                || (p.requestId != 0 && v.claimableDeposit != p.assetsToDeposit)
         ) {
             revert NOT_READY_TO_CLAIM();
         }
@@ -237,12 +246,15 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
             if (shares != 0 && !p.data.retain4626) {
                 /// @dev dispatch acknowledgement to mint superPositions
                 if (p.isXChain == 1) {
-                    /// @dev this was never encoded in deposits
-                    (uint256 payloadId,) = abi.decode(p.data.extraFormData, (uint256, uint256));
+                    (v.is7540, v.ambIds) = _decode7540ExtraFormData(p.data.superformId, p.data.extraFormData);
+
+                    if (!v.is7540) revert ERC7540_AMBIDS_NOT_ENCODED();
+
+                    if (v.ambIds.length == 0) revert ERC7540_AMBIDS_NOT_ENCODED();
 
                     _dispatchAcknowledgement(
                         p.srcChainId,
-                        _getDeliveryAMB(payloadId),
+                        v.ambIds,
                         abi.encode(
                             AMBMessage(
                                 DataLib.packTxInfo(
@@ -496,5 +508,28 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
 
     function _getSuperRegistryAddress(bytes32 id) internal view returns (address) {
         return superRegistry.getAddress(id);
+    }
+
+    function _decode7540ExtraFormData(
+        uint256 superformId_,
+        bytes memory extraFormData_
+    )
+        internal
+        pure
+        returns (bool found7540, uint8[] memory ambIds)
+    {
+        (uint256 nVaults, bytes[] memory encodedDatas) = abi.decode(extraFormData_, (uint256, bytes[]));
+
+        for (uint256 i = 0; i < nVaults; ++i) {
+            (uint256 decodedSuperformId, bytes memory encodedSfData) = abi.decode(encodedDatas[i], (uint256, bytes));
+
+            if (decodedSuperformId == superformId_) {
+                (ambIds) = abi.decode(encodedSfData, (uint8[]));
+                if (ambIds.length > 0) {
+                    found7540 = true;
+                    break;
+                }
+            }
+        }
     }
 }

@@ -8,6 +8,7 @@ import { InitSingleVaultData } from "src/types/DataTypes.sol";
 //////////////////////////////////////////////////////////////
 error NOT_ASYNC_SUPERFORM();
 error NOT_READY_TO_CLAIM();
+error ERC7540_AMBIDS_NOT_ENCODED();
 
 //////////////////////////////////////////////////////////////
 //                           ENUMS                        //
