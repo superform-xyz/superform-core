@@ -11,7 +11,7 @@ on:
     branches: [main, develop, v1]
 
 env:
-  BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
+  BSC_RPC_URL: ${{ secrets.BSC_RPC_URL_VNET }}
   ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
   OPTIMISM_RPC_URL: ${{ secrets.OPTIMISM_RPC_URL }}
   ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
