@@ -7,6 +7,8 @@ import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISocketValidator } from "src/interfaces/ISocketValidator.sol";
 
+import "forge-std/console.sol";
+
 /// @title SocketValidator
 /// @dev Asserts Socket x-chain input txData is valid
 /// @author Zeropoint Labs
@@ -79,6 +81,9 @@ contract SocketValidator is ISocketValidator, BridgeValidator {
         if (isRouteBlacklisted(decodedReq.bridgeRequest.id)) {
             revert Error.BLACKLISTED_ROUTE_ID();
         }
+
+        console.log("decodedReq.toChainId: %s", decodedReq.toChainId); // wrong one
+        console.log("args_.liqDstChainId: %s", uint256(args_.liqDstChainId));
 
         /// @dev 1. chain id validation (only allow xChain with this)
         if (decodedReq.toChainId != uint256(args_.liqDstChainId)) revert Error.INVALID_TXDATA_CHAIN_ID();

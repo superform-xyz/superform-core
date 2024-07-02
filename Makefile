@@ -21,6 +21,8 @@ ifeq ($(ENVIRONMENT), local)
 	export OPTIMISM_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/OPTIMISM_RPC_URL/credential)
 	export BASE_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/BASE_RPC_URL/credential)
 	export FANTOM_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/FANTOM_RPC_URL/credential)
+	export SEPOLIA_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/SEPOLIA_RPC_URL/credential)
+	export BSC_TESTNET_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/BSC_TESTNET_RPC_URL/credential)
 endif
 
 # deps
@@ -28,7 +30,7 @@ install:; forge install
 update:; forge update
 
 # Build & test
-build :; FOUNDRY_PROFILE=production forge build
+build :; FOUNDRY_PROFILE=production forge build 
 build-unoptimized :; FOUNDRY_PROFILE=localdev forge build
 build-sizes :; FOUNDRY_PROFILE=production forge build --sizes
 test-vvv   :; forge test --match-contract PayloadHelper --evm-version cancun

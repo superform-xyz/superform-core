@@ -4,40 +4,41 @@ pragma solidity ^0.8.23;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract SXSVW4626NativeSlippagePseudoAsyncAMB23 is ProtocolActions {
+contract SXSVW7540WithdrawAsyncNativeRevertingDstSwapSlippageAMB23 is ProtocolActions {
     function setUp() public override {
         super.setUp();
+
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
-    //////////////////////////////////////////////////////////////*/
-        AMBs = [2, 3];
+        //////////////////////////////////////////////////////////////*/
+        AMBs = [1, 3];
 
-        CHAIN_0 = POLY;
-        DST_CHAINS = [ETH];
+        CHAIN_0 = ETH;
+        DST_CHAINS = [ARBI];
 
-        TARGET_UNDERLYINGS[ETH][0] = [6];
+        TARGET_UNDERLYINGS[ARBI][0] = [4];
 
-        TARGET_VAULTS[ETH][0] = [0];
+        TARGET_VAULTS[ARBI][0] = [14];
 
-        TARGET_FORM_KINDS[ETH][0] = [0];
+        TARGET_FORM_KINDS[ARBI][0] = [4];
 
-        TARGET_UNDERLYINGS[ETH][1] = [6];
+        TARGET_UNDERLYINGS[ARBI][1] = [4];
 
-        TARGET_VAULTS[ETH][1] = [0];
+        TARGET_VAULTS[ARBI][1] = [14];
 
-        TARGET_FORM_KINDS[ETH][1] = [0];
+        TARGET_FORM_KINDS[ARBI][1] = [4];
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[ETH][0] = [1];
-        LIQ_BRIDGES[ETH][1] = [1];
+        LIQ_BRIDGES[ARBI][0] = [2];
+        LIQ_BRIDGES[ARBI][1] = [2];
 
-        RECEIVE_4626[ETH][0] = [false];
-        RECEIVE_4626[ETH][1] = [true];
+        RECEIVE_4626[ARBI][0] = [false];
+        RECEIVE_4626[ARBI][1] = [false];
 
         GENERATE_WITHDRAW_TX_DATA_ON_DST = true;
 
-        FINAL_LIQ_DST_WITHDRAW[ETH] = [ETH];
+        FINAL_LIQ_DST_WITHDRAW[ARBI] = [ETH];
 
         actions.push(
             TestAction({
@@ -47,9 +48,9 @@ contract SXSVW4626NativeSlippagePseudoAsyncAMB23 is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                dstSwap: false,
-                externalToken: 69_420 // 0 = DAI, 1 = USDT, 2 = WETH
+                slippage: 44, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: true,
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
 
@@ -75,7 +76,7 @@ contract SXSVW4626NativeSlippagePseudoAsyncAMB23 is ProtocolActions {
     function test_scenario(uint128 amountOne_) public {
         /// @dev amount = 1 after slippage will become 0, hence starting with 2
         amountOne_ = uint128(bound(amountOne_, 2e18, 10e18));
-        AMOUNTS[ETH][0] = [amountOne_];
+        AMOUNTS[ARBI][0] = [amountOne_];
 
         for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
@@ -94,7 +95,7 @@ contract SXSVW4626NativeSlippagePseudoAsyncAMB23 is ProtocolActions {
                     DST_CHAINS[0]
                 );
 
-                AMOUNTS[ETH][1] = [superPositions[0]];
+                AMOUNTS[ARBI][1] = [superPositions[0]];
             }
 
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);

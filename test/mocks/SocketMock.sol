@@ -9,6 +9,7 @@ import "./MockERC20.sol";
 
 /// @title Socket Mock
 /// @dev eventually replace this by using a fork of the real registry contract
+
 contract SocketMock is ISocketRegistry, Test {
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -97,8 +98,6 @@ contract SocketMock is ISocketRegistry, Test {
             }
         }
 
-        amount_ = ((amount_ * uint256(10_000 - vars.slippage)) / 10_000);
-
         vm.selectFork(vars.prevForkId);
         vars.decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
         vm.selectFork(vars.toForkId);
@@ -106,6 +105,8 @@ contract SocketMock is ISocketRegistry, Test {
 
         if (vars.isDstSwap) vars.slippage = (vars.slippage * int256(vars.dstSwapSlippageShare)) / 100;
         else vars.slippage = (vars.slippage * int256(100 - vars.dstSwapSlippageShare)) / 100;
+
+        amount_ = ((amount_ * uint256(10_000 - vars.slippage)) / 10_000);
 
         if (vars.decimal1 > vars.decimal2) {
             vars.finalAmount = (amount_ * vars.USDPerUnderlyingToken)
@@ -146,13 +147,13 @@ contract SocketMock is ISocketRegistry, Test {
 
         uint256 decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
         uint256 decimal2 = bridgeToken_ == NATIVE ? 18 : MockERC20(bridgeToken_).decimals();
-
         /// @dev the results of this amount if there is a bridge are effectively ignored
         if (decimal1 > decimal2) {
             amount_ = (amount_ * USDPerExternalToken) / (USDPerUnderlyingToken * 10 ** (decimal1 - decimal2));
         } else {
             amount_ = (amount_ * USDPerExternalToken) * 10 ** (decimal2 - decimal1) / USDPerUnderlyingToken;
         }
+
         /// @dev swap slippage if any, is applied in ProtocolActions._stage1_buildReqData() for direct
         /// actions and in ProtocolActions._buildLiqBridgeTxDataDstSwap() for dstSwaps.
         /// @dev Could allocate swap slippage share separately like for ProtocolActions.MULTI_TX_SLIPPAGE_SHARE
