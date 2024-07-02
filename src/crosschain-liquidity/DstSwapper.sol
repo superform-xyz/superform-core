@@ -14,6 +14,7 @@ import { InitSingleVaultData, InitMultiVaultData, PayloadState } from "src/types
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ReentrancyGuard } from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
+import "forge-std/console.sol";
 
 /// @title DstSwapper
 /// @dev Handles all destination chain swaps
@@ -333,6 +334,8 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard, LiquidityHandler {
             }
         } else {
             if (IERC20(userSuppliedInterimToken_).balanceOf(address(this)) < v.amount) {
+                console.log("balance", IERC20(userSuppliedInterimToken_).balanceOf(address(this)));
+                console.log("amount", v.amount);
                 revert Error.INSUFFICIENT_BALANCE();
             }
         }

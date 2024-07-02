@@ -155,11 +155,13 @@ struct SetupVars {
     address erc4626TimelockForm;
     address kycDao4626Form;
     address erc5115form;
+    address erc7540form;
     address coreStateRegistry;
     address PayloadHelper;
     address paymentHelper;
     address timelockStateRegistry;
     address broadcastRegistry;
+    address asyncStateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
     address timelockVault;
@@ -182,6 +184,7 @@ struct SetupVars {
     address debridgeValidator;
     address debridgeForwarderValidator;
     address rewardsDistributor;
+    address eRC5115To4626WrapperFactory;
     Vm.Log[] logs;
     address superPositions;
     address kycDAOMock;

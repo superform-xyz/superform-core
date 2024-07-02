@@ -11,7 +11,7 @@ import { IDlnSource } from "src/vendor/deBridge/IDlnSource.sol";
 import { ICrossChainForwarder } from "src/vendor/deBridge/ICrossChainForwarder.sol";
 
 contract DeBridgeForwarderValidatorTest is ProtocolActions {
-    address constant NATIVE = address(0); // native for de-bridge is address(0)
+    address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address constant DE_BRIDGE_SOURCE = 0xeF4fB24aD0916217251F553c0596F8Edc630EB66;
 
     address constant SWAP_ROUTER = 0x1111111254EEB25477B68fb85Ed929f73A960582;

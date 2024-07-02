@@ -252,6 +252,9 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         deBridgeQuote.orderAuthorityAddressDst = _castToAddress(v.xChainQuote.orderAuthorityAddressDst);
         deBridgeQuote.bridgeRefundRecipient = _castToAddress(v.xChainQuote.allowedCancelBeneficiarySrc);
         deBridgeQuote.givePatchAuthoritySrc = v.xChainQuote.givePatchAuthoritySrc;
+
+        if (deBridgeQuote.outputToken == address(0)) deBridgeQuote.outputToken = NATIVE;
+        if (deBridgeQuote.inputToken == address(0)) deBridgeQuote.inputToken = NATIVE;
     }
 
     /// @dev helps parsing debridge calldata and return the input parameters

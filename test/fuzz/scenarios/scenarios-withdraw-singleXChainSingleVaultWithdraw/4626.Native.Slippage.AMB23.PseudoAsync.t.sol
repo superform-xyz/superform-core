@@ -3,7 +3,6 @@ pragma solidity ^0.8.23;
 
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
-import "forge-std/console.sol";
 
 contract SXSVW4626NativeSlippagePseudoAsyncAMB23 is ProtocolActions {
     function setUp() public override {
