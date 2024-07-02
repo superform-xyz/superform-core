@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract SXMVW7540FullAsync5115SlippageDstSwapAMB13 is ProtocolActions {
+contract SXMVW7540ADepositAWithdraw5115SlippageDstSwapAMB13 is ProtocolActions {
     function setUp() public override {
         super.setUp();
 
