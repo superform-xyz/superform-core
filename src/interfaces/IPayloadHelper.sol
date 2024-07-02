@@ -31,6 +31,7 @@ interface IPayloadHelper {
         uint256[] slippages;
         uint256[] superformIds;
         bool[] hasDstSwaps;
+        bool[] retain4626s;
         address receiverAddress;
         uint256 srcPayloadId;
         bytes extraFormData;

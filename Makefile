@@ -32,8 +32,8 @@ update:; forge update
 # Build & test
 build :; FOUNDRY_PROFILE=production forge build 
 build-unoptimized :; FOUNDRY_PROFILE=localdev forge build
-build-sizes :; FOUNDRY_PROFILE=production forge build --sizes --evm-version cancun
-test-vvv   :; forge test --match-contract SXMVW7540FullAsync5115SlippageAMB23 -vvvvv --evm-version cancun 
+build-sizes :; FOUNDRY_PROFILE=production forge build --sizes
+test-vvv   :; forge test --match-contract PayloadHelper --evm-version cancun
 ftest   :; forge test --evm-version cancun
 test-ci :; forge test --no-match-path "test/invariant/**/*.sol" --evm-version cancun
 coverage :; FOUNDRY_PROFILE=coverage forge coverage --no-match-path "test/invariant/**/*.sol" --no-match-contract SmokeTest --evm-version cancun --report lcov
