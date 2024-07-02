@@ -35,7 +35,7 @@ script = "script"
 src = "src"
 test = "test"
 auto_detect_remappings = false
-assertions_revert = false
+assertions_revert = true
 legacy_assertions = true
 gas_limit = "18446744073709551615"
 

@@ -8,7 +8,6 @@ import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { StdInvariant } from "forge-std/StdInvariant.sol";
 import { RewardsDistributorStore } from "../stores/RewardsDistributorStore.sol";
-import "forge-std/console.sol";
 
 contract RewardsDistributorHandler is StdInvariant, MerkleReader {
     RewardsDistributorStore public store;

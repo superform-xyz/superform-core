@@ -218,7 +218,7 @@ abstract contract CommonProtocolActions is BaseSetup {
                         FORKS[args.liqDstChainId],
                         args.underlyingTokenDst,
                         args.slippage,
-                        args.dstSwap,
+                        false,
                         MULTI_TX_SLIPPAGE_SHARE,
                         args.USDPerExternalToken,
                         args.USDPerUnderlyingToken,
@@ -241,7 +241,7 @@ abstract contract CommonProtocolActions is BaseSetup {
                         FORKS[args.liqDstChainId],
                         args.underlyingTokenDst,
                         args.slippage,
-                        args.dstSwap,
+                        false,
                         MULTI_TX_SLIPPAGE_SHARE,
                         args.USDPerExternalToken,
                         args.USDPerUnderlyingToken,
@@ -381,6 +381,7 @@ abstract contract CommonProtocolActions is BaseSetup {
         /// @dev amount_ adjusted after swap slippage
         int256 swapSlippage = (slippage_ * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
         amount_ = (amount_ * uint256(10_000 - swapSlippage)) / 10_000;
+
 
         /// @dev already on target chain, so need to vm.selectFork() to it
         (, int256 USDPerSendingTokenDst,,,) =

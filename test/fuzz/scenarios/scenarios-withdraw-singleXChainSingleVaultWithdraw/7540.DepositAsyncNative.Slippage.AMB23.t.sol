@@ -38,7 +38,7 @@ contract SXSVW7540DepositAsyncNativeDstSwapSlippageAMB23 is ProtocolActions {
 
         GENERATE_WITHDRAW_TX_DATA_ON_DST = true;
 
-        FINAL_LIQ_DST_WITHDRAW[OP] = [OP];
+        FINAL_LIQ_DST_WITHDRAW[OP] = [POLY];
 
         actions.push(
             TestAction({
