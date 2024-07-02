@@ -1105,7 +1105,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                 SuperRegistry(vars.superRegistry).setBridgeAddresses(bridgeIds, bridgeAddresses, bridgeValidators);
             }
 
-            /// @dev configures ambImpkementations to super registry
+            /// @dev configures ambImplementations to super registry
             if (vars.chainId == FANTOM) {
                 uint8[] memory ambIdsFantom = new uint8[](3);
                 ambIdsFantom[0] = 1;

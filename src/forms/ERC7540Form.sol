@@ -852,16 +852,20 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
     {
         address sharesReceiver = singleVaultData_.retain4626 ? singleVaultData_.receiverAddress : address(this);
 
+        address share = _share();
+
         address vaultLoc = vault;
+
         address assetLoc = asset;
+
         /// @dev allowance is modified inside of the IERC20.transferFrom() call
         IERC20(assetLoc).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
 
-        uint256 sharesBalanceBefore = _balanceOf(vaultLoc, sharesReceiver);
+        uint256 sharesBalanceBefore = _balanceOf(share, sharesReceiver);
 
         shares = IERC7540(vault).deposit(assetDifference, sharesReceiver);
 
-        uint256 sharesBalanceAfter = _balanceOf(vaultLoc, sharesReceiver);
+        uint256 sharesBalanceAfter = _balanceOf(share, sharesReceiver);
 
         if (IERC20(assetLoc).allowance(address(this), vaultLoc) > 0) IERC20(assetLoc).forceApprove(vaultLoc, 0);
 

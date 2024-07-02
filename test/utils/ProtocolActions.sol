@@ -1590,8 +1590,19 @@ abstract contract ProtocolActions is CommonProtocolActions {
             IAsyncStateRegistry asyncStateRegistry =
                 IAsyncStateRegistry(contracts[DST_CHAINS[i]][bytes32(bytes("AsyncStateRegistry"))]);
 
+            currentWithdrawPayloadCounter = asyncStateRegistry.asyncWithdrawPayloadCounter();
             if (countAsyncWithdraw[i] > 0) {
-                currentWithdrawPayloadCounter = asyncStateRegistry.asyncWithdrawPayloadCounter();
+                /// @dev set 7540 operator and move vault to claimable
+                for (uint256 j = 0; j < asyncWithdrawSFs[i].length; j++) {
+                    (address superform,,) = asyncWithdrawSFs[i][j].getSuperform();
+                    _authorizeOperatorAndMoveToClaimable(superform, action.user);
+                }
+
+                for (uint256 j = 0; j < revertingAsyncWithdrawSFs[i].length; j++) {
+                    (address superform,,) = revertingAsyncWithdrawSFs[i][j].getSuperform();
+                    _authorizeOperatorAndMoveToClaimable(superform, action.user);
+                }
+
                 if (currentWithdrawPayloadCounter > 0) {
                     /// @dev set 7540 operator and move vault to claimable
                     for (uint256 j = 0; j < asyncWithdrawSFs[i].length; j++) {
