@@ -192,7 +192,8 @@ abstract contract BaseSetup is StdInvariant, Test {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev we should fork these instead of mocking.
-    string[] public UNDERLYING_TOKENS = ["DAI", "USDC", "WETH", "ezETH", "wstETH", "sUSDe", "USDe"];
+    /// @notice tUSD is a test token on sepolia
+    string[] public UNDERLYING_TOKENS = ["DAI", "USDC", "WETH", "ezETH", "wstETH", "sUSDe", "USDe", "tUSD"];
 
     /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm, 4 = ERC511§5, 5 = ERC7540
     uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(2), uint32(3), uint32(4), uint32(5)];
@@ -509,6 +510,7 @@ abstract contract BaseSetup is StdInvariant, Test {
     string public SEPOLIA_RPC_URL_QN = vm.envString("SEPOLIA_RPC_URL_QN"); // Native token: ETH
     string public BSC_TESTNET_RPC_URL_QN = vm.envString("BSC_TESTNET_RPC_URL_QN"); // Native token: BNB
 
+    bool public LAUNCH_TESTNETS = false;
     /*//////////////////////////////////////////////////////////////
                         KYC DAO VALIDITY VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -517,6 +519,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         [address(0), address(0), address(0), 0x205E10d3c4C87E26eB66B1B270b71b7708494dB9, address(0), address(0)];
 
     function setUp() public virtual {
+        if (!LAUNCH_TESTNETS) chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
+
         _preDeploymentSetup(true, false);
 
         _fundNativeTokens();
@@ -626,6 +630,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev deployments
         for (uint256 i = 0; i < chainIds.length; ++i) {
             vars.chainId = chainIds[i];
+
             vars.fork = FORKS[vars.chainId];
             vars.ambAddresses = new address[](ambIds.length);
             /// @dev salt unique to each chain
@@ -1507,6 +1512,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[ETH][getContract(ETH, "sUSDe")] = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
         tokenPriceFeeds[ETH][getContract(ETH, "USDe")] = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
+        tokenPriceFeeds[ETH][getContract(ETH, "tUSD")] = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
 
         /// BSC
         tokenPriceFeeds[BSC][getContract(BSC, "DAI")] = 0x132d3C0B1D2cEa0BC552588063bdBb210FDeecfA;
@@ -1519,6 +1525,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[BSC][getContract(BSC, "sUSDe")] = 0x51597f405303C4377E36123cBc172b13269EA163;
         tokenPriceFeeds[BSC][getContract(BSC, "USDe")] = 0x51597f405303C4377E36123cBc172b13269EA163;
+        tokenPriceFeeds[BSC][getContract(BSC, "tUSD")] = 0x51597f405303C4377E36123cBc172b13269EA163;
 
         /// AVAX
         tokenPriceFeeds[AVAX][getContract(AVAX, "DAI")] = 0x51D7180edA2260cc4F6e4EebB82FEF5c3c2B8300;
@@ -1531,6 +1538,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[AVAX][getContract(AVAX, "sUSDe")] = 0xF096872672F44d6EBA71458D74fe67F9a77a23B9;
         tokenPriceFeeds[AVAX][getContract(AVAX, "USDe")] = 0xF096872672F44d6EBA71458D74fe67F9a77a23B9;
+        tokenPriceFeeds[AVAX][getContract(AVAX, "tUSD")] = 0xF096872672F44d6EBA71458D74fe67F9a77a23B9;
 
         /// POLYGON
         tokenPriceFeeds[POLY][getContract(POLY, "DAI")] = 0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D;
@@ -1543,6 +1551,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[POLY][getContract(POLY, "sUSDe")] = 0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7;
         tokenPriceFeeds[POLY][getContract(POLY, "USDe")] = 0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7;
+        tokenPriceFeeds[POLY][getContract(POLY, "tUSD")] = 0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7;
 
         /// OPTIMISM
         tokenPriceFeeds[OP][getContract(OP, "DAI")] = 0x8dBa75e83DA73cc766A7e5a0ee71F656BAb470d6;
@@ -1555,6 +1564,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[OP][getContract(OP, "sUSDe")] = 0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3;
         tokenPriceFeeds[OP][getContract(OP, "USDe")] = 0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3;
+        tokenPriceFeeds[OP][getContract(OP, "tUSD")] = 0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3;
 
         /// ARBITRUM
         tokenPriceFeeds[ARBI][getContract(ARBI, "DAI")] = 0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB;
@@ -1567,6 +1577,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[ARBI][getContract(ARBI, "sUSDe")] = 0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3;
         tokenPriceFeeds[ARBI][getContract(ARBI, "USDe")] = 0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3;
+        tokenPriceFeeds[ARBI][getContract(ARBI, "tUSD")] = 0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3;
 
         /// BASE
         tokenPriceFeeds[BASE][getContract(BASE, "DAI")] = 0x591e79239a7d679378eC8c847e5038150364C78F;
@@ -1579,6 +1590,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[BASE][getContract(BASE, "sUSDe")] = 0x7e860098F58bBFC8648a4311b374B1D669a2bc6B;
         tokenPriceFeeds[BASE][getContract(BASE, "USDe")] = 0x7e860098F58bBFC8648a4311b374B1D669a2bc6B;
+        tokenPriceFeeds[BASE][getContract(BASE, "tUSD")] = 0x7e860098F58bBFC8648a4311b374B1D669a2bc6B;
 
         /// FANTOM
         tokenPriceFeeds[FANTOM][getContract(FANTOM, "DAI")] = 0x91d5DEFAFfE2854C7D02F50c80FA1fdc8A721e52;
@@ -1591,6 +1603,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[FANTOM][getContract(FANTOM, "sUSDe")] = 0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c;
         tokenPriceFeeds[FANTOM][getContract(FANTOM, "USDe")] = 0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c;
+        tokenPriceFeeds[FANTOM][getContract(FANTOM, "tUSD")] = 0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c;
 
         /// SEPOLIA
         tokenPriceFeeds[SEPOLIA][getContract(SEPOLIA, "DAI")] = 0x14866185B1962B63C3Ea9E03Bc1da838bab34C19;
@@ -1603,6 +1616,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[SEPOLIA][getContract(SEPOLIA, "sUSDe")] = 0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E;
         tokenPriceFeeds[SEPOLIA][getContract(SEPOLIA, "USDe")] = 0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E;
+        tokenPriceFeeds[SEPOLIA][getContract(SEPOLIA, "tUSD")] = 0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E;
 
         /// BSC_TESTNET
         tokenPriceFeeds[BSC_TESTNET][getContract(BSC_TESTNET, "DAI")] = 0xE4eE17114774713d2De0eC0f035d4F7665fc025D;
@@ -1615,6 +1629,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[BSC_TESTNET][getContract(BSC_TESTNET, "sUSDe")] = 0x90c069C4538adAc136E051052E14c1cD799C41B7;
         tokenPriceFeeds[BSC_TESTNET][getContract(BSC_TESTNET, "USDe")] = 0x90c069C4538adAc136E051052E14c1cD799C41B7;
+        tokenPriceFeeds[BSC_TESTNET][getContract(BSC_TESTNET, "tUSD")] = 0x90c069C4538adAc136E051052E14c1cD799C41B7;
     }
 
     function _preDeploymentSetup(bool pinnedBlock, bool invariant) internal {
@@ -1631,10 +1646,13 @@ abstract contract BaseSetup is StdInvariant, Test {
             forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 120_950_600) : vm.createFork(OPTIMISM_RPC_URL_QN);
             forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL_QN);
             forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 82_228_344) : vm.createFork(FANTOM_RPC_URL_QN);
-            forks[SEPOLIA] =
-                pinnedBlock ? vm.createFork(SEPOLIA_RPC_URL_QN, 6_206_000) : vm.createFork(SEPOLIA_RPC_URL_QN);
-            forks[BSC_TESTNET] =
-                pinnedBlock ? vm.createFork(BSC_TESTNET_RPC_URL_QN, 41_624_319) : vm.createFork(BSC_TESTNET_RPC_URL_QN);
+            if (LAUNCH_TESTNETS) {
+                forks[SEPOLIA] =
+                    pinnedBlock ? vm.createFork(SEPOLIA_RPC_URL_QN, 6_206_000) : vm.createFork(SEPOLIA_RPC_URL_QN);
+                forks[BSC_TESTNET] = pinnedBlock
+                    ? vm.createFork(BSC_TESTNET_RPC_URL_QN, 41_624_319)
+                    : vm.createFork(BSC_TESTNET_RPC_URL_QN);
+            }
         }
 
         mapping(uint64 => string) storage rpcURLs = RPC_URLS;
@@ -1981,6 +1999,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         existingTokens[11_155_111]["DAI"] = address(0);
         existingTokens[11_155_111]["USDC"] = address(0);
         existingTokens[11_155_111]["WETH"] = address(0);
+        existingTokens[11_155_111]["tUSD"] = 0x8503b4452Bf6238cC76CdbEE223b46d7196b1c93;
 
         mapping(
             uint64 chainId
@@ -2022,6 +2041,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         existingVaults[250][1]["DAI"][0] = address(0);
         existingVaults[250][1]["USDC"][0] = 0xd55C59Da5872DE866e39b1e3Af2065330ea8Acd6;
         existingVaults[250][1]["WETH"][0] = address(0);
+
+        existingVaults[11_155_111][4]["tUSD"][0] = 0xC6e3Bec489bc661cf4e4c59236C1B79f9924cAB7;
 
         mapping(uint64 chainId => mapping(uint256 market => address realVault)) storage erc5115Vaults = ERC5115_VAULTS;
         mapping(uint64 chainId => mapping(uint256 market => string name)) storage erc5115VaultsNames =
@@ -2138,26 +2159,24 @@ abstract contract BaseSetup is StdInvariant, Test {
     function _broadcastPayloadHelper(uint64 currentChainId, Vm.Log[] memory logs) internal {
         vm.stopPrank();
 
-        address[] memory dstTargets = new address[](chainIds.length - 3);
-        address[] memory dstWormhole = new address[](chainIds.length - 3);
+        address[] memory dstTargets = new address[](chainIds.length - 1);
+        address[] memory dstWormhole = new address[](chainIds.length - 1);
 
-        uint256[] memory forkIds = new uint256[](chainIds.length - 3);
+        uint256[] memory forkIds = new uint256[](chainIds.length - 1);
 
         uint16 currWormholeChainId;
 
         uint256 j;
         for (uint256 i = 0; i < chainIds.length; ++i) {
-            if (chainIds[i] != BSC_TESTNET && chainIds[i] != SEPOLIA) {
-                if (chainIds[i] != currentChainId) {
-                    dstWormhole[j] = wormholeCore[i];
-                    dstTargets[j] = getContract(chainIds[i], "WormholeSRImplementation");
+            if (chainIds[i] != currentChainId) {
+                dstWormhole[j] = wormholeCore[i];
+                dstTargets[j] = getContract(chainIds[i], "WormholeSRImplementation");
 
-                    forkIds[j] = FORKS[chainIds[i]];
+                forkIds[j] = FORKS[chainIds[i]];
 
-                    ++j;
-                } else {
-                    currWormholeChainId = wormhole_chainIds[i];
-                }
+                ++j;
+            } else {
+                currWormholeChainId = wormhole_chainIds[i];
             }
         }
 

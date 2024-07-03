@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract SXSVDNormal4626SepoliaNoSlippageAMB23 is ProtocolActions {
     function setUp() public override {
+        LAUNCH_TESTNETS = true;
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE

@@ -3521,7 +3521,7 @@ contract SuperformRouterTest is ProtocolActions {
         _broadcastPayloadHelper(ARBI, vm.getRecordedLogs());
 
         for (uint256 i = 0; i < chainIds.length; ++i) {
-            if (chainIds[i] != ARBI && chainIds[i] != SEPOLIA && chainIds[i] != BSC_TESTNET) {
+            if (chainIds[i] != ARBI ) {
                 vm.selectFork(FORKS[chainIds[i]]);
 
                 bool statusBefore = SuperformFactory(getContract(chainIds[i], "SuperformFactory"))
