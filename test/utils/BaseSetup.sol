@@ -45,6 +45,12 @@ import { ERC7540AsyncDepositMockRedeemRevert } from "../mocks/ERC7540AsyncDeposi
 import { ERC7540AsyncRedeemMock } from "../mocks/ERC7540AsyncRedeemMock.sol";
 import { ERC7540AsyncRedeemMockRevert } from "../mocks/ERC7540AsyncRedeemMockRevert.sol";
 import { ERC7540FullyAsyncMock } from "../mocks/ERC7540FullyAsyncMock.sol";
+
+import { TrancheTokenLike } from "../mocks/7540MockUtils/TrancheTokenLike.sol";
+import { RestrictionManagerLike } from "../mocks/7540MockUtils/RestrictionManagerLike.sol";
+
+import { IERC7540Vault as IERC7540 } from "src/vendor/centrifuge/IERC7540.sol";
+
 /// @dev Protocol imports
 import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
 import { BroadcastRegistry } from "src/crosschain-data/BroadcastRegistry.sol";
@@ -117,9 +123,9 @@ abstract contract BaseSetup is StdInvariant, Test {
     bytes32 constant PERMIT_TRANSFER_FROM_TYPEHASH = keccak256(
         "PermitTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline)TokenPermissions(address token,uint256 amount)"
     );
-    bytes32 constant AUTHORIZE_OPERATOR_TYPEHASH = keccak256(
-        "AuthorizeOperator(address controller,address operator,bool approved,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
-    );
+    bytes32 constant AUTHORIZE_OPERATOR_TYPEHASH =
+        keccak256("AuthorizeOperator(address controller,address operator,bool approved,uint256 deadline,bytes32 nonce)");
+
     /// @dev ETH mainnet values as on 22nd Aug, 2023
     uint256 public constant TOTAL_SUPPLY_DAI = 3_961_541_270_138_222_277_363_935_051;
     uint256 public constant TOTAL_SUPPLY_USDC = 23_581_451_089_110_212;
@@ -1445,6 +1451,15 @@ abstract contract BaseSetup is StdInvariant, Test {
                                 ERC7540Form(vars.superform).forwardDustToPaymaster(
                                     ERC7540Form(vars.superform).getVaultAsset()
                                 );
+                                /// @dev activating centrifuge real vault (note: this flow will be needed in production)
+                                if (vault == 0xC6e3Bec489bc661cf4e4c59236C1B79f9924cAB7 && LAUNCH_TESTNETS) {
+                                    address mgr = TrancheTokenLike(IERC7540(vault).share()).restrictionManager();
+                                    vm.startPrank(RestrictionManagerLike(mgr).root());
+                                    RestrictionManagerLike(mgr).updateMember(
+                                        IERC7540(vault).share(), vars.superform, type(uint64).max
+                                    );
+                                    vm.startPrank(deployer);
+                                }
                             }
 
                             contracts[chainIds[i]][bytes32(
@@ -2042,7 +2057,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         existingVaults[250][1]["USDC"][0] = 0xd55C59Da5872DE866e39b1e3Af2065330ea8Acd6;
         existingVaults[250][1]["WETH"][0] = address(0);
 
-        existingVaults[11_155_111][4]["tUSD"][0] = 0xC6e3Bec489bc661cf4e4c59236C1B79f9924cAB7;
+        existingVaults[11_155_111][5]["tUSD"][0] = 0xC6e3Bec489bc661cf4e4c59236C1B79f9924cAB7;
 
         mapping(uint64 chainId => mapping(uint256 market => address realVault)) storage erc5115Vaults = ERC5115_VAULTS;
         mapping(uint64 chainId => mapping(uint256 market => string name)) storage erc5115VaultsNames =
