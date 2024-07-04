@@ -1455,9 +1455,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                                 if (vault == 0xC6e3Bec489bc661cf4e4c59236C1B79f9924cAB7 && LAUNCH_TESTNETS) {
                                     address mgr = TrancheTokenLike(IERC7540(vault).share()).restrictionManager();
                                     vm.startPrank(RestrictionManagerLike(mgr).root());
-                                    RestrictionManagerLike(mgr).updateMember(
-                                        IERC7540(vault).share(), vars.superform, type(uint64).max
-                                    );
+                                    RestrictionManagerLike(mgr).updateMember(vars.superform, type(uint64).max);
                                     vm.startPrank(deployer);
                                 }
                             }
