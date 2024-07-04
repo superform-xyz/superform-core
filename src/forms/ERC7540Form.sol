@@ -507,7 +507,7 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
         }
 
         assetsToDeposit = IERC20(vars.asset).balanceOf(address(this)) - vars.balanceBefore;
-
+        
         /// @dev the difference in vault tokens, ready to be deposited, is compared with the amount inscribed in the
         /// superform data
         if (

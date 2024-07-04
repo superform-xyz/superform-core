@@ -232,9 +232,12 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         IERC7540Form superform = IERC7540Form(v.superformAddress);
 
         v.claimableDeposit = superform.getClaimableDepositRequest(p.requestId, p.data.receiverAddress);
+        
+
+        
         if (
-            (p.requestId == 0 && v.claimableDeposit < p.assetsToDeposit)
-                || (p.requestId != 0 && v.claimableDeposit != p.assetsToDeposit)
+            (p.requestId == 0 && v.claimableDeposit < p.assetsDeposited)
+                || (p.requestId != 0 && v.claimableDeposit != p.assetsDeposited)
         ) {
             revert NOT_READY_TO_CLAIM();
         }

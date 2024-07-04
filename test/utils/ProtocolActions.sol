@@ -7,6 +7,9 @@ import { IAuthorizeOperator, IERC7540Vault as IERC7540, IERC7575 } from "src/ven
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { LiFiMock } from "../mocks/LiFiMock.sol";
 import { ISetClaimable } from "../mocks/7540MockUtils/ISetClaimable.sol";
+import { InvestmentManagerLike } from "../mocks/7540MockUtils/InvestmentManagerLike.sol";
+import { PoolManagerLike } from "../mocks/7540MockUtils/PoolManagerLike.sol";
+import { ERC7540VaultLike } from "../mocks/7540MockUtils/ERC7540VaultLike.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.sol";
 import { IAsyncStateRegistry } from "src/interfaces/IAsyncStateRegistry.sol";
@@ -280,7 +283,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         /// @dev this is only required for full async and async deposit forms
         if (action.action == Actions.Deposit) {
-            _stage5_1_finalize_asyncDeposit_payload(action, vars);
+            _stage5_1_finalize_asyncDeposit_payload(action, vars, multiSuperformsData, singleSuperformsData);
 
             if (DEBUG_MODE) console.log("Stage 5_1 async deposit complete");
 
@@ -345,7 +348,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         }
 
         if (action.action == Actions.Withdraw) {
-            _stage7_finalize_asyncWithdraw_payload(action, vars);
+            _stage7_finalize_asyncWithdraw_payload(action, vars, multiSuperformsData, singleSuperformsData);
 
             if (DEBUG_MODE) console.log("Stage 7 async withdraw complete");
 
@@ -1320,7 +1323,65 @@ abstract contract ProtocolActions is CommonProtocolActions {
         Vm.Log[] logs;
     }
 
-    function _authorizeOperatorAndMoveToClaimable(address superform, uint256 user) internal {
+    function _fulfillDepositRequest(
+        address investmentManager,
+        address vault,
+        address asset,
+        uint256 amount,
+        address user
+    )
+        internal
+        returns (uint128 tranchesPayout)
+    {
+        address poolManager = InvestmentManagerLike(investmentManager).poolManager();
+
+        (uint128 latestPrice,) = PoolManagerLike(poolManager).getTrancheTokenPrice(
+            ERC7540VaultLike(vault).poolId(), ERC7540VaultLike(vault).trancheId(), asset
+        );
+
+        tranchesPayout = uint128(amount * 10 ** 18 / latestPrice);
+
+        uint128 assetId = PoolManagerLike(poolManager).assetToId(asset);
+        InvestmentManagerLike(investmentManager).fulfillDepositRequest(
+            ERC7540VaultLike(vault).poolId(),
+            ERC7540VaultLike(vault).trancheId(),
+            user,
+            assetId,
+            uint128(amount),
+            tranchesPayout,
+            uint128(amount)
+        );
+    }
+
+    function _fulfillRedeemRequest(
+        address investmentManager,
+        address vault,
+        address asset,
+        uint256 amount,
+        address user
+    )
+        internal
+        returns (uint128 assetPayout)
+    {
+        address poolManager = InvestmentManagerLike(investmentManager).poolManager();
+
+        (uint128 latestPrice,) = PoolManagerLike(poolManager).getTrancheTokenPrice(
+            ERC7540VaultLike(vault).poolId(), ERC7540VaultLike(vault).trancheId(), asset
+        );
+
+        assetPayout = uint128(amount * latestPrice / 10 ** 18);
+        uint128 assetId = PoolManagerLike(poolManager).assetToId(asset);
+        InvestmentManagerLike(investmentManager).fulfillRedeemRequest(
+            ERC7540VaultLike(vault).poolId(),
+            ERC7540VaultLike(vault).trancheId(),
+            user,
+            assetId,
+            assetPayout,
+            uint128(amount)
+        );
+    }
+
+    function _authorizeOperator(address superform, uint256 user) internal {
         address vault = IBaseForm(superform).getVaultAddress();
         if (!IERC7540(vault).isOperator(users[user], superform)) {
             bytes32 nonce = _randomBytes32();
@@ -1337,12 +1398,69 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 )
             );
         }
+    }
 
-        ISetClaimable(vault).moveAssetsToClaimable(0, users[user]);
+    function _moveToClaimable(
+        address superform,
+        TestAction memory action,
+        MultiVaultSFData[] memory multiSuperformsData,
+        SingleVaultSFData[] memory singleSuperformsData,
+        uint256 dstIndex,
+        bool deposit
+    )
+        internal
+    {
+        address vault = IBaseForm(superform).getVaultAddress();
+        address asset = IBaseForm(superform).getVaultAsset();
+        address manager = ERC7540VaultLike(vault).manager();
+        if (vault == REAL_VAULT_ADDRESS[SEPOLIA][5]["tUSD"][0]) {
+            /// @dev for centrifuge
+            vm.startPrank(InvestmentManagerLike(manager).root());
+
+            if (action.multiVaults) {
+                uint256 lenVaults = multiSuperformsData[dstIndex].amounts.length;
+                for (uint256 i = 0; i < lenVaults; ++i) {
+                    if (deposit) {
+                        _fulfillDepositRequest(
+                            manager, vault, asset, multiSuperformsData[dstIndex].amounts[i], users[action.user]
+                        );
+                    } else {
+                        _fulfillRedeemRequest(
+                            manager, vault, asset, multiSuperformsData[dstIndex].amounts[i], users[action.user]
+                        );
+                    }
+                }
+            } else {
+                if (deposit) {
+                    _fulfillDepositRequest(
+                        manager, vault, asset, singleSuperformsData[dstIndex].amount, users[action.user]
+                    );
+                } else {
+                    _fulfillRedeemRequest(
+                        manager, vault, asset, singleSuperformsData[dstIndex].amount, users[action.user]
+                    );
+                }
+            }
+            vm.stopPrank();
+        } else {
+            /// @dev for a mock
+            if (deposit) {
+                ISetClaimable(vault).moveAssetsToClaimable(0, users[action.user]);
+            } else {
+                ISetClaimable(vault).moveSharesToClaimable(0, users[action.user]);
+            }
+        }
     }
 
     /// @dev STEP 5_1 DIRECT AND X-CHAIN: Finalize async deposit payload
-    function _stage5_1_finalize_asyncDeposit_payload(TestAction memory action, StagesLocalVars memory vars) internal {
+    function _stage5_1_finalize_asyncDeposit_payload(
+        TestAction memory action,
+        StagesLocalVars memory vars,
+        MultiVaultSFData[] memory multiSuperformsData,
+        SingleVaultSFData[] memory singleSuperformsData
+    )
+        internal
+    {
         Stage51ASyncDeposit memory v;
 
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
@@ -1357,12 +1475,14 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 /// @dev set 7540 operator and move vault to claimable
                 for (uint256 j = 0; j < asyncDepositSFs[i].length; j++) {
                     (v.superform,,) = asyncDepositSFs[i][j].getSuperform();
-                    _authorizeOperatorAndMoveToClaimable(v.superform, action.user);
+                    _authorizeOperator(v.superform, action.user);
+                    _moveToClaimable(v.superform, action, multiSuperformsData, singleSuperformsData, i, true);
                 }
 
                 for (uint256 j = 0; j < revertingRedeemAsyncDepositSFs[i].length; j++) {
                     (v.superform,,) = revertingRedeemAsyncDepositSFs[i][j].getSuperform();
-                    _authorizeOperatorAndMoveToClaimable(v.superform, action.user);
+                    _authorizeOperator(v.superform, action.user);
+                    _moveToClaimable(v.superform, action, multiSuperformsData, singleSuperformsData, i, true);
                 }
 
                 if (v.currentDepositPayloadCounter > 0) {
@@ -1577,7 +1697,14 @@ abstract contract ProtocolActions is CommonProtocolActions {
     }
 
     /// @dev STEP 7 DIRECT AND X-CHAIN: Finalize timelocked payload after time has passed
-    function _stage7_finalize_asyncWithdraw_payload(TestAction memory action, StagesLocalVars memory vars) internal {
+    function _stage7_finalize_asyncWithdraw_payload(
+        TestAction memory action,
+        StagesLocalVars memory vars,
+        MultiVaultSFData[] memory multiSuperformsData,
+        SingleVaultSFData[] memory singleSuperformsData
+    )
+        internal
+    {
         uint256 initialFork;
         uint256 currentWithdrawPayloadCounter;
         uint256 currentSyncWithdrawTxDataPayloadCounter;
@@ -1595,12 +1722,12 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 /// @dev set 7540 operator and move vault to claimable
                 for (uint256 j = 0; j < asyncWithdrawSFs[i].length; j++) {
                     (address superform,,) = asyncWithdrawSFs[i][j].getSuperform();
-                    _authorizeOperatorAndMoveToClaimable(superform, action.user);
+                    _authorizeOperator(superform, action.user);
                 }
 
                 for (uint256 j = 0; j < revertingAsyncWithdrawSFs[i].length; j++) {
                     (address superform,,) = revertingAsyncWithdrawSFs[i][j].getSuperform();
-                    _authorizeOperatorAndMoveToClaimable(superform, action.user);
+                    _authorizeOperator(superform, action.user);
                 }
 
                 if (currentWithdrawPayloadCounter > 0) {
@@ -1608,9 +1735,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     for (uint256 j = 0; j < asyncWithdrawSFs[i].length; j++) {
                         (address superform,,) = asyncWithdrawSFs[i][j].getSuperform();
 
-                        ISetClaimable(IBaseForm(superform).getVaultAddress()).moveSharesToClaimable(
-                            0, users[action.user]
-                        );
+                        _moveToClaimable(superform, action, multiSuperformsData, singleSuperformsData, i, false);
                     }
                     uint256 asyncWithdrawPerformed;
                     /// @dev perform the calls from beginning to last because of easiness in passing unlock id

@@ -29,7 +29,7 @@ enum AsyncStatus {
 struct AsyncDepositPayload {
     uint8 isXChain;
     uint64 srcChainId;
-    uint256 assetsToDeposit;
+    uint256 assetsDeposited;
     uint256 requestId;
     InitSingleVaultData data;
     AsyncStatus status;

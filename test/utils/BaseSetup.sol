@@ -1456,6 +1456,10 @@ abstract contract BaseSetup is StdInvariant, Test {
                                     address mgr = TrancheTokenLike(IERC7540(vault).share()).restrictionManager();
                                     vm.startPrank(RestrictionManagerLike(mgr).root());
                                     RestrictionManagerLike(mgr).updateMember(vars.superform, type(uint64).max);
+                                    RestrictionManagerLike(mgr).updateMember(users[0], type(uint64).max);
+                                    RestrictionManagerLike(mgr).updateMember(users[1], type(uint64).max);
+                                    RestrictionManagerLike(mgr).updateMember(users[2], type(uint64).max);
+
                                     vm.startPrank(deployer);
                                 }
                             }
@@ -1661,7 +1665,7 @@ abstract contract BaseSetup is StdInvariant, Test {
             forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 82_228_344) : vm.createFork(FANTOM_RPC_URL_QN);
             if (LAUNCH_TESTNETS) {
                 forks[SEPOLIA] =
-                    pinnedBlock ? vm.createFork(SEPOLIA_RPC_URL_QN, 6_206_000) : vm.createFork(SEPOLIA_RPC_URL_QN);
+                    pinnedBlock ? vm.createFork(SEPOLIA_RPC_URL_QN, 6_244_520) : vm.createFork(SEPOLIA_RPC_URL_QN);
                 forks[BSC_TESTNET] = pinnedBlock
                     ? vm.createFork(BSC_TESTNET_RPC_URL_QN, 41_624_319)
                     : vm.createFork(BSC_TESTNET_RPC_URL_QN);
