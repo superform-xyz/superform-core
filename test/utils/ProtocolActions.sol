@@ -2380,24 +2380,14 @@ abstract contract ProtocolActions is CommonProtocolActions {
             uint256 swapSlippage = uint256(args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE) / 100);
             uint256 finalAmount = (args.amount * uint256(10_000 - swapSlippage)) / 10_000;
 
+            (, v.USDPerExternalToken,,,) =
+                AggregatorV3Interface(tokenPriceFeeds[args.toChainId][args.uniqueInterimToken]).latestRoundData();
+
             (, v.USDPerUnderlyingOrInterimTokenDst,,,) =
                 AggregatorV3Interface(tokenPriceFeeds[args.toChainId][args.underlyingTokenDst]).latestRoundData();
 
-            // Get decimals of underlyingTokenDst
-            uint256 decimalUnderlyingDst =
-                args.underlyingTokenDst != NATIVE_TOKEN ? MockERC20(args.underlyingTokenDst).decimals() : 18;
-
-            // Decimal correction
-            uint256 decimalDiff;
-            if (v.decimal1 > decimalUnderlyingDst) {
-                decimalDiff = 10 ** (v.decimal1 - decimalUnderlyingDst);
-                finalAmount = (finalAmount * uint256(v.USDPerExternalToken))
-                    / (uint256(v.USDPerUnderlyingOrInterimTokenDst) * decimalDiff);
-            } else {
-                decimalDiff = 10 ** (decimalUnderlyingDst - v.decimal1);
-                finalAmount = (finalAmount * uint256(v.USDPerExternalToken) * decimalDiff)
-                    / uint256(v.USDPerUnderlyingOrInterimTokenDst);
-            }
+            finalAmount =
+                (finalAmount * uint256(v.USDPerExternalToken)) / (uint256(v.USDPerUnderlyingOrInterimTokenDst));
 
             v.expectedAmountOfShares = IBaseForm(v.superform).previewDepositTo(finalAmount);
         } else {
