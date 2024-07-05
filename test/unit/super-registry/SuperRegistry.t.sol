@@ -310,9 +310,9 @@ contract SuperRegistryTest is BaseSetup {
         uint8[] memory registryId = new uint8[](2);
         address[] memory registryAddress = new address[](2);
 
-        registryId[0] = 4;
+        registryId[0] = 200;
         registryAddress[0] = address(0);
-        registryId[1] = 5;
+        registryId[1] = 201;
         registryAddress[1] = address(0x3);
 
         vm.startPrank(deployer);
@@ -322,7 +322,7 @@ contract SuperRegistryTest is BaseSetup {
 
         superRegistry.setStateRegistryAddress(registryId, registryAddress);
 
-        assertEq(superRegistry.getStateRegistry(5), address(0x3));
+        assertEq(superRegistry.getStateRegistry(201), address(0x3));
 
         vm.expectRevert(Error.DISABLED.selector);
         vm.startPrank(deployer);
