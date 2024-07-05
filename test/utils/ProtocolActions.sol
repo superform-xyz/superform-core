@@ -1412,8 +1412,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
     {
         address vault = IBaseForm(superform).getVaultAddress();
         address asset = IBaseForm(superform).getVaultAsset();
-        address manager = ERC7540VaultLike(vault).manager();
         if (vault == REAL_VAULT_ADDRESS[SEPOLIA][5]["tUSD"][0]) {
+            address manager = ERC7540VaultLike(vault).manager();
+
             /// @dev for centrifuge
             vm.startPrank(InvestmentManagerLike(manager).root());
 

@@ -3,7 +3,12 @@ pragma solidity ^0.8.23;
 
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.sol";
-import { IAsyncStateRegistry, AsyncDepositPayload, AsyncWithdrawPayload, SyncWithdrawTxDataPayload } from "src/interfaces/IAsyncStateRegistry.sol";
+import {
+    IAsyncStateRegistry,
+    AsyncDepositPayload,
+    AsyncWithdrawPayload,
+    SyncWithdrawTxDataPayload
+} from "src/interfaces/IAsyncStateRegistry.sol";
 import { IPayloadHelper } from "src/interfaces/IPayloadHelper.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
@@ -184,7 +189,7 @@ contract PayloadHelper is IPayloadHelper {
             payload.srcChainId,
             payload.data.payloadId,
             payload.data.superformId,
-            payload.assetsToDeposit
+            payload.assetsDeposited
         );
     }
 
@@ -227,7 +232,8 @@ contract PayloadHelper is IPayloadHelper {
             revert Error.INVALID_PAYLOAD_ID();
         }
 
-        SyncWithdrawTxDataPayload memory payload = asyncStateRegistry.getSyncWithdrawTxDataPayload(syncWithdrawPayloadId_);
+        SyncWithdrawTxDataPayload memory payload =
+            asyncStateRegistry.getSyncWithdrawTxDataPayload(syncWithdrawPayloadId_);
 
         return (
             payload.data.receiverAddress,
