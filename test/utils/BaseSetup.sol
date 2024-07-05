@@ -201,7 +201,7 @@ abstract contract BaseSetup is StdInvariant, Test {
     /// @notice tUSD is a test token on sepolia
     string[] public UNDERLYING_TOKENS = ["DAI", "USDC", "WETH", "ezETH", "wstETH", "sUSDe", "USDe", "tUSD"];
 
-    /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm, 4 = ERC511§5, 5 = ERC7540
+    /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm, 4 = ERC5115, 5 = ERC7540
     uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(2), uint32(3), uint32(4), uint32(5)];
 
     /// @dev WARNING!! THESE VAULT NAMES MUST BE THE EXACT NAMES AS FILLED IN vaultKinds
