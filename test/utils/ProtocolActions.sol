@@ -2373,12 +2373,36 @@ abstract contract ProtocolActions is CommonProtocolActions {
         );
 
         is5115 = v.superformId5115 == args.superformId;
-
         is7540 = v.superformId7540 == args.superformId;
 
         if (is5115 && is7540) revert("SAME ID TWO DIFFERENT IMPL");
+        if (args.dstSwap) {
+            uint256 swapSlippage = uint256(args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE) / 100);
+            uint256 finalAmount = (args.amount * uint256(10_000 - swapSlippage)) / 10_000;
 
-        v.expectedAmountOfShares = IBaseForm(v.superform).previewDepositTo(args.amount);
+            (, v.USDPerUnderlyingOrInterimTokenDst,,,) =
+                AggregatorV3Interface(tokenPriceFeeds[args.toChainId][args.underlyingTokenDst]).latestRoundData();
+
+            // Get decimals of underlyingTokenDst
+            uint256 decimalUnderlyingDst =
+                args.underlyingTokenDst != NATIVE_TOKEN ? MockERC20(args.underlyingTokenDst).decimals() : 18;
+
+            // Decimal correction
+            uint256 decimalDiff;
+            if (v.decimal1 > decimalUnderlyingDst) {
+                decimalDiff = 10 ** (v.decimal1 - decimalUnderlyingDst);
+                finalAmount = (finalAmount * uint256(v.USDPerExternalToken))
+                    / (uint256(v.USDPerUnderlyingOrInterimTokenDst) * decimalDiff);
+            } else {
+                decimalDiff = 10 ** (decimalUnderlyingDst - v.decimal1);
+                finalAmount = (finalAmount * uint256(v.USDPerExternalToken) * decimalDiff)
+                    / uint256(v.USDPerUnderlyingOrInterimTokenDst);
+            }
+
+            v.expectedAmountOfShares = IBaseForm(v.superform).previewDepositTo(finalAmount);
+        } else {
+            v.expectedAmountOfShares = IBaseForm(v.superform).previewDepositTo(args.amount);
+        }
         /// data structure to encode: number of vaults encoded [] array of encoded datas
         /// encoded datas:
         /// for 5115 - (uint256 superformId, address vaultTokenIn)
@@ -2878,6 +2902,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 }
             }
         }
+
         /// @dev if test type is RevertProcessPayload, revert is further down the call chain
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
             vm.prank(deployer);
