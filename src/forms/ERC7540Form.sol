@@ -4,12 +4,7 @@ pragma solidity ^0.8.23;
 import { BaseForm } from "src/BaseForm.sol";
 import { LiquidityHandler } from "src/crosschain-liquidity/LiquidityHandler.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
-import {
-    IAsyncStateRegistry,
-    AsyncWithdrawPayload,
-    AsyncDepositPayload,
-    SyncWithdrawTxDataPayload
-} from "src/interfaces/IAsyncStateRegistry.sol";
+import { IAsyncStateRegistry, SyncWithdrawTxDataPayload } from "src/interfaces/IAsyncStateRegistry.sol";
 import { IEmergencyQueue } from "src/interfaces/IEmergencyQueue.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { Error } from "src/libraries/Error.sol";
@@ -95,6 +90,8 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
         uint64 chainId;
         address asset;
         uint256 amount;
+        uint256 assetsBalanceBefore;
+        uint256 assetsBalanceAfter;
         LiqRequest liqData;
     }
 
@@ -277,14 +274,23 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IERC7540FormBase
-    function claimDeposit(AsyncDepositPayload memory p_) external onlyAsyncStateRegistry returns (uint256 shares) {
+    function claimDeposit(
+        address user_,
+        uint256 superformId_,
+        uint256 amountToClaim_,
+        bool retain4626_
+    )
+        external
+        onlyAsyncStateRegistry
+        returns (uint256 shares)
+    {
         if (vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
 
         if (vaultKind == VaultKind.REDEEM_ASYNC) revert INVALID_VAULT_KIND();
 
-        if (p_.data.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
+        if (user_ == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
 
-        if (_isPaused(p_.data.superformId)) {
+        if (_isPaused(superformId_)) {
             /// @dev in case of a deposit claim and the form is paused, nothing can be sent to the emergency queue as
             /// there
             /// @dev are no shares belonging to this payload in the superform at this moment. return 0 to stop
@@ -295,26 +301,32 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
         uint256 sharesBalanceBefore;
         uint256 sharesBalanceAfter;
 
-        (sharesBalanceBefore, sharesBalanceAfter, shares) = _claim(
-            _share(),
-            p_.data.amount,
-            p_.data.retain4626 ? p_.data.receiverAddress : address(this),
-            p_.data.receiverAddress,
-            true
-        );
-
-        _slippageValidation(sharesBalanceBefore, sharesBalanceAfter, shares, p_.data.outputAmount, p_.data.maxSlippage);
+        (sharesBalanceBefore, sharesBalanceAfter, shares) =
+            _claim(_share(), amountToClaim_, retain4626_ ? user_ : address(this), user_, true);
     }
 
     /// @inheritdoc IERC7540FormBase
-    function claimWithdraw(AsyncWithdrawPayload memory p_) external onlyAsyncStateRegistry returns (uint256 assets) {
+    function claimWithdraw(
+        address user_,
+        uint256 superformId_,
+        uint256 amountToClaim_,
+        uint256 maxSlippage_,
+        bool retain4626_,
+        uint8 isXChain_,
+        uint64 srcChainId_,
+        LiqRequest memory liqData_
+    )
+        external
+        onlyAsyncStateRegistry
+        returns (uint256 assets)
+    {
         if (vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
 
         if (vaultKind == VaultKind.DEPOSIT_ASYNC) revert INVALID_VAULT_KIND();
 
-        if (p_.data.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
+        if (user_ == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
 
-        if (_isPaused(p_.data.superformId)) {
+        if (_isPaused(superformId_)) {
             /// @dev in case of a withdraw claim and the form is paused, nothing can be sent to the emergency queue as
             /// the shares
             /// @dev have already been sent via requestRedeem to the vault. return 0 to stop processing
@@ -323,33 +335,27 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
         }
         ClaimWithdrawLocalVars memory vars;
 
-        vars.liqData = p_.data.liqData;
-        vars.len1 = vars.liqData.txData.length;
+        vars.len1 = liqData_.txData.length;
 
         /// @dev a case where the withdraw req liqData has a valid token and tx data is not updated by the keeper
-        if (vars.liqData.token != address(0) && vars.len1 == 0) {
+        if (liqData_.token != address(0) && vars.len1 == 0) {
             revert Error.WITHDRAW_TX_DATA_NOT_UPDATED();
-        } else if (vars.liqData.token == address(0) && vars.len1 != 0) {
+        } else if (liqData_.token == address(0) && vars.len1 != 0) {
             revert Error.WITHDRAW_TOKEN_NOT_UPDATED();
         }
 
         /// @dev redeem from vault
         vars.asset = asset;
 
-        uint256 assetsBalanceBefore;
-        uint256 assetsBalanceAfter;
-
-        (assetsBalanceBefore, assetsBalanceAfter, assets) = _claim(
+        (vars.assetsBalanceBefore, vars.assetsBalanceAfter, assets) = _claim(
             vars.asset,
-            p_.data.amount,
+            amountToClaim_,
             /// @dev if the txData is empty, the tokens are sent directly to the sender, otherwise sent first to this
             /// form
-            vars.len1 == 0 ? p_.data.receiverAddress : address(this),
-            p_.data.receiverAddress,
+            vars.len1 == 0 ? user_ : address(this),
+            user_,
             false
         );
-
-        _slippageValidation(assetsBalanceBefore, assetsBalanceAfter, assets, p_.data.outputAmount, p_.data.maxSlippage);
 
         if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
@@ -363,9 +369,7 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
             /// withdraw
             if (
                 _isWithdrawTxDataAmountInvalid(
-                    _decodeAmountIn(_getBridgeValidator(vars.liqData.bridgeId), vars.liqData.txData),
-                    assets,
-                    p_.data.maxSlippage
+                    _decodeAmountIn(_getBridgeValidator(liqData_.bridgeId), liqData_.txData), assets, maxSlippage_
                 )
             ) {
                 revert REDEEM_INVALID_LIQ_REQUEST();
@@ -373,20 +377,20 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             _swapAssetsInOrOut(
-                vars.liqData.bridgeId,
-                vars.liqData.txData,
+                liqData_.bridgeId,
+                liqData_.txData,
                 IBridgeValidator.ValidateTxDataArgs(
-                    vars.liqData.txData,
+                    liqData_.txData,
                     vars.chainId,
-                    p_.isXChain == 1 ? p_.srcChainId : vars.chainId,
-                    vars.liqData.liqDstChainId,
+                    isXChain_ == 1 ? srcChainId_ : vars.chainId,
+                    liqData_.liqDstChainId,
                     false,
                     address(this),
-                    p_.data.receiverAddress,
+                    user_,
                     vars.asset,
                     address(0)
                 ),
-                vars.liqData.nativeAmount,
+                liqData_.nativeAmount,
                 vars.asset,
                 false
             );
@@ -421,10 +425,10 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
         if (vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
 
         if (vaultKind == VaultKind.DEPOSIT_ASYNC || vaultKind == VaultKind.FULLY_ASYNC) {
-            (uint256 assetsToDeposit, uint256 requestId) = _requestDirectDeposit(singleVaultData_);
+            _requestDirectDeposit(singleVaultData_);
 
             /// @dev state registry for re-processing at a later date
-            _storeDepositPayload(0, CHAIN_ID, assetsToDeposit, requestId, singleVaultData_);
+            _updateAccount(0, CHAIN_ID, singleVaultData_, true);
             shares = 0;
         } else {
             shares = _processDirectDeposit(singleVaultData_);
@@ -507,7 +511,7 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
         }
 
         assetsToDeposit = IERC20(vars.asset).balanceOf(address(this)) - vars.balanceBefore;
-        
+
         /// @dev the difference in vault tokens, ready to be deposited, is compared with the amount inscribed in the
         /// superform data
         if (
@@ -536,14 +540,9 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
         if (vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
 
         if (vaultKind == VaultKind.DEPOSIT_ASYNC || vaultKind == VaultKind.FULLY_ASYNC) {
+            _requestXChainDeposit(singleVaultData_, srcChainId_);
             /// @dev state registry for re-processing at a later date
-            _storeDepositPayload(
-                1,
-                srcChainId_,
-                singleVaultData_.amount,
-                _requestXChainDeposit(singleVaultData_, srcChainId_),
-                singleVaultData_
-            );
+            _updateAccount(1, srcChainId_, singleVaultData_, true);
             shares = 0;
         } else {
             shares = _processXChainDeposit(singleVaultData_, srcChainId_);
@@ -610,8 +609,9 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
 
         if (vaultKind == VaultKind.REDEEM_ASYNC || vaultKind == VaultKind.FULLY_ASYNC) {
             if (!singleVaultData_.retain4626) {
+                _requestRedeem(singleVaultData_, CHAIN_ID);
                 /// @dev state registry for re-processing at a later date
-                _storeWithdrawPayload(0, CHAIN_ID, _requestRedeem(singleVaultData_, CHAIN_ID), singleVaultData_);
+                _updateAccount(0, CHAIN_ID, singleVaultData_, false);
             } else {
                 /// @dev transfer shares to user and do not redeem shares for assets
                 _shareTransferOut(singleVaultData_.receiverAddress, singleVaultData_.amount);
@@ -699,8 +699,9 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
 
         if (vaultKind == VaultKind.REDEEM_ASYNC || vaultKind == VaultKind.FULLY_ASYNC) {
             if (!singleVaultData_.retain4626) {
+                _requestRedeem(singleVaultData_, srcChainId_);
                 /// @dev state registry for re-processing at a later date
-                _storeWithdrawPayload(1, srcChainId_, _requestRedeem(singleVaultData_, srcChainId_), singleVaultData_);
+                _updateAccount(1, srcChainId_, singleVaultData_, false);
             } else {
                 /// @dev transfer shares to user and do not redeem shares for assets
                 _shareTransferOut(singleVaultData_.receiverAddress, singleVaultData_.amount);
@@ -927,31 +928,16 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
     }
 
     /// @dev stores the deposit payload
-    function _storeDepositPayload(
+    function _updateAccount(
         uint8 type_,
         uint64 srcChainId_,
-        uint256 assetsToDeposit_,
-        uint256 requestId_,
-        InitSingleVaultData memory data_
+        InitSingleVaultData memory data_,
+        bool isDeposit_
     )
         internal
     {
-        IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY"))).receiveDepositPayload(
-            type_, srcChainId_, assetsToDeposit_, requestId_, data_
-        );
-    }
-
-    /// @dev stores the withdraw payload
-    function _storeWithdrawPayload(
-        uint8 type_,
-        uint64 srcChainId_,
-        uint256 requestId_,
-        InitSingleVaultData memory data_
-    )
-        internal
-    {
-        IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY"))).receiveWithdrawPayload(
-            type_, srcChainId_, requestId_, data_
+        IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY"))).updateAccount(
+            type_, srcChainId_, data_, isDeposit_
         );
     }
 

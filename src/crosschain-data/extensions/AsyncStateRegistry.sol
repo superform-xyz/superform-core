@@ -11,12 +11,13 @@ import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
 import {
     AsyncStatus,
     IAsyncStateRegistry,
-    AsyncDepositPayload,
-    AsyncWithdrawPayload,
     SyncWithdrawTxDataPayload,
     NOT_ASYNC_SUPERFORM,
     NOT_READY_TO_CLAIM,
-    ERC7540_AMBIDS_NOT_ENCODED
+    ERC7540_AMBIDS_NOT_ENCODED,
+    INVALID_AMOUNT_IN_TXDATA,
+    ClaimAvailableDepositsArgs,
+    UserAccount
 } from "src/interfaces/IAsyncStateRegistry.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
@@ -32,7 +33,8 @@ import {
     CallbackType,
     TransactionType,
     PayloadState,
-    ReturnSingleData
+    ReturnSingleData,
+    LiqRequest
 } from "src/types/DataTypes.sol";
 import { IERC7575 } from "src/vendor/centrifuge/IERC7540.sol";
 
@@ -47,18 +49,10 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     //                     STATE VARIABLES                      //
     //////////////////////////////////////////////////////////////
 
-    /// @dev tracks the total async deposit payloads
-    uint256 public asyncDepositPayloadCounter;
-
-    /// @dev tracks the total async withdraw payloads
-    uint256 public asyncWithdrawPayloadCounter;
-
     /// @dev tracks the total sync withdraw txData payloads
     uint256 public syncWithdrawTxDataPayloadCounter;
 
-    /// @dev stores the async  payloads
-    mapping(uint256 asyncPayloadId => AsyncDepositPayload) public asyncDepositPayload;
-    mapping(uint256 asyncPayloadId => AsyncWithdrawPayload) public asyncWithdrawPayload;
+    mapping(address user => mapping(uint256 superformId => UserAccount account)) public userAccounts;
     mapping(uint256 syncPayloadId => SyncWithdrawTxDataPayload) public syncWithdrawTxDataPayload;
 
     //////////////////////////////////////////////////////////////
@@ -114,21 +108,15 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IAsyncStateRegistry
-    function getAsyncDepositPayload(uint256 payloadId_)
+    function getUserAccount(
+        address user_,
+        uint256 superformId_
+    )
         external
         view
-        returns (AsyncDepositPayload memory asyncDepositPayload_)
+        returns (UserAccount memory userAccount)
     {
-        return asyncDepositPayload[payloadId_];
-    }
-
-    /// @inheritdoc IAsyncStateRegistry
-    function getAsyncWithdrawPayload(uint256 payloadId_)
-        external
-        view
-        returns (AsyncWithdrawPayload memory asyncWithdrawPayload_)
-    {
-        return asyncWithdrawPayload[payloadId_];
+        return userAccounts[user_][superformId_];
     }
 
     /// @inheritdoc IAsyncStateRegistry
@@ -139,17 +127,17 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     {
         return syncWithdrawTxDataPayload[payloadId_];
     }
+
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IAsyncStateRegistry
-    function receiveDepositPayload(
+    function updateAccount(
         uint8 type_,
         uint64 srcChainId_,
-        uint256 assetsToDeposit_,
-        uint256 requestId_,
-        InitSingleVaultData memory data_
+        InitSingleVaultData memory data_,
+        bool isDeposit_
     )
         external
         override
@@ -157,35 +145,23 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     {
         if (data_.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
 
-        ++asyncDepositPayloadCounter;
-        uint256 payloadId = asyncDepositPayloadCounter;
+        uint8[] memory ambIds;
+        bool is7540;
+        if (type_ == 1) {
+            (is7540, ambIds) = _decode7540ExtraFormData(data_.superformId, data_.extraFormData);
+            if (!(is7540 && ambIds.length > 0)) revert ERC7540_AMBIDS_NOT_ENCODED();
+        }
+        UserAccount storage acc = userAccounts[data_.receiverAddress][data_.superformId];
 
-        asyncDepositPayload[payloadId] =
-            AsyncDepositPayload(type_, srcChainId_, assetsToDeposit_, requestId_, data_, AsyncStatus.PENDING);
+        acc.isXChain = type_;
+        acc.retain4626 = data_.retain4626;
+        acc.currentSrcChainId = srcChainId_;
+        acc.currentReturnDataPayloadId = data_.payloadId;
+        acc.maxSlippageSetting = data_.maxSlippage;
+        if (!isDeposit_) acc.currentLiqRequest = data_.liqData;
+        acc.ambIds = ambIds;
 
-        emit ReceivedAsyncDepositPayload(payloadId);
-    }
-
-    /// @inheritdoc IAsyncStateRegistry
-    function receiveWithdrawPayload(
-        uint8 type_,
-        uint64 srcChainId_,
-        uint256 requestId_,
-        InitSingleVaultData memory data_
-    )
-        external
-        override
-        onlyAsyncSuperform(data_.superformId)
-    {
-        if (data_.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
-
-        ++asyncWithdrawPayloadCounter;
-        uint256 payloadId = asyncWithdrawPayloadCounter;
-
-        asyncWithdrawPayload[payloadId] =
-            AsyncWithdrawPayload(type_, srcChainId_, requestId_, data_, AsyncStatus.PENDING);
-
-        emit ReceivedAsyncWithdrawPayload(payloadId);
+        emit UpdatedUserAccount(data_.receiverAddress, data_.superformId);
     }
 
     /// @inheritdoc IAsyncStateRegistry
@@ -207,57 +183,43 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         emit ReceivedSyncWithdrawTxDataPayload(payloadId);
     }
 
-    struct FinalizeDepositPayloadLocalVars {
+    struct ClaimAvailableDepositsLocalVars {
         bool is7540;
         address superformAddress;
         uint256 claimableDeposit;
         uint8[] ambIds;
     }
-    /// @inheritdoc IAsyncStateRegistry
 
-    function finalizeDepositPayload(uint256 asyncPayloadId_)
+    /// @inheritdoc IAsyncStateRegistry
+    function claimAvailableDeposits(ClaimAvailableDepositsArgs memory args_)
         external
         payable
         override
         onlyAsyncStateRegistryProcessor
     {
-        FinalizeDepositPayloadLocalVars memory v;
-        AsyncDepositPayload storage p = asyncDepositPayload[asyncPayloadId_];
-        if (p.status != AsyncStatus.PENDING) {
-            revert Error.INVALID_PAYLOAD_STATUS();
-        }
+        ClaimAvailableDepositsLocalVars memory v;
 
-        (v.superformAddress,,) = p.data.superformId.getSuperform();
+        UserAccount memory acc = userAccounts[args_.user][args_.superformId];
+
+        (v.superformAddress,,) = args_.superformId.getSuperform();
 
         IERC7540Form superform = IERC7540Form(v.superformAddress);
 
-        v.claimableDeposit = superform.getClaimableDepositRequest(p.requestId, p.data.receiverAddress);
-        
+        v.claimableDeposit = superform.getClaimableDepositRequest(0, args_.user);
 
-        
-        if (
-            (p.requestId == 0 && v.claimableDeposit < p.assetsDeposited)
-                || (p.requestId != 0 && v.claimableDeposit != p.assetsDeposited)
-        ) {
+        if (v.claimableDeposit == 0) {
             revert NOT_READY_TO_CLAIM();
         }
 
-        /// @dev set status here to prevent re-entrancy
-        p.status = AsyncStatus.PROCESSED;
-
-        try superform.claimDeposit(p) returns (uint256 shares) {
-            if (shares != 0 && !p.data.retain4626) {
+        try superform.claimDeposit(args_.user, args_.superformId, v.claimableDeposit, acc.retain4626) returns (
+            uint256 shares
+        ) {
+            if (shares != 0 && !acc.retain4626) {
                 /// @dev dispatch acknowledgement to mint superPositions
-                if (p.isXChain == 1) {
-                    (v.is7540, v.ambIds) = _decode7540ExtraFormData(p.data.superformId, p.data.extraFormData);
-
-                    if (!v.is7540) revert ERC7540_AMBIDS_NOT_ENCODED();
-
-                    if (v.ambIds.length == 0) revert ERC7540_AMBIDS_NOT_ENCODED();
-
+                if (acc.isXChain == 1) {
                     _dispatchAcknowledgement(
-                        p.srcChainId,
-                        v.ambIds,
+                        acc.currentSrcChainId,
+                        acc.ambIds,
                         abi.encode(
                             AMBMessage(
                                 DataLib.packTxInfo(
@@ -265,23 +227,23 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
                                     uint8(CallbackType.RETURN),
                                     0,
                                     _getStateRegistryId(),
-                                    p.data.receiverAddress,
+                                    args_.user,
                                     CHAIN_ID
                                 ),
-                                abi.encode(ReturnSingleData(p.data.payloadId, p.data.superformId, shares))
+                                abi.encode(ReturnSingleData(acc.currentReturnDataPayloadId, args_.superformId, shares))
                             )
                         )
                     );
                 }
 
                 /// @dev for direct chain, superPositions are minted directly
-                if (p.isXChain == 0) {
+                if (acc.isXChain == 0) {
                     ISuperPositions(_getSuperRegistryAddress(keccak256("SUPER_POSITIONS"))).mintSingle(
-                        p.data.receiverAddress, p.data.superformId, shares
+                        args_.user, args_.superformId, shares
                     );
                 }
             } else if (shares == 0) {
-                emit FailedAsyncDepositZeroShares(asyncPayloadId_);
+                emit FailedDepositClaim(args_.user, args_.superformId);
             }
         } catch {
             /// @dev In case of a deposit actual failure (at the vault level, or returned shares level in the form),
@@ -290,65 +252,68 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
             /// @dev This must happen like this because superform does not have the shares nor the assets to act upon
             /// them.
 
-            emit FailedDeposit(asyncPayloadId_);
+            emit FailedDepositClaim(args_.user, args_.superformId);
         }
 
-        /// @dev restoring state for gas saving
-        delete asyncDepositPayload[asyncPayloadId_];
-
-        emit FinalizedAsyncDepositPayload(asyncPayloadId_);
+        emit ClaimedAvailableDeposits(args_.user, args_.superformId);
     }
 
     /// @inheritdoc IAsyncStateRegistry
-    function finalizeWithdrawPayload(
-        uint256 asyncPayloadId_,
-        bytes memory txData_
+    function claimAvailableRedeems(
+        address user_,
+        uint256 superformId_,
+        bytes memory updatedTxData_
     )
         external
         override
         onlyAsyncStateRegistryProcessor
     {
-        AsyncWithdrawPayload storage p = asyncWithdrawPayload[asyncPayloadId_];
-        if (p.status != AsyncStatus.PENDING) {
-            revert Error.INVALID_PAYLOAD_STATUS();
-        }
+        UserAccount storage acc = userAccounts[user_][superformId_];
 
-        (address superformAddress,,) = p.data.superformId.getSuperform();
+        (address superformAddress,,) = superformId_.getSuperform();
 
         IERC7540Form superform = IERC7540Form(superformAddress);
 
-        uint256 claimableRedeem = superform.getClaimableRedeemRequest(p.requestId, p.data.receiverAddress);
+        uint256 claimableRedeem = superform.getClaimableRedeemRequest(0, user_);
 
-        if (
-            (p.requestId == 0 && claimableRedeem < p.data.amount)
-                || (p.requestId != 0 && claimableRedeem != p.data.amount)
-        ) {
+        if (claimableRedeem == 0) {
             revert NOT_READY_TO_CLAIM();
         }
 
-        /// @dev set status here to prevent re-entrancy
-        p.status = AsyncStatus.PROCESSED;
-
         /// @dev this step is used to feed txData in case user wants to receive assets in a different way
-        if (txData_.length != 0) {
-            _validateTxData(true, p.srcChainId, txData_, p.data, superformAddress);
+        if (updatedTxData_.length != 0) {
+            _validateTxDataAsync(
+                true,
+                acc.currentSrcChainId,
+                claimableRedeem,
+                updatedTxData_,
+                acc.currentLiqRequest,
+                user_,
+                superformAddress
+            );
 
-            p.data.liqData.txData = txData_;
+            acc.currentLiqRequest.txData = updatedTxData_;
         }
 
         /// @dev if redeeming failed superPositions are not reminted
         /// @dev this is different than the normal 4626 flow because if a redeem is claimable
         /// @dev a user could simply go to the vault and claim the assets directly
-        superform.claimWithdraw(p);
+        superform.claimWithdraw(
+            user_,
+            superformId_,
+            claimableRedeem,
+            acc.maxSlippageSetting,
+            acc.retain4626,
+            acc.isXChain,
+            acc.currentSrcChainId,
+            acc.currentLiqRequest
+        );
 
-        /// @dev restoring state for gas saving
-        delete asyncWithdrawPayload[asyncPayloadId_];
-
-        emit FinalizedAsyncWithdrawPayload(asyncPayloadId_);
+        /// emit
     }
 
     /// @inheritdoc IAsyncStateRegistry
-    function finalizeSyncWithdrawTxDataPayload(
+    function processSyncWithdrawWithUpdatedTxData(
         uint256 payloadId_,
         bytes memory txData_
     )
@@ -438,6 +403,42 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     //////////////////////////////////////////////////////////////
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
+
+    function _validateTxDataAsync(
+        bool async_,
+        uint64 srcChainId_,
+        uint256 claimableRedeem_,
+        bytes memory txData_,
+        LiqRequest memory liqData_,
+        address user_,
+        address superformAddress_
+    )
+        internal
+        view
+    {
+        IBaseForm superform = IBaseForm(superformAddress_);
+        PayloadUpdaterLib.validateLiqReq(liqData_);
+
+        IBridgeValidator bridgeValidator = IBridgeValidator(superRegistry.getBridgeValidator(liqData_.bridgeId));
+
+        bridgeValidator.validateTxData(
+            IBridgeValidator.ValidateTxDataArgs(
+                txData_,
+                CHAIN_ID,
+                srcChainId_,
+                liqData_.liqDstChainId,
+                false,
+                superformAddress_,
+                user_,
+                superform.getVaultAsset(),
+                address(0)
+            )
+        );
+
+        if (bridgeValidator.decodeAmountIn(txData_, false) != claimableRedeem_) {
+            revert INVALID_AMOUNT_IN_TXDATA();
+        }
+    }
 
     function _validateTxData(
         bool async_,

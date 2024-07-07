@@ -3,12 +3,7 @@ pragma solidity ^0.8.23;
 
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.sol";
-import {
-    IAsyncStateRegistry,
-    AsyncDepositPayload,
-    AsyncWithdrawPayload,
-    SyncWithdrawTxDataPayload
-} from "src/interfaces/IAsyncStateRegistry.sol";
+import { IAsyncStateRegistry, SyncWithdrawTxDataPayload } from "src/interfaces/IAsyncStateRegistry.sol";
 import { IPayloadHelper } from "src/interfaces/IPayloadHelper.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
@@ -158,56 +153,6 @@ contract PayloadHelper is IPayloadHelper {
         }
 
         TimelockPayload memory payload = timelockStateRegistry.getTimelockPayload(timelockPayloadId_);
-
-        return (
-            payload.data.receiverAddress,
-            payload.srcChainId,
-            payload.data.payloadId,
-            payload.data.superformId,
-            payload.data.amount
-        );
-    }
-
-    /// @inheritdoc IPayloadHelper
-    function decodeAsyncDepositPayload(uint256 asyncDepositPayloadId_)
-        external
-        view
-        override
-        returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
-    {
-        IAsyncStateRegistry asyncStateRegistry =
-            IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY")));
-
-        if (asyncDepositPayloadId_ > asyncStateRegistry.asyncDepositPayloadCounter()) {
-            revert Error.INVALID_PAYLOAD_ID();
-        }
-
-        AsyncDepositPayload memory payload = asyncStateRegistry.getAsyncDepositPayload(asyncDepositPayloadId_);
-
-        return (
-            payload.data.receiverAddress,
-            payload.srcChainId,
-            payload.data.payloadId,
-            payload.data.superformId,
-            payload.assetsDeposited
-        );
-    }
-
-    /// @inheritdoc IPayloadHelper
-    function decodeAsyncWithdrawPayload(uint256 asyncWithdrawPayloadId_)
-        external
-        view
-        override
-        returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
-    {
-        IAsyncStateRegistry asyncStateRegistry =
-            IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY")));
-
-        if (asyncWithdrawPayloadId_ > asyncStateRegistry.asyncWithdrawPayloadCounter()) {
-            revert Error.INVALID_PAYLOAD_ID();
-        }
-
-        AsyncWithdrawPayload memory payload = asyncStateRegistry.getAsyncWithdrawPayload(asyncWithdrawPayloadId_);
 
         return (
             payload.data.receiverAddress,
