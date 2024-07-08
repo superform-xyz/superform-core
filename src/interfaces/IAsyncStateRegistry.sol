@@ -76,7 +76,7 @@ interface IAsyncStateRegistry is IBaseAsyncStateRegistry {
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
 
-    function updateAccount(
+    function updateRequestConfig(
         uint8 type_,
         uint64 srcChainId_,
         bool isDeposit_,

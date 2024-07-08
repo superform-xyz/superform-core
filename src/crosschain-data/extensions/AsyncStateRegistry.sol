@@ -66,7 +66,7 @@ contract AsyncStateRegistry is BaseAsyncStateRegistry, IAsyncStateRegistry {
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IAsyncStateRegistry
-    function updateAccount(
+    function updateRequestConfig(
         uint8 type_,
         uint64 srcChainId_,
         bool isDeposit_,
@@ -216,7 +216,6 @@ contract AsyncStateRegistry is BaseAsyncStateRegistry, IAsyncStateRegistry {
         /// @dev this step is used to feed txData in case user wants to receive assets in a different way
         if (updatedTxData_.length != 0) {
             _validateTxDataAsync(
-                true,
                 config.currentSrcChainId,
                 claimableRedeem,
                 updatedTxData_,
@@ -236,7 +235,6 @@ contract AsyncStateRegistry is BaseAsyncStateRegistry, IAsyncStateRegistry {
             superformId_,
             claimableRedeem,
             config.maxSlippageSetting,
-            config.retain4626,
             config.isXChain,
             config.currentSrcChainId,
             config.currentLiqRequest
@@ -250,7 +248,6 @@ contract AsyncStateRegistry is BaseAsyncStateRegistry, IAsyncStateRegistry {
     //////////////////////////////////////////////////////////////
 
     function _validateTxDataAsync(
-        bool async_,
         uint64 srcChainId_,
         uint256 claimableRedeem_,
         bytes memory txData_,

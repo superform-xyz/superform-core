@@ -313,7 +313,6 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
         uint256 superformId_,
         uint256 amountToClaim_,
         uint256 maxSlippage_,
-        bool retain4626_,
         uint8 isXChain_,
         uint64 srcChainId_,
         LiqRequest memory liqData_
@@ -929,7 +928,7 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
     )
         internal
     {
-        IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY"))).updateAccount(
+        IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY"))).updateRequestConfig(
             type_, srcChainId_, isDeposit_, requestId_, data_
         );
     }

@@ -53,7 +53,6 @@ interface IERC7540FormBase {
         uint256 superformId_,
         uint256 amountToClaim_,
         uint256 maxSlippage_,
-        bool retain4626_,
         uint8 isXChain_,
         uint64 srcChainId_,
         LiqRequest memory liqData_

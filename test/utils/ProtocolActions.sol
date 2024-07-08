@@ -12,7 +12,7 @@ import { PoolManagerLike } from "../mocks/7540MockUtils/PoolManagerLike.sol";
 import { ERC7540VaultLike } from "../mocks/7540MockUtils/ERC7540VaultLike.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.sol";
-import { IAsyncStateRegistry } from "src/interfaces/IAsyncStateRegistry.sol";
+import { IAsyncStateRegistry, ClaimAvailableDepositsArgs } from "src/interfaces/IAsyncStateRegistry.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { IERC5115Form } from "src/forms/interfaces/IERC5115Form.sol";
@@ -1471,50 +1471,51 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             v.asyncStateRegistry = IAsyncStateRegistry(contracts[DST_CHAINS[i]][bytes32(bytes("AsyncStateRegistry"))]);
 
-            v.currentDepositPayloadCounter = v.asyncStateRegistry.asyncDepositPayloadCounter();
             if (countAsyncDeposit[i] > 0) {
+                vm.recordLogs();
+
                 /// @dev set 7540 operator and move vault to claimable
                 for (uint256 j = 0; j < asyncDepositSFs[i].length; j++) {
                     (v.superform,,) = asyncDepositSFs[i][j].getSuperform();
+
                     _authorizeOperator(v.superform, action.user);
+
                     _moveToClaimable(v.superform, action, multiSuperformsData, singleSuperformsData, i, true);
+
+                    uint256 nativeFee = _generateAckGasFeesAndParamsForAsyncDepositCallback(
+                        abi.encode(CHAIN_0, DST_CHAINS[i]), AMBs, users[action.user], asyncDepositSFs[i][j]
+                    );
+
+                    vm.prank(deployer);
+
+                    v.asyncStateRegistry.claimAvailableDeposits{ value: nativeFee }(
+                        ClaimAvailableDepositsArgs(users[action.user], asyncDepositSFs[i][j])
+                    );
                 }
 
                 for (uint256 j = 0; j < revertingRedeemAsyncDepositSFs[i].length; j++) {
                     (v.superform,,) = revertingRedeemAsyncDepositSFs[i][j].getSuperform();
+
                     _authorizeOperator(v.superform, action.user);
+
                     _moveToClaimable(v.superform, action, multiSuperformsData, singleSuperformsData, i, true);
+
+                    uint256 nativeFee = _generateAckGasFeesAndParamsForAsyncDepositCallback(
+                        abi.encode(CHAIN_0, DST_CHAINS[i]),
+                        AMBs,
+                        users[action.user],
+                        revertingRedeemAsyncDepositSFs[i][j]
+                    );
+
+                    vm.prank(deployer);
+
+                    v.asyncStateRegistry.claimAvailableDeposits{ value: nativeFee }(
+                        ClaimAvailableDepositsArgs(users[action.user], revertingRedeemAsyncDepositSFs[i][j])
+                    );
                 }
-
-                if (v.currentDepositPayloadCounter > 0) {
-                    vm.recordLogs();
-
-                    /// @dev perform the calls from beginning to last because of easiness in passing unlock id
-                    for (uint256 j = countAsyncDeposit[i]; j > 0; j--) {
-                        uint256 nativeFee = _generateAckGasFeesAndParamsForAsyncDepositCallback(
-                            abi.encode(CHAIN_0, DST_CHAINS[i]),
-                            AMBs,
-                            v.currentDepositPayloadCounter - v.asyncDepositPerformed
-                        );
-
-                        vm.prank(deployer);
-
-                        v.asyncStateRegistry.finalizeDepositPayload{ value: nativeFee }(
-                            v.currentDepositPayloadCounter - v.asyncDepositPerformed
-                        );
-
-                        /// @dev tries to process already finalized payload
-                        vm.prank(deployer);
-                        vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
-                        v.asyncStateRegistry.finalizeDepositPayload(
-                            v.currentDepositPayloadCounter - v.asyncDepositPerformed
-                        );
-                        ++v.asyncDepositPerformed;
-                    }
-                    /// @dev deliver the message for the given destination
-                    v.logs = vm.getRecordedLogs();
-                    _payloadDeliveryHelper(CHAIN_0, DST_CHAINS[i], v.logs);
-                }
+                /// @dev deliver the message for the given destination
+                v.logs = vm.getRecordedLogs();
+                _payloadDeliveryHelper(CHAIN_0, DST_CHAINS[i], v.logs);
             }
         }
         vm.selectFork(v.initialFork);
@@ -1707,7 +1708,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
         internal
     {
         uint256 initialFork;
-        uint256 currentWithdrawPayloadCounter;
         uint256 currentSyncWithdrawTxDataPayloadCounter;
 
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
@@ -1718,48 +1718,40 @@ abstract contract ProtocolActions is CommonProtocolActions {
             IAsyncStateRegistry asyncStateRegistry =
                 IAsyncStateRegistry(contracts[DST_CHAINS[i]][bytes32(bytes("AsyncStateRegistry"))]);
 
-            currentWithdrawPayloadCounter = asyncStateRegistry.asyncWithdrawPayloadCounter();
             if (countAsyncWithdraw[i] > 0) {
                 /// @dev set 7540 operator and move vault to claimable
                 for (uint256 j = 0; j < asyncWithdrawSFs[i].length; j++) {
                     (address superform,,) = asyncWithdrawSFs[i][j].getSuperform();
+
                     _authorizeOperator(superform, action.user);
+
+                    _moveToClaimable(superform, action, multiSuperformsData, singleSuperformsData, i, false);
+
+                    vm.prank(deployer);
+                    asyncStateRegistry.claimAvailableRedeems(
+                        users[action.user],
+                        asyncWithdrawSFs[i][j],
+                        GENERATE_WITHDRAW_TX_DATA_ON_DST
+                            ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][asyncRedeemIndexes[DST_CHAINS[i]][j]]
+                            : bytes("")
+                    );
                 }
 
                 for (uint256 j = 0; j < revertingAsyncWithdrawSFs[i].length; j++) {
                     (address superform,,) = revertingAsyncWithdrawSFs[i][j].getSuperform();
+
                     _authorizeOperator(superform, action.user);
-                }
 
-                if (currentWithdrawPayloadCounter > 0) {
-                    /// @dev set 7540 operator and move vault to claimable
-                    for (uint256 j = 0; j < asyncWithdrawSFs[i].length; j++) {
-                        (address superform,,) = asyncWithdrawSFs[i][j].getSuperform();
+                    _moveToClaimable(superform, action, multiSuperformsData, singleSuperformsData, i, false);
 
-                        _moveToClaimable(superform, action, multiSuperformsData, singleSuperformsData, i, false);
-                    }
-                    uint256 asyncWithdrawPerformed;
-                    /// @dev perform the calls from beginning to last because of easiness in passing unlock id
-                    for (uint256 j = countAsyncWithdraw[i]; j > 0; j--) {
-                        vm.prank(deployer);
-                        asyncStateRegistry.finalizeWithdrawPayload(
-                            currentWithdrawPayloadCounter - asyncWithdrawPerformed,
-                            GENERATE_WITHDRAW_TX_DATA_ON_DST
-                                ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][asyncRedeemIndexes[DST_CHAINS[i]][j]]
-                                : bytes("")
-                        );
-
-                        /// @dev tries to process already finalized payload
-                        vm.prank(deployer);
-                        vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
-                        asyncStateRegistry.finalizeWithdrawPayload(
-                            currentWithdrawPayloadCounter - asyncWithdrawPerformed,
-                            GENERATE_WITHDRAW_TX_DATA_ON_DST
-                                ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][asyncRedeemIndexes[DST_CHAINS[i]][j]]
-                                : bytes("")
-                        );
-                        ++asyncWithdrawPerformed;
-                    }
+                    vm.prank(deployer);
+                    asyncStateRegistry.claimAvailableRedeems(
+                        users[action.user],
+                        asyncWithdrawSFs[i][j],
+                        GENERATE_WITHDRAW_TX_DATA_ON_DST
+                            ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][asyncRedeemIndexes[DST_CHAINS[i]][j]]
+                            : bytes("")
+                    );
                 }
             }
             if (countAsyncDeposit[i] > 0) {
@@ -1776,7 +1768,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                             currentSyncWithdrawTxDataPayloadCounter - syncWithdrawPerformed
                         );
                         vm.prank(deployer);
-                        asyncStateRegistry.finalizeSyncWithdrawTxDataPayload{ value: nativeFee }(
+                        asyncStateRegistry.processSyncWithdrawWithUpdatedTxData{ value: nativeFee }(
                             currentSyncWithdrawTxDataPayloadCounter - syncWithdrawPerformed,
                             GENERATE_WITHDRAW_TX_DATA_ON_DST
                                 ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][asyncDepositIndexes[DST_CHAINS[i]][j]]
@@ -1786,7 +1778,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         /// @dev tries to process already finalized payload
                         vm.prank(deployer);
                         vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
-                        asyncStateRegistry.finalizeSyncWithdrawTxDataPayload(
+                        asyncStateRegistry.processSyncWithdrawWithUpdatedTxData(
                             currentSyncWithdrawTxDataPayloadCounter - syncWithdrawPerformed,
                             GENERATE_WITHDRAW_TX_DATA_ON_DST
                                 ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][asyncDepositIndexes[DST_CHAINS[i]][j]]
