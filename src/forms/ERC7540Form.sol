@@ -4,7 +4,9 @@ pragma solidity ^0.8.23;
 import { BaseForm } from "src/BaseForm.sol";
 import { LiquidityHandler } from "src/crosschain-liquidity/LiquidityHandler.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
-import { IAsyncStateRegistry, SyncWithdrawTxDataPayload } from "src/interfaces/IAsyncStateRegistry.sol";
+import { IBaseAsyncStateRegistry, SyncWithdrawTxDataPayload } from "src/interfaces/IBaseAsyncStateRegistry.sol";
+import { IAsyncStateRegistry } from "src/interfaces/IAsyncStateRegistry.sol";
+
 import { IEmergencyQueue } from "src/interfaces/IEmergencyQueue.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { Error } from "src/libraries/Error.sol";
@@ -425,10 +427,8 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
         if (vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
 
         if (vaultKind == VaultKind.DEPOSIT_ASYNC || vaultKind == VaultKind.FULLY_ASYNC) {
-            _requestDirectDeposit(singleVaultData_);
-
             /// @dev state registry for re-processing at a later date
-            _updateAccount(0, CHAIN_ID, singleVaultData_, true);
+            _updateAccount(0, CHAIN_ID, true, _requestDirectDeposit(singleVaultData_), singleVaultData_);
             shares = 0;
         } else {
             shares = _processDirectDeposit(singleVaultData_);
@@ -438,17 +438,12 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
     }
 
     /// @dev calls the vault to request direct async deposit
-    function _requestDirectDeposit(InitSingleVaultData memory singleVaultData_)
-        internal
-        returns (uint256 assetsToDeposit, uint256 requestId)
-    {
-        assetsToDeposit = _directMoveTokensIn(singleVaultData_);
+    function _requestDirectDeposit(InitSingleVaultData memory singleVaultData_) internal returns (uint256 requestId) {
+        uint256 assetsToDeposit = _directMoveTokensIn(singleVaultData_);
 
         requestId = _requestDeposit(assetsToDeposit, singleVaultData_.receiverAddress);
 
         emit RequestProcessed(CHAIN_ID, CHAIN_ID, singleVaultData_.payloadId, assetsToDeposit, vault, requestId);
-
-        return (assetsToDeposit, requestId);
     }
 
     /// @dev calls the vault to process direct sync deposit
@@ -540,9 +535,8 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
         if (vaultKind == VaultKind.UNSET) revert VAULT_KIND_NOT_SET();
 
         if (vaultKind == VaultKind.DEPOSIT_ASYNC || vaultKind == VaultKind.FULLY_ASYNC) {
-            _requestXChainDeposit(singleVaultData_, srcChainId_);
             /// @dev state registry for re-processing at a later date
-            _updateAccount(1, srcChainId_, singleVaultData_, true);
+            _updateAccount(1, srcChainId_, true, _requestXChainDeposit(singleVaultData_, srcChainId_), singleVaultData_);
             shares = 0;
         } else {
             shares = _processXChainDeposit(singleVaultData_, srcChainId_);
@@ -609,9 +603,8 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
 
         if (vaultKind == VaultKind.REDEEM_ASYNC || vaultKind == VaultKind.FULLY_ASYNC) {
             if (!singleVaultData_.retain4626) {
-                _requestRedeem(singleVaultData_, CHAIN_ID);
                 /// @dev state registry for re-processing at a later date
-                _updateAccount(0, CHAIN_ID, singleVaultData_, false);
+                _updateAccount(0, CHAIN_ID, false, _requestRedeem(singleVaultData_, CHAIN_ID), singleVaultData_);
             } else {
                 /// @dev transfer shares to user and do not redeem shares for assets
                 _shareTransferOut(singleVaultData_.receiverAddress, singleVaultData_.amount);
@@ -699,9 +692,8 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
 
         if (vaultKind == VaultKind.REDEEM_ASYNC || vaultKind == VaultKind.FULLY_ASYNC) {
             if (!singleVaultData_.retain4626) {
-                _requestRedeem(singleVaultData_, srcChainId_);
                 /// @dev state registry for re-processing at a later date
-                _updateAccount(1, srcChainId_, singleVaultData_, false);
+                _updateAccount(1, srcChainId_, false, _requestRedeem(singleVaultData_, srcChainId_), singleVaultData_);
             } else {
                 /// @dev transfer shares to user and do not redeem shares for assets
                 _shareTransferOut(singleVaultData_.receiverAddress, singleVaultData_.amount);
@@ -931,20 +923,21 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
     function _updateAccount(
         uint8 type_,
         uint64 srcChainId_,
-        InitSingleVaultData memory data_,
-        bool isDeposit_
+        bool isDeposit_,
+        uint256 requestId_,
+        InitSingleVaultData memory data_
     )
         internal
     {
         IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY"))).updateAccount(
-            type_, srcChainId_, data_, isDeposit_
+            type_, srcChainId_, isDeposit_, requestId_, data_
         );
     }
 
     /// @dev stores the sync withdraw payload
     function _storeSyncWithdrawPayload(uint64 srcChainId_, InitSingleVaultData memory data_) internal {
         // send info to async state registry for txData update
-        IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY")))
+        IBaseAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY")))
             .receiveSyncWithdrawTxDataPayload(srcChainId_, data_);
     }
 

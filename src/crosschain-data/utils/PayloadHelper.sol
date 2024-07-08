@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.sol";
-import { IAsyncStateRegistry, SyncWithdrawTxDataPayload } from "src/interfaces/IAsyncStateRegistry.sol";
+import { IBaseAsyncStateRegistry, SyncWithdrawTxDataPayload } from "src/interfaces/IBaseAsyncStateRegistry.sol";
 import { IPayloadHelper } from "src/interfaces/IPayloadHelper.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
@@ -170,8 +170,8 @@ contract PayloadHelper is IPayloadHelper {
         override
         returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
     {
-        IAsyncStateRegistry asyncStateRegistry =
-            IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY")));
+        IBaseAsyncStateRegistry asyncStateRegistry =
+            IBaseAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY")));
 
         if (syncWithdrawPayloadId_ > asyncStateRegistry.syncWithdrawTxDataPayloadCounter()) {
             revert Error.INVALID_PAYLOAD_ID();
