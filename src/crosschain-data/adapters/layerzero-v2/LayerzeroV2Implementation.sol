@@ -261,21 +261,6 @@ contract LayerzeroV2Implementation is IAmbImplementation, ILayerZeroReceiver {
         return 0;
     }
 
-    /// @notice indicates whether an address is an approved composeMsg sender to the endpoint.
-    /// @dev the default sender IS the OAppReceiver implementer.
-    function isComposeMsgSender(
-        Origin calldata, /*_origin*/
-        bytes calldata, /*_message*/
-        address _sender
-    )
-        public
-        view
-        virtual
-        returns (bool)
-    {
-        return _sender == address(this);
-    }
-
     //////////////////////////////////////////////////////////////
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
