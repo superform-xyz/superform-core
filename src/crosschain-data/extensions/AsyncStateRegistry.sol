@@ -77,12 +77,10 @@ contract AsyncStateRegistry is BaseAsyncStateRegistry, IAsyncStateRegistry {
         override
         onlyAsyncSuperform(data_.superformId)
     {
+        if (data_.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
+
         /// @dev note that as per the standard, if requestId_ is returned as 0, it means it will always be zero
         RequestConfig storage config = requestConfigs[data_.receiverAddress][data_.superformId];
-
-        if (data_.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
-        uint8[] memory ambIds;
-        bool is7540;
 
         config.isXChain = type_;
 
@@ -100,9 +98,11 @@ contract AsyncStateRegistry is BaseAsyncStateRegistry, IAsyncStateRegistry {
 
         if (!isDeposit_) config.currentLiqRequest = data_.liqData;
 
-        if (type_ == 1) {
-            (is7540, ambIds) = _decode7540ExtraFormData(data_.superformId, data_.extraFormData);
+        if (type_ == 1 && isDeposit_) {
+            (bool is7540, uint8[] memory ambIds) = _decode7540ExtraFormData(data_.superformId, data_.extraFormData);
+
             if (!(is7540 && ambIds.length > 0)) revert ERC7540_AMBIDS_NOT_ENCODED();
+
             config.ambIds = ambIds;
 
             /// @dev TODO can check ambs length is greater than quorum

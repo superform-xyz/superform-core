@@ -2396,6 +2396,7 @@ abstract contract BaseSetup is StdInvariant, Test {
             )
         );
 
+        vars.paymentHelper = PaymentHelper(contracts[vars.dstChainId][bytes32(bytes("PaymentHelper"))]);
         (msgValue,) = vars.paymentHelper.calculateAMBData(vars.srcChainId, selectedAmbIds, vars.message);
     }
 
