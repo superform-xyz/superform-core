@@ -101,6 +101,7 @@ import { IPermit2 } from "src/vendor/dragonfly-xyz/IPermit2.sol";
 import { IAuthorizeOperator } from "src/vendor/centrifuge/IERC7540.sol";
 import { TimelockStateRegistry } from "src/crosschain-data/extensions/TimelockStateRegistry.sol";
 import { AsyncStateRegistry } from "src/crosschain-data/extensions/AsyncStateRegistry.sol";
+import { RequestConfig } from "src/interfaces/IAsyncStateRegistry.sol";
 import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
 import { PaymentHelper } from "src/payments/PaymentHelper.sol";
 import { IPaymentHelperV2 as IPaymentHelper } from "src/interfaces/IPaymentHelperV2.sol";
@@ -2374,7 +2375,8 @@ abstract contract BaseSetup is StdInvariant, Test {
     function _generateAckGasFeesAndParamsForAsyncDepositCallback(
         bytes memory chainIds_,
         uint8[] memory selectedAmbIds,
-        uint256 asyncDepositPayloadId
+        address user_,
+        uint256 superformId_
     )
         internal
         view
@@ -2383,18 +2385,18 @@ abstract contract BaseSetup is StdInvariant, Test {
         LocalAckVars memory vars;
         (vars.srcChainId, vars.dstChainId) = abi.decode(chainIds_, (uint64, uint64));
 
-        address _paymentHelper = contracts[vars.dstChainId][bytes32(bytes("PaymentHelper"))];
-        vars.paymentHelper = PaymentHelper(_paymentHelper);
+        AsyncStateRegistry asr = AsyncStateRegistry(contracts[vars.dstChainId][bytes32(bytes("AsyncStateRegistry"))]);
 
-        address _payloadHelper = contracts[vars.dstChainId][bytes32(bytes("PayloadHelper"))];
-        vars.payloadHelper = PayloadHelper(_payloadHelper);
+        RequestConfig memory config = asr.getRequestConfig(user_, superformId_);
 
-        (,, uint256 payloadId, uint256 superformId, uint256 amount) =
-            vars.payloadHelper.decodeAsyncDepositPayload(asyncDepositPayloadId);
+        vars.message = abi.encode(
+            AMBMessage(
+                2 ** 256 - 1,
+                abi.encode(ReturnSingleData(config.currentReturnDataPayloadId, superformId_, type(uint256).max))
+            )
+        );
 
-        vars.message =
-            abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superformId, amount))));
-
+        vars.paymentHelper = PaymentHelper(contracts[vars.dstChainId][bytes32(bytes("PaymentHelper"))]);
         (msgValue,) = vars.paymentHelper.calculateAMBData(vars.srcChainId, selectedAmbIds, vars.message);
     }
 

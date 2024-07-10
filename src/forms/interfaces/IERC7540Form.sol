@@ -2,12 +2,8 @@
 pragma solidity ^0.8.23;
 
 import { IERC4626Form } from "./IERC4626Form.sol";
-import { InitSingleVaultData, TimelockPayload } from "../../types/DataTypes.sol";
-import {
-    AsyncWithdrawPayload,
-    AsyncDepositPayload,
-    SyncWithdrawTxDataPayload
-} from "../../interfaces/IAsyncStateRegistry.sol";
+import { InitSingleVaultData, TimelockPayload, LiqRequest } from "../../types/DataTypes.sol";
+import { SyncWithdrawTxDataPayload } from "../../interfaces/IBaseAsyncStateRegistry.sol";
 
 /// @title IERC7540FormBase
 /// @author Zeropoint Labs
@@ -42,17 +38,27 @@ interface IERC7540FormBase {
 
     /// @dev this function is called when the shares are ready to be transferred to the form or to receiverAddress (if
     /// retain4626 is set)
-    /// @param p_ the payload data
-    /// @return shares the amount of shares minted
-    function claimDeposit(AsyncDepositPayload memory p_) external returns (uint256 shares);
+    function claimDeposit(
+        address user_,
+        uint256 superformId_,
+        uint256 amountToClaim_,
+        bool retain4626_
+    )
+        external
+        returns (uint256 shares);
 
     /// @dev this function is called the withdraw request is ready to be claimed
-    /// @dev retain4626 flag is not added in this implementation unlike in ERC4626Implementation.sol because
-    /// @dev if a vault fails to redeem at this stage, superPositions are minted back to the user and he can
-    /// @dev try again with retain4626 flag set and take their shares directly
-    /// @param p_ the payload data
-    /// @return assets the amount of assets withdrawn
-    function claimWithdraw(AsyncWithdrawPayload memory p_) external returns (uint256 assets);
+    function claimWithdraw(
+        address user_,
+        uint256 superformId_,
+        uint256 amountToClaim_,
+        uint256 maxSlippage_,
+        uint8 isXChain_,
+        uint64 srcChainId_,
+        LiqRequest memory liqData_
+    )
+        external
+        returns (uint256 assets);
 
     /// @dev this function is called when txData has been updated for asyncDeposit forms wheneve required
     /// @param p_ the payload data
