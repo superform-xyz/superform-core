@@ -1714,6 +1714,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         view
         returns (bytes memory txData)
     {
+
         LiqBridgeTxDataArgs memory liqDataArgs = TX_DATA_TO_UPDATE_ON_DST[dstChain].generateTxDataArgs[asyncRedeemIndex];
 
         liqDataArgs.amount = IERC7540Form(superform).getClaimableRedeemRequest(0, user);
@@ -1727,6 +1728,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         address superform;
         uint256 syncWithdrawPerformed;
         uint256 nativeFee;
+        uint256 asyncRedeemIndex;
         bytes txData;
         IAsyncStateRegistry asyncStateRegistry;
         Vm.Log[] logs;
@@ -1757,11 +1759,18 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     _authorizeOperator(v.superform, action.user);
 
                     _moveToClaimable(v.superform, action, multiSuperformsData, singleSuperformsData, i, false);
-
+                    if (action.multiVaults) {
+                        for (uint256 k = 0; k < multiSuperformsData[i].superformIds.length; ++k) {
+                            if (multiSuperformsData[i].superformIds[k] == asyncWithdrawSFs[i][j]) {
+                                v.asyncRedeemIndex = k;
+                                break;
+                            }
+                        }
+                    } else {
+                        v.asyncRedeemIndex = 0;
+                    }
                     v.txData = GENERATE_WITHDRAW_TX_DATA_ON_DST
-                        ? _generateClaimableRedeemTxData(
-                            v.superform, users[action.user], asyncRedeemIndexes[DST_CHAINS[i]][j], DST_CHAINS[i]
-                        )
+                        ? _generateClaimableRedeemTxData(v.superform, users[action.user], v.asyncRedeemIndex, DST_CHAINS[i])
                         : bytes("");
 
                     vm.prank(deployer);
@@ -1776,10 +1785,19 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
                     _moveToClaimable(v.superform, action, multiSuperformsData, singleSuperformsData, i, false);
 
+                    if (action.multiVaults) {
+                        for (uint256 k = 0; k < multiSuperformsData[i].superformIds.length; ++k) {
+                            if (multiSuperformsData[i].superformIds[k] == revertingAsyncWithdrawSFs[i][j]) {
+                                v.asyncRedeemIndex = k;
+                                break;
+                            }
+                        }
+                    } else {
+                        v.asyncRedeemIndex = 0;
+                    }
+
                     v.txData = GENERATE_WITHDRAW_TX_DATA_ON_DST
-                        ? _generateClaimableRedeemTxData(
-                            v.superform, users[action.user], asyncRedeemIndexes[DST_CHAINS[i]][j], DST_CHAINS[i]
-                        )
+                        ? _generateClaimableRedeemTxData(v.superform, users[action.user], v.asyncRedeemIndex, DST_CHAINS[i])
                         : bytes("");
                     vm.prank(deployer);
 
@@ -2867,6 +2885,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 }
                 if (vars.formKinds[j] == 4 && (vars.vaultIds[j] == 10 || vars.vaultIds[j] == 12)) {
                     ++countAsyncWithdraw[dst];
+
                     asyncRedeemIndexes[chain1][countAsyncWithdraw[dst]] = j;
                 }
             }
