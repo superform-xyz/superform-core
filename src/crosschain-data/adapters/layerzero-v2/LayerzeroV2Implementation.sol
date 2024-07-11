@@ -302,7 +302,7 @@ contract LayerzeroV2Implementation is IAmbImplementation, ILayerZeroReceiver {
         returns (MessagingReceipt memory receipt)
     {
         // @dev push corresponding fees to the endpoint
-        if (msg.value != _fee.nativeFee || _fee.lzTokenFee != 0) revert INVALID_MSG_FEE();
+        if (msg.value < _fee.nativeFee || _fee.lzTokenFee != 0) revert INVALID_MSG_FEE();
 
         return endpoint.send{ value: msg.value }(
             MessagingParams(_dstEid, _getPeerOrRevert(_dstEid), _message, _options, false), _refundAddress
