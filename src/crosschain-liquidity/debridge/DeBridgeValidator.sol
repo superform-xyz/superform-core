@@ -70,7 +70,7 @@ contract DeBridgeValidator is BridgeValidator {
         address receiver = _castToAddress(deBridgeQuote.receiverDst);
 
         if (args_.deposit) {
-            if (args_.srcChainId == args_.dstChainId) {
+            if (args_.srcChainId == args_.dstChainId || args_.dstChainId != args_.liqDstChainId) {
                 revert Error.INVALID_ACTION();
             }
 

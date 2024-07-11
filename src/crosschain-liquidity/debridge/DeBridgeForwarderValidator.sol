@@ -92,7 +92,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         /// @dev 2. receiver address validation
         /// @dev allows dst swaps by coupling debridge with other bridges
         if (args_.deposit) {
-            if (args_.srcChainId == args_.dstChainId) {
+            if (args_.srcChainId == args_.dstChainId || args_.dstChainId != args_.liqDstChainId) {
                 revert Error.INVALID_ACTION();
             }
 
