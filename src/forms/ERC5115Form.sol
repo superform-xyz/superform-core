@@ -516,17 +516,12 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         address sharesReceiver = singleVaultData_.retain4626 ? singleVaultData_.receiverAddress : address(this);
 
         uint256 sharesBalanceBefore = v.balanceOf(sharesReceiver);
+        uint256 outputAmountMin = singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage);
         /// @dev WARNING: validate if minSharesOut can be outputAmount (the result of previewDeposit)
-        shares = v.deposit(sharesReceiver, assetDifference_, singleVaultData_.outputAmount);
+        shares = v.deposit(sharesReceiver, assetDifference_, outputAmountMin);
         uint256 sharesBalanceAfter = v.balanceOf(sharesReceiver);
 
-        if (
-            (sharesBalanceAfter - sharesBalanceBefore != shares)
-                || (
-                    ENTIRE_SLIPPAGE * shares
-                        < singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)
-                )
-        ) {
+        if ((sharesBalanceAfter - sharesBalanceBefore != shares) || (ENTIRE_SLIPPAGE * shares < outputAmountMin)) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
 
