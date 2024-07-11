@@ -193,7 +193,7 @@ contract DeBridgeForwarderValidatorTest is ProtocolActions {
 
         vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
         validator.validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(txData, ETH, AVAX, ETH, true, address(0), receiver, NATIVE, NATIVE)
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, AVAX, ARBI, true, address(0), receiver, NATIVE, NATIVE)
         );
     }
 

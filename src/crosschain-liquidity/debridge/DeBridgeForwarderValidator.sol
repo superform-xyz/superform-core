@@ -80,7 +80,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         }
 
         if (
-            superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), args_.dstChainId)
+            superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), args_.liqDstChainId)
                 != deBridgeQuote.orderAuthorityAddressDst
         ) revert DeBridgeError.INVALID_DEBRIDGE_AUTHORITY();
 
