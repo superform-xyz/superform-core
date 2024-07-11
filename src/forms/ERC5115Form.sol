@@ -27,6 +27,9 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     /// @dev Identifier for the CoreStateRegistry
     uint8 constant stateRegistryId = 1;
 
+    /// @dev Tolerance constant to account for tokens with rounding issues on transfer
+    uint256 constant TOLERANCE_CONSTANT = 10 wei;
+
     /// @dev Represents 100% in basis points
     uint256 internal constant ENTIRE_SLIPPAGE = 10_000;
 
@@ -312,11 +315,16 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
             revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
         }
 
+        uint256 balanceBefore = IERC20(vaultTokenIn).balanceOf(address(this));
         /// @dev pulling from sender, to auto-send tokens back in case of failed deposits / reverts
         IERC20(vaultTokenIn).safeTransferFrom(msg.sender, address(this), singleVaultData_.amount);
 
         /// @dev allowance is modified inside of the IERC20.transferFrom() call
         IERC20(vaultTokenIn).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
+
+        /// @dev to account for tokens with rounding issues during transfer like stETH
+        /// @dev please refer: https://github.com/lidofinance/lido-dao/issues/442
+        singleVaultData_.amount = IERC20(vaultTokenIn).balanceOf(address(this)) - balanceBefore;
 
         /// @dev deposit vaultTokenIn for shares and add extra validation check to ensure intended ERC5115 behavior
         shares = _depositAndValidate(singleVaultData_, singleVaultData_.amount);
