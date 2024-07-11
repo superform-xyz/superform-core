@@ -243,6 +243,8 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
                 _checkAllowanceAndTransferIn(vars.sendingToken, vars.inputAmount);
             }
 
+            vars.chainId = CHAIN_ID;
+
             vars.bridgeValidator.validateTxData(
                 IBridgeValidator.ValidateTxDataArgs(
                     singleVaultData_.liqData.txData,
