@@ -1456,6 +1456,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                                 if (vault == 0xC6e3Bec489bc661cf4e4c59236C1B79f9924cAB7 && LAUNCH_TESTNETS) {
                                     address mgr = TrancheTokenLike(IERC7540(vault).share()).restrictionManager();
                                     vm.startPrank(RestrictionManagerLike(mgr).root());
+                                    /// @dev TODO remove updateMemeber can be removed for superform
                                     RestrictionManagerLike(mgr).updateMember(vars.superform, type(uint64).max);
                                     RestrictionManagerLike(mgr).updateMember(users[0], type(uint64).max);
                                     RestrictionManagerLike(mgr).updateMember(users[1], type(uint64).max);

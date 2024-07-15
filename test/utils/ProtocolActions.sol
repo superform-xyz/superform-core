@@ -1341,6 +1341,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
     {
         address poolManager = InvestmentManagerLike(investmentManager).poolManager();
 
+        /// @dev TODO this is now getTranchePrice
         (uint128 latestPrice,) = PoolManagerLike(poolManager).getTrancheTokenPrice(
             ERC7540VaultLike(vault).poolId(), ERC7540VaultLike(vault).trancheId(), asset
         );
@@ -1348,6 +1349,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
         tranchesPayout = uint128(amount * 10 ** 18 / latestPrice);
 
         uint128 assetId = PoolManagerLike(poolManager).assetToId(asset);
+
+        /// @dev TODO remove last arg
         InvestmentManagerLike(investmentManager).fulfillDepositRequest(
             ERC7540VaultLike(vault).poolId(),
             ERC7540VaultLike(vault).trancheId(),
@@ -1371,12 +1374,15 @@ abstract contract ProtocolActions is CommonProtocolActions {
     {
         address poolManager = InvestmentManagerLike(investmentManager).poolManager();
 
+            /// @dev TODO this is now getTranchePrice
         (uint128 latestPrice,) = PoolManagerLike(poolManager).getTrancheTokenPrice(
             ERC7540VaultLike(vault).poolId(), ERC7540VaultLike(vault).trancheId(), asset
         );
 
         assetPayout = uint128(amount * latestPrice / 10 ** 18);
         uint128 assetId = PoolManagerLike(poolManager).assetToId(asset);
+
+        /// @dev TODO remove last arg
         InvestmentManagerLike(investmentManager).fulfillRedeemRequest(
             ERC7540VaultLike(vault).poolId(),
             ERC7540VaultLike(vault).trancheId(),
