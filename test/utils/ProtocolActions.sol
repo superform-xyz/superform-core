@@ -919,25 +919,35 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         internalVars.k = 0;
         for (uint256 i = 0; i < chainIds.length; ++i) {
+            uint256 trueChainIdIndex;
+
+            for (uint256 j = 0; j < defaultChainIds.length; j++) {
+                if (chainIds[i] == defaultChainIds[j]) {
+                    trueChainIdIndex = j;
+                    break;
+                }
+            }
             if (chainIds[i] == CHAIN_0) {
-                internalVars.axelarFromChain = axelar_chainIds[i];
+                internalVars.axelarFromChain = axelar_chainIds[trueChainIdIndex];
             }
 
             for (uint256 j = 0; j < vars.nUniqueDsts; ++j) {
                 if (uniqueDSTs[j] == chainIds[i] && chainIds[i] != CHAIN_0) {
-                    internalVars.toMailboxes[internalVars.k] = hyperlaneMailboxes[i];
-                    internalVars.expDstDomains[internalVars.k] = hyperlane_chainIds[i];
+                    internalVars.toMailboxes[internalVars.k] = hyperlaneMailboxes[trueChainIdIndex];
+                    internalVars.expDstDomains[internalVars.k] = hyperlane_chainIds[trueChainIdIndex];
 
-                    internalVars.endpoints[internalVars.k] = lzEndpoints[i];
+                    internalVars.endpoints[internalVars.k] = lzEndpoints[trueChainIdIndex];
                     internalVars.endpointsV2[internalVars.k] = lzV2Endpoint;
 
-                    internalVars.lzChainIds[internalVars.k] = lz_chainIds[i];
-                    internalVars.lzChainIdsV2[internalVars.k] = lz_v2_chainIds[i];
+                    internalVars.lzChainIds[internalVars.k] = lz_chainIds[trueChainIdIndex];
+                    internalVars.lzChainIdsV2[internalVars.k] = lz_v2_chainIds[trueChainIdIndex];
 
-                    internalVars.axelarGateways[internalVars.k] = axelarGateway[i];
-                    internalVars.axelarChainIds[internalVars.k] = axelar_chainIds[i];
+                    internalVars.axelarGateways[internalVars.k] = axelarGateway[trueChainIdIndex];
+                    internalVars.axelarChainIds[internalVars.k] = axelar_chainIds[trueChainIdIndex];
 
                     internalVars.forkIds[internalVars.k] = FORKS[chainIds[i]];
+                    console.log("chainIds", chainIds[i]);
+                    console.log("FORKS[chainIds[i]]", FORKS[chainIds[i]]);
 
                     internalVars.wormholeRelayers[internalVars.k] = wormholeRelayer;
                     internalVars.expDstChainAddresses[internalVars.k] =
@@ -980,6 +990,13 @@ abstract contract ProtocolActions is CommonProtocolActions {
             }
 
             if (AMBs[index] == 3) {
+                console.log("WORMHOLE_CHAIN_IDS[CHAIN_0]", WORMHOLE_CHAIN_IDS[CHAIN_0]);
+                console.log("CHAIN_0", CHAIN_0);
+                console.log("forkid", internalVars.forkIds[0]);
+
+                console.log("exp", internalVars.expDstChainAddresses[0]);
+                console.log("wormholeRelayers", internalVars.wormholeRelayers[0]);
+
                 WormholeHelper(getContract(CHAIN_0, "WormholeHelper")).help(
                     WORMHOLE_CHAIN_IDS[CHAIN_0],
                     internalVars.forkIds,
@@ -1374,7 +1391,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
     {
         address poolManager = InvestmentManagerLike(investmentManager).poolManager();
 
-            /// @dev TODO this is now getTranchePrice
+        /// @dev TODO this is now getTranchePrice
         (uint128 latestPrice,) = PoolManagerLike(poolManager).getTrancheTokenPrice(
             ERC7540VaultLike(vault).poolId(), ERC7540VaultLike(vault).trancheId(), asset
         );
@@ -1720,7 +1737,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
         view
         returns (bytes memory txData)
     {
-
         LiqBridgeTxDataArgs memory liqDataArgs = TX_DATA_TO_UPDATE_ON_DST[dstChain].generateTxDataArgs[asyncRedeemIndex];
 
         liqDataArgs.amount = IERC7540Form(superform).getClaimableRedeemRequest(0, user);
@@ -3483,6 +3499,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             /// @notice ID: 3 Wormhole
             if (AMBs[i] == 3) {
+                console.log("to chain", TO_CHAIN);
+                console.log("from chain", FROM_CHAIN);
                 WormholeHelper(getContract(TO_CHAIN, "WormholeHelper")).help(
                     WORMHOLE_CHAIN_IDS[TO_CHAIN], FORKS[FROM_CHAIN], wormholeRelayer, logs
                 );

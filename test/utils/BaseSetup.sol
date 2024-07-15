@@ -398,7 +398,9 @@ abstract contract BaseSetup is StdInvariant, Test {
     uint64 public constant BSC_TESTNET = 97;
 
     uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 11_155_111, 97];
+    uint64[] public defaultChainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 11_155_111, 97];
 
+    mapping(uint64 chainId => bool selected) selectedChainIds;
     /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
     uint16 public constant LZ_ETH = 101;
     uint16 public constant LZ_BSC = 102;
@@ -526,7 +528,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         [address(0), address(0), address(0), 0x205E10d3c4C87E26eB66B1B270b71b7708494dB9, address(0), address(0)];
 
     function setUp() public virtual {
-        if (!LAUNCH_TESTNETS) chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
+        //if (!LAUNCH_TESTNETS) chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
 
         _preDeploymentSetup(true, false);
 
@@ -637,6 +639,13 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev deployments
         for (uint256 i = 0; i < chainIds.length; ++i) {
             vars.chainId = chainIds[i];
+
+            for (uint256 j = 0; j < defaultChainIds.length; j++) {
+                if (vars.chainId == defaultChainIds[j]) {
+                    vars.trueChainIdIndex = j;
+                    break;
+                }
+            }
 
             vars.fork = FORKS[vars.chainId];
             vars.ambAddresses = new address[](ambIds.length);
@@ -770,7 +779,7 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.lzImplementation = address(new LayerzeroImplementation{ salt: salt }(vars.superRegistryC));
             contracts[vars.chainId][bytes32(bytes("LayerzeroImplementation"))] = vars.lzImplementation;
 
-            LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[i]);
+            LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[vars.trueChainIdIndex]);
 
             /// @dev 6.1.1 - deploy Layerzero v2 implementation
             vars.lzV2Implementation = address(new LayerzeroV2Implementation{ salt: salt }(vars.superRegistryC));
@@ -783,7 +792,8 @@ abstract contract BaseSetup is StdInvariant, Test {
                 vars.hyperlaneImplementation =
                     address(new HyperlaneImplementation{ salt: salt }(SuperRegistry(vars.superRegistry)));
                 HyperlaneImplementation(vars.hyperlaneImplementation).setHyperlaneConfig(
-                    IMailbox(hyperlaneMailboxes[i]), IInterchainGasPaymaster(hyperlanePaymasters[i])
+                    IMailbox(hyperlaneMailboxes[vars.trueChainIdIndex]),
+                    IInterchainGasPaymaster(hyperlanePaymasters[vars.trueChainIdIndex])
                 );
                 contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
             }
@@ -794,22 +804,27 @@ abstract contract BaseSetup is StdInvariant, Test {
 
             WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayer);
             /// set refund chain id to wormhole chain id
-            WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(wormhole_chainIds[i]);
+            WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(
+                wormhole_chainIds[vars.trueChainIdIndex]
+            );
 
             /// @dev 6.4- deploy Wormhole Specialized Relayer Implementation
             vars.wormholeSRImplementation = address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC, 3));
             contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
 
-            WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[i]);
+            WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[vars.trueChainIdIndex]);
             WormholeSRImplementation(vars.wormholeSRImplementation).setRelayer(deployer);
 
             /// @dev 6.5- deploy Axelar Implementation
             vars.axelarImplementation = address(new AxelarImplementation{ salt: salt }(vars.superRegistryC));
             contracts[vars.chainId][bytes32(bytes("AxelarImplementation"))] = vars.axelarImplementation;
 
-            AxelarImplementation(vars.axelarImplementation).setAxelarConfig(IAxelarGateway(axelarGateway[i]));
+            AxelarImplementation(vars.axelarImplementation).setAxelarConfig(
+                IAxelarGateway(axelarGateway[vars.trueChainIdIndex])
+            );
             AxelarImplementation(vars.axelarImplementation).setAxelarGasService(
-                IAxelarGasService(axelarGasService[i]), IInterchainGasEstimation(axelarGasService[i])
+                IAxelarGasService(axelarGasService[vars.trueChainIdIndex]),
+                IInterchainGasEstimation(axelarGasService[vars.trueChainIdIndex])
             );
 
             vars.ambAddresses[0] = vars.lzImplementation;
@@ -1188,21 +1203,34 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.paymentHelper = getContract(vars.chainId, "PaymentHelper");
             vars.superRegistryC = SuperRegistry(payable(vars.superRegistry));
             vars.superRegistryC.setVaultLimitPerDestination(vars.chainId, 5);
+            console.log("---");
 
+            console.log("setting config for", vars.chainId);
             /// @dev Set all trusted remotes for each chain, configure amb chains ids, setupQuorum for all chains as 1
             /// and setup PaymentHelper
             /// @dev has to be performed after all main contracts have been deployed on all chains
             for (uint256 j = 0; j < chainIds.length; ++j) {
+                uint256 trueChainIdIndex;
+                // find selected chain ids and assign to selectedChainIds mapping
+                for (uint256 k = 0; k < defaultChainIds.length; k++) {
+                    if (chainIds[j] == defaultChainIds[k]) {
+                        trueChainIdIndex = k;
+                        break;
+                    }
+                }
                 if (vars.chainId != chainIds[j]) {
                     vars.dstChainId = chainIds[j];
 
-                    vars.dstLzChainId = lz_chainIds[j];
-                    vars.dstHypChainId = hyperlane_chainIds[j];
-                    vars.dstWormholeChainId = wormhole_chainIds[j];
+                    vars.dstLzChainId = lz_chainIds[trueChainIdIndex];
+                    vars.dstHypChainId = hyperlane_chainIds[trueChainIdIndex];
+                    vars.dstWormholeChainId = wormhole_chainIds[trueChainIdIndex];
 
+                    console.log("vars.dstChainId", vars.dstChainId);
+                    console.log("trueChainIdIndex", trueChainIdIndex);
                     vars.dstLzImplementation = getContract(vars.dstChainId, "LayerzeroImplementation");
                     vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
                     vars.dstWormholeARImplementation = getContract(vars.dstChainId, "WormholeARImplementation");
+                    console.log("vars.dstWormholeARImplementation", vars.dstWormholeARImplementation);
                     vars.dstWormholeSRImplementation = getContract(vars.dstChainId, "WormholeSRImplementation");
                     vars.dstwormholeBroadcastHelper = getContract(vars.dstChainId, "WormholeBroadcastHelper");
                     vars.dstAxelarImplementation = getContract(vars.dstChainId, "AxelarImplementation");
@@ -1215,12 +1243,12 @@ abstract contract BaseSetup is StdInvariant, Test {
                     );
 
                     LayerzeroV2Implementation(payable(vars.lzV2Implementation)).setPeer(
-                        lz_v2_chainIds[j],
+                        lz_v2_chainIds[trueChainIdIndex],
                         bytes32(uint256(uint160(getContract(vars.dstChainId, "LayerzeroV2Implementation"))))
                     );
 
                     LayerzeroV2Implementation(payable(vars.lzV2Implementation)).setChainId(
-                        vars.dstChainId, lz_v2_chainIds[j]
+                        vars.dstChainId, lz_v2_chainIds[trueChainIdIndex]
                     );
 
                     if (!(vars.chainId == FANTOM || vars.dstChainId == FANTOM)) {
@@ -1242,11 +1270,11 @@ abstract contract BaseSetup is StdInvariant, Test {
                     );
 
                     AxelarImplementation(payable(vars.axelarImplementation)).setChainId(
-                        vars.dstChainId, axelar_chainIds[j]
+                        vars.dstChainId, axelar_chainIds[trueChainIdIndex]
                     );
 
                     AxelarImplementation(payable(vars.axelarImplementation)).setReceiver(
-                        axelar_chainIds[j], vars.dstAxelarImplementation
+                        axelar_chainIds[trueChainIdIndex], vars.dstAxelarImplementation
                     );
 
                     WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setChainId(
@@ -1282,8 +1310,8 @@ abstract contract BaseSetup is StdInvariant, Test {
                             abi.decode(GAS_USED[vars.dstChainId][4], (uint256)),
                             vars.dstChainId == ARBI ? 1_000_000 : 200_000,
                             abi.decode(GAS_USED[vars.dstChainId][6], (uint256)),
-                            nativePrices[j],
-                            gasPrices[j],
+                            nativePrices[trueChainIdIndex],
+                            gasPrices[trueChainIdIndex],
                             750,
                             2_000_000,
                             /// @dev ackGasCost to move a msg from dst to source
@@ -1399,10 +1427,10 @@ abstract contract BaseSetup is StdInvariant, Test {
                         vars.chainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
                     );
                     PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
-                        vars.chainId, 7, abi.encode(nativePrices[j])
+                        vars.chainId, 7, abi.encode(nativePrices[trueChainIdIndex])
                     );
                     PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
-                        vars.chainId, 8, abi.encode(gasPrices[j])
+                        vars.chainId, 8, abi.encode(gasPrices[trueChainIdIndex])
                     );
 
                     /// @dev gas per byte
@@ -1654,24 +1682,46 @@ abstract contract BaseSetup is StdInvariant, Test {
     function _preDeploymentSetup(bool pinnedBlock, bool invariant) internal {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
-        if (!invariant) {
-            forks[ETH] = pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 20_017_840) : vm.createFork(ETHEREUM_RPC_URL_QN);
-            forks[BSC] = pinnedBlock ? vm.createFork(BSC_RPC_URL, 39_315_701) : vm.createFork(BSC_RPC_URL_QN);
-            forks[AVAX] =
-                pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 46_289_230) : vm.createFork(AVALANCHE_RPC_URL_QN);
-            forks[POLY] = pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 57_754_395) : vm.createFork(POLYGON_RPC_URL_QN);
-            forks[ARBI] =
-                pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 218_289_569) : vm.createFork(ARBITRUM_RPC_URL_QN);
-            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 120_950_600) : vm.createFork(OPTIMISM_RPC_URL_QN);
-            forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL_QN);
-            forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 82_228_344) : vm.createFork(FANTOM_RPC_URL_QN);
-            if (LAUNCH_TESTNETS) {
-                forks[SEPOLIA] =
-                    pinnedBlock ? vm.createFork(SEPOLIA_RPC_URL_QN, 6_244_520) : vm.createFork(SEPOLIA_RPC_URL_QN);
-                forks[BSC_TESTNET] = pinnedBlock
-                    ? vm.createFork(BSC_TESTNET_RPC_URL_QN, 41_624_319)
-                    : vm.createFork(BSC_TESTNET_RPC_URL_QN);
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            // find selected chain ids and assign to selectedChainIds mapping
+            for (uint256 j = 0; j < defaultChainIds.length; j++) {
+                if (chainIds[i] == defaultChainIds[j]) {
+                    selectedChainIds[chainIds[i]] = true;
+                    break;
+                }
             }
+        }
+        if (!invariant) {
+            forks[ETH] = selectedChainIds[ETH]
+                ? pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 20_017_840) : vm.createFork(ETHEREUM_RPC_URL_QN)
+                : 999;
+            forks[BSC] = selectedChainIds[BSC]
+                ? pinnedBlock ? vm.createFork(BSC_RPC_URL, 39_315_701) : vm.createFork(BSC_RPC_URL_QN)
+                : 999;
+            forks[AVAX] = selectedChainIds[AVAX]
+                ? pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 46_289_230) : vm.createFork(AVALANCHE_RPC_URL_QN)
+                : 999;
+            forks[POLY] = selectedChainIds[POLY]
+                ? pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 57_754_395) : vm.createFork(POLYGON_RPC_URL_QN)
+                : 999;
+            forks[ARBI] = selectedChainIds[ARBI]
+                ? pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 218_289_569) : vm.createFork(ARBITRUM_RPC_URL_QN)
+                : 999;
+            forks[OP] = selectedChainIds[OP]
+                ? pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 120_950_600) : vm.createFork(OPTIMISM_RPC_URL_QN)
+                : 999;
+            forks[BASE] = selectedChainIds[BASE]
+                ? pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL_QN)
+                : 999;
+            forks[FANTOM] = selectedChainIds[FANTOM]
+                ? pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 82_228_344) : vm.createFork(FANTOM_RPC_URL_QN)
+                : 999;
+            forks[SEPOLIA] = selectedChainIds[SEPOLIA]
+                ? pinnedBlock ? vm.createFork(SEPOLIA_RPC_URL_QN, 6_244_520) : vm.createFork(SEPOLIA_RPC_URL_QN)
+                : 999;
+            forks[BSC_TESTNET] = selectedChainIds[BSC_TESTNET]
+                ? pinnedBlock ? vm.createFork(BSC_TESTNET_RPC_URL_QN, 41_624_319) : vm.createFork(BSC_TESTNET_RPC_URL_QN)
+                : 999;
         }
 
         mapping(uint64 => string) storage rpcURLs = RPC_URLS;
@@ -1763,9 +1813,17 @@ abstract contract BaseSetup is StdInvariant, Test {
         mapping(uint64 => uint16) storage wormholeChainIdsStorage = WORMHOLE_CHAIN_IDS;
 
         for (uint256 i = 0; i < chainIds.length; ++i) {
-            wormholeChainIdsStorage[chainIds[i]] = wormhole_chainIds[i];
-            AXELAR_GATEWAYS[chainIds[i]] = axelarGateway[i];
-            AXELAR_CHAIN_IDS[chainIds[i]] = axelar_chainIds[i];
+            uint256 trueChainIdIndex;
+
+            for (uint256 j = 0; j < defaultChainIds.length; j++) {
+                if (chainIds[i] == defaultChainIds[j]) {
+                    trueChainIdIndex = j;
+                    break;
+                }
+            }
+            wormholeChainIdsStorage[chainIds[i]] = wormhole_chainIds[trueChainIdIndex];
+            AXELAR_GATEWAYS[chainIds[i]] = axelarGateway[trueChainIdIndex];
+            AXELAR_CHAIN_IDS[chainIds[i]] = axelar_chainIds[trueChainIdIndex];
         }
 
         /// price feeds on all chains, for paymentHelper: chain => asset => priceFeed (against USD)
