@@ -124,13 +124,16 @@ contract ERC5115To4626WrapperFactory is IERC5115To4626WrapperFactory {
         override
         returns (uint256 superformId, address superform)
     {
-        WrapperMetadata memory metadata = wrappers[wrapperKey];
+        WrapperMetadata storage metadata = wrappers[wrapperKey];
 
         if (metadata.wrapper == address(0)) revert WRAPPER_DOES_NOT_EXIST();
         ISuperformFactory sf = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
 
         address formImplementation = sf.getFormImplementation(formImplementationId_);
         if (formImplementation == address(0)) revert Error.FORM_DOES_NOT_EXIST();
+
+        if (metadata.formImplementation != address(0)) revert WRAPPER_ALREADY_HAS_FORM();
+        metadata.formImplementation = formImplementation;
 
         (superformId, superform) = sf.createSuperform(formImplementationId_, metadata.wrapper);
         emit CreatedSuperformForExistingWrapper(metadata.wrapper, wrapperKey, superformId, superform);
