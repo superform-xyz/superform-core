@@ -53,6 +53,9 @@ interface IERC5115To4626WrapperFactory {
     /// @notice Reverts if the wrapper does not exist
     error WRAPPER_DOES_NOT_EXIST();
 
+    /// @notice Revert if the wrapper already has a form implementation associated with it
+    error WRAPPER_ALREADY_HAS_FORM();
+
     //////////////////////////////////////////////////////////////
     //                  EXTERNAL  FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
