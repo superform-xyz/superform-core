@@ -946,8 +946,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     internalVars.axelarChainIds[internalVars.k] = axelar_chainIds[trueChainIdIndex];
 
                     internalVars.forkIds[internalVars.k] = FORKS[chainIds[i]];
-                    console.log("chainIds", chainIds[i]);
-                    console.log("FORKS[chainIds[i]]", FORKS[chainIds[i]]);
 
                     internalVars.wormholeRelayers[internalVars.k] = wormholeRelayer;
                     internalVars.expDstChainAddresses[internalVars.k] =
@@ -990,13 +988,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
             }
 
             if (AMBs[index] == 3) {
-                console.log("WORMHOLE_CHAIN_IDS[CHAIN_0]", WORMHOLE_CHAIN_IDS[CHAIN_0]);
-                console.log("CHAIN_0", CHAIN_0);
-                console.log("forkid", internalVars.forkIds[0]);
-
-                console.log("exp", internalVars.expDstChainAddresses[0]);
-                console.log("wormholeRelayers", internalVars.wormholeRelayers[0]);
-
                 WormholeHelper(getContract(CHAIN_0, "WormholeHelper")).help(
                     WORMHOLE_CHAIN_IDS[CHAIN_0],
                     internalVars.forkIds,
@@ -3499,8 +3490,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             /// @notice ID: 3 Wormhole
             if (AMBs[i] == 3) {
-                console.log("to chain", TO_CHAIN);
-                console.log("from chain", FROM_CHAIN);
+
                 WormholeHelper(getContract(TO_CHAIN, "WormholeHelper")).help(
                     WORMHOLE_CHAIN_IDS[TO_CHAIN], FORKS[FROM_CHAIN], wormholeRelayer, logs
                 );

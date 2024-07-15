@@ -1203,9 +1203,7 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.paymentHelper = getContract(vars.chainId, "PaymentHelper");
             vars.superRegistryC = SuperRegistry(payable(vars.superRegistry));
             vars.superRegistryC.setVaultLimitPerDestination(vars.chainId, 5);
-            console.log("---");
 
-            console.log("setting config for", vars.chainId);
             /// @dev Set all trusted remotes for each chain, configure amb chains ids, setupQuorum for all chains as 1
             /// and setup PaymentHelper
             /// @dev has to be performed after all main contracts have been deployed on all chains
@@ -1225,12 +1223,9 @@ abstract contract BaseSetup is StdInvariant, Test {
                     vars.dstHypChainId = hyperlane_chainIds[trueChainIdIndex];
                     vars.dstWormholeChainId = wormhole_chainIds[trueChainIdIndex];
 
-                    console.log("vars.dstChainId", vars.dstChainId);
-                    console.log("trueChainIdIndex", trueChainIdIndex);
                     vars.dstLzImplementation = getContract(vars.dstChainId, "LayerzeroImplementation");
                     vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
                     vars.dstWormholeARImplementation = getContract(vars.dstChainId, "WormholeARImplementation");
-                    console.log("vars.dstWormholeARImplementation", vars.dstWormholeARImplementation);
                     vars.dstWormholeSRImplementation = getContract(vars.dstChainId, "WormholeSRImplementation");
                     vars.dstwormholeBroadcastHelper = getContract(vars.dstChainId, "WormholeBroadcastHelper");
                     vars.dstAxelarImplementation = getContract(vars.dstChainId, "AxelarImplementation");
