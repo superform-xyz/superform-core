@@ -62,7 +62,7 @@ contract MaliciousWithdrawVault {
     }
 
     function redeem(address, uint256, uint256) external pure returns (uint256) {
-        return 0;
+        return 10 wei;
     }
 
     function balanceOf(address) external view returns (uint256) {
