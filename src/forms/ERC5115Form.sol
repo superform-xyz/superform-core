@@ -48,12 +48,15 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IERC5115Form
-    function claimRewardTokens() external virtual override {
+    function claimRewardTokens() public virtual override {
         address[] memory rewardTokens = getRewardTokens();
-        uint256[] memory rewardAmounts = _claimRewardTokens(true);
 
-        if (rewardAmounts.length != rewardTokens.length) {
-            revert Error.ARRAY_LENGTH_MISMATCH();
+        try IERC5115To4626Wrapper(vault).claimRewards(address(this)) returns (uint256[] memory rewardAmounts) {
+            if (rewardAmounts.length != rewardTokens.length) {
+                revert Error.ARRAY_LENGTH_MISMATCH();
+            }
+        } catch {
+            revert FUNCTION_NOT_IMPLEMENTED();
         }
 
         address rewardsDistributor = superRegistry.getAddress(keccak256("REWARDS_DISTRIBUTOR"));
@@ -217,7 +220,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         override
         returns (uint256 shares)
     {
-        _claimRewardTokens(false);
+        try this.claimRewardTokens() { } catch { }
         DirectDepositLocalVars memory vars;
 
         /// @dev gets a snapshot of vault token in
@@ -639,19 +642,5 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
 
         /// @dev transfers token_ to this address
         token_.safeTransferFrom(msg.sender, address(this), amount_);
-    }
-
-    /// @dev internal function to claim reward tokens from the vault on behalf of the form
-    /// @param revertOnFail will revert if the claim rewards fail
-    function _claimRewardTokens(bool revertOnFail) internal returns (uint256[] memory) {
-        try IERC5115To4626Wrapper(vault).claimRewards(address(this)) returns (uint256[] memory rewardAmounts) {
-            return rewardAmounts;
-        } catch {
-            if (revertOnFail) {
-                revert FUNCTION_NOT_IMPLEMENTED();
-            }
-        }
-
-        return new uint256[](0);
     }
 }
