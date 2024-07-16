@@ -6,7 +6,7 @@ import "../../../utils/ProtocolActions.sol";
 
 contract SXSVDNormal4626SepoliaNoSlippageAMB23 is ProtocolActions {
     function setUp() public override {
-        chainIds = defaultChainIds;
+        chainIds = [ETH, SEPOLIA, BSC_TESTNET];
 
         LAUNCH_TESTNETS = true;
 

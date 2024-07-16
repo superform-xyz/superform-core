@@ -397,7 +397,7 @@ abstract contract BaseSetup is StdInvariant, Test {
     uint64 public constant SEPOLIA = 11_155_111;
     uint64 public constant BSC_TESTNET = 97;
 
-    uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 11_155_111, 97];
+    uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
     uint64[] public defaultChainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 11_155_111, 97];
 
     mapping(uint64 chainId => bool selected) selectedChainIds;

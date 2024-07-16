@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract SDiMVDMulti021NoNativeSlippageAMB24 is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE

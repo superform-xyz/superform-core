@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract SXSVDTimelockedRevert4626NoTokenInputSlippageAMB24 is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, OP, POLY];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
