@@ -217,6 +217,8 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
         console.log("source address:", fromWormholeFormat(sourceAddress_));
+        console.log("sourceChain_ sourceChain_:", uint256(sourceChain_));
+
         console.log("authorized impl:", authorizedImpl[sourceChain_]);
         if (fromWormholeFormat(sourceAddress_) != authorizedImpl[sourceChain_]) {
             revert Error.INVALID_SRC_SENDER();

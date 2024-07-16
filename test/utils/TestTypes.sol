@@ -125,6 +125,7 @@ struct SetupVars {
     uint16 dstLzChainId;
     uint32 dstHypChainId;
     uint16 dstWormholeChainId;
+    uint256 trueChainIdIndex;
     uint256 fork;
     address[] ambAddresses;
     address superform;

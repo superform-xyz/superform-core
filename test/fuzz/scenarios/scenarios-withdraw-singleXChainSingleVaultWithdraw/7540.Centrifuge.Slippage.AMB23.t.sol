@@ -6,8 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract SXSVW7540CentrifugeNativeSlippageAMB23 is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, BSC_TESTNET, SEPOLIA];
         LAUNCH_TESTNETS = true;
-
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE

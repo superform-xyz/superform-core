@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract MDSVDNormal5115MultiTokenInputNoSlippageDebridgeAMB23 is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, OP, POLY];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE

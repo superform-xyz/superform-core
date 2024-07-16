@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract SXMVW7540ADepositAWithdraw5115SlippageDstSwapAMB13 is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, OP];
+
         super.setUp();
 
         /*//////////////////////////////////////////////////////////////

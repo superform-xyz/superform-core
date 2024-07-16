@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract SXSVW7540WithdrawAsyncNativeRevertingDstSwapSlippageAMB23 is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, ARBI];
+
         super.setUp();
 
         /*//////////////////////////////////////////////////////////////
