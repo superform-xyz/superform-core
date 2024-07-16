@@ -559,6 +559,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         uint256 assetsBalanceBefore = IERC20(vaultTokenOut_).balanceOf(assetsReceiver);
 
         IERC20 underlyingVault = IERC20(IERC5115To4626Wrapper(vault).getUnderlying5115Vault());
+
         /// @dev have to increase allowance as shares are moved to wrapper first
         underlyingVault.safeIncreaseAllowance(vault, singleVaultData_.amount);
 
@@ -566,11 +567,10 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
 
         uint256 assetsBalanceAfter = IERC20(vaultTokenOut_).balanceOf(assetsReceiver);
 
-        /// @dev reset allowance to wrapper
-        if (underlyingVault.allowance(address(this), vault) > 0) underlyingVault.forceApprove(vault, 0);
+        if (assets < TOLERANCE_CONSTANT) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
         if (
-            (assetsBalanceAfter - assetsBalanceBefore != assets)
+            (assetsBalanceAfter - assetsBalanceBefore < assets - TOLERANCE_CONSTANT)
                 || (
                     ENTIRE_SLIPPAGE * assets
                         < singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)
@@ -579,7 +579,8 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
 
-        if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
+        /// @dev reset allowance to wrapper
+        if (underlyingVault.allowance(address(this), vault) > 0) underlyingVault.forceApprove(vault, 0);
     }
 
     /// @dev helper to validate the withdrawal amount
