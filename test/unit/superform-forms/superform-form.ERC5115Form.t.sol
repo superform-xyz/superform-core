@@ -19,6 +19,8 @@ contract MaliciousVault {
     function balanceOf(address) external pure returns (uint256) {
         return 0;
     }
+
+    function getRewardTokens() external pure returns (address[] memory) { }
 }
 
 contract VaultThatDontSpendApprovals {
@@ -78,6 +80,8 @@ contract MaliciousWithdrawVault {
     }
 
     function approve(address, uint256) external pure { }
+
+    function getRewardTokens() external pure returns (address[] memory) { }
 }
 
 contract Mock5115VaultWithNoRewards is Test {
