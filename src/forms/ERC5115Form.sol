@@ -59,8 +59,9 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
             } else {
                 address rewardsDistributor = superRegistry.getAddress(keccak256("REWARDS_DISTRIBUTOR"));
 
-                for (uint256 i = 0; i < rewardTokens.length; ++i) {
-                    IERC20 rewardToken = IERC20(rewardTokens[i]);
+                IERC20 rewardToken;
+                for (uint256 i; i < rewardTokens.length; ++i) {
+                    rewardToken = IERC20(rewardTokens[i]);
                     if (address(rewardToken) == vault) {
                         if (!avoidRevert) {
                             revert Error.CANNOT_FORWARD_4646_TOKEN();
