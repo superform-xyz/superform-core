@@ -49,7 +49,7 @@ interface IERC5115Form {
     //////////////////////////////////////////////////////////////
 
     /// @notice Claims reward tokens for the caller
-    function claimRewardTokens() external;
+    function claimRewardTokens(bool avoidRevert) external;
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //

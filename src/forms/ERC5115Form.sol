@@ -48,7 +48,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IERC5115Form
-    function claimRewardTokens() public virtual override {
+    function claimRewardTokens(bool avoidRevert) public virtual override {
         address[] memory rewardTokens = getRewardTokens();
 
         try IERC5115To4626Wrapper(vault).claimRewards(address(this)) returns (uint256[] memory rewardAmounts) {
@@ -56,7 +56,9 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
                 revert Error.ARRAY_LENGTH_MISMATCH();
             }
         } catch {
-            revert FUNCTION_NOT_IMPLEMENTED();
+            if (!avoidRevert) {
+                revert FUNCTION_NOT_IMPLEMENTED();
+            }
         }
 
         address rewardsDistributor = superRegistry.getAddress(keccak256("REWARDS_DISTRIBUTOR"));
@@ -220,7 +222,12 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         override
         returns (uint256 shares)
     {
-        try this.claimRewardTokens() { } catch { }
+        /// @dev we try to claim rewards - for vaults where one of the token in is the reward tokens, this prevents
+        /// attack behaviours that would steal
+        /// @dev those tokens from the superform
+
+        claimRewardTokens(true);
+
         DirectDepositLocalVars memory vars;
 
         /// @dev gets a snapshot of vault token in

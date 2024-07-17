@@ -258,7 +258,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
     /// @dev Test malicious rewards claim
     function test_malicious_rewardClaim() public {
         vm.expectRevert(Error.CANNOT_FORWARD_4646_TOKEN.selector);
-        malSuperformVaultTokenReward.claimRewardTokens();
+        malSuperformVaultTokenReward.claimRewardTokens(true);
     }
 
     /// @dev Test Vault Symbol
@@ -398,7 +398,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
     /// @dev Test Revert Claim Reward Tokens
     function test_superformRevertClaimRewardTokensERC5115() public {
         vm.expectRevert(IERC5115Form.FUNCTION_NOT_IMPLEMENTED.selector);
-        noRewardsSuperform.claimRewardTokens();
+        noRewardsSuperform.claimRewardTokens(false);
     }
 
     /// @dev Test Revert Get Accrued Rewards
@@ -426,7 +426,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
             rewardsBalanceBefore[i] = IERC20(rewardsSuperform.getRewardTokens()[i]).balanceOf(address(this));
         }
 
-        rewardsSuperform.claimRewardTokens();
+        rewardsSuperform.claimRewardTokens(false);
 
         for (uint256 i; i < rewardsBalanceBefore.length; ++i) {
             uint256 rewardsBalanceAfter = IERC20(rewardsSuperform.getRewardTokens()[i]).balanceOf(address(this));
@@ -1400,7 +1400,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
         SuperRegistry(getContract(ARBI, "SuperRegistry")).setAddress(rewardsId, address(0), ARBI);
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        rewardsSuperform.claimRewardTokens();
+        rewardsSuperform.claimRewardTokens(false);
     }
 
     /// @dev Test balance and transfer properties of wrapper
