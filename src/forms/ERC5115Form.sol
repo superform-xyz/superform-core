@@ -53,22 +53,27 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
 
         try IERC5115To4626Wrapper(vault).claimRewards(address(this)) returns (uint256[] memory rewardAmounts) {
             if (rewardAmounts.length != rewardTokens.length) {
-                revert Error.ARRAY_LENGTH_MISMATCH();
+                if (!avoidRevert) {
+                    revert Error.ARRAY_LENGTH_MISMATCH();
+                }
+            } else {
+                address rewardsDistributor = superRegistry.getAddress(keccak256("REWARDS_DISTRIBUTOR"));
+
+                for (uint256 i = 0; i < rewardTokens.length; ++i) {
+                    IERC20 rewardToken = IERC20(rewardTokens[i]);
+                    if (address(rewardToken) == vault) {
+                        if (!avoidRevert) {
+                            revert Error.CANNOT_FORWARD_4646_TOKEN();
+                        }
+                    } else {
+                        rewardToken.safeTransfer(rewardsDistributor, rewardToken.balanceOf(address(this)));
+                    }
+                }
             }
         } catch {
             if (!avoidRevert) {
                 revert FUNCTION_NOT_IMPLEMENTED();
             }
-        }
-
-        address rewardsDistributor = superRegistry.getAddress(keccak256("REWARDS_DISTRIBUTOR"));
-
-        IERC20 rewardToken;
-        for (uint256 i; i < rewardTokens.length; ++i) {
-            rewardToken = IERC20(rewardTokens[i]);
-            if (address(rewardToken) == vault) revert Error.CANNOT_FORWARD_4646_TOKEN();
-
-            rewardToken.safeTransfer(rewardsDistributor, rewardToken.balanceOf(address(this)));
         }
     }
 
