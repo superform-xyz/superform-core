@@ -157,9 +157,12 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         uint16 dstChainId = ambChainId[dstChainId_];
         (uint256 dstNativeAirdrop, uint256 dstGasLimit) = abi.decode(extraData_, (uint256, uint256));
 
+        address authImpl = authorizedImpl[domain];
+        if (authImpl == address(0)) revert Error.ZERO_ADDRESS();
+
         /// @dev refunds any excess on this chain back to srcSender_
         relayer.sendPayloadToEvm{ value: msg.value }(
-            dstChainId, authorizedImpl[dstChainId], message_, dstNativeAirdrop, dstGasLimit, refundChainId, srcSender_
+            dstChainId, authImpl, message_, dstNativeAirdrop, dstGasLimit, refundChainId, srcSender_
         );
     }
 
