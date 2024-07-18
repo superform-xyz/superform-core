@@ -262,7 +262,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
     /// @dev Test malicious rewards claim
     function test_malicious_rewardClaim() public {
         vm.expectRevert(Error.CANNOT_FORWARD_4646_TOKEN.selector);
-        malSuperformVaultTokenReward.claimRewardTokens(true);
+        malSuperformVaultTokenReward.claimRewardTokens(false);
     }
 
     /// @dev Test Vault Symbol
