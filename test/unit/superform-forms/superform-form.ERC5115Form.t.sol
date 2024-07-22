@@ -1479,4 +1479,59 @@ contract SuperformERC5115FormTest is ProtocolActions {
         vm.expectRevert(ERC5115To4626Wrapper.INVALID_RECEIVER.selector);
         targetWrapper.redeem(address(targetWrapper), 1e6, 0);
     }
+
+    /// @dev Test xchain deposit exceeds tolerance
+    function test_5115DepositTransferExceedsTolerance() public {
+        address vault = targetSuperform.getVaultAddress();
+
+        bytes32 vaultFormImplementationCombination = keccak256(abi.encode(getContract(ARBI, "ERC5115Form"), vault));
+        uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
+            .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
+
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(superformId, abi.encode(0x5979D7b546E38E414F7E9822514be443A4800529));
+
+        LiqRequest memory liqRequest = LiqRequest(
+            bytes(""),
+            0x5979D7b546E38E414F7E9822514be443A4800529,
+            0x5979D7b546E38E414F7E9822514be443A4800529,
+            0,
+            ARBI,
+            0
+        );
+
+        InitSingleVaultData memory sfData = InitSingleVaultData(
+            1, superformId, 2e6, 2e6, 100, liqRequest, false, false, deployer, abi.encode(1, extra5115Data)
+        );
+
+        address token = 0x5979D7b546E38E414F7E9822514be443A4800529;
+        deal(token, getContract(ARBI, "CoreStateRegistry"), 100e6);
+
+        vm.prank(getContract(ARBI, "CoreStateRegistry"));
+        MockERC20(token).approve(address(targetSuperform), 100e6);
+
+        // Mock the transferFrom function to return true but transfer less than expected
+        vm.mockCall(
+            token,
+            abi.encodeWithSelector(
+                IERC20.transferFrom.selector, getContract(ARBI, "CoreStateRegistry"), address(targetSuperform), 2e6
+            ),
+            abi.encode(true)
+        );
+
+        // Mock the balanceOf function to return a value less than expected
+        vm.mockCall(
+            token,
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(targetSuperform)),
+            abi.encode(1e6) // Return half of the expected amount
+        );
+
+        vm.startPrank(SuperRegistry(getContract(ARBI, "SuperRegistry")).getAddress(keccak256("CORE_STATE_REGISTRY")));
+        vm.expectRevert(IERC5115Form.TRANSFER_FROM_EXCEEDS_TOLERANCE.selector);
+        targetSuperform.xChainDepositIntoVault(sfData, deployer, OP);
+
+        // Clear the mocks after the test
+        vm.clearMockedCalls();
+    }
 }
