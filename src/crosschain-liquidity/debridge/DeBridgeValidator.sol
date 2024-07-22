@@ -55,7 +55,7 @@ contract DeBridgeValidator is BridgeValidator {
         }
 
         if (
-            superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), args_.dstChainId)
+            superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), args_.liqDstChainId)
                 != _castToAddress(deBridgeQuote.orderAuthorityAddressDst)
         ) revert DeBridgeError.INVALID_DEBRIDGE_AUTHORITY();
 
@@ -70,7 +70,7 @@ contract DeBridgeValidator is BridgeValidator {
         address receiver = _castToAddress(deBridgeQuote.receiverDst);
 
         if (args_.deposit) {
-            if (args_.srcChainId == args_.dstChainId) {
+            if (args_.srcChainId == args_.dstChainId || args_.dstChainId != args_.liqDstChainId) {
                 revert Error.INVALID_ACTION();
             }
 

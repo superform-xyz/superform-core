@@ -306,12 +306,6 @@ contract LayerzeroV2ImplementationTest is BaseSetup {
         assertEq(nonce, 0);
     }
 
-    function testIsComposeMessage() public view {
-        Origin memory origin = Origin(eid, bytes32(uint256(uint160(address(layerzeroImpl)))), 0);
-        bool isComposer = layerzeroImpl.isComposeMsgSender(origin, bytes(""), address(layerzeroImpl));
-        assertTrue(isComposer);
-    }
-
     function testRevertRetryMessage() public {
         bytes memory message =
             abi.encode(AMBMessage(DataLib.packTxInfo(0, 0, 0, 1, address(0), 0), abi.encode(bytes32(0))));

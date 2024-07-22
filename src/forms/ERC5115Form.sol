@@ -27,6 +27,9 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     /// @dev Identifier for the CoreStateRegistry
     uint8 constant stateRegistryId = 1;
 
+    /// @dev Tolerance constant to account for tokens with rounding issues on transfer
+    uint256 constant TOLERANCE_CONSTANT = 10 wei;
+
     /// @dev Represents 100% in basis points
     uint256 internal constant ENTIRE_SLIPPAGE = 10_000;
 
@@ -45,25 +48,33 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IERC5115Form
-    function claimRewardTokens() external virtual override {
+    function claimRewardTokens(bool avoidRevert) public virtual override {
         address[] memory rewardTokens = getRewardTokens();
 
         try IERC5115To4626Wrapper(vault).claimRewards(address(this)) returns (uint256[] memory rewardAmounts) {
             if (rewardAmounts.length != rewardTokens.length) {
-                revert Error.ARRAY_LENGTH_MISMATCH();
+                if (!avoidRevert) {
+                    revert Error.ARRAY_LENGTH_MISMATCH();
+                }
+            } else {
+                address rewardsDistributor = superRegistry.getAddress(keccak256("REWARDS_DISTRIBUTOR"));
+
+                IERC20 rewardToken;
+                for (uint256 i; i < rewardTokens.length; ++i) {
+                    rewardToken = IERC20(rewardTokens[i]);
+                    if (address(rewardToken) == vault) {
+                        if (!avoidRevert) {
+                            revert Error.CANNOT_FORWARD_4646_TOKEN();
+                        }
+                    } else {
+                        rewardToken.safeTransfer(rewardsDistributor, rewardToken.balanceOf(address(this)));
+                    }
+                }
             }
         } catch {
-            revert FUNCTION_NOT_IMPLEMENTED();
-        }
-
-        address rewardsDistributor = superRegistry.getAddress(keccak256("REWARDS_DISTRIBUTOR"));
-
-        IERC20 rewardToken;
-        for (uint256 i; i < rewardTokens.length; ++i) {
-            rewardToken = IERC20(rewardTokens[i]);
-            if (address(rewardToken) == vault) revert Error.CANNOT_FORWARD_4646_TOKEN();
-
-            rewardToken.safeTransfer(rewardsDistributor, rewardToken.balanceOf(address(this)));
+            if (!avoidRevert) {
+                revert FUNCTION_NOT_IMPLEMENTED();
+            }
         }
     }
 
@@ -217,6 +228,12 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         override
         returns (uint256 shares)
     {
+        /// @dev we try to claim rewards - for vaults where one of the token in is the reward tokens, this prevents
+        /// attack behaviours that would steal
+        /// @dev those tokens from the superform
+
+        claimRewardTokens(true);
+
         DirectDepositLocalVars memory vars;
 
         /// @dev gets a snapshot of vault token in
@@ -242,6 +259,8 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
             if (address(vars.sendingToken) != NATIVE) {
                 _checkAllowanceAndTransferIn(vars.sendingToken, vars.inputAmount);
             }
+
+            vars.chainId = CHAIN_ID;
 
             vars.bridgeValidator.validateTxData(
                 IBridgeValidator.ValidateTxDataArgs(
@@ -310,8 +329,18 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
             revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
         }
 
+        uint256 balanceBefore = IERC20(vaultTokenIn).balanceOf(address(this));
         /// @dev pulling from sender, to auto-send tokens back in case of failed deposits / reverts
         IERC20(vaultTokenIn).safeTransferFrom(msg.sender, address(this), singleVaultData_.amount);
+        uint256 balanceDiff = IERC20(vaultTokenIn).balanceOf(address(this)) - balanceBefore;
+
+        if (singleVaultData_.amount - TOLERANCE_CONSTANT > balanceDiff) {
+            revert IERC5115Form.TRANSFER_FROM_EXCEEDS_TOLERANCE();
+        }
+
+        /// @dev to account for tokens with rounding issues during transfer like stETH
+        /// @dev please refer: https://github.com/lidofinance/lido-dao/issues/442
+        singleVaultData_.amount = balanceDiff;
 
         /// @dev allowance is modified inside of the IERC20.transferFrom() call
         IERC20(vaultTokenIn).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
@@ -516,17 +545,14 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         address sharesReceiver = singleVaultData_.retain4626 ? singleVaultData_.receiverAddress : address(this);
 
         uint256 sharesBalanceBefore = v.balanceOf(sharesReceiver);
+        uint256 outputAmountMin =
+            (singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)) / ENTIRE_SLIPPAGE;
+
         /// @dev WARNING: validate if minSharesOut can be outputAmount (the result of previewDeposit)
-        shares = v.deposit(sharesReceiver, assetDifference_, singleVaultData_.outputAmount);
+        shares = v.deposit(sharesReceiver, assetDifference_, outputAmountMin);
         uint256 sharesBalanceAfter = v.balanceOf(sharesReceiver);
 
-        if (
-            (sharesBalanceAfter - sharesBalanceBefore != shares)
-                || (
-                    ENTIRE_SLIPPAGE * shares
-                        < singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)
-                )
-        ) {
+        if ((sharesBalanceAfter - sharesBalanceBefore != shares) || shares < outputAmountMin) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
 
@@ -552,6 +578,7 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         uint256 assetsBalanceBefore = IERC20(vaultTokenOut_).balanceOf(assetsReceiver);
 
         IERC20 underlyingVault = IERC20(IERC5115To4626Wrapper(vault).getUnderlying5115Vault());
+
         /// @dev have to increase allowance as shares are moved to wrapper first
         underlyingVault.safeIncreaseAllowance(vault, singleVaultData_.amount);
 
@@ -559,11 +586,10 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
 
         uint256 assetsBalanceAfter = IERC20(vaultTokenOut_).balanceOf(assetsReceiver);
 
-        /// @dev reset allowance to wrapper
-        if (underlyingVault.allowance(address(this), vault) > 0) underlyingVault.forceApprove(vault, 0);
+        if (assets < TOLERANCE_CONSTANT) revert Error.WITHDRAW_ZERO_COLLATERAL();
 
         if (
-            (assetsBalanceAfter - assetsBalanceBefore != assets)
+            (assetsBalanceAfter - assetsBalanceBefore < assets - TOLERANCE_CONSTANT)
                 || (
                     ENTIRE_SLIPPAGE * assets
                         < singleVaultData_.outputAmount * (ENTIRE_SLIPPAGE - singleVaultData_.maxSlippage)
@@ -572,7 +598,8 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
 
-        if (assets == 0) revert Error.WITHDRAW_ZERO_COLLATERAL();
+        /// @dev reset allowance to wrapper
+        if (underlyingVault.allowance(address(this), vault) > 0) underlyingVault.forceApprove(vault, 0);
     }
 
     /// @dev helper to validate the withdrawal amount
