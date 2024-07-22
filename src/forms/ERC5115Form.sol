@@ -332,10 +332,15 @@ contract ERC5115Form is IERC5115Form, BaseForm, LiquidityHandler {
         uint256 balanceBefore = IERC20(vaultTokenIn).balanceOf(address(this));
         /// @dev pulling from sender, to auto-send tokens back in case of failed deposits / reverts
         IERC20(vaultTokenIn).safeTransferFrom(msg.sender, address(this), singleVaultData_.amount);
+        uint256 balanceDiff = IERC20(vaultTokenIn).balanceOf(address(this)) - balanceBefore;
+
+        if (singleVaultData_.amount - TOLERANCE_CONSTANT > balanceDiff) {
+            revert IERC5115Form.TRANSFER_FROM_EXCEEDS_TOLERANCE();
+        }
 
         /// @dev to account for tokens with rounding issues during transfer like stETH
         /// @dev please refer: https://github.com/lidofinance/lido-dao/issues/442
-        singleVaultData_.amount = IERC20(vaultTokenIn).balanceOf(address(this)) - balanceBefore;
+        singleVaultData_.amount = balanceDiff;
 
         /// @dev allowance is modified inside of the IERC20.transferFrom() call
         IERC20(vaultTokenIn).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
