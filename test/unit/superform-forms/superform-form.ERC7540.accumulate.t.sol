@@ -13,7 +13,7 @@ contract SuperformERC7540AccumulationTest is ProtocolActions {
         super.setUp();
     }
 
-    function test_7540AccumulationOfClaimable() external {
+    function test_7540AccumulateXChain() external {
         uint64 srcChainId = BSC_TESTNET;
         uint64 dstChainId = SEPOLIA;
 
@@ -31,7 +31,52 @@ contract SuperformERC7540AccumulationTest is ProtocolActions {
             srcChainId,
             getContract(dstChainId, string.concat("tUSDERC7540FullyAsyncMockSuperform5")),
             user,
-            superformId
+            superformId,
+            true
+        );
+    }
+
+    function test_7540AccumulateSameChain() external {
+        uint64 srcChainId = BSC_TESTNET;
+        uint64 dstChainId = SEPOLIA;
+
+        address user = users[0];
+        uint256 depositAmount = 1e18;
+        uint256 superformId = _getSuperformId(dstChainId);
+
+        _performCrossChainDeposit(srcChainId, dstChainId, user, depositAmount, superformId);
+        _processCrossChainDeposit(dstChainId);
+
+        _performSameChainDeposit(dstChainId, user, depositAmount, superformId);
+
+        _checkAndClaimAccumulatedAmounts(
+            dstChainId,
+            srcChainId,
+            getContract(dstChainId, string.concat("tUSDERC7540FullyAsyncMockSuperform5")),
+            user,
+            superformId,
+            false
+        );
+    }
+
+    function test_7540AccumulateOnlySameChain() external {
+        uint64 srcChainId = BSC_TESTNET;
+        uint64 dstChainId = SEPOLIA;
+
+        address user = users[0];
+        uint256 depositAmount = 1e18;
+        uint256 superformId = _getSuperformId(dstChainId);
+
+        _performSameChainDeposit(dstChainId, user, depositAmount, superformId);
+        _performSameChainDeposit(dstChainId, user, depositAmount, superformId);
+
+        _checkAndClaimAccumulatedAmounts(
+            dstChainId,
+            srcChainId,
+            getContract(dstChainId, string.concat("tUSDERC7540FullyAsyncMockSuperform5")),
+            user,
+            superformId,
+            false
         );
     }
 
@@ -193,7 +238,8 @@ contract SuperformERC7540AccumulationTest is ProtocolActions {
         uint64 srcChainId,
         address superform,
         address user,
-        uint256 superformId
+        uint256 superformId,
+        bool xChain
     )
         internal
     {
@@ -216,9 +262,13 @@ contract SuperformERC7540AccumulationTest is ProtocolActions {
         );
         vm.stopPrank();
 
-        // _payloadDeliveryHelper(dstChainId, srcChainId, vm.getRecordedLogs());
+        if (xChain) {
+            _payloadDeliveryHelper(srcChainId, dstChainId, vm.getRecordedLogs());
 
-        // vm.selectFork(srcChainId);
-        // AsyncStateRegistry(getContract(srcChainId, "AsyncStateRegistry")).processPayload(1);
+            vm.selectFork(FORKS[srcChainId]);
+            vm.startPrank(deployer);
+            AsyncStateRegistry(getContract(srcChainId, "AsyncStateRegistry")).processPayload(1);
+            vm.stopPrank();
+        }
     }
 }
