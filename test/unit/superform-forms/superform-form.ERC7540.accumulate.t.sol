@@ -36,6 +36,45 @@ contract SuperformERC7540AccumulationTest is ProtocolActions {
         );
     }
 
+    function test_7540AccumulateWithdrawXChain() external {
+        uint64 srcChainId = BSC_TESTNET;
+        uint64 dstChainId = SEPOLIA;
+
+        address user = users[0];
+        uint256 depositAmount = 1e18;
+        uint256 superformId = _getSuperformId(dstChainId);
+
+        // Perform a deposit first
+        _performCrossChainDeposit(srcChainId, dstChainId, user, depositAmount, superformId);
+        _processCrossChainDeposit(dstChainId);
+
+        _checkAndClaimAccumulatedAmounts(
+            dstChainId,
+            srcChainId,
+            getContract(dstChainId, string.concat("tUSDERC7540FullyAsyncMockSuperform5")),
+            user,
+            superformId,
+            true
+        );
+
+        // Perform cross-chain withdrawal
+        _performCrossChainWithdraw(srcChainId, dstChainId, user, depositAmount / 2, superformId);
+        _processCrossChainWithdraw(dstChainId, 2);
+
+        _performCrossChainWithdraw(srcChainId, dstChainId, user, depositAmount / 2, superformId);
+        _processCrossChainWithdraw(dstChainId, 3);
+
+        // Check the withdrawn amount
+        _checkAndRedeemAccumulatedAmounts(
+            dstChainId,
+            srcChainId,
+            getContract(dstChainId, string.concat("tUSDERC7540FullyAsyncMockSuperform5")),
+            user,
+            superformId,
+            false
+        );
+    }
+
     function test_7540AccumulateSameChain() external {
         uint64 srcChainId = BSC_TESTNET;
         uint64 dstChainId = SEPOLIA;
@@ -176,6 +215,46 @@ contract SuperformERC7540AccumulationTest is ProtocolActions {
         _payloadDeliveryHelper(dstChainId, srcChainId, vm.getRecordedLogs());
     }
 
+    function _performCrossChainWithdraw(
+        uint64 srcChainId,
+        uint64 dstChainId,
+        address user,
+        uint256 withdrawAmount,
+        uint256 superformId
+    )
+        internal
+    {
+        vm.selectFork(FORKS[srcChainId]);
+        vm.startPrank(user);
+
+        address srcSuperformRouter = getContract(srcChainId, "SuperformRouter");
+
+        SuperPositions(getContract(srcChainId, "SuperPositions")).setApprovalForAll(srcSuperformRouter, true);
+        SuperformRouter(payable(srcSuperformRouter)).singleXChainSingleVaultWithdraw{ value: 0.5 ether }(
+            SingleXChainSingleVaultStateReq(
+                AMBs,
+                dstChainId,
+                SingleVaultSFData(
+                    superformId,
+                    withdrawAmount,
+                    withdrawAmount,
+                    10_000,
+                    LiqRequest(bytes(""), address(0), address(0), 0, dstChainId, 0),
+                    bytes(""),
+                    false,
+                    false,
+                    user,
+                    user,
+                    abi.encode(1, new bytes[](0))
+                )
+            )
+        );
+
+        vm.stopPrank();
+
+        _payloadDeliveryHelper(dstChainId, srcChainId, vm.getRecordedLogs());
+    }
+
     function _createLiqRequest(
         uint64 srcChainId,
         uint64 dstChainId,
@@ -233,6 +312,14 @@ contract SuperformERC7540AccumulationTest is ProtocolActions {
         CoreStateRegistry(csr).processPayload(1);
     }
 
+    function _processCrossChainWithdraw(uint64 dstChainId, uint256 payloadId) internal {
+        vm.selectFork(FORKS[dstChainId]);
+        address csr = getContract(dstChainId, "CoreStateRegistry");
+
+        vm.prank(deployer);
+        CoreStateRegistry(csr).processPayload(payloadId);
+    }
+
     function _checkAndClaimAccumulatedAmounts(
         uint64 dstChainId,
         uint64 srcChainId,
@@ -243,6 +330,10 @@ contract SuperformERC7540AccumulationTest is ProtocolActions {
     )
         internal
     {
+        vm.selectFork(FORKS[srcChainId]);
+        uint256 superPositionsBefore =
+            SuperPositions(getContract(dstChainId, "SuperPositions")).balanceOf(user, superformId);
+
         vm.selectFork(FORKS[dstChainId]);
 
         address vault = IBaseForm(superform).getVaultAddress();
@@ -270,5 +361,63 @@ contract SuperformERC7540AccumulationTest is ProtocolActions {
             AsyncStateRegistry(getContract(srcChainId, "AsyncStateRegistry")).processPayload(1);
             vm.stopPrank();
         }
+
+        vm.selectFork(FORKS[srcChainId]);
+        uint256 superPositionsAfter =
+            SuperPositions(getContract(dstChainId, "SuperPositions")).balanceOf(user, superformId);
+
+        assertGt(
+            superPositionsAfter, superPositionsBefore, "User's SuperPositions balance should increase after claiming"
+        );
+    }
+
+    function _checkAndRedeemAccumulatedAmounts(
+        uint64 dstChainId,
+        uint64 srcChainId,
+        address superform,
+        address user,
+        uint256 superformId,
+        bool failedRemint
+    )
+        internal
+    {
+        vm.selectFork(FORKS[srcChainId]);
+        uint256 superPositionsBefore =
+            SuperPositions(getContract(dstChainId, "SuperPositions")).balanceOf(user, superformId);
+
+        vm.selectFork(FORKS[dstChainId]);
+
+        address vault = IBaseForm(superform).getVaultAddress();
+        address investmentManager = ERC7540VaultLike(vault).manager();
+        address asset = IBaseForm(superform).getVaultAsset();
+
+        _authorizeOperator(superform, 0);
+
+        vm.startPrank(InvestmentManagerLike(investmentManager).root());
+        _fulfillRedeemRequest(investmentManager, vault, asset, 0.9e18, user);
+        vm.stopPrank();
+
+        vm.startPrank(deployer);
+        vm.recordLogs();
+        AsyncStateRegistry(getContract(dstChainId, "AsyncStateRegistry")).claimAvailableRedeems(
+            user, superformId, bytes("")
+        );
+        vm.stopPrank();
+
+        if (failedRemint) {
+            _payloadDeliveryHelper(srcChainId, dstChainId, vm.getRecordedLogs());
+
+            vm.selectFork(FORKS[srcChainId]);
+            vm.startPrank(deployer);
+            AsyncStateRegistry(getContract(srcChainId, "AsyncStateRegistry")).processPayload(2);
+            vm.stopPrank();
+        }
+
+        uint256 superPositionsAfter =
+            SuperPositions(getContract(dstChainId, "SuperPositions")).balanceOf(user, superformId);
+
+        assertLt(
+            superPositionsAfter, superPositionsBefore, "User's SuperPositions balance should decrease after redeeming"
+        );
     }
 }
