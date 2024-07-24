@@ -2,7 +2,8 @@
 pragma solidity ^0.8.23;
 
 import { SignatureChecker } from "openzeppelin-contracts/contracts/utils/cryptography/SignatureChecker.sol";
-import { ICoreStateRegistry } from "src/interfaces/ICoreStateRegistry.sol";
+import { Address } from "openzeppelin-contracts/contracts/utils/Address.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { IERC1155 } from "openzeppelin-contracts/contracts/interfaces/IERC1155.sol";
@@ -18,41 +19,44 @@ import {
 } from "src/types/DataTypes.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { SuperPositions } from "src/SuperPositions.sol";
-
-library EIP712Lib {
-    bytes32 public constant EIP712_DOMAIN_TYPEHASH = 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f;
-
-    function calculateDomainSeparator(bytes32 nameHash, bytes32 versionHash) internal view returns (bytes32) {
-        return keccak256(abi.encode(EIP712_DOMAIN_TYPEHASH, nameHash, versionHash, block.chainid, address(this)));
-    }
-}
-
-interface ICoreStateRegistryExtended is ICoreStateRegistry {
-    function payloadsCount() external view returns (uint256);
-    function payloadTracking(uint256) external view returns (PayloadState);
-    function payloadBody(uint256) external view returns (bytes memory);
-    function payloadHeader(uint256) external view returns (uint256);
-}
+import { EIP712Lib } from "./lib/EIP712Lib.sol";
 
 contract SuperformRouterWrapper is IERC1155Receiver {
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
-    //                       ERRORS                          //
+    //                       ERRORS                             //
     //////////////////////////////////////////////////////////////
 
     error EXPIRED();
     error AUTHORIZATION_USED();
     error INVALID_AUTHORIZATION();
+    error NOT_ROUTER_WRAPPER_KEEPER();
+
+    //////////////////////////////////////////////////////////////
+    //                       EVENTS                             //
+    //////////////////////////////////////////////////////////////
+
+    event RebalanceCompleted(uint256 indexed id, uint256 amount, address indexed receiver);
+
+    event RebalanceMultiCompleted(uint256[] indexed ids, uint256[] amounts, address indexed receiver);
+
+    event Deposit4626Completed(address indexed receiver);
+
+    event DepositUsingSmartWalletCompleted(address indexed receiver);
+
     //////////////////////////////////////////////////////////////
     //                       CONSTANTS                          //
     //////////////////////////////////////////////////////////////
 
-    ICoreStateRegistryExtended public immutable CORE_STATE_REGISTRY;
+    IBaseStateRegistry public immutable CORE_STATE_REGISTRY;
     address public immutable SUPERFORM_ROUTER;
     address public immutable SUPER_POSITIONS;
     bytes32 public constant REBALANCE_SUPERPOSITIONS_TYPEHASH = keccak256(
         "metaRebalancePositions(uint256 id_,uint256 amount_,address receiver_,bytes calldata callData_,uint256 deadline_,bytes32 nonce_,bytes memory signature_"
+    );
+    bytes32 public constant REBALANCE_MULTI_SUPERPOSITIONS_TYPEHASH = keccak256(
+        "metaRebalancePositions(uint256[] id_,uint256[] amount_,address receiver_,bytes calldata callData_,uint256 deadline_,bytes32 nonce_,bytes memory signature_"
     );
     bytes32 public constant DEPOSIT_4626_TYPEHASH = keccak256(
         "metaDeposit4626(address vault_,uint256 amount_,address receiver_,bytes calldata callData_,uint256 deadline_,bytes32 nonce_,bytes memory signature_"
@@ -63,7 +67,7 @@ contract SuperformRouterWrapper is IERC1155Receiver {
 
     bytes32 private immutable nameHash;
     bytes32 private immutable versionHash;
-    uint256 public immutable deploymentChainId;
+    uint256 public immutable CHAIN_ID;
     bytes32 private immutable _DOMAIN_SEPARATOR;
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
@@ -74,30 +78,59 @@ contract SuperformRouterWrapper is IERC1155Receiver {
     mapping(address => mapping(bytes32 => bool)) public authorizations;
 
     //////////////////////////////////////////////////////////////
+    //                       MODIFIERS                          //
+    //////////////////////////////////////////////////////////////
+
+    modifier onlyRouterWrapperKeeper() {
+        if (
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
+                keccak256("ROUTER_WRAPPER_ROLE"), msg.sender
+            )
+        ) {
+            revert NOT_ROUTER_WRAPPER_KEEPER();
+        }
+        _;
+    }
+
+    //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address superformRouter_, address superPositions_, ICoreStateRegistryExtended coreStateRegistry_) {
+    constructor(
+        address superRegistry_,
+        address superformRouter_,
+        address superPositions_,
+        IBaseStateRegistry coreStateRegistry_
+    ) {
+        if (
+            superRegistry_ == address(0) || superformRouter_ == address(0) || superPositions_ == address(0)
+                || address(coreStateRegistry_) == address(0)
+        ) {
+            revert Error.ZERO_ADDRESS();
+        }
+
+        if (block.chainid > type(uint64).max) {
+            revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
+        }
+
         SUPERFORM_ROUTER = superformRouter_;
         SUPER_POSITIONS = superPositions_;
         CORE_STATE_REGISTRY = coreStateRegistry_;
         nameHash = keccak256(bytes("Superform"));
         versionHash = keccak256(bytes("1"));
-        deploymentChainId = block.chainid;
+        CHAIN_ID = block.chainid;
         _DOMAIN_SEPARATOR = EIP712Lib.calculateDomainSeparator(nameHash, versionHash);
     }
 
     function DOMAIN_SEPARATOR() public view returns (bytes32) {
-        return block.chainid == deploymentChainId
-            ? _DOMAIN_SEPARATOR
-            : EIP712Lib.calculateDomainSeparator(nameHash, versionHash);
+        return block.chainid == CHAIN_ID ? _DOMAIN_SEPARATOR : EIP712Lib.calculateDomainSeparator(nameHash, versionHash);
     }
 
     //////////////////////////////////////////////////////////////
     //                  EXTERNAL WRITE FUNCTIONS                //
     //////////////////////////////////////////////////////////////
 
-    /// @dev helps user rebalance their superpositions
+    /// @dev helps user rebalance a Single SuperPosition
     /// @dev this covers the goal "1 Exiting a vault and entering another in one step for same chain operations and
     /// cross chain operations where the source vault’s chain is the same as the users’ SuperPositions chain"
     function rebalancePositions(
@@ -112,10 +145,29 @@ contract SuperformRouterWrapper is IERC1155Receiver {
         _transferSuperPositions(receiver_, id_, amount_);
 
         _callSuperformRouter(callData_);
+
+        emit RebalanceCompleted(id_, amount_, receiver_);
     }
 
-    /// @dev allows gasless transactions for the function above
-    /// @notice misses logic to covert a portion of amount to native tokens for the keeper
+    /// @dev batch version of rebalancePositions
+    function rebalanceMultiPositions(
+        uint256[] calldata ids_,
+        uint256[] calldata amounts_,
+        address receiver_,
+        bytes calldata callData_
+    )
+        external
+        payable
+    {
+        _transferBatchSuperPositions(receiver_, ids_, amounts_);
+
+        _callSuperformRouter(callData_);
+
+        emit RebalanceMultiCompleted(ids_, amounts_, receiver_);
+    }
+
+    /// @dev allows gasless transactions for the function 'rebalancePositions'
+    /// @notice misses logic to covert a portion of SPs to native tokens for the keeper
     /// @dev this helps with goal "4 Allow for gasless transactions where tx costs are deducted from funding tokens (or
     /// from SuperPositions) OR subsidized by Superform team."
     /// @dev user could set infinite allowance to move SuperPositions to this contract to help with UX
@@ -130,6 +182,7 @@ contract SuperformRouterWrapper is IERC1155Receiver {
     )
         external
         payable
+        onlyRouterWrapperKeeper
     {
         _setAuthorizationNonce(deadline_, receiver_, nonce_);
 
@@ -154,11 +207,61 @@ contract SuperformRouterWrapper is IERC1155Receiver {
         /// @dev logic to convert a portion SuperPositions sent here to native tokens (can we use superPools for this?)
 
         _callSuperformRouter(callData_);
+
+        emit RebalanceCompleted(id_, amount_, receiver_);
+    }
+
+    /// @dev batch version of the function above
+    function metaRebalanceMultiPositions(
+        uint256[] calldata ids_,
+        uint256[] calldata amounts_,
+        address receiver_,
+        bytes calldata callData_,
+        uint256 deadline_,
+        bytes32 nonce_,
+        bytes memory signature_
+    )
+        external
+        payable
+        onlyRouterWrapperKeeper
+    {
+        _setAuthorizationNonce(deadline_, receiver_, nonce_);
+
+        _checkSignature(
+            receiver_,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    DOMAIN_SEPARATOR(),
+                    keccak256(
+                        abi.encode(
+                            REBALANCE_MULTI_SUPERPOSITIONS_TYPEHASH,
+                            ids_,
+                            amounts_,
+                            receiver_,
+                            callData_,
+                            deadline_,
+                            nonce_
+                        )
+                    )
+                )
+            ),
+            signature_
+        );
+
+        _transferBatchSuperPositions(receiver_, ids_, amounts_);
+
+        /// @dev logic to convert a portion SuperPositions sent here to native tokens (can we use superPools for this?)
+
+        _callSuperformRouter(callData_);
+
+        emit RebalanceMultiCompleted(ids_, amounts_, receiver_);
     }
 
     /// NOTE: add function for same chain action
-    /// NOTE: handle the multidst case
     /// NOTE: just 4626 shares
+    /// NOTE: currently hard to handle entering with multiple 4626 shares due to having to redeem. if we avoid redeem it
+    /// is possible (requires MetaStateRegistry)
     /// @dev helps user deposit 4626 vault shares into superform
     /// @dev this helps with goal "2 Entering Superform via any 4626 share in one step by transfering the share to the
     /// specific superform"
@@ -181,6 +284,8 @@ contract SuperformRouterWrapper is IERC1155Receiver {
         _transferERC20In(asset, receiver_, amount_);
 
         _deposit4626(asset, vault, amount_, asset.balanceOf(address(this)), receiver_, callData_);
+
+        emit Deposit4626Completed(receiver_);
     }
 
     /// @dev allows gasless transactions for the function above
@@ -199,6 +304,7 @@ contract SuperformRouterWrapper is IERC1155Receiver {
     )
         external
         payable
+        onlyRouterWrapperKeeper
     {
         _setAuthorizationNonce(deadline_, receiver_, nonce_);
 
@@ -224,9 +330,12 @@ contract SuperformRouterWrapper is IERC1155Receiver {
         uint256 amountToRedeem = amount_ - (amount_ / 10);
 
         _deposit4626(asset, vault, amountToRedeem, asset.balanceOf(address(this)), receiver_, callData_);
+
+        emit Deposit4626Completed(receiver_);
     }
 
     /// @dev helps user deposit into superform using smart contract wallets
+    /// @dev should only allow a single asset to be deposited (because this is similar to a normal deposit)
     /// @dev this covers the goal "3 Providing better compatibility with smart contract wallets such as coinbase smart
     /// wallet"
     /// @param asset_ the ERC20 asset to deposit
@@ -244,6 +353,8 @@ contract SuperformRouterWrapper is IERC1155Receiver {
         _transferERC20In(asset_, receiver_, amount_);
 
         _depositUsingSmartWallet(asset_, amount_, asset_.balanceOf(address(this)), receiver_, callData_);
+
+        emit DepositUsingSmartWalletCompleted(receiver_);
     }
 
     /// @dev allows gasless transactions for the function above
@@ -262,6 +373,7 @@ contract SuperformRouterWrapper is IERC1155Receiver {
     )
         external
         payable
+        onlyRouterWrapperKeeper
     {
         _setAuthorizationNonce(deadline_, receiver_, nonce_);
 
@@ -290,6 +402,8 @@ contract SuperformRouterWrapper is IERC1155Receiver {
         uint256 amountToDeposit = amount_ - (amount_ / 10);
 
         _depositUsingSmartWallet(asset, amountToDeposit, asset.balanceOf(address(this)), receiver_, callData_);
+
+        emit DepositUsingSmartWalletCompleted(receiver_);
     }
 
     /// @dev this is callback payload id
@@ -338,12 +452,23 @@ contract SuperformRouterWrapper is IERC1155Receiver {
     //                   INTERNAL FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
 
+    function _setAuthorizationNonce(uint256 deadline_, address user_, bytes32 nonce_) internal {
+        if (block.timestamp > deadline_) revert EXPIRED();
+        if (authorizations[user_][nonce_]) revert AUTHORIZATION_USED();
+
+        authorizations[user_][nonce_] = true;
+    }
+
+    function _checkSignature(address user_, bytes32 digest_, bytes memory signature_) internal {
+        if (!SignatureChecker.isValidSignatureNow(user_, digest_, signature_)) revert INVALID_AUTHORIZATION();
+    }
+
     /// @dev refunds any unused refunds
-    function _processRefunds(IERC20 asset_) internal {
+    function _processRefunds(IERC20 asset_, address user_) internal {
         uint256 balance = asset_.balanceOf(address(this));
 
         if (balance > 0) {
-            asset_.transfer(msg.sender, balance);
+            asset_.transfer(user_, balance);
         }
     }
 
@@ -352,16 +477,22 @@ contract SuperformRouterWrapper is IERC1155Receiver {
         SuperPositions(SUPER_POSITIONS).setApprovalForOne(SUPERFORM_ROUTER, id_, amount_);
     }
 
-    function _callSuperformRouter(bytes calldata callData_) internal {
-        /// @dev processes the deposit to a random superform
-        /// @notice no need to store info here as receiverSP will be user address
-        /// @dev how to ensure call data only calls certain functions?
-        (bool success,) = SUPERFORM_ROUTER.call{ value: msg.value }(callData_);
+    function _transferBatchSuperPositions(
+        address user_,
+        uint256[] calldata ids_,
+        uint256[] calldata amounts_
+    )
+        internal
+    {
+        SuperPositions(SUPER_POSITIONS).safeBatchTransferFrom(user_, address(this), ids_, amounts_, "");
+        SuperPositions(SUPER_POSITIONS).setApprovalForAll(SUPERFORM_ROUTER, true);
+    }
 
-        /// @dev revert if not `success`
-        if (!success) {
-            revert();
-        }
+    /// @dev how to ensure call data only calls certain functions?
+    function _callSuperformRouter(bytes calldata callData_) internal {
+        (bool success, bytes memory returndata) = SUPERFORM_ROUTER.call{ value: msg.value }(callData_);
+
+        Address.verifyCallResult(success, returndata);
     }
 
     function _transferERC20In(IERC20 asset_, address user_, uint256 amount_) internal {
@@ -401,7 +532,7 @@ contract SuperformRouterWrapper is IERC1155Receiver {
         }
 
         /// @dev refund any unused funds
-        _processRefunds(asset_);
+        _processRefunds(asset_, receiver_);
     }
 
     function _depositUsingSmartWallet(
@@ -432,7 +563,7 @@ contract SuperformRouterWrapper is IERC1155Receiver {
         }
 
         /// @dev refund any unused funds
-        _processRefunds(asset_);
+        _processRefunds(asset_, receiver_);
     }
 
     function _completeDisbursement(uint256 returnPayloadId) internal {
@@ -468,16 +599,5 @@ contract SuperformRouterWrapper is IERC1155Receiver {
         }
 
         statusMap[payloadId] = true;
-    }
-
-    function _setAuthorizationNonce(uint256 deadline_, address user_, bytes32 nonce_) internal {
-        if (block.timestamp > deadline_) revert EXPIRED();
-        if (authorizations[user_][nonce_]) revert AUTHORIZATION_USED();
-
-        authorizations[user_][nonce_] = true;
-    }
-
-    function _checkSignature(address user_, bytes32 digest_, bytes memory signature_) internal {
-        if (!SignatureChecker.isValidSignatureNow(user_, digest_, signature_)) revert INVALID_AUTHORIZATION();
     }
 }
