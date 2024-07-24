@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import { SignatureChecker } from "openzeppelin-contracts/contracts/utils/cryptography/SignatureChecker.sol";
 import { Address } from "openzeppelin-contracts/contracts/utils/Address.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
@@ -19,7 +20,9 @@ import {
 } from "src/types/DataTypes.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { SuperPositions } from "src/SuperPositions.sol";
-import { EIP712Lib } from "./lib/EIP712Lib.sol";
+import { EIP712Lib } from "src/libraries/EIP712Lib.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { Error } from "src/libraries/Error.sol";
 
 contract SuperformRouterWrapper is IERC1155Receiver {
     using DataLib for uint256;
@@ -31,7 +34,7 @@ contract SuperformRouterWrapper is IERC1155Receiver {
     error EXPIRED();
     error AUTHORIZATION_USED();
     error INVALID_AUTHORIZATION();
-    error NOT_ROUTER_WRAPPER_KEEPER();
+    error NOT_ROUTER_WRAPPER_PROCESSOR();
 
     //////////////////////////////////////////////////////////////
     //                       EVENTS                             //
@@ -48,21 +51,22 @@ contract SuperformRouterWrapper is IERC1155Receiver {
     //////////////////////////////////////////////////////////////
     //                       CONSTANTS                          //
     //////////////////////////////////////////////////////////////
+    ISuperRegistry public immutable superRegistry;
 
     IBaseStateRegistry public immutable CORE_STATE_REGISTRY;
     address public immutable SUPERFORM_ROUTER;
     address public immutable SUPER_POSITIONS;
     bytes32 public constant REBALANCE_SUPERPOSITIONS_TYPEHASH = keccak256(
-        "metaRebalancePositions(uint256 id_,uint256 amount_,address receiver_,bytes calldata callData_,uint256 deadline_,bytes32 nonce_,bytes memory signature_"
+        "MetaRebalancePositions(uint256 id_,uint256 amount_,address receiver_,bytes calldata callData_,uint256 deadline_,bytes32 nonce_,bytes memory signature_,uint256 deadline_,bytes32 nonce_)"
     );
     bytes32 public constant REBALANCE_MULTI_SUPERPOSITIONS_TYPEHASH = keccak256(
-        "metaRebalancePositions(uint256[] id_,uint256[] amount_,address receiver_,bytes calldata callData_,uint256 deadline_,bytes32 nonce_,bytes memory signature_"
+        "MetaRebalancePositions(uint256[] id_,uint256[] amount_,address receiver_,bytes calldata callData_,uint256 deadline_,bytes32 nonce_,bytes memory signature_,uint256 deadline_,bytes32 nonce_)"
     );
     bytes32 public constant DEPOSIT_4626_TYPEHASH = keccak256(
-        "metaDeposit4626(address vault_,uint256 amount_,address receiver_,bytes calldata callData_,uint256 deadline_,bytes32 nonce_,bytes memory signature_"
+        "MetaDeposit4626(address vault_,uint256 amount_,address receiver_,bytes calldata callData_,uint256 deadline_,bytes32 nonce_,bytes memory signature_,uint256 deadline_,bytes32 nonce_)"
     );
     bytes32 public constant DEPOSIT_SMARTWALLET_TYPEHASH = keccak256(
-        "metaDepositUsingSmartWallet(address asset_,uint256 amount_,address receiver_,bytes calldata callData_,uint256 deadline_,bytes32 nonce_,bytes memory signature_"
+        "MetaDepositUsingSmartWallet(address asset_,uint256 amount_,address receiver_,bytes calldata callData_,uint256 deadline_,bytes32 nonce_,bytes memory signature_,uint256 deadline_,bytes32 nonce_)"
     );
 
     bytes32 private immutable nameHash;
@@ -81,13 +85,13 @@ contract SuperformRouterWrapper is IERC1155Receiver {
     //                       MODIFIERS                          //
     //////////////////////////////////////////////////////////////
 
-    modifier onlyRouterWrapperKeeper() {
+    modifier onlyRouterWrapperProcessor() {
         if (
             !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
-                keccak256("ROUTER_WRAPPER_ROLE"), msg.sender
+                keccak256("ROUTER_WRAPPER_PROCESSOR"), msg.sender
             )
         ) {
-            revert NOT_ROUTER_WRAPPER_KEEPER();
+            revert NOT_ROUTER_WRAPPER_PROCESSOR();
         }
         _;
     }
@@ -112,6 +116,7 @@ contract SuperformRouterWrapper is IERC1155Receiver {
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }
+        superRegistry = ISuperRegistry(superRegistry_);
 
         SUPERFORM_ROUTER = superformRouter_;
         SUPER_POSITIONS = superPositions_;
@@ -181,8 +186,7 @@ contract SuperformRouterWrapper is IERC1155Receiver {
         bytes memory signature_
     )
         external
-        payable
-        onlyRouterWrapperKeeper
+        onlyRouterWrapperProcessor
     {
         _setAuthorizationNonce(deadline_, receiver_, nonce_);
 
@@ -222,8 +226,7 @@ contract SuperformRouterWrapper is IERC1155Receiver {
         bytes memory signature_
     )
         external
-        payable
-        onlyRouterWrapperKeeper
+        onlyRouterWrapperProcessor
     {
         _setAuthorizationNonce(deadline_, receiver_, nonce_);
 
@@ -303,8 +306,7 @@ contract SuperformRouterWrapper is IERC1155Receiver {
         bytes memory signature_
     )
         external
-        payable
-        onlyRouterWrapperKeeper
+        onlyRouterWrapperProcessor
     {
         _setAuthorizationNonce(deadline_, receiver_, nonce_);
 
@@ -372,8 +374,7 @@ contract SuperformRouterWrapper is IERC1155Receiver {
         bytes memory signature_
     )
         external
-        payable
-        onlyRouterWrapperKeeper
+        onlyRouterWrapperProcessor
     {
         _setAuthorizationNonce(deadline_, receiver_, nonce_);
 
