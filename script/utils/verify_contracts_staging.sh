@@ -50,7 +50,7 @@ file_names=(
     "src/crosschain-liquidity/debridge/DeBridgeValidator.sol"
     "src/EmergencyQueue.sol"
     "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol"
-    "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol"
+    "src/crosschain-data/adapters/layerzero-v2/LayerzeroV2Implementation.sol"
     "src/crosschain-liquidity/lifi/LiFiValidator.sol"
     "src/payments/PayMaster.sol"
     "src/crosschain-data/utils/PayloadHelper.sol"
@@ -82,7 +82,7 @@ contract_names=(
     "DeBridgeValidator"
     "EmergencyQueue"
     "HyperlaneImplementation"
-    "LayerzeroImplementation"
+    "LayerzeroV2Implementation"
     "LiFiValidator"
     "PayMaster"
     "PayloadHelper"
@@ -113,8 +113,8 @@ contract_addresses=(
     0x8b791c7306F26Bb48913e78E75afE7f351802C1d
     0xd2164fc4bccBff23C5Bc263130BAe2fC2B629eDE
     0x7FE59421D6b85afa86d982E3186a74c72f6c4c03
-    0x207BFE0Fb040F17cC61B67e4aaDfC59C9e170671
-    0x1863862794cD8ec60daBF8B473fcA928B78cE563
+    0xFD1ad4B1119DF6fDa416600e4d456a2E941bf158
+    0xccaC476Da9b34C9553Bb2b3E7F5D23d60e497183
     0x2BDC6F9607dcf7FA5b9fe0eE03334772A80Ba03C
     0xAe398C54A5B3c8736c1382C44867d41B12938Cc4
     0x5Ae08549F266a9B4cC95Ad8aac57bE6Af236b647
@@ -122,7 +122,7 @@ contract_addresses=(
     0x71060c588Aa01e61253EE4ac231Ac1a2bC672Bb8
     0x9CA4480B65E5F3d57cFb942ac44A0A6Ab0B2C843
     0x21b69aC55e3B620aCF74b4362D34d5E51a8187b8
-    0x3b6FABE94a5d0B160e2E1519495e7Fe9dD009Ea3
+    0x3E0509DF842e59C1aA6a72EcfE45Dda28cC728a0
     0x9AB6Dd8c4FC98F859a3271db98B81777aC2893b0
     0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47
     0x9736b60c4f749232d400B5605f21AE137a5Ebb71
@@ -146,7 +146,7 @@ contract_addresses_fantom=(
     0x48cC0351ecdCefcDC5597e5695e4bCEb5CA4cdB8
     0xE49a5d6fA3bF4489D751CA5f93B2a7f475011bac
     0x0000000000000000000000000000000000000000
-    0x9061774Bd32D9C4552c540a822823949Fad006D9
+    0x0968b6c93a64D09dBd7D06F5fBB8056510C0DdcB
     0xf5f3E4ee38E2251097907a9ddB58Aa7Efe93A471
     0x1B14F3153368B6c651b247BA14bCF7b04FD5759E
     0x0c4e84B90718B7F33b8D4CbC6dA0774F84187041
@@ -154,7 +154,7 @@ contract_addresses_fantom=(
     0x026427bfaDcA8442B1D3267019a5f9c6A36A4a63
     0x730A06A3195060D15d5fF04685514c9da16C89db
     0x8a7503184520E0Ce00EFCAA57C8ed8791C1a296a
-    0x0545Ecc81aC5855b1D55578B03431d986eDEA746
+    0x113A800A5cbe171F7f0C2bA2AF92e6eA5aC9D38F
     0x31303F1C04bb060C62b4Af6CA74bd8a6B89d493f
     0x7B8d68f90dAaC67C577936d3Ce451801864EF189
     0xFFe9AFe35806F3fc1Df81188953ADb72f0B22F2A
