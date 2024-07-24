@@ -6,8 +6,6 @@ import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { Error } from "src/libraries/Error.sol";
 import "src/vendor/1inch/IAggregationRouterV6.sol";
 
-import "forge-std/console.sol";
-
 /// @title OneInchValidator
 /// @dev Asserts OneInch txData is valid
 /// @author Zeropoint Labs
@@ -164,7 +162,7 @@ contract OneInchValidator {
         }
         /// @dev decodes the generic router call
         else if (selector == IAggregationRouterV6.swap.selector) {
-            (, IAggregationRouterV6.SwapDescription memory swapDescription, bytes memory extCallData) =
+            (, IAggregationRouterV6.SwapDescription memory swapDescription,) =
                 abi.decode(_parseCallData(txData_), (IAggregationExecutor, IAggregationRouterV6.SwapDescription, bytes));
 
             fromToken = address(swapDescription.srcToken);

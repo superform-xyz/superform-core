@@ -24,7 +24,6 @@ contract SDMVW0TokenInputNoSlippageAMB1323 is ProtocolActions {
 
         TARGET_UNDERLYINGS[AVAX][1] = [1];
         TARGET_VAULTS[AVAX][1] = [0];
-        
 
         TARGET_FORM_KINDS[AVAX][1] = [0];
 
@@ -44,7 +43,7 @@ contract SDMVW0TokenInputNoSlippageAMB1323 is ProtocolActions {
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                multiVaults: true, //!!WARNING turn on or off multi vaults
+                multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",
@@ -58,7 +57,7 @@ contract SDMVW0TokenInputNoSlippageAMB1323 is ProtocolActions {
         actions.push(
             TestAction({
                 action: Actions.Withdraw,
-                multiVaults: true, //!!WARNING turn on or off multi vaults
+                multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",

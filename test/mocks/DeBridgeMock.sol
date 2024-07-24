@@ -9,7 +9,6 @@ import "./MockERC20.sol";
 
 /// @title DeBridge Dln Source Mock
 /// @dev eventually replace this by using a fork of the real dln source contract
-
 contract DeBridgeMock is Test {
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -31,7 +30,7 @@ contract DeBridgeMock is Test {
         payable
         returns (bytes32)
     {
-        (address from, uint256 fromChainId, uint256 toChainId) = abi.decode(_metadata, (address, uint256, uint256));
+        (, uint256 fromChainId, uint256 toChainId) = abi.decode(_metadata, (address, uint256, uint256));
 
         // vm.selectFork(fromChainId);
         // MockERC20(_orderCreation.giveTokenAddress).transferFrom(from, address(this), _orderCreation.giveAmount);

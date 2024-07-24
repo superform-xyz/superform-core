@@ -12,6 +12,11 @@ import { DlnOrderLib } from "src/vendor/deBridge/DlnOrderLib.sol";
 /// @author Zeropoint Labs
 contract DeBridgeValidator is BridgeValidator {
     //////////////////////////////////////////////////////////////
+    //                       CONSTANTS                          //
+    //////////////////////////////////////////////////////////////
+    bytes private constant NATIVE_IN_BYTES = abi.encodePacked(NATIVE);
+
+    //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
@@ -50,7 +55,7 @@ contract DeBridgeValidator is BridgeValidator {
         }
 
         if (
-            superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), args_.dstChainId)
+            superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), args_.liqDstChainId)
                 != _castToAddress(deBridgeQuote.orderAuthorityAddressDst)
         ) revert DeBridgeError.INVALID_DEBRIDGE_AUTHORITY();
 
@@ -65,7 +70,7 @@ contract DeBridgeValidator is BridgeValidator {
         address receiver = _castToAddress(deBridgeQuote.receiverDst);
 
         if (args_.deposit) {
-            if (args_.srcChainId == args_.dstChainId) {
+            if (args_.srcChainId == args_.dstChainId || args_.dstChainId != args_.liqDstChainId) {
                 revert Error.INVALID_ACTION();
             }
 
@@ -150,6 +155,12 @@ contract DeBridgeValidator is BridgeValidator {
 
         if (permitEnvelope.length > 0) {
             revert DeBridgeError.INVALID_PERMIT_ENVELOP();
+        }
+
+        /// @dev casting native tokens
+        if (deBridgeQuote.giveTokenAddress == address(0)) deBridgeQuote.giveTokenAddress = NATIVE;
+        if (_castToAddress(deBridgeQuote.takeTokenAddress) == address(0)) {
+            deBridgeQuote.takeTokenAddress = NATIVE_IN_BYTES;
         }
     }
 

@@ -178,7 +178,10 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
             revert Error.INVALID_CHAIN_ID();
         }
 
-        string memory axelerDstImpl = authorizedImpl[axelarChainId].toString();
+        address authImpl = authorizedImpl[axelarChainId];
+        if (authImpl == address(0)) revert Error.ZERO_ADDRESS();
+
+        string memory axelerDstImpl = authImpl.toString();
 
         gateway.callContract(axelarChainId, axelerDstImpl, message_);
         gasService.payNativeGasForContractCall{ value: msg.value }(

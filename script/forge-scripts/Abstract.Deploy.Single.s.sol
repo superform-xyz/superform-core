@@ -14,6 +14,8 @@ import { SuperformFactory } from "src/SuperformFactory.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
 import { ERC4626TimelockForm } from "src/forms/ERC4626TimelockForm.sol";
 import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
+import { ERC5115Form } from "src/forms/ERC5115Form.sol";
+import { ERC5115To4626WrapperFactory } from "src/forms/wrappers/ERC5115To4626WrapperFactory.sol";
 import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
 import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator.sol";
@@ -69,6 +71,8 @@ struct SetupVars {
     address axelarImplementation;
     address erc4626Form;
     address erc4626TimelockForm;
+    address erc5115Form;
+    address erc5115To4626WrapperFactory;
     address timelockStateRegistry;
     address broadcastRegistry;
     address coreStateRegistry;
@@ -114,7 +118,7 @@ abstract contract AbstractDeploySingle is BatchScript {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[26] public contractNames = [
+    string[28] public contractNames = [
         "CoreStateRegistry",
         //"TimelockStateRegistry",
         "BroadcastRegistry",
@@ -143,7 +147,9 @@ abstract contract AbstractDeploySingle is BatchScript {
         "DeBridgeValidator",
         "DeBridgeForwarderValidator",
         "OneInchValidator",
-        "AxelarImplementation"
+        "AxelarImplementation",
+        "ERC5115Form",
+        "ERC5115To4626WrapperFactory"
     ];
 
     enum Chains {
@@ -170,7 +176,7 @@ abstract contract AbstractDeploySingle is BatchScript {
     //////////////////////////////////////////////////////////////*/
     string public SUPER_POSITIONS_NAME;
 
-    /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm
+    /// @dev 1 = ERC4626Form, 2 = 5115Form, 3 = KYCDaoForm
     uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(2), uint32(3)];
     string[] public VAULT_KINDS = ["Vault", "TimelockedVault", "KYCDaoVault"];
 
@@ -644,6 +650,14 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.erc4626Form = address(new ERC4626Form{ salt: salt }(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars.erc4626Form;
 
+        /// @dev 8.1 - Deploy 5115Form implementation
+        vars.erc5115Form = address(new ERC5115Form{ salt: salt }(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("ERC5115Form"))] = vars.erc5115Form;
+
+        /// @dev 8.1.1 Deploy 5115 wrapper factory
+        vars.erc5115To4626WrapperFactory = address(new ERC5115To4626WrapperFactory{ salt: salt }(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("ERC5115To4626WrapperFactory"))] = vars.erc5115To4626WrapperFactory;
+
         // Timelock + ERC4626 Form
         //vars.erc4626TimelockForm = address(new ERC4626TimelockForm{ salt: salt }(vars.superRegistry));
         //contracts[vars.chainId][bytes32(bytes("ERC4626TimelockForm"))] = vars.erc4626TimelockForm;
@@ -654,6 +668,7 @@ abstract contract AbstractDeploySingle is BatchScript {
 
         /// @dev 9 - Add newly deployed form implementations to Factory, formImplementationId 1
         ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0], 1);
+        ISuperformFactory(vars.factory).addFormImplementation(vars.erc5115Form, FORM_IMPLEMENTATION_IDS[1], 1);
 
         /// passing 2 because timelock state registry id is 2
         //ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626TimelockForm, FORM_IMPLEMENTATION_IDS[1],
@@ -1031,7 +1046,6 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.superRBACC = SuperRBAC(vars.superRBAC);
 
         /// @dev pause forms
-
         SuperformFactory(vars.factory).changeFormImplementationPauseStatus(
             FORM_IMPLEMENTATION_IDS[0], ISuperformFactory.PauseStatus(1), ""
         );

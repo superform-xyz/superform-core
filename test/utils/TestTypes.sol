@@ -33,6 +33,7 @@ enum TestType {
 }
 
 struct StagesLocalVars {
+    uint256 act;
     Vm.Log[] logs;
     MultiDstMultiVaultStateReq multiDstMultiVaultStateReq;
     MultiDstSingleVaultStateReq multiDstSingleVaultStateReq;
@@ -58,7 +59,6 @@ struct StagesLocalVars {
     uint256 chain0Index;
     uint256 chainDstIndex;
     uint256 nUniqueDsts;
-    bool[] partialWithdrawVaults;
     int256 slippage;
     uint256[] superformIds;
     /// @dev targets from invariant handler
@@ -75,6 +75,7 @@ struct StagesLocalVars {
     uint256[] underlyingWithBridgeSlippages;
     uint256[] amountsBeforeCSR;
     uint256[] finalAmountsThatReachedCSR;
+    address[] potentialRealVaults;
 }
 
 struct MessagingAssertVars {
@@ -153,6 +154,7 @@ struct SetupVars {
     address erc4626Form;
     address erc4626TimelockForm;
     address kycDao4626Form;
+    address erc5115form;
     address coreStateRegistry;
     address PayloadHelper;
     address paymentHelper;
@@ -180,6 +182,7 @@ struct SetupVars {
     address debridgeValidator;
     address debridgeForwarderValidator;
     address rewardsDistributor;
+    address eRC5115To4626WrapperFactory;
     Vm.Log[] logs;
     address superPositions;
     address kycDAOMock;
@@ -219,7 +222,6 @@ struct SingleVaultCallDataArgs {
     uint256 liquidityBridgeSrcChainId;
     uint256 liquidityBridgeToChainId;
     bool dstSwap;
-    bool partialWithdrawVault;
     int256 slippage;
 }
 
@@ -245,7 +247,6 @@ struct MultiVaultCallDataArgs {
     bool dstSwap;
     Actions action;
     int256 slippage;
-    bool[] partialWithdrawVaults;
 }
 
 struct BuildDepositCallDataArgs {
