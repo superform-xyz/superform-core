@@ -78,6 +78,8 @@ import {
     IAxelarGasService,
     IInterchainGasEstimation
 } from "src/crosschain-data/adapters/axelar/AxelarImplementation.sol";
+
+import { ERC5115To4626WrapperFactory } from "src/forms/wrappers/ERC5115To4626WrapperFactory.sol";
 import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
 import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
 import ".././utils/AmbParams.sol";
@@ -126,7 +128,7 @@ abstract contract BaseSetup is StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[40] public contractNames = [
+    string[41] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -166,7 +168,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         "OneInchValidator",
         "DeBridgeValidator",
         "DeBridgeForwarderValidator",
-        "RewardsDistributor"
+        "RewardsDistributor",
+        "ERC5115To4626WrapperFactory"
     ];
 
     /*//////////////////////////////////////////////////////////////
@@ -878,15 +881,19 @@ abstract contract BaseSetup is StdInvariant, Test {
                     vaults[vars.chainId][FORM_IMPLEMENTATION_IDS[j]] = doubleVaults;
                 }
             }
+            /// @dev deploy wrapper factory
+            vars.eRC5115To4626WrapperFactory =
+                address(new ERC5115To4626WrapperFactory{ salt: salt }(vars.superRegistry));
+
+            contracts[vars.chainId][bytes32(bytes("ERC5115To4626WrapperFactory"))] = vars.eRC5115To4626WrapperFactory;
 
             if (NUMBER_OF_5115S[vars.chainId] > 0) {
                 for (uint256 j = 0; j < NUMBER_OF_5115S[vars.chainId]; ++j) {
-                    address new5115WrapperVault = address(
-                        new ERC5115To4626Wrapper{ salt: salt }(
-                            ERC5115_VAULTS[vars.chainId][j],
-                            ERC5115S_CHOSEN_ASSETS[vars.chainId][ERC5115_VAULTS[vars.chainId][j]].assetIn,
-                            ERC5115S_CHOSEN_ASSETS[vars.chainId][ERC5115_VAULTS[vars.chainId][j]].assetOut
-                        )
+                    address new5115WrapperVault = ERC5115To4626WrapperFactory(vars.eRC5115To4626WrapperFactory)
+                        .createWrapper(
+                        ERC5115_VAULTS[vars.chainId][j],
+                        ERC5115S_CHOSEN_ASSETS[vars.chainId][ERC5115_VAULTS[vars.chainId][j]].assetIn,
+                        ERC5115S_CHOSEN_ASSETS[vars.chainId][ERC5115_VAULTS[vars.chainId][j]].assetOut
                     );
 
                     wrapped5115vaults[vars.chainId].push(new5115WrapperVault);
@@ -1836,7 +1843,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev  pendle ethena - market: SUSDE-MAINNET-SEP2024
         /// sUSDe sUSDe
         erc5115Vaults[1][0] = 0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65;
-        erc5115VaultsNames[1][0] = "SUSDe";
+        erc5115VaultsNames[1][0] = "sUSDe";
         erc5115ChosenAssets[1][0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65].assetIn =
             0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
         erc5115ChosenAssets[1][0x4139cDC6345aFFbaC0692b43bed4D059Df3e6d65].assetOut =

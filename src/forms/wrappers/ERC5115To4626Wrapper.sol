@@ -39,9 +39,6 @@ contract ERC5115To4626Wrapper is IERC5115To4626Wrapper {
     /// @dev The address of the token used for withdrawals
     address public immutable mainTokenOut;
 
-    /// @dev Pendle uses `address(0)` as NATIVE
-    address internal constant NATIVE = address(0);
-
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////

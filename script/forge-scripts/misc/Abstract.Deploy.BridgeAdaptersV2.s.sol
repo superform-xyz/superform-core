@@ -79,11 +79,11 @@ abstract contract AbstractDeployBridgeAdaptersV2 is EnvironmentUtils {
         if (vars.chainId != 250) {
             uint8[] memory bridgeIds = new uint8[](3);
             /// lz v2
-            bridgeIds[0] = 5;
+            bridgeIds[0] = 14;
             /// hyperlane (with amb protect)
-            bridgeIds[1] = 6;
+            bridgeIds[1] = 15;
             /// wormhole (with amb protect)
-            bridgeIds[2] = 7;
+            bridgeIds[2] = 16;
 
             address[] memory bridgeAddress = new address[](3);
             bridgeAddress[0] = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
@@ -103,9 +103,9 @@ abstract contract AbstractDeployBridgeAdaptersV2 is EnvironmentUtils {
         } else {
             uint8[] memory bridgeIds = new uint8[](2);
             /// lz v2
-            bridgeIds[0] = 5;
+            bridgeIds[0] = 14;
             /// wormhole (with amb protect)
-            bridgeIds[1] = 7;
+            bridgeIds[1] = 16;
 
             address[] memory bridgeAddress = new address[](2);
             bridgeAddress[0] = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
@@ -148,7 +148,7 @@ abstract contract AbstractDeployBridgeAdaptersV2 is EnvironmentUtils {
         WormholeARImplementation wormholeImpl = WormholeARImplementation(
             _readContractsV1(env, chainNames[trueIndex], vars.chainId, "WormholeARImplementation")
         );
-        
+
         wormholeImpl.setRefundChainId(wormhole_chainIds[trueIndex]);
 
         lzImpl.setLzEndpoint(lzV2Endpoint);
@@ -180,7 +180,9 @@ abstract contract AbstractDeployBridgeAdaptersV2 is EnvironmentUtils {
                     bytes32(
                         uint256(
                             uint160(
-                                _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "LayerzeroImplementation")
+                                _readContractsV1(
+                                    env, chainNames[vars.dstTrueIndex], vars.dstChainId, "LayerzeroImplementation"
+                                )
                             )
                         )
                     )

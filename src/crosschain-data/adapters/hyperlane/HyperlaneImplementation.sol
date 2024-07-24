@@ -151,8 +151,11 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
             revert Error.INVALID_CHAIN_ID();
         }
 
+        address authImpl = authorizedImpl[domain];
+        if (authImpl == address(0)) revert Error.ZERO_ADDRESS();
+
         mailbox.dispatch{ value: msg.value }(
-            domain, _castAddr(authorizedImpl[domain]), message_, _generateHookMetadata(extraData_, srcSender_)
+            domain, _castAddr(authImpl), message_, _generateHookMetadata(extraData_, srcSender_)
         );
     }
 

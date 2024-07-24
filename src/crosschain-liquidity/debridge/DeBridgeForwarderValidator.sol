@@ -80,7 +80,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         }
 
         if (
-            superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), args_.dstChainId)
+            superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), args_.liqDstChainId)
                 != deBridgeQuote.orderAuthorityAddressDst
         ) revert DeBridgeError.INVALID_DEBRIDGE_AUTHORITY();
 
@@ -92,7 +92,7 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         /// @dev 2. receiver address validation
         /// @dev allows dst swaps by coupling debridge with other bridges
         if (args_.deposit) {
-            if (args_.srcChainId == args_.dstChainId) {
+            if (args_.srcChainId == args_.dstChainId || args_.dstChainId != args_.liqDstChainId) {
                 revert Error.INVALID_ACTION();
             }
 
@@ -252,6 +252,9 @@ contract DeBridgeForwarderValidator is BridgeValidator {
         deBridgeQuote.orderAuthorityAddressDst = _castToAddress(v.xChainQuote.orderAuthorityAddressDst);
         deBridgeQuote.bridgeRefundRecipient = _castToAddress(v.xChainQuote.allowedCancelBeneficiarySrc);
         deBridgeQuote.givePatchAuthoritySrc = v.xChainQuote.givePatchAuthoritySrc;
+
+        if (deBridgeQuote.outputToken == address(0)) deBridgeQuote.outputToken = NATIVE;
+        if (deBridgeQuote.inputToken == address(0)) deBridgeQuote.inputToken = NATIVE;
     }
 
     /// @dev helps parsing debridge calldata and return the input parameters
