@@ -40,33 +40,41 @@ contract SuperformRouterWrapper is IERC1155Receiver {
     //                       EVENTS                             //
     //////////////////////////////////////////////////////////////
 
-    event RebalanceCompleted(uint256 indexed id, uint256 amount, address indexed receiver);
+    event RebalanceCompleted(uint256 indexed id, uint256 amount, address indexed receiver, bool smartWallet);
 
-    event RebalanceMultiCompleted(uint256[] indexed ids, uint256[] amounts, address indexed receiver);
+    event XChainRebalanceInitiated(
+        uint256 indexed id,
+        uint256 amount,
+        address indexed receiver,
+        bool smartWallet,
+        address interimAsset,
+        uint256 finalizeSlippage,
+        uint256 expectedAmountInterimAsset
+    );
+    event XChainRebalanceFailed(address indexed receiver, uint256 indexed firstStepLastCSRPayloadId);
 
-    event Deposit4626Completed(address indexed receiver);
+    event XChainRebalanceComplete(address indexed receiver, uint256 indexed firstStepLastCSRPayloadId);
 
-    event DepositUsingSmartWalletCompleted(address indexed receiver);
+    event WithdrawCompleted(uint256 indexed id, uint256 amount, address indexed receiver);
+
+    event WithdrawMultiCompleted(uint256[] indexed ids, uint256[] amounts, address indexed receiver);
+
+    event Deposit4626Completed(address indexed receiver, address indexed vault);
+
+    event DepositCompleted(address indexed receiver, bool smartWallet, bool meta);
 
     //////////////////////////////////////////////////////////////
     //                       CONSTANTS                          //
     //////////////////////////////////////////////////////////////
     ISuperRegistry public immutable superRegistry;
+    uint256 internal constant ENTIRE_SLIPPAGE = 10_000;
 
     IBaseStateRegistry public immutable CORE_STATE_REGISTRY;
     address public immutable SUPERFORM_ROUTER;
     address public immutable SUPER_POSITIONS;
-    bytes32 public constant REBALANCE_SUPERPOSITIONS_TYPEHASH = keccak256(
-        "MetaRebalancePositions(uint256 id_,uint256 amount_,address receiver_,bytes calldata callData_,uint256 deadline_,bytes32 nonce_,bytes memory signature_,uint256 deadline_,bytes32 nonce_)"
-    );
-    bytes32 public constant REBALANCE_MULTI_SUPERPOSITIONS_TYPEHASH = keccak256(
-        "MetaRebalancePositions(uint256[] id_,uint256[] amount_,address receiver_,bytes calldata callData_,uint256 deadline_,bytes32 nonce_,bytes memory signature_,uint256 deadline_,bytes32 nonce_)"
-    );
-    bytes32 public constant DEPOSIT_4626_TYPEHASH = keccak256(
-        "MetaDeposit4626(address vault_,uint256 amount_,address receiver_,bytes calldata callData_,uint256 deadline_,bytes32 nonce_,bytes memory signature_,uint256 deadline_,bytes32 nonce_)"
-    );
-    bytes32 public constant DEPOSIT_SMARTWALLET_TYPEHASH = keccak256(
-        "MetaDepositUsingSmartWallet(address asset_,uint256 amount_,address receiver_,bytes calldata callData_,uint256 deadline_,bytes32 nonce_,bytes memory signature_,uint256 deadline_,bytes32 nonce_)"
+
+    bytes32 public constant DEPOSIT_TYPEHASH = keccak256(
+        "MetaDeposit(address asset_,uint256 amount_,address receiverAddressSP_,bool smartWallet_,bytes calldata callData_,uint256 deadline_,bytes32 nonce_,bytes memory signature_,uint256 deadline_,bytes32 nonce_)"
     );
 
     bytes32 private immutable nameHash;
@@ -77,9 +85,17 @@ contract SuperformRouterWrapper is IERC1155Receiver {
     //                     STATE VARIABLES                      //
     //////////////////////////////////////////////////////////////
 
+    struct XChainRebalanceData {
+        bytes rebalanceCalldata;
+        bool smartWallet;
+        address interimAsset;
+    }
+
     mapping(uint256 payloadId => address user) public msgSenderMap;
     mapping(uint256 payloadId => bool processed) public statusMap;
     mapping(address => mapping(bytes32 => bool)) public authorizations;
+    mapping(address receiverAddressSP => mapping(uint256 firstStepLastCSRPayloadId => XChainRebalanceData data)) public
+        xChainRebalanceCallData;
 
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
@@ -135,51 +151,180 @@ contract SuperformRouterWrapper is IERC1155Receiver {
     //                  EXTERNAL WRITE FUNCTIONS                //
     //////////////////////////////////////////////////////////////
 
-    /// @dev helps user rebalance a Single SuperPosition
-    /// @dev this covers the goal "1 Exiting a vault and entering another in one step for same chain operations and
-    /// cross chain operations where the source vault’s chain is the same as the users’ SuperPositions chain"
-    function rebalancePositions(
+    /// @dev helps user rebalance a single SuperPosition in a synchronous way
+    function rebalancePositionsSync(
         uint256 id_,
+        uint256 sharesToRedeem_,
+        uint256 previewRedeemAmount_,
+        uint256 slippage_,
+        address receiverAddressSP_,
+        address vaultAsset,
+        bool smartWallet_,
+        bytes calldata callData_,
+        bytes calldata rebalanceCallData_
+    )
+        external
+        payable
+    {
+        _rebalancePositionsSync(
+            id_,
+            sharesToRedeem_,
+            previewRedeemAmount_,
+            slippage_,
+            receiverAddressSP_,
+            vaultAsset,
+            smartWallet_,
+            callData_,
+            rebalanceCallData_
+        );
+    }
+
+    /// @dev initiates the rebalance process for when the vault to redeem from is on a different chain
+    function initiateXChainRebalance(
+        uint256 id_,
+        uint256 sharesToRedeem_,
+        address receiverAddressSP_,
+        address interimAsset_,
+        uint256 finalizeSlippage_,
+        uint256 expectedAmountInterimAsset_,
+        bool smartWallet_,
+        bytes calldata callData_,
+        bytes calldata rebalanceCallData_
+    )
+        external
+        payable
+    {
+        /// step 1: send SPs to wrapper
+        _transferSuperPositions(receiverAddressSP_, id_, sharesToRedeem_);
+
+        /// step 2: send SPs to router
+        _callSuperformRouter(callData_);
+
+        /// notice rebalanceCallData can be multi Dst / multi vault
+        xChainRebalanceCallData[receiverAddressSP_][CORE_STATE_REGISTRY.payloadsCount()] = XChainRebalanceData({
+            rebalanceCalldata: rebalanceCallData_,
+            smartWallet: smartWallet_,
+            interimAsset: interimAsset_,
+            slippage: finalizeSlippage_,
+            expectedAmountInterimAsset: expectedAmountInterimAsset_
+        });
+
+        emit XChainRebalanceInitiated(
+            id_,
+            sharesToRedeem_,
+            receiverAddressSP_,
+            smartWallet_,
+            interimAsset_,
+            finalizeSlippage_,
+            expectedAmountInterimAsset_
+        );
+    }
+
+    /// @dev completes the rebalance process for when the vault to redeem from is on a different chain
+    function finalizeXChainRebalance(
+        address receiverAddressSP_,
+        uint256 amountReceivedInterimAsset_,
+        uint256 firstStepLastCSRPayloadId_,
+        bytes calldata rebalanceCallData_
+    )
+        external
+        payable
+        returns (bool rebalanceSuccessful)
+    {
+        XChainRebalanceData memory data = xChainRebalanceCallData[receiverAddressSP_][firstStepLastCSRPayloadId_];
+
+        IERC20 interimAsset = IERC20(data.interimAsset);
+        if (
+            ENTIRE_SLIPPAGE * amountReceivedInterimAsset_
+                < ((data.expectedAmountInterimAsset * (ENTIRE_SLIPPAGE - data.slippage)))
+        ) {
+            interimAsset.safeTransferFrom(address(this), receiverAddressSP_, amountReceivedInterimAsset_);
+
+            emit XChainRebalanceFailed(receiverAddressSP_, firstStepLastCSRPayloadId_);
+            return false;
+        }
+
+        data.smartWallet
+            ? _depositUsingSmartWallet(interimAsset, amountReceivedInterimAsset_, receiverAddressSP_, rebalanceCallData_)
+            : _deposit(interimAsset, amountReceivedInterimAsset_, receiverAddressSP_, rebalanceCallData_);
+
+        emit XChainRebalanceComplete(receiverAddressSP_, firstStepLastCSRPayloadId_);
+
+        return true;
+    }
+
+    /// NOTE: add function for same chain action
+    /// NOTE: just 4626 shares
+    /// @dev helps user deposit 4626 vault shares into superform
+    /// @dev this helps with goal "2 Entering Superform via any 4626 share in one step by transfering the share to the
+    /// specific superform"
+    /// @param vault_ the 4626 vault to redeem from
+    /// @param amount_ the 4626 vault share amount to redeem
+    /// @param receiverAddressSP_ the receiver of the superform shares
+    /// @param smartWallet_ whether to use smart wallet or not
+    /// @param callData_ the encoded superform router request
+    function deposit4626(
+        address vault_,
         uint256 amount_,
-        address receiver_,
+        address receiverAddressSP_,
+        bool smartWallet_,
         bytes calldata callData_
     )
         external
         payable
     {
-        _transferSuperPositions(receiver_, id_, amount_);
+        _transferERC20In(IERC20(vault_), receiverAddressSP_, amount_);
 
-        _callSuperformRouter(callData_);
+        uint256 amountRedeemed = _redeemShare(IERC4626(vault_), amount_);
 
-        emit RebalanceCompleted(id_, amount_, receiver_);
+        IERC20 asset = IERC4626(vault_).asset();
+
+        smartWallet_
+            ? _depositUsingSmartWallet(asset, amountRedeemed, receiverAddressSP_, callData_)
+            : _deposit(asset, amountRedeemed, receiverAddressSP_, callData_);
+
+        emit Deposit4626Completed(receiverAddressSP_, vault_);
     }
 
-    /// @dev batch version of rebalancePositions
-    function rebalanceMultiPositions(
-        uint256[] calldata ids_,
-        uint256[] calldata amounts_,
-        address receiver_,
+    /// @dev helps user deposit into superform
+    /// @dev should only allow a single asset to be deposited (because this is similar to a normal deposit)
+    /// @dev adds smart wallet support
+    /// @dev this covers the goal "3 Providing better compatibility with smart contract wallets such as coinbase smart
+    /// wallet"
+    /// @param asset_ the ERC20 asset to deposit
+    /// @param amount_ the ERC20 amount to deposit
+    /// @param receiverAddressSP_ the receiver of the superform shares
+    /// @param smartWallet_ whether to use smart wallet or not
+    /// @param callData_ the encoded superform router deposit request
+    function deposit(
+        IERC20 asset_,
+        uint256 amount_,
+        address receiverAddressSP_,
+        bool smartWallet_,
         bytes calldata callData_
     )
         external
         payable
     {
-        _transferBatchSuperPositions(receiver_, ids_, amounts_);
+        _transferERC20In(asset_, receiverAddressSP_, amount_);
 
-        _callSuperformRouter(callData_);
+        smartWallet_
+            ? _depositUsingSmartWallet(asset_, amount_, receiverAddressSP_, callData_)
+            : _deposit(asset_, amount_, receiverAddressSP_, callData_);
 
-        emit RebalanceMultiCompleted(ids_, amounts_, receiver_);
+        emit DepositCompleted(receiverAddressSP_, smartWallet_, false);
     }
 
-    /// @dev allows gasless transactions for the function 'rebalancePositions'
-    /// @notice misses logic to covert a portion of SPs to native tokens for the keeper
+    /// @dev allows gasless transactions for the function above
+    /// @notice misses logic to covert a portion of amount to native tokens for the keeper
     /// @dev this helps with goal "4 Allow for gasless transactions where tx costs are deducted from funding tokens (or
     /// from SuperPositions) OR subsidized by Superform team."
-    /// @dev user could set infinite allowance to move SuperPositions to this contract to help with UX
-    function metaRebalancePositions(
-        uint256 id_,
+    /// @dev user needs to set infinite allowance of assets to wrapper to allow this in smooth ux
+    function metaDeposit(
+        address asset_,
         uint256 amount_,
-        address receiver_,
+        address receiverAddressSP_,
+        bool smartWallet_,
         bytes calldata callData_,
         uint256 deadline_,
         bytes32 nonce_,
@@ -188,60 +333,21 @@ contract SuperformRouterWrapper is IERC1155Receiver {
         external
         onlyRouterWrapperProcessor
     {
-        _setAuthorizationNonce(deadline_, receiver_, nonce_);
+        _setAuthorizationNonce(deadline_, receiverAddressSP_, nonce_);
 
         _checkSignature(
-            receiver_,
+            receiverAddressSP_,
             keccak256(
                 abi.encodePacked(
                     "\x19\x01",
                     DOMAIN_SEPARATOR(),
                     keccak256(
                         abi.encode(
-                            REBALANCE_SUPERPOSITIONS_TYPEHASH, id_, amount_, receiver_, callData_, deadline_, nonce_
-                        )
-                    )
-                )
-            ),
-            signature_
-        );
-
-        _transferSuperPositions(receiver_, id_, amount_);
-
-        /// @dev logic to convert a portion SuperPositions sent here to native tokens (can we use superPools for this?)
-
-        _callSuperformRouter(callData_);
-
-        emit RebalanceCompleted(id_, amount_, receiver_);
-    }
-
-    /// @dev batch version of the function above
-    function metaRebalanceMultiPositions(
-        uint256[] calldata ids_,
-        uint256[] calldata amounts_,
-        address receiver_,
-        bytes calldata callData_,
-        uint256 deadline_,
-        bytes32 nonce_,
-        bytes memory signature_
-    )
-        external
-        onlyRouterWrapperProcessor
-    {
-        _setAuthorizationNonce(deadline_, receiver_, nonce_);
-
-        _checkSignature(
-            receiver_,
-            keccak256(
-                abi.encodePacked(
-                    "\x19\x01",
-                    DOMAIN_SEPARATOR(),
-                    keccak256(
-                        abi.encode(
-                            REBALANCE_MULTI_SUPERPOSITIONS_TYPEHASH,
-                            ids_,
-                            amounts_,
-                            receiver_,
+                            DEPOSIT_TYPEHASH,
+                            asset_,
+                            amount_,
+                            receiverAddressSP_,
+                            smartWallet_,
                             callData_,
                             deadline_,
                             nonce_
@@ -252,159 +358,19 @@ contract SuperformRouterWrapper is IERC1155Receiver {
             signature_
         );
 
-        _transferBatchSuperPositions(receiver_, ids_, amounts_);
-
-        /// @dev logic to convert a portion SuperPositions sent here to native tokens (can we use superPools for this?)
-
-        _callSuperformRouter(callData_);
-
-        emit RebalanceMultiCompleted(ids_, amounts_, receiver_);
-    }
-
-    /// NOTE: add function for same chain action
-    /// NOTE: just 4626 shares
-    /// NOTE: currently hard to handle entering with multiple 4626 shares due to having to redeem. if we avoid redeem it
-    /// is possible (requires MetaStateRegistry)
-    /// @dev helps user deposit 4626 vault shares into superform
-    /// @dev this helps with goal "2 Entering Superform via any 4626 share in one step by transfering the share to the
-    /// specific superform"
-    /// @dev however does not conform exactly to the intended because the share is redeemed first
-    /// @param vault_ the 4626 vault to redeem from
-    /// @param amount_ the 4626 vault share amount to redeem
-    /// @param callData_ the encoded superform router request
-    function deposit4626(
-        address vault_,
-        uint256 amount_,
-        address receiver_,
-        bytes calldata callData_
-    )
-        external
-        payable
-    {
-        IERC4626 vault = IERC4626(vault_);
-
-        IERC20 asset = IERC20(vault.asset());
-        _transferERC20In(asset, receiver_, amount_);
-
-        _deposit4626(asset, vault, amount_, asset.balanceOf(address(this)), receiver_, callData_);
-
-        emit Deposit4626Completed(receiver_);
-    }
-
-    /// @dev allows gasless transactions for the function above
-    /// @notice misses logic to covert a portion of amount to native tokens for the keeper
-    /// @dev this helps with goal "4 Allow for gasless transactions where tx costs are deducted from funding tokens (or
-    /// from SuperPositions) OR subsidized by Superform team."
-    /// @dev user needs to set infinite allowance of vault shares to wrapper to allow this in smooth ux
-    function metaDeposit4626(
-        address vault_,
-        uint256 amount_,
-        address receiver_,
-        bytes calldata callData_,
-        uint256 deadline_,
-        bytes32 nonce_,
-        bytes memory signature_
-    )
-        external
-        onlyRouterWrapperProcessor
-    {
-        _setAuthorizationNonce(deadline_, receiver_, nonce_);
-
-        _checkSignature(
-            receiver_,
-            keccak256(
-                abi.encodePacked(
-                    "\x19\x01",
-                    DOMAIN_SEPARATOR(),
-                    keccak256(
-                        abi.encode(DEPOSIT_4626_TYPEHASH, vault_, amount_, receiver_, callData_, deadline_, nonce_)
-                    )
-                )
-            ),
-            signature_
-        );
-        IERC4626 vault = IERC4626(vault_);
-        IERC20 asset = IERC20(vault.asset());
-        _transferERC20In(asset, receiver_, amount_);
-
-        /// add logic to take a portion of shares as native for keeper
-        /// @dev e.g
-        uint256 amountToRedeem = amount_ - (amount_ / 10);
-
-        _deposit4626(asset, vault, amountToRedeem, asset.balanceOf(address(this)), receiver_, callData_);
-
-        emit Deposit4626Completed(receiver_);
-    }
-
-    /// @dev helps user deposit into superform using smart contract wallets
-    /// @dev should only allow a single asset to be deposited (because this is similar to a normal deposit)
-    /// @dev this covers the goal "3 Providing better compatibility with smart contract wallets such as coinbase smart
-    /// wallet"
-    /// @param asset_ the ERC20 asset to deposit
-    /// @param amount_ the ERC20 amount to deposit
-    /// @param callData_ the encoded superform router deposit request
-    function depositUsingSmartWallet(
-        IERC20 asset_,
-        uint256 amount_,
-        address receiver_,
-        bytes calldata callData_
-    )
-        external
-        payable
-    {
-        _transferERC20In(asset_, receiver_, amount_);
-
-        _depositUsingSmartWallet(asset_, amount_, asset_.balanceOf(address(this)), receiver_, callData_);
-
-        emit DepositUsingSmartWalletCompleted(receiver_);
-    }
-
-    /// @dev allows gasless transactions for the function above
-    /// @notice misses logic to covert a portion of amount to native tokens for the keeper
-    /// @dev this helps with goal "4 Allow for gasless transactions where tx costs are deducted from funding tokens (or
-    /// from SuperPositions) OR subsidized by Superform team."
-    /// @dev user needs to set infinite allowance of assets to wrapper to allow this in smooth ux
-    function metaDepositUsingSmartWallet(
-        address asset_,
-        uint256 amount_,
-        address receiver_,
-        bytes calldata callData_,
-        uint256 deadline_,
-        bytes32 nonce_,
-        bytes memory signature_
-    )
-        external
-        onlyRouterWrapperProcessor
-    {
-        _setAuthorizationNonce(deadline_, receiver_, nonce_);
-
-        _checkSignature(
-            receiver_,
-            keccak256(
-                abi.encodePacked(
-                    "\x19\x01",
-                    DOMAIN_SEPARATOR(),
-                    keccak256(
-                        abi.encode(
-                            DEPOSIT_SMARTWALLET_TYPEHASH, asset_, amount_, receiver_, callData_, deadline_, nonce_
-                        )
-                    )
-                )
-            ),
-            signature_
-        );
-
         IERC20 asset = IERC20(asset_);
 
-        _transferERC20In(asset, receiver_, amount_);
+        _transferERC20In(asset, receiverAddressSP_, amount_);
 
         /// add logic to take a portion of shares as native for keeper
         /// @dev e.g
         uint256 amountToDeposit = amount_ - (amount_ / 10);
 
-        _depositUsingSmartWallet(asset, amountToDeposit, asset.balanceOf(address(this)), receiver_, callData_);
+        smartWallet_
+            ? _depositUsingSmartWallet(asset_, amountToDeposit, receiverAddressSP_, callData_)
+            : _deposit(asset_, amountToDeposit, receiverAddressSP_, callData_);
 
-        emit DepositUsingSmartWalletCompleted(receiver_);
+        emit DepositCompleted(receiverAddressSP_, smartWallet_, true);
     }
 
     /// @dev this is callback payload id
@@ -413,6 +379,48 @@ contract SuperformRouterWrapper is IERC1155Receiver {
     function completeDisbursement(uint256 returnPayloadId) external {
         _completeDisbursement(returnPayloadId);
     }
+
+    /// @dev helps user exit SuperPositions
+    /// @dev TODO decide if needed
+    /// @dev TODO can decode callData to obtain dstChains and message wrapper accordingly to allow rebalances in dsts
+    /// (advanced)
+    function withdraw(
+        uint256 id_,
+        uint256 amount_,
+        address receiverAddressSP_,
+        bytes calldata callData_
+    )
+        external
+        payable
+    {
+        _transferSuperPositions(receiverAddressSP_, id_, amount_);
+
+        _callSuperformRouter(callData_);
+
+        emit WithdrawCompleted(id_, amount_, receiverAddressSP_);
+    }
+
+    /// @dev batch version of the function above
+    /// @dev TODO decide if needed
+    function withdrawMulti(
+        uint256[] calldata ids_,
+        uint256[] calldata amounts_,
+        address receiverAddressSP_,
+        bytes calldata callData_
+    )
+        external
+        payable
+    {
+        _transferBatchSuperPositions(receiverAddressSP_, ids_, amounts_);
+
+        _callSuperformRouter(callData_);
+
+        emit WithdrawMultiCompleted(ids_, amounts_, receiverAddressSP_);
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                  EXTERNAL PURE FUNCTIONS                //
+    //////////////////////////////////////////////////////////////
 
     /// @dev overrides receive functions
     function onERC1155Received(
@@ -452,6 +460,46 @@ contract SuperformRouterWrapper is IERC1155Receiver {
     //////////////////////////////////////////////////////////////
     //                   INTERNAL FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
+
+    function _rebalancePositionsSync(
+        uint256 id_,
+        uint256 sharesToRedeem_,
+        uint256 previewRedeemAmount_,
+        uint256 slippage_,
+        address receiverAddressSP_,
+        address vaultAsset,
+        bool smartWallet_,
+        bytes calldata callData_,
+        bytes calldata rebalanceCallData_
+    )
+        internal
+    {
+        /// step 1: send SPs to wrapper
+        _transferSuperPositions(receiverAddressSP_, id_, sharesToRedeem_);
+        IERC20 asset = IERC20(vaultAsset);
+
+        uint256 balanceBefore = asset.balanceOf(address(this));
+
+        /// step 2: send SPs to router
+        _callSuperformRouter(callData_);
+
+        uint256 balanceAfter = asset.balanceOf(address(this));
+
+        uint256 amountToDeposit = balanceAfter - balanceBefore;
+
+        if (amountToDeposit == 0) revert Error.ZERO_AMOUNT();
+
+        if (ENTIRE_SLIPPAGE * amountToDeposit < ((previewRedeemAmount_ * (ENTIRE_SLIPPAGE - slippage_)))) {
+            revert Error.VAULT_IMPLEMENTATION_FAILED();
+        }
+        /// step 3: rebalance into a new superform with rebalanceCallData_
+        /// this can be same chain or cross chain
+        smartWallet_
+            ? _depositUsingSmartWallet(asset, amountToDeposit, receiverAddressSP_, rebalanceCallData_)
+            : _deposit(asset, amountToDeposit, receiverAddressSP_, rebalanceCallData_);
+
+        emit RebalanceCompleted(id_, sharesToRedeem_, receiverAddressSP_, smartWallet_);
+    }
 
     function _setAuthorizationNonce(uint256 deadline_, address user_, bytes32 nonce_) internal {
         if (block.timestamp > deadline_) revert EXPIRED();
@@ -496,61 +544,50 @@ contract SuperformRouterWrapper is IERC1155Receiver {
         Address.verifyCallResult(success, returndata);
     }
 
-    function _transferERC20In(IERC20 asset_, address user_, uint256 amount_) internal {
-        asset_.transferFrom(user_, address(this), amount_);
+    function _transferERC20In(IERC20 erc20_, address user_, uint256 amount_) internal {
+        erc20_.transferFrom(user_, address(this), amount_);
     }
 
-    function _deposit4626(
-        IERC20 asset_,
-        IERC4626 vault_,
-        uint256 amountToRedeem_,
-        uint256 collateralBalanceBefore_,
-        address receiver_,
-        bytes calldata callData_
-    )
-        internal
-    {
+    function _redeemShare(IERC4626 vault_, uint256 amountToRedeem_) internal returns (uint256 balanceDifference) {
+        IERC20 asset = vault_.asset();
+        uint256 collateralBalanceBefore = asset.balanceOf(address(this));
+
         /// @dev redeem the vault shares and receive collateral
         vault_.redeem(amountToRedeem_, address(this), address(this));
 
         /// @dev collateral balance after
-        uint256 collateralBalanceAfter = asset_.balanceOf(address(this));
-        uint256 collateralAdjusted = collateralBalanceAfter - collateralBalanceBefore_;
+        uint256 collateralBalanceAfter = asset.balanceOf(address(this));
 
+        balanceDifference = collateralBalanceAfter - collateralBalanceBefore;
+    }
+
+    function _deposit(
+        IERC20 asset_,
+        uint256 amountToDeposit_,
+        address receiverAddressSP_,
+        bytes calldata callData_
+    )
+        internal
+    {
         /// @dev approves superform router on demand
-        asset_.approve(SUPERFORM_ROUTER, collateralAdjusted);
-
-        uint256 payloadStartCount = CORE_STATE_REGISTRY.payloadsCount();
+        asset_.approve(SUPERFORM_ROUTER, amountToDeposit_);
 
         _callSuperformRouter(callData_);
 
-        uint256 payloadEndCount = CORE_STATE_REGISTRY.payloadsCount();
-
-        if (payloadEndCount - payloadStartCount > 0) {
-            for (uint256 i = payloadStartCount; i < payloadEndCount; i++) {
-                msgSenderMap[i] = receiver_;
-            }
-        }
-
         /// @dev refund any unused funds
-        _processRefunds(asset_, receiver_);
+        _processRefunds(asset_, receiverAddressSP_);
     }
 
     function _depositUsingSmartWallet(
         IERC20 asset_,
         uint256 amountToDeposit_,
-        uint256 collateralBalanceBefore_,
-        address receiver_,
+        address receiverAddressSP_,
         bytes calldata callData_
     )
         internal
     {
-        /// @dev collateral balance after
-        uint256 collateralBalanceAfter = asset_.balanceOf(address(this));
-        uint256 collateralAdjusted = collateralBalanceAfter - collateralBalanceBefore_;
-
         /// @dev approves superform router on demand
-        asset_.approve(SUPERFORM_ROUTER, collateralAdjusted);
+        asset_.approve(SUPERFORM_ROUTER, amountToDeposit_);
         uint256 payloadStartCount = CORE_STATE_REGISTRY.payloadsCount();
 
         _callSuperformRouter(callData_);
@@ -559,16 +596,25 @@ contract SuperformRouterWrapper is IERC1155Receiver {
 
         if (payloadEndCount - payloadStartCount > 0) {
             for (uint256 i = payloadStartCount; i < payloadEndCount; i++) {
-                msgSenderMap[i] = receiver_;
+                msgSenderMap[i] = receiverAddressSP_;
             }
         }
 
         /// @dev refund any unused funds
-        _processRefunds(asset_, receiver_);
+        _processRefunds(asset_, receiverAddressSP_);
     }
 
-    function _completeDisbursement(uint256 returnPayloadId) internal {
-        uint256 txInfo = CORE_STATE_REGISTRY.payloadHeader(returnPayloadId);
+    function _completeDisbursement(uint256 csrAckPayloadId) internal {
+        address receiverSP = msgSenderMap[payloadId];
+
+        if (receiverSP == address(0)) revert Error.INVALID_PAYLOAD_ID();
+        mapping(uint256 => bool) storage statusMapLoc = statusMap;
+
+        if (statusMapLoc[payloadId]) revert Error.PAYLOAD_ALREADY_PROCESSED();
+
+        statusMapLoc = true;
+
+        uint256 txInfo = CORE_STATE_REGISTRY.payloadHeader(csrAckPayloadId);
 
         (uint256 returnTxType, uint256 callbackType, uint8 multi,,,) = txInfo.decodeTxInfo();
 
@@ -579,26 +625,20 @@ contract SuperformRouterWrapper is IERC1155Receiver {
         uint256 payloadId;
         if (multi != 0) {
             ReturnMultiData memory returnData =
-                abi.decode(CORE_STATE_REGISTRY.payloadBody(returnPayloadId), (ReturnMultiData));
+                abi.decode(CORE_STATE_REGISTRY.payloadBody(csrAckPayloadId), (ReturnMultiData));
 
             payloadId = returnData.payloadId;
             IERC1155(SUPER_POSITIONS).safeBatchTransferFrom(
-                address(this), msgSenderMap[payloadId], returnData.superformIds, returnData.amounts, ""
+                address(this), receiverSP, returnData.superformIds, returnData.amounts, ""
             );
         } else {
             ReturnSingleData memory returnData =
-                abi.decode(CORE_STATE_REGISTRY.payloadBody(returnPayloadId), (ReturnSingleData));
+                abi.decode(CORE_STATE_REGISTRY.payloadBody(csrAckPayloadId), (ReturnSingleData));
 
             payloadId = returnData.payloadId;
             IERC1155(SUPER_POSITIONS).safeTransferFrom(
-                address(this), msgSenderMap[payloadId], returnData.superformId, returnData.amount, ""
+                address(this), receiverSP, returnData.superformId, returnData.amount, ""
             );
         }
-
-        if (statusMap[payloadId]) {
-            revert();
-        }
-
-        statusMap[payloadId] = true;
     }
 }
