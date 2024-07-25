@@ -33,11 +33,11 @@ update:; forge update
 build :; FOUNDRY_PROFILE=production forge build 
 build-unoptimized :; FOUNDRY_PROFILE=localdev forge build
 build-sizes :; FOUNDRY_PROFILE=production forge build --sizes
-test-vvv   :; forge test --match-test test_7540AccumulateWithdrawXChain -vvvv --evm-version cancun
+test-vvv   :; forge test --match-contract SDSVW7540DepositAsyncSyncWithdrawRevertNativeSlippageAMB23 -vvv --evm-version cancun
 ftest   :; forge test --evm-version cancun
 test-ci :; forge test --no-match-path "test/invariant/**/*.sol" --evm-version cancun
 coverage :; FOUNDRY_PROFILE=coverage forge coverage --no-match-path "test/invariant/**/*.sol" --no-match-contract SmokeTest --evm-version cancun --report lcov
-coverage-t :; FOUNDRY_PROFILE=coverage forge coverage --match-contract 5115 --evm-version cancun --report lcov
+coverage-t :; FOUNDRY_PROFILE=coverage forge coverage --match-contract 7540 --evm-version cancun --report lcov
 smoke-test   :; forge test --match-contract SmokeTest -vvv
 invariant   :; forge test --match-path "test/invariant/**/*.sol" --evm-version cancun -vvv
 invariant-rewards   :; forge test --match-test invariant_tokenBalances --evm-version cancun -vvv
