@@ -4,42 +4,43 @@ pragma solidity ^0.8.23;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract SXSVW7540FAsyncNativeSlippageAMB23 is ProtocolActions {
+contract SDSVW7540WithdrawAsyncNativeDstSwapSlippageAMB21 is ProtocolActions {
     function setUp() public override {
-        chainIds = [ETH, POLY, OP];
+        chainIds = [ETH, OP];
 
         super.setUp();
+
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
-    //////////////////////////////////////////////////////////////*/
-        AMBs = [2, 3];
+        //////////////////////////////////////////////////////////////*/
+        AMBs = [2, 1];
 
-        CHAIN_0 = POLY;
+        CHAIN_0 = OP;
         DST_CHAINS = [OP];
 
-        TARGET_UNDERLYINGS[OP][0] = [1];
+        TARGET_UNDERLYINGS[OP][0] = [3];
 
-        TARGET_VAULTS[OP][0] = [10];
+        TARGET_VAULTS[OP][0] = [12];
 
         TARGET_FORM_KINDS[OP][0] = [4];
- 
-        TARGET_UNDERLYINGS[OP][1] = [1];
 
-        TARGET_VAULTS[OP][1] = [10];
+        TARGET_UNDERLYINGS[OP][1] = [3];
+
+        TARGET_VAULTS[OP][1] = [12];
 
         TARGET_FORM_KINDS[OP][1] = [4];
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[OP][0] = [1];
-        LIQ_BRIDGES[OP][1] = [1];
+        LIQ_BRIDGES[OP][0] = [2];
+        LIQ_BRIDGES[OP][1] = [2];
 
         RECEIVE_4626[OP][0] = [false];
         RECEIVE_4626[OP][1] = [false];
 
         GENERATE_WITHDRAW_TX_DATA_ON_DST = true;
 
-        FINAL_LIQ_DST_WITHDRAW[OP] = [OP];
+        FINAL_LIQ_DST_WITHDRAW[OP] = [ETH];
 
         actions.push(
             TestAction({
@@ -49,9 +50,9 @@ contract SXSVW7540FAsyncNativeSlippageAMB23 is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                dstSwap: false,
-                externalToken: 69_420 // 0 = DAI, 1 = USDT, 2 = WETH
+                slippage: 444, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: true,
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
 

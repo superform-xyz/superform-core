@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract SXSVW7540FAsyncNativeSlippageAMB23 is ProtocolActions {
+contract SDSVW7540FAsyncNativeSlippage is ProtocolActions {
     function setUp() public override {
         chainIds = [ETH, POLY, OP];
 
@@ -14,7 +14,7 @@ contract SXSVW7540FAsyncNativeSlippageAMB23 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
         AMBs = [2, 3];
 
-        CHAIN_0 = POLY;
+        CHAIN_0 = OP;
         DST_CHAINS = [OP];
 
         TARGET_UNDERLYINGS[OP][0] = [1];
@@ -22,7 +22,7 @@ contract SXSVW7540FAsyncNativeSlippageAMB23 is ProtocolActions {
         TARGET_VAULTS[OP][0] = [10];
 
         TARGET_FORM_KINDS[OP][0] = [4];
- 
+
         TARGET_UNDERLYINGS[OP][1] = [1];
 
         TARGET_VAULTS[OP][1] = [10];
