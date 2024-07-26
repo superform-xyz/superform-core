@@ -67,26 +67,35 @@ interface IAsyncStateRegistry {
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////
 
+    /// @dev is emitted when a async deposit/redeem request is updated
     event UpdatedRequestsConfig(address indexed user_, uint256 indexed superformId_, uint256 indexed requestId_);
 
+    /// @dev is emitted when shares are successfull claimed
     event ClaimedAvailableDeposits(address indexed user_, uint256 indexed superformId_, uint256 indexed requestId_);
 
+    /// @dev is emitted when available funds are successfull redeemed
     event ClaimedAvailableRedeems(address indexed user_, uint256 indexed superformId_, uint256 indexed requestId_);
 
+    /// @dev is emitted when async deposit fails
     event FailedDepositClaim(address indexed user_, uint256 indexed superformId_, uint256 indexed requestId_);
 
+    /// @dev is emitted when async redeem fails
     event FailedRedeemClaim(address indexed user_, uint256 indexed superformId_, uint256 indexed requestId_);
 
-    /// @dev is emitted when a sync withdraw tx data payload is received
-    event ReceivedSyncWithdrawTxDataPayload(uint256 indexed payloadId);
+    /// @dev is emitted when a sync redeem tx data payload is received
+    event ReceivedSyncWithdrawTxDataPayload(uint256 indexed payloadId_);
 
-    /// @dev is emitted when a sync withdraw tx data payload is finalized
-    event FinalizedSyncWithdrawTxDataPayload(uint256 indexed payloadId);
+    /// @dev is emitted when a sync redeem tx data payload is finalized
+    event FinalizedSyncWithdrawTxDataPayload(uint256 indexed payloadId_);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
 
+    /// @notice retrieves the request configuration for a given user and superform
+    /// @param user_ The address of the user
+    /// @param superformId_ The ID of the superform
+    /// @return requestConfig for the specified user and superform
     function getRequestConfig(
         address user_,
         uint256 superformId_
@@ -95,21 +104,27 @@ interface IAsyncStateRegistry {
         view
         returns (RequestConfig memory requestConfig);
 
-    /// @dev allows users to read the syncWithdrawTxDataPayload stored per payloadId_
-    /// @param payloadId_ is the unique payload identifier allocated on the destination chain
-    /// @return syncWithdrawTxDataPayload_ the syncWithdrawTxData payload stored
+    /// @notice retrieves the sync withdraw txData payload for a given payload ID
+    /// @param payloadId_ The ID of the payload
+    /// @return syncWithdrawTxDataPayload_ for the specified payload ID
     function getSyncWithdrawTxDataPayload(uint256 payloadId_)
         external
         view
         returns (SyncWithdrawTxDataPayload memory syncWithdrawTxDataPayload_);
 
-    /// @dev allows users to read the syncWithdrawTxDataPayloadCounter
+    /// @notice retrieves the current withdraw tx data payload counter
     function syncWithdrawTxDataPayloadCounter() external view returns (uint256);
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
 
+    /// @notice updates the request configuration for a given superform
+    /// @param type_ The type of the request
+    /// @param srcChainId_ The source chain ID
+    /// @param isDeposit_ Whether the request is a deposit
+    /// @param requestId_ The ID of the request
+    /// @param data_ The InitSingleVaultData containing request information
     function updateRequestConfig(
         uint8 type_,
         uint64 srcChainId_,
@@ -119,8 +134,14 @@ interface IAsyncStateRegistry {
     )
         external;
 
-    function claimAvailableDeposits(ClaimAvailableDepositsArgs memory args) external payable;
+    /// @notice claims available deposits for a user
+    /// @param args_ The arguments for claiming deposits
+    function claimAvailableDeposits(ClaimAvailableDepositsArgs memory args_) external payable;
 
+    /// @notice claims available redeems for a user
+    /// @param user_ The address of the user
+    /// @param superformId_ The ID of the superform
+    /// @param updatedTxData_ The updated transaction data
     function claimAvailableRedeems(address user_, uint256 superformId_, bytes memory updatedTxData_) external;
 
     /// @notice Receives the off-chain generated transaction data for the sync withdraw tx

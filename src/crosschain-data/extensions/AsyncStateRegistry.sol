@@ -7,39 +7,19 @@ import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
-import {
-    IAsyncStateRegistry,
-    SyncWithdrawTxDataPayload,
-    ClaimAvailableDepositsArgs,
-    ClaimAvailableDepositsLocalVars,
-    NOT_READY_TO_CLAIM,
-    ERC7540_AMBIDS_NOT_ENCODED,
-    INVALID_AMOUNT_IN_TXDATA,
-    REQUEST_CONFIG_NON_EXISTENT,
-    NOT_ASYNC_SUPERFORM,
-    AsyncStatus,
-    RequestConfig
-} from "src/interfaces/IAsyncStateRegistry.sol";
-
 import { IERC7540Form } from "src/forms/interfaces/IERC7540Form.sol";
-import { Error } from "src/libraries/Error.sol";
-import { ProofLib } from "src/libraries/ProofLib.sol";
-import { DataLib } from "src/libraries/DataLib.sol";
-import { PayloadUpdaterLib } from "src/libraries/PayloadUpdaterLib.sol";
-import {
-    InitSingleVaultData,
-    AMBMessage,
-    CallbackType,
-    TransactionType,
-    ReturnSingleData,
-    LiqRequest,
-    PayloadState
-} from "src/types/DataTypes.sol";
-import { BaseStateRegistry } from "src/crosschain-data/BaseStateRegistry.sol";
 import { IERC7575 } from "src/vendor/centrifuge/IERC7540.sol";
 import { IQuorumManager } from "src/interfaces/IQuorumManager.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { IPaymentHelperV2 as IPaymentHelper } from "src/interfaces/IPaymentHelperV2.sol";
+
+import { Error } from "src/libraries/Error.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { PayloadUpdaterLib } from "src/libraries/PayloadUpdaterLib.sol";
+
+import "src/crosschain-data/BaseStateRegistry.sol";
+import "src/interfaces/IAsyncStateRegistry.sol";
+import "src/types/DataTypes.sol";
 
 /// @title AsyncStateRegistry
 /// @dev Handles communication in 7540 forms with constant zero request ids
@@ -55,28 +35,31 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     /// @dev tracks the total sync withdraw txData payloads
     uint256 public syncWithdrawTxDataPayloadCounter;
 
-    // 0 for unset, 1 for non fungible, 2 for fungible
+    /// @dev 0 for unset, 1 for non fungible, 2 for fungible
     uint8 public immutable ASYNC_STATE_REGISRY_TYPE;
 
+    /// @dev request configurations for each user and superform
     mapping(address user => mapping(uint256 superformId => RequestConfig requestConfig)) public requestConfigs;
 
+    /// @dev sync withdraw txData payloads
     mapping(uint256 syncPayloadId => SyncWithdrawTxDataPayload) public syncWithdrawTxDataPayload;
 
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
     //////////////////////////////////////////////////////////////
 
+    /// @dev dispatchPayload() should be disabled by default
+    modifier onlySender() override {
+        revert Error.DISABLED();
+        _;
+    }
+
+    /// @dev ensures only the async state registry processor can a valid caller
     modifier onlyAsyncStateRegistryProcessor() {
         bytes32 role = keccak256("ASYNC_STATE_REGISTRY_PROCESSOR_ROLE");
         if (!ISuperRBAC(_getSuperRegistryAddress(keccak256("SUPER_RBAC"))).hasRole(role, msg.sender)) {
             revert Error.NOT_PRIVILEGED_CALLER(role);
         }
-        _;
-    }
-
-    /// @dev dispatchPayload() should be disabled by default
-    modifier onlySender() override {
-        revert Error.DISABLED();
         _;
     }
 
@@ -421,6 +404,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
 
+    /// @dev validates the transaction data for async operations
     function _validateTxDataAsync(
         uint64 srcChainId_,
         uint256 claimableRedeem_,
@@ -456,6 +440,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         }
     }
 
+    /// @dev validates the transaction data using a bridge validator
     function _validateTxData(
         bool async_,
         uint64 srcChainId_,
@@ -498,14 +483,12 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         }
     }
 
-    /// @dev returns the required quorum for the src chain id from super registry
-    /// @param chainId is the src chain id
-    /// @return the quorum configured for the chain id
+    /// @dev returns the required quorum for the source chain ID
     function _getRequiredMessagingQuorum(uint64 chainId) internal view returns (uint256) {
         return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId);
     }
 
-    /// @dev allows users to read the ids of ambs that delivered a payload
+    /// @dev retrieves the AMB IDs that delivered a payload
     function _getDeliveryAMB(uint256 payloadId_) internal view returns (uint8[] memory ambIds_) {
         IBaseStateRegistry coreStateRegistry =
             IBaseStateRegistry(_getSuperRegistryAddress(keccak256("CORE_STATE_REGISTRY")));
@@ -515,6 +498,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
 
     /// @notice In regular flow, BaseStateRegistry function for messaging back to the source
     /// @notice Use constructed earlier return message to send acknowledgment (msg) back to the source
+    /// @dev dispatches an acknowledgment message back to the source chain
     function _dispatchAcknowledgement(uint64 dstChainId_, uint8[] memory ambIds_, bytes memory message_) internal {
         (, bytes memory extraData) = IPaymentHelper(_getSuperRegistryAddress(keccak256("PAYMENT_HELPER")))
             .calculateAMBData(dstChainId_, ambIds_, message_);
@@ -522,14 +506,17 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         _dispatchPayload(msg.sender, ambIds_, dstChainId_, message_, extraData);
     }
 
+    /// @dev retrieves the state registry ID
     function _getStateRegistryId() internal view returns (uint8) {
         return superRegistry.getStateRegistryId(address(this));
     }
 
+    /// @dev retrieves an address from the SuperRegistry
     function _getSuperRegistryAddress(bytes32 id) internal view returns (address) {
         return superRegistry.getAddress(id);
     }
 
+    /// @dev decodes the 7540 extra form data
     function _decode7540ExtraFormData(
         uint256 superformId_,
         bytes memory extraFormData_
