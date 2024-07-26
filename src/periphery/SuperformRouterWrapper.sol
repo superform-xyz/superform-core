@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import { SignatureChecker } from "openzeppelin-contracts/contracts/utils/cryptography/SignatureChecker.sol";
 import { EIP712 } from "openzeppelin-contracts/contracts/utils/cryptography/EIP712.sol";
 import { Address } from "openzeppelin-contracts/contracts/utils/Address.sol";
+import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { IERC1155 } from "openzeppelin-contracts/contracts/interfaces/IERC1155.sol";
@@ -26,6 +27,7 @@ import { Error } from "src/libraries/Error.sol";
 
 contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
     using DataLib for uint256;
+    using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////////////
     //                       ERRORS                             //
@@ -40,7 +42,9 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
     //                       EVENTS                             //
     //////////////////////////////////////////////////////////////
 
-    event RebalanceCompleted(address indexed receiver, uint256 indexed id, uint256 amount, bool smartWallet);
+    event RebalanceSyncCompleted(address indexed receiver, uint256 indexed id, uint256 amount, bool smartWallet);
+
+    event RebalanceMultiSyncCompleted(address indexed receiver, uint256[] ids, uint256[] amounts, bool smartWallet);
 
     event XChainRebalanceInitiated(
         address indexed receiver,
@@ -51,13 +55,24 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
         uint256 finalizeSlippage,
         uint256 expectedAmountInterimAsset
     );
+
+    event XChainRebalanceMultiInitiated(
+        address indexed receiver,
+        uint256[] ids,
+        uint256[] amounts,
+        bool smartWallet,
+        address interimAsset,
+        uint256 finalizeSlippage,
+        uint256 expectedAmountInterimAsset
+    );
+
     event XChainRebalanceFailed(address indexed receiver, uint256 indexed firstStepLastCSRPayloadId);
 
     event XChainRebalanceComplete(address indexed receiver, uint256 indexed firstStepLastCSRPayloadId);
 
     event WithdrawCompleted(address indexed receiver, uint256 indexed id, uint256 amount);
 
-    event WithdrawMultiCompleted(address indexed receiver, uint256[] indexed ids, uint256[] amounts);
+    event WithdrawMultiCompleted(address indexed receiver, uint256[] ids, uint256[] amounts);
 
     event Deposit4626Completed(address indexed receiver, address indexed vault);
 
@@ -87,6 +102,32 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
         bytes rebalanceCalldata;
         bool smartWallet;
         address interimAsset;
+        uint256 slippage;
+        uint256 expectedAmountInterimAsset;
+    }
+
+    struct RebalanceMultiPositionsSyncArgs {
+        uint256[] ids;
+        uint256[] sharesToRedeem;
+        uint256 previewRedeemAmount;
+        address interimAsset;
+        uint256 slippage;
+        address receiverAddressSP;
+        bool smartWallet;
+        bytes callData;
+        bytes rebalanceCallData;
+    }
+
+    struct InitiateXChainRebalanceMultiArgs {
+        uint256[] ids;
+        uint256[] sharesToRedeem;
+        address receiverAddressSP;
+        address interimAsset;
+        uint256 finalizeSlippage;
+        uint256 expectedAmountInterimAsset;
+        bool smartWallet;
+        bytes callData;
+        bytes rebalanceCallData;
     }
 
     mapping(uint256 payloadId => address user) public msgSenderMap;
@@ -144,12 +185,13 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
     //////////////////////////////////////////////////////////////
 
     /// @dev helps user rebalance a single SuperPosition in a synchronous way
+    /// @dev note: this is not to be used by multi vault rebalances
     /// @param id_ the superform id to redeem from
     /// @param sharesToRedeem_ the amount of superform shares to redeem
     /// @param previewRedeemAmount_ the amount of asset to receive after redeeming
+    /// @param vaultAsset_ the asset to receive after redeeming
     /// @param slippage_ the slippage to allow for the rebalance
     /// @param receiverAddressSP_ the receiver of the superform shares
-    /// @param vaultAsset the asset to receive after redeeming
     /// @param smartWallet_ whether to use smart wallet or not
     /// @param callData_ the encoded superform router request
     /// @param rebalanceCallData_ the encoded superform router request for the rebalance
@@ -157,9 +199,9 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
         uint256 id_,
         uint256 sharesToRedeem_,
         uint256 previewRedeemAmount_,
+        address vaultAsset_,
         uint256 slippage_,
         address receiverAddressSP_,
-        address vaultAsset,
         bool smartWallet_,
         bytes calldata callData_,
         bytes calldata rebalanceCallData_
@@ -167,17 +209,47 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
         external
         payable
     {
+        _transferSuperPositions(receiverAddressSP_, id_, sharesToRedeem_);
+
         _rebalancePositionsSync(
-            id_,
-            sharesToRedeem_,
             previewRedeemAmount_,
+            vaultAsset_,
             slippage_,
             receiverAddressSP_,
-            vaultAsset,
             smartWallet_,
             callData_,
-            rebalanceCallData_
+            rebalanceCallData_,
+            false
         );
+
+        emit RebalanceSyncCompleted(receiverAddressSP_, id_, sharesToRedeem_, smartWallet_);
+    }
+
+    /// @dev batch version of the function above
+    /// @param args the args to rebalance (similar to the function above)
+    function rebalanceMultiPositionsSync(RebalanceMultiPositionsSyncArgs memory args) external payable {
+        uint256 len = args.ids.length;
+        if (len != args.sharesToRedeem.length) {
+            revert Error.ARRAY_LENGTH_MISMATCH();
+        }
+
+        for (uint256 i = 0; i < len; ++i) {
+            /// @dev step 1: send SPs to wrapper
+            _transferSuperPositions(args.receiverAddressSP, args.ids[i], args.sharesToRedeem[i]);
+        }
+
+        _rebalancePositionsSync(
+            args.previewRedeemAmount,
+            args.interimAsset,
+            args.slippage,
+            args.receiverAddressSP,
+            args.smartWallet,
+            args.callData,
+            args.rebalanceCallData,
+            true
+        );
+
+        emit RebalanceMultiSyncCompleted(args.receiverAddressSP, args.ids, args.sharesToRedeem, args.smartWallet);
     }
 
     /// @dev initiates the rebalance process for when the vault to redeem from is on a different chain
@@ -230,8 +302,47 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
         );
     }
 
+    /// @dev batch version of the function above
+    /// @dev TODO how to validate interimAsset is final asset of the entire callData_ (and should we check
+    /// expectedAmountInterimAsset on finalize)
+    /// @param args the args to rebalance (similar to the function above)
+    function initiateXChainRebalanceMulti(InitiateXChainRebalanceMultiArgs memory args) external payable {
+        uint256 len = args.ids.length;
+        if (len != args.sharesToRedeem.length) {
+            revert Error.ARRAY_LENGTH_MISMATCH();
+        }
+
+        for (uint256 i = 0; i < len; ++i) {
+            /// @dev step 1: send SPs to wrapper
+            _transferSuperPositions(args.receiverAddressSP, args.ids[i], args.sharesToRedeem[i]);
+        }
+
+        /// @dev step 2: send SPs to router
+        _callSuperformRouter(args.callData);
+
+        /// notice rebalanceCallData can be multi Dst / multi vault
+        xChainRebalanceCallData[args.receiverAddressSP][CORE_STATE_REGISTRY.payloadsCount()] = XChainRebalanceData({
+            rebalanceCalldata: args.rebalanceCallData,
+            smartWallet: args.smartWallet,
+            interimAsset: args.interimAsset,
+            slippage: args.finalizeSlippage,
+            expectedAmountInterimAsset: args.expectedAmountInterimAsset
+        });
+
+        emit XChainRebalanceMultiInitiated(
+            args.receiverAddressSP,
+            args.ids,
+            args.sharesToRedeem,
+            args.smartWallet,
+            args.interimAsset,
+            args.finalizeSlippage,
+            args.expectedAmountInterimAsset
+        );
+    }
+
     /// @dev completes the rebalance process for when the vault to redeem from is on a different chain
     /// @notice rebalanceCalldata can contain multiple destinations or vaults, but external asset remains one
+    /// @dev TODO should we transfer the interim asset in case the slippage check fails? or how do we deal with this?
     /// @param receiverAddressSP_ the receiver of the superform shares
     /// @param firstStepLastCSRPayloadId_ the first step payload id
     /// @param amountReceivedInterimAsset_ the amount of interim asset received
@@ -289,10 +400,10 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
         payable
     {
         _transferERC20In(IERC20(vault_), receiverAddressSP_, amount_);
+        IERC4626 vault = IERC4626(vault_);
+        uint256 amountRedeemed = _redeemShare(vault, amount_);
 
-        uint256 amountRedeemed = _redeemShare(IERC4626(vault_), amount_);
-
-        IERC20 asset = IERC4626(vault_).asset();
+        IERC20 asset = IERC20(vault.asset());
 
         smartWallet_
             ? _depositUsingSmartWallet(asset, amountRedeemed, receiverAddressSP_, callData_)
@@ -390,8 +501,8 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
         uint256 amountToDeposit = amount_ - (amount_ / 10);
 
         smartWallet_
-            ? _depositUsingSmartWallet(asset_, amountToDeposit, receiverAddressSP_, callData_)
-            : _deposit(asset_, amountToDeposit, receiverAddressSP_, callData_);
+            ? _depositUsingSmartWallet(asset, amountToDeposit, receiverAddressSP_, callData_)
+            : _deposit(asset, amountToDeposit, receiverAddressSP_, callData_);
 
         emit DepositCompleted(receiverAddressSP_, smartWallet_, true);
     }
@@ -401,16 +512,20 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
     /// wallet"
     /// @param csrAckPayloadId_ the payload id to complete the disbursement
     function completeDisbursement(uint256 csrAckPayloadId_) external {
-        _completeDisbursement(csrAckPayloadId_);
+        address receiverAddressSP = _completeDisbursement(csrAckPayloadId_);
+
+        emit DisbursementCompleted(receiverAddressSP, csrAckPayloadId_);
     }
 
     /// @dev batch version of the function above
     /// @param csrAckPayloadIds_ the payload ids to complete the disbursement
     function batchCompleteDisbursement(uint256[] calldata csrAckPayloadIds_) external {
         uint256 len = csrAckPayloadIds_.length;
-        if (len == 0) revert Error.ZERO_LENGTH();
+        if (len == 0) revert Error.ARRAY_LENGTH_MISMATCH();
+        address receiverAddressSP;
         for (uint256 i = 0; i < len; i++) {
-            _completeDisbursement(csrAckPayloadIds_[i]);
+            receiverAddressSP = _completeDisbursement(csrAckPayloadIds_[i]);
+            emit DisbursementCompleted(receiverAddressSP, csrAckPayloadIds_[i]);
         }
     }
 
@@ -496,26 +611,24 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
     //////////////////////////////////////////////////////////////
 
     function _rebalancePositionsSync(
-        uint256 id_,
-        uint256 sharesToRedeem_,
         uint256 previewRedeemAmount_,
+        address asset_,
         uint256 slippage_,
         address receiverAddressSP_,
-        address vaultAsset,
         bool smartWallet_,
-        bytes calldata callData_,
-        bytes calldata rebalanceCallData_
+        bytes memory callData_,
+        bytes memory rebalanceCallData_,
+        bool multi
     )
         internal
     {
-        /// @dev step 1: send SPs to wrapper
-        _transferSuperPositions(receiverAddressSP_, id_, sharesToRedeem_);
-
-        IERC20 asset = IERC20(vaultAsset);
+        IERC20 asset = IERC20(asset_);
 
         uint256 balanceBefore = asset.balanceOf(address(this));
 
         /// @dev step 2: send SPs to router
+        /// @dev TODO: final asset of multi vault must be "interimAsset" otherwise funds can be lost (validations
+        /// needed)
         _callSuperformRouter(callData_);
 
         uint256 balanceAfter = asset.balanceOf(address(this));
@@ -527,13 +640,12 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
         if (ENTIRE_SLIPPAGE * amountToDeposit < ((previewRedeemAmount_ * (ENTIRE_SLIPPAGE - slippage_)))) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
+
         /// @dev step 3: rebalance into a new superform with rebalanceCallData_
         /// @dev this can be same chain or cross chain
         smartWallet_
             ? _depositUsingSmartWallet(asset, amountToDeposit, receiverAddressSP_, rebalanceCallData_)
             : _deposit(asset, amountToDeposit, receiverAddressSP_, rebalanceCallData_);
-
-        emit RebalanceCompleted(receiverAddressSP_, id_, sharesToRedeem_, smartWallet_);
     }
 
     function _setAuthorizationNonce(uint256 deadline_, address user_, bytes32 nonce_) internal {
@@ -543,7 +655,7 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
         authorizations[user_][nonce_] = true;
     }
 
-    function _checkSignature(address user_, bytes32 digest_, bytes memory signature_) internal {
+    function _checkSignature(address user_, bytes32 digest_, bytes memory signature_) internal view {
         if (!SignatureChecker.isValidSignatureNow(user_, digest_, signature_)) revert INVALID_AUTHORIZATION();
     }
 
@@ -573,7 +685,7 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
     }
 
     /// @dev how to ensure call data only calls certain functions?
-    function _callSuperformRouter(bytes calldata callData_) internal {
+    function _callSuperformRouter(bytes memory callData_) internal {
         (bool success, bytes memory returndata) = SUPERFORM_ROUTER.call{ value: msg.value }(callData_);
 
         Address.verifyCallResult(success, returndata);
@@ -584,7 +696,7 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
     }
 
     function _redeemShare(IERC4626 vault_, uint256 amountToRedeem_) internal returns (uint256 balanceDifference) {
-        IERC20 asset = vault_.asset();
+        IERC20 asset = IERC20(vault_.asset());
         uint256 collateralBalanceBefore = asset.balanceOf(address(this));
 
         /// @dev redeem the vault shares and receive collateral
@@ -600,7 +712,7 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
         IERC20 asset_,
         uint256 amountToDeposit_,
         address receiverAddressSP_,
-        bytes calldata callData_
+        bytes memory callData_
     )
         internal
     {
@@ -617,7 +729,7 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
         IERC20 asset_,
         uint256 amountToDeposit_,
         address receiverAddressSP_,
-        bytes calldata callData_
+        bytes memory callData_
     )
         internal
     {
@@ -639,15 +751,15 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
         _processRefunds(asset_, receiverAddressSP_);
     }
 
-    function _completeDisbursement(uint256 csrAckPayloadId) internal {
-        address receiverAddressSP = msgSenderMap[payloadId];
+    function _completeDisbursement(uint256 csrAckPayloadId) internal returns (address receiverAddressSP) {
+        receiverAddressSP = msgSenderMap[csrAckPayloadId];
 
         if (receiverAddressSP == address(0)) revert Error.INVALID_PAYLOAD_ID();
         mapping(uint256 => bool) storage statusMapLoc = statusMap;
 
-        if (statusMapLoc[payloadId]) revert Error.PAYLOAD_ALREADY_PROCESSED();
+        if (statusMapLoc[csrAckPayloadId]) revert Error.PAYLOAD_ALREADY_PROCESSED();
 
-        statusMapLoc = true;
+        statusMapLoc[csrAckPayloadId] = true;
 
         uint256 txInfo = CORE_STATE_REGISTRY.payloadHeader(csrAckPayloadId);
 
@@ -675,7 +787,5 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
                 address(this), receiverAddressSP, returnData.superformId, returnData.amount, ""
             );
         }
-
-        emit DisbursementCompleted(receiverAddressSP, payloadId);
     }
 }
