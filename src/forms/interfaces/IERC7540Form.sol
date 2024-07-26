@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import { IERC4626Form } from "./IERC4626Form.sol";
 import { InitSingleVaultData, TimelockPayload, LiqRequest } from "../../types/DataTypes.sol";
-import { SyncWithdrawTxDataPayload } from "../../interfaces/IBaseAsyncStateRegistry.sol";
+import { SyncWithdrawTxDataPayload } from "../../interfaces/IAsyncStateRegistry.sol";
 
 /// @title IERC7540FormBase
 /// @author Zeropoint Labs

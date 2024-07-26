@@ -4,8 +4,7 @@ pragma solidity ^0.8.23;
 import { BaseForm } from "src/BaseForm.sol";
 import { LiquidityHandler } from "src/crosschain-liquidity/LiquidityHandler.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
-import { IBaseAsyncStateRegistry, SyncWithdrawTxDataPayload } from "src/interfaces/IBaseAsyncStateRegistry.sol";
-import { IAsyncStateRegistry } from "src/interfaces/IAsyncStateRegistry.sol";
+import { IAsyncStateRegistry, SyncWithdrawTxDataPayload } from "src/interfaces/IAsyncStateRegistry.sol";
 
 import { IEmergencyQueue } from "src/interfaces/IEmergencyQueue.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
@@ -936,7 +935,7 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
     /// @dev stores the sync withdraw payload
     function _storeSyncWithdrawPayload(uint64 srcChainId_, InitSingleVaultData memory data_) internal {
         // send info to async state registry for txData update
-        IBaseAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY")))
+        IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY")))
             .receiveSyncWithdrawTxDataPayload(srcChainId_, data_);
     }
 
