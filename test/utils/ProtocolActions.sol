@@ -102,6 +102,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
     /// 2)
     bool sameChainDstHasRevertingVault;
 
+    /// @dev bool flag to detect on each action if a second async step is a reverting vault (action is stopped in stage
+    /// 5_1)
+    bool sameChainDstHasAsyncRevertingVault;
+
     /// @dev to be aware which destinations have been 'used' already
     mapping(uint64 chainId => UniqueDSTInfo info) public usedDSTs;
 
@@ -249,10 +253,11 @@ abstract contract ProtocolActions is CommonProtocolActions {
         /// @dev simulation of cross-chain message delivery (for x-chain actions)
         aV = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperformsData, singleSuperformsData);
         if (DEBUG_MODE) console.log("Stage 3 complete");
+        console.log("3");
 
         /// @dev processing of message delivery on destination   (for x-chain actions)
         Stage4ReturnVars memory r = _stage4_process_src_dst_payload(action, vars, aV, singleSuperformsData, act);
-
+        console.log("4");
         if (!r.success) {
             if (DEBUG_MODE) console.log("Stage 4 failed");
             return;
@@ -276,7 +281,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 if (DEBUG_MODE) console.log("Stage 5 failed");
 
                 return;
-            } else if (action.testType != TestType.RevertMainAction) {
+            } else if (action.testType != TestType.RevertMainAction && !sameChainDstHasAsyncRevertingVault) {
                 if (DEBUG_MODE) console.log("Stage 5 complete");
 
                 /// @dev if we don't even process main action there is nothing to assert
@@ -287,8 +292,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
             }
         }
 
+        console.log("5");
         /// @dev this is only required for full async and async deposit forms
         if (action.action == Actions.Deposit) {
+            console.log("5_1");
             _stage5_1_finalize_asyncDeposit_payload(action, vars, multiSuperformsData, singleSuperformsData);
 
             if (DEBUG_MODE) console.log("Stage 5_1 async deposit complete");
@@ -297,11 +304,13 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             if (DEBUG_MODE) console.log("Stage 5_2 async deposit mint superPositions complete");
 
-            /// @dev if we don't even process main action there is nothing to assert
-            /// @dev assert superpositions mint
-            _assertAfterAsyncDeposit(
-                action, multiSuperformsData, singleSuperformsData, vars, inputBalanceBefore, r.finalAmounts
-            );
+            if (!sameChainDstHasAsyncRevertingVault) {
+                /// @dev if we don't even process main action there is nothing to assert
+                /// @dev assert superpositions mint
+                _assertAfterAsyncDeposit(
+                    action, multiSuperformsData, singleSuperformsData, vars, inputBalanceBefore, r.finalAmounts
+                );
+            }
 
             if (DEBUG_MODE) console.log("Asserted after async deposit mint superPositions complete");
         }
@@ -420,6 +429,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         delete revertingRedeemAsyncDepositSFs;
 
         delete sameChainDstHasRevertingVault;
+        delete sameChainDstHasAsyncRevertingVault;
 
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
             delete countTimelocked[i];
@@ -644,6 +654,21 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         break;
                     }
                 }
+
+                if (revertingAsyncDepositSFs.length > 0) {
+                    if (revertingAsyncDepositSFs[i].length > 0 && action.action == Actions.Deposit) {
+                        sameChainDstHasAsyncRevertingVault = true;
+                        break;
+                    }
+                }
+
+                if (revertingRedeemAsyncDepositSFs.length > 0) {
+                    if (action.action == Actions.Withdraw && revertingRedeemAsyncDepositSFs[i].length > 0) {
+                        sameChainDstHasRevertingVault = true;
+                        break;
+                    }
+                }
+
                 if (revertingWithdrawSFs.length > 0) {
                     if (revertingWithdrawSFs[i].length > 0 && action.action == Actions.Withdraw) {
                         sameChainDstHasRevertingVault = true;
@@ -1485,6 +1510,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         Stage51ASyncDeposit memory v;
 
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
+            if (CHAIN_0 == DST_CHAINS[i]) { }
             v.initialFork = vm.activeFork();
 
             vm.selectFork(FORKS[DST_CHAINS[i]]);
@@ -1492,6 +1518,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             v.asyncStateRegistry = IAsyncStateRegistry(contracts[DST_CHAINS[i]][bytes32(bytes("AsyncStateRegistry"))]);
 
             if (countAsyncDeposit[i] > 0) {
+                console.log("5_1_1");
                 vm.recordLogs();
 
                 /// @dev set 7540 operator and move vault to claimable
@@ -1513,6 +1540,26 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     );
                 }
 
+                for (uint256 j = 0; j < revertingAsyncDepositSFs[i].length; j++) {
+                    (v.superform,,) = revertingAsyncDepositSFs[i][j].getSuperform();
+
+                    _authorizeOperator(v.superform, action.user);
+
+                    _moveToClaimable(v.superform, action, multiSuperformsData, singleSuperformsData, i, true);
+
+                    uint256 nativeFee = _generateAckGasFeesAndParamsForAsyncDepositCallback(
+                        abi.encode(CHAIN_0, DST_CHAINS[i]), AMBs, users[action.user], revertingAsyncDepositSFs[i][j]
+                    );
+
+                    vm.prank(deployer);
+
+                    vm.expectEmit();
+                    emit IAsyncStateRegistry.FailedDepositClaim(users[action.user], revertingAsyncDepositSFs[i][j], 0);
+                    v.asyncStateRegistry.claimAvailableDeposits{ value: nativeFee }(
+                        ClaimAvailableDepositsArgs(users[action.user], revertingAsyncDepositSFs[i][j])
+                    );
+                }
+
                 for (uint256 j = 0; j < revertingRedeemAsyncDepositSFs[i].length; j++) {
                     (v.superform,,) = revertingRedeemAsyncDepositSFs[i][j].getSuperform();
 
@@ -1528,6 +1575,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     );
 
                     vm.prank(deployer);
+
+                    if (sameChainDstHasAsyncRevertingVault) {
+                        vm.expectRevert();
+                    }
 
                     v.asyncStateRegistry.claimAvailableDeposits{ value: nativeFee }(
                         ClaimAvailableDepositsArgs(users[action.user], revertingRedeemAsyncDepositSFs[i][j])
@@ -2891,7 +2942,10 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 }
                 if (
                     vars.formKinds[j] == 4
-                        && (vars.vaultIds[j] == 10 || vars.vaultIds[j] == 11 || vars.vaultIds[j] == 15)
+                        && (
+                            vars.vaultIds[j] == 10 || vars.vaultIds[j] == 11 || vars.vaultIds[j] == 13
+                                || vars.vaultIds[j] == 15
+                        )
                 ) {
                     ++countAsyncDeposit[dst];
                     asyncDepositIndexes[chain1][countAsyncDeposit[dst]] = j;
@@ -3490,7 +3544,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             /// @notice ID: 3 Wormhole
             if (AMBs[i] == 3) {
-
                 WormholeHelper(getContract(TO_CHAIN, "WormholeHelper")).help(
                     WORMHOLE_CHAIN_IDS[TO_CHAIN], FORKS[FROM_CHAIN], wormholeRelayer, logs
                 );
