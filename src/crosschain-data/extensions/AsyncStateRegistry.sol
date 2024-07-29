@@ -9,7 +9,6 @@ import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { ISuperPositions } from "src/interfaces/ISuperPositions.sol";
 import { IERC7540Form } from "src/forms/interfaces/IERC7540Form.sol";
 import { IERC7575 } from "src/vendor/centrifuge/IERC7540.sol";
-import { IQuorumManager } from "src/interfaces/IQuorumManager.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { IPaymentHelperV2 as IPaymentHelper } from "src/interfaces/IPaymentHelperV2.sol";
 
@@ -76,37 +75,11 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         _;
     }
 
-    /// @dev ensures only valid payloads are processed
-    /// @param payloadId_ is the payloadId to check
-    modifier isValidPayloadId(uint256 payloadId_) {
-        if (payloadId_ > payloadsCount) {
-            revert Error.INVALID_PAYLOAD_ID();
-        }
-        _;
-    }
-
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
     constructor(ISuperRegistry superRegistry_) BaseStateRegistry(superRegistry_) { }
-    //////////////////////////////////////////////////////////////
-    //              EXTERNAL VIEW FUNCTIONS                     //
-    //////////////////////////////////////////////////////////////
-
-    /// @inheritdoc IAsyncStateRegistry
-    function getRequestConfig(address user_, uint256 superformId_) external view returns (RequestConfig memory) {
-        return requestConfigs[user_][superformId_];
-    }
-
-    /// @inheritdoc IAsyncStateRegistry
-    function getSyncWithdrawTxDataPayload(uint256 payloadId_)
-        external
-        view
-        returns (SyncWithdrawTxDataPayload memory syncWithdrawTxDataPayload_)
-    {
-        return syncWithdrawTxDataPayload[payloadId_];
-    }
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL WRITE FUNCTIONS                    //
@@ -189,14 +162,11 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     }
 
     /// @inheritdoc BaseStateRegistry
-    function processPayload(uint256 payloadId_)
-        external
-        payable
-        virtual
-        override
-        onlyAsyncStateRegistryProcessor
-        isValidPayloadId(payloadId_)
-    {
+    function processPayload(uint256 payloadId_) external payable virtual override onlyAsyncStateRegistryProcessor {
+        if (payloadId_ > payloadsCount) {
+            revert Error.INVALID_PAYLOAD_ID();
+        }
+
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
             revert Error.PAYLOAD_ALREADY_PROCESSED();
         }
@@ -210,7 +180,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         AMBMessage memory _message = AMBMessage(_payloadHeader, payloadBody[payloadId_]);
 
         /// @dev validates quorum
-        if (messageQuorum[_message.computeProof()] < _getRequiredMessagingQuorum(srcChainId)) {
+        if (messageQuorum[_message.computeProof()] < _getQuorum(srcChainId)) {
             revert Error.INSUFFICIENT_QUORUM();
         }
 
@@ -315,7 +285,6 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
             /// vault contract level.
             /// @dev This must happen like this because superform does not have the shares nor the assets to act upon
             /// them.
-
             emit FailedDepositClaim(args_.user, args_.superformId, config.requestId);
         }
 
@@ -341,17 +310,14 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         (address superformAddress,,) = superformId_.getSuperform();
 
         /// @dev validate that account exists (aka User must do at least one deposit to initiate this procedure)
-
-        IERC7540Form superform = IERC7540Form(superformAddress);
-
-        uint256 claimableRedeem = superform.getClaimableRedeemRequest(config.requestId, user_);
+        uint256 claimableRedeem = IERC7540Form(superformAddress).getClaimableRedeemRequest(config.requestId, user_);
 
         if (claimableRedeem == 0) {
             revert NOT_READY_TO_CLAIM();
         }
 
         /// @dev this step is used to feed txData in case user wants to receive assets in a different way
-        if (updatedTxData_.length != 0) {
+        if (updatedTxData_.length > 0) {
             _validateTxDataAsync(
                 config.currentSrcChainId,
                 claimableRedeem,
@@ -367,7 +333,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         /// @dev if redeeming failed superPositions are not reminted
         /// @dev this is different than the normal 4626 flow because if a redeem is claimable
         /// @dev a user could simply go to the vault and claim the assets directly
-        superform.claimWithdraw(
+        IERC7540Form(superformAddress).claimWithdraw(
             user_,
             superformId_,
             claimableRedeem,
@@ -378,6 +344,24 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         );
 
         emit ClaimedAvailableRedeems(user_, superformId_, config.requestId);
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              EXTERNAL VIEW FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc IAsyncStateRegistry
+    function getRequestConfig(address user_, uint256 superformId_) external view returns (RequestConfig memory) {
+        return requestConfigs[user_][superformId_];
+    }
+
+    /// @inheritdoc IAsyncStateRegistry
+    function getSyncWithdrawTxDataPayload(uint256 payloadId_)
+        external
+        view
+        returns (SyncWithdrawTxDataPayload memory syncWithdrawTxDataPayload_)
+    {
+        return syncWithdrawTxDataPayload[payloadId_];
     }
 
     //////////////////////////////////////////////////////////////
@@ -396,9 +380,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         internal
         view
     {
-        IBaseForm superform = IBaseForm(superformAddress_);
         PayloadUpdaterLib.validateLiqReq(liqData_);
-
         IBridgeValidator bridgeValidator = IBridgeValidator(superRegistry.getBridgeValidator(liqData_.bridgeId));
 
         bridgeValidator.validateTxData(
@@ -410,7 +392,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
                 false,
                 superformAddress_,
                 user_,
-                superform.getVaultAsset(),
+                IBaseForm(superformAddress_).getVaultAsset(),
                 address(0)
             )
         );
@@ -431,7 +413,6 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         internal
         view
     {
-        IBaseForm superform = IBaseForm(superformAddress_);
         PayloadUpdaterLib.validateLiqReq(data_.liqData);
 
         IBridgeValidator bridgeValidator = IBridgeValidator(superRegistry.getBridgeValidator(data_.liqData.bridgeId));
@@ -445,11 +426,13 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
                 false,
                 superformAddress_,
                 data_.receiverAddress,
-                superform.getVaultAsset(),
+                IBaseForm(superformAddress_).getVaultAsset(),
                 address(0)
             )
         );
-        address vault = superform.getVaultAddress();
+
+        address vault = IBaseForm(superformAddress_).getVaultAddress();
+
         /// @dev Validate if it is safe to use convertToAssets in full async or async redeem given previewRedeem is not
         /// available
         if (
@@ -463,17 +446,10 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         }
     }
 
-    /// @dev returns the required quorum for the source chain ID
-    function _getRequiredMessagingQuorum(uint64 chainId) internal view returns (uint256) {
-        return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId);
-    }
-
     /// @dev retrieves the AMB IDs that delivered a payload
     function _getDeliveryAMB(uint256 payloadId_) internal view returns (uint8[] memory ambIds_) {
-        IBaseStateRegistry coreStateRegistry =
-            IBaseStateRegistry(_getSuperRegistryAddress(keccak256("CORE_STATE_REGISTRY")));
-
-        ambIds_ = coreStateRegistry.getMessageAMB(payloadId_);
+        ambIds_ =
+            IBaseStateRegistry(_getSuperRegistryAddress(keccak256("CORE_STATE_REGISTRY"))).getMessageAMB(payloadId_);
     }
 
     /// @notice In regular flow, BaseStateRegistry function for messaging back to the source
