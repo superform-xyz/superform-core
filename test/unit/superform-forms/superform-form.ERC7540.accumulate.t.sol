@@ -90,7 +90,8 @@ contract SuperformERC7540AccumulationTest is ProtocolActions {
 
         _checkAndClaimAccumulatedAmounts(
             dstChainId,
-            srcChainId,
+            /// src chain id == dst chain id (same chain)
+            dstChainId,
             getContract(dstChainId, string.concat("tUSDERC7540FullyAsyncMockSuperform5")),
             user,
             superformId,
@@ -99,7 +100,8 @@ contract SuperformERC7540AccumulationTest is ProtocolActions {
     }
 
     function test_7540AccumulateOnlySameChain() external {
-        uint64 srcChainId = BSC_TESTNET;
+        /// src chain id == dst chain id (same chain)
+        uint64 srcChainId = SEPOLIA;
         uint64 dstChainId = SEPOLIA;
 
         address user = users[0];
