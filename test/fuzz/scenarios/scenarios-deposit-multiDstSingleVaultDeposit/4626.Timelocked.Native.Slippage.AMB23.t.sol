@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract MDSVDTimelockedNoNativeSlippageAMB23 is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, ARBI, OP];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE

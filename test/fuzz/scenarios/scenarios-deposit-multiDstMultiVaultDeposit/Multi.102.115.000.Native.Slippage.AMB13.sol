@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract MDMVDMulti102115000NativeSlippageAMB13 is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, ARBI, AVAX, OP];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE

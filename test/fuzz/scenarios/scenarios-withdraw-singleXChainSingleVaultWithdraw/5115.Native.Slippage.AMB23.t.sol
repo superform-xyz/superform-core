@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract SXSVW5115NativeSlippageAMB23 is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, POLY, OP];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE

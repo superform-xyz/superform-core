@@ -382,7 +382,6 @@ abstract contract CommonProtocolActions is BaseSetup {
         int256 swapSlippage = (slippage_ * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
         amount_ = (amount_ * uint256(10_000 - swapSlippage)) / 10_000;
 
-
         /// @dev already on target chain, so need to vm.selectFork() to it
         (, int256 USDPerSendingTokenDst,,,) =
             AggregatorV3Interface(tokenPriceFeeds[toChainId_][sendingTokenDst_]).latestRoundData();

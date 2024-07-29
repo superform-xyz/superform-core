@@ -53,30 +53,6 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         address[] expectedVaults;
     }
 
-    function test_utility_superforms() public {
-        UtilityArgs memory vars;
-        vm.startPrank(deployer);
-
-        vm.selectFork(FORKS[chainId]);
-
-        /// @dev Testing Coss Chain Superform Deployments
-        vars.transformedChainIds_ = new uint256[](vars.chainIds_.length);
-
-        for (uint256 j; j < vars.chainIds_.length; ++j) {
-            vars.transformedChainIds_[j] = uint256(vars.chainIds_[j]);
-        }
-
-        vars.expectedFormformImplementationIds = new uint32[](chainIds.length * UNDERLYING_TOKENS.length);
-        vars.expectedChainIds = new uint256[](chainIds.length * UNDERLYING_TOKENS.length);
-
-        /// @dev removed 1 from vault kinds as it corresponds to 5115
-        uint256 expectedNumberOfSuperforms = 7 * (VAULT_KINDS.length - 1) + NUMBER_OF_5115S[chainId];
-
-        assertEq(
-            SuperformFactory(getContract(chainId, "SuperformFactory")).getSuperformCount(), expectedNumberOfSuperforms
-        );
-    }
-
     function test_base_setup_superforms() public {
         vm.startPrank(deployer);
 

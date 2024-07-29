@@ -484,7 +484,6 @@ contract SuperformRouterAATest is ProtocolActions {
             ""
         );
 
-
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
         /// @dev approves before call
@@ -499,7 +498,6 @@ contract SuperformRouterAATest is ProtocolActions {
         walletDestination.singleDirectSingleVaultWithdraw{ value: 2 ether }(req);
 
         if (receive4626_) {
-
             assertGt(IERC4626(IBaseForm(v.superform).getVaultAddress()).balanceOf(scWalletAtLiqDst_), 0);
         }
     }
@@ -572,7 +570,6 @@ contract SuperformRouterAATest is ProtocolActions {
         ambIds_[0] = 1;
         ambIds_[1] = 2;
 
-
         SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds_, ARBI, data);
 
         /// @dev approves before call
@@ -615,7 +612,6 @@ contract SuperformRouterAATest is ProtocolActions {
         }
 
         if (receive4626_) {
-
             assertGt(IERC4626(IBaseForm(v.superform).getVaultAddress()).balanceOf(scWalletAtLiqDst_), 0);
         }
         vm.selectFork(FORKS[ETH]);

@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract SXSVWRevertKyc4626TokenInputNoSlippage is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, AVAX];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE

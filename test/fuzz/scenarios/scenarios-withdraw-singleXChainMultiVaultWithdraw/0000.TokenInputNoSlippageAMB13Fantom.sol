@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract SDMVW0000TokenInputNoSlippageAMB13Fantom is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, FANTOM];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE

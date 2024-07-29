@@ -3,10 +3,7 @@ pragma solidity ^0.8.23;
 
 import { SafeTransferLib } from "./7540MockUtils/SafeTransferLib.sol";
 import {
-    IERC7540Deposit,
-    IERC7540Redeem,
-    IERC7540Operator,
-    IAuthorizeOperator
+    IERC7540Deposit, IERC7540Redeem, IERC7540Operator, IAuthorizeOperator
 } from "src/vendor/centrifuge/IERC7540.sol";
 import { IERC7575, IERC165 } from "src/vendor/centrifuge/IERC7575.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";

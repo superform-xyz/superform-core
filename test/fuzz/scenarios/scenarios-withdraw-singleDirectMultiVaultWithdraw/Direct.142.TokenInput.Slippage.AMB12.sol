@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract SDiMVW142TokenInputSlippageAMB12 is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, AVAX];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
