@@ -5,6 +5,7 @@ pragma solidity ^0.8.23;
 /// @dev Interface for QuorumManager
 /// @author ZeroPoint Labs
 interface IQuorumManager {
+    
     //////////////////////////////////////////////////////////////
     //                          EVENTS                           //
     //////////////////////////////////////////////////////////////
