@@ -186,7 +186,6 @@ contract RewardsDistributorTests is MerkleReader {
         (,,,, bytes32[] memory proof_, address[] memory tokensToClaim, uint256[] memory amountsToClaim) =
             _generateMerkleTree(MerkleReader.MerkleArgs(periodId, user, OP));
 
-
         address[] memory tokensToClaimPartial = new address[](1);
         tokensToClaimPartial[0] = tokensToClaim[0];
 

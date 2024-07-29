@@ -5,7 +5,6 @@ pragma solidity ^0.8.23;
 /// @dev Interface for SuperformFactory
 /// @author ZeroPoint Labs
 interface ISuperformFactory {
-    
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////

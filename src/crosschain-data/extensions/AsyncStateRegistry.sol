@@ -35,9 +35,6 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     /// @dev tracks the total sync withdraw txData payloads
     uint256 public syncWithdrawTxDataPayloadCounter;
 
-    /// @dev 0 for unset, 1 for non fungible, 2 for fungible
-    uint8 public immutable ASYNC_STATE_REGISRY_TYPE;
-
     /// @dev request configurations for each user and superform
     mapping(address user => mapping(uint256 superformId => RequestConfig requestConfig)) public requestConfigs;
 
@@ -118,7 +115,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     /// @inheritdoc IAsyncStateRegistry
     function receiveSyncWithdrawTxDataPayload(
         uint64 srcChainId_,
-        InitSingleVaultData memory data_
+        InitSingleVaultData calldata data_
     )
         external
         override
@@ -137,7 +134,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     /// @inheritdoc IAsyncStateRegistry
     function processSyncWithdrawWithUpdatedTxData(
         uint256 payloadId_,
-        bytes memory txData_
+        bytes calldata txData_
     )
         external
         payable
@@ -228,7 +225,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         uint64 srcChainId_,
         bool isDeposit_,
         uint256 requestId_,
-        InitSingleVaultData memory data_
+        InitSingleVaultData calldata data_
     )
         external
         override
@@ -240,63 +237,47 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         RequestConfig storage config = requestConfigs[data_.receiverAddress][data_.superformId];
 
         config.isXChain = type_;
-
         config.retain4626 = data_.retain4626;
-
         config.currentSrcChainId = srcChainId_;
 
         if (requestId_ != 0) config.requestId = requestId_;
 
-        /// @dev decode payloadId with txHistory and check if multi == 1 if so, do not update
         /// TODO
+        /// @dev decode payloadId with txHistory and check if multi == 1 if so, do not update
         config.currentReturnDataPayloadId = data_.payloadId;
-
         config.maxSlippageSetting = data_.maxSlippage;
 
         if (!isDeposit_) config.currentLiqRequest = data_.liqData;
 
         if (type_ == 1 && isDeposit_) {
-            (bool is7540, uint8[] memory ambIds) = _decode7540ExtraFormData(data_.superformId, data_.extraFormData);
-
-            if (!(is7540 && ambIds.length > 0)) revert ERC7540_AMBIDS_NOT_ENCODED();
-
-            config.ambIds = ambIds;
-
-            /// @dev TODO can check ambs length is greater than quorum
+            config.ambIds = _decode7540ExtraFormData(data_.superformId, data_.extraFormData);
+            if (config.ambIds.length < _getQuorum(srcChainId_)) revert ERC7540_AMBIDS_NOT_ENCODED();
         }
 
         emit UpdatedRequestsConfig(data_.receiverAddress, data_.superformId, requestId_);
     }
 
     /// @inheritdoc IAsyncStateRegistry
-    function claimAvailableDeposits(ClaimAvailableDepositsArgs memory args_)
+    function claimAvailableDeposits(ClaimAvailableDepositsArgs calldata args_)
         external
         payable
         override
         onlyAsyncStateRegistryProcessor
     {
-        ClaimAvailableDepositsLocalVars memory v;
-
         RequestConfig memory config = requestConfigs[args_.user][args_.superformId];
 
-        if (config.currentSrcChainId == 0) {
-            revert REQUEST_CONFIG_NON_EXISTENT();
-        }
+        if (config.currentSrcChainId == 0) revert REQUEST_CONFIG_NON_EXISTENT();
 
-        (v.superformAddress,,) = args_.superformId.getSuperform();
+        (address superformAddress,,) = args_.superformId.getSuperform();
 
-        IERC7540Form superform = IERC7540Form(v.superformAddress);
+        uint256 claimableDeposit =
+            IERC7540Form(superformAddress).getClaimableDepositRequest(config.requestId, args_.user);
+        if (claimableDeposit == 0) revert NOT_READY_TO_CLAIM();
 
-        v.claimableDeposit = superform.getClaimableDepositRequest(config.requestId, args_.user);
-
-        if (v.claimableDeposit == 0) {
-            revert NOT_READY_TO_CLAIM();
-        }
-
-        try superform.claimDeposit(args_.user, args_.superformId, v.claimableDeposit, config.retain4626) returns (
-            uint256 shares
-        ) {
-            if (shares != 0 && !config.retain4626) {
+        try IERC7540Form(superformAddress).claimDeposit(
+            args_.user, args_.superformId, claimableDeposit, config.retain4626
+        ) returns (uint256 shares) {
+            if (shares > 0 && !config.retain4626) {
                 /// @dev dispatch acknowledgement to mint superPositions
                 if (config.isXChain == 1) {
                     _dispatchAcknowledgement(
@@ -319,9 +300,8 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
                         )
                     );
                 }
-
                 /// @dev for direct chain, superPositions are minted directly
-                if (config.isXChain == 0) {
+                else {
                     ISuperPositions(_getSuperRegistryAddress(keccak256("SUPER_POSITIONS"))).mintSingle(
                         args_.user, args_.superformId, shares
                     );
@@ -346,7 +326,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     function claimAvailableRedeems(
         address user_,
         uint256 superformId_,
-        bytes memory updatedTxData_
+        bytes calldata updatedTxData_
     )
         external
         override
@@ -408,7 +388,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     function _validateTxDataAsync(
         uint64 srcChainId_,
         uint256 claimableRedeem_,
-        bytes memory txData_,
+        bytes calldata txData_,
         LiqRequest memory liqData_,
         address user_,
         address superformAddress_
@@ -444,7 +424,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     function _validateTxData(
         bool async_,
         uint64 srcChainId_,
-        bytes memory txData_,
+        bytes calldata txData_,
         InitSingleVaultData memory data_,
         address superformAddress_
     )
@@ -519,23 +499,23 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     /// @dev decodes the 7540 extra form data
     function _decode7540ExtraFormData(
         uint256 superformId_,
-        bytes memory extraFormData_
+        bytes calldata extraFormData_
     )
         internal
         pure
-        returns (bool found7540, uint8[] memory ambIds)
+        returns (uint8[] memory ambIds)
     {
         (uint256 nVaults, bytes[] memory encodedDatas) = abi.decode(extraFormData_, (uint256, bytes[]));
 
-        for (uint256 i = 0; i < nVaults; ++i) {
-            (uint256 decodedSuperformId, bytes memory encodedSfData) = abi.decode(encodedDatas[i], (uint256, bytes));
+        uint256 decodedSuperformId;
+        bytes memory encodedSfData;
+
+        for (uint256 i; i < nVaults; ++i) {
+            (decodedSuperformId, encodedSfData) = abi.decode(encodedDatas[i], (uint256, bytes));
 
             if (decodedSuperformId == superformId_) {
                 (ambIds) = abi.decode(encodedSfData, (uint8[]));
-                if (ambIds.length > 0) {
-                    found7540 = true;
-                    break;
-                }
+                if (ambIds.length > 0) break;
             }
         }
     }

@@ -6,7 +6,6 @@ import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { Error } from "src/libraries/Error.sol";
 import "src/vendor/1inch/IAggregationRouterV6.sol";
 
-
 /// @title OneInchValidator
 /// @dev Asserts OneInch txData is valid
 /// @author Zeropoint Labs

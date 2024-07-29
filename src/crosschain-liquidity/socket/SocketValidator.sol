@@ -7,7 +7,6 @@ import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISocketValidator } from "src/interfaces/ISocketValidator.sol";
 
-
 /// @title SocketValidator
 /// @dev Asserts Socket x-chain input txData is valid
 /// @author Zeropoint Labs

@@ -7,7 +7,6 @@ import { InitSingleVaultData } from "src/types/DataTypes.sol";
 /// @dev Interface for EmergencyQueue
 /// @author ZeroPoint Labs
 interface IEmergencyQueue {
-    
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////

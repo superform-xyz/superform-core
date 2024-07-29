@@ -7,7 +7,6 @@ import { LiqRequest } from "src/types/DataTypes.sol";
 /// @dev Interface for PayMaster
 /// @author ZeroPoint Labs
 interface IPayMaster {
-    
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////

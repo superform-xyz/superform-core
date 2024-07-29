@@ -8,7 +8,6 @@ import { Error } from "src/libraries/Error.sol";
 /// @dev Quorum thresholds using in sending proofs from chain to chain
 /// @author ZeroPoint Labs
 abstract contract QuorumManager is IQuorumManager {
-    
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
     //////////////////////////////////////////////////////////////
