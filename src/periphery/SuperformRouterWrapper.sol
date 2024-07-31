@@ -37,6 +37,8 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
     error AUTHORIZATION_USED();
     error INVALID_AUTHORIZATION();
     error NOT_ROUTER_WRAPPER_PROCESSOR();
+    error INVALID_REDEEM_SELECTOR();
+    error INVALID_DEPOSIT_SELECTOR();
 
     //////////////////////////////////////////////////////////////
     //                       EVENTS                             //
@@ -130,11 +132,17 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
         bytes rebalanceCallData;
     }
 
+    enum Actions {
+        DEPOSIT,
+        WITHDRAWAL
+    }
+
     mapping(uint256 payloadId => address user) public msgSenderMap;
     mapping(uint256 payloadId => bool processed) public statusMap;
     mapping(address => mapping(bytes32 => bool)) public authorizations;
     mapping(address receiverAddressSP => mapping(uint256 firstStepLastCSRPayloadId => XChainRebalanceData data)) public
         xChainRebalanceCallData;
+    mapping(Actions => mapping(bytes4 => bool)) public whitelistedSelectors;
 
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
@@ -279,9 +287,15 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
         /// @dev step 1: send SPs to wrapper
         _transferSuperPositions(receiverAddressSP_, id_, sharesToRedeem_);
 
+        if (!whitelistedSelectors[Actions.WITHDRAWAL][_parseSelectorMem(callData_)]) {
+            revert INVALID_REDEEM_SELECTOR();
+        }
         /// @dev step 2: send SPs to router
         _callSuperformRouter(callData_);
 
+        if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(rebalanceCallData_)]) {
+            revert INVALID_DEPOSIT_SELECTOR();
+        }
         /// notice rebalanceCallData can be multi Dst / multi vault
         xChainRebalanceCallData[receiverAddressSP_][CORE_STATE_REGISTRY.payloadsCount()] = XChainRebalanceData({
             rebalanceCalldata: rebalanceCallData_,
@@ -317,9 +331,16 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
             _transferSuperPositions(args.receiverAddressSP, args.ids[i], args.sharesToRedeem[i]);
         }
 
+        if (!whitelistedSelectors[Actions.WITHDRAWAL][_parseSelectorMem(args.callData)]) {
+            revert INVALID_REDEEM_SELECTOR();
+        }
+
         /// @dev step 2: send SPs to router
         _callSuperformRouter(args.callData);
 
+        if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(args.rebalanceCallData)]) {
+            revert INVALID_DEPOSIT_SELECTOR();
+        }
         /// notice rebalanceCallData can be multi Dst / multi vault
         xChainRebalanceCallData[args.receiverAddressSP][CORE_STATE_REGISTRY.payloadsCount()] = XChainRebalanceData({
             rebalanceCalldata: args.rebalanceCallData,
@@ -626,6 +647,7 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
 
         uint256 balanceBefore = asset.balanceOf(address(this));
 
+        if (!whitelistedSelectors[Actions.WITHDRAWAL][_parseSelectorMem(calldata_)]) revert INVALID_REDEEM_SELECTOR();
         /// @dev step 2: send SPs to router
         /// @dev TODO: final asset of multi vault must be "interimAsset" otherwise funds can be lost (validations
         /// needed)
@@ -719,6 +741,9 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
         /// @dev approves superform router on demand
         asset_.approve(SUPERFORM_ROUTER, amountToDeposit_);
 
+        if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(callData_)]) {
+            revert INVALID_DEPOSIT_SELECTOR();
+        }
         _callSuperformRouter(callData_);
 
         /// @dev refund any unused funds
@@ -737,6 +762,9 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
         asset_.approve(SUPERFORM_ROUTER, amountToDeposit_);
         uint256 payloadStartCount = CORE_STATE_REGISTRY.payloadsCount();
 
+        if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(callData_)]) {
+            revert INVALID_DEPOSIT_SELECTOR();
+        }
         _callSuperformRouter(callData_);
 
         uint256 payloadEndCount = CORE_STATE_REGISTRY.payloadsCount();
@@ -786,6 +814,13 @@ contract SuperformRouterWrapper is IERC1155Receiver, EIP712 {
             IERC1155(SUPER_POSITIONS).safeTransferFrom(
                 address(this), receiverAddressSP, returnData.superformId, returnData.amount, ""
             );
+        }
+    }
+
+    /// @dev helps parse bytes memory selector
+    function _parseSelectorMem(bytes memory data) internal pure returns (bytes4 selector) {
+        assembly {
+            selector := mload(add(data, 0x20))
         }
     }
 }
