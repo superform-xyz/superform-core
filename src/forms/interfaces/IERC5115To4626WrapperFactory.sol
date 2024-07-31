@@ -92,12 +92,13 @@ interface IERC5115To4626WrapperFactory {
         external
         returns (address wrapper);
 
-    /// @notice Batch creates wrappers without creating superforms
+    /// @notice Batch creates wrappers with superforms
+    /// @param formImplementationIds_ the form implementation ids
     /// @param underlyingVaultAddresses the addresses of the underlying vaults
     /// @param tokenIns the addresses of the tokens to be deposited
     /// @param tokenOuts the addresses of the tokens to be withdrawn
     function batchCreateWrapperWithSuperform(
-        uint32 formImplementationId_,
+        uint32[] calldata formImplementationIds_,
         address[] calldata underlyingVaultAddresses,
         address[] calldata tokenIns,
         address[] calldata tokenOuts

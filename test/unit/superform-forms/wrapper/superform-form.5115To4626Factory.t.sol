@@ -130,6 +130,10 @@ contract ERC5115To4626WrapperTest is ProtocolActions {
     }
 
     function test_BatchCreateWrapperWithSuperform() public {
+        uint32[] memory formIds = new uint32[](2);
+        formIds[0] = FORM_ID;
+        formIds[1] = FORM_ID;
+
         address[] memory vaults = new address[](2);
         vaults[0] = address(mockVault);
         vaults[1] = address(mockVault2);
@@ -142,13 +146,13 @@ contract ERC5115To4626WrapperTest is ProtocolActions {
         tokensOut[1] = tokenOut;
 
         vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
-        wrapperFactory.batchCreateWrapperWithSuperform(FORM_ID, vaults, tokensIn, tokensOut);
+        wrapperFactory.batchCreateWrapperWithSuperform(formIds, vaults, tokensIn, tokensOut);
 
         tokensIn = new address[](2);
         tokensIn[0] = tokenIn;
         tokensIn[1] = tokenIn2;
 
-        address[] memory wrappers = wrapperFactory.batchCreateWrapperWithSuperform(FORM_ID, vaults, tokensIn, tokensOut);
+        address[] memory wrappers = wrapperFactory.batchCreateWrapperWithSuperform(formIds, vaults, tokensIn, tokensOut);
 
         bytes32 wrapperKeys1 = keccak256(abi.encodePacked(address(mockVault), tokenIn, tokenOut));
         bytes32 wrapperKeys2 = keccak256(abi.encodePacked(address(mockVault2), tokenIn2, tokenOut));
