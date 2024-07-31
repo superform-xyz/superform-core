@@ -232,6 +232,10 @@ contract PayloadHelperMultiTest is ProtocolActions {
             assertEq(v.slippages[i], MAX_SLIPPAGE);
         }
 
+        for (uint256 i; i < v.retain4626.length; ++i) {
+            assertEq(v.retain4626[i], false);
+        }
+
         /// @notice: just asserting if fees are greater than 0
         /// no way to write serious tests on forked testnet at this point. should come back to this later on.
         (uint256 ambFees,) = IPaymentHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PaymentHelper"))]).estimateAMBFees(
