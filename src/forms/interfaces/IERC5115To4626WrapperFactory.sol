@@ -43,6 +43,12 @@ interface IERC5115To4626WrapperFactory {
         address indexed wrapper, bytes32 wrapperKey, uint256 superformId, address superform
     );
 
+    /// @notice Emitted when a wrapper is updated with a form implementation
+    /// @param wrapper the address of the wrapper
+    /// @param wrapperKey the key of the wrapper
+    /// @param formImplementation the address of the form implementation
+    event WrapperUpdatedWithImplementation(address indexed wrapper, bytes32 wrapperKey, address formImplementation);
+
     //////////////////////////////////////////////////////////////
     //                          ERRORS                          //
     //////////////////////////////////////////////////////////////
@@ -85,6 +91,19 @@ interface IERC5115To4626WrapperFactory {
     )
         external
         returns (address wrapper);
+
+    /// @notice Batch creates wrappers without creating superforms
+    /// @param underlyingVaultAddresses the addresses of the underlying vaults
+    /// @param tokenIns the addresses of the tokens to be deposited
+    /// @param tokenOuts the addresses of the tokens to be withdrawn
+    function batchCreateWrapperWithSuperform(
+        uint32 formImplementationId_,
+        address[] calldata underlyingVaultAddresses,
+        address[] calldata tokenIns,
+        address[] calldata tokenOuts
+    )
+        external
+        returns (address[] memory wrappers_);
 
     /// @notice Creates a superform for an existing wrapper
     /// @param wrapperKey the key of the wrapper
