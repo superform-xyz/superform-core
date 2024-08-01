@@ -96,9 +96,9 @@ contract ERC5115To4626WrapperFactory is IERC5115To4626WrapperFactory {
     }
 
     /// @inheritdoc IERC5115To4626WrapperFactory
-    function batchCreateWrapperWithSuperform(
-        uint32[] calldata formImplementationIds_,
-        address[] calldata underlyingVaultAddresses,
+    function batchCreateWrappersWithSuperform(
+        uint32 formImplementationId_,
+        address underlyingVaultAddress_,
         address[] calldata tokenIns,
         address[] calldata tokenOuts
     )
@@ -106,20 +106,16 @@ contract ERC5115To4626WrapperFactory is IERC5115To4626WrapperFactory {
         override
         returns (address[] memory wrappers_)
     {
-        uint256 len = underlyingVaultAddresses.length;
+        uint256 len = tokenIns.length;
 
-        if (
-            len != tokenIns.length || tokenIns.length != tokenOuts.length
-                || tokenOuts.length != formImplementationIds_.length
-        ) {
+        if (len != tokenOuts.length) {
             revert Error.ARRAY_LENGTH_MISMATCH();
         }
 
         wrappers_ = new address[](len);
         for (uint256 i; i < len; i++) {
-            wrappers_[i] = _createWrapperWithSuperform(
-                formImplementationIds_[i], underlyingVaultAddresses[i], tokenIns[i], tokenOuts[i]
-            );
+            wrappers_[i] =
+                _createWrapperWithSuperform(formImplementationId_, underlyingVaultAddress_, tokenIns[i], tokenOuts[i]);
         }
     }
 
