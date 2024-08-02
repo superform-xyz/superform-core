@@ -70,15 +70,15 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver, EI
     }
 
     /// @dev refunds any unused refunds
-    modifier refundUnused(IERC20 asset_, address user_) {
-        uint256 balanceBefore = asset_.balanceOf(address(this));
+    modifier refundUnused(address asset_, address user_) {
+        uint256 balanceBefore = IERC20(asset_).balanceOf(address(this));
 
         _;
 
-        uint256 balanceAfter = asset_.balanceOf(address(this));
+        uint256 balanceDiff = IERC20(asset_).balanceOf(address(this)) - balanceBefore;
 
-        if (balanceAfter - balanceBefore > 0) {
-            asset_.transfer(user_, balance);
+        if (balanceDiff > 0) {
+            IERC20(asset_).transfer(user_, balanceDiff);
         }
     }
 
@@ -116,20 +116,21 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver, EI
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc ISuperformRouterWrapper
-    function rebalancePositionsSync(
+    function rebalanceSinglePosition(
         uint256 id_,
         uint256 sharesToRedeem_,
         uint256 previewRedeemAmount_,
         address vaultAsset_,
         uint256 slippage_,
         address receiverAddressSP_,
-        bool smartWallet_,
         bytes calldata callData_,
-        bytes calldata rebalanceCallData_
+        bytes calldata rebalanceCallData_,
+        bool smartWallet_
     )
         external
         payable
         override
+        refundUnused(vaultAsset_, receiverAddressSP_)
     {
         _transferSuperPositions(receiverAddressSP_, id_, sharesToRedeem_);
 
@@ -148,13 +149,13 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver, EI
     }
 
     /// @inheritdoc ISuperformRouterWrapper
-    function rebalanceMultiPositionsSync(RebalanceMultiPositionsSyncArgs memory args) external payable override {
+    function rebalanceMultiPositions(RebalanceMultiPositionsSyncArgs memory args) external payable override {
         uint256 len = args.ids.length;
         if (len != args.sharesToRedeem.length) {
             revert Error.ARRAY_LENGTH_MISMATCH();
         }
 
-        for (uint256 i = 0; i < len; ++i) {
+        for (uint256 i; i < len; ++i) {
             /// @dev step 1: send SPs to wrapper
             _transferSuperPositions(args.receiverAddressSP, args.ids[i], args.sharesToRedeem[i]);
         }
@@ -174,7 +175,7 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver, EI
     }
 
     /// @inheritdoc ISuperformRouterWrapper
-    function initiateXChainRebalance(
+    function startCrossChainRebalance(
         uint256 id_,
         uint256 sharesToRedeem_,
         address receiverAddressSP_,
@@ -222,13 +223,13 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver, EI
     }
 
     /// @inheritdoc ISuperformRouterWrapper
-    function initiateXChainRebalanceMulti(InitiateXChainRebalanceMultiArgs memory args) external payable override {
+    function startCrossChainRebalanceMulti(InitiateXChainRebalanceMultiArgs memory args) external payable override {
         uint256 len = args.ids.length;
         if (len != args.sharesToRedeem.length) {
             revert Error.ARRAY_LENGTH_MISMATCH();
         }
 
-        for (uint256 i = 0; i < len; ++i) {
+        for (uint256 i; i < len; ++i) {
             /// @dev step 1: send SPs to wrapper
             _transferSuperPositions(args.receiverAddressSP, args.ids[i], args.sharesToRedeem[i]);
         }
@@ -264,7 +265,7 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver, EI
     }
 
     /// @inheritdoc ISuperformRouterWrapper
-    function finalizeXChainRebalance(
+    function completeCrossChainRebalance(
         address receiverAddressSP_,
         uint256 firstStepLastCSRPayloadId_,
         uint256 amountReceivedInterimAsset_
@@ -345,7 +346,7 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver, EI
     }
 
     /// @inheritdoc ISuperformRouterWrapper
-    function metaDeposit(
+    function depositWithSignature(
         address asset_,
         uint256 amount_,
         address receiverAddressSP_,
@@ -400,25 +401,25 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver, EI
     }
 
     /// @inheritdoc ISuperformRouterWrapper
-    function completeDisbursement(uint256 csrAckPayloadId_) external override {
+    function finalizeDisbursement(uint256 csrAckPayloadId_) external override {
         address receiverAddressSP = _completeDisbursement(csrAckPayloadId_);
 
         emit DisbursementCompleted(receiverAddressSP, csrAckPayloadId_);
     }
 
     /// @inheritdoc ISuperformRouterWrapper
-    function batchCompleteDisbursement(uint256[] calldata csrAckPayloadIds_) external override {
+    function finalizeBatchDisbursement(uint256[] calldata csrAckPayloadIds_) external override {
         uint256 len = csrAckPayloadIds_.length;
         if (len == 0) revert Error.ARRAY_LENGTH_MISMATCH();
         address receiverAddressSP;
-        for (uint256 i = 0; i < len; i++) {
+        for (uint256 i; i < len; i++) {
             receiverAddressSP = _completeDisbursement(csrAckPayloadIds_[i]);
             emit DisbursementCompleted(receiverAddressSP, csrAckPayloadIds_[i]);
         }
     }
 
     /// @inheritdoc ISuperformRouterWrapper
-    function withdraw(
+    function withdrawSinglePosition(
         uint256 id_,
         uint256 amount_,
         address receiverAddressSP_,
@@ -436,7 +437,7 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver, EI
     }
 
     /// @inheritdoc ISuperformRouterWrapper
-    function withdrawMulti(
+    function withdrawMultiPositions(
         uint256[] calldata ids_,
         uint256[] calldata amounts_,
         address receiverAddressSP_,
@@ -601,9 +602,6 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver, EI
             revert INVALID_DEPOSIT_SELECTOR();
         }
         _callSuperformRouter(callData_);
-
-        /// @dev refund any unused funds
-        _processRefunds(asset_, receiverAddressSP_);
     }
 
     function _depositUsingSmartWallet(
@@ -630,9 +628,6 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver, EI
                 msgSenderMap[i] = receiverAddressSP_;
             }
         }
-
-        /// @dev refund any unused funds
-        _processRefunds(asset_, receiverAddressSP_);
     }
 
     function _completeDisbursement(uint256 csrAckPayloadId) internal returns (address receiverAddressSP) {
