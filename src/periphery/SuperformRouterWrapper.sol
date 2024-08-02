@@ -69,6 +69,19 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver, EI
         _;
     }
 
+    /// @dev refunds any unused refunds
+    modifier refundUnused(IERC20 asset_, address user_) {
+        uint256 balanceBefore = asset_.balanceOf(address(this));
+
+        _;
+
+        uint256 balanceAfter = asset_.balanceOf(address(this));
+
+        if (balanceAfter - balanceBefore > 0) {
+            asset_.transfer(user_, balance);
+        }
+    }
+
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
@@ -531,15 +544,6 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver, EI
 
     function _checkSignature(address user_, bytes32 digest_, bytes memory signature_) internal view {
         if (!SignatureChecker.isValidSignatureNow(user_, digest_, signature_)) revert INVALID_AUTHORIZATION();
-    }
-
-    /// @dev refunds any unused refunds
-    function _processRefunds(IERC20 asset_, address user_) internal {
-        uint256 balance = asset_.balanceOf(address(this));
-
-        if (balance > 0) {
-            asset_.transfer(user_, balance);
-        }
     }
 
     function _transferSuperPositions(address user_, uint256 id_, uint256 amount_) internal {
