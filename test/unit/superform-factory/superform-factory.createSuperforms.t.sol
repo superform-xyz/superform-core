@@ -23,11 +23,9 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         super.setUp();
 
         /// @dev ERC4626 DAI vault on chainId
-        vault = address(
-            vaults[chainId][FORM_IMPLEMENTATION_IDS[0]][0][vaultBytecodes2[FORM_IMPLEMENTATION_IDS[0]]
-                .vaultBytecode
-                .length - 1]
-        );
+        vault = vaults[chainId][FORM_IMPLEMENTATION_IDS[0]][0][vaultBytecodes2[FORM_IMPLEMENTATION_IDS[0]]
+            .vaultBytecode
+            .length - 1];
     }
 
     struct UtilityArgs {
@@ -71,7 +69,8 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         vars.expectedFormformImplementationIds = new uint32[](chainIds.length * UNDERLYING_TOKENS.length);
         vars.expectedChainIds = new uint256[](chainIds.length * UNDERLYING_TOKENS.length);
 
-        uint256 expectedNumberOfSuperforms = UNDERLYING_TOKENS.length * VAULT_KINDS.length;
+        /// @dev removed 1 from vault kinds as it corresponds to 5115
+        uint256 expectedNumberOfSuperforms = 7 * (VAULT_KINDS.length - 1) + NUMBER_OF_5115S[chainId];
 
         assertEq(
             SuperformFactory(getContract(chainId, "SuperformFactory")).getSuperformCount(), expectedNumberOfSuperforms
@@ -104,7 +103,7 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         assertEq(totalSuperformsAfter, totalSuperformsBefore + 1);
 
         uint256 totalFormImplementations = SuperformFactory(getContract(chainId, "SuperformFactory")).getFormCount();
-        assertEq(totalFormImplementations, 4);
+        assertEq(totalFormImplementations, 5);
 
         bool superformExists =
             SuperformFactory(getContract(chainId, "SuperformFactory")).isSuperform(superformIdCreated);
@@ -206,13 +205,9 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         address formImplementation2 = address(new ERC4626Form(superRegistry));
 
         // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation, 420, 1
-        );
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(formImplementation, 420, 1);
 
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
-            formImplementation2, 69, 1
-        );
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(formImplementation2, 69, 1);
 
         SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(420, vault);
         SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(69, vault);

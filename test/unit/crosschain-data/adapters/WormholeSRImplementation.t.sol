@@ -78,7 +78,7 @@ contract WormholeSRImplementationTest is BaseSetup {
         SuperformFactory sfFactory = SuperformFactory(getContract(ETH, "SuperformFactory"));
 
         uint8[] memory ambId = new uint8[](1);
-        ambId[0] = 5;
+        ambId[0] = 100;
 
         address[] memory ambAddress = new address[](1);
 
@@ -93,7 +93,7 @@ contract WormholeSRImplementationTest is BaseSetup {
         vm.prank(deployer);
         vm.expectRevert(Error.RELAYER_NOT_SET.selector);
         sfFactory.changeFormImplementationPauseStatus(
-            1, ISuperformFactory.PauseStatus.PAUSED, abi.encode(5, abi.encode(0, ""))
+            1, ISuperformFactory.PauseStatus.PAUSED, abi.encode(100, abi.encode(0, ""))
         );
     }
 
@@ -111,7 +111,7 @@ contract WormholeSRImplementationTest is BaseSetup {
         SuperformFactory sfFactory = SuperformFactory(getContract(ETH, "SuperformFactory"));
 
         uint8[] memory ambId = new uint8[](1);
-        ambId[0] = 5;
+        ambId[0] = 100;
 
         address[] memory ambAddress = new address[](1);
 
@@ -124,7 +124,7 @@ contract WormholeSRImplementationTest is BaseSetup {
 
         vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
         sfFactory.changeFormImplementationPauseStatus(
-            1, ISuperformFactory.PauseStatus.PAUSED, abi.encode(5, abi.encode(0, ""))
+            1, ISuperformFactory.PauseStatus.PAUSED, abi.encode(100, abi.encode(0, ""))
         );
 
         vm.stopPrank();

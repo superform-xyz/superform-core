@@ -296,39 +296,28 @@ contract SmokeTestStaging is MainnetBaseSetup {
     }
 
     function test_layerzeroImplementation() public {
-        LayerzeroImplementation layerzero;
+        LayerzeroV2Implementation layerzero;
 
         /// @dev index should match the index of target chains
-        address[] memory endpoints = new address[](TARGET_DEPLOYMENT_CHAINS.length);
-        endpoints[0] = 0x3c2269811836af69497E5F486A85D7316753cf62;
-        endpoints[1] = 0x3c2269811836af69497E5F486A85D7316753cf62;
-        endpoints[2] = 0x3c2269811836af69497E5F486A85D7316753cf62;
-        endpoints[3] = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
-        endpoints[4] = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
-
-        /// @dev index should match the index of target chains
-        uint16[] memory ambIds_ = new uint16[](TARGET_DEPLOYMENT_CHAINS.length);
-        ambIds_[0] = uint16(102);
-        ambIds_[1] = uint16(110);
-        ambIds_[2] = uint16(111);
-        ambIds_[3] = uint16(184);
-        ambIds_[4] = uint16(112);
+        uint32[] memory ambIds_ = new uint32[](TARGET_DEPLOYMENT_CHAINS.length);
+        ambIds_[0] = uint16(30_102);
+        ambIds_[1] = uint16(30_110);
+        ambIds_[2] = uint16(30_111);
+        ambIds_[3] = uint16(30_184);
+        ambIds_[4] = uint16(30_112);
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
             vm.selectFork(FORKS[chainId]);
-            layerzero = LayerzeroImplementation(getContract(chainId, "LayerzeroImplementation"));
+            layerzero = LayerzeroV2Implementation(getContract(chainId, "LayerzeroImplementation"));
 
-            assertEq(address(layerzero.lzEndpoint()), endpoints[i]);
+            assertEq(address(layerzero.endpoint()), lzV2Endpoint);
 
             for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
                 if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
                     assertEq(
-                        layerzero.trustedRemoteLookup(ambIds_[j]),
-                        abi.encodePacked(
-                            getContract(TARGET_DEPLOYMENT_CHAINS[j], "LayerzeroImplementation"),
-                            getContract(TARGET_DEPLOYMENT_CHAINS[i], "LayerzeroImplementation")
-                        )
+                        layerzero.peers(ambIds_[j]),
+                        bytes32(uint256(uint160(getContract(TARGET_DEPLOYMENT_CHAINS[j], "LayerzeroImplementation"))))
                     );
                     assertEq(layerzero.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds_[j]);
                     assertEq(layerzero.superChainId(ambIds_[j]), TARGET_DEPLOYMENT_CHAINS[j]);
@@ -337,6 +326,7 @@ contract SmokeTestStaging is MainnetBaseSetup {
         }
     }
 
+    /// @dev commented out as ar implementation is paused for now
     function test_wormholeARImplementation() public {
         WormholeARImplementation wormhole;
 
@@ -422,6 +412,55 @@ contract SmokeTestStaging is MainnetBaseSetup {
         }
     }
 
+    function test_axelar() public {
+        AxelarImplementation axelar;
+
+        /// @dev index should match the index of target chains
+        address[] memory axelar_gateways = new address[](TARGET_DEPLOYMENT_CHAINS.length);
+        axelar_gateways[0] = 0x304acf330bbE08d1e512eefaa92F6a57871fD895;
+        axelar_gateways[1] = 0xe432150cce91c13a887f7D836923d5597adD8E31;
+        axelar_gateways[2] = 0xe432150cce91c13a887f7D836923d5597adD8E31;
+        axelar_gateways[3] = 0xe432150cce91c13a887f7D836923d5597adD8E31;
+        axelar_gateways[4] = 0x304acf330bbE08d1e512eefaa92F6a57871fD895;
+
+        /// @dev index should match the index of target chains
+        address[] memory axelar_gasServices = new address[](TARGET_DEPLOYMENT_CHAINS.length);
+        axelar_gasServices[0] = 0x2d5d7d31F671F86C782533cc367F14109a082712;
+        axelar_gasServices[1] = 0x2d5d7d31F671F86C782533cc367F14109a082712;
+        axelar_gasServices[2] = 0x2d5d7d31F671F86C782533cc367F14109a082712;
+        axelar_gasServices[3] = 0x2d5d7d31F671F86C782533cc367F14109a082712;
+        axelar_gasServices[4] = 0x2d5d7d31F671F86C782533cc367F14109a082712;
+
+        /// @dev index should match the index of target chains
+        string[] memory ambIds_ = new string[](TARGET_DEPLOYMENT_CHAINS.length);
+        ambIds_[0] = "binance";
+        ambIds_[1] = "arbitrum";
+        ambIds_[2] = "optimism";
+        ambIds_[3] = "base";
+        ambIds_[4] = "Fantom";
+
+        for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
+            uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+            vm.selectFork(FORKS[chainId]);
+            axelar = AxelarImplementation(getContract(chainId, "AxelarImplementation"));
+
+            assertEq(address(axelar.gateway()), axelar_gateways[i]);
+            assertEq(address(axelar.gasService()), axelar_gasServices[i]);
+            assertEq(address(axelar.gasEstimator()), axelar_gasServices[i]);
+
+            for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
+                if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
+                    assertEq(
+                        axelar.authorizedImpl(ambIds_[j]),
+                        getContract(TARGET_DEPLOYMENT_CHAINS[j], "AxelarImplementation")
+                    );
+                    assertEq(axelar.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds_[j]);
+                    assertEq(axelar.superChainId(ambIds_[j]), TARGET_DEPLOYMENT_CHAINS[j]);
+                }
+            }
+        }
+    }
+
     function test_paymentHelper() public {
         PaymentHelper paymentHelper;
 
@@ -471,6 +510,20 @@ contract SmokeTestStaging is MainnetBaseSetup {
 
             assertEq(superRegistry.getAddress(keccak256("REWARDS_DISTRIBUTOR")), address(rewardsDistributor));
             assertEq(address(rewardsDistributor.superRegistry()), address(superRegistry));
+        }
+    }
+
+    function test_5115FormStaging() public {
+        SuperformFactory superFactory;
+
+        for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
+            uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+            vm.selectFork(FORKS[chainId]);
+            superFactory = SuperformFactory(getContract(chainId, "SuperformFactory"));
+
+            assertEq(superFactory.getFormImplementation(5), getContract(chainId, "ERC5115Form"));
+            assertEq(superFactory.getFormCount(), 5);
+            assertEq(superFactory.getFormStateRegistryId(5), 1);
         }
     }
 }

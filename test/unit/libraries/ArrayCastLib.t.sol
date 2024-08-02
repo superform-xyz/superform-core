@@ -31,20 +31,20 @@ contract ArrayCastLibTest is Test {
         arrayCastLib = new ArrayCastLibUser();
     }
 
-    function test_castLiqRequestToArray() external {
+    function test_castLiqRequestToArray() public view {
         LiqRequest memory req = LiqRequest("", address(0), address(0), 1, 1, 1 wei);
 
         LiqRequest[] memory castedReq = arrayCastLib.castLiqRequestToArray(req);
         assertEq(castedReq.length, 1);
     }
 
-    function test_castBoolToArray() external {
+    function test_castBoolToArray() public view {
         bool value = true;
         bool[] memory castedValue = arrayCastLib.castBoolToArray(value);
         assertEq(castedValue.length, 1);
     }
 
-    function test_castToMultiVaultData() external {
+    function test_castToMultiVaultData() public view {
         InitSingleVaultData memory data = InitSingleVaultData(
             1, 1, 1e18, 1e18, 100, LiqRequest(bytes(""), address(0), address(0), 1, 1, 0), true, true, address(0), ""
         );

@@ -63,7 +63,7 @@ contract RewardsDistributorHandler is StdInvariant, MerkleReader {
 
     constructor(
         uint64[] memory chainIds_,
-        string[31] memory contractNames_,
+        string[41] memory contractNames_,
         address[][] memory coreContracts,
         uint256[] memory forksArray,
         RewardsDistributorStore _rewardsDistributorStore
@@ -92,8 +92,10 @@ contract RewardsDistributorHandler is StdInvariant, MerkleReader {
             totalUSDCToDeposit += usdcToDeposit;
             totalDAIToDeposit += daiToDeposit;
         }
+
         deal(USDC, address(rewards), totalUSDCToDeposit);
         deal(DAI, address(rewards), totalDAIToDeposit);
+
         /*
         0
         Total amount USDC: 5349
@@ -302,7 +304,7 @@ contract RewardsDistributorHandler is StdInvariant, MerkleReader {
 
     struct InitHandlerSetupVars {
         uint64[] chainIds;
-        string[31] contractNames;
+        string[41] contractNames;
         address[][] coreContracts;
         uint256[] forksArray;
     }

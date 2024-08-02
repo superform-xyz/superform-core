@@ -6,6 +6,7 @@ import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
+import { ProofLib } from "src/libraries/ProofLib.sol";
 import { Error } from "src/libraries/Error.sol";
 import { AMBMessage } from "src/types/DataTypes.sol";
 import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
@@ -18,6 +19,7 @@ import { StandardHookMetadata } from "src/vendor/hyperlane/StandardHookMetadata.
 /// @author Zeropoint Labs
 contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     using DataLib for uint256;
+    using ProofLib for AMBMessage;
 
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
@@ -36,6 +38,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     mapping(uint32 => uint64) public superChainId;
     mapping(uint32 => address) public authorizedImpl;
     mapping(bytes32 => bool) public processedMessages;
+    mapping(bytes32 => bool) public ambProtect;
 
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
@@ -148,8 +151,11 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
             revert Error.INVALID_CHAIN_ID();
         }
 
+        address authImpl = authorizedImpl[domain];
+        if (authImpl == address(0)) revert Error.ZERO_ADDRESS();
+
         mailbox.dispatch{ value: msg.value }(
-            domain, _castAddr(authorizedImpl[domain]), message_, _generateHookMetadata(extraData_, srcSender_)
+            domain, _castAddr(authImpl), message_, _generateHookMetadata(extraData_, srcSender_)
         );
     }
 
@@ -242,6 +248,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
             revert Error.INVALID_CHAIN_ID();
         }
 
+        _ambProtect(decoded);
         targetRegistry.receivePayload(origin, body_);
     }
 
@@ -270,5 +277,22 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
             uint256 gasLimit = abi.decode(extraData_, (uint256));
             hookMetaData = StandardHookMetadata.formatMetadata(gasLimit, srcSender_);
         }
+    }
+
+    /// @dev prevents the same AMB from delivery a payload and its proof
+    /// @dev is an additional protection against malicious ambs
+    function _ambProtect(AMBMessage memory _message) internal {
+        bytes32 proof;
+
+        /// @dev amb protect
+        if (_message.params.length != 32) {
+            (, bytes memory payloadBody) = abi.decode(_message.params, (uint8[], bytes));
+            proof = AMBMessage(_message.txInfo, payloadBody).computeProof();
+        } else {
+            proof = abi.decode(_message.params, (bytes32));
+        }
+
+        if (ambProtect[proof]) revert MALICIOUS_DELIVERY();
+        ambProtect[proof] = true;
     }
 }

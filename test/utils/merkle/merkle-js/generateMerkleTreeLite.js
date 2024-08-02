@@ -13,7 +13,7 @@ let dai = 20;
 let totalAmountUSDC = 0;
 let totalAmountDAI = 0;
 const maxRewardTokenTypes = 2;
-const tokenTypes = ["0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85", "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"];
+const tokenTypes = ["0x81C9A7B55A4df39A9B7B5F781ec0e53539694873", "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"];
 let claimer = ""
 let claimers = []
 

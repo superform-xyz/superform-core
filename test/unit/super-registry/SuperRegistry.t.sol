@@ -240,14 +240,14 @@ contract SuperRegistryTest is BaseSetup {
         address[] memory ambAddress = new address[](2);
         bool[] memory broadcastAMB = new bool[](2);
 
-        ambId[0] = 5;
+        ambId[0] = 100;
         ambAddress[0] = address(0x1);
-        ambId[1] = 6;
+        ambId[1] = 101;
         ambAddress[1] = address(0x3);
         broadcastAMB[1] = true;
         vm.startPrank(deployer);
         superRegistry.setAmbAddress(ambId, ambAddress, broadcastAMB);
-        assertEq(superRegistry.getAmbAddress(6), address(0x3));
+        assertEq(superRegistry.getAmbAddress(101), address(0x3));
 
         ///@dev set same address
         vm.expectRevert(Error.DISABLED.selector);
@@ -393,7 +393,7 @@ contract SuperRegistryTest is BaseSetup {
         superRegistry.setRequiredMessagingQuorum(0, 2);
     }
 
-    function test_getAmbId() public {
+    function test_getAmbId() public view {
         uint256 ambId_ = superRegistry.getAmbId(getContract(ETH, "LayerzeroImplementation"));
         assertEq(ambId_, 1);
     }
