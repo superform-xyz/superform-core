@@ -269,6 +269,22 @@ interface ISuperformRouterWrapper {
         external
         payable;
 
+    /// @notice Batch deposit function for multiple deposits with different parameters
+    /// @param assets_ An array of ERC20 token addresses to deposit
+    /// @param amounts_ An array of amounts to deposit for each transaction
+    /// @param receiverAddressesSP_ An array of addresses to receive the superforms
+    /// @param smartWallets_ An array of booleans indicating whether to use a smart wallet for each deposit
+    /// @param callDatas_ An array of calldatas for each deposit
+    function batchDeposit(
+        IERC20[] calldata assets_,
+        uint256[] calldata amounts_,
+        address[] calldata receiverAddressesSP_,
+        bool[] calldata smartWallets_,
+        bytes[] calldata callDatas_
+    )
+        external
+        payable;
+
     /// @notice completes the disbursement process
     /// @param csrAckPayloadId_ The payload ID to complete the disbursement
     function finalizeDisbursement(uint256 csrAckPayloadId_) external;

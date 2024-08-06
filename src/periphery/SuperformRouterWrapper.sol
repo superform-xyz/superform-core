@@ -329,7 +329,7 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
         bool smartWallet_,
         bytes calldata callData_
     )
-        external
+        public
         payable
         override
     {
@@ -340,6 +340,32 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
             : _deposit(asset_, amount_, receiverAddressSP_, callData_);
 
         emit DepositCompleted(receiverAddressSP_, smartWallet_, false);
+    }
+
+    /// @inheritdoc ISuperformRouterWrapper
+    function batchDeposit(
+        IERC20[] calldata asset_,
+        uint256[] calldata amount_,
+        address[] calldata receiverAddressSP_,
+        bool[] calldata smartWallet_,
+        bytes[] calldata callData_
+    )
+        external
+        payable
+        override
+    {
+        uint256 len = asset_.length;
+
+        if (
+            len == 0 || len != amount_.length || len != receiverAddressSP_.length || len != smartWallet_.length
+                || len != callData_.length
+        ) {
+            revert Error.ARRAY_LENGTH_MISMATCH();
+        }
+
+        for (uint256 i; i < len; ++i) {
+            deposit(asset_[i], amount_[i], receiverAddressSP_[i], smartWallet_[i], callData_[i]);
+        }
     }
 
     /// @inheritdoc ISuperformRouterWrapper
