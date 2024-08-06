@@ -101,16 +101,18 @@ abstract contract AbstractDeployOneInchValidator is EnvironmentUtils {
         uint8[] memory newBridgeids = new uint8[](1);
 
         bridgeValidators[0] = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "OneInchValidator");
-        newBridgeids[0] = 9;
+        newBridgeids[0] = 4;
 
         assert(NEW_BRIDGE_ADDRESSES[vars.chainId][0] != address(0));
         assert(bridgeValidators[0] != address(0));
 
         vars.superRegistryC =
             SuperRegistry(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry")));
+
         address expectedSr = vars.chainId == 250
             ? 0x7feB31d18E43E2faeC718EEd2D7f34402c3e27b4
             : 0x17A332dC7B40aE701485023b219E9D6f493a2514;
+
         assert(address(vars.superRegistryC) == expectedSr);
 
         bytes memory txn = abi.encodeWithSelector(
@@ -122,7 +124,7 @@ abstract contract AbstractDeployOneInchValidator is EnvironmentUtils {
 
         addToBatch(address(vars.superRegistryC), 0, txn);
         /// Send to Safe to sign
-        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], false);
+        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], true);
     }
 
     function _addOneInchValidatorToSuperRegistryStaging(

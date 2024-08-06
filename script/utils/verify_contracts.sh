@@ -10,25 +10,25 @@ export BASESCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BASESCAN_API_K
 export FTMSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/FTMSCAN_API_KEY/credential)
 
 networks=(
-    #1
-    #56
-    #43114
-    #137
-    #42161
-    #10
-    #8453
+    1
+    56
+    43114
+    137
+    42161
+    10
+    8453
     250
     # add more networks here if needed
 )
 
 api_keys=(
-    #$ETHERSCAN_API_KEY
-    #$BSCSCAN_API_KEY
-    #$SNOWTRACE_API_KEY
-    #$POLYGONSCAN_API_KEY
-    #$ARBISCAN_API_KEY
-    #$OPSCAN_API_KEY
-    #$BASESCAN_API_KEY
+    $ETHERSCAN_API_KEY
+    $BSCSCAN_API_KEY
+    $SNOWTRACE_API_KEY
+    $POLYGONSCAN_API_KEY
+    $ARBISCAN_API_KEY
+    $OPSCAN_API_KEY
+    $BASESCAN_API_KEY
     $FTMSCAN_API_KEY
     # add more API keys here if needed
 )
@@ -69,6 +69,7 @@ file_names=(
     "src/crosschain-data/BroadcastRegistry.sol"
     "src/crosschain-data/adapters/wormhole/specialized-relayer/WormholeSRImplementation.sol"
     "src/crosschain-liquidity/socket/SocketOneInchValidator.sol"
+    "src/crosschain-liquidity/1inch/OneInchValidator.sol"
     # Add more file names here if needed
 )
 
@@ -94,6 +95,7 @@ contract_names=(
     "BroadcastRegistry"
     "WormholeSRImplementation"
     "SocketOneInchValidator"
+    "OneInchValidator"
     # Add more contract names here if needed
 )
 
@@ -119,6 +121,7 @@ contract_addresses=(
     0x856ddF6348fFF6B774566cD63f2e8db3796a0965
     0x2827eFf89affacf9E80D671bca6DeCf7dbdcCaCa
     0x9B1dE8d1Fbf77Ca949f944F718D93fdC48f218C8
+    0xB2B58dEfa7Dc7e26D21F58847BaEA5A6375eAf8D
     # Add more addresses here if needed
 )
 
@@ -144,6 +147,7 @@ contract_addresses_fantom=(
     0xf631CA98f1884Ca3AD5abC510F071C54fbd3d8E9
     0x0Bb3468d5b3Cd0842eEc911C735a9B128B21B0C9
     0xeb077f9CB0406667DDD7BE945f393297578372F1
+    0xf5232D46E988e4ED6E95f90748Ec1AAEd19Ec0B8
     # Add more addresses here if needed
 )
 
@@ -168,6 +172,7 @@ constructor_args=(
     $empty_constructor_arg
     $super_constructor_arg
     $wormhole_sr_arg
+    $super_constructor_arg
     $super_constructor_arg
 )
 
