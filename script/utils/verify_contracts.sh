@@ -53,7 +53,7 @@ file_names=(
     "src/forms/ERC4626Form.sol"
     "src/EmergencyQueue.sol"
     "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol"
-    "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol"
+    "src/crosschain-data/adapters/layerzero-v2/LayerzeroV2Implementation.sol"
     "src/crosschain-liquidity/lifi/LiFiValidator.sol"
     "src/payments/PayMaster.sol"
     "src/crosschain-data/utils/PayloadHelper.sol"
@@ -82,7 +82,7 @@ contract_names=(
     "ERC4626Form"
     "EmergencyQueue"
     "HyperlaneImplementation"
-    "LayerzeroImplementation"
+    "LayerzeroV2Implementation"
     "LiFiValidator"
     "PayMaster"
     "PayloadHelper"
@@ -110,8 +110,8 @@ contract_addresses=(
     0x2691638Fa19357773C186BA34924E194B4Ab6cDa
     0x58F8Cef0D825B1a609FaD0576d5F2b7399ab1335
     0xE22DCd9264086DF7B26d97A9A9d35e8dFac819dd
-    0x5417Fe6bA77106BCb5Ef1173fd901097BF08F234
-    0x8a3E646d9FDAA5ce032743fCe4d81B5Fa8723Be2
+    0x9f1F6357284526489e8e6ce4b2cB2612Aa1d4712
+    0x2a14460FEE6f73b408c6acF627190614daC97Df0
     0x7fa95363c82b2baceb73627988dc12eeb17e4c2b
     0xF1b9e0E57D134B7dFede001ccE5e879D8C2b8C1B
     0x92f98d698d2c8E0f29D1bb4d75C3A03e05e811bc
@@ -119,7 +119,7 @@ contract_addresses=(
     0x7483486862BDa9BA68Be4923E7E9945c2771Ec28
     0xD85ec15A9F814D6173bF1a89273bFB3964aAdaEC
     0xa195608C2306A26f727d5199D5A382a4508308DA
-    0xbD59F0B24d7A668f2c2CEAcfa056518bB3C06A9f
+    0xEa3b1027fe6dB0F01aCc73627B47fD4a5a079427
     0x01dF6fb6a28a89d6bFa53b2b3F20644AbF417678
     0x17A332dC7B40aE701485023b219E9D6f493a2514
     0x480bec236e3d3AE33789908BF024850B2Fe71258
@@ -140,7 +140,7 @@ contract_addresses_fantom=(
     0x290dE2677EC5056458D60202B112ac44e9b3d90d
     0x898e4E8a442C079e74c9E61E956d2FD183e5Eb99
     0x0000000000000000000000000000000000000000
-    0x2551c2218a37e8e28BF3C1658d8A315cD4209847
+    0xbc558947dd89C72E4e9C3563Cfb637f8bd46CD5c
     0xbB7d1453487043Aa8db8512eC22498a8F2fB652B
     0xeE8695cDa4697987e1Fcd191F3c69FFF5Ef02eD0
     0xEBDf673A9A0c40149641E50244415C67DD2B5CE8
@@ -148,7 +148,7 @@ contract_addresses_fantom=(
     0xfDf661e1e7e8F617b383516688A8aFC9c6176A04
     0xbc85043544CC2b3Fd095d54b6431822979BBB62A
     0x50DFeb29B462a64867f421C585BDaE89cf4656d4
-    0xE4350dFcB29Fd580B662522b3fC85Dc5c3E9aBC8
+    0x370dffFE065D820c30341C52b34Ac18C4df4C3E9
     0x7F1535FF0f0A099eb7D314e1655BD4dC92986aAD
     0x7feB31d18E43E2faeC718EEd2D7f34402c3e27b4
     0xd831b4ba49852F6E7246Fe7f4A7DABB5b0C56e1F
@@ -168,6 +168,8 @@ constructor_args=(
     $super_constructor_arg
     $super_constructor_arg
     $super_constructor_arg
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
     $super_constructor_arg
     $super_constructor_arg
     $super_constructor_arg
@@ -175,9 +177,7 @@ constructor_args=(
     $super_constructor_arg
     $super_constructor_arg
     $super_constructor_arg
-    $super_constructor_arg
-    $super_constructor_arg
-    $super_constructor_arg
+    $super_constructor_arg_ftm
     $superposition_constructor_arg
     $superregistry_constructor_arg
     $super_rbac_arg
