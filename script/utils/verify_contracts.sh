@@ -72,6 +72,7 @@ file_names=(
     "src/crosschain-liquidity/1inch/OneInchValidator.sol"
     "src/crosschain-liquidity/debridge/DeBridgeForwarderValidator.sol"
     "src/crosschain-liquidity/debridge/DeBridgeValidator.sol"
+    "src/crosschain-data/adapters/axelar/AxelarImplementation.sol"
     # Add more file names here if needed
 )
 
@@ -100,6 +101,7 @@ contract_names=(
     "OneInchValidator"
     "DeBridgeForwarderValidator"
     "DeBridgeValidator"
+    "AxelarImplementation"
     # Add more contract names here if needed
 )
 
@@ -128,6 +130,7 @@ contract_addresses=(
     0xB2B58dEfa7Dc7e26D21F58847BaEA5A6375eAf8D
     0xDEa392D62cA1Edb74FB9210Aed714ad8F12b3E60
     0x04A9e7318544DA4dd8c3d76E9c72d2087e285a8d
+    0xD8d5B00C1c99174897488E3dCa157B6849731E6A
     # Add more addresses here if needed
 )
 
@@ -156,6 +159,7 @@ contract_addresses_fantom=(
     0xf5232D46E988e4ED6E95f90748Ec1AAEd19Ec0B8
     0xDEDaA19236743EfB77a20042AA5Bb8C8A005C388
     0x3456E9f41a4039d127aCfff4708ffC6CE0Ca83e2
+    0x03a1480B5B6114B5D6c801bB4C71fc142488a41a
     # Add more addresses here if needed
 )
 
@@ -182,8 +186,9 @@ constructor_args=(
     $wormhole_sr_arg
     $super_constructor_arg
     $super_constructor_arg
-    $super_constructor_arg_ftm
-    $super_constructor_arg_ftm
+    $super_constructor_arg
+    $super_constructor_arg
+    $super_constructor_arg
 )
 
 # loop through networks
