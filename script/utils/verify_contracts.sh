@@ -70,6 +70,8 @@ file_names=(
     "src/crosschain-data/adapters/wormhole/specialized-relayer/WormholeSRImplementation.sol"
     "src/crosschain-liquidity/socket/SocketOneInchValidator.sol"
     "src/crosschain-liquidity/1inch/OneInchValidator.sol"
+    "src/crosschain-liquidity/debridge/DeBridgeForwarderValidator.sol"
+    "src/crosschain-liquidity/debridge/DeBridgeValidator.sol"
     # Add more file names here if needed
 )
 
@@ -96,6 +98,8 @@ contract_names=(
     "WormholeSRImplementation"
     "SocketOneInchValidator"
     "OneInchValidator"
+    "DeBridgeForwarderValidator"
+    "DeBridgeValidator"
     # Add more contract names here if needed
 )
 
@@ -122,6 +126,8 @@ contract_addresses=(
     0x2827eFf89affacf9E80D671bca6DeCf7dbdcCaCa
     0x9B1dE8d1Fbf77Ca949f944F718D93fdC48f218C8
     0xB2B58dEfa7Dc7e26D21F58847BaEA5A6375eAf8D
+    0xDEa392D62cA1Edb74FB9210Aed714ad8F12b3E60
+    0x04A9e7318544DA4dd8c3d76E9c72d2087e285a8d
     # Add more addresses here if needed
 )
 
@@ -148,6 +154,8 @@ contract_addresses_fantom=(
     0x0Bb3468d5b3Cd0842eEc911C735a9B128B21B0C9
     0xeb077f9CB0406667DDD7BE945f393297578372F1
     0xf5232D46E988e4ED6E95f90748Ec1AAEd19Ec0B8
+    0xDEDaA19236743EfB77a20042AA5Bb8C8A005C388
+    0x3456E9f41a4039d127aCfff4708ffC6CE0Ca83e2
     # Add more addresses here if needed
 )
 
@@ -174,6 +182,8 @@ constructor_args=(
     $wormhole_sr_arg
     $super_constructor_arg
     $super_constructor_arg
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
 )
 
 # loop through networks
