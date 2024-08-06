@@ -11,28 +11,54 @@ export BASE_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BASE_RPC_URL/crede
 export FANTOM_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/FANTOM_RPC_URL/credential)
 
 # Run the script
-echo Deploying bridge adapters: ...
+# echo Deploying bridge adapters: ...
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "deployBridgeAdaptersV2(uint256,uint256, uint256)" 0 0 0 --rpc-url $ETHEREUM_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "deployBridgeAdaptersV2(uint256,uint256, uint256)" 0 0 0 --rpc-url $ETHEREUM_RPC_URL --slow --broadcast --sender 0x1985df46791bebb1e3ed9ec60417f38cecc1d349
+# wait
+
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "deployBridgeAdaptersV2(uint256,uint256, uint256)" 0 1 0 --rpc-url $BSC_RPC_URL --slow --broadcast --sender 0x1985df46791bebb1e3ed9ec60417f38cecc1d349
+# wait
+
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "deployBridgeAdaptersV2(uint256,uint256, uint256)" 0 2 0 --rpc-url $AVALANCHE_RPC_URL --slow --broadcast --sender 0x1985df46791bebb1e3ed9ec60417f38cecc1d349
+# wait
+
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "deployBridgeAdaptersV2(uint256,uint256, uint256)" 0 3 0 --rpc-url $POLYGON_RPC_URL --slow --broadcast --sender 0x1985df46791bebb1e3ed9ec60417f38cecc1d349
+# wait
+
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "deployBridgeAdaptersV2(uint256,uint256, uint256)" 0 4 0 --rpc-url $ARBITRUM_RPC_URL --slow --broadcast --sender 0x1985df46791bebb1e3ed9ec60417f38cecc1d349
+# wait
+
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "deployBridgeAdaptersV2(uint256,uint256, uint256)" 0 5 0 --rpc-url $OPTIMISM_RPC_URL --slow --broadcast --sender 0x1985df46791bebb1e3ed9ec60417f38cecc1d349
+# wait
+
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "deployBridgeAdaptersV2(uint256,uint256, uint256)" 0 6 0 --rpc-url $BASE_RPC_URL --slow --broadcast --sender 0x1985df46791bebb1e3ed9ec60417f38cecc1d349
+# wait
+
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "deployBridgeAdaptersV2(uint256,uint256, uint256)" 0 7 1 --rpc-url $FANTOM_RPC_URL --slow --broadcast --sender 0x1985df46791bebb1e3ed9ec60417f38cecc1d349
+# wait
+
+echo Configuring bridge adapters: ...
+
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "configureDeploymentAdapters(uint256,uint256, uint256)" 0 0 0 --rpc-url $ETHEREUM_RPC_URL --slow --broadcast --sender 0x1985df46791bebb1e3ed9ec60417f38cecc1d349
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "deployBridgeAdaptersV2(uint256,uint256, uint256)" 0 1 0 --rpc-url $BSC_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "configureDeploymentAdapters(uint256,uint256, uint256)" 0 1 0 --rpc-url $BSC_RPC_URL --slow --broadcast --sender 0x1985df46791bebb1e3ed9ec60417f38cecc1d349
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "deployBridgeAdaptersV2(uint256,uint256, uint256)" 0 2 0 --rpc-url $AVALANCHE_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "configureDeploymentAdapters(uint256,uint256, uint256)" 0 2 0 --rpc-url $AVALANCHE_RPC_URL --slow --broadcast --sender 0x1985df46791bebb1e3ed9ec60417f38cecc1d349
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "deployBridgeAdaptersV2(uint256,uint256, uint256)" 0 3 0 --rpc-url $POLYGON_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "configureDeploymentAdapters(uint256,uint256, uint256)" 0 3 0 --rpc-url $POLYGON_RPC_URL --slow --broadcast --sender 0x1985df46791bebb1e3ed9ec60417f38cecc1d349
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "deployBridgeAdaptersV2(uint256,uint256, uint256)" 0 4 0 --rpc-url $ARBITRUM_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "configureDeploymentAdapters(uint256,uint256, uint256)" 0 4 0 --rpc-url $ARBITRUM_RPC_URL --slow --broadcast --sender 0x1985df46791bebb1e3ed9ec60417f38cecc1d349
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "deployBridgeAdaptersV2(uint256,uint256, uint256)" 0 5 0 --rpc-url $OPTIMISM_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "configureDeploymentAdapters(uint256,uint256, uint256)" 0 5 0 --rpc-url $OPTIMISM_RPC_URL --slow --broadcast --sender 0x1985df46791bebb1e3ed9ec60417f38cecc1d349
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "deployBridgeAdaptersV2(uint256,uint256, uint256)" 0 6 0 --rpc-url $BASE_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "configureDeploymentAdapters(uint256,uint256, uint256)" 0 6 0 --rpc-url $BASE_RPC_URL --slow --broadcast --sender 0x1985df46791bebb1e3ed9ec60417f38cecc1d349
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "deployBridgeAdaptersV2(uint256,uint256, uint256)" 0 7 1 --rpc-url $FANTOM_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.DeployBridgeAdaptersV2.s.sol:MainnetDeployBridgeAdaptersV2 --sig "configureDeploymentAdapters(uint256,uint256, uint256)" 0 7 1 --rpc-url $FANTOM_RPC_URL --slow --broadcast --sender 0x1985df46791bebb1e3ed9ec60417f38cecc1d349
 wait
