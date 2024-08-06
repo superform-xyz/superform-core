@@ -109,6 +109,32 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
     }
 
     //////////////////////////////////////////////////////////////
+    //                  EXTERNAL PROTECTED FUNCTIONS            //
+    //////////////////////////////////////////////////////////////
+
+    /// @inheritdoc ISuperformRouterWrapper
+    function finalizeDisbursement(uint256 csrAckPayloadId_) external override onlyRouterWrapperProcessor {
+        address receiverAddressSP = _completeDisbursement(csrAckPayloadId_);
+
+        emit DisbursementCompleted(receiverAddressSP, csrAckPayloadId_);
+    }
+
+    /// @inheritdoc ISuperformRouterWrapper
+    function finalizeBatchDisbursement(uint256[] calldata csrAckPayloadIds_)
+        external
+        override
+        onlyRouterWrapperProcessor
+    {
+        uint256 len = csrAckPayloadIds_.length;
+        if (len == 0) revert Error.ARRAY_LENGTH_MISMATCH();
+        address receiverAddressSP;
+        for (uint256 i; i < len; i++) {
+            receiverAddressSP = _completeDisbursement(csrAckPayloadIds_[i]);
+            emit DisbursementCompleted(receiverAddressSP, csrAckPayloadIds_[i]);
+        }
+    }
+
+    //////////////////////////////////////////////////////////////
     //                  EXTERNAL WRITE FUNCTIONS                //
     //////////////////////////////////////////////////////////////
 
@@ -365,24 +391,6 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
 
         for (uint256 i; i < len; ++i) {
             deposit(asset_[i], amount_[i], receiverAddressSP_[i], smartWallet_[i], callData_[i]);
-        }
-    }
-
-    /// @inheritdoc ISuperformRouterWrapper
-    function finalizeDisbursement(uint256 csrAckPayloadId_) external override {
-        address receiverAddressSP = _completeDisbursement(csrAckPayloadId_);
-
-        emit DisbursementCompleted(receiverAddressSP, csrAckPayloadId_);
-    }
-
-    /// @inheritdoc ISuperformRouterWrapper
-    function finalizeBatchDisbursement(uint256[] calldata csrAckPayloadIds_) external override {
-        uint256 len = csrAckPayloadIds_.length;
-        if (len == 0) revert Error.ARRAY_LENGTH_MISMATCH();
-        address receiverAddressSP;
-        for (uint256 i; i < len; i++) {
-            receiverAddressSP = _completeDisbursement(csrAckPayloadIds_[i]);
-            emit DisbursementCompleted(receiverAddressSP, csrAckPayloadIds_[i]);
         }
     }
 
