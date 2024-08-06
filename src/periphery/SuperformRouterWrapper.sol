@@ -2,7 +2,6 @@
 pragma solidity ^0.8.23;
 
 import { SignatureChecker } from "openzeppelin-contracts/contracts/utils/cryptography/SignatureChecker.sol";
-import { EIP712 } from "openzeppelin-contracts/contracts/utils/cryptography/EIP712.sol";
 import { Address } from "openzeppelin-contracts/contracts/utils/Address.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
@@ -25,7 +24,7 @@ import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ISuperformRouterWrapper, IERC20 } from "src/interfaces/ISuperformRouterWrapper.sol";
 import { Error } from "src/libraries/Error.sol";
 
-contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver, EIP712 {
+contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
     using DataLib for uint256;
     using SafeERC20 for IERC20;
 
@@ -91,9 +90,7 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver, EI
         address superformRouter_,
         address superPositions_,
         IBaseStateRegistry coreStateRegistry_
-    )
-        EIP712("SuperformRouterWrapper", "1")
-    {
+    ) {
         if (
             superRegistry_ == address(0) || superformRouter_ == address(0) || superPositions_ == address(0)
                 || address(coreStateRegistry_) == address(0)
@@ -343,61 +340,6 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver, EI
             : _deposit(asset_, amount_, receiverAddressSP_, callData_);
 
         emit DepositCompleted(receiverAddressSP_, smartWallet_, false);
-    }
-
-    /// @inheritdoc ISuperformRouterWrapper
-    function depositWithSignature(
-        address asset_,
-        uint256 amount_,
-        address receiverAddressSP_,
-        bool smartWallet_,
-        bytes calldata callData_,
-        uint256 deadline_,
-        bytes32 nonce_,
-        bytes memory signature_
-    )
-        external
-        override
-        onlyRouterWrapperProcessor
-    {
-        _setAuthorizationNonce(deadline_, receiverAddressSP_, nonce_);
-
-        _checkSignature(
-            receiverAddressSP_,
-            keccak256(
-                abi.encodePacked(
-                    "\x19\x01",
-                    _domainSeparatorV4(),
-                    keccak256(
-                        abi.encode(
-                            DEPOSIT_TYPEHASH,
-                            asset_,
-                            amount_,
-                            receiverAddressSP_,
-                            smartWallet_,
-                            callData_,
-                            deadline_,
-                            nonce_
-                        )
-                    )
-                )
-            ),
-            signature_
-        );
-
-        IERC20 asset = IERC20(asset_);
-
-        _transferERC20In(asset, receiverAddressSP_, amount_);
-
-        /// add logic to take a portion of shares as native for keeper
-        /// @dev e.g
-        uint256 amountToDeposit = amount_ - (amount_ / 10);
-
-        smartWallet_
-            ? _depositUsingSmartWallet(asset, amountToDeposit, receiverAddressSP_, callData_)
-            : _deposit(asset, amountToDeposit, receiverAddressSP_, callData_);
-
-        emit DepositCompleted(receiverAddressSP_, smartWallet_, true);
     }
 
     /// @inheritdoc ISuperformRouterWrapper

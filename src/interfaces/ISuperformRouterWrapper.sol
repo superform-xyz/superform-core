@@ -269,28 +269,6 @@ interface ISuperformRouterWrapper {
         external
         payable;
 
-    /// @notice allows gasless transactions for token deposits
-    /// @dev user needs to set infinite allowance of assets to wrapper for smooth UX
-    /// @param asset_ The ERC20 asset to deposit
-    /// @param amount_ The ERC20 amount to deposit
-    /// @param receiverAddressSP_ The receiver of the superform shares
-    /// @param smartWallet_ Whether to use smart wallet or not
-    /// @param callData_ The encoded superform router deposit request
-    /// @param deadline_ The deadline for the authorization
-    /// @param nonce_ The nonce for the authorization
-    /// @param signature_ The signature for the authorization
-    function depositWithSignature(
-        address asset_,
-        uint256 amount_,
-        address receiverAddressSP_,
-        bool smartWallet_,
-        bytes calldata callData_,
-        uint256 deadline_,
-        bytes32 nonce_,
-        bytes memory signature_
-    )
-        external;
-
     /// @notice completes the disbursement process
     /// @param csrAckPayloadId_ The payload ID to complete the disbursement
     function finalizeDisbursement(uint256 csrAckPayloadId_) external;
