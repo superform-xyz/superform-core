@@ -359,6 +359,17 @@ abstract contract AbstractDeployBridgeAdaptersV2 is EnvironmentUtils {
         address protocolAdmin = PROTOCOL_ADMINS[trueIndex];
         assert(protocolAdmin != address(0));
 
+        address[] memory rescuerAddress = new address[](TARGET_CHAINS.length);
+        bytes32[] memory ids = new bytes32[](TARGET_CHAINS.length);
+
+        for (uint256 i; i < rescuerAddress.length; i++) {
+            ids[i] = 0xf98729ec1ce0343ca1d11c51d1d2d3aa1a7b3f4f6876d0611e0a6fa86520a0cb;
+            rescuerAddress[i] = 0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5;
+        }
+
+        txn = abi.encodeWithSelector(SuperRegistry.batchSetAddress.selector, ids, rescuerAddress, TARGET_CHAINS);
+        addToBatch(address(vars.superRegistryC), 0, txn);
+
         /// Send to Safe to sign
         executeBatch(vars.chainId, protocolAdmin, false);
     }
