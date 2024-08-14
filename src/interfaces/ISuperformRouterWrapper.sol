@@ -26,6 +26,18 @@ interface ISuperformRouterWrapper {
     /// @notice thrown when an invalid deposit selector is provided
     error INVALID_DEPOSIT_SELECTOR();
 
+    /// @notice thrown when the refund proposer is invalid
+    error INVALID_PROPOSER();
+
+    /// @notice thrown when the refund payload is invalid
+    error INVALID_REFUND_DATA();
+
+    /// @notice thrown when refund is already proposed
+    error REFUND_ALREADY_PROPOSED();
+
+    /// @notice thrown if the refund is still in dispute phase
+    error IN_DISPUTE_PHASE();
+
     //////////////////////////////////////////////////////////////
     //                       EVENTS                             //
     //////////////////////////////////////////////////////////////
@@ -118,6 +130,24 @@ interface ISuperformRouterWrapper {
     /// @param payloadId The ID of the disbursement payload
     event DisbursementCompleted(address indexed receiver, uint256 indexed payloadId);
 
+    /// @notice emitted when a new refund is created
+    /// @param lastPayloadId is the unique identifier for the payload
+    /// @param refundReceiver is the address of the user who'll receiver the refund
+    /// @param refundToken is the token to be refunded
+    /// @param refundAmount is the new refund amount
+    event RefundInitiated(
+        uint256 indexed lastPayloadId, address indexed refundReceiver, address refundToken, uint256 refundAmount
+    );
+
+    /// @notice emitted when an existing refund got disputed
+    event RefundDisputed(uint256 indexed lastPayloadId, address indexed disputer);
+
+    /// @notice emitted when a new refund amount is proposed
+    event NewRefundAmountProposed(uint256 indexed lastPayloadId, uint256 indexed newRefundAmount);
+
+    /// @notice emitted when a refund is complete
+    event RefundCompleted(uint256 indexed lastPayloadId, address indexed caller);
+
     //////////////////////////////////////////////////////////////
     //                       STRUCTS                            //
     //////////////////////////////////////////////////////////////
@@ -152,6 +182,13 @@ interface ISuperformRouterWrapper {
         bool smartWallet;
         bytes callData;
         bytes rebalanceCallData;
+    }
+
+    struct Refund {
+        address receiver;
+        address interimToken;
+        uint256 amount;
+        uint256 proposedTime;
     }
 
     enum Actions {
@@ -322,4 +359,17 @@ interface ISuperformRouterWrapper {
     )
         external
         payable;
+
+    /// @notice allows the receiver / disputer to protect against malicious processors
+    /// @param finalPayloadId_ is the unique identifier of the refund
+    function disputeRefund(uint256 finalPayloadId_) external;
+
+    /// @notice allows the rescuer to propose a new refund amount after a successful dispute
+    /// @param finalPayloadId_ is the unique identifier of the refund
+    /// @param refundAmount_ is the new refund amount proposed
+    function proposeRefund(uint256 finalPayloadId_, uint256 refundAmount_) external;
+
+    /// @notice allows the user to claim their refund post the dispute period
+    /// @param finalPayloadId_ is the unique identifier of the refund
+    function finalizeRefund(uint256 finalPayloadId_) external;
 }

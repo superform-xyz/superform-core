@@ -38,10 +38,6 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
     address public immutable SUPERFORM_ROUTER;
     address public immutable SUPER_POSITIONS;
 
-    bytes32 public constant DEPOSIT_TYPEHASH = keccak256(
-        "MetaDeposit(address asset_,uint256 amount_,address receiverAddressSP_,bool smartWallet_,bytes calldata callData_,uint256 deadline_,bytes32 nonce_,bytes memory signature_,uint256 deadline_,bytes32 nonce_)"
-    );
-
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
     //////////////////////////////////////////////////////////////
@@ -52,17 +48,14 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
     mapping(address receiverAddressSP => mapping(uint256 firstStepLastCSRPayloadId => XChainRebalanceData data)) public
         xChainRebalanceCallData;
     mapping(Actions => mapping(bytes4 => bool)) public whitelistedSelectors;
+    mapping(uint256 lastPayloadId => Refund) public refunds;
 
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
     //////////////////////////////////////////////////////////////
 
     modifier onlyRouterWrapperProcessor() {
-        if (
-            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
-                keccak256("ROUTER_WRAPPER_PROCESSOR"), msg.sender
-            )
-        ) {
+        if (!_hasRole(keccak256("ROUTER_WRAPPER_PROCESSOR"), msg.sender)) {
             revert NOT_ROUTER_WRAPPER_PROCESSOR();
         }
         _;
@@ -300,17 +293,21 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
     {
         XChainRebalanceData memory data = xChainRebalanceCallData[receiverAddressSP_][firstStepLastCSRPayloadId_];
 
-        IERC20 interimAsset = IERC20(data.interimAsset);
         if (
             ENTIRE_SLIPPAGE * amountReceivedInterimAsset_
                 < ((data.expectedAmountInterimAsset * (ENTIRE_SLIPPAGE - data.slippage)))
         ) {
-            interimAsset.safeTransferFrom(address(this), receiverAddressSP_, amountReceivedInterimAsset_);
+            refunds[firstStepLastCSRPayloadId_] =
+                Refund(receiverAddressSP_, data.interimAsset, amountReceivedInterimAsset_, block.timestamp);
 
+            emit RefundInitiated(
+                firstStepLastCSRPayloadId_, receiverAddressSP_, data.interimAsset, amountReceivedInterimAsset_
+            );
             emit XChainRebalanceFailed(receiverAddressSP_, firstStepLastCSRPayloadId_);
             return false;
         }
 
+        IERC20 interimAsset = IERC20(data.interimAsset);
         data.smartWallet
             ? _depositUsingSmartWallet(
                 interimAsset, amountReceivedInterimAsset_, receiverAddressSP_, data.rebalanceCalldata
@@ -428,6 +425,54 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
         _callSuperformRouter(callData_);
 
         emit WithdrawMultiCompleted(receiverAddressSP_, ids_, amounts_);
+    }
+
+    /// @inheritdoc ISuperformRouterWrapper
+    function disputeRefund(uint256 finalPayloadId_) external override {
+        Refund storage r = refunds[finalPayloadId_];
+
+        /// TODO: check if a new role is needed here
+        if (!(msg.sender == r.receiver || _hasRole(keccak256("CORE_STATE_REGISTRY_DISPUTER_ROLE"), msg.sender))) {
+            revert Error.NOT_VALID_DISPUTER();
+        }
+
+        if (r.proposedTime == 0 || block.timestamp > r.proposedTime + _getDelay()) revert Error.DISPUTE_TIME_ELAPSED();
+
+        /// @dev just can reset the last proposed time, since amounts should be updated again to
+        /// pass the proposedTime zero check in finalize
+        r.proposedTime = 0;
+
+        emit RefundDisputed(finalPayloadId_, msg.sender);
+    }
+
+    /// @inheritdoc ISuperformRouterWrapper
+    function proposeRefund(uint256 finalPayloadId_, uint256 refundAmount_) external {
+        /// TODO: check if a new role is needed here
+        if (!_hasRole(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), msg.sender)) revert INVALID_PROPOSER();
+
+        Refund storage r = refunds[finalPayloadId_];
+
+        if (r.interimToken == address(0) || r.receiver == address(0)) revert INVALID_REFUND_DATA();
+        if (r.proposedTime != 0) revert REFUND_ALREADY_PROPOSED();
+
+        r.proposedTime = block.timestamp;
+        r.amount = refundAmount_;
+
+        emit NewRefundAmountProposed(finalPayloadId_, refundAmount_);
+    }
+
+    /// @inheritdoc ISuperformRouterWrapper
+    function finalizeRefund(uint256 finalPayloadId_) external {
+        Refund memory r = refunds[finalPayloadId_];
+
+        if (r.proposedTime == 0 || block.timestamp <= r.proposedTime + _getDelay()) revert IN_DISPUTE_PHASE();
+
+        /// @dev deleting to prevent re-entrancy
+        delete refunds[finalPayloadId_];
+
+        IERC20(r.interimToken).safeTransfer(r.receiver, r.amount);
+
+        emit RefundCompleted(finalPayloadId_, msg.sender);
     }
 
     //////////////////////////////////////////////////////////////
@@ -649,5 +694,19 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
         assembly {
             selector := mload(add(data, 0x20))
         }
+    }
+
+    /// @dev returns the current dispute delay
+    function _getDelay() internal view returns (uint256) {
+        uint256 delay = superRegistry.delay();
+        if (delay == 0) {
+            revert Error.DELAY_NOT_SET();
+        }
+        return delay;
+    }
+
+    /// @dev returns if an address has a specific role
+    function _hasRole(bytes32 id_, address addressToCheck_) internal view returns (bool) {
+        return ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(id_, addressToCheck_);
     }
 }
