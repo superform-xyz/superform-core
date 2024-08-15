@@ -324,17 +324,19 @@ contract SmokeTest is MainnetBaseSetup {
 
         /// @dev index should match the index of target chains
         uint16[] memory _ambIds = new uint16[](TARGET_DEPLOYMENT_CHAINS.length);
-        _ambIds[0] = uint16(101);
-        _ambIds[1] = uint16(102);
-        _ambIds[2] = uint16(106);
-        _ambIds[3] = uint16(109);
-        _ambIds[4] = uint16(110);
-        _ambIds[5] = uint16(111);
-        _ambIds[6] = uint16(184);
-        _ambIds[7] = uint16(112);
+        _ambIds[0] = uint16(30_101);
+        _ambIds[1] = uint16(30_102);
+        _ambIds[2] = uint16(30_106);
+        _ambIds[3] = uint16(30_109);
+        _ambIds[4] = uint16(30_110);
+        _ambIds[5] = uint16(30_111);
+        _ambIds[6] = uint16(30_184);
+        _ambIds[7] = uint16(30_112);
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+
+            if (chainId == FANTOM) continue;
             vm.selectFork(FORKS[chainId]);
             layerzero = LayerzeroV2Implementation(getContract(chainId, "LayerzeroImplementation"));
 
@@ -380,6 +382,8 @@ contract SmokeTest is MainnetBaseSetup {
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+            if (chainId == FANTOM) continue;
+
             vm.selectFork(FORKS[chainId]);
             wormhole = WormholeARImplementation(getContract(chainId, "WormholeARImplementation"));
 
@@ -462,7 +466,7 @@ contract SmokeTest is MainnetBaseSetup {
         axelar_gateways[4] = 0xe432150cce91c13a887f7D836923d5597adD8E31;
         axelar_gateways[5] = 0xe432150cce91c13a887f7D836923d5597adD8E31;
         axelar_gateways[6] = 0xe432150cce91c13a887f7D836923d5597adD8E31;
-        axelar_gateways[6] = 0x304acf330bbE08d1e512eefaa92F6a57871fD895;
+        axelar_gateways[7] = 0x304acf330bbE08d1e512eefaa92F6a57871fD895;
 
         /// @dev index should match the index of target chains
         address[] memory axelar_gasServices = new address[](TARGET_DEPLOYMENT_CHAINS.length);
@@ -488,6 +492,8 @@ contract SmokeTest is MainnetBaseSetup {
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+            if (chainId == FANTOM) continue;
+
             vm.selectFork(FORKS[chainId]);
             axelar = AxelarImplementation(getContract(chainId, "AxelarImplementation"));
 
@@ -516,6 +522,7 @@ contract SmokeTest is MainnetBaseSetup {
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+            if (chainId == FANTOM) continue;
 
             vm.selectFork(FORKS[chainId]);
             superRegistry = SuperRegistry(getContract(chainId, "SuperRegistry"));
@@ -544,6 +551,7 @@ contract SmokeTest is MainnetBaseSetup {
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+            if (chainId == FANTOM) continue;
 
             vm.selectFork(FORKS[chainId]);
             superRegistry = SuperRegistry(getContract(chainId, "SuperRegistry"));
