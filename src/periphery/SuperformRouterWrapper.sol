@@ -165,7 +165,12 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
     }
 
     /// @inheritdoc ISuperformRouterWrapper
-    function rebalanceMultiPositions(RebalanceMultiPositionsSyncArgs memory args) external payable override {
+    function rebalanceMultiPositions(RebalanceMultiPositionsSyncArgs memory args)
+        external
+        payable
+        override
+        refundUnused(args.interimAsset, args.receiverAddressSP)
+    {
         uint256 len = args.ids.length;
         if (len != args.sharesToRedeem.length) {
             revert Error.ARRAY_LENGTH_MISMATCH();
