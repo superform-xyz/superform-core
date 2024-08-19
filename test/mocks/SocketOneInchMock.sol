@@ -7,8 +7,10 @@ import "forge-std/Test.sol";
 import "./MockERC20.sol";
 import { ISocketOneInchImpl } from "src/vendor/socket/ISocketOneInchImpl.sol";
 
+import "forge-std/console.sol";
 /// @title Socket OneInch Mock
 /// @dev eventually replace this by using a fork of the real registry contract
+
 contract SocketOneInchMock is ISocketOneInchImpl, Test {
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 

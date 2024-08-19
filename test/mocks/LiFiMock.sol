@@ -128,7 +128,6 @@ contract LiFiMock is Test {
         vm.selectFork(toForkId_);
         decimal2 = outputToken == NATIVE ? 18 : MockERC20(outputToken).decimals();
 
-
         if (decimal1 > decimal2) {
             finalAmount =
                 (amountOut_ * USDPerUnderlyingToken) / (10 ** (decimal1 - decimal2) * USDPerUnderlyingTokenDst);

@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract SDMVW0TokenInputNoSlippageAMB13 is ProtocolActions {
+contract SDMVW0TokenInputNoSlippageAMB1323 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -14,36 +14,36 @@ contract SDMVW0TokenInputNoSlippageAMB13 is ProtocolActions {
         AMBs = [1, 3];
 
         CHAIN_0 = POLY;
-        DST_CHAINS = [ARBI];
+        DST_CHAINS = [AVAX];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[ARBI][0] = [1];
-        TARGET_VAULTS[ARBI][0] = [0];
+        TARGET_UNDERLYINGS[AVAX][0] = [1];
+        TARGET_VAULTS[AVAX][0] = [0];
 
-        TARGET_FORM_KINDS[ARBI][0] = [0];
+        TARGET_FORM_KINDS[AVAX][0] = [0];
 
-        TARGET_UNDERLYINGS[ARBI][1] = [1];
-        TARGET_VAULTS[ARBI][1] = [0];
+        TARGET_UNDERLYINGS[AVAX][1] = [1];
+        TARGET_VAULTS[AVAX][1] = [0];
 
-        TARGET_FORM_KINDS[ARBI][1] = [0];
+        TARGET_FORM_KINDS[AVAX][1] = [0];
 
-        PARTIAL[ARBI][1] = [true];
+        PARTIAL[AVAX][1] = [true];
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[ARBI][0] = [1];
-        LIQ_BRIDGES[ARBI][1] = [1];
+        LIQ_BRIDGES[AVAX][0] = [1];
+        LIQ_BRIDGES[AVAX][1] = [1];
 
-        RECEIVE_4626[ARBI][0] = [false];
-        RECEIVE_4626[ARBI][1] = [false];
+        RECEIVE_4626[AVAX][0] = [false];
+        RECEIVE_4626[AVAX][1] = [false];
 
-        FINAL_LIQ_DST_WITHDRAW[ARBI] = [POLY];
+        FINAL_LIQ_DST_WITHDRAW[AVAX] = [POLY];
 
         /// @dev push in order the actions should be executed
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                multiVaults: true, //!!WARNING turn on or off multi vaults
+                multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",
@@ -57,7 +57,7 @@ contract SDMVW0TokenInputNoSlippageAMB13 is ProtocolActions {
         actions.push(
             TestAction({
                 action: Actions.Withdraw,
-                multiVaults: true, //!!WARNING turn on or off multi vaults
+                multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",
@@ -75,10 +75,10 @@ contract SDMVW0TokenInputNoSlippageAMB13 is ProtocolActions {
 
     function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
         amountOne_ = uint128(bound(amountOne_, 2 * 10 ** 6, TOTAL_SUPPLY_USDC));
-        AMOUNTS[ARBI][0] = [amountOne_];
+        AMOUNTS[AVAX][0] = [amountOne_];
         /// @dev partial is true
         amountTwo_ = uint128(bound(amountTwo_, 10, amountOne_ - 1));
-        AMOUNTS[ARBI][1] = [amountTwo_];
+        AMOUNTS[AVAX][1] = [amountTwo_];
 
         for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];

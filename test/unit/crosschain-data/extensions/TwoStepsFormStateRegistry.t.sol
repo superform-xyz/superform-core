@@ -38,7 +38,8 @@ contract TimelockStateRegistryTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         vm.prank(getContract(AVAX, "SuperformRouter"));
@@ -126,7 +127,8 @@ contract TimelockStateRegistryTest is ProtocolActions {
             0,
             1,
             1,
-            1
+            1,
+            address(0)
         );
 
         bytes memory txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, true);

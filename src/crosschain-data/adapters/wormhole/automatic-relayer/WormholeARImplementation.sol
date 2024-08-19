@@ -6,6 +6,7 @@ import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
+import { ProofLib } from "src/libraries/ProofLib.sol";
 import { Error } from "src/libraries/Error.sol";
 import { AMBMessage } from "src/types/DataTypes.sol";
 import { IWormholeRelayer, VaaKey } from "src/vendor/wormhole/IWormholeRelayer.sol";
@@ -17,6 +18,7 @@ import "src/vendor/wormhole/Utils.sol";
 /// @author Zeropoint Labs
 contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     using DataLib for uint256;
+    using ProofLib for AMBMessage;
 
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
@@ -34,6 +36,7 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     mapping(uint16 => uint64) public superChainId;
     mapping(uint16 => address) public authorizedImpl;
     mapping(bytes32 => bool) public processedMessages;
+    mapping(bytes32 => bool) public ambProtect;
 
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
@@ -134,6 +137,13 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
 
+    struct DispatchPayloadVars {
+        uint16 dstChainId;
+        uint256 dstNativeAirdrop;
+        uint256 dstGasLimit;
+        address authImpl;
+    }
+
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
         address srcSender_,
@@ -151,12 +161,17 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
             revert Error.REFUND_CHAIN_ID_NOT_SET();
         }
 
-        uint16 dstChainId = ambChainId[dstChainId_];
-        (uint256 dstNativeAirdrop, uint256 dstGasLimit) = abi.decode(extraData_, (uint256, uint256));
+        DispatchPayloadVars memory v;
+
+        v.dstChainId = ambChainId[dstChainId_];
+        (v.dstNativeAirdrop, v.dstGasLimit) = abi.decode(extraData_, (uint256, uint256));
+
+        v.authImpl = authorizedImpl[v.dstChainId];
+        if (v.authImpl == address(0)) revert Error.ZERO_ADDRESS();
 
         /// @dev refunds any excess on this chain back to srcSender_
         relayer.sendPayloadToEvm{ value: msg.value }(
-            dstChainId, authorizedImpl[dstChainId], message_, dstNativeAirdrop, dstGasLimit, refundChainId, srcSender_
+            v.dstChainId, v.authImpl, message_, v.dstNativeAirdrop, v.dstGasLimit, refundChainId, srcSender_
         );
     }
 
@@ -232,6 +247,7 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
             revert Error.INVALID_CHAIN_ID();
         }
 
+        _ambProtect(decoded);
         targetRegistry.receivePayload(sourceChain, payload_);
     }
 
@@ -286,5 +302,26 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
 
         authorizedImpl[chainId_] = authorizedImpl_;
         emit AuthorizedImplAdded(chainId_, authorizedImpl_);
+    }
+
+    //////////////////////////////////////////////////////////////
+    //              INTERNAL HELPER FUNCTIONS                   //
+    //////////////////////////////////////////////////////////////
+
+    /// @dev prevents the same AMB from delivery a payload and its proof
+    /// @dev is an additional protection against malicious ambs
+    function _ambProtect(AMBMessage memory _message) internal {
+        bytes32 proof;
+
+        /// @dev amb protect
+        if (_message.params.length != 32) {
+            (, bytes memory payloadBody) = abi.decode(_message.params, (uint8[], bytes));
+            proof = AMBMessage(_message.txInfo, payloadBody).computeProof();
+        } else {
+            proof = abi.decode(_message.params, (bytes32));
+        }
+
+        if (ambProtect[proof]) revert MALICIOUS_DELIVERY();
+        ambProtect[proof] = true;
     }
 }

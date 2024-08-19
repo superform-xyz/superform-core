@@ -240,8 +240,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                         vars.chainDstIndex,
                         action.dstSwap,
                         action.action,
-                        action.slippage,
-                        new bool[](0)
+                        action.slippage
                     ),
                     action.action
                 );
@@ -291,7 +290,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     /// @dev these are just the originating and dst chain ids casted to uint256 (the liquidity bridge
                     /// chain ids)
                     action.dstSwap,
-                    false,
                     action.slippage
                 );
 
@@ -526,7 +524,9 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         address[] toMailboxes;
         uint32[] expDstDomains;
         address[] endpoints;
+        address[] endpointsV2;
         uint16[] lzChainIds;
+        uint32[] lzChainIdsV2;
         address[] wormholeRelayers;
         address[] expDstChainAddresses;
         uint256[] forkIds;
@@ -577,7 +577,10 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         internalVars.expDstDomains = new uint32[](vars.nUniqueDsts);
 
         internalVars.endpoints = new address[](vars.nUniqueDsts);
+        internalVars.endpointsV2 = new address[](vars.nUniqueDsts);
+
         internalVars.lzChainIds = new uint16[](vars.nUniqueDsts);
+        internalVars.lzChainIdsV2 = new uint32[](vars.nUniqueDsts);
 
         internalVars.wormholeRelayers = new address[](vars.nUniqueDsts);
         internalVars.expDstChainAddresses = new address[](vars.nUniqueDsts);
@@ -592,7 +595,10 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     internalVars.expDstDomains[internalVars.k] = hyperlane_chainIds[i];
 
                     internalVars.endpoints[internalVars.k] = lzEndpoints[i];
+                    internalVars.endpointsV2[internalVars.k] = lzV2Endpoint;
+
                     internalVars.lzChainIds[internalVars.k] = lz_chainIds[i];
+                    internalVars.lzChainIdsV2[internalVars.k] = lz_v2_chainIds[i];
 
                     internalVars.forkIds[internalVars.k] = FORKS[chainIds[i]];
 
@@ -615,6 +621,12 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     /// note: using some max limit
                     internalVars.forkIds,
                     vars.logs
+                );
+            }
+
+            if (vars.AMBs[index] == 6) {
+                LayerZeroV2Helper(getContract(vars.CHAIN_0, "LayerZeroV2Helper")).help(
+                    internalVars.endpointsV2, internalVars.lzChainIdsV2, internalVars.forkIds, vars.logs
                 );
             }
 
@@ -895,7 +907,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                 args.liquidityBridgeSrcChainId,
                 uint256(args.toChainId),
                 args.dstSwap,
-                false,
                 args.slippage
             );
 
@@ -944,7 +955,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             users[args.user],
             users[args.user],
             /// @dev repeat user for receiverAddressSP - not testing AA here
-            abi.encode(false)
+            ""
         );
     }
 
@@ -1042,7 +1053,8 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             args.slippage,
             uint256(v.USDPerExternalToken),
             uint256(v.USDPerUnderlyingOrInterimTokenDst),
-            uint256(v.USDPerUnderlyingToken)
+            uint256(v.USDPerUnderlyingToken),
+            users[args.user]
         );
 
         v.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, args.srcChainId == args.toChainId);
@@ -1159,7 +1171,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             users[args.user],
             users[args.user],
             /// @dev repeat user for receiverAddressSP - not testing AA here
-            abi.encode(false)
+            ""
         );
         vm.selectFork(v.initialFork);
     }
@@ -1241,7 +1253,8 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             /// @dev switching USDPerExternalToken with USDPerUnderlyingTokenDst as above
             uint256(USDPerUnderlyingTokenDst),
             uint256(USDPerExternalToken),
-            uint256(USDPerUnderlyingToken)
+            uint256(USDPerUnderlyingToken),
+            users[args.user]
         );
 
         vars.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, args.toChainId == args.liqDstChainId);
@@ -1273,7 +1286,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             args.receive4626,
             users[args.user],
             users[args.user],
-            abi.encode(false)
+            ""
         );
 
         vm.selectFork(initialFork);
@@ -1693,6 +1706,13 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     /// note: using some max limit
                     FORKS[FROM_CHAIN],
                     logs
+                );
+            }
+
+            /// @notice ID: 6 Layerzero v2
+            if (AMBs[i] == 6) {
+                LayerZeroV2Helper(getContract(TO_CHAIN, "LayerZeroV2Helper")).help(
+                    lzV2Endpoint, FORKS[FROM_CHAIN], logs
                 );
             }
 

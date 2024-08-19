@@ -1,11 +1,12 @@
 {
+  "AxelarImplementation": "0xD8d5B00C1c99174897488E3dCa157B6849731E6A",
   "BroadcastRegistry": "0x856ddF6348fFF6B774566cD63f2e8db3796a0965",
   "CoreStateRegistry": "0x3721B0E122768CedDfB3Dec810E64c361177f826",
   "DstSwapper": "0x2691638Fa19357773C186BA34924E194B4Ab6cDa",
   "ERC4626Form": "0x58F8Cef0D825B1a609FaD0576d5F2b7399ab1335",
   "EmergencyQueue": "0xE22DCd9264086DF7B26d97A9A9d35e8dFac819dd",
-  "HyperlaneImplementation": "0x5417Fe6bA77106BCb5Ef1173fd901097BF08F234",
-  "LayerzeroImplementation": "0x8a3E646d9FDAA5ce032743fCe4d81B5Fa8723Be2",
+  "HyperlaneImplementation": "0x9f1F6357284526489e8e6ce4b2cB2612Aa1d4712",
+  "LayerzeroImplementation": "0x2a14460FEE6f73b408c6acF627190614daC97Df0",
   "LiFiValidator": "0x7fA95363c82b2bACeB73627988dc12Eeb17E4C2B",
   "PayMaster": "0xF1b9e0E57D134B7dFede001ccE5e879D8C2b8C1B",
   "PayloadHelper": "0x92f98d698d2c8E0f29D1bb4d75C3A03e05e811bc",
@@ -19,6 +20,10 @@
   "SuperformFactory": "0xD85ec15A9F814D6173bF1a89273bFB3964aAdaEC",
   "SuperformRouter": "0xa195608C2306A26f727d5199D5A382a4508308DA",
   "VaultClaimer": "0xC4A234A40aC13b02096Dd4aae1b8221541Dc5d5A",
-  "WormholeARImplementation": "0xbD59F0B24d7A668f2c2CEAcfa056518bB3C06A9f",
-  "WormholeSRImplementation": "0x2827eFf89affacf9E80D671bca6DeCf7dbdcCaCa"
+  "WormholeARImplementation": "0xEa3b1027fe6dB0F01aCc73627B47fD4a5a079427",
+  "WormholeSRImplementation": "0x2827eFf89affacf9E80D671bca6DeCf7dbdcCaCa",
+  "ERC5115Form": "0x0000000000000000000000000000000000000000",
+  "OneInchValidator": "0xB2B58dEfa7Dc7e26D21F58847BaEA5A6375eAf8D",
+  "DeBridgeForwarderValidator": "0xDEa392D62cA1Edb74FB9210Aed714ad8F12b3E60",
+  "DeBridgeValidator": "0x04A9e7318544DA4dd8c3d76E9c72d2087e285a8d"
 }

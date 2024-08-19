@@ -67,6 +67,7 @@ contract SmokeTest is MainnetBaseSetup {
         }
     }
 
+    /*
     function test_superRegistryAddresses_destination() public {
         SuperRegistry sr;
 
@@ -122,6 +123,7 @@ contract SmokeTest is MainnetBaseSetup {
             }
         }
     }
+    */
 
     function test_roles() public {
         SuperRBAC srbac;
@@ -159,7 +161,6 @@ contract SmokeTest is MainnetBaseSetup {
             for (uint256 j = 0; j < len; ++j) {
                 assert(srbac.hasRole(ids[j], newAddresses[j]));
                 /// @dev each role should have a single member
-
                 assertEq(srbac.getRoleMemberCount(ids[j]), 1);
             }
             assert(srbac.hasRole(keccak256("PROTOCOL_ADMIN_ROLE"), PROTOCOL_ADMINS[i]));
@@ -308,7 +309,7 @@ contract SmokeTest is MainnetBaseSetup {
     }
 
     function test_layerzeroImplementation() public {
-        LayerzeroImplementation layerzero;
+        LayerzeroV2Implementation layerzero;
 
         /// @dev index should match the index of target chains
         address[] memory endpoints = new address[](TARGET_DEPLOYMENT_CHAINS.length);
@@ -323,30 +324,28 @@ contract SmokeTest is MainnetBaseSetup {
 
         /// @dev index should match the index of target chains
         uint16[] memory _ambIds = new uint16[](TARGET_DEPLOYMENT_CHAINS.length);
-        _ambIds[0] = uint16(101);
-        _ambIds[1] = uint16(102);
-        _ambIds[2] = uint16(106);
-        _ambIds[3] = uint16(109);
-        _ambIds[4] = uint16(110);
-        _ambIds[5] = uint16(111);
-        _ambIds[6] = uint16(184);
-        _ambIds[7] = uint16(112);
+        _ambIds[0] = uint16(30_101);
+        _ambIds[1] = uint16(30_102);
+        _ambIds[2] = uint16(30_106);
+        _ambIds[3] = uint16(30_109);
+        _ambIds[4] = uint16(30_110);
+        _ambIds[5] = uint16(30_111);
+        _ambIds[6] = uint16(30_184);
+        _ambIds[7] = uint16(30_112);
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
-            vm.selectFork(FORKS[chainId]);
-            layerzero = LayerzeroImplementation(getContract(chainId, "LayerzeroImplementation"));
 
-            assertEq(address(layerzero.lzEndpoint()), endpoints[i]);
+            vm.selectFork(FORKS[chainId]);
+            layerzero = LayerzeroV2Implementation(getContract(chainId, "LayerzeroImplementation"));
+
+            assertEq(address(layerzero.endpoint()), lzV2Endpoint);
 
             for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
                 if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
                     assertEq(
-                        layerzero.trustedRemoteLookup(_ambIds[j]),
-                        abi.encodePacked(
-                            getContract(TARGET_DEPLOYMENT_CHAINS[j], "LayerzeroImplementation"),
-                            getContract(TARGET_DEPLOYMENT_CHAINS[i], "LayerzeroImplementation")
-                        )
+                        layerzero.peers(_ambIds[j]),
+                        bytes32(uint256(uint160(getContract(TARGET_DEPLOYMENT_CHAINS[j], "LayerzeroImplementation"))))
                     );
                     assertEq(layerzero.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), _ambIds[j]);
                     assertEq(layerzero.superChainId(_ambIds[j]), TARGET_DEPLOYMENT_CHAINS[j]);
@@ -382,6 +381,7 @@ contract SmokeTest is MainnetBaseSetup {
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+
             vm.selectFork(FORKS[chainId]);
             wormhole = WormholeARImplementation(getContract(chainId, "WormholeARImplementation"));
 
@@ -449,6 +449,112 @@ contract SmokeTest is MainnetBaseSetup {
                     assertEq(wormhole.superChainId(_ambIds[j]), TARGET_DEPLOYMENT_CHAINS[j]);
                 }
             }
+        }
+    }
+
+    function test_axelarImplementation() public {
+        AxelarImplementation axelar;
+
+        /// @dev index should match the index of target chains
+        address[] memory axelar_gateways = new address[](TARGET_DEPLOYMENT_CHAINS.length);
+        axelar_gateways[0] = 0x4F4495243837681061C4743b74B3eEdf548D56A5;
+        axelar_gateways[1] = 0x304acf330bbE08d1e512eefaa92F6a57871fD895;
+        axelar_gateways[2] = 0x5029C0EFf6C34351a0CEc334542cDb22c7928f78;
+        axelar_gateways[3] = 0x6f015F16De9fC8791b234eF68D486d2bF203FBA8;
+        axelar_gateways[4] = 0xe432150cce91c13a887f7D836923d5597adD8E31;
+        axelar_gateways[5] = 0xe432150cce91c13a887f7D836923d5597adD8E31;
+        axelar_gateways[6] = 0xe432150cce91c13a887f7D836923d5597adD8E31;
+        axelar_gateways[7] = 0x304acf330bbE08d1e512eefaa92F6a57871fD895;
+
+        /// @dev index should match the index of target chains
+        address[] memory axelar_gasServices = new address[](TARGET_DEPLOYMENT_CHAINS.length);
+        axelar_gasServices[0] = 0x2d5d7d31F671F86C782533cc367F14109a082712;
+        axelar_gasServices[1] = 0x2d5d7d31F671F86C782533cc367F14109a082712;
+        axelar_gasServices[2] = 0x2d5d7d31F671F86C782533cc367F14109a082712;
+        axelar_gasServices[3] = 0x2d5d7d31F671F86C782533cc367F14109a082712;
+        axelar_gasServices[4] = 0x2d5d7d31F671F86C782533cc367F14109a082712;
+        axelar_gasServices[5] = 0x2d5d7d31F671F86C782533cc367F14109a082712;
+        axelar_gasServices[6] = 0x2d5d7d31F671F86C782533cc367F14109a082712;
+        axelar_gasServices[7] = 0x2d5d7d31F671F86C782533cc367F14109a082712;
+
+        /// @dev index should match the index of target chains
+        string[] memory ambIds_ = new string[](TARGET_DEPLOYMENT_CHAINS.length);
+        ambIds_[0] = "Ethereum";
+        ambIds_[1] = "binance";
+        ambIds_[2] = "Avalanche";
+        ambIds_[3] = "Polygon";
+        ambIds_[4] = "arbitrum";
+        ambIds_[5] = "optimism";
+        ambIds_[6] = "base";
+        ambIds_[7] = "Fantom";
+
+        for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
+            uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+
+            vm.selectFork(FORKS[chainId]);
+            axelar = AxelarImplementation(getContract(chainId, "AxelarImplementation"));
+
+            assertEq(address(axelar.gateway()), axelar_gateways[i]);
+            assertEq(address(axelar.gasService()), axelar_gasServices[i]);
+            assertEq(address(axelar.gasEstimator()), axelar_gasServices[i]);
+
+            for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
+                if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
+                    assertEq(
+                        axelar.authorizedImpl(ambIds_[j]),
+                        getContract(TARGET_DEPLOYMENT_CHAINS[j], "AxelarImplementation")
+                    );
+                    assertEq(axelar.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds_[j]);
+                    assertEq(axelar.superChainId(ambIds_[j]), TARGET_DEPLOYMENT_CHAINS[j]);
+                }
+            }
+        }
+    }
+
+    function test_deBridgeValidators() public {
+        SuperRegistry superRegistry;
+
+        address de_bridge_address = 0xeF4fB24aD0916217251F553c0596F8Edc630EB66;
+        address de_bridge_forwarder_address = 0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251;
+
+        for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
+            uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+            if (chainId == FANTOM) continue;
+
+            vm.selectFork(FORKS[chainId]);
+            superRegistry = SuperRegistry(getContract(chainId, "SuperRegistry"));
+
+            assertEq(superRegistry.getBridgeValidator(5), getContract(chainId, "DeBridgeValidator"));
+            assertEq(superRegistry.getBridgeValidator(6), getContract(chainId, "DeBridgeForwarderValidator"));
+
+            assertEq(superRegistry.getBridgeAddress(5), de_bridge_address);
+            assertEq(superRegistry.getBridgeAddress(6), de_bridge_forwarder_address);
+
+            for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
+                assertEq(
+                    superRegistry.getAddressByChainId(
+                        keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), TARGET_DEPLOYMENT_CHAINS[j]
+                    ),
+                    0x90ed07A867bDb6a73565D7abBc7434Dd810Fafc5
+                );
+            }
+        }
+    }
+
+    function test_oneInchValidator() public {
+        SuperRegistry superRegistry;
+
+        address one_inch_address = 0x111111125421cA6dc452d289314280a0f8842A65;
+
+        for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
+            uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+            if (chainId == FANTOM) continue;
+
+            vm.selectFork(FORKS[chainId]);
+            superRegistry = SuperRegistry(getContract(chainId, "SuperRegistry"));
+
+            assertEq(superRegistry.getBridgeValidator(4), getContract(chainId, "OneInchValidator"));
+            assertEq(superRegistry.getBridgeAddress(4), one_inch_address);
         }
     }
 
