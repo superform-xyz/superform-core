@@ -1052,7 +1052,6 @@ contract CoreStateRegistryTest is ProtocolActions {
         /// this should fail as it is larger than the balance difference (result of swapping 0.1 WETH (1e17 in in
         /// txDataFails) to DAI )
         v.amounts[0] = isFailingIndex1Vault ? 419_972_359 : 419_950_757_613_293_461_130;
-
         v.amounts[1] = isFailingIndex1Vault ? 1e21 : 419_972_359;
 
         v.externalToken = getContract(ETH, "DAI");
@@ -1394,7 +1393,7 @@ contract CoreStateRegistryTest is ProtocolActions {
                 getContract(AVAX, "DAI"),
                 getContract(AVAX, "DstSwapper"),
                 AVAX,
-                111_629_656_688_722_279,
+                159_055_440_488_689_510,
                 0
             );
 
@@ -1416,7 +1415,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             v.finalTokens[0] = getContract(AVAX, "DAI");
             v.finalTokens[1] = getContract(AVAX, "DAI");
 
-            v.amounts[0] = 419_941_560_086_336_667_640;
+            v.amounts[0] = 419_950_757_613_293_461_130;
             v.amounts[1] = 419_972_359;
 
             vm.prank(deployer);
