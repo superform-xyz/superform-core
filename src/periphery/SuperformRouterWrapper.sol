@@ -8,8 +8,6 @@ import { IERC1155 } from "openzeppelin-contracts/contracts/interfaces/IERC1155.s
 import { IERC1155Receiver } from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 import {
-    PayloadState,
-    AMBMessage,
     CallbackType,
     TransactionType,
     ReturnSingleData,
@@ -47,7 +45,6 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
 
     mapping(uint256 payloadId => address user) public msgSenderMap;
     mapping(uint256 payloadId => bool processed) public statusMap;
-    mapping(address user => mapping(bytes32 nonce => bool authorized)) public authorizations;
     mapping(address receiverAddressSP => mapping(uint256 firstStepLastCSRPayloadId => XChainRebalanceData data)) public
         xChainRebalanceCallData;
     mapping(Actions => mapping(bytes4 selector => bool whitelisted)) public whitelistedSelectors;
@@ -213,9 +210,7 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
         }
 
         /// @dev transfers multiple superPositions to this contract and approves router
-        for (uint256 i; i < len; ++i) {
-            _transferSuperPositions(args.receiverAddressSP, args.ids[i], args.sharesToRedeem[i]);
-        }
+        _transferBatchSuperPositions(args.receiverAddressSP, args.ids, args.sharesToRedeem);
 
         _rebalancePositionsSync(
             RebalancePositionsSyncArgs(
@@ -300,9 +295,7 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
         }
 
         /// @dev transfers multiple superPositions to this contract and approves router
-        for (uint256 i; i < len; ++i) {
-            _transferSuperPositions(args.receiverAddressSP, args.ids[i], args.sharesToRedeem[i]);
-        }
+        _transferBatchSuperPositions(args.receiverAddressSP, args.ids, args.sharesToRedeem);
 
         if (!whitelistedSelectors[Actions.WITHDRAWAL][_parseSelectorMem(args.callData)]) {
             revert INVALID_REBALANCE_FROM_SELECTOR();
@@ -357,7 +350,6 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
             emit RefundInitiated(
                 firstStepLastCSRPayloadId_, receiverAddressSP_, data.interimAsset, amountReceivedInterimAsset_
             );
-            emit XChainRebalanceFailed(receiverAddressSP_, firstStepLastCSRPayloadId_);
             return false;
         }
 
@@ -417,68 +409,6 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
             : _deposit(asset_, amount_, msg.value, receiverAddressSP_, callData_);
 
         emit DepositCompleted(receiverAddressSP_, smartWallet_, false);
-    }
-
-    /// @inheritdoc ISuperformRouterWrapper
-    function batchDeposit(
-        IERC20[] calldata asset_,
-        uint256[] calldata amount_,
-        address[] calldata receiverAddressSP_,
-        bool[] calldata smartWallet_,
-        bytes[] calldata callData_
-    )
-        external
-        payable
-        override
-    {
-        uint256 len = asset_.length;
-
-        if (
-            len == 0 || len != amount_.length || len != receiverAddressSP_.length || len != smartWallet_.length
-                || len != callData_.length
-        ) {
-            revert Error.ARRAY_LENGTH_MISMATCH();
-        }
-
-        for (uint256 i; i < len; ++i) {
-            deposit(asset_[i], amount_[i], receiverAddressSP_[i], smartWallet_[i], callData_[i]);
-        }
-    }
-
-    /// @inheritdoc ISuperformRouterWrapper
-    function withdrawSinglePosition(
-        uint256 id_,
-        uint256 amount_,
-        address receiverAddressSP_,
-        bytes calldata callData_
-    )
-        external
-        payable
-        override
-    {
-        _transferSuperPositions(receiverAddressSP_, id_, amount_);
-
-        _callSuperformRouter(callData_, msg.value);
-
-        emit WithdrawCompleted(receiverAddressSP_, id_, amount_);
-    }
-
-    /// @inheritdoc ISuperformRouterWrapper
-    function withdrawMultiPositions(
-        uint256[] calldata ids_,
-        uint256[] calldata amounts_,
-        address receiverAddressSP_,
-        bytes calldata callData_
-    )
-        external
-        payable
-        override
-    {
-        _transferBatchSuperPositions(receiverAddressSP_, ids_, amounts_);
-
-        _callSuperformRouter(callData_, msg.value);
-
-        emit WithdrawMultiCompleted(receiverAddressSP_, ids_, amounts_);
     }
 
     /// @inheritdoc ISuperformRouterWrapper
@@ -639,30 +569,16 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
             : _deposit(asset, amountToDeposit, args.rebalanceToMsgValue, args.receiverAddressSP, rebalanceCallData);
     }
 
-    function _setAuthorizationNonce(uint256 deadline_, address user_, bytes32 nonce_) internal {
-        if (block.timestamp > deadline_) revert EXPIRED();
-        if (authorizations[user_][nonce_]) revert AUTHORIZATION_USED();
-
-        authorizations[user_][nonce_] = true;
-    }
-
     function _transferSuperPositions(address user_, uint256 id_, uint256 amount_) internal {
         SuperPositions(SUPER_POSITIONS).safeTransferFrom(user_, address(this), id_, amount_, "");
         SuperPositions(SUPER_POSITIONS).setApprovalForOne(SUPERFORM_ROUTER, id_, amount_);
     }
 
-    function _transferBatchSuperPositions(
-        address user_,
-        uint256[] calldata ids_,
-        uint256[] calldata amounts_
-    )
-        internal
-    {
+    function _transferBatchSuperPositions(address user_, uint256[] memory ids_, uint256[] memory amounts_) internal {
         SuperPositions(SUPER_POSITIONS).safeBatchTransferFrom(user_, address(this), ids_, amounts_, "");
         SuperPositions(SUPER_POSITIONS).setApprovalForAll(SUPERFORM_ROUTER, true);
     }
 
-    /// @dev how to ensure call data only calls certain functions?
     function _callSuperformRouter(bytes memory callData_, uint256 msgValue_) internal {
         (bool success, bytes memory returndata) = SUPERFORM_ROUTER.call{ value: msgValue_ }(callData_);
 

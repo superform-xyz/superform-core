@@ -8,15 +8,6 @@ interface ISuperformRouterWrapper {
     //                       ERRORS                             //
     //////////////////////////////////////////////////////////////
 
-    /// @notice thrown when the deadline for a transaction has expired
-    error EXPIRED();
-
-    /// @notice thrown when an authorization has already been used
-    error AUTHORIZATION_USED();
-
-    /// @notice thrown when an invalid authorization is provided
-    error INVALID_AUTHORIZATION();
-
     /// @notice thrown when a non-processor attempts to call a processor-only function
     error NOT_ROUTER_WRAPPER_PROCESSOR();
 
@@ -110,27 +101,10 @@ interface ISuperformRouterWrapper {
         uint256 expectedAmountInterimAsset
     );
 
-    /// @notice emitted when a cross-chain rebalance fails
-    /// @param receiver The address that was to receive the rebalanced position
-    /// @param firstStepLastCSRPayloadId The ID of the last payload in the first step of the rebalance
-    event XChainRebalanceFailed(address indexed receiver, uint256 indexed firstStepLastCSRPayloadId);
-
     /// @notice emitted when a cross-chain rebalance is completed
     /// @param receiver The address receiving the rebalanced position
     /// @param firstStepLastCSRPayloadId The ID of the last payload in the first step of the rebalance
     event XChainRebalanceComplete(address indexed receiver, uint256 indexed firstStepLastCSRPayloadId);
-
-    /// @notice emitted when a withdrawal is completed
-    /// @param receiver The address receiving the withdrawn tokens
-    /// @param id The ID of the position withdrawn from
-    /// @param amount The amount of tokens withdrawn
-    event WithdrawCompleted(address indexed receiver, uint256 indexed id, uint256 amount);
-
-    /// @notice emitted when multiple withdrawals are completed
-    /// @param receiver The address receiving the withdrawn tokens
-    /// @param ids The IDs of the positions withdrawn from
-    /// @param amounts The amounts of tokens withdrawn from each position
-    event WithdrawMultiCompleted(address indexed receiver, uint256[] ids, uint256[] amounts);
 
     /// @notice emitted when a deposit from an ERC4626 vault is completed
     /// @param receiver The address receiving the deposited tokens
@@ -158,12 +132,18 @@ interface ISuperformRouterWrapper {
     );
 
     /// @notice emitted when an existing refund got disputed
+    /// @param lastPayloadId is the unique identifier for the payload
+    /// @param disputer is the address of the user who disputed the refund
     event RefundDisputed(uint256 indexed lastPayloadId, address indexed disputer);
 
     /// @notice emitted when a new refund amount is proposed
+    /// @param lastPayloadId is the unique identifier for the payload
+    /// @param newRefundAmount is the new refund amount proposed
     event NewRefundAmountProposed(uint256 indexed lastPayloadId, uint256 indexed newRefundAmount);
 
     /// @notice emitted when a refund is complete
+    /// @param lastPayloadId is the unique identifier for the payload
+    /// @param caller is the address of the user who called the function
     event RefundCompleted(uint256 indexed lastPayloadId, address indexed caller);
 
     //////////////////////////////////////////////////////////////
@@ -333,22 +313,6 @@ interface ISuperformRouterWrapper {
         external
         payable;
 
-    /// @notice Batch deposit function for multiple deposits with different parameters
-    /// @param assets_ An array of ERC20 token addresses to deposit
-    /// @param amounts_ An array of amounts to deposit for each transaction
-    /// @param receiverAddressesSP_ An array of addresses to receive the superforms
-    /// @param smartWallets_ An array of booleans indicating whether to use a smart wallet for each deposit
-    /// @param callDatas_ An array of calldatas for each deposit
-    function batchDeposit(
-        IERC20[] calldata assets_,
-        uint256[] calldata amounts_,
-        address[] calldata receiverAddressesSP_,
-        bool[] calldata smartWallets_,
-        bytes[] calldata callDatas_
-    )
-        external
-        payable;
-
     /// @notice completes the disbursement process
     /// @param csrAckPayloadId_ The payload ID to complete the disbursement
     function finalizeDisbursement(uint256 csrAckPayloadId_) external;
@@ -356,36 +320,6 @@ interface ISuperformRouterWrapper {
     /// @notice completes multiple disbursements in a batch
     /// @param csrAckPayloadIds_ The payload IDs to complete the disbursements
     function finalizeBatchDisbursement(uint256[] calldata csrAckPayloadIds_) external;
-
-    /// @notice withdraws from a single SuperPosition
-    /// @dev TODO: decide if needed and implement cross-chain functionality
-    /// @param id_ the ID of the position to withdraw from
-    /// @param amount_ The amount to withdraw
-    /// @param receiverAddressSP_ The receiver of the withdrawn tokens
-    /// @param callData_ The encoded superform router withdrawal request
-    function withdrawSinglePosition(
-        uint256 id_,
-        uint256 amount_,
-        address receiverAddressSP_,
-        bytes calldata callData_
-    )
-        external
-        payable;
-
-    /// @notice withdraws from multiple SuperPositions
-    /// @dev TODO: decide if needed and implement cross-chain functionality
-    /// @param ids_ The IDs of the positions to withdraw from
-    /// @param amounts_ The amounts to withdraw from each position
-    /// @param receiverAddressSP_ The receiver of the withdrawn tokens
-    /// @param callData_ The encoded superform router withdrawal request
-    function withdrawMultiPositions(
-        uint256[] calldata ids_,
-        uint256[] calldata amounts_,
-        address receiverAddressSP_,
-        bytes calldata callData_
-    )
-        external
-        payable;
 
     /// @notice allows the receiver / disputer to protect against malicious processors
     /// @param finalPayloadId_ is the unique identifier of the refund
