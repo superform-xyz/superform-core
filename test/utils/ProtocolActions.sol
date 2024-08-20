@@ -12,7 +12,7 @@ import { PoolManagerLike } from "../mocks/7540MockUtils/PoolManagerLike.sol";
 import { ERC7540VaultLike } from "../mocks/7540MockUtils/ERC7540VaultLike.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.sol";
-import { IAsyncStateRegistry, ClaimAvailableDepositsArgs } from "src/interfaces/IAsyncStateRegistry.sol";
+import { IAsyncStateRegistry } from "src/interfaces/IAsyncStateRegistry.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { IERC5115Form } from "src/forms/interfaces/IERC5115Form.sol";
@@ -1536,7 +1536,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     vm.prank(deployer);
 
                     v.asyncStateRegistry.claimAvailableDeposits{ value: nativeFee }(
-                        ClaimAvailableDepositsArgs(users[action.user], asyncDepositSFs[i][j])
+                        users[action.user], asyncDepositSFs[i][j]
                     );
                 }
 
@@ -1556,7 +1556,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     vm.expectEmit();
                     emit IAsyncStateRegistry.FailedDepositClaim(users[action.user], revertingAsyncDepositSFs[i][j], 0);
                     v.asyncStateRegistry.claimAvailableDeposits{ value: nativeFee }(
-                        ClaimAvailableDepositsArgs(users[action.user], revertingAsyncDepositSFs[i][j])
+                        users[action.user], revertingAsyncDepositSFs[i][j]
                     );
                 }
 
@@ -1581,7 +1581,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     }
 
                     v.asyncStateRegistry.claimAvailableDeposits{ value: nativeFee }(
-                        ClaimAvailableDepositsArgs(users[action.user], revertingRedeemAsyncDepositSFs[i][j])
+                        users[action.user], revertingRedeemAsyncDepositSFs[i][j]
                     );
                 }
                 /// @dev deliver the message for the given destination

@@ -351,7 +351,7 @@ contract SuperformERC7540AccumulationTest is ProtocolActions {
         vm.startPrank(deployer);
         vm.recordLogs();
         AsyncStateRegistry(getContract(dstChainId, "AsyncStateRegistry")).claimAvailableDeposits{ value: 0.5 ether }(
-            ClaimAvailableDepositsArgs(user, superformId)
+            user, superformId
         );
         vm.stopPrank();
 

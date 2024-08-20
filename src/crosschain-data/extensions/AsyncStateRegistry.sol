@@ -228,25 +228,27 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     }
 
     /// @inheritdoc IAsyncStateRegistry
-    function claimAvailableDeposits(ClaimAvailableDepositsArgs calldata args_)
+    function claimAvailableDeposits(
+        address user_,
+        uint256 superformId_
+    )
         external
         payable
         override
         onlyAsyncStateRegistryProcessor
     {
-        RequestConfig memory config = requestConfigs[args_.user][args_.superformId];
+        RequestConfig memory config = requestConfigs[user_][superformId_];
+        ClaimAvailableDepositsLocalVars memory v;
 
         if (config.currentSrcChainId == 0) revert REQUEST_CONFIG_NON_EXISTENT();
 
-        (address superformAddress,,) = args_.superformId.getSuperform();
+        (v.superformAddress,,) = superformId_.getSuperform();
 
-        uint256 claimableDeposit =
-            IERC7540Form(superformAddress).getClaimableDepositRequest(config.requestId, args_.user);
-        if (claimableDeposit == 0) revert NOT_READY_TO_CLAIM();
+        v.claimableDeposit = IERC7540Form(v.superformAddress).getClaimableDepositRequest(config.requestId, user_);
+        if (v.claimableDeposit == 0) revert NOT_READY_TO_CLAIM();
 
-        try IERC7540Form(superformAddress).claimDeposit(
-            args_.user, args_.superformId, claimableDeposit, config.retain4626
-        ) returns (uint256 shares) {
+        try IERC7540Form(v.superformAddress).claimDeposit(user_, superformId_, v.claimableDeposit, config.retain4626)
+        returns (uint256 shares) {
             if (shares > 0 && !config.retain4626) {
                 /// @dev dispatch acknowledgement to mint superPositions
                 if (config.isXChain == 1) {
@@ -260,12 +262,10 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
                                     uint8(CallbackType.RETURN),
                                     0,
                                     _getStateRegistryId(),
-                                    args_.user,
+                                    user_,
                                     CHAIN_ID
                                 ),
-                                abi.encode(
-                                    ReturnSingleData(config.currentReturnDataPayloadId, args_.superformId, shares)
-                                )
+                                abi.encode(ReturnSingleData(config.currentReturnDataPayloadId, superformId_, shares))
                             )
                         )
                     );
@@ -273,11 +273,11 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
                 /// @dev for direct chain, superPositions are minted directly
                 else {
                     ISuperPositions(_getSuperRegistryAddress(keccak256("SUPER_POSITIONS"))).mintSingle(
-                        args_.user, args_.superformId, shares
+                        user_, superformId_, shares
                     );
                 }
             } else if (shares == 0) {
-                emit FailedDepositClaim(args_.user, args_.superformId, config.requestId);
+                emit FailedDepositClaim(user_, superformId_, config.requestId);
             }
         } catch {
             /// @dev In case of a deposit actual failure (at the vault level, or returned shares level in the form),
@@ -285,10 +285,10 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
             /// vault contract level.
             /// @dev This must happen like this because superform does not have the shares nor the assets to act upon
             /// them.
-            emit FailedDepositClaim(args_.user, args_.superformId, config.requestId);
+            emit FailedDepositClaim(user_, superformId_, config.requestId);
         }
 
-        emit ClaimedAvailableDeposits(args_.user, args_.superformId, config.requestId);
+        emit ClaimedAvailableDeposits(user_, superformId_, config.requestId);
     }
 
     /// @inheritdoc IAsyncStateRegistry

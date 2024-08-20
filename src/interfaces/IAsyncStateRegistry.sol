@@ -40,16 +40,9 @@ struct RequestConfig {
     uint8[] ambIds;
 }
 
-struct ClaimAvailableDepositsArgs {
-    address user;
-    uint256 superformId;
-}
-
 struct ClaimAvailableDepositsLocalVars {
-    bool is7540;
     address superformAddress;
     uint256 claimableDeposit;
-    uint8[] ambIds;
 }
 
 /// @dev holds information about a sync withdraw txdata payload
@@ -135,8 +128,9 @@ interface IAsyncStateRegistry {
         external;
 
     /// @notice claims available deposits for a user
-    /// @param args_ The arguments for claiming deposits
-    function claimAvailableDeposits(ClaimAvailableDepositsArgs memory args_) external payable;
+    /// @param user_ The address of the user
+    /// @param superformId_ the ID of the superform
+    function claimAvailableDeposits(address user_, uint256 superformId_) external payable;
 
     /// @notice claims available redeems for a user
     /// @param user_ The address of the user
