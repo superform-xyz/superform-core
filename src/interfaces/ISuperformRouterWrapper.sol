@@ -20,8 +20,23 @@ interface ISuperformRouterWrapper {
     /// @notice thrown when a non-processor attempts to call a processor-only function
     error NOT_ROUTER_WRAPPER_PROCESSOR();
 
-    /// @notice thrown when an invalid redeem selector is provided
-    error INVALID_REDEEM_SELECTOR();
+    /// @notice thrown when an invalid rebalance from selector is provided
+    error INVALID_REBALANCE_FROM_SELECTOR();
+
+    /// @notice thrown when an invalid rebalance to selector is provided
+    error INVALID_REBALANCE_TO_SELECTOR();
+
+    /// @notice thrown if the interimToken is different than expected
+    error REBALANCE_SINGLE_POSITIONS_DIFFERENT_TOKEN();
+
+    /// @notice thrown if the liqDstChainId is different than expected
+    error REBALANCE_SINGLE_POSITIONS_DIFFERENT_CHAIN();
+
+    /// @notice thrown if the interimToken is different than expected in the array
+    error REBALANCE_MULTI_POSITIONS_DIFFERENT_TOKEN();
+
+    /// @notice thrown if the liqDstChainId is different than expected in the array
+    error REBALANCE_MULTI_POSITIONS_DIFFERENT_CHAIN();
 
     /// @notice thrown when an invalid deposit selector is provided
     error INVALID_DEPOSIT_SELECTOR();
@@ -37,6 +52,9 @@ interface ISuperformRouterWrapper {
 
     /// @notice thrown if the refund is still in dispute phase
     error IN_DISPUTE_PHASE();
+
+    /// @notice thrown if msg.value is lower than the required fee
+    error INVALID_FEE();
 
     //////////////////////////////////////////////////////////////
     //                       EVENTS                             //
@@ -160,16 +178,43 @@ interface ISuperformRouterWrapper {
         uint256 expectedAmountInterimAsset;
     }
 
-    struct RebalanceMultiPositionsSyncArgs {
-        uint256[] ids;
-        uint256[] sharesToRedeem;
+    struct RebalanceSinglePositionSyncArgs {
+        uint256 id;
+        uint256 sharesToRedeem;
         uint256 previewRedeemAmount;
+        uint256 rebalanceFromMsgValue;
+        uint256 rebalanceToMsgValue;
         address interimAsset;
         uint256 slippage;
         address receiverAddressSP;
         bool smartWallet;
         bytes callData;
         bytes rebalanceCallData;
+    }
+
+    struct RebalanceMultiPositionsSyncArgs {
+        uint256[] ids;
+        uint256[] sharesToRedeem;
+        uint256 previewRedeemAmount;
+        uint256 rebalanceFromMsgValue;
+        uint256 rebalanceToMsgValue;
+        address interimAsset;
+        uint256 slippage;
+        address receiverAddressSP;
+        bool smartWallet;
+        bytes callData;
+        bytes rebalanceCallData;
+    }
+
+    struct RebalancePositionsSyncArgs {
+        Actions action;
+        uint256 previewRedeemAmount;
+        address asset;
+        uint256 slippage;
+        uint256 rebalanceFromMsgValue;
+        uint256 rebalanceToMsgValue;
+        address receiverAddressSP;
+        bool smartWallet;
     }
 
     struct InitiateXChainRebalanceMultiArgs {
@@ -193,7 +238,10 @@ interface ISuperformRouterWrapper {
 
     enum Actions {
         DEPOSIT,
-        WITHDRAWAL
+        WITHDRAWAL,
+        REBALANCE_FROM_SINGLE,
+        REBALANCE_FROM_MULTI,
+        REBALANCE_TO
     }
 
     //////////////////////////////////////////////////////////////
@@ -201,33 +249,12 @@ interface ISuperformRouterWrapper {
     //////////////////////////////////////////////////////////////
 
     /// @notice rebalances a single SuperPosition synchronously
-    /// @dev Not to be used for multi-vault rebalances
-    /// @param id_ The superform ID to redeem from
-    /// @param sharesToRedeem_ The amount of superform shares to redeem
-    /// @param previewRedeemAmount_ The amount of asset to receive after redeeming
-    /// @param vaultAsset_ The asset to receive after redeeming
-    /// @param slippage_ The slippage to allow for the rebalance
-    /// @param receiverAddressSP_ The receiver of the superform shares
-    /// @param smartWallet_ Whether to use smart wallet or not
-    /// @param callData_ The encoded superform router request
-    /// @param rebalanceCallData_ The encoded superform router request for the rebalance
-    function rebalanceSinglePosition(
-        uint256 id_,
-        uint256 sharesToRedeem_,
-        uint256 previewRedeemAmount_,
-        address vaultAsset_,
-        uint256 slippage_,
-        address receiverAddressSP_,
-        bytes calldata callData_,
-        bytes calldata rebalanceCallData_,
-        bool smartWallet_
-    )
-        external
-        payable;
+    /// @param args The arguments for rebalancing single positions
+    function rebalanceSinglePosition(RebalanceSinglePositionSyncArgs calldata args) external payable;
 
     /// @notice rebalances multiple SuperPositions synchronously
     /// @param args The arguments for rebalancing multiple positions
-    function rebalanceMultiPositions(RebalanceMultiPositionsSyncArgs memory args) external payable;
+    function rebalanceMultiPositions(RebalanceMultiPositionsSyncArgs calldata args) external payable;
 
     /// @notice initiates the rebalance process for a position on a different chain
     /// @param id_ The superform ID to redeem from

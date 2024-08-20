@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { SignatureChecker } from "openzeppelin-contracts/contracts/utils/cryptography/SignatureChecker.sol";
 import { Address } from "openzeppelin-contracts/contracts/utils/Address.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
@@ -14,7 +13,9 @@ import {
     CallbackType,
     TransactionType,
     ReturnSingleData,
-    ReturnMultiData
+    ReturnMultiData,
+    SingleDirectSingleVaultStateReq,
+    SingleDirectMultiVaultStateReq
 } from "src/types/DataTypes.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { SuperPositions } from "src/SuperPositions.sol";
@@ -22,6 +23,7 @@ import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ISuperformRouterWrapper, IERC20 } from "src/interfaces/ISuperformRouterWrapper.sol";
+import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
 import { Error } from "src/libraries/Error.sol";
 
 contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
@@ -37,6 +39,7 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
     IBaseStateRegistry public immutable CORE_STATE_REGISTRY;
     address public immutable SUPERFORM_ROUTER;
     address public immutable SUPER_POSITIONS;
+    uint64 public immutable CHAIN_ID;
 
     //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
@@ -44,10 +47,10 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
 
     mapping(uint256 payloadId => address user) public msgSenderMap;
     mapping(uint256 payloadId => bool processed) public statusMap;
-    mapping(address => mapping(bytes32 => bool)) public authorizations;
+    mapping(address user => mapping(bytes32 nonce => bool authorized)) public authorizations;
     mapping(address receiverAddressSP => mapping(uint256 firstStepLastCSRPayloadId => XChainRebalanceData data)) public
         xChainRebalanceCallData;
-    mapping(Actions => mapping(bytes4 => bool)) public whitelistedSelectors;
+    mapping(Actions => mapping(bytes4 selector => bool whitelisted)) public whitelistedSelectors;
     mapping(uint256 lastPayloadId => Refund) public refunds;
 
     //////////////////////////////////////////////////////////////
@@ -94,11 +97,23 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
         if (block.chainid > type(uint64).max) {
             revert Error.BLOCK_CHAIN_ID_OUT_OF_BOUNDS();
         }
+
+        CHAIN_ID = uint64(block.chainid);
+
         superRegistry = ISuperRegistry(superRegistry_);
 
         SUPERFORM_ROUTER = superformRouter_;
         SUPER_POSITIONS = superPositions_;
         CORE_STATE_REGISTRY = coreStateRegistry_;
+
+        whitelistedSelectors[Actions.REBALANCE_FROM_SINGLE][IBaseRouter.singleDirectSingleVaultWithdraw.selector] = true;
+        whitelistedSelectors[Actions.REBALANCE_FROM_MULTI][IBaseRouter.singleDirectMultiVaultWithdraw.selector] = true;
+        whitelistedSelectors[Actions.REBALANCE_TO][IBaseRouter.singleDirectSingleVaultDeposit.selector] = true;
+        whitelistedSelectors[Actions.REBALANCE_TO][IBaseRouter.singleXChainSingleVaultDeposit.selector] = true;
+        whitelistedSelectors[Actions.REBALANCE_TO][IBaseRouter.singleDirectMultiVaultDeposit.selector] = true;
+        whitelistedSelectors[Actions.REBALANCE_TO][IBaseRouter.singleXChainMultiVaultDeposit.selector] = true;
+        whitelistedSelectors[Actions.REBALANCE_TO][IBaseRouter.multiDstSingleVaultDeposit.selector] = true;
+        whitelistedSelectors[Actions.REBALANCE_TO][IBaseRouter.multiDstMultiVaultDeposit.selector] = true;
     }
 
     //////////////////////////////////////////////////////////////
@@ -113,7 +128,9 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
     }
 
     /// @inheritdoc ISuperformRouterWrapper
-    function finalizeBatchDisbursement(uint256[] calldata csrAckPayloadIds_)
+    function finalizeBatchDisbursement(
+        uint256[] calldata csrAckPayloadIds_
+    )
         external
         override
         onlyRouterWrapperProcessor
@@ -133,39 +150,52 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
 
     /// @inheritdoc ISuperformRouterWrapper
     function rebalanceSinglePosition(
-        uint256 id_,
-        uint256 sharesToRedeem_,
-        uint256 previewRedeemAmount_,
-        address vaultAsset_,
-        uint256 slippage_,
-        address receiverAddressSP_,
-        bytes calldata callData_,
-        bytes calldata rebalanceCallData_,
-        bool smartWallet_
+        RebalanceSinglePositionSyncArgs calldata args
     )
         external
         payable
         override
-        refundUnused(vaultAsset_, receiverAddressSP_)
+        refundUnused(args.interimAsset, args.receiverAddressSP)
     {
-        _transferSuperPositions(receiverAddressSP_, id_, sharesToRedeem_);
+        uint256 totalFee = args.rebalanceFromMsgValue + args.rebalanceToMsgValue;
+
+        if (msg.value < totalFee) {
+            revert INVALID_FEE();
+        }
+        /// @dev transfers a single superPosition to this contract and approves router
+        _transferSuperPositions(args.receiverAddressSP, args.id, args.sharesToRedeem);
 
         _rebalancePositionsSync(
-            previewRedeemAmount_,
-            vaultAsset_,
-            slippage_,
-            receiverAddressSP_,
-            smartWallet_,
-            callData_,
-            rebalanceCallData_,
-            false
+            RebalancePositionsSyncArgs(
+                Actions.REBALANCE_FROM_SINGLE,
+                args.previewRedeemAmount,
+                args.interimAsset,
+                args.slippage,
+                args.rebalanceFromMsgValue,
+                args.rebalanceToMsgValue,
+                args.receiverAddressSP,
+                args.smartWallet
+            ),
+            args.callData,
+            args.rebalanceCallData
         );
 
-        emit RebalanceSyncCompleted(receiverAddressSP_, id_, sharesToRedeem_, smartWallet_);
+        if (msg.value > totalFee) {
+            /// @dev refunds msg.sender if msg.value was more than needed
+            (bool success,) = payable(msg.sender).call{ value: msg.value - totalFee }("");
+
+            if (!success) {
+                revert Error.FAILED_TO_SEND_NATIVE();
+            }
+        }
+
+        emit RebalanceSyncCompleted(args.receiverAddressSP, args.id, args.sharesToRedeem, args.smartWallet);
     }
 
     /// @inheritdoc ISuperformRouterWrapper
-    function rebalanceMultiPositions(RebalanceMultiPositionsSyncArgs memory args)
+    function rebalanceMultiPositions(
+        RebalanceMultiPositionsSyncArgs calldata args
+    )
         external
         payable
         override
@@ -176,21 +206,40 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
             revert Error.ARRAY_LENGTH_MISMATCH();
         }
 
+        uint256 totalFee = args.rebalanceFromMsgValue + args.rebalanceToMsgValue;
+
+        if (msg.value < totalFee) {
+            revert INVALID_FEE();
+        }
+
+        /// @dev transfers multiple superPositions to this contract and approves router
         for (uint256 i; i < len; ++i) {
-            /// @dev step 1: send SPs to wrapper
             _transferSuperPositions(args.receiverAddressSP, args.ids[i], args.sharesToRedeem[i]);
         }
 
         _rebalancePositionsSync(
-            args.previewRedeemAmount,
-            args.interimAsset,
-            args.slippage,
-            args.receiverAddressSP,
-            args.smartWallet,
+            RebalancePositionsSyncArgs(
+                Actions.REBALANCE_FROM_MULTI,
+                args.previewRedeemAmount,
+                args.interimAsset,
+                args.slippage,
+                args.rebalanceFromMsgValue,
+                args.rebalanceToMsgValue,
+                args.receiverAddressSP,
+                args.smartWallet
+            ),
             args.callData,
-            args.rebalanceCallData,
-            true
+            args.rebalanceCallData
         );
+
+        if (msg.value > totalFee) {
+            /// @dev forwards the rest to msg.sender
+            (bool success,) = payable(msg.sender).call{ value: msg.value - totalFee }("");
+
+            if (!success) {
+                revert Error.FAILED_TO_SEND_NATIVE();
+            }
+        }
 
         emit RebalanceMultiSyncCompleted(args.receiverAddressSP, args.ids, args.sharesToRedeem, args.smartWallet);
     }
@@ -211,14 +260,14 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
         payable
         override
     {
-        /// @dev step 1: send SPs to wrapper
+        /// @dev transfers a single superPosition to this contract and approves router
         _transferSuperPositions(receiverAddressSP_, id_, sharesToRedeem_);
 
         if (!whitelistedSelectors[Actions.WITHDRAWAL][_parseSelectorMem(callData_)]) {
-            revert INVALID_REDEEM_SELECTOR();
+            revert INVALID_REBALANCE_FROM_SELECTOR();
         }
         /// @dev step 2: send SPs to router
-        _callSuperformRouter(callData_);
+        _callSuperformRouter(callData_, msg.value);
 
         if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(rebalanceCallData_)]) {
             revert INVALID_DEPOSIT_SELECTOR();
@@ -250,17 +299,17 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
             revert Error.ARRAY_LENGTH_MISMATCH();
         }
 
+        /// @dev transfers multiple superPositions to this contract and approves router
         for (uint256 i; i < len; ++i) {
-            /// @dev step 1: send SPs to wrapper
             _transferSuperPositions(args.receiverAddressSP, args.ids[i], args.sharesToRedeem[i]);
         }
 
         if (!whitelistedSelectors[Actions.WITHDRAWAL][_parseSelectorMem(args.callData)]) {
-            revert INVALID_REDEEM_SELECTOR();
+            revert INVALID_REBALANCE_FROM_SELECTOR();
         }
 
         /// @dev step 2: send SPs to router
-        _callSuperformRouter(args.callData);
+        _callSuperformRouter(args.callData, msg.value);
 
         if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(args.rebalanceCallData)]) {
             revert INVALID_DEPOSIT_SELECTOR();
@@ -315,9 +364,9 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
         IERC20 interimAsset = IERC20(data.interimAsset);
         data.smartWallet
             ? _depositUsingSmartWallet(
-                interimAsset, amountReceivedInterimAsset_, receiverAddressSP_, data.rebalanceCalldata
+                interimAsset, amountReceivedInterimAsset_, msg.value, receiverAddressSP_, data.rebalanceCalldata
             )
-            : _deposit(interimAsset, amountReceivedInterimAsset_, receiverAddressSP_, data.rebalanceCalldata);
+            : _deposit(interimAsset, amountReceivedInterimAsset_, msg.value, receiverAddressSP_, data.rebalanceCalldata);
 
         emit XChainRebalanceComplete(receiverAddressSP_, firstStepLastCSRPayloadId_);
 
@@ -343,8 +392,8 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
         IERC20 asset = IERC20(vault.asset());
 
         smartWallet_
-            ? _depositUsingSmartWallet(asset, amountRedeemed, receiverAddressSP_, callData_)
-            : _deposit(asset, amountRedeemed, receiverAddressSP_, callData_);
+            ? _depositUsingSmartWallet(asset, amountRedeemed, msg.value, receiverAddressSP_, callData_)
+            : _deposit(asset, amountRedeemed, msg.value, receiverAddressSP_, callData_);
 
         emit Deposit4626Completed(receiverAddressSP_, vault_);
     }
@@ -364,8 +413,8 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
         _transferERC20In(asset_, receiverAddressSP_, amount_);
 
         smartWallet_
-            ? _depositUsingSmartWallet(asset_, amount_, receiverAddressSP_, callData_)
-            : _deposit(asset_, amount_, receiverAddressSP_, callData_);
+            ? _depositUsingSmartWallet(asset_, amount_, msg.value, receiverAddressSP_, callData_)
+            : _deposit(asset_, amount_, msg.value, receiverAddressSP_, callData_);
 
         emit DepositCompleted(receiverAddressSP_, smartWallet_, false);
     }
@@ -409,7 +458,7 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
     {
         _transferSuperPositions(receiverAddressSP_, id_, amount_);
 
-        _callSuperformRouter(callData_);
+        _callSuperformRouter(callData_, msg.value);
 
         emit WithdrawCompleted(receiverAddressSP_, id_, amount_);
     }
@@ -427,7 +476,7 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
     {
         _transferBatchSuperPositions(receiverAddressSP_, ids_, amounts_);
 
-        _callSuperformRouter(callData_);
+        _callSuperformRouter(callData_, msg.value);
 
         emit WithdrawMultiCompleted(receiverAddressSP_, ids_, amounts_);
     }
@@ -524,26 +573,49 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
     //////////////////////////////////////////////////////////////
 
     function _rebalancePositionsSync(
-        uint256 previewRedeemAmount_,
-        address asset_,
-        uint256 slippage_,
-        address receiverAddressSP_,
-        bool smartWallet_,
-        bytes memory callData_,
-        bytes memory rebalanceCallData_,
-        bool multi
+        RebalancePositionsSyncArgs memory args,
+        bytes calldata callData,
+        bytes calldata rebalanceCallData
     )
         internal
     {
-        IERC20 asset = IERC20(asset_);
+        IERC20 asset = IERC20(args.asset);
 
         uint256 balanceBefore = asset.balanceOf(address(this));
 
-        if (!whitelistedSelectors[Actions.WITHDRAWAL][_parseSelectorMem(callData_)]) revert INVALID_REDEEM_SELECTOR();
+        /// @dev step 1: validate the call data
+
+        if (!whitelistedSelectors[args.action][_parseSelectorMem(callData)]) {
+            revert INVALID_REBALANCE_FROM_SELECTOR();
+        }
+        if (args.action == Actions.REBALANCE_FROM_SINGLE) {
+            SingleDirectSingleVaultStateReq memory req =
+                abi.decode(_parseCallData(callData), (SingleDirectSingleVaultStateReq));
+
+            if (req.superformData.liqRequest.token != args.asset) {
+                revert REBALANCE_SINGLE_POSITIONS_DIFFERENT_TOKEN();
+            }
+            if (req.superformData.liqRequest.liqDstChainId != CHAIN_ID) {
+                revert REBALANCE_SINGLE_POSITIONS_DIFFERENT_CHAIN();
+            }
+        } else {
+            SingleDirectMultiVaultStateReq memory req =
+                abi.decode(_parseCallData(callData), (SingleDirectMultiVaultStateReq));
+            uint256 len = req.superformData.liqRequests.length;
+
+            for (uint256 i; i < len; ++i) {
+                // Validate that the token is equal in all indexes
+                if (req.superformData.liqRequests[i].token != args.asset) {
+                    revert REBALANCE_MULTI_POSITIONS_DIFFERENT_TOKEN();
+                }
+                if (req.superformData.liqRequests[i].liqDstChainId != CHAIN_ID) {
+                    revert REBALANCE_MULTI_POSITIONS_DIFFERENT_CHAIN();
+                }
+            }
+        }
+
         /// @dev step 2: send SPs to router
-        /// @dev TODO: final asset of multi vault must be "interimAsset" otherwise funds can be lost (validations
-        /// needed)
-        _callSuperformRouter(callData_);
+        _callSuperformRouter(callData, args.rebalanceFromMsgValue);
 
         uint256 balanceAfter = asset.balanceOf(address(this));
 
@@ -551,15 +623,20 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
 
         if (amountToDeposit == 0) revert Error.ZERO_AMOUNT();
 
-        if (ENTIRE_SLIPPAGE * amountToDeposit < ((previewRedeemAmount_ * (ENTIRE_SLIPPAGE - slippage_)))) {
+        if (ENTIRE_SLIPPAGE * amountToDeposit < ((args.previewRedeemAmount * (ENTIRE_SLIPPAGE - args.slippage)))) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
 
-        /// @dev step 3: rebalance into a new superform with rebalanceCallData_
-        /// @dev this can be same chain or cross chain
-        smartWallet_
-            ? _depositUsingSmartWallet(asset, amountToDeposit, receiverAddressSP_, rebalanceCallData_)
-            : _deposit(asset, amountToDeposit, receiverAddressSP_, rebalanceCallData_);
+        /// @dev step 3: rebalance into a new superform with rebalanceCallData
+        if (!whitelistedSelectors[args.action][_parseSelectorMem(rebalanceCallData)]) {
+            revert INVALID_REBALANCE_TO_SELECTOR();
+        }
+
+        args.smartWallet
+            ? _depositUsingSmartWallet(
+                asset, amountToDeposit, args.rebalanceToMsgValue, args.receiverAddressSP, rebalanceCallData
+            )
+            : _deposit(asset, amountToDeposit, args.rebalanceToMsgValue, args.receiverAddressSP, rebalanceCallData);
     }
 
     function _setAuthorizationNonce(uint256 deadline_, address user_, bytes32 nonce_) internal {
@@ -567,10 +644,6 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
         if (authorizations[user_][nonce_]) revert AUTHORIZATION_USED();
 
         authorizations[user_][nonce_] = true;
-    }
-
-    function _checkSignature(address user_, bytes32 digest_, bytes memory signature_) internal view {
-        if (!SignatureChecker.isValidSignatureNow(user_, digest_, signature_)) revert INVALID_AUTHORIZATION();
     }
 
     function _transferSuperPositions(address user_, uint256 id_, uint256 amount_) internal {
@@ -590,8 +663,8 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
     }
 
     /// @dev how to ensure call data only calls certain functions?
-    function _callSuperformRouter(bytes memory callData_) internal {
-        (bool success, bytes memory returndata) = SUPERFORM_ROUTER.call{ value: msg.value }(callData_);
+    function _callSuperformRouter(bytes memory callData_, uint256 msgValue_) internal {
+        (bool success, bytes memory returndata) = SUPERFORM_ROUTER.call{ value: msgValue_ }(callData_);
 
         Address.verifyCallResult(success, returndata);
     }
@@ -616,6 +689,7 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
     function _deposit(
         IERC20 asset_,
         uint256 amountToDeposit_,
+        uint256 msgValue_,
         address receiverAddressSP_,
         bytes memory callData_
     )
@@ -627,12 +701,13 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
         if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(callData_)]) {
             revert INVALID_DEPOSIT_SELECTOR();
         }
-        _callSuperformRouter(callData_);
+        _callSuperformRouter(callData_, msgValue_);
     }
 
     function _depositUsingSmartWallet(
         IERC20 asset_,
         uint256 amountToDeposit_,
+        uint256 msgValue_,
         address receiverAddressSP_,
         bytes memory callData_
     )
@@ -645,7 +720,7 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
         if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(callData_)]) {
             revert INVALID_DEPOSIT_SELECTOR();
         }
-        _callSuperformRouter(callData_);
+        _callSuperformRouter(callData_, msgValue_);
 
         uint256 payloadEndCount = CORE_STATE_REGISTRY.payloadsCount();
 
@@ -713,5 +788,10 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
     /// @dev returns if an address has a specific role
     function _hasRole(bytes32 id_, address addressToCheck_) internal view returns (bool) {
         return ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(id_, addressToCheck_);
+    }
+
+    /// @dev helps parse calldata
+    function _parseCallData(bytes calldata callData_) internal pure returns (bytes calldata) {
+        return callData_[4:];
     }
 }
