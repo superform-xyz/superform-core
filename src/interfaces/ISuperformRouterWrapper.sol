@@ -29,8 +29,8 @@ interface ISuperformRouterWrapper {
     /// @notice thrown if the liqDstChainId is different than expected in the array
     error REBALANCE_MULTI_POSITIONS_DIFFERENT_CHAIN();
 
-    /// @notice thrown when an invalid deposit selector is provided
-    error INVALID_DEPOSIT_SELECTOR();
+    /// @notice thrown if the receiver address is invalid (not the wrapper)
+    error REBALANCE_XCHAIN_INVALID_RECEIVER_ADDRESS();
 
     /// @notice thrown when the refund proposer is invalid
     error INVALID_PROPOSER();
@@ -197,6 +197,18 @@ interface ISuperformRouterWrapper {
         bool smartWallet;
     }
 
+    struct InitiateXChainRebalanceArgs {
+        uint256 id;
+        uint256 sharesToRedeem;
+        address receiverAddressSP;
+        address interimAsset;
+        uint256 finalizeSlippage;
+        uint256 expectedAmountInterimAsset;
+        bool smartWallet;
+        bytes callData;
+        bytes rebalanceCallData;
+    }
+
     struct InitiateXChainRebalanceMultiArgs {
         uint256[] ids;
         uint256[] sharesToRedeem;
@@ -218,9 +230,10 @@ interface ISuperformRouterWrapper {
 
     enum Actions {
         DEPOSIT,
-        WITHDRAWAL,
         REBALANCE_FROM_SINGLE,
         REBALANCE_FROM_MULTI,
+        REBALANCE_X_CHAIN_FROM_SINGLE,
+        REBALANCE_X_CHAIN_FROM_MULTI,
         REBALANCE_TO
     }
 
@@ -229,39 +242,24 @@ interface ISuperformRouterWrapper {
     //////////////////////////////////////////////////////////////
 
     /// @notice rebalances a single SuperPosition synchronously
+    /// @notice interim asset and receiverAddressSP must be set. In non smart contract wallet rebalances,
+    /// receiverAddressSP is only used for refunds
     /// @param args The arguments for rebalancing single positions
     function rebalanceSinglePosition(RebalanceSinglePositionSyncArgs calldata args) external payable;
 
     /// @notice rebalances multiple SuperPositions synchronously
+    /// @notice interim asset and receiverAddressSP must be set. In non smart contract wallet rebalances,
+    /// receiverAddressSP is only used for refunds
+    /// @notice receiverAddressSP of rebalanceCallData must be the address of the wrapper for smart wallets
+    /// @notice for normal deposits receiverAddressSP is the users' specified receiverAddressSP
     /// @param args The arguments for rebalancing multiple positions
     function rebalanceMultiPositions(RebalanceMultiPositionsSyncArgs calldata args) external payable;
 
     /// @notice initiates the rebalance process for a position on a different chain
-    /// @param id_ The superform ID to redeem from
-    /// @param sharesToRedeem_ The amount of superform shares to redeem
-    /// @param receiverAddressSP_ The receiver of the superform shares
-    /// @param interimAsset_ The asset to receive on the other chain
-    /// @param finalizeSlippage_ The slippage to allow for the finalize step
-    /// @param expectedAmountInterimAsset_ The expected amount of interim asset to receive
-    /// @param smartWallet_ Whether to use smart wallet or not
-    /// @param callData_ The encoded superform router request
-    /// @param rebalanceCallData_ The encoded superform router request for the rebalance
-    function startCrossChainRebalance(
-        uint256 id_,
-        uint256 sharesToRedeem_,
-        address receiverAddressSP_,
-        address interimAsset_,
-        uint256 finalizeSlippage_,
-        uint256 expectedAmountInterimAsset_,
-        bool smartWallet_,
-        bytes calldata callData_,
-        bytes calldata rebalanceCallData_
-    )
-        external
-        payable;
+    /// @param args The arguments for initiating cross-chain rebalance for single positions
+    function startCrossChainRebalance(InitiateXChainRebalanceArgs calldata args) external payable;
 
     /// @notice initiates the rebalance process for multiple positions on different chains
-    /// @dev TODO: validate interimAsset is final asset of the entire callData_
     /// @param args The arguments for initiating cross-chain rebalance for multiple positions
     function startCrossChainRebalanceMulti(InitiateXChainRebalanceMultiArgs memory args) external payable;
 
