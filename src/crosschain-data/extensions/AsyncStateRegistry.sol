@@ -35,6 +35,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     uint256 public syncWithdrawTxDataPayloadCounter;
 
     /// @dev request configurations for each user and superform
+    /// @dev is a profile for the user used during depositing & redeeming from async vaults
     mapping(address user => mapping(uint256 superformId => RequestConfig requestConfig)) public requestConfigs;
 
     /// @dev sync withdraw txData payloads

@@ -113,6 +113,7 @@ interface IAsyncStateRegistry {
     //////////////////////////////////////////////////////////////
 
     /// @notice updates the request configuration for a given superform
+    /// @dev the request parameters of the latest update overrides all preceding requests
     /// @param type_ The type of the request
     /// @param srcChainId_ The source chain ID
     /// @param isDeposit_ Whether the request is a deposit
