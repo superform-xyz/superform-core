@@ -572,7 +572,7 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
             if (singleVaultData_.liqData.token != ZERO_ADDRESS && singleVaultData_.liqData.txData.length == 0) {
                 _storeSyncWithdrawPayload(srcChainId_, singleVaultData_);
             } else {
-                // assume update not needed, process imediately
+                // assume update not needed, process immediately
                 assets = _processXChainWithdraw(singleVaultData_, srcChainId_);
             }
         }
