@@ -96,8 +96,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     {
         if (data_.receiverAddress == address(0)) revert Error.RECEIVER_ADDRESS_NOT_SET();
 
-        ++syncWithdrawTxDataPayloadCounter;
-        uint256 payloadId = syncWithdrawTxDataPayloadCounter;
+        uint256 payloadId = ++syncWithdrawTxDataPayloadCounter;
 
         syncWithdrawTxDataPayload[payloadId] = SyncWithdrawTxDataPayload(srcChainId_, data_, AsyncStatus.PENDING);
 
