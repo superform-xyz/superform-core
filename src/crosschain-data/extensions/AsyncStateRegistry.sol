@@ -292,7 +292,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     }
 
     /// @inheritdoc IAsyncStateRegistry
-    function claimAvailableRedeems(
+    function claimAvailableRedeem(
         address user_,
         uint256 superformId_,
         bytes calldata updatedTxData_
@@ -333,7 +333,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         /// @dev if redeeming failed superPositions are not reminted
         /// @dev this is different than the normal 4626 flow because if a redeem is claimable
         /// @dev a user could simply go to the vault and claim the assets directly
-        IERC7540Form(superformAddress).claimWithdraw(
+        IERC7540Form(superformAddress).claimRedeem(
             user_,
             superformId_,
             claimableRedeem,

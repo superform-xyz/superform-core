@@ -1839,7 +1839,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
                     vm.prank(deployer);
 
-                    v.asyncStateRegistry.claimAvailableRedeems(users[action.user], asyncWithdrawSFs[i][j], v.txData);
+                    v.asyncStateRegistry.claimAvailableRedeem(users[action.user], asyncWithdrawSFs[i][j], v.txData);
                 }
 
                 for (uint256 j = 0; j < revertingAsyncWithdrawSFs[i].length; j++) {
@@ -1865,7 +1865,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                         : bytes("");
                     vm.prank(deployer);
 
-                    v.asyncStateRegistry.claimAvailableRedeems(
+                    v.asyncStateRegistry.claimAvailableRedeem(
                         users[action.user], revertingAsyncWithdrawSFs[i][j], v.txData
                     );
                 }

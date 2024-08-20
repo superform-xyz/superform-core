@@ -102,8 +102,8 @@ interface IERC7540FormBase {
         external
         returns (uint256 shares);
 
-    /// @dev this function is called the withdraw request is ready to be claimed
-    function claimWithdraw(
+    /// @dev this function is called when the redeem request is ready to be claimed
+    function claimRedeem(
         address user_,
         uint256 superformId_,
         uint256 amountToClaim_,

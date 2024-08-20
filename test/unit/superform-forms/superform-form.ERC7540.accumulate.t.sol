@@ -401,7 +401,7 @@ contract SuperformERC7540AccumulationTest is ProtocolActions {
 
         vm.startPrank(deployer);
         vm.recordLogs();
-        AsyncStateRegistry(getContract(dstChainId, "AsyncStateRegistry")).claimAvailableRedeems(
+        AsyncStateRegistry(getContract(dstChainId, "AsyncStateRegistry")).claimAvailableRedeem(
             user, superformId, bytes("")
         );
         vm.stopPrank();

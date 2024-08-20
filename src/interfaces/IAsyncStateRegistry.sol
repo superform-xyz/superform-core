@@ -142,7 +142,7 @@ interface IAsyncStateRegistry {
     /// @param user_ The address of the user
     /// @param superformId_ The ID of the superform
     /// @param updatedTxData_ The updated transaction data
-    function claimAvailableRedeems(address user_, uint256 superformId_, bytes memory updatedTxData_) external;
+    function claimAvailableRedeem(address user_, uint256 superformId_, bytes memory updatedTxData_) external;
 
     /// @notice Receives the off-chain generated transaction data for the sync withdraw tx
     /// @param srcChainId_ is the chainId of the source chain

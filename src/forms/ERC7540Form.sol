@@ -95,7 +95,7 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
     }
 
     /// @inheritdoc IERC7540FormBase
-    function claimWithdraw(
+    function claimRedeem(
         address user_,
         uint256 superformId_,
         uint256 amountToClaim_,
