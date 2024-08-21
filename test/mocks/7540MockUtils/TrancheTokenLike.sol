@@ -2,5 +2,5 @@
 pragma solidity >=0.5.0;
 
 interface TrancheTokenLike {
-    function restrictionManager() external view returns (address);
+    function hook() external view returns (address);
 }

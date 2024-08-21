@@ -8,8 +8,7 @@ interface InvestmentManagerLike {
         address user,
         uint128 assetId,
         uint128 assets,
-        uint128 shares,
-        uint128 fulfillment
+        uint128 shares
     )
         external;
 

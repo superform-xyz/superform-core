@@ -125,7 +125,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         "PermitTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline)TokenPermissions(address token,uint256 amount)"
     );
     bytes32 constant AUTHORIZE_OPERATOR_TYPEHASH =
-        keccak256("AuthorizeOperator(address controller,address operator,bool approved,uint256 deadline,bytes32 nonce)");
+        keccak256("AuthorizeOperator(address controller,address operator,bool approved,bytes32 nonce,uint256 deadline)");
 
     /// @dev ETH mainnet values as on 22nd Aug, 2023
     uint256 public constant TOTAL_SUPPLY_DAI = 3_961_541_270_138_222_277_363_935_051;
@@ -1476,14 +1476,18 @@ abstract contract BaseSetup is StdInvariant, Test {
                                     ERC7540Form(vars.superform).getVaultAsset()
                                 );
                                 /// @dev activating centrifuge real vault (note: this flow will be needed in production)
-                                if (vault == 0xC6e3Bec489bc661cf4e4c59236C1B79f9924cAB7 && LAUNCH_TESTNETS) {
-                                    address mgr = TrancheTokenLike(IERC7540(vault).share()).restrictionManager();
+                                if (
+                                    (vault == 0x3b33D257E77E018326CCddeCA71cf9350C585A66 && LAUNCH_TESTNETS)
+                                        || vault == 0x1d01Ef1997d44206d839b78bA6813f60F1B3A970
+                                ) {
+                                    address token = IERC7540(vault).share();
+                                    address mgr = TrancheTokenLike(token).hook();
                                     vm.startPrank(RestrictionManagerLike(mgr).root());
                                     /// @dev TODO remove updateMemeber can be removed for superform
-                                    RestrictionManagerLike(mgr).updateMember(vars.superform, type(uint64).max);
-                                    RestrictionManagerLike(mgr).updateMember(users[0], type(uint64).max);
-                                    RestrictionManagerLike(mgr).updateMember(users[1], type(uint64).max);
-                                    RestrictionManagerLike(mgr).updateMember(users[2], type(uint64).max);
+                                    RestrictionManagerLike(mgr).updateMember(token, vars.superform, type(uint64).max);
+                                    RestrictionManagerLike(mgr).updateMember(token, users[0], type(uint64).max);
+                                    RestrictionManagerLike(mgr).updateMember(token, users[1], type(uint64).max);
+                                    RestrictionManagerLike(mgr).updateMember(token, users[2], type(uint64).max);
 
                                     vm.startPrank(deployer);
                                 }
@@ -1688,7 +1692,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         }
         if (!invariant) {
             forks[ETH] = selectedChainIds[ETH]
-                ? pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 20_017_840) : vm.createFork(ETHEREUM_RPC_URL_QN)
+                ? pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 20_574_913) : vm.createFork(ETHEREUM_RPC_URL_QN)
                 : 999;
             forks[BSC] = selectedChainIds[BSC]
                 ? pinnedBlock ? vm.createFork(BSC_RPC_URL, 39_315_701) : vm.createFork(BSC_RPC_URL_QN)
@@ -1712,7 +1716,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                 ? pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 82_228_344) : vm.createFork(FANTOM_RPC_URL_QN)
                 : 999;
             forks[SEPOLIA] = selectedChainIds[SEPOLIA]
-                ? pinnedBlock ? vm.createFork(SEPOLIA_RPC_URL_QN, 6_244_520) : vm.createFork(SEPOLIA_RPC_URL_QN)
+                ? pinnedBlock ? vm.createFork(SEPOLIA_RPC_URL_QN, 6_541_394) : vm.createFork(SEPOLIA_RPC_URL_QN)
                 : 999;
             forks[BSC_TESTNET] = selectedChainIds[BSC_TESTNET]
                 ? pinnedBlock ? vm.createFork(BSC_TESTNET_RPC_URL_QN, 41_624_319) : vm.createFork(BSC_TESTNET_RPC_URL_QN)
@@ -2114,7 +2118,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         existingVaults[250][1]["USDC"][0] = 0xd55C59Da5872DE866e39b1e3Af2065330ea8Acd6;
         existingVaults[250][1]["WETH"][0] = address(0);
 
-        existingVaults[11_155_111][5]["tUSD"][0] = 0xC6e3Bec489bc661cf4e4c59236C1B79f9924cAB7;
+        /// @dev 7540 real centrifuge vaults on mainnet & testnet
+        existingVaults[1][5]["USDC"][0] = 0x1d01Ef1997d44206d839b78bA6813f60F1B3A970;
+        existingVaults[11_155_111][5]["tUSD"][0] = 0x3b33D257E77E018326CCddeCA71cf9350C585A66;
 
         mapping(uint64 chainId => mapping(uint256 market => address realVault)) storage erc5115Vaults = ERC5115_VAULTS;
         mapping(uint64 chainId => mapping(uint256 market => string name)) storage erc5115VaultsNames =
@@ -2367,8 +2373,8 @@ abstract contract BaseSetup is StdInvariant, Test {
                         authorizeOperator.controller,
                         authorizeOperator.operator,
                         authorizeOperator.approved,
-                        authorizeOperator.deadline,
-                        authorizeOperator.nonce
+                        authorizeOperator.nonce,
+                        authorizeOperator.deadline
                     )
                 )
             )

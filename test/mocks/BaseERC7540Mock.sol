@@ -30,7 +30,7 @@ abstract contract BaseERC7540Mock is IAuthorizeOperator, IERC7540Operator, IERC7
     uint256 public immutable deploymentChainId;
     bytes32 private immutable _DOMAIN_SEPARATOR;
     bytes32 public constant AUTHORIZE_OPERATOR_TYPEHASH =
-        keccak256("AuthorizeOperator(address controller,address operator,bool approved,uint256 deadline,bytes32 nonce)");
+        keccak256("AuthorizeOperator(address controller,address operator,bool approved,bytes32 nonce,uint256 deadline)");
 
     mapping(address controller => mapping(bytes32 nonce => bool used)) authorizations;
 
@@ -84,8 +84,8 @@ abstract contract BaseERC7540Mock is IAuthorizeOperator, IERC7540Operator, IERC7
         address controller,
         address operator,
         bool approved,
-        uint256 deadline,
         bytes32 nonce,
+        uint256 deadline,
         bytes memory signature
     )
         external
@@ -101,7 +101,7 @@ abstract contract BaseERC7540Mock is IAuthorizeOperator, IERC7540Operator, IERC7
             abi.encodePacked(
                 "\x19\x01",
                 DOMAIN_SEPARATOR(),
-                keccak256(abi.encode(AUTHORIZE_OPERATOR_TYPEHASH, controller, operator, approved, deadline, nonce))
+                keccak256(abi.encode(AUTHORIZE_OPERATOR_TYPEHASH, controller, operator, approved, nonce, deadline))
             )
         );
 

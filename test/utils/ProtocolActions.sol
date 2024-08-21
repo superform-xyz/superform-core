@@ -253,11 +253,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
         /// @dev simulation of cross-chain message delivery (for x-chain actions)
         aV = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperformsData, singleSuperformsData);
         if (DEBUG_MODE) console.log("Stage 3 complete");
-        console.log("3");
 
         /// @dev processing of message delivery on destination   (for x-chain actions)
         Stage4ReturnVars memory r = _stage4_process_src_dst_payload(action, vars, aV, singleSuperformsData, act);
-        console.log("4");
         if (!r.success) {
             if (DEBUG_MODE) console.log("Stage 4 failed");
             return;
@@ -292,10 +290,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
             }
         }
 
-        console.log("5");
         /// @dev this is only required for full async and async deposit forms
         if (action.action == Actions.Deposit) {
-            console.log("5_1");
             _stage5_1_finalize_asyncDeposit_payload(action, vars, multiSuperformsData, singleSuperformsData);
 
             if (DEBUG_MODE) console.log("Stage 5_1 async deposit complete");
@@ -1375,7 +1371,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         address poolManager = InvestmentManagerLike(investmentManager).poolManager();
 
         /// @dev TODO this is now getTranchePrice
-        (uint128 latestPrice,) = PoolManagerLike(poolManager).getTrancheTokenPrice(
+        (uint128 latestPrice,) = PoolManagerLike(poolManager).getTranchePrice(
             ERC7540VaultLike(vault).poolId(), ERC7540VaultLike(vault).trancheId(), asset
         );
 
@@ -1390,8 +1386,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             user,
             assetId,
             uint128(amount),
-            tranchesPayout,
-            uint128(amount)
+            tranchesPayout
         );
     }
 
@@ -1408,7 +1403,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         address poolManager = InvestmentManagerLike(investmentManager).poolManager();
 
         /// @dev TODO this is now getTranchePrice
-        (uint128 latestPrice,) = PoolManagerLike(poolManager).getTrancheTokenPrice(
+        (uint128 latestPrice,) = PoolManagerLike(poolManager).getTranchePrice(
             ERC7540VaultLike(vault).poolId(), ERC7540VaultLike(vault).trancheId(), asset
         );
 
@@ -1434,8 +1429,8 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 users[user],
                 superform,
                 true,
-                block.timestamp + 30 days,
                 nonce,
+                block.timestamp + 30 days,
                 _signAuthorizeOperator(
                     AuthorizeOperator(users[user], superform, true, block.timestamp + 30 days, nonce),
                     vault,
@@ -1457,7 +1452,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
     {
         address vault = IBaseForm(superform).getVaultAddress();
         address asset = IBaseForm(superform).getVaultAsset();
-        if (vault == REAL_VAULT_ADDRESS[SEPOLIA][5]["tUSD"][0]) {
+        if (vault == REAL_VAULT_ADDRESS[SEPOLIA][5]["tUSD"][0] || vault == REAL_VAULT_ADDRESS[ETH][5]["USDC"][0]) {
             address manager = ERC7540VaultLike(vault).manager();
 
             /// @dev for centrifuge
@@ -1518,7 +1513,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
             v.asyncStateRegistry = IAsyncStateRegistry(contracts[DST_CHAINS[i]][bytes32(bytes("AsyncStateRegistry"))]);
 
             if (countAsyncDeposit[i] > 0) {
-                console.log("5_1_1");
                 vm.recordLogs();
 
                 /// @dev set 7540 operator and move vault to claimable
@@ -2698,7 +2692,9 @@ abstract contract ProtocolActions is CommonProtocolActions {
         int256 USDPerUnderlyingToken;
     }
 
-    function _buildSingleVaultWithdrawCallData(SingleVaultCallDataArgs memory args)
+    function _buildSingleVaultWithdrawCallData(
+        SingleVaultCallDataArgs memory args
+    )
         internal
         returns (SingleVaultSFData memory superformData)
     {
