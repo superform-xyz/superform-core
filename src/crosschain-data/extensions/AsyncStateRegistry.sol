@@ -28,6 +28,12 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     using ProofLib for AMBMessage;
 
     //////////////////////////////////////////////////////////////
+    //                     CONSTANTS                            //
+    //////////////////////////////////////////////////////////////
+    bytes32 private constant EMPTY_LIQ_REQUEST =
+        keccak256(abi.encode(LiqRequest(bytes(""), address(0), address(0), 0, 0, 0)));
+
+    //////////////////////////////////////////////////////////////
     //                     STATE VARIABLES                      //
     //////////////////////////////////////////////////////////////
 
@@ -184,6 +190,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         }
 
         if (callbackType == uint256(CallbackType.FAIL) || callbackType == uint256(CallbackType.RETURN)) {
+            /// TODO _message -> return payload id -> determine if its multi then recast and call stateMultiSync
             ISuperPositions(_getSuperRegistryAddress(keccak256("SUPER_POSITIONS"))).stateSync(_message);
         }
     }
@@ -208,19 +215,16 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         config.isXChain = type_;
         config.retain4626 = data_.retain4626;
         config.currentSrcChainId = srcChainId_;
-
-        if (requestId_ != 0) config.requestId = requestId_;
-
-        /// TODO
-        /// @dev decode payloadId with txHistory and check if multi == 1 if so, do not update
-        config.currentReturnDataPayloadId = data_.payloadId;
         config.maxSlippageSetting = data_.maxSlippage;
 
+        if (requestId_ != 0) config.requestId = requestId_;
         if (!isDeposit_) config.currentLiqRequest = data_.liqData;
 
         if (type_ == 1 && isDeposit_) {
             config.ambIds = _decode7540ExtraFormData(data_.superformId, data_.extraFormData);
             if (config.ambIds.length < _getQuorum(srcChainId_)) revert ERC7540_AMBIDS_NOT_ENCODED();
+
+            config.currentReturnDataPayloadId = data_.payloadId;
         }
 
         emit UpdatedRequestsConfig(data_.receiverAddress, data_.superformId, requestId_);
@@ -317,6 +321,8 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
 
         /// @dev this step is used to feed txData in case user wants to receive assets in a different way
         if (updatedTxData_.length > 0) {
+            if (keccak256(abi.encode(config.currentLiqRequest)) == EMPTY_LIQ_REQUEST) revert INVALID_UPDATED_TX_DATA();
+
             _validateTxDataAsync(
                 config.currentSrcChainId,
                 claimableRedeem,

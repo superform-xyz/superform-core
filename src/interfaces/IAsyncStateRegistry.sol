@@ -13,6 +13,7 @@ error ERC7540_AMBIDS_NOT_ENCODED();
 error INVALID_AMOUNT_IN_TXDATA();
 error REQUEST_CONFIG_NON_EXISTENT();
 error NOT_ASYNC_SUPERFORM();
+error INVALID_UPDATED_TX_DATA();
 
 //////////////////////////////////////////////////////////////
 //                           ENUMS                        //
@@ -100,7 +101,9 @@ interface IAsyncStateRegistry {
     /// @notice retrieves the sync withdraw txData payload for a given payload ID
     /// @param payloadId_ The ID of the payload
     /// @return syncWithdrawTxDataPayload_ for the specified payload ID
-    function getSyncWithdrawTxDataPayload(uint256 payloadId_)
+    function getSyncWithdrawTxDataPayload(
+        uint256 payloadId_
+    )
         external
         view
         returns (SyncWithdrawTxDataPayload memory syncWithdrawTxDataPayload_);
