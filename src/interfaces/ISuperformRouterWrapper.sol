@@ -47,6 +47,9 @@ interface ISuperformRouterWrapper {
     /// @notice thrown if msg.value is lower than the required fee
     error INVALID_FEE();
 
+    /// @notice thrown if rebalance to calldata is empty
+    error EMPTY_REBALANCE_CALL_DATA();
+
     //////////////////////////////////////////////////////////////
     //                       EVENTS                             //
     //////////////////////////////////////////////////////////////
@@ -233,8 +236,7 @@ interface ISuperformRouterWrapper {
         REBALANCE_FROM_SINGLE,
         REBALANCE_FROM_MULTI,
         REBALANCE_X_CHAIN_FROM_SINGLE,
-        REBALANCE_X_CHAIN_FROM_MULTI,
-        REBALANCE_TO
+        REBALANCE_X_CHAIN_FROM_MULTI
     }
 
     //////////////////////////////////////////////////////////////
