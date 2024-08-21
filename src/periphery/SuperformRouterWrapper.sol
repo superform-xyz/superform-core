@@ -12,6 +12,9 @@ import {
     TransactionType,
     ReturnSingleData,
     ReturnMultiData,
+    LiqRequest,
+    SingleVaultSFData,
+    MultiVaultSFData,
     SingleDirectSingleVaultStateReq,
     SingleDirectMultiVaultStateReq,
     SingleXChainSingleVaultStateReq,
@@ -20,6 +23,7 @@ import {
     MultiDstSingleVaultStateReq
 } from "src/types/DataTypes.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
+import { ArrayCastLib } from "src/libraries/ArrayCastLib.sol";
 import { SuperPositions } from "src/SuperPositions.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
@@ -211,7 +215,10 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
 
     /// @inheritdoc ISuperformRouterWrapper
     function startCrossChainRebalance(InitiateXChainRebalanceArgs calldata args) external payable override {
-        if (args.rebalanceCallData.length == 0) {
+        if (
+            args.rebalanceToAmbIds.length == 0 || args.rebalanceToDstChainIds.length == 0
+                || args.rebalanceToSfData.length == 0
+        ) {
             revert EMPTY_REBALANCE_CALL_DATA();
         }
 
@@ -248,19 +255,23 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
         }
 
         /// @dev send SPs to router
-        /// @notice msg.value here is the sum of rebalanceFromMsgValue and rebalanceToMsgValue (to be executed later by the keeper)
+        /// @notice msg.value here is the sum of rebalanceFromMsgValue and rebalanceToMsgValue (to be executed later by
+        /// the keeper)
         _callSuperformRouter(args.callData, msg.value);
 
-        if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(args.rebalanceCallData)]) {
+        if (!whitelistedSelectors[Actions.DEPOSIT][args.rebalanceToSelector]) {
             revert INVALID_REBALANCE_TO_SELECTOR();
         }
-        /// notice rebalanceCallData can be multi Dst / multi vault
+
         xChainRebalanceCallData[args.receiverAddressSP][CORE_STATE_REGISTRY.payloadsCount()] = XChainRebalanceData({
-            rebalanceCalldata: args.rebalanceCallData,
+            rebalanceSelector: args.rebalanceToSelector,
             smartWallet: args.smartWallet,
             interimAsset: args.interimAsset,
             slippage: args.finalizeSlippage,
-            expectedAmountInterimAsset: args.expectedAmountInterimAsset
+            expectedAmountInterimAsset: args.expectedAmountInterimAsset,
+            rebalanceToAmbIds: args.rebalanceToAmbIds,
+            rebalanceToDstChainIds: args.rebalanceToDstChainIds,
+            rebalanceToSfData: args.rebalanceToSfData
         });
 
         emit XChainRebalanceInitiated(
@@ -270,7 +281,8 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
             args.smartWallet,
             args.interimAsset,
             args.finalizeSlippage,
-            args.expectedAmountInterimAsset
+            args.expectedAmountInterimAsset,
+            args.rebalanceToSelector
         );
     }
 
@@ -280,7 +292,10 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
             revert Error.ARRAY_LENGTH_MISMATCH();
         }
 
-        if (args.rebalanceCallData.length == 0) {
+        if (
+            args.rebalanceToAmbIds.length == 0 || args.rebalanceToDstChainIds.length == 0
+                || args.rebalanceToSfData.length == 0
+        ) {
             revert EMPTY_REBALANCE_CALL_DATA();
         }
 
@@ -369,17 +384,20 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
         /// @dev send SPs to router
         _callSuperformRouter(args.callData, msg.value);
 
-        if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(args.rebalanceCallData)]) {
+        if (!whitelistedSelectors[Actions.DEPOSIT][args.rebalanceToSelector]) {
             revert INVALID_REBALANCE_TO_SELECTOR();
         }
 
         /// @dev in multiDst multiple payloads ids will be generated on source chain
         xChainRebalanceCallData[args.receiverAddressSP][CORE_STATE_REGISTRY.payloadsCount()] = XChainRebalanceData({
-            rebalanceCalldata: args.rebalanceCallData,
+            rebalanceSelector: args.rebalanceToSelector,
             smartWallet: args.smartWallet,
             interimAsset: args.interimAsset,
             slippage: args.finalizeSlippage,
-            expectedAmountInterimAsset: args.expectedAmountInterimAsset
+            expectedAmountInterimAsset: args.expectedAmountInterimAsset,
+            rebalanceToAmbIds: args.rebalanceToAmbIds,
+            rebalanceToDstChainIds: args.rebalanceToDstChainIds,
+            rebalanceToSfData: args.rebalanceToSfData
         });
 
         emit XChainRebalanceMultiInitiated(
@@ -389,7 +407,8 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
             args.smartWallet,
             args.interimAsset,
             args.finalizeSlippage,
-            args.expectedAmountInterimAsset
+            args.expectedAmountInterimAsset,
+            args.rebalanceToSelector
         );
     }
 
@@ -397,11 +416,13 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
     function completeCrossChainRebalance(
         address receiverAddressSP_,
         uint256 firstStepLastCSRPayloadId_,
-        uint256 amountReceivedInterimAsset_
+        uint256 amountReceivedInterimAsset_,
+        LiqRequest[][] memory liqRequests_
     )
         external
         payable
         override
+        onlyRouterWrapperProcessor
         returns (bool rebalanceSuccessful)
     {
         XChainRebalanceData memory data = xChainRebalanceCallData[receiverAddressSP_][firstStepLastCSRPayloadId_];
@@ -439,10 +460,93 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
             amountToDeposit = balanceOfInterim;
         }
 
+        /// @dev validate the update of txData by the keeper and re-construct calldata
+        bytes memory rebalanceToCallData;
+
+        if (data.rebalanceSelector == IBaseRouter.singleDirectSingleVaultDeposit.selector) {
+            SingleVaultSFData memory superformData = abi.decode(data.rebalanceToSfData, (SingleVaultSFData));
+
+            MultiVaultSFData memory multiSuperformData =
+                _validateLiqRequest(_castToMultiVaultData(superformData), liqRequests_[0]);
+
+            superformData.liqRequest.txData = multiSuperformData.liqRequests[0].txData;
+
+            rebalanceToCallData = abi.encode(SingleDirectSingleVaultStateReq(superformData));
+        } else if (data.rebalanceSelector == IBaseRouter.singleXChainSingleVaultDeposit.selector) {
+            SingleVaultSFData memory superformData = abi.decode(data.rebalanceToSfData, (SingleVaultSFData));
+
+            MultiVaultSFData memory multiSuperformData =
+                _validateLiqRequest(_castToMultiVaultData(superformData), liqRequests_[0]);
+
+            superformData.liqRequest.txData = multiSuperformData.liqRequests[0].txData;
+
+            rebalanceToCallData = abi.encode(
+                SingleXChainSingleVaultStateReq(
+                    abi.decode(data.rebalanceToAmbIds, (uint8[])),
+                    abi.decode(data.rebalanceToDstChainIds, (uint64)),
+                    superformData
+                )
+            );
+        } else if (data.rebalanceSelector == IBaseRouter.singleDirectMultiVaultDeposit.selector) {
+            MultiVaultSFData memory multiSuperformData = abi.decode(data.rebalanceToSfData, (MultiVaultSFData));
+
+            multiSuperformData = _validateLiqRequest(multiSuperformData, liqRequests_[0]);
+
+            rebalanceToCallData = abi.encode(SingleDirectMultiVaultStateReq(multiSuperformData));
+        } else if (data.rebalanceSelector == IBaseRouter.singleXChainMultiVaultDeposit.selector) {
+            MultiVaultSFData memory multiSuperformData = abi.decode(data.rebalanceToSfData, (MultiVaultSFData));
+
+            multiSuperformData = _validateLiqRequest(multiSuperformData, liqRequests_[0]);
+
+            rebalanceToCallData = abi.encode(
+                SingleXChainMultiVaultStateReq(
+                    abi.decode(data.rebalanceToAmbIds, (uint8[])),
+                    abi.decode(data.rebalanceToDstChainIds, (uint64)),
+                    multiSuperformData
+                )
+            );
+        } else if (data.rebalanceSelector == IBaseRouter.multiDstSingleVaultDeposit.selector) {
+            SingleVaultSFData[] memory superformsData = abi.decode(data.rebalanceToSfData, (SingleVaultSFData[]));
+            uint256 len = superformsData.length;
+            if (liqRequests_.length != len) {
+                revert Error.ARRAY_LENGTH_MISMATCH();
+            }
+            MultiVaultSFData[] memory multiSuperformData = new MultiVaultSFData[](len);
+            for (uint256 i; i < len; ++i) {
+                multiSuperformData[i] = _validateLiqRequest(_castToMultiVaultData(superformsData[i]), liqRequests_[i]);
+                superformsData[i].liqRequest.txData = multiSuperformData[i].liqRequests[0].txData;
+            }
+
+            rebalanceToCallData = abi.encode(
+                MultiDstSingleVaultStateReq(
+                    abi.decode(data.rebalanceToAmbIds, (uint8[][])),
+                    abi.decode(data.rebalanceToDstChainIds, (uint64[])),
+                    superformsData
+                )
+            );
+        } else if (data.rebalanceSelector == IBaseRouter.multiDstMultiVaultDeposit.selector) {
+            MultiVaultSFData[] memory multiSuperformData = abi.decode(data.rebalanceToSfData, (MultiVaultSFData[]));
+            uint256 len = multiSuperformData.length;
+            if (liqRequests_.length != len) {
+                revert Error.ARRAY_LENGTH_MISMATCH();
+            }
+            for (uint256 i; i < len; ++i) {
+                multiSuperformData[i] = _validateLiqRequest(multiSuperformData[i], liqRequests_[i]);
+            }
+
+            rebalanceToCallData = abi.encode(
+                MultiDstMultiVaultStateReq(
+                    abi.decode(data.rebalanceToAmbIds, (uint8[][])),
+                    abi.decode(data.rebalanceToDstChainIds, (uint64[])),
+                    multiSuperformData
+                )
+            );
+        }
+
         /// for cross chain cases or event direct cases with swaps, it is likely that txData needs to be updated...
         data.smartWallet
-            ? _depositUsingSmartWallet(interimAsset, amountToDeposit, msg.value, receiverAddressSP_, data.rebalanceCalldata)
-            : _deposit(interimAsset, amountToDeposit, msg.value, data.rebalanceCalldata);
+            ? _depositUsingSmartWallet(interimAsset, amountToDeposit, msg.value, receiverAddressSP_, rebalanceToCallData)
+            : _deposit(interimAsset, amountToDeposit, msg.value, rebalanceToCallData);
 
         emit XChainRebalanceComplete(receiverAddressSP_, firstStepLastCSRPayloadId_);
 
@@ -830,5 +934,78 @@ contract SuperformRouterWrapper is ISuperformRouterWrapper, IERC1155Receiver {
     /// @dev returns the address from super registry
     function _getAddress(bytes32 id_) internal view returns (address) {
         return superRegistry.getAddress(id_);
+    }
+
+    function _castToMultiVaultData(
+        SingleVaultSFData memory data_
+    )
+        internal
+        pure
+        returns (MultiVaultSFData memory castedData_)
+    {
+        uint256[] memory superformIds = new uint256[](1);
+        superformIds[0] = data_.superformId;
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = data_.amount;
+
+        uint256[] memory outputAmounts = new uint256[](1);
+        outputAmounts[0] = data_.outputAmount;
+
+        uint256[] memory maxSlippage = new uint256[](1);
+        maxSlippage[0] = data_.maxSlippage;
+
+        LiqRequest[] memory liqData = new LiqRequest[](1);
+        liqData[0] = data_.liqRequest;
+
+        castedData_ = MultiVaultSFData(
+            superformIds,
+            amounts,
+            outputAmounts,
+            maxSlippage,
+            liqData,
+            data_.permit2data,
+            ArrayCastLib.castBoolToArray(data_.hasDstSwap),
+            ArrayCastLib.castBoolToArray(data_.retain4626),
+            data_.receiverAddress,
+            data_.receiverAddressSP,
+            data_.extraFormData
+        );
+    }
+
+    function _validateLiqRequest(
+        MultiVaultSFData memory sfData,
+        LiqRequest[] memory liqRequest
+    )
+        internal
+        returns (MultiVaultSFData memory)
+    {
+        /// TODO any more validations needed?
+        uint256 sfDataLen = sfData.liqRequests.length;
+
+        if (sfDataLen != liqRequest.length) {
+            revert Error.ARRAY_LENGTH_MISMATCH();
+        }
+
+        for (uint256 i; i < sfDataLen; ++i) {
+            if (
+                (sfData.liqRequests[i].token == address(0) && liqRequest[i].txData.length != 0)
+                    || (sfData.liqRequests[i].token != address(0) && liqRequest[i].txData.length == 0)
+            ) {
+                revert COMPLETE_REBALANCE_INVALID_TX_DATA_UPDATE();
+            } else if (sfData.liqRequests[i].token != address(0) && liqRequest[i].txData.length != 0) {
+                if (sfData.liqRequests[i].token != liqRequest[i].token) {
+                    revert COMPLETE_REBALANCE_DIFFERENT_TOKEN();
+                }
+                if (sfData.liqRequests[i].liqDstChainId != liqRequest[i].liqDstChainId) {
+                    revert COMPLETE_REBALANCE_DIFFERENT_CHAIN();
+                }
+
+                // update the txData
+                sfData.liqRequests[i].txData = liqRequest[i].txData;
+            }
+        }
+
+        return sfData;
     }
 }

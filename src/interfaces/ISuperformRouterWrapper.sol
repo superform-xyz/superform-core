@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import { LiqRequest } from "src/types/DataTypes.sol";
+
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
 interface ISuperformRouterWrapper {
@@ -31,6 +33,15 @@ interface ISuperformRouterWrapper {
 
     /// @notice thrown if the receiver address is invalid (not the wrapper)
     error REBALANCE_XCHAIN_INVALID_RECEIVER_ADDRESS();
+
+    /// @notice thrown if the rebalance to txData update is invalid
+    error COMPLETE_REBALANCE_INVALID_TX_DATA_UPDATE();
+
+    /// @notice thrown if the rebalance to txData update is invalid
+    error COMPLETE_REBALANCE_DIFFERENT_TOKEN();
+
+    /// @notice thrown if the rebalance to txData update is invalid
+    error COMPLETE_REBALANCE_DIFFERENT_CHAIN();
 
     /// @notice thrown when the refund proposer is invalid
     error INVALID_PROPOSER();
@@ -76,6 +87,7 @@ interface ISuperformRouterWrapper {
     /// @param interimAsset The address of the interim asset used in the cross-chain transfer
     /// @param finalizeSlippage The slippage tolerance for the finalization step
     /// @param expectedAmountInterimAsset The expected amount of interim asset to be received
+    /// @param rebalanceToSelector The selector for the rebalance to function
     event XChainRebalanceInitiated(
         address indexed receiver,
         uint256 indexed id,
@@ -83,7 +95,8 @@ interface ISuperformRouterWrapper {
         bool smartWallet,
         address interimAsset,
         uint256 finalizeSlippage,
-        uint256 expectedAmountInterimAsset
+        uint256 expectedAmountInterimAsset,
+        bytes4 rebalanceToSelector
     );
 
     /// @notice emitted when multiple cross-chain rebalances are initiated
@@ -94,6 +107,7 @@ interface ISuperformRouterWrapper {
     /// @param interimAsset The address of the interim asset used in the cross-chain transfer
     /// @param finalizeSlippage The slippage tolerance for the finalization step
     /// @param expectedAmountInterimAsset The expected amount of interim asset to be received
+    /// @param rebalanceToSelector The selector for the rebalance to function
     event XChainRebalanceMultiInitiated(
         address indexed receiver,
         uint256[] ids,
@@ -101,7 +115,8 @@ interface ISuperformRouterWrapper {
         bool smartWallet,
         address interimAsset,
         uint256 finalizeSlippage,
-        uint256 expectedAmountInterimAsset
+        uint256 expectedAmountInterimAsset,
+        bytes4 rebalanceToSelector
     );
 
     /// @notice emitted when a cross-chain rebalance is completed
@@ -153,14 +168,6 @@ interface ISuperformRouterWrapper {
     //                       STRUCTS                            //
     //////////////////////////////////////////////////////////////
 
-    struct XChainRebalanceData {
-        bytes rebalanceCalldata;
-        bool smartWallet;
-        address interimAsset;
-        uint256 slippage;
-        uint256 expectedAmountInterimAsset;
-    }
-
     struct RebalanceSinglePositionSyncArgs {
         uint256 id;
         uint256 sharesToRedeem;
@@ -200,6 +207,17 @@ interface ISuperformRouterWrapper {
         bool smartWallet;
     }
 
+    struct XChainRebalanceData {
+        bytes4 rebalanceSelector;
+        bool smartWallet;
+        address interimAsset;
+        uint256 slippage;
+        uint256 expectedAmountInterimAsset;
+        bytes rebalanceToAmbIds;
+        bytes rebalanceToDstChainIds;
+        bytes rebalanceToSfData;
+    }
+
     struct InitiateXChainRebalanceArgs {
         uint256 id;
         uint256 sharesToRedeem;
@@ -208,8 +226,11 @@ interface ISuperformRouterWrapper {
         uint256 finalizeSlippage;
         uint256 expectedAmountInterimAsset;
         bool smartWallet;
+        bytes4 rebalanceToSelector;
         bytes callData;
-        bytes rebalanceCallData;
+        bytes rebalanceToAmbIds;
+        bytes rebalanceToDstChainIds;
+        bytes rebalanceToSfData;
     }
 
     struct InitiateXChainRebalanceMultiArgs {
@@ -220,8 +241,11 @@ interface ISuperformRouterWrapper {
         uint256 finalizeSlippage;
         uint256 expectedAmountInterimAsset;
         bool smartWallet;
+        bytes4 rebalanceToSelector;
         bytes callData;
-        bytes rebalanceCallData;
+        bytes rebalanceToAmbIds;
+        bytes rebalanceToDstChainIds;
+        bytes rebalanceToSfData;
     }
 
     struct Refund {
@@ -270,11 +294,13 @@ interface ISuperformRouterWrapper {
     /// @param receiverAddressSP_ The receiver of the superform shares
     /// @param firstStepLastCSRPayloadId_ The first step payload ID
     /// @param amountReceivedInterimAsset_ The amount of interim asset received
+    /// @param liqRequests_ The liquidity requests for the txdata update
     /// @return rebalanceSuccessful Whether the rebalance was successful
     function completeCrossChainRebalance(
         address receiverAddressSP_,
         uint256 firstStepLastCSRPayloadId_,
-        uint256 amountReceivedInterimAsset_
+        uint256 amountReceivedInterimAsset_,
+        LiqRequest[][] memory liqRequests_
     )
         external
         payable
