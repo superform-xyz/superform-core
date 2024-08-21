@@ -114,13 +114,14 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         override
         onlyAsyncStateRegistryProcessor
     {
-        SyncWithdrawTxDataPayload storage p = syncWithdrawTxDataPayload[payloadId_];
+        SyncWithdrawTxDataPayload memory p = syncWithdrawTxDataPayload[payloadId_];
+
         if (p.status != AsyncStatus.PENDING) {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
 
-        /// @dev set status here to prevent re-entrancy
-        p.status = AsyncStatus.PROCESSED;
+        /// @dev set status here to prevent re-entrancy (as status will become UNAVAILABLE)
+        delete syncWithdrawTxDataPayload[payloadId_];
 
         (address superformAddress,,) = p.data.superformId.getSuperform();
 
@@ -130,6 +131,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
 
             p.data.liqData.txData = txData_;
         }
+
         try IERC7540Form(superformAddress).syncWithdrawTxData(p) { }
         catch {
             /// @dev dispatch acknowledgement to mint superPositions back because of failure
@@ -154,9 +156,6 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
                 )
             );
         }
-
-        /// @dev restoring state for gas saving
-        delete syncWithdrawTxDataPayload[payloadId_];
 
         emit FinalizedSyncWithdrawTxDataPayload(payloadId_);
     }
@@ -356,7 +355,9 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     }
 
     /// @inheritdoc IAsyncStateRegistry
-    function getSyncWithdrawTxDataPayload(uint256 payloadId_)
+    function getSyncWithdrawTxDataPayload(
+        uint256 payloadId_
+    )
         external
         view
         returns (SyncWithdrawTxDataPayload memory syncWithdrawTxDataPayload_)
