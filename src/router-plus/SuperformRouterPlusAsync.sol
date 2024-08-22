@@ -149,9 +149,11 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             SingleVaultSFData memory superformData = abi.decode(data.rebalanceToSfData, (SingleVaultSFData));
 
             MultiVaultSFData memory multiSuperformData =
-                _updateSuperformData(_castToMultiVaultData(superformData), liqRequests_[0]);
+                _updateSuperformData(_castToMultiVaultData(superformData), liqRequests_[0], data.smartWallet);
 
             superformData.liqRequest.txData = multiSuperformData.liqRequests[0].txData;
+            superformData.liqRequest.nativeAmount = multiSuperformData.liqRequests[0].nativeAmount;
+            superformData.receiverAddressSP = multiSuperformData.receiverAddressSP;
 
             rebalanceToCallData =
                 abi.encodeWithSelector(data.rebalanceSelector, SingleDirectSingleVaultStateReq(superformData));
@@ -159,9 +161,11 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             SingleVaultSFData memory superformData = abi.decode(data.rebalanceToSfData, (SingleVaultSFData));
 
             MultiVaultSFData memory multiSuperformData =
-                _updateSuperformData(_castToMultiVaultData(superformData), liqRequests_[0]);
+                _updateSuperformData(_castToMultiVaultData(superformData), liqRequests_[0], data.smartWallet);
 
             superformData.liqRequest.txData = multiSuperformData.liqRequests[0].txData;
+            superformData.liqRequest.nativeAmount = multiSuperformData.liqRequests[0].nativeAmount;
+            superformData.receiverAddressSP = multiSuperformData.receiverAddressSP;
 
             rebalanceToCallData = abi.encodeWithSelector(
                 data.rebalanceSelector,
@@ -174,14 +178,14 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         } else if (data.rebalanceSelector == IBaseRouter.singleDirectMultiVaultDeposit.selector) {
             MultiVaultSFData memory multiSuperformData = abi.decode(data.rebalanceToSfData, (MultiVaultSFData));
 
-            multiSuperformData = _updateSuperformData(multiSuperformData, liqRequests_[0]);
+            multiSuperformData = _updateSuperformData(multiSuperformData, liqRequests_[0], data.smartWallet);
 
             rebalanceToCallData =
                 abi.encodeWithSelector(data.rebalanceSelector, SingleDirectMultiVaultStateReq(multiSuperformData));
         } else if (data.rebalanceSelector == IBaseRouter.singleXChainMultiVaultDeposit.selector) {
             MultiVaultSFData memory multiSuperformData = abi.decode(data.rebalanceToSfData, (MultiVaultSFData));
 
-            multiSuperformData = _updateSuperformData(multiSuperformData, liqRequests_[0]);
+            multiSuperformData = _updateSuperformData(multiSuperformData, liqRequests_[0], data.smartWallet);
 
             rebalanceToCallData = abi.encodeWithSelector(
                 data.rebalanceSelector,
@@ -199,8 +203,11 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             }
             MultiVaultSFData[] memory multiSuperformData = new MultiVaultSFData[](len);
             for (uint256 i; i < len; ++i) {
-                multiSuperformData[i] = _updateSuperformData(_castToMultiVaultData(superformsData[i]), liqRequests_[i]);
+                multiSuperformData[i] =
+                    _updateSuperformData(_castToMultiVaultData(superformsData[i]), liqRequests_[i], data.smartWallet);
                 superformsData[i].liqRequest.txData = multiSuperformData[i].liqRequests[0].txData;
+                superformsData[i].liqRequest.nativeAmount = multiSuperformData[i].liqRequests[0].nativeAmount;
+                superformsData[i].receiverAddressSP = multiSuperformData[i].receiverAddressSP;
             }
 
             rebalanceToCallData = abi.encodeWithSelector(
@@ -218,7 +225,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
                 revert Error.ARRAY_LENGTH_MISMATCH();
             }
             for (uint256 i; i < len; ++i) {
-                multiSuperformData[i] = _updateSuperformData(multiSuperformData[i], liqRequests_[i]);
+                multiSuperformData[i] = _updateSuperformData(multiSuperformData[i], liqRequests_[i], data.smartWallet);
             }
 
             rebalanceToCallData = abi.encodeWithSelector(
@@ -340,7 +347,8 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
 
     function _updateSuperformData(
         MultiVaultSFData memory sfData,
-        LiqRequest[] memory liqRequest
+        LiqRequest[] memory liqRequest,
+        bool smartWallet
     )
         internal
         returns (MultiVaultSFData memory)
@@ -374,6 +382,11 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
                 // update the txData and native amount
                 sfData.liqRequests[i].txData = liqRequest[i].txData;
                 sfData.liqRequests[i].nativeAmount = liqRequest[i].nativeAmount;
+            }
+            if (smartWallet) {
+                /// always override the calldata receiver address SP to be address of this for later processing in smart
+                /// wallet's case
+                sfData.receiverAddressSP = address(this);
             }
         }
         /// if token and txData are 0 no update is made (same chain actions without swaps)

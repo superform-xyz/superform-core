@@ -112,26 +112,26 @@ abstract contract BaseSuperformRouterPlus is IBaseSuperformRouterPlus, IERC1155R
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IBaseSuperformRouterPlus
-    function finalizeDisbursement(uint256 csrAckPayloadId_) external override onlyRouterPlusProcessor {
-        address receiverAddressSP = _completeDisbursement(csrAckPayloadId_);
+    function finalizeDisbursement(uint256 csrSrcPayloadId_) external override onlyRouterPlusProcessor {
+        address receiverAddressSP = _completeDisbursement(csrSrcPayloadId_);
 
-        emit DisbursementCompleted(receiverAddressSP, csrAckPayloadId_);
+        emit DisbursementCompleted(receiverAddressSP, csrSrcPayloadId_);
     }
 
     /// @inheritdoc IBaseSuperformRouterPlus
     function finalizeBatchDisbursement(
-        uint256[] calldata csrAckPayloadIds_
+        uint256[] calldata csrSrcPayloadIds_
     )
         external
         override
         onlyRouterPlusProcessor
     {
-        uint256 len = csrAckPayloadIds_.length;
+        uint256 len = csrSrcPayloadIds_.length;
         if (len == 0) revert Error.ARRAY_LENGTH_MISMATCH();
         address receiverAddressSP;
         for (uint256 i; i < len; i++) {
-            receiverAddressSP = _completeDisbursement(csrAckPayloadIds_[i]);
-            emit DisbursementCompleted(receiverAddressSP, csrAckPayloadIds_[i]);
+            receiverAddressSP = _completeDisbursement(csrSrcPayloadIds_[i]);
+            emit DisbursementCompleted(receiverAddressSP, csrSrcPayloadIds_[i]);
         }
     }
 

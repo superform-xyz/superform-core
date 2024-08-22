@@ -31,8 +31,8 @@ interface IBaseSuperformRouterPlus {
 
     /// @notice emitted when a disbursement is completed
     /// @param receiver The address receiving the disbursed tokens
-    /// @param payloadId The ID of the disbursement payload
-    event DisbursementCompleted(address indexed receiver, uint256 indexed payloadId);
+    /// @param csrSrcPayloadId The ID of the csr payload generated on source for sending the message
+    event DisbursementCompleted(address indexed receiver, uint256 indexed csrSrcPayloadId);
 
     //////////////////////////////////////////////////////////////
     //                       ENUMS                             //
@@ -51,10 +51,10 @@ interface IBaseSuperformRouterPlus {
     //////////////////////////////////////////////////////////////
 
     /// @notice completes the disbursement process
-    /// @param csrAckPayloadId_ The payload ID to complete the disbursement
-    function finalizeDisbursement(uint256 csrAckPayloadId_) external;
+    /// @param csrSrcPayloadId_ The ID of the csr payload generated on source for sending the message
+    function finalizeDisbursement(uint256 csrSrcPayloadId_) external;
 
     /// @notice completes multiple disbursements in a batch
-    /// @param csrAckPayloadIds_ The payload IDs to complete the disbursements
-    function finalizeBatchDisbursement(uint256[] calldata csrAckPayloadIds_) external;
+    /// @param csrSrcPayloadIds_ The ID of the csr payloads generated on source for sending the message
+    function finalizeBatchDisbursement(uint256[] calldata csrSrcPayloadIds_) external;
 }
