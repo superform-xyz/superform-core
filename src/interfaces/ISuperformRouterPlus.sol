@@ -20,11 +20,17 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
     /// @notice thrown if the liqDstChainId is different than expected
     error REBALANCE_SINGLE_POSITIONS_DIFFERENT_CHAIN();
 
+    /// @notice thrown if the amounts to redeem differ
+    error REBALANCE_SINGLE_POSITIONS_DIFFERENT_AMOUNT();
+
     /// @notice thrown if the interimToken is different than expected in the array
     error REBALANCE_MULTI_POSITIONS_DIFFERENT_TOKEN();
 
     /// @notice thrown if the liqDstChainId is different than expected in the array
     error REBALANCE_MULTI_POSITIONS_DIFFERENT_CHAIN();
+
+    /// @notice thrown if the amounts to redeem differ
+    error REBALANCE_MULTI_POSITIONS_DIFFERENT_AMOUNTS();
 
     /// @notice thrown if the receiver address is invalid (not the router plus)
     error REBALANCE_XCHAIN_INVALID_RECEIVER_ADDRESS();
@@ -137,6 +143,7 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
 
     struct RebalancePositionsSyncArgs {
         Actions action;
+        uint256[] sharesToRedeem;
         uint256 previewRedeemAmount;
         address asset;
         uint256 slippage;
@@ -176,12 +183,9 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
         bytes rebalanceToSfData;
     }
 
-
     //////////////////////////////////////////////////////////////
     //                  EXTERNAL WRITE FUNCTIONS                //
     //////////////////////////////////////////////////////////////
-
-
 
     /// @notice rebalances a single SuperPosition synchronously
     /// @notice interim asset and receiverAddressSP must be set. In non smart contract wallet rebalances,

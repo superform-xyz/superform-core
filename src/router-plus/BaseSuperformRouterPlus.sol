@@ -220,17 +220,17 @@ abstract contract BaseSuperformRouterPlus is IBaseSuperformRouterPlus, IERC1155R
         }
     }
 
-    function _completeDisbursement(uint256 csrAckPayloadId) internal returns (address receiverAddressSP) {
-        receiverAddressSP = msgSenderMap[csrAckPayloadId];
+    function _completeDisbursement(uint256 csrSrcPayloadId) internal returns (address receiverAddressSP) {
+        receiverAddressSP = msgSenderMap[csrSrcPayloadId];
 
         if (receiverAddressSP == address(0)) revert Error.INVALID_PAYLOAD_ID();
         mapping(uint256 => bool) storage statusMapLoc = statusMap;
 
-        if (statusMapLoc[csrAckPayloadId]) revert Error.PAYLOAD_ALREADY_PROCESSED();
+        if (statusMapLoc[csrSrcPayloadId]) revert Error.PAYLOAD_ALREADY_PROCESSED();
 
-        statusMapLoc[csrAckPayloadId] = true;
+        statusMapLoc[csrSrcPayloadId] = true;
 
-        uint256 txInfo = CORE_STATE_REGISTRY.payloadHeader(csrAckPayloadId);
+        uint256 txInfo = CORE_STATE_REGISTRY.payloadHeader(csrSrcPayloadId);
 
         (uint256 returnTxType, uint256 callbackType, uint8 multi,,,) = txInfo.decodeTxInfo();
 
@@ -241,7 +241,7 @@ abstract contract BaseSuperformRouterPlus is IBaseSuperformRouterPlus, IERC1155R
         uint256 payloadId;
         if (multi != 0) {
             ReturnMultiData memory returnData =
-                abi.decode(CORE_STATE_REGISTRY.payloadBody(csrAckPayloadId), (ReturnMultiData));
+                abi.decode(CORE_STATE_REGISTRY.payloadBody(csrSrcPayloadId), (ReturnMultiData));
 
             payloadId = returnData.payloadId;
             IERC1155(SUPER_POSITIONS).safeBatchTransferFrom(
@@ -249,7 +249,7 @@ abstract contract BaseSuperformRouterPlus is IBaseSuperformRouterPlus, IERC1155R
             );
         } else {
             ReturnSingleData memory returnData =
-                abi.decode(CORE_STATE_REGISTRY.payloadBody(csrAckPayloadId), (ReturnSingleData));
+                abi.decode(CORE_STATE_REGISTRY.payloadBody(csrSrcPayloadId), (ReturnSingleData));
 
             payloadId = returnData.payloadId;
             IERC1155(SUPER_POSITIONS).safeTransferFrom(

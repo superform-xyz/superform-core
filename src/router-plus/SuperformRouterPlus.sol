@@ -52,10 +52,12 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
         /// @dev transfers a single superPosition to this contract and approves router
         _transferSuperPositions(args.receiverAddressSP, args.id, args.sharesToRedeem);
-
+        uint256[] memory sharesToRedeem = new uint256[](1);
+        sharesToRedeem[0] = args.sharesToRedeem;
         _rebalancePositionsSync(
             RebalancePositionsSyncArgs(
                 Actions.REBALANCE_FROM_SINGLE,
+                sharesToRedeem,
                 args.previewRedeemAmount,
                 args.interimAsset,
                 args.slippage,
@@ -90,6 +92,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         _rebalancePositionsSync(
             RebalancePositionsSyncArgs(
                 Actions.REBALANCE_FROM_MULTI,
+                args.sharesToRedeem,
                 args.previewRedeemAmount,
                 args.interimAsset,
                 args.slippage,
@@ -143,6 +146,10 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
         if (req.superformData.liqRequest.liqDstChainId != CHAIN_ID) {
             revert REBALANCE_SINGLE_POSITIONS_DIFFERENT_CHAIN();
+        }
+
+        if (req.superformData.amount != args.sharesToRedeem) {
+            revert REBALANCE_SINGLE_POSITIONS_DIFFERENT_AMOUNT();
         }
 
         address ROUTER_PLUS_ASYNC = _getAddress(keccak256("SUPERFORM_ROUTER_PLUS_ASYNC"));
@@ -235,6 +242,9 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 if (req.superformsData.liqRequests[i].liqDstChainId != CHAIN_ID) {
                     revert REBALANCE_MULTI_POSITIONS_DIFFERENT_CHAIN();
                 }
+                if (req.superformsData.amounts[i] != args.sharesToRedeem[i]) {
+                    revert REBALANCE_MULTI_POSITIONS_DIFFERENT_AMOUNTS();
+                }
             }
 
             if (req.superformsData.receiverAddress != ROUTER_PLUS_ASYNC) {
@@ -257,6 +267,9 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                     if (req.superformsData[i].liqRequests[j].liqDstChainId != CHAIN_ID) {
                         revert REBALANCE_MULTI_POSITIONS_DIFFERENT_CHAIN();
                     }
+                    if (req.superformsData[i].amounts[j] != args.sharesToRedeem[j]) {
+                        revert REBALANCE_MULTI_POSITIONS_DIFFERENT_AMOUNTS();
+                    }
                 }
 
                 if (req.superformsData[i].receiverAddress != ROUTER_PLUS_ASYNC) {
@@ -276,6 +289,10 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 }
                 if (req.superformsData[i].liqRequest.liqDstChainId != CHAIN_ID) {
                     revert REBALANCE_MULTI_POSITIONS_DIFFERENT_CHAIN();
+                }
+
+                if (req.superformsData[i].amount != args.sharesToRedeem[i]) {
+                    revert REBALANCE_MULTI_POSITIONS_DIFFERENT_AMOUNTS();
                 }
 
                 if (req.superformsData[i].receiverAddress != ROUTER_PLUS_ASYNC) {
@@ -335,15 +352,20 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         IERC4626 vault = IERC4626(vault_);
         uint256 amountRedeemed = _redeemShare(vault, amount_);
 
-        IERC20 asset = IERC20(vault.asset());
+        address assetAdr = vault.asset();
+        IERC20 asset = IERC20(assetAdr);
 
         if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(callData_)]) {
             revert INVALID_REBALANCE_TO_SELECTOR();
         }
 
+        uint256 balanceBefore = asset.balanceOf(address(this));
+
         smartWallet_
             ? _depositUsingSmartWallet(asset, amountRedeemed, msg.value, receiverAddressSP_, callData_)
             : _deposit(asset, amountRedeemed, msg.value, callData_);
+
+        _tokenRefunds(assetAdr, receiverAddressSP_, balanceBefore);
 
         emit Deposit4626Completed(receiverAddressSP_, vault_);
     }
@@ -365,10 +387,13 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(callData_)]) {
             revert INVALID_REBALANCE_TO_SELECTOR();
         }
+        uint256 balanceBefore = IERC20(asset_).balanceOf(address(this));
 
         smartWallet_
             ? _depositUsingSmartWallet(asset_, amount_, msg.value, receiverAddressSP_, callData_)
             : _deposit(asset_, amount_, msg.value, callData_);
+
+        _tokenRefunds(address(asset_), receiverAddressSP_, balanceBefore);
 
         emit DepositCompleted(receiverAddressSP_, smartWallet_, false);
     }
@@ -402,6 +427,9 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             if (req.superformData.liqRequest.liqDstChainId != CHAIN_ID) {
                 revert REBALANCE_SINGLE_POSITIONS_DIFFERENT_CHAIN();
             }
+            if (req.superformData.amount != args.sharesToRedeem[0]) {
+                revert REBALANCE_SINGLE_POSITIONS_DIFFERENT_AMOUNT();
+            }
         } else {
             SingleDirectMultiVaultStateReq memory req =
                 abi.decode(_parseCallData(callData), (SingleDirectMultiVaultStateReq));
@@ -414,6 +442,9 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 }
                 if (req.superformData.liqRequests[i].liqDstChainId != CHAIN_ID) {
                     revert REBALANCE_MULTI_POSITIONS_DIFFERENT_CHAIN();
+                }
+                if (req.superformData.amounts[i] != args.sharesToRedeem[i]) {
+                    revert REBALANCE_MULTI_POSITIONS_DIFFERENT_AMOUNTS();
                 }
             }
         }
@@ -502,13 +533,21 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         }
     }
 
-    /// @dev refunds any unused refunds
-    function _refundUnused(address asset_, address user_, uint256 balanceBefore, uint256 totalFee) internal {
+    function _tokenRefunds(address asset_, address user_, uint256 balanceBefore) internal {
         uint256 balanceDiff = IERC20(asset_).balanceOf(address(this)) - balanceBefore;
 
         if (balanceDiff > 0) {
             IERC20(asset_).transfer(user_, balanceDiff);
         }
+
+        if (IERC20(asset_).allowance(address(this), SUPERFORM_ROUTER) > 0) {
+            IERC20(asset_).forceApprove(SUPERFORM_ROUTER, 0);
+        }
+    }
+
+    /// @dev refunds any unused refunds
+    function _refundUnused(address asset_, address user_, uint256 balanceBefore, uint256 totalFee) internal {
+        _tokenRefunds(asset_, user_, balanceBefore);
 
         if (msg.value > totalFee) {
             /// @dev refunds msg.sender if msg.value was more than needed
