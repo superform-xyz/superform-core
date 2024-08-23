@@ -107,8 +107,7 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
     /// @notice emitted when a deposit is completed
     /// @param receiver The address receiving the deposited tokens
     /// @param smartWallet Whether a smart wallet was used
-    /// @param meta Whether the deposit was a meta-transaction
-    event DepositCompleted(address indexed receiver, bool smartWallet, bool meta);
+    event DepositCompleted(address indexed receiver, bool smartWallet);
     //////////////////////////////////////////////////////////////
     //                       STRUCTS                            //
     //////////////////////////////////////////////////////////////
@@ -157,6 +156,11 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
         uint256 rebalanceToMsgValue;
         address receiverAddressSP;
         bool smartWallet;
+        bytes rebalanceToAmbIds;
+        bytes rebalanceToDstChainIds;
+        bytes rebalanceToSfData;
+        bytes4 rebalanceToSelector;
+        uint256 balanceBefore;
     }
 
     struct InitiateXChainRebalanceArgs {
@@ -189,6 +193,16 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
         bytes rebalanceToSfData;
     }
 
+    struct DepositArgs {
+        uint256 amount;
+        address receiverAddressSP;
+        bool smartWallet;
+        bytes depositAmbIds;
+        bytes depositDstChainIds;
+        bytes depositSfData;
+        bytes4 depositSelector;
+    }
+
     //////////////////////////////////////////////////////////////
     //                  EXTERNAL WRITE FUNCTIONS                //
     //////////////////////////////////////////////////////////////
@@ -217,46 +231,26 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
 
     /// @notice deposits ERC4626 vault shares into superform
     /// @param vault_ The ERC4626 vault to redeem from
-    /// @param amount_ The ERC4626 vault share amount to redeem
-    /// @param receiverAddressSP_ The receiver of the superform shares
-    /// @param smartWallet_ Whether to use smart wallet or not
-    /// @param depositAmbIds_ The array of AMB bridge IDs for the deposit
-    /// @param depositDstChainIds_ The array of destination chain IDs for the deposit
-    /// @param depositSfData_ The array of superform data for the deposit
-    /// @param depositSelector_ The selector for the deposit function
-    function deposit4626(
-        address vault_,
-        uint256 amount_,
-        address receiverAddressSP_,
-        bool smartWallet_,
-        bytes calldata depositAmbIds_,
-        bytes calldata depositDstChainIds_,
-        bytes calldata depositSfData_,
-        bytes4 depositSelector_
-    )
-        external
-        payable;
+    /// @param args Rest of the arguments containing:
+    /// - amount_ The ERC4626 vault share amount to redeem
+    /// - receiverAddressSP_ The receiver of the superform shares
+    /// - smartWallet_ Whether to use smart wallet or not
+    /// - depositAmbIds_ The array of AMB bridge IDs for the deposit
+    /// - depositDstChainIds_ The array of destination chain IDs for the deposit
+    /// - depositSfData_ The array of superform data for the deposit
+    /// - depositSelector_ The selector for the deposit function
+    function deposit4626(address vault_, DepositArgs calldata args) external payable;
 
     /// @notice deposits tokens into superform
     /// @dev should only allow a single asset to be deposited
     /// @param asset_ The ERC20 asset to deposit
-    /// @param amount_ The ERC20 amount to deposit
-    /// @param receiverAddressSP_ The receiver of the superform shares
-    /// @param smartWallet_ Whether to use smart wallet or not
-    /// @param depositAmbIds_ The array of AMB bridge IDs for the deposit
-    /// @param depositDstChainIds_ The array of destination chain IDs for the deposit
-    /// @param depositSfData_ The array of superform data for the deposit
-    /// @param depositSelector_ The selector for the deposit function
-    function deposit(
-        IERC20 asset_,
-        uint256 amount_,
-        address receiverAddressSP_,
-        bool smartWallet_,
-        bytes calldata depositAmbIds_,
-        bytes calldata depositDstChainIds_,
-        bytes calldata depositSfData_,
-        bytes4 depositSelector_
-    )
-        external
-        payable;
+    /// @param args Rest of the arguments containing:
+    /// - amount_ The ERC4626 vault share amount to redeem
+    /// - receiverAddressSP_ The receiver of the superform shares
+    /// - smartWallet_ Whether to use smart wallet or not
+    /// - depositAmbIds_ The array of AMB bridge IDs for the deposit
+    /// - depositDstChainIds_ The array of destination chain IDs for the deposit
+    /// - depositSfData_ The array of superform data for the deposit
+    /// - depositSelector_ The selector for the deposit function
+    function deposit(IERC20 asset_, DepositArgs calldata args) external payable;
 }

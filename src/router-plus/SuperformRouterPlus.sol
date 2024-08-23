@@ -59,14 +59,14 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 args.rebalanceFromMsgValue,
                 args.rebalanceToMsgValue,
                 args.receiverAddressSP,
-                args.smartWallet
+                args.smartWallet,
+                args.rebalanceToAmbIds,
+                args.rebalanceToDstChainIds,
+                args.rebalanceToSfData,
+                args.rebalanceToSelector,
+                balanceBefore
             ),
-            args.callData,
-            args.rebalanceToAmbIds,
-            args.rebalanceToDstChainIds,
-            args.rebalanceToSfData,
-            args.rebalanceToSelector,
-            balanceBefore
+            args.callData
         );
 
         _refundUnused(args.interimAsset, args.receiverAddressSP, balanceBefore, totalFee);
@@ -97,14 +97,14 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 args.rebalanceFromMsgValue,
                 args.rebalanceToMsgValue,
                 args.receiverAddressSP,
-                args.smartWallet
+                args.smartWallet,
+                args.rebalanceToAmbIds,
+                args.rebalanceToDstChainIds,
+                args.rebalanceToSfData,
+                args.rebalanceToSelector,
+                balanceBefore
             ),
-            args.callData,
-            args.rebalanceToAmbIds,
-            args.rebalanceToDstChainIds,
-            args.rebalanceToSfData,
-            args.rebalanceToSelector,
-            balanceBefore
+            args.callData
         );
 
         _refundUnused(args.interimAsset, args.receiverAddressSP, balanceBefore, totalFee);
@@ -338,104 +338,68 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     }
 
     /// @inheritdoc ISuperformRouterPlus
-    function deposit4626(
-        address vault_,
-        uint256 amount_,
-        address receiverAddressSP_,
-        bool smartWallet_,
-        bytes calldata depositAmbIds_,
-        bytes calldata depositDstChainIds_,
-        bytes calldata depositSfData_,
-        bytes4 depositSelector_
-    )
-        external
-        payable
-        override
-    {
-        _transferERC20In(IERC20(vault_), receiverAddressSP_, amount_);
+    function deposit4626(address vault_, DepositArgs calldata args) external payable override {
+        _transferERC20In(IERC20(vault_), args.receiverAddressSP, args.amount);
         IERC4626 vault = IERC4626(vault_);
-        uint256 amountRedeemed = _redeemShare(vault, amount_);
+        uint256 amountRedeemed = _redeemShare(vault, args.amount);
 
         address assetAdr = vault.asset();
         IERC20 asset = IERC20(assetAdr);
 
-        if (!whitelistedSelectors[Actions.DEPOSIT][depositSelector_]) {
+        if (!whitelistedSelectors[Actions.DEPOSIT][args.depositSelector]) {
             revert INVALID_DEPOSIT_SELECTOR();
         }
 
         /// @dev re-construct calldata
         (bytes memory rebalanceToCallData, bool[] memory sameChain, uint256[][] memory superformIds) =
         _generateRebalanceToCallData(
-            depositAmbIds_, depositDstChainIds_, depositSfData_, depositSelector_, smartWallet_
+            args.depositAmbIds, args.depositDstChainIds, args.depositSfData, args.depositSelector, args.smartWallet
         );
 
         uint256 balanceBefore = asset.balanceOf(address(this));
 
-        smartWallet_
+        args.smartWallet
             ? _depositUsingSmartWallet(
-                asset, amountRedeemed, msg.value, receiverAddressSP_, rebalanceToCallData, sameChain, superformIds
+                asset, amountRedeemed, msg.value, args.receiverAddressSP, rebalanceToCallData, sameChain, superformIds
             )
             : _deposit(asset, amountRedeemed, msg.value, rebalanceToCallData);
 
-        _tokenRefunds(assetAdr, receiverAddressSP_, balanceBefore);
+        _tokenRefunds(assetAdr, args.receiverAddressSP, balanceBefore);
 
-        emit Deposit4626Completed(receiverAddressSP_, vault_);
+        emit Deposit4626Completed(args.receiverAddressSP, vault_);
     }
 
     /// @inheritdoc ISuperformRouterPlus
-    function deposit(
-        IERC20 asset_,
-        uint256 amount_,
-        address receiverAddressSP_,
-        bool smartWallet_,
-        bytes calldata depositAmbIds_,
-        bytes calldata depositDstChainIds_,
-        bytes calldata depositSfData_,
-        bytes4 depositSelector_
-    )
-        public
-        payable
-        override
-    {
-        _transferERC20In(asset_, receiverAddressSP_, amount_);
+    function deposit(IERC20 asset_, DepositArgs calldata args) public payable override {
+        _transferERC20In(asset_, args.receiverAddressSP, args.amount);
 
-        if (!whitelistedSelectors[Actions.DEPOSIT][depositSelector_]) {
+        if (!whitelistedSelectors[Actions.DEPOSIT][args.depositSelector]) {
             revert INVALID_DEPOSIT_SELECTOR();
         }
         /// @dev re-construct calldata
         (bytes memory rebalanceToCallData, bool[] memory sameChain, uint256[][] memory superformIds) =
         _generateRebalanceToCallData(
-            depositAmbIds_, depositDstChainIds_, depositSfData_, depositSelector_, smartWallet_
+            args.depositAmbIds, args.depositDstChainIds, args.depositSfData, args.depositSelector, args.smartWallet
         );
 
         uint256 balanceBefore = IERC20(asset_).balanceOf(address(this));
 
-        smartWallet_
+        args.smartWallet
             ? _depositUsingSmartWallet(
-                asset_, amount_, msg.value, receiverAddressSP_, rebalanceToCallData, sameChain, superformIds
+                asset_, args.amount, msg.value, args.receiverAddressSP, rebalanceToCallData, sameChain, superformIds
             )
-            : _deposit(asset_, amount_, msg.value, rebalanceToCallData);
+            : _deposit(asset_, args.amount, msg.value, rebalanceToCallData);
 
-        _tokenRefunds(address(asset_), receiverAddressSP_, balanceBefore);
+        _tokenRefunds(address(asset_), args.receiverAddressSP, balanceBefore);
 
-        emit DepositCompleted(receiverAddressSP_, smartWallet_, false);
+        emit DepositCompleted(args.receiverAddressSP, args.smartWallet);
     }
 
     //////////////////////////////////////////////////////////////
     //                   INTERNAL FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
 
-    function _rebalancePositionsSync(
-        RebalancePositionsSyncArgs memory args,
-        bytes calldata callData,
-        bytes calldata rebalanceToAmbIds,
-        bytes calldata rebalanceToDstChainIds,
-        bytes calldata rebalanceToSfData,
-        bytes4 rebalanceSelector,
-        uint256 balanceBefore
-    )
-        internal
-    {
+    function _rebalancePositionsSync(RebalancePositionsSyncArgs memory args, bytes calldata callData) internal {
         IERC20 asset = IERC20(args.asset);
 
         /// @dev validate the call data
@@ -478,7 +442,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         /// @dev send SPs to router
         _callSuperformRouter(callData, args.rebalanceFromMsgValue);
 
-        uint256 amountToDeposit = asset.balanceOf(address(this)) - balanceBefore;
+        uint256 amountToDeposit = asset.balanceOf(address(this)) - args.balanceBefore;
 
         if (amountToDeposit == 0) revert Error.ZERO_AMOUNT();
 
@@ -487,14 +451,18 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         }
 
         /// @dev step 3: rebalance into a new superform with rebalanceCallData
-        if (!whitelistedSelectors[Actions.DEPOSIT][rebalanceSelector]) {
+        if (!whitelistedSelectors[Actions.DEPOSIT][args.rebalanceToSelector]) {
             revert INVALID_DEPOSIT_SELECTOR();
         }
 
         /// @dev re-construct calldata
         (bytes memory rebalanceToCallData, bool[] memory sameChain, uint256[][] memory superformIds) =
         _generateRebalanceToCallData(
-            rebalanceToAmbIds, rebalanceToDstChainIds, rebalanceToSfData, rebalanceSelector, args.smartWallet
+            args.rebalanceToAmbIds,
+            args.rebalanceToDstChainIds,
+            args.rebalanceToSfData,
+            args.rebalanceToSelector,
+            args.smartWallet
         );
 
         args.smartWallet
@@ -511,9 +479,9 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     }
 
     function _generateRebalanceToCallData(
-        bytes calldata rebalanceToAmbIds,
-        bytes calldata rebalanceToDstChainIds,
-        bytes calldata rebalanceToSfData,
+        bytes memory rebalanceToAmbIds,
+        bytes memory rebalanceToDstChainIds,
+        bytes memory rebalanceToSfData,
         bytes4 rebalanceSelector,
         bool smartWallet
     )
