@@ -12,8 +12,6 @@ import { SuperRBAC } from "src/settings/SuperRBAC.sol";
 import { SuperPositions } from "src/SuperPositions.sol";
 import { SuperformFactory } from "src/SuperformFactory.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
-import { ERC4626TimelockForm } from "src/forms/ERC4626TimelockForm.sol";
-import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
 import { ERC5115Form } from "src/forms/ERC5115Form.sol";
 import { ERC5115To4626WrapperFactory } from "src/forms/wrappers/ERC5115To4626WrapperFactory.sol";
 import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
@@ -37,7 +35,6 @@ import { WormholeSRImplementation } from
     "src/crosschain-data/adapters/wormhole/specialized-relayer/WormholeSRImplementation.sol";
 import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
 import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
-import { TimelockStateRegistry } from "src/crosschain-data/extensions/TimelockStateRegistry.sol";
 import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
 import { PaymentHelper } from "src/payments/PaymentHelper.sol";
 import { IPaymentHelperV2 as IPaymentHelper } from "src/interfaces/IPaymentHelperV2.sol";
@@ -45,7 +42,6 @@ import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
 import { EmergencyQueue } from "src/EmergencyQueue.sol";
 import { VaultClaimer } from "src/VaultClaimer.sol";
-import { generateBroadcastParams } from "test/utils/AmbParams.sol";
 import { AcrossFacetPacked } from "./misc/blacklistedFacets/AcrossFacetPacked.sol";
 import { AmarokFacetPacked } from "./misc/blacklistedFacets/AmarokFacetPacked.sol";
 import { RewardsDistributor } from "src/RewardsDistributor.sol";
@@ -70,15 +66,12 @@ struct SetupVars {
     address wormholeSRImplementation;
     address axelarImplementation;
     address erc4626Form;
-    address erc4626TimelockForm;
     address erc5115Form;
     address erc5115To4626WrapperFactory;
-    address timelockStateRegistry;
     address broadcastRegistry;
     address coreStateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
-    address timelockVault;
     address superformRouter;
     address dstLzImplementation;
     address dstHyperlaneImplementation;
@@ -120,7 +113,6 @@ abstract contract AbstractDeploySingle is BatchScript {
 
     string[28] public contractNames = [
         "CoreStateRegistry",
-        //"TimelockStateRegistry",
         "BroadcastRegistry",
         "LayerzeroImplementation",
         "HyperlaneImplementation",
@@ -132,8 +124,6 @@ abstract contract AbstractDeploySingle is BatchScript {
         "DstSwapper",
         "SuperformFactory",
         "ERC4626Form",
-        //"ERC4626TimelockForm",
-        //"ERC4626KYCDaoForm",
         "SuperformRouter",
         "SuperPositions",
         "SuperRegistry",
@@ -160,7 +150,8 @@ abstract contract AbstractDeploySingle is BatchScript {
         Arbitrum,
         Optimism,
         Base,
-        Fantom
+        Fantom,
+        Linea
     }
 
     enum Cycle {
@@ -176,27 +167,27 @@ abstract contract AbstractDeploySingle is BatchScript {
     //////////////////////////////////////////////////////////////*/
     string public SUPER_POSITIONS_NAME;
 
-    /// @dev 1 = ERC4626Form, 2 = 5115Form, 3 = KYCDaoForm
-    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(2), uint32(3)];
-    string[] public VAULT_KINDS = ["Vault", "TimelockedVault", "KYCDaoVault"];
+    /// @dev 1 = ERC4626Form, 2 = 5115Form
+    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(2)];
+    string[] public VAULT_KINDS = ["Vault"];
 
     /// @dev liquidity bridge ids 101 is lifi v2,
     /// 2 is socket
     /// 3 is socket one inch implementation
-    /// 4 is debridge
-    /// 5 is debridge crosschain forwarder
-    /// 6 is one inch implementation
+    /// 4 is one inch implementation
+    /// 5 is debridge implementation
+    /// 6 is debridge crosschain forwarder
     uint8[] public bridgeIds = [101, 2, 3, 4, 5, 6];
 
     mapping(uint64 chainId => address[] bridgeAddresses) public BRIDGE_ADDRESSES;
 
     /// @dev setup amb bridges
-    /// @notice id 1 is layerzero
-    /// @notice id 2 is hyperlane
-    /// @notice id 3 is wormhole AR
+    /// @notice id 5 is layerzero v2
+    /// @notice id 6 is hyperlane (with amb protect)
+    /// @notice id 7 is wormhole AR (with amb protect)
     /// @notice id 4 is wormhole SR
-    /// @notice id 5 is axelar
-    uint8[] public ambIds = [uint8(1), 2, 3, 4, 5];
+    /// @notice id 8 is axelar
+    uint8[] public ambIds = [uint8(5), 6, 7, 4, 8];
     bool[] public broadcastAMB = [false, false, false, true, false];
 
     /// @dev new settings ids
@@ -219,7 +210,8 @@ abstract contract AbstractDeploySingle is BatchScript {
         0x979Ca5202784112f4738403dBec5D0F3B9daabB9,
         0xd4C1905BB1D26BC93DAC913e13CaCC278CdCC80D,
         0xeA87ae93Fa0019a82A727bfd3eBd1cFCa8f64f1D,
-        address(0)
+        address(0),
+        0x02d16BC51af6BfD153d67CA61754cF912E82C4d9
     ];
 
     address[] public hyperlanePaymasters = [
@@ -230,7 +222,8 @@ abstract contract AbstractDeploySingle is BatchScript {
         0x3b6044acd6767f017e99318AA6Ef93b7B06A5a22,
         0xD8A76C4D91fCbB7Cc8eA795DFDF870E48368995C,
         0xc3F23848Ed2e04C0c6d41bd7804fa8f89F940B94,
-        address(0)
+        address(0),
+        0x8105a095368f1a184CceA86cCe21318B5Ee5BE28
     ];
 
     address[] public wormholeCore = [
@@ -241,7 +234,8 @@ abstract contract AbstractDeploySingle is BatchScript {
         0xa5f208e072434bC67592E4C49C1B991BA79BCA46,
         0xEe91C335eab126dF5fDB3797EA9d6aD93aeC9722,
         0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6,
-        0x126783A6Cb203a3E35344528B26ca3a0489a1485
+        0x126783A6Cb203a3E35344528B26ca3a0489a1485,
+        address(0)
     ];
 
     address[] public axelarGateway = [
@@ -252,10 +246,12 @@ abstract contract AbstractDeploySingle is BatchScript {
         0xe432150cce91c13a887f7D836923d5597adD8E31,
         0xe432150cce91c13a887f7D836923d5597adD8E31,
         0xe432150cce91c13a887f7D836923d5597adD8E31,
-        0x304acf330bbE08d1e512eefaa92F6a57871fD895
+        0x304acf330bbE08d1e512eefaa92F6a57871fD895,
+        0xe432150cce91c13a887f7D836923d5597adD8E31
     ];
 
     address[] public axelarGasService = [
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
         0x2d5d7d31F671F86C782533cc367F14109a082712,
         0x2d5d7d31F671F86C782533cc367F14109a082712,
         0x2d5d7d31F671F86C782533cc367F14109a082712,
@@ -279,17 +275,20 @@ abstract contract AbstractDeploySingle is BatchScript {
     uint64 public constant OP = 10;
     uint64 public constant BASE = 8453;
     uint64 public constant FANTOM = 250;
+    uint64 public constant LINEA = 59_144;
 
-    uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
+    uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 59_144];
     string[] public chainNames =
-        ["Ethereum", "Binance", "Avalanche", "Polygon", "Arbitrum", "Optimism", "Base", "Fantom"];
+        ["Ethereum", "Binance", "Avalanche", "Polygon", "Arbitrum", "Optimism", "Base", "Fantom", "Linea"];
 
     /// @dev vendor chain ids
-    uint32[] public lz_chainIds = [30_101, 30_102, 30_106, 30_109, 30_110, 30_111, 30_184, 30_112];
-    uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
-    uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30, 10];
+    uint32[] public lz_chainIds = [30_101, 30_102, 30_106, 30_109, 30_110, 30_111, 30_184, 30_112, 30_183];
+    uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 59_144];
+
+    /// @notice Wormhole is not available on Linea yet
+    uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30, 10, 38];
     string[] public axelar_chainIds =
-        ["Ethereum", "binance", "Avalanche", "Polygon", "arbitrum", "optimism", "base", "Fantom"];
+        ["Ethereum", "binance", "Avalanche", "Polygon", "arbitrum", "optimism", "base", "Fantom", "linea"];
 
     uint256 public constant milionTokensE18 = 1 ether;
 
@@ -305,7 +304,8 @@ abstract contract AbstractDeploySingle is BatchScript {
         100_000_000, // ARBI
         4_000_000, // OP
         1_000_000, // BASE
-        4 * 10e9 // FANTOM
+        4 * 10e9, // FANTOM
+        60_000_000 // LINEA (0.06 gwei)
     ];
 
     /// @dev !WARNING: update these for Fantom
@@ -318,7 +318,8 @@ abstract contract AbstractDeploySingle is BatchScript {
         253_400_000_000, // ARBI
         253_400_000_000, // OP
         253_400_000_000, // BASE
-        4 * 10e9 // FANTOM
+        4 * 10e9, // FANTOM
+        253_400_000_000
     ];
 
     /*//////////////////////////////////////////////////////////////
@@ -326,20 +327,6 @@ abstract contract AbstractDeploySingle is BatchScript {
     //////////////////////////////////////////////////////////////*/
 
     mapping(uint64 => mapping(uint64 => address)) public PRICE_FEEDS;
-
-    /*//////////////////////////////////////////////////////////////
-                        KYC DAO VALIDITY VARIABLES
-    //////////////////////////////////////////////////////////////*/
-
-    address[] public kycDAOValidityAddresses = [
-        address(0),
-        address(0),
-        address(0),
-        0x205E10d3c4C87E26eB66B1B270b71b7708494dB9,
-        address(0),
-        address(0),
-        address(0)
-    ];
 
     /*//////////////////////////////////////////////////////////////
                         RBAC VARIABLES
@@ -376,8 +363,10 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// @dev OP https://app.onchainden.com/safes/oeth:0x99620a926d68746d5f085b3f7cd62f4ffb71f0c1
         0x2F973806f8863E860A553d4F2E7c2AB4A9F3b87C,
         /// @dev BASE https://app.onchainden.com/safes/base:0x2f973806f8863e860a553d4f2e7c2ab4a9f3b87c
-        0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1
+        0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1,
         /// @dev FANTOM https://safe.fantom.network/home?safe=ftm:0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1
+        address(0)
+        /// TODO: add protocol admin for LINEA HERE
     ];
 
     address[] public PROTOCOL_ADMINS_STAGING = [
@@ -392,8 +381,10 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// @dev OP https://app.onchainden.com/safes/oeth:0xfe3A0C3c4980Eef00C2Ec73D8770a2D9A489fdE5
         0xbd1F951F52FC7616E2F743F976295fDc5276Cfb9,
         /// @dev BASE https://app.onchainden.com/safes/base:0xbd1F951F52FC7616E2F743F976295fDc5276Cfb9
-        0xdc337f59a90B1F6a016c02851559AdbE81f0B889
+        0xdc337f59a90B1F6a016c02851559AdbE81f0B889,
         /// @dev FANTOM https://safe.fantom.network/home?safe=ftm:0xdc337f59a90B1F6a016c02851559AdbE81f0B889
+        address(0)
+        /// TODO: add protocol admin address for LINEA HERE
     ];
 
     /// @dev environment variable setup for upgrade
@@ -419,6 +410,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         forks[Chains.Optimism] = "optimism";
         forks[Chains.Base] = "base";
         forks[Chains.Fantom] = "fantom";
+        forks[Chains.Linea] = "linea";
     }
 
     function getContract(uint64 chainId, string memory _name) public view returns (address) {
@@ -497,18 +489,7 @@ abstract contract AbstractDeploySingle is BatchScript {
 
         vars.superRegistryC.setAddress(vars.superRegistryC.CORE_STATE_REGISTRY(), vars.coreStateRegistry, vars.chainId);
 
-        /*
-        /// @dev 3.2 - deploy Timelock State Registry
-        vars.timelockStateRegistry = address(new TimelockStateRegistry{ salt: salt }(vars.superRegistryC));
-        contracts[vars.chainId][bytes32(bytes("TimelockStateRegistry"))] = vars.timelockStateRegistry;
-        
-
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.TIMELOCK_STATE_REGISTRY(), vars.timelockStateRegistry, vars.chainId
-        );
-        */
-
-        /// @dev 3.3 - deploy Broadcast State Registry
+        /// @dev 3.2 - deploy Broadcast State Registry
         vars.broadcastRegistry = address(new BroadcastRegistry{ salt: salt }(vars.superRegistryC));
         contracts[vars.chainId][bytes32(bytes("BroadcastRegistry"))] = vars.broadcastRegistry;
 
@@ -544,22 +525,24 @@ abstract contract AbstractDeploySingle is BatchScript {
             contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
         }
 
-        /// @dev 5.3- deploy Wormhole Automatic Relayer Implementation
-        vars.wormholeImplementation = address(new WormholeARImplementation{ salt: salt }(vars.superRegistryC));
-        contracts[vars.chainId][bytes32(bytes("WormholeARImplementation"))] = vars.wormholeImplementation;
+        if (vars.chainId != LINEA) {
+            /// @dev 5.3- deploy Wormhole Automatic Relayer Implementation
+            vars.wormholeImplementation = address(new WormholeARImplementation{ salt: salt }(vars.superRegistryC));
+            contracts[vars.chainId][bytes32(bytes("WormholeARImplementation"))] = vars.wormholeImplementation;
 
-        address wormholeRelayerConfig = vars.chainId == BASE ? wormholeBaseRelayer : wormholeRelayer;
-        WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayerConfig);
-        WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(wormhole_chainIds[trueIndex]);
+            address wormholeRelayerConfig = vars.chainId == BASE ? wormholeBaseRelayer : wormholeRelayer;
+            WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayerConfig);
+            WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(wormhole_chainIds[trueIndex]);
 
-        /// @dev 6.4- deploy Wormhole Specialized Relayer Implementation
-        vars.wormholeSRImplementation =
-            address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC, brRegistryId));
-        contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
+            /// @dev 6.4- deploy Wormhole Specialized Relayer Implementation
+            vars.wormholeSRImplementation =
+                address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC, brRegistryId));
+            contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
 
-        WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[trueIndex]);
-        /// @dev FIXME who is the wormhole relayer on mainnet?
-        WormholeSRImplementation(vars.wormholeSRImplementation).setRelayer(ownerAddress);
+            WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[trueIndex]);
+            /// @dev FIXME who is the wormhole relayer on mainnet
+            WormholeSRImplementation(vars.wormholeSRImplementation).setRelayer(ownerAddress);
+        }
 
         /// @dev 6.5- deploy Axelar Implementation
         vars.axelarImplementation = address(new AxelarImplementation{ salt: salt }(vars.superRegistryC));
@@ -598,47 +581,34 @@ abstract contract AbstractDeploySingle is BatchScript {
         }
         contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
 
-        vars.socketValidator = address(new SocketValidator{ salt: salt }(vars.superRegistry));
-        contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars.socketValidator;
-        if (vars.chainId == 1) {
-            // Mainnet Hop
-            SocketValidator(vars.socketValidator).addToBlacklist(18);
-        } else if (vars.chainId == 10) {
-            // Optimism Hop
-            SocketValidator(vars.socketValidator).addToBlacklist(15);
-        } else if (vars.chainId == 42_161) {
-            // Arbitrum hop
-            SocketValidator(vars.socketValidator).addToBlacklist(16);
-        } else if (vars.chainId == 137) {
-            // Polygon hop
-            SocketValidator(vars.socketValidator).addToBlacklist(21);
-        } else if (vars.chainId == 8453) {
-            // Base hop
-            SocketValidator(vars.socketValidator).addToBlacklist(1);
-        }
-
-        vars.socketOneInchValidator = address(new SocketOneInchValidator{ salt: salt }(vars.superRegistry));
-        contracts[vars.chainId][bytes32(bytes("SocketOneInchValidator"))] = vars.socketOneInchValidator;
-
         vars.deBridgeValidator = address(new DeBridgeValidator{ salt: salt }(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("DeBridgeValidator"))] = vars.deBridgeValidator;
 
         vars.deBridgeForwarderValidator = address(new DeBridgeForwarderValidator{ salt: salt }(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderValidator"))] = vars.deBridgeForwarderValidator;
 
-        vars.oneInchValidator = address(new OneInchValidator{ salt: salt }(vars.superRegistry));
-        contracts[vars.chainId][bytes32(bytes("OneInchValidator"))] = vars.oneInchValidator;
+        if (vars.chainId != LINEA) {
+            vars.socketOneInchValidator = address(new SocketOneInchValidator{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("SocketOneInchValidator"))] = vars.socketOneInchValidator;
+
+            vars.oneInchValidator = address(new OneInchValidator{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("OneInchValidator"))] = vars.oneInchValidator;
+        }
 
         bridgeValidators[0] = vars.lifiValidator;
+        /// FIXME: should be address(0) always
         bridgeValidators[1] = vars.socketValidator;
+
+        /// FIXME: should be address(0) always for LINEA
         bridgeValidators[2] = vars.socketOneInchValidator;
-        bridgeValidators[3] = vars.deBridgeValidator;
-        bridgeValidators[4] = vars.deBridgeForwarderValidator;
-        bridgeValidators[5] = vars.oneInchValidator;
+
+        /// FIXME: should be address(0) always for LINEA
+        bridgeValidators[3] = vars.oneInchValidator;
+        bridgeValidators[4] = vars.deBridgeValidator;
+        bridgeValidators[5] = vars.deBridgeForwarderValidator;
 
         /// @dev 7 - Deploy SuperformFactory
         vars.factory = address(new SuperformFactory{ salt: salt }(vars.superRegistry));
-
         contracts[vars.chainId][bytes32(bytes("SuperformFactory"))] = vars.factory;
 
         /// @dev FIXME does SuperRBAC itself need broadcaster role?
@@ -658,23 +628,11 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.erc5115To4626WrapperFactory = address(new ERC5115To4626WrapperFactory{ salt: salt }(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("ERC5115To4626WrapperFactory"))] = vars.erc5115To4626WrapperFactory;
 
-        // Timelock + ERC4626 Form
-        //vars.erc4626TimelockForm = address(new ERC4626TimelockForm{ salt: salt }(vars.superRegistry));
-        //contracts[vars.chainId][bytes32(bytes("ERC4626TimelockForm"))] = vars.erc4626TimelockForm;
-
-        /// 9 KYCDao ERC4626 Form
-        //vars.kycDao4626Form = address(new ERC4626KYCDaoForm{ salt: salt }(vars.superRegistry));
-        //contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
-
-        /// @dev 9 - Add newly deployed form implementations to Factory, formImplementationId 1
+        /// @dev 9 - Add newly deployed form implementations to Factory,
+        /// @notice formImplementationId for ERC4626 form is 1
+        /// @notice formImplementationId for ERC5115 form is 2
         ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0], 1);
-        ISuperformFactory(vars.factory).addFormImplementation(vars.erc5115Form, FORM_IMPLEMENTATION_IDS[1], 1);
-
-        /// passing 2 because timelock state registry id is 2
-        //ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626TimelockForm, FORM_IMPLEMENTATION_IDS[1],
-        // 2);
-
-        //ISuperformFactory(vars.factory).addFormImplementation(vars.kycDao4626Form, FORM_IMPLEMENTATION_IDS[2], 1);
+        ISuperformFactory(vars.factory).addFormImplementation(vars.erc5115Form, FORM_IMPLEMENTATION_IDS[1], 2);
 
         /// @dev 10 - Deploy SuperformRouter
         vars.superformRouter = address(new SuperformRouter{ salt: salt }(vars.superRegistry));
@@ -683,6 +641,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
 
         /// @dev 11 - Deploy SuperPositions
+        /// FIMXE: check if the uri is right for linea
         vars.superPositions = address(
             new SuperPositions{ salt: salt }(
                 "https://ipfs-gateway.superform.xyz/ipns/k51qzi5uqu5dg90fqdo9j63m556wlddeux4mlgyythp30zousgh3huhyzouyq8/JSON/",
@@ -721,6 +680,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// @dev BASE does not have SocketV1 available
         if (vars.chainId == BASE) {
             uint8[] memory bridgeIdsBase = new uint8[](4);
+
             /// @dev this is the new id of lifi validator
             bridgeIdsBase[0] = 101;
 
@@ -748,6 +708,30 @@ abstract contract AbstractDeploySingle is BatchScript {
             bridgeValidatorsBase[3] = bridgeValidators[5];
 
             vars.superRegistryC.setBridgeAddresses(bridgeIdsBase, bridgeAddressesBase, bridgeValidatorsBase);
+        } else if (vars.chainId == LINEA) {
+            uint8[] memory bridgeIdsLinea = new uint8[](3);
+
+            /// @dev this is the new id of lifi validator
+            bridgeIdsLinea[0] = 101;
+
+            /// @dev these are debridge
+            bridgeIdsLinea[1] = 5;
+            bridgeIdsLinea[2] = 6;
+
+            address[] memory bridgeAddressesLinea = new address[](3);
+            bridgeAddressesLinea[0] = BRIDGE_ADDRESSES[vars.chainId][0];
+
+            /// and 4 is debridge and 5 is debridge forwarder
+            bridgeAddressesLinea[1] = BRIDGE_ADDRESSES[vars.chainId][4];
+            bridgeAddressesLinea[2] = BRIDGE_ADDRESSES[vars.chainId][5];
+
+            address[] memory bridgeValidatorsLinea = new address[](3);
+            bridgeValidatorsLinea[0] = bridgeValidators[0];
+
+            bridgeValidatorsLinea[3] = bridgeValidators[4];
+            bridgeValidatorsLinea[4] = bridgeValidators[5];
+
+            vars.superRegistryC.setBridgeAddresses(bridgeIdsLinea, bridgeAddressesLinea, bridgeValidatorsLinea);
         } else {
             vars.superRegistryC.setBridgeAddresses(bridgeIds, BRIDGE_ADDRESSES[vars.chainId], bridgeValidators);
         }
@@ -771,6 +755,25 @@ abstract contract AbstractDeploySingle is BatchScript {
 
             SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(
                 ambIdsFantom, ambAddressesFantom, broadcastAMBFantom
+            );
+        } else if (vars.chainId == LINEA) {
+            uint8[] memory ambIdsLinea = new uint8[](3);
+            ambIdsLinea[0] = 5;
+            ambIdsLinea[1] = 6;
+            ambIdsLinea[2] = 8;
+
+            address[] memory ambAddressesLinea = new address[](3);
+            ambAddressesLinea[0] = vars.lzImplementation;
+            ambAddressesLinea[1] = vars.hyperlaneImplementation;
+            ambAddressesLinea[2] = vars.axelarImplementation;
+
+            bool[] memory broadcastAMBLinea = new bool[](3);
+            broadcastAMBLinea[0] = false;
+            broadcastAMBLinea[1] = false;
+            broadcastAMBLinea[2] = false;
+
+            SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(
+                ambIdsLinea, ambAddressesLinea, broadcastAMBLinea
             );
         } else {
             SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(
@@ -853,7 +856,6 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// @dev !WARNING - Default value for updateWithdrawGas for now
         PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(abi.encode(4, abi.encode(0, "")));
 
-        /*
         /// @dev 20 deploy rewards distributor
         vars.rewardsDistributor = address(new RewardsDistributor{ salt: salt }(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("RewardsDistributor"))] = vars.rewardsDistributor;
@@ -864,7 +866,6 @@ abstract contract AbstractDeploySingle is BatchScript {
 
         vars.superRBACC.setRoleAdmin(rewardsAdminRole, vars.superRBACC.PROTOCOL_ADMIN_ROLE());
         vars.superRBACC.grantRole(rewardsAdminRole, REWARDS_ADMIN);
-        */
 
         vm.stopBroadcast();
 
@@ -889,8 +890,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         setEnvDeploy(cycle)
     {
         SetupVars memory vars;
-        // j = 0
-        //
+
         vars.chainId = targetDeploymentChains[i];
 
         cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
@@ -978,7 +978,6 @@ abstract contract AbstractDeploySingle is BatchScript {
 
         address protocolAdmin = env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[trueIndex];
 
-        console.log("protocolAdmin", protocolAdmin);
         if (grantProtocolAdmin) {
             if (protocolAdmin != address(0)) {
                 srbac.grantRole(protocolAdminRole, protocolAdmin);
@@ -1366,21 +1365,23 @@ abstract contract AbstractDeploySingle is BatchScript {
                 );
             }
 
-            WormholeARImplementation(payable(vars.wormholeImplementation)).setReceiver(
-                vars.dstWormholeChainId, vars.dstWormholeARImplementation
-            );
+            if (!(vars.chainId == LINEA || vars.dstChainId == LINEA)) {
+                WormholeARImplementation(payable(vars.wormholeImplementation)).setReceiver(
+                    vars.dstWormholeChainId, vars.dstWormholeARImplementation
+                );
 
-            WormholeARImplementation(payable(vars.wormholeImplementation)).setChainId(
-                vars.dstChainId, vars.dstWormholeChainId
-            );
+                WormholeARImplementation(payable(vars.wormholeImplementation)).setChainId(
+                    vars.dstChainId, vars.dstWormholeChainId
+                );
 
-            WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setChainId(
-                vars.dstChainId, vars.dstWormholeChainId
-            );
+                WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setChainId(
+                    vars.dstChainId, vars.dstWormholeChainId
+                );
 
-            WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setReceiver(
-                vars.dstWormholeChainId, vars.dstWormholeSRImplementation
-            );
+                WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setReceiver(
+                    vars.dstWormholeChainId, vars.dstWormholeSRImplementation
+                );
+            }
 
             AxelarImplementation(payable(vars.axelarImplementation)).setChainId(vars.dstChainId, vars.dstAxelarChainId);
 
@@ -1432,47 +1433,44 @@ abstract contract AbstractDeploySingle is BatchScript {
                 addToBatch(vars.hyperlaneImplementation, 0, txn);
             }
 
-            txn = abi.encodeWithSelector(
-                WormholeARImplementation.setReceiver.selector, vars.dstWormholeChainId, vars.dstWormholeARImplementation
-            );
-            addToBatch(vars.wormholeImplementation, 0, txn);
+            if (!(vars.chainId == LINEA || vars.dstChainId == LINEA)) {
+                txn = abi.encodeWithSelector(
+                    WormholeARImplementation.setReceiver.selector,
+                    vars.dstWormholeChainId,
+                    vars.dstWormholeARImplementation
+                );
+                addToBatch(vars.wormholeImplementation, 0, txn);
 
-            txn = abi.encodeWithSelector(
-                WormholeARImplementation.setChainId.selector, vars.dstChainId, vars.dstWormholeChainId
-            );
-            addToBatch(vars.wormholeImplementation, 0, txn);
+                txn = abi.encodeWithSelector(
+                    WormholeARImplementation.setChainId.selector, vars.dstChainId, vars.dstWormholeChainId
+                );
+                addToBatch(vars.wormholeImplementation, 0, txn);
 
-            txn = abi.encodeWithSelector(
-                WormholeSRImplementation.setChainId.selector, vars.dstChainId, vars.dstWormholeChainId
-            );
-            addToBatch(vars.wormholeSRImplementation, 0, txn);
+                txn = abi.encodeWithSelector(
+                    WormholeSRImplementation.setChainId.selector, vars.dstChainId, vars.dstWormholeChainId
+                );
+                addToBatch(vars.wormholeSRImplementation, 0, txn);
 
-            txn = abi.encodeWithSelector(
-                WormholeSRImplementation.setReceiver.selector, vars.dstWormholeChainId, vars.dstWormholeSRImplementation
-            );
-            addToBatch(vars.wormholeSRImplementation, 0, txn);
+                txn = abi.encodeWithSelector(
+                    WormholeSRImplementation.setReceiver.selector,
+                    vars.dstWormholeChainId,
+                    vars.dstWormholeSRImplementation
+                );
+                addToBatch(vars.wormholeSRImplementation, 0, txn);
+            }
 
             txn = abi.encodeWithSelector(SuperRegistry.setRequiredMessagingQuorum.selector, vars.dstChainId, 1);
             addToBatch(vars.superRegistry, 0, txn);
 
-            /*
+            /// FIXME: check why this was commented
             txn = abi.encodeWithSelector(vars.superRegistryC.setVaultLimitPerDestination.selector, vars.dstChainId, 5);
             addToBatch(vars.superRegistry, 0, txn);
-            */
 
             txn = abi.encodeWithSelector(
                 vars.superRegistryC.batchSetAddress.selector, ids, newAddresses, chainIdsSetAddresses
             );
             addToBatch(vars.superRegistry, 0, txn);
         }
-
-        /*
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.TIMELOCK_STATE_REGISTRY(),
-            _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "TimelockStateRegistry"),
-            vars.dstChainId
-        );
-        */
     }
 
     function _preDeploymentSetup() internal {
@@ -1487,6 +1485,8 @@ abstract contract AbstractDeploySingle is BatchScript {
         gasUsed[ARBI][3] = abi.encode(2_500_000);
         gasUsed[BASE][3] = abi.encode(600_000);
         gasUsed[FANTOM][3] = abi.encode(643_315);
+        /// FIXME: get values from backend for this
+        gasUsed[LINEA][3] = abi.encode(0);
 
         // updateDepositGasUsed == 4 (only used on deposits for now)
         gasUsed[ETH][4] = abi.encode(225_000);
@@ -1497,6 +1497,8 @@ abstract contract AbstractDeploySingle is BatchScript {
         gasUsed[ARBI][4] = abi.encode(1_400_000);
         gasUsed[BASE][4] = abi.encode(200_000);
         gasUsed[FANTOM][4] = abi.encode(734_757);
+        /// FIXME: get values from backend for this
+        gasUsed[LINEA][4] = abi.encode(0);
 
         // withdrawGasUsed == 6
         gasUsed[ETH][6] = abi.encode(1_272_330);
@@ -1507,6 +1509,8 @@ abstract contract AbstractDeploySingle is BatchScript {
         gasUsed[ARBI][6] = abi.encode(1_654_955);
         gasUsed[BASE][6] = abi.encode(1_178_778);
         gasUsed[FANTOM][6] = abi.encode(567_881);
+        /// FIXME: get values from backend for this
+        gasUsed[FANTOM][6] = abi.encode(0);
 
         // updateWithdrawGasUsed == 13
         /*
@@ -1527,71 +1531,81 @@ abstract contract AbstractDeploySingle is BatchScript {
         gasUsed[ARBI][13] = abi.encode(1_366_122);
         gasUsed[BASE][13] = abi.encode(919_466);
         gasUsed[FANTOM][13] = abi.encode(2_003_157);
+        /// FIXME: get values from backend for this
+        gasUsed[FANTOM][13] = abi.encode(0);
 
         mapping(uint64 chainId => address[] bridgeAddresses) storage bridgeAddresses = BRIDGE_ADDRESSES;
         bridgeAddresses[ETH] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
             0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
             0x2ddf16BA6d0180e5357d5e170eF1917a01b41fc0,
+            0x111111125421cA6dc452d289314280a0f8842A65,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
-            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251,
-            0x111111125421cA6dc452d289314280a0f8842A65
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
         ];
         bridgeAddresses[BSC] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
             0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
             0xd286595d2e3D879596FAB51f83A702D10a6db27b,
+            0x111111125421cA6dc452d289314280a0f8842A65,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
-            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251,
-            0x111111125421cA6dc452d289314280a0f8842A65
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
         ];
         bridgeAddresses[AVAX] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
             0x2b42AFFD4b7C14d9B7C2579229495c052672Ccd3,
             0xbDf50eAe568ECef74796ed6022a0d453e8432410,
+            0x111111125421cA6dc452d289314280a0f8842A65,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
-            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251,
-            0x111111125421cA6dc452d289314280a0f8842A65
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
         ];
         bridgeAddresses[POLY] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
             0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
             0x2ddf16BA6d0180e5357d5e170eF1917a01b41fc0,
+            0x111111125421cA6dc452d289314280a0f8842A65,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
-            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251,
-            0x111111125421cA6dc452d289314280a0f8842A65
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
         ];
         bridgeAddresses[ARBI] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
             0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
             0xaa3d9fA3aB930aE635b001d00C612aa5b14d750e,
+            0x111111125421cA6dc452d289314280a0f8842A65,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
-            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251,
-            0x111111125421cA6dc452d289314280a0f8842A65
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
         ];
         bridgeAddresses[OP] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
             0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
             0xbDf50eAe568ECef74796ed6022a0d453e8432410,
+            0x111111125421cA6dc452d289314280a0f8842A65,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
-            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251,
-            0x111111125421cA6dc452d289314280a0f8842A65
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
         ];
         bridgeAddresses[BASE] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
             address(0),
             address(0),
+            0x111111125421cA6dc452d289314280a0f8842A65,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
-            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251,
-            0x111111125421cA6dc452d289314280a0f8842A65
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
         ];
         bridgeAddresses[FANTOM] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
             0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
             0x565810cbfa3Cf1390963E5aFa2fB953795686339,
+            0x111111125421cA6dc452d289314280a0f8842A65,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
-            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251,
-            0x111111125421cA6dc452d289314280a0f8842A65
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
+        ];
+        bridgeAddresses[LINEA] = [
+            0xDE1E598b81620773454588B85D6b5D4eEC32573e,
+            address(0),
+            address(0),
+            address(0),
+            0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
         ];
 
         /// price feeds on all chains
@@ -1606,8 +1620,9 @@ abstract contract AbstractDeploySingle is BatchScript {
         priceFeeds[ETH][OP] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][ARBI] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][BASE] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-        priceFeeds[ETH][FANTOM] = address(0); // 0x2DE7E4a9488488e0058B95854CC2f7955B35dC9b has 18 decimals which looks
-            // to be incorrect
+        priceFeeds[ETH][FANTOM] = address(0);
+        // 0x2DE7E4a9488488e0058B95854CC2f7955B35dC9b has 18 decimals which looks incorrect
+        priceFeeds[ETH][LINEA] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
 
         /// BSC
         priceFeeds[BSC][BSC] = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
@@ -1618,6 +1633,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         priceFeeds[BSC][ARBI] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
         priceFeeds[BSC][BASE] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
         priceFeeds[BSC][FANTOM] = 0xe2A47e87C0f4134c8D06A41975F6860468b2F925;
+        priceFeeds[BSC][LINEA] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
 
         /// AVAX
         priceFeeds[AVAX][AVAX] = 0x0A77230d17318075983913bC2145DB16C7366156;
@@ -1628,6 +1644,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         priceFeeds[AVAX][ARBI] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
         priceFeeds[AVAX][BASE] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
         priceFeeds[AVAX][FANTOM] = 0x2dD517B2f9ba49CedB0573131FD97a5AC19ff648;
+        priceFeeds[AVAX][LINEA] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
 
         /// POLYGON
         priceFeeds[POLY][POLY] = 0xAB594600376Ec9fD91F8e885dADF0CE036862dE0;
@@ -1638,6 +1655,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         priceFeeds[POLY][ARBI] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][BASE] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][FANTOM] = 0x58326c0F831b2Dbf7234A4204F28Bba79AA06d5f;
+        priceFeeds[POLY][LINEA] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
 
         /// OPTIMISM
         priceFeeds[OP][OP] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
@@ -1648,6 +1666,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         priceFeeds[OP][ARBI] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         priceFeeds[OP][BASE] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         priceFeeds[OP][FANTOM] = 0xc19d58652d6BfC6Db6FB3691eDA6Aa7f3379E4E9;
+        priceFeeds[OP][LINEA] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
 
         /// ARBITRUM
         priceFeeds[ARBI][ARBI] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
@@ -1658,6 +1677,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         priceFeeds[ARBI][ETH] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         priceFeeds[ARBI][BASE] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         priceFeeds[ARBI][FANTOM] = 0xFeaC1A3936514746e70170c0f539e70b23d36F19;
+        priceFeeds[ARBI][LINEA] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
 
         /// BASE
         priceFeeds[BASE][BASE] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
@@ -1668,6 +1688,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         priceFeeds[BASE][ETH] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
         priceFeeds[BASE][ARBI] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
         priceFeeds[BASE][FANTOM] = address(0);
+        priceFeeds[BASE][LINEA] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
 
         /// FANTOM
         priceFeeds[FANTOM][FANTOM] = 0xf4766552D15AE4d256Ad41B6cf2933482B0680dc;
@@ -1678,6 +1699,18 @@ abstract contract AbstractDeploySingle is BatchScript {
         priceFeeds[FANTOM][ETH] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
         priceFeeds[FANTOM][BASE] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
         priceFeeds[FANTOM][ARBI] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+        priceFeeds[FANTOM][LINEA] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+
+        /// LINEA
+        priceFeeds[LINEA][LINEA] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        priceFeeds[LINEA][OP] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        priceFeeds[LINEA][POLY] = 0x9ce4473B42a639d010eD741df3CA829E6e480803;
+        priceFeeds[LINEA][AVAX] = address(0);
+        priceFeeds[LINEA][BSC] = address(0);
+        priceFeeds[LINEA][ETH] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        priceFeeds[LINEA][BASE] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        priceFeeds[LINEA][ARBI] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        priceFeeds[LINEA][FANTOM] = address(0);
     }
 
     /// @dev use this function for full deployments
