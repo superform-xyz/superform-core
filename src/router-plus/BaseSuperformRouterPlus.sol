@@ -25,6 +25,8 @@ import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { IBaseSuperformRouterPlus, IERC20 } from "src/interfaces/IBaseSuperformRouterPlus.sol";
 import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
+import { ISuperformRouterLike } from "src/router-plus/ISuperformRouterLike.sol";
+
 import { Error } from "src/libraries/Error.sol";
 
 abstract contract BaseSuperformRouterPlus is IBaseSuperformRouterPlus, IERC1155Receiver {
@@ -34,9 +36,6 @@ abstract contract BaseSuperformRouterPlus is IBaseSuperformRouterPlus, IERC1155R
     //                       CONSTANTS                          //
     //////////////////////////////////////////////////////////////
     ISuperRegistry public immutable superRegistry;
-    IBaseStateRegistry public immutable CORE_STATE_REGISTRY;
-    address public immutable SUPERFORM_ROUTER;
-    address public immutable SUPER_POSITIONS;
     uint64 public immutable CHAIN_ID;
     uint256 internal constant ENTIRE_SLIPPAGE = 10_000;
 
@@ -44,8 +43,8 @@ abstract contract BaseSuperformRouterPlus is IBaseSuperformRouterPlus, IERC1155R
     //                     STATE VARIABLES                      //
     //////////////////////////////////////////////////////////////
 
-    mapping(uint256 payloadId => address user) public msgSenderMap;
-    mapping(uint256 payloadId => bool processed) public statusMap;
+    mapping(uint256 routerPayloadId => address receiverAddressSP) public msgSenderMap;
+    mapping(uint256 csrAckPayloadId => bool processed) public statusMap;
     mapping(Actions => mapping(bytes4 selector => bool whitelisted)) public whitelistedSelectors;
 
     //////////////////////////////////////////////////////////////
@@ -63,16 +62,8 @@ abstract contract BaseSuperformRouterPlus is IBaseSuperformRouterPlus, IERC1155R
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(
-        address superRegistry_,
-        address superformRouter_,
-        address superPositions_,
-        IBaseStateRegistry coreStateRegistry_
-    ) {
-        if (
-            superRegistry_ == address(0) || superformRouter_ == address(0) || superPositions_ == address(0)
-                || address(coreStateRegistry_) == address(0)
-        ) {
+    constructor(address superRegistry_) {
+        if (superRegistry_ == address(0)) {
             revert Error.ZERO_ADDRESS();
         }
 
@@ -83,10 +74,6 @@ abstract contract BaseSuperformRouterPlus is IBaseSuperformRouterPlus, IERC1155R
         CHAIN_ID = uint64(block.chainid);
 
         superRegistry = ISuperRegistry(superRegistry_);
-
-        SUPERFORM_ROUTER = superformRouter_;
-        SUPER_POSITIONS = superPositions_;
-        CORE_STATE_REGISTRY = coreStateRegistry_;
 
         whitelistedSelectors[Actions.REBALANCE_FROM_SINGLE][IBaseRouter.singleDirectSingleVaultWithdraw.selector] = true;
         whitelistedSelectors[Actions.REBALANCE_FROM_MULTI][IBaseRouter.singleDirectMultiVaultWithdraw.selector] = true;
@@ -184,14 +171,15 @@ abstract contract BaseSuperformRouterPlus is IBaseSuperformRouterPlus, IERC1155R
     }
 
     function _callSuperformRouter(bytes memory callData_, uint256 msgValue_) internal {
-        (bool success, bytes memory returndata) = SUPERFORM_ROUTER.call{ value: msgValue_ }(callData_);
+        (bool success, bytes memory returndata) =
+            _getAddress(keccak256("SUPERFORM_ROUTER")).call{ value: msgValue_ }(callData_);
 
         Address.verifyCallResult(success, returndata);
     }
 
     function _deposit(IERC20 asset_, uint256 amountToDeposit_, uint256 msgValue_, bytes memory callData_) internal {
         /// @dev approves superform router on demand
-        asset_.approve(SUPERFORM_ROUTER, amountToDeposit_);
+        asset_.approve(_getAddress(keccak256("SUPERFORM_ROUTER")), amountToDeposit_);
 
         _callSuperformRouter(callData_, msgValue_);
     }
@@ -201,17 +189,56 @@ abstract contract BaseSuperformRouterPlus is IBaseSuperformRouterPlus, IERC1155R
         uint256 amountToDeposit_,
         uint256 msgValue_,
         address receiverAddressSP_,
-        bytes memory callData_
+        bytes memory callData_,
+        bool[] memory sameChain_,
+        uint256[][] memory superformIds_
     )
         internal
     {
         /// @dev approves superform router on demand
-        asset_.approve(SUPERFORM_ROUTER, amountToDeposit_);
-        uint256 payloadStartCount = CORE_STATE_REGISTRY.payloadsCount();
+        asset_.approve(_getAddress(keccak256("SUPERFORM_ROUTER")), amountToDeposit_);
+
+        uint256 payloadStartCount = ISuperformRouterLike(_getAddress(keccak256("SUPERFORM_ROUTER"))).payloadIds();
+
+        uint256 lenDst = sameChain_.length;
+        uint256[][] memory batchBalanceBefore = new uint256[][](lenDst);
+        address superPositions = _getAddress(keccak256("SUPER_POSITIONS"));
+        for (uint256 i; i < lenDst; i++) {
+            if (sameChain_[i]) {
+                uint256 lenSps = superformIds_[i].length;
+                address[] memory receiverAddressSPs = new address[](lenSps);
+                for (uint256 j; j < lenSps; ++j) {
+                    receiverAddressSPs[j] = address(this);
+                }
+                batchBalanceBefore[i] = IERC1155(superPositions).balanceOfBatch(receiverAddressSPs, superformIds_[i]);
+            }
+        }
 
         _callSuperformRouter(callData_, msgValue_);
 
-        uint256 payloadEndCount = CORE_STATE_REGISTRY.payloadsCount();
+        uint256[][] memory batchBalanceAfter = new uint256[][](lenDst);
+        for (uint256 i; i < lenDst; i++) {
+            if (sameChain_[i]) {
+                uint256 lenSps = superformIds_[i].length;
+                address[] memory receiverAddressSPs = new address[](lenSps);
+                for (uint256 j; j < lenSps; ++j) {
+                    receiverAddressSPs[j] = address(this);
+                }
+                batchBalanceAfter[i] = IERC1155(superPositions).balanceOfBatch(receiverAddressSPs, superformIds_[i]);
+
+                for (uint256 j; j < lenSps; j++) {
+                    IERC1155(superPositions).safeTransferFrom(
+                        address(this),
+                        receiverAddressSP_,
+                        superformIds_[i][j],
+                        batchBalanceAfter[i][j] - batchBalanceBefore[i][j],
+                        ""
+                    );
+                }
+            }
+        }
+
+        uint256 payloadEndCount = ISuperformRouterLike(_getAddress(keccak256("SUPERFORM_ROUTER"))).payloadIds();
 
         if (payloadEndCount - payloadStartCount > 0) {
             for (uint256 i = payloadStartCount; i < payloadEndCount; i++) {
@@ -220,17 +247,17 @@ abstract contract BaseSuperformRouterPlus is IBaseSuperformRouterPlus, IERC1155R
         }
     }
 
-    function _completeDisbursement(uint256 csrSrcPayloadId) internal returns (address receiverAddressSP) {
-        receiverAddressSP = msgSenderMap[csrSrcPayloadId];
-
-        if (receiverAddressSP == address(0)) revert Error.INVALID_PAYLOAD_ID();
+    function _completeDisbursement(uint256 csrAckPayloadId_) internal returns (address receiverAddressSP) {
         mapping(uint256 => bool) storage statusMapLoc = statusMap;
 
-        if (statusMapLoc[csrSrcPayloadId]) revert Error.PAYLOAD_ALREADY_PROCESSED();
+        if (statusMapLoc[csrAckPayloadId_]) revert Error.PAYLOAD_ALREADY_PROCESSED();
 
-        statusMapLoc[csrSrcPayloadId] = true;
+        statusMapLoc[csrAckPayloadId_] = true;
 
-        uint256 txInfo = CORE_STATE_REGISTRY.payloadHeader(csrSrcPayloadId);
+        address coreStateRegistry = _getAddress(keccak256("CORE_STATE_REGISTRY"));
+        address superPositions = _getAddress(keccak256("SUPER_POSITIONS"));
+
+        uint256 txInfo = IBaseStateRegistry(coreStateRegistry).payloadHeader(csrAckPayloadId_);
 
         (uint256 returnTxType, uint256 callbackType, uint8 multi,,,) = txInfo.decodeTxInfo();
 
@@ -238,21 +265,30 @@ abstract contract BaseSuperformRouterPlus is IBaseSuperformRouterPlus, IERC1155R
             revert Error.INVALID_PAYLOAD_TYPE();
         }
 
-        uint256 payloadId;
         if (multi != 0) {
             ReturnMultiData memory returnData =
-                abi.decode(CORE_STATE_REGISTRY.payloadBody(csrSrcPayloadId), (ReturnMultiData));
+                abi.decode(IBaseStateRegistry(coreStateRegistry).payloadBody(csrAckPayloadId_), (ReturnMultiData));
 
-            payloadId = returnData.payloadId;
-            IERC1155(SUPER_POSITIONS).safeBatchTransferFrom(
+            /// @dev receiver address SP is retrieved from _depositUsingSmartWallet here. ReturnData.payloadId is the
+            /// original router id
+            receiverAddressSP = msgSenderMap[returnData.payloadId];
+
+            if (receiverAddressSP == address(0)) revert Error.INVALID_PAYLOAD_ID();
+
+            IERC1155(superPositions).safeBatchTransferFrom(
                 address(this), receiverAddressSP, returnData.superformIds, returnData.amounts, ""
             );
         } else {
             ReturnSingleData memory returnData =
-                abi.decode(CORE_STATE_REGISTRY.payloadBody(csrSrcPayloadId), (ReturnSingleData));
+                abi.decode(IBaseStateRegistry(coreStateRegistry).payloadBody(csrAckPayloadId_), (ReturnSingleData));
 
-            payloadId = returnData.payloadId;
-            IERC1155(SUPER_POSITIONS).safeTransferFrom(
+            /// @dev receiver address SP is retrieved from _depositUsingSmartWallet here. ReturnData.payloadId is the
+            /// original router id
+            receiverAddressSP = msgSenderMap[returnData.payloadId];
+
+            if (receiverAddressSP == address(0)) revert Error.INVALID_PAYLOAD_ID();
+
+            IERC1155(superPositions).safeTransferFrom(
                 address(this), receiverAddressSP, returnData.superformId, returnData.amount, ""
             );
         }

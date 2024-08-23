@@ -27,9 +27,6 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
     /// @notice thrown if the rebalance to txData update is invalid
     error COMPLETE_REBALANCE_DIFFERENT_CHAIN();
 
-    /// @notice thrown if the provided selector is invalid
-    error INVALID_REBALANCE_SELECTOR();
-
     /// @notice thrown when the refund proposer is invalid
     error INVALID_PROPOSER();
 
