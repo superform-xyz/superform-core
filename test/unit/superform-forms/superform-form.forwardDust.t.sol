@@ -10,7 +10,6 @@ import { DataLib } from "src/libraries/DataLib.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
 import { SuperPositions } from "src/SuperPositions.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
-import { IERC4626TimelockForm } from "src/forms/interfaces/IERC4626TimelockForm.sol";
 import "src/types/DataTypes.sol";
 
 contract ForwardDustFormTest is ProtocolActions {
@@ -160,11 +159,6 @@ contract ForwardDustFormTest is ProtocolActions {
         if (formImplementationId_ != 1) {
             vm.prank(getContract(ARBI, "CoreStateRegistry"));
             IBaseForm(superform).xChainWithdrawFromVault(data2, user, ETH);
-        } else {
-            vm.prank(getContract(ARBI, "TimelockStateRegistry"));
-            IERC4626TimelockForm(superform).withdrawAfterCoolDown(
-                TimelockPayload(1, ETH, block.timestamp, data2, TimelockStatus.PENDING)
-            );
         }
     }
 }
