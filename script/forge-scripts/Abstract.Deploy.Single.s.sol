@@ -728,8 +728,8 @@ abstract contract AbstractDeploySingle is BatchScript {
             address[] memory bridgeValidatorsLinea = new address[](3);
             bridgeValidatorsLinea[0] = bridgeValidators[0];
 
-            bridgeValidatorsLinea[3] = bridgeValidators[4];
-            bridgeValidatorsLinea[4] = bridgeValidators[5];
+            bridgeValidatorsLinea[1] = bridgeValidators[4];
+            bridgeValidatorsLinea[2] = bridgeValidators[5];
 
             vars.superRegistryC.setBridgeAddresses(bridgeIdsLinea, bridgeAddressesLinea, bridgeValidatorsLinea);
         } else {
