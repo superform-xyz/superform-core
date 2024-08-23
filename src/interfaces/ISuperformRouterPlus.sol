@@ -11,8 +11,8 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
     /// @notice thrown when an invalid rebalance from selector is provided
     error INVALID_REBALANCE_FROM_SELECTOR();
 
-    /// @notice thrown when an invalid rebalance to selector is provided
-    error INVALID_REBALANCE_TO_SELECTOR();
+    /// @notice thrown when an invalid deposit selector provided
+    error INVALID_DEPOSIT_SELECTOR();
 
     /// @notice thrown if the interimToken is different than expected
     error REBALANCE_SINGLE_POSITIONS_DIFFERENT_TOKEN();
@@ -124,7 +124,10 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
         address receiverAddressSP;
         bool smartWallet;
         bytes callData;
-        bytes rebalanceCallData;
+        bytes rebalanceToAmbIds;
+        bytes rebalanceToDstChainIds;
+        bytes rebalanceToSfData;
+        bytes4 rebalanceToSelector;
     }
 
     struct RebalanceMultiPositionsSyncArgs {
@@ -138,7 +141,10 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
         address receiverAddressSP;
         bool smartWallet;
         bytes callData;
-        bytes rebalanceCallData;
+        bytes rebalanceToAmbIds;
+        bytes rebalanceToDstChainIds;
+        bytes rebalanceToSfData;
+        bytes4 rebalanceToSelector;
     }
 
     struct RebalancePositionsSyncArgs {
@@ -214,13 +220,19 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
     /// @param amount_ The ERC4626 vault share amount to redeem
     /// @param receiverAddressSP_ The receiver of the superform shares
     /// @param smartWallet_ Whether to use smart wallet or not
-    /// @param callData_ The encoded superform router request
+    /// @param depositAmbIds_ The array of AMB bridge IDs for the deposit
+    /// @param depositDstChainIds_ The array of destination chain IDs for the deposit
+    /// @param depositSfData_ The array of superform data for the deposit
+    /// @param depositSelector_ The selector for the deposit function
     function deposit4626(
         address vault_,
         uint256 amount_,
         address receiverAddressSP_,
         bool smartWallet_,
-        bytes calldata callData_
+        bytes calldata depositAmbIds_,
+        bytes calldata depositDstChainIds_,
+        bytes calldata depositSfData_,
+        bytes4 depositSelector_
     )
         external
         payable;
@@ -231,13 +243,19 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
     /// @param amount_ The ERC20 amount to deposit
     /// @param receiverAddressSP_ The receiver of the superform shares
     /// @param smartWallet_ Whether to use smart wallet or not
-    /// @param callData_ The encoded superform router deposit request
+    /// @param depositAmbIds_ The array of AMB bridge IDs for the deposit
+    /// @param depositDstChainIds_ The array of destination chain IDs for the deposit
+    /// @param depositSfData_ The array of superform data for the deposit
+    /// @param depositSelector_ The selector for the deposit function
     function deposit(
         IERC20 asset_,
         uint256 amount_,
         address receiverAddressSP_,
         bool smartWallet_,
-        bytes calldata callData_
+        bytes calldata depositAmbIds_,
+        bytes calldata depositDstChainIds_,
+        bytes calldata depositSfData_,
+        bytes4 depositSelector_
     )
         external
         payable;

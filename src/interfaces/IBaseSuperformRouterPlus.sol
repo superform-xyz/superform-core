@@ -10,6 +10,10 @@ interface IBaseSuperformRouterPlus {
 
     /// @notice thrown when a non-processor attempts to call a processor-only function
     error NOT_ROUTER_PLUS_PROCESSOR();
+
+    /// @notice thrown if the provided selector is invalid
+    error INVALID_REBALANCE_SELECTOR();
+
     //////////////////////////////////////////////////////////////
     //                       STRUCTS                             //
     //////////////////////////////////////////////////////////////

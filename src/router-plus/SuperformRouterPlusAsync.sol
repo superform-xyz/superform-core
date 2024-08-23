@@ -49,14 +49,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(
-        address superRegistry_,
-        address superformRouter_,
-        address superPositions_,
-        IBaseStateRegistry coreStateRegistry_
-    )
-        BaseSuperformRouterPlus(superRegistry_, superformRouter_, superPositions_, coreStateRegistry_)
-    { }
+    constructor(address superRegistry_) BaseSuperformRouterPlus(superRegistry_) { }
 
     //////////////////////////////////////////////////////////////
     //                  EXTERNAL VIEW FUNCTIONS                //
@@ -144,9 +137,20 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
 
         /// @dev validate the update of txData by the keeper and re-construct calldata
         bytes memory rebalanceToCallData;
+        bool[] memory sameChain;
+        uint256[][] memory superformIds;
 
         if (data.rebalanceSelector == IBaseRouter.singleDirectSingleVaultDeposit.selector) {
             SingleVaultSFData memory superformData = abi.decode(data.rebalanceToSfData, (SingleVaultSFData));
+
+            if (data.smartWallet) {
+                superformIds = new uint256[][](1);
+                uint256[] memory superformIdsTemp = new uint256[](1);
+                superformIdsTemp[0] = superformData.superformId;
+                superformIds[0] = superformIdsTemp;
+                sameChain = new bool[](1);
+                sameChain[0] = true;
+            }
 
             MultiVaultSFData memory multiSuperformData =
                 _updateSuperformData(_castToMultiVaultData(superformData), liqRequests_[0], data.smartWallet);
@@ -178,6 +182,13 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         } else if (data.rebalanceSelector == IBaseRouter.singleDirectMultiVaultDeposit.selector) {
             MultiVaultSFData memory multiSuperformData = abi.decode(data.rebalanceToSfData, (MultiVaultSFData));
 
+            if (data.smartWallet) {
+                superformIds = new uint256[][](1);
+                superformIds[0] = multiSuperformData.superformIds;
+                sameChain = new bool[](1);
+                sameChain[0] = true;
+            }
+
             multiSuperformData = _updateSuperformData(multiSuperformData, liqRequests_[0], data.smartWallet);
 
             rebalanceToCallData =
@@ -198,25 +209,37 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         } else if (data.rebalanceSelector == IBaseRouter.multiDstSingleVaultDeposit.selector) {
             SingleVaultSFData[] memory superformsData = abi.decode(data.rebalanceToSfData, (SingleVaultSFData[]));
             uint256 len = superformsData.length;
+
             if (liqRequests_.length != len) {
                 revert Error.ARRAY_LENGTH_MISMATCH();
             }
+
             MultiVaultSFData[] memory multiSuperformData = new MultiVaultSFData[](len);
+
+            if (data.smartWallet) {
+                superformIds = new uint256[][](len);
+                sameChain = new bool[](len);
+            }
+            uint64[] memory dstChains = abi.decode(data.rebalanceToDstChainIds, (uint64[]));
+
             for (uint256 i; i < len; ++i) {
                 multiSuperformData[i] =
                     _updateSuperformData(_castToMultiVaultData(superformsData[i]), liqRequests_[i], data.smartWallet);
                 superformsData[i].liqRequest.txData = multiSuperformData[i].liqRequests[0].txData;
                 superformsData[i].liqRequest.nativeAmount = multiSuperformData[i].liqRequests[0].nativeAmount;
                 superformsData[i].receiverAddressSP = multiSuperformData[i].receiverAddressSP;
+                if (data.smartWallet) {
+                    superformIds[i] = new uint256[](1);
+                    superformIds[i][0] = superformsData[i].superformId;
+                    if (dstChains[i] == CHAIN_ID) {
+                        sameChain[i] = true;
+                    }
+                }
             }
 
             rebalanceToCallData = abi.encodeWithSelector(
                 data.rebalanceSelector,
-                MultiDstSingleVaultStateReq(
-                    abi.decode(data.rebalanceToAmbIds, (uint8[][])),
-                    abi.decode(data.rebalanceToDstChainIds, (uint64[])),
-                    superformsData
-                )
+                MultiDstSingleVaultStateReq(abi.decode(data.rebalanceToAmbIds, (uint8[][])), dstChains, superformsData)
             );
         } else if (data.rebalanceSelector == IBaseRouter.multiDstMultiVaultDeposit.selector) {
             MultiVaultSFData[] memory multiSuperformData = abi.decode(data.rebalanceToSfData, (MultiVaultSFData[]));
@@ -224,16 +247,32 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             if (liqRequests_.length != len) {
                 revert Error.ARRAY_LENGTH_MISMATCH();
             }
+
+            uint64[] memory dstChains = abi.decode(data.rebalanceToDstChainIds, (uint64[]));
+
+            if (data.smartWallet) {
+                superformIds = new uint256[][](len);
+                sameChain = new bool[](len);
+            }
             for (uint256 i; i < len; ++i) {
                 multiSuperformData[i] = _updateSuperformData(multiSuperformData[i], liqRequests_[i], data.smartWallet);
+                if (data.smartWallet) {
+                    if (dstChains[i] == CHAIN_ID) {
+                        sameChain[i] = true;
+                    }
+                    uint256 lenSfs = multiSuperformData[i].superformIds.length;
+                    uint256[] memory superformIdsTemp = new uint256[](lenSfs);
+                    for (uint256 j; j < lenSfs; ++j) {
+                        superformIdsTemp[j] = multiSuperformData[i].superformIds[j];
+                    }
+                    superformIds[i] = superformIdsTemp;
+                }
             }
 
             rebalanceToCallData = abi.encodeWithSelector(
                 data.rebalanceSelector,
                 MultiDstMultiVaultStateReq(
-                    abi.decode(data.rebalanceToAmbIds, (uint8[][])),
-                    abi.decode(data.rebalanceToDstChainIds, (uint64[])),
-                    multiSuperformData
+                    abi.decode(data.rebalanceToAmbIds, (uint8[][])), dstChains, multiSuperformData
                 )
             );
         } else {
@@ -241,7 +280,9 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         }
 
         data.smartWallet
-            ? _depositUsingSmartWallet(interimAsset, amountToDeposit, msg.value, receiverAddressSP_, rebalanceToCallData)
+            ? _depositUsingSmartWallet(
+                interimAsset, amountToDeposit, msg.value, receiverAddressSP_, rebalanceToCallData, sameChain, superformIds
+            )
             : _deposit(interimAsset, amountToDeposit, msg.value, rebalanceToCallData);
 
         emit XChainRebalanceComplete(receiverAddressSP_, firstStepLastCSRPayloadId_);
