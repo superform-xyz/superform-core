@@ -292,7 +292,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
             proof = abi.decode(_message.params, (bytes32));
         }
 
-        if (ambProtect[proof]) revert MALICIOUS_DELIVERY();
+        if (ambProtect[proof]) revert ();
         ambProtect[proof] = true;
     }
 }

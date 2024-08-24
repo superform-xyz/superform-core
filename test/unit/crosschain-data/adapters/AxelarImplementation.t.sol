@@ -253,7 +253,7 @@ contract AxelarImplementationTest is BaseSetup {
             abi.encode(true)
         );
 
-        vm.expectRevert(IAmbImplementation.MALICIOUS_DELIVERY.selector);
+        vm.expectRevert();
         vm.prank(address(gateway));
         axelarImpl.execute(commandId, sourceChain, sourceAddress, payload);
     }

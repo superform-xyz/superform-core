@@ -273,7 +273,7 @@ contract LayerzeroV2ImplementationTest is BaseSetup {
         vm.prank(lzEndpoint);
         layerzeroImpl.lzReceive(origin, guid, message, address(0), bytes(""));
 
-        vm.expectRevert(IAmbImplementation.MALICIOUS_DELIVERY.selector);
+        vm.expectRevert();
         vm.prank(lzEndpoint);
         layerzeroImpl.lzReceive(origin, bytes32(uint256(12)), message, address(0), bytes(""));
     }

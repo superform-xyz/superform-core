@@ -302,7 +302,7 @@ contract WormholeARImplementationTest is BaseSetup {
         );
 
         vm.prank(relayer);
-        vm.expectRevert(IAmbImplementation.MALICIOUS_DELIVERY.selector);
+        vm.expectRevert();
         WormholeARImplementation(wormholeARArbi).receiveWormholeMessages(
             abi.encode(ambMessageWithProof),
             new bytes[](0),

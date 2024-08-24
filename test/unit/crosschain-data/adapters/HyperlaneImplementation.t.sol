@@ -55,7 +55,7 @@ contract HyperlaneImplementationUnitTest is BaseSetup {
         );
 
         vm.prank(address(hyperlaneImplementation.mailbox()));
-        vm.expectRevert(IAmbImplementation.MALICIOUS_DELIVERY.selector);
+        vm.expectRevert();
         hyperlaneImplementation.handle(origin, sender, abi.encode(ambMessageWithProof));
     }
 }
