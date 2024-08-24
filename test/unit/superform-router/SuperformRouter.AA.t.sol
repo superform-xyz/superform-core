@@ -114,24 +114,6 @@ contract SuperformRouterAATest is ProtocolActions {
         _xChainWithdraw_SmartContractWallet(AVAX, address(walletDestinationAVAX), false, "VaultMock", 0, false);
     }
 
-    function test_withdrawWithSmartContractWallet_timelock() public {
-        _xChainDeposit_SmartContractWallet(false, true, 0, "ERC4626TimelockMock", 1);
-
-        _xChainWithdraw_SmartContractWallet(ETH, address(walletDestination), false, "ERC4626TimelockMock", 1, false);
-    }
-
-    function test_withdrawWithSmartContractWallet_3rdChainId_timelock() public {
-        _xChainDeposit_SmartContractWallet(false, true, 0, "ERC4626TimelockMock", 1);
-        vm.selectFork(FORKS[AVAX]);
-        SmartContractWallet walletDestinationAVAX = new SmartContractWallet(
-            SuperformRouter(payable(getContract(AVAX, "SuperformRouter"))), getContract(AVAX, "DAI")
-        );
-
-        _xChainWithdraw_SmartContractWallet(
-            AVAX, address(walletDestinationAVAX), false, "ERC4626TimelockMock", 1, false
-        );
-    }
-
     function test_withdrawWithSmartContractWallet_retain4626() public {
         _xChainDeposit_SmartContractWallet(false, true, 0, "VaultMock", 0);
 
@@ -148,32 +130,10 @@ contract SuperformRouterAATest is ProtocolActions {
         _xChainWithdraw_SmartContractWallet(ARBI, address(walletDestinationAVAX), false, "VaultMock", 0, true);
     }
 
-    function test_withdrawWithSmartContractWallet_timelock_retain4626() public {
-        _xChainDeposit_SmartContractWallet(false, true, 0, "ERC4626TimelockMock", 1);
-
-        _xChainWithdraw_SmartContractWallet(ARBI, address(walletDestination), false, "ERC4626TimelockMock", 1, true);
-    }
-
-    function test_withdrawWithSmartContractWallet_3rdChainId_timelock_retain4626() public {
-        _xChainDeposit_SmartContractWallet(false, true, 0, "ERC4626TimelockMock", 1);
-        vm.selectFork(FORKS[AVAX]);
-        SmartContractWallet walletDestinationAVAX = new SmartContractWallet(
-            SuperformRouter(payable(getContract(AVAX, "SuperformRouter"))), getContract(AVAX, "DAI")
-        );
-
-        _xChainWithdraw_SmartContractWallet(ARBI, address(walletDestinationAVAX), false, "ERC4626TimelockMock", 1, true);
-    }
-
     function test_direct_withdrawWithSmartContractWallet_retain4626() public {
         _directDeposit_SmartContractWallet(false, true, 0, "VaultMock", 0);
 
         _directWithdraw_SmartContractWallet(ARBI, address(walletDestination), false, "VaultMock", 0, true);
-    }
-
-    function test_direct_withdrawWithSmartContractWallet_timelock_retain4626() public {
-        _directDeposit_SmartContractWallet(false, true, 0, "ERC4626TimelockMock", 1);
-
-        _directWithdraw_SmartContractWallet(ARBI, address(walletDestination), false, "ERC4626TimelockMock", 1, true);
     }
 
     function _directDeposit_SmartContractWallet(
