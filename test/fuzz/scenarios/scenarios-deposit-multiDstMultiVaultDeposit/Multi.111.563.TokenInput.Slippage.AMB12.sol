@@ -21,9 +21,8 @@ contract MDMVDMulti111563NoTokenInputSlippageAMB12 is ProtocolActions {
         TARGET_UNDERLYINGS[AVAX][0] = [2, 2, 2];
         TARGET_UNDERLYINGS[OP][0] = [2, 2, 2];
 
-        TARGET_VAULTS[AVAX][0] = [1, 1, 1];
-
-        TARGET_VAULTS[OP][0] = [5, 5, 3];
+        TARGET_VAULTS[AVAX][0] = [0, 0, 0];
+        TARGET_VAULTS[OP][0] = [0, 0, 1];
 
         TARGET_FORM_KINDS[AVAX][0] = [1, 1, 1];
         TARGET_FORM_KINDS[OP][0] = [1, 1, 0];

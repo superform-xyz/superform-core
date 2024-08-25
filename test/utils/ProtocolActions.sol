@@ -1161,8 +1161,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         }
     }
 
-    /// @dev STEP 6 X-CHAIN: Process payload back on source (re-mint of SuperPositions for failed withdraws (inc. 1st
-    /// stage timelock failures - unlock request))
+    /// @dev STEP 6 X-CHAIN: Process payload back on source (re-mint of SuperPositions for failed withdraws
     function _stage6_process_superPositions_withdraw(
         TestAction memory action,
         StagesLocalVars memory vars,
