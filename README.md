@@ -28,7 +28,7 @@ This repository includes all Superform contracts and can be split into two categ
 
 ## Resources
 
-- [Twitter](https://twitter.com/superformxyz)
+- [X (Twitter)](https://x.com/superformxyz)
 - [Website](https://www.superform.xyz/)
 - [Application](https://app.superform.xyz)
 - [Technical Documentation](https://docs.superform.xyz)
