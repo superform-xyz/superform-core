@@ -899,6 +899,7 @@ abstract contract AbstractDeploySingle is BatchScript {
             _readContractsV1(env, chainNames[trueIndex], vars.chainId, "WormholeARImplementation");
         vars.wormholeSRImplementation =
             _readContractsV1(env, chainNames[trueIndex], vars.chainId, "WormholeSRImplementation");
+        vars.axelarImplementation = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "AxelarImplementation");
         vars.superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
         vars.paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
         vars.superRegistryC = SuperRegistry(vars.superRegistry);
