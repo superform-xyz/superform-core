@@ -47,6 +47,8 @@ FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy
 
 wait
 
+<<comment
+
 echo Running Stage 2: ...
 
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "deployStage2(uint256,uint256,uint256)" 1 0 0 --rpc-url $LINEA_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
@@ -145,3 +147,4 @@ fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Dep
 wait
 
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "revokeBurnerAddress(uint256,uint256)" 1 0 --rpc-url $LINEA_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+comment
