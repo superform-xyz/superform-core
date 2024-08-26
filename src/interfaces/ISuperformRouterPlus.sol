@@ -1,21 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import { IBaseSuperformRouterPlus, IERC20 } from "./IBaseSuperformRouterPlus.sol";
 
-interface ISuperformRouterWrapper {
+interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
     //////////////////////////////////////////////////////////////
     //                       ERRORS                             //
     //////////////////////////////////////////////////////////////
 
-    /// @notice thrown when a non-processor attempts to call a processor-only function
-    error NOT_ROUTER_WRAPPER_PROCESSOR();
-
     /// @notice thrown when an invalid rebalance from selector is provided
     error INVALID_REBALANCE_FROM_SELECTOR();
 
-    /// @notice thrown when an invalid rebalance to selector is provided
-    error INVALID_REBALANCE_TO_SELECTOR();
+    /// @notice thrown when an invalid deposit selector provided
+    error INVALID_DEPOSIT_SELECTOR();
 
     /// @notice thrown if the interimToken is different than expected
     error REBALANCE_SINGLE_POSITIONS_DIFFERENT_TOKEN();
@@ -23,26 +20,20 @@ interface ISuperformRouterWrapper {
     /// @notice thrown if the liqDstChainId is different than expected
     error REBALANCE_SINGLE_POSITIONS_DIFFERENT_CHAIN();
 
+    /// @notice thrown if the amounts to redeem differ
+    error REBALANCE_SINGLE_POSITIONS_DIFFERENT_AMOUNT();
+
     /// @notice thrown if the interimToken is different than expected in the array
     error REBALANCE_MULTI_POSITIONS_DIFFERENT_TOKEN();
 
     /// @notice thrown if the liqDstChainId is different than expected in the array
     error REBALANCE_MULTI_POSITIONS_DIFFERENT_CHAIN();
 
-    /// @notice thrown if the receiver address is invalid (not the wrapper)
+    /// @notice thrown if the amounts to redeem differ
+    error REBALANCE_MULTI_POSITIONS_DIFFERENT_AMOUNTS();
+
+    /// @notice thrown if the receiver address is invalid (not the router plus)
     error REBALANCE_XCHAIN_INVALID_RECEIVER_ADDRESS();
-
-    /// @notice thrown when the refund proposer is invalid
-    error INVALID_PROPOSER();
-
-    /// @notice thrown when the refund payload is invalid
-    error INVALID_REFUND_DATA();
-
-    /// @notice thrown when refund is already proposed
-    error REFUND_ALREADY_PROPOSED();
-
-    /// @notice thrown if the refund is still in dispute phase
-    error IN_DISPUTE_PHASE();
 
     /// @notice thrown if msg.value is lower than the required fee
     error INVALID_FEE();
@@ -76,6 +67,7 @@ interface ISuperformRouterWrapper {
     /// @param interimAsset The address of the interim asset used in the cross-chain transfer
     /// @param finalizeSlippage The slippage tolerance for the finalization step
     /// @param expectedAmountInterimAsset The expected amount of interim asset to be received
+    /// @param rebalanceToSelector The selector for the rebalance to function
     event XChainRebalanceInitiated(
         address indexed receiver,
         uint256 indexed id,
@@ -83,7 +75,8 @@ interface ISuperformRouterWrapper {
         bool smartWallet,
         address interimAsset,
         uint256 finalizeSlippage,
-        uint256 expectedAmountInterimAsset
+        uint256 expectedAmountInterimAsset,
+        bytes4 rebalanceToSelector
     );
 
     /// @notice emitted when multiple cross-chain rebalances are initiated
@@ -94,6 +87,7 @@ interface ISuperformRouterWrapper {
     /// @param interimAsset The address of the interim asset used in the cross-chain transfer
     /// @param finalizeSlippage The slippage tolerance for the finalization step
     /// @param expectedAmountInterimAsset The expected amount of interim asset to be received
+    /// @param rebalanceToSelector The selector for the rebalance to function
     event XChainRebalanceMultiInitiated(
         address indexed receiver,
         uint256[] ids,
@@ -101,13 +95,9 @@ interface ISuperformRouterWrapper {
         bool smartWallet,
         address interimAsset,
         uint256 finalizeSlippage,
-        uint256 expectedAmountInterimAsset
+        uint256 expectedAmountInterimAsset,
+        bytes4 rebalanceToSelector
     );
-
-    /// @notice emitted when a cross-chain rebalance is completed
-    /// @param receiver The address receiving the rebalanced position
-    /// @param firstStepLastCSRPayloadId The ID of the last payload in the first step of the rebalance
-    event XChainRebalanceComplete(address indexed receiver, uint256 indexed firstStepLastCSRPayloadId);
 
     /// @notice emitted when a deposit from an ERC4626 vault is completed
     /// @param receiver The address receiving the deposited tokens
@@ -117,49 +107,10 @@ interface ISuperformRouterWrapper {
     /// @notice emitted when a deposit is completed
     /// @param receiver The address receiving the deposited tokens
     /// @param smartWallet Whether a smart wallet was used
-    /// @param meta Whether the deposit was a meta-transaction
-    event DepositCompleted(address indexed receiver, bool smartWallet, bool meta);
-
-    /// @notice emitted when a disbursement is completed
-    /// @param receiver The address receiving the disbursed tokens
-    /// @param payloadId The ID of the disbursement payload
-    event DisbursementCompleted(address indexed receiver, uint256 indexed payloadId);
-
-    /// @notice emitted when a new refund is created
-    /// @param lastPayloadId is the unique identifier for the payload
-    /// @param refundReceiver is the address of the user who'll receiver the refund
-    /// @param refundToken is the token to be refunded
-    /// @param refundAmount is the new refund amount
-    event RefundInitiated(
-        uint256 indexed lastPayloadId, address indexed refundReceiver, address refundToken, uint256 refundAmount
-    );
-
-    /// @notice emitted when an existing refund got disputed
-    /// @param lastPayloadId is the unique identifier for the payload
-    /// @param disputer is the address of the user who disputed the refund
-    event RefundDisputed(uint256 indexed lastPayloadId, address indexed disputer);
-
-    /// @notice emitted when a new refund amount is proposed
-    /// @param lastPayloadId is the unique identifier for the payload
-    /// @param newRefundAmount is the new refund amount proposed
-    event NewRefundAmountProposed(uint256 indexed lastPayloadId, uint256 indexed newRefundAmount);
-
-    /// @notice emitted when a refund is complete
-    /// @param lastPayloadId is the unique identifier for the payload
-    /// @param caller is the address of the user who called the function
-    event RefundCompleted(uint256 indexed lastPayloadId, address indexed caller);
-
+    event DepositCompleted(address indexed receiver, bool smartWallet);
     //////////////////////////////////////////////////////////////
     //                       STRUCTS                            //
     //////////////////////////////////////////////////////////////
-
-    struct XChainRebalanceData {
-        bytes rebalanceCalldata;
-        bool smartWallet;
-        address interimAsset;
-        uint256 slippage;
-        uint256 expectedAmountInterimAsset;
-    }
 
     struct RebalanceSinglePositionSyncArgs {
         uint256 id;
@@ -172,7 +123,10 @@ interface ISuperformRouterWrapper {
         address receiverAddressSP;
         bool smartWallet;
         bytes callData;
-        bytes rebalanceCallData;
+        bytes rebalanceToAmbIds;
+        bytes rebalanceToDstChainIds;
+        bytes rebalanceToSfData;
+        bytes4 rebalanceToSelector;
     }
 
     struct RebalanceMultiPositionsSyncArgs {
@@ -186,11 +140,15 @@ interface ISuperformRouterWrapper {
         address receiverAddressSP;
         bool smartWallet;
         bytes callData;
-        bytes rebalanceCallData;
+        bytes rebalanceToAmbIds;
+        bytes rebalanceToDstChainIds;
+        bytes rebalanceToSfData;
+        bytes4 rebalanceToSelector;
     }
 
     struct RebalancePositionsSyncArgs {
         Actions action;
+        uint256[] sharesToRedeem;
         uint256 previewRedeemAmount;
         address asset;
         uint256 slippage;
@@ -198,6 +156,11 @@ interface ISuperformRouterWrapper {
         uint256 rebalanceToMsgValue;
         address receiverAddressSP;
         bool smartWallet;
+        bytes rebalanceToAmbIds;
+        bytes rebalanceToDstChainIds;
+        bytes rebalanceToSfData;
+        bytes4 rebalanceToSelector;
+        uint256 balanceBefore;
     }
 
     struct InitiateXChainRebalanceArgs {
@@ -208,8 +171,11 @@ interface ISuperformRouterWrapper {
         uint256 finalizeSlippage;
         uint256 expectedAmountInterimAsset;
         bool smartWallet;
+        bytes4 rebalanceToSelector;
         bytes callData;
-        bytes rebalanceCallData;
+        bytes rebalanceToAmbIds;
+        bytes rebalanceToDstChainIds;
+        bytes rebalanceToSfData;
     }
 
     struct InitiateXChainRebalanceMultiArgs {
@@ -220,23 +186,21 @@ interface ISuperformRouterWrapper {
         uint256 finalizeSlippage;
         uint256 expectedAmountInterimAsset;
         bool smartWallet;
+        bytes4 rebalanceToSelector;
         bytes callData;
-        bytes rebalanceCallData;
+        bytes rebalanceToAmbIds;
+        bytes rebalanceToDstChainIds;
+        bytes rebalanceToSfData;
     }
 
-    struct Refund {
-        address receiver;
-        address interimToken;
+    struct DepositArgs {
         uint256 amount;
-        uint256 proposedTime;
-    }
-
-    enum Actions {
-        DEPOSIT,
-        REBALANCE_FROM_SINGLE,
-        REBALANCE_FROM_MULTI,
-        REBALANCE_X_CHAIN_FROM_SINGLE,
-        REBALANCE_X_CHAIN_FROM_MULTI
+        address receiverAddressSP;
+        bool smartWallet;
+        bytes depositAmbIds;
+        bytes depositDstChainIds;
+        bytes depositSfData;
+        bytes4 depositSelector;
     }
 
     //////////////////////////////////////////////////////////////
@@ -252,7 +216,7 @@ interface ISuperformRouterWrapper {
     /// @notice rebalances multiple SuperPositions synchronously
     /// @notice interim asset and receiverAddressSP must be set. In non smart contract wallet rebalances,
     /// receiverAddressSP is only used for refunds
-    /// @notice receiverAddressSP of rebalanceCallData must be the address of the wrapper for smart wallets
+    /// @notice receiverAddressSP of rebalanceCallData must be the address of the router plus for smart wallets
     /// @notice for normal deposits receiverAddressSP is the users' specified receiverAddressSP
     /// @param args The arguments for rebalancing multiple positions
     function rebalanceMultiPositions(RebalanceMultiPositionsSyncArgs calldata args) external payable;
@@ -265,72 +229,28 @@ interface ISuperformRouterWrapper {
     /// @param args The arguments for initiating cross-chain rebalance for multiple positions
     function startCrossChainRebalanceMulti(InitiateXChainRebalanceMultiArgs memory args) external payable;
 
-    /// @notice completes the rebalance process for positions on different chains
-    /// @dev TODO: determine handling of interim asset transfer if slippage check fails
-    /// @param receiverAddressSP_ The receiver of the superform shares
-    /// @param firstStepLastCSRPayloadId_ The first step payload ID
-    /// @param amountReceivedInterimAsset_ The amount of interim asset received
-    /// @return rebalanceSuccessful Whether the rebalance was successful
-    function completeCrossChainRebalance(
-        address receiverAddressSP_,
-        uint256 firstStepLastCSRPayloadId_,
-        uint256 amountReceivedInterimAsset_
-    )
-        external
-        payable
-        returns (bool rebalanceSuccessful);
-
     /// @notice deposits ERC4626 vault shares into superform
     /// @param vault_ The ERC4626 vault to redeem from
-    /// @param amount_ The ERC4626 vault share amount to redeem
-    /// @param receiverAddressSP_ The receiver of the superform shares
-    /// @param smartWallet_ Whether to use smart wallet or not
-    /// @param callData_ The encoded superform router request
-    function deposit4626(
-        address vault_,
-        uint256 amount_,
-        address receiverAddressSP_,
-        bool smartWallet_,
-        bytes calldata callData_
-    )
-        external
-        payable;
+    /// @param args Rest of the arguments containing:
+    /// - amount_ The ERC4626 vault share amount to redeem
+    /// - receiverAddressSP_ The receiver of the superform shares
+    /// - smartWallet_ Whether to use smart wallet or not
+    /// - depositAmbIds_ The array of AMB bridge IDs for the deposit
+    /// - depositDstChainIds_ The array of destination chain IDs for the deposit
+    /// - depositSfData_ The array of superform data for the deposit
+    /// - depositSelector_ The selector for the deposit function
+    function deposit4626(address vault_, DepositArgs calldata args) external payable;
 
     /// @notice deposits tokens into superform
     /// @dev should only allow a single asset to be deposited
     /// @param asset_ The ERC20 asset to deposit
-    /// @param amount_ The ERC20 amount to deposit
-    /// @param receiverAddressSP_ The receiver of the superform shares
-    /// @param smartWallet_ Whether to use smart wallet or not
-    /// @param callData_ The encoded superform router deposit request
-    function deposit(
-        IERC20 asset_,
-        uint256 amount_,
-        address receiverAddressSP_,
-        bool smartWallet_,
-        bytes calldata callData_
-    )
-        external
-        payable;
-
-    /// @notice completes the disbursement process
-    /// @param csrAckPayloadId_ The payload ID to complete the disbursement
-    function finalizeDisbursement(uint256 csrAckPayloadId_) external;
-
-    /// @notice completes multiple disbursements in a batch
-    /// @param csrAckPayloadIds_ The payload IDs to complete the disbursements
-    function finalizeBatchDisbursement(uint256[] calldata csrAckPayloadIds_) external;
-
-    /// @notice allows the receiver / disputer to protect against malicious processors
-    /// @param finalPayloadId_ is the unique identifier of the refund
-    function disputeRefund(uint256 finalPayloadId_) external;
-
-    /// @notice allows the rescuer to propose a new refund amount after a successful dispute
-    /// @param finalPayloadId_ is the unique identifier of the refund
-    /// @param refundAmount_ is the new refund amount proposed
-    function proposeRefund(uint256 finalPayloadId_, uint256 refundAmount_) external;
-
-    /// @notice allows the user to claim their refund post the dispute period
-    /// @param finalPayloadId_ is the unique identifier of the refund
-    function finalizeRefund(uint256 finalPayloadId_) external;
+    /// @param args Rest of the arguments containing:
+    /// - amount_ The ERC4626 vault share amount to redeem
+    /// - receiverAddressSP_ The receiver of the superform shares
+    /// - smartWallet_ Whether to use smart wallet or not
+    /// - depositAmbIds_ The array of AMB bridge IDs for the deposit
+    /// - depositDstChainIds_ The array of destination chain IDs for the deposit
+    /// - depositSfData_ The array of superform data for the deposit
+    /// - depositSelector_ The selector for the deposit function
+    function deposit(IERC20 asset_, DepositArgs calldata args) external payable;
 }
