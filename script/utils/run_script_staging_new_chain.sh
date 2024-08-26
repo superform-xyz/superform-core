@@ -43,7 +43,7 @@ comment
 
 echo Running Stage 1: ...
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "deployStage1(uint256,uint256,uint256)" 1 0 1 --rpc-url $LINEA_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "deployStage1(uint256,uint256,uint256)" 1 0 0 --rpc-url $LINEA_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 
 wait
 
@@ -74,6 +74,10 @@ FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy
 wait
 
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChains(uint256,uint256)" 1 3 --rpc-url $BASE_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy 
+
+wait
+
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChains(uint256,uint256)" 1 4 --rpc-url $BASE_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy 
 
 wait
 
@@ -112,3 +116,11 @@ fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Dep
   --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3  --unlocked --slow
 
 wait
+
+export FIREBLOCKS_RPC_URL=$FANTOM_RPC_URL
+
+fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 1 4 \
+  --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3  --unlocked --slow
+
+wait
+
