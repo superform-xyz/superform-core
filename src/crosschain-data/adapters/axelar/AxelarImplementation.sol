@@ -6,7 +6,7 @@ import { DataLib } from "src/libraries/DataLib.sol";
 import { ProofLib } from "src/libraries/ProofLib.sol";
 import { AMBMessage } from "src/types/DataTypes.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
-import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { IAmbImplementationV2 as IAmbImplementation } from "src/interfaces/IAmbImplementationV2.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { IAxelarGasService } from "src/vendor/axelar/IAxelarGasService.sol";
