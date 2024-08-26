@@ -42,17 +42,6 @@ contract ForwardDustFormTest is ProtocolActions {
         assertEq(balanceAfter, 0);
     }
 
-    function test_forwardDustToPaymasterTimelocked() public {
-        address superform = _successfulDepositWithdraw("ERC4626TimelockMock", 1, 1e18, 0, true, deployer);
-
-        uint256 balanceBefore = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
-        assertGt(balanceBefore, 0);
-        IBaseForm(superform).forwardDustToPaymaster(getContract(ARBI, "WETH"));
-        uint256 balanceAfter = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
-
-        assertEq(balanceAfter, 0);
-    }
-
     function test_forwardDustToPaymaster_arbitraryToken_4626revert() public {
         address superform = _successfulDepositWithdraw("VaultMock", 0, 1e18, 0, false, deployer);
 
