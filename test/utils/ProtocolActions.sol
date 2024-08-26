@@ -245,7 +245,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         /// @dev this is only for x-chain actions
         if (action.action == Actions.Withdraw) {
             bool toAssert;
-            (success, toAssert) = _stage6_process_superPositions_withdraw(action, vars, multiSuperformsData);
+            (success, toAssert) = _stage6_process_superPositions_withdraw(action, vars);
             if (!success) {
                 if (DEBUG_MODE) console.log("Stage 6 failed");
                 return;
@@ -1164,8 +1164,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
     /// @dev STEP 6 X-CHAIN: Process payload back on source (re-mint of SuperPositions for failed withdraws
     function _stage6_process_superPositions_withdraw(
         TestAction memory action,
-        StagesLocalVars memory vars,
-        MultiVaultSFData[] memory multiSuperformsData
+        StagesLocalVars memory vars
     )
         internal
         returns (bool success, bool toAssert)

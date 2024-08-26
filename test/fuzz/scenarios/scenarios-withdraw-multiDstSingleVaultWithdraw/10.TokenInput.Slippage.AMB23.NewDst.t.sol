@@ -21,7 +21,6 @@ contract MDSVW10NativeSlippageAMB23NewDst is ProtocolActions {
         TARGET_UNDERLYINGS[ARBI][0] = [1];
 
         TARGET_VAULTS[OP][0] = [1];
-
         TARGET_VAULTS[ARBI][0] = [0];
 
         TARGET_FORM_KINDS[OP][0] = [1];
