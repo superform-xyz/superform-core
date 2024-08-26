@@ -41,13 +41,13 @@ Addresses obtained with a sample deployment to Polygon
 }
 comment
 
-<<comment
 echo Running Stage 1: ...
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "deployStage1(uint256,uint256,uint256)" 1 0 0 --rpc-url $LINEA_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --broadcast
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "deployStage1(uint256,uint256,uint256)" 1 0 0 --rpc-url $LINEA_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --broadcast
 
 wait
 
+<<comment
 echo Running Stage 2: ...
 
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "deployStage2(uint256,uint256,uint256)" 1 0 0 --rpc-url $LINEA_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --broadcast
@@ -103,8 +103,6 @@ FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy
 
 wait
 
-comment
-
 echo Configure all other chains based on new chain payment helper gas values: ...
 
 export FIREBLOCKS_API_KEY=$(op read op://zry2qwhqux2w6qtjitg44xb7b4/FB_STAGING_PAYMASTER_ACTION/credential)
@@ -113,14 +111,19 @@ export FOUNDRY_PROFILE=production
 export FIREBLOCKS_VAULT_ACCOUNT_IDS=13 #PaymentAdmin Staging
 #export FIREBLOCKS_VAULT_ACCOUNT_IDS=5 #PaymentAdmin Prod
 
-export FIREBLOCKS_RPC_URL=$BSC_RPC_URL
+export FIREBLOCKS_RPC_URL=$BASE_RPC_URL
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 1 0 \
-  --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3  --unlocked --slow
+fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 1 3 \
+  --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3  --unlocked --slow --broadcast
 
 wait
 
-<<comment
+export FIREBLOCKS_RPC_URL=$BSC_RPC_URL
+
+fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 1 0 \
+  --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3  --unlocked --slow --broadcast
+
+wait
 
 export FIREBLOCKS_RPC_URL=$ARBITRUM_RPC_URL
 
@@ -133,13 +136,6 @@ wait
 export FIREBLOCKS_RPC_URL=$OPTIMISM_RPC_URL
 
 fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 1 2 \
-  --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3  --unlocked --slow --broadcast
-
-wait
-
-export FIREBLOCKS_RPC_URL=$BASE_RPC_URL
-
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 1 3 \
   --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3  --unlocked --slow --broadcast
 
 wait

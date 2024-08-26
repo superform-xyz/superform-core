@@ -548,9 +548,9 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.axelarImplementation = address(new AxelarImplementation{ salt: salt }(vars.superRegistryC));
         contracts[vars.chainId][bytes32(bytes("AxelarImplementation"))] = vars.axelarImplementation;
 
-        AxelarImplementation(vars.axelarImplementation).setAxelarConfig(IAxelarGateway(axelarGateway[i]));
+        AxelarImplementation(vars.axelarImplementation).setAxelarConfig(IAxelarGateway(axelarGateway[trueIndex]));
         AxelarImplementation(vars.axelarImplementation).setAxelarGasService(
-            IAxelarGasService(axelarGasService[i]), IInterchainGasEstimation(axelarGasService[i])
+            IAxelarGasService(axelarGasService[trueIndex]), IInterchainGasEstimation(axelarGasService[trueIndex])
         );
 
         vars.ambAddresses[0] = vars.lzImplementation;
