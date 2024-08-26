@@ -2,12 +2,15 @@
 pragma solidity ^0.8.23;
 
 import { LiqRequest } from "src/types/DataTypes.sol";
-import { IBaseSuperformRouterPlus, IERC20 } from "./IBaseSuperformRouterPlus.sol";
+import { IBaseSuperformRouterPlus } from "./IBaseSuperformRouterPlus.sol";
 
 interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
     //////////////////////////////////////////////////////////////
     //                       ERRORS                             //
     //////////////////////////////////////////////////////////////
+
+    /// @notice thrown when a non-processor attempts to call a processor-only function
+    error NOT_ROUTER_PLUS_PROCESSOR();
 
     /// @notice thrown if the caller is not router plus
     error NOT_ROUTER_PLUS();
@@ -17,9 +20,6 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
 
     /// @notice thrown if the rebalance to txData update is invalid
     error COMPLETE_REBALANCE_DIFFERENT_TOKEN();
-
-    /// @notice thrown if the rebalance to txData update is invalid
-    error COMPLETE_REBALANCE_DIFFERENT_INTERIM_TOKEN();
 
     /// @notice thrown if the rebalance to txData update is invalid
     error COMPLETE_REBALANCE_DIFFERENT_BRIDGE_ID();
@@ -45,32 +45,32 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
 
     /// @notice emitted when a cross-chain rebalance is completed
     /// @param receiver The address receiving the rebalanced position
-    /// @param firstStepLastCSRPayloadId The ID of the last payload in the first step of the rebalance
-    event XChainRebalanceComplete(address indexed receiver, uint256 indexed firstStepLastCSRPayloadId);
+    /// @param routerPlusPayloadId The router plus payload id of the rebalance
+    event XChainRebalanceComplete(address indexed receiver, uint256 indexed routerPlusPayloadId);
 
     /// @notice emitted when a new refund is created
-    /// @param lastPayloadId is the unique identifier for the payload
+    /// @param routerPlusPayloadId is the unique identifier for the payload
     /// @param refundReceiver is the address of the user who'll receiver the refund
     /// @param refundToken is the token to be refunded
     /// @param refundAmount is the new refund amount
     event RefundInitiated(
-        uint256 indexed lastPayloadId, address indexed refundReceiver, address refundToken, uint256 refundAmount
+        uint256 indexed routerPlusPayloadId, address indexed refundReceiver, address refundToken, uint256 refundAmount
     );
 
     /// @notice emitted when an existing refund got disputed
-    /// @param lastPayloadId is the unique identifier for the payload
+    /// @param routerPlusPayloadId is the unique identifier for the payload
     /// @param disputer is the address of the user who disputed the refund
-    event RefundDisputed(uint256 indexed lastPayloadId, address indexed disputer);
+    event RefundDisputed(uint256 indexed routerPlusPayloadId, address indexed disputer);
 
     /// @notice emitted when a new refund amount is proposed
-    /// @param lastPayloadId is the unique identifier for the payload
+    /// @param routerPlusPayloadId is the unique identifier for the payload
     /// @param newRefundAmount is the new refund amount proposed
-    event NewRefundAmountProposed(uint256 indexed lastPayloadId, uint256 indexed newRefundAmount);
+    event NewRefundAmountProposed(uint256 indexed routerPlusPayloadId, uint256 indexed newRefundAmount);
 
     /// @notice emitted when a refund is complete
-    /// @param lastPayloadId is the unique identifier for the payload
+    /// @param routerPlusPayloadId is the unique identifier for the payload
     /// @param caller is the address of the user who called the function
-    event RefundCompleted(uint256 indexed lastPayloadId, address indexed caller);
+    event RefundCompleted(uint256 indexed routerPlusPayloadId, address indexed caller);
 
     //////////////////////////////////////////////////////////////
     //                       STRUCTS                            //
@@ -89,11 +89,11 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
 
     /// @notice returns the call data for a cross-chain rebalance
     /// @param receiverAddressSP_ The address of the receiver
-    /// @param firstStepLastCSRPayloadId_ The ID of the last payload in the first step
+    /// @param routerPlusPayloadId_ The router plus payload id
     /// @return data_ The XChainRebalanceData struct
     function getXChainRebalanceCallData(
         address receiverAddressSP_,
-        uint256 firstStepLastCSRPayloadId_
+        uint256 routerPlusPayloadId_
     )
         external
         view
@@ -105,24 +105,24 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
 
     /// @dev only callable by router plus
     /// @param receiverAddressSP_ The address of the receiver
-    /// @param firstStepLastCSRPayloadId_ The ID of the last payload in the first step
+    /// @param routerPlusPayloadId_ The router plus payload id
     /// @param data_ The XChainRebalanceData struct
     function setXChainRebalanceCallData(
         address receiverAddressSP_,
-        uint256 firstStepLastCSRPayloadId_,
+        uint256 routerPlusPayloadId_,
         XChainRebalanceData memory data_
     )
         external;
 
     /// @notice completes the rebalance process for positions on different chains
     /// @param receiverAddressSP_ The receiver of the superform shares
-    /// @param firstStepLastCSRPayloadId_ The first step payload ID
+    /// @param routerPlusPayloadId_ The first step payload ID
     /// @param amountReceivedInterimAsset_ The amount of interim asset received
     /// @param liqRequests_ The liquidity requests for the txdata update
     /// @return rebalanceSuccessful Whether the rebalance was successful
     function completeCrossChainRebalance(
         address receiverAddressSP_,
-        uint256 firstStepLastCSRPayloadId_,
+        uint256 routerPlusPayloadId_,
         uint256 amountReceivedInterimAsset_,
         LiqRequest[][] memory liqRequests_
     )
