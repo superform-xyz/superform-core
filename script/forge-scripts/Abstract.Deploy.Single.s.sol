@@ -366,7 +366,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1,
         /// @dev FANTOM https://safe.fantom.network/home?safe=ftm:0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1
         address(0)
-        /// TODO: add protocol admin for LINEA HERE
+        /// FIXME: add protocol admin for LINEA HERE
     ];
 
     address[] public PROTOCOL_ADMINS_STAGING = [
@@ -383,8 +383,8 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// @dev BASE https://app.onchainden.com/safes/base:0xbd1F951F52FC7616E2F743F976295fDc5276Cfb9
         0xdc337f59a90B1F6a016c02851559AdbE81f0B889,
         /// @dev FANTOM https://safe.fantom.network/home?safe=ftm:0xdc337f59a90B1F6a016c02851559AdbE81f0B889
-        address(0)
-        /// TODO: add protocol admin address for LINEA HERE
+        0xBbb23AE2e3816a178f8bd405fb101D064C5071d9
+        /// @dev LINEA https://safe.linea.build/home?safe=linea:0xBbb23AE2e3816a178f8bd405fb101D064C5071d9
     ];
 
     /// @dev environment variable setup for upgrade
@@ -596,13 +596,10 @@ abstract contract AbstractDeploySingle is BatchScript {
         }
 
         bridgeValidators[0] = vars.lifiValidator;
-        /// FIXME: should be address(0) always
         bridgeValidators[1] = vars.socketValidator;
 
-        /// FIXME: should be address(0) always for LINEA
         bridgeValidators[2] = vars.socketOneInchValidator;
 
-        /// FIXME: should be address(0) always for LINEA
         bridgeValidators[3] = vars.oneInchValidator;
         bridgeValidators[4] = vars.deBridgeValidator;
         bridgeValidators[5] = vars.deBridgeForwarderValidator;
@@ -1462,7 +1459,6 @@ abstract contract AbstractDeploySingle is BatchScript {
             txn = abi.encodeWithSelector(SuperRegistry.setRequiredMessagingQuorum.selector, vars.dstChainId, 1);
             addToBatch(vars.superRegistry, 0, txn);
 
-            /// FIXME: check why this was commented
             txn = abi.encodeWithSelector(vars.superRegistryC.setVaultLimitPerDestination.selector, vars.dstChainId, 5);
             addToBatch(vars.superRegistry, 0, txn);
 
@@ -1485,8 +1481,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         gasUsed[ARBI][3] = abi.encode(2_500_000);
         gasUsed[BASE][3] = abi.encode(600_000);
         gasUsed[FANTOM][3] = abi.encode(643_315);
-        /// FIXME: get values from backend for this
-        gasUsed[LINEA][3] = abi.encode(0);
+        gasUsed[LINEA][3] = abi.encode(600_000);
 
         // updateDepositGasUsed == 4 (only used on deposits for now)
         gasUsed[ETH][4] = abi.encode(225_000);
@@ -1497,8 +1492,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         gasUsed[ARBI][4] = abi.encode(1_400_000);
         gasUsed[BASE][4] = abi.encode(200_000);
         gasUsed[FANTOM][4] = abi.encode(734_757);
-        /// FIXME: get values from backend for this
-        gasUsed[LINEA][4] = abi.encode(0);
+        gasUsed[LINEA][4] = abi.encode(200_000);
 
         // withdrawGasUsed == 6
         gasUsed[ETH][6] = abi.encode(1_272_330);
@@ -1509,8 +1503,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         gasUsed[ARBI][6] = abi.encode(1_654_955);
         gasUsed[BASE][6] = abi.encode(1_178_778);
         gasUsed[FANTOM][6] = abi.encode(567_881);
-        /// FIXME: get values from backend for this
-        gasUsed[FANTOM][6] = abi.encode(0);
+        gasUsed[LINEA][6] = abi.encode(1_178_778);
 
         // updateWithdrawGasUsed == 13
         /*
@@ -1531,8 +1524,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         gasUsed[ARBI][13] = abi.encode(1_366_122);
         gasUsed[BASE][13] = abi.encode(919_466);
         gasUsed[FANTOM][13] = abi.encode(2_003_157);
-        /// FIXME: get values from backend for this
-        gasUsed[FANTOM][13] = abi.encode(0);
+        gasUsed[LINEA][13] = abi.encode(919_466);
 
         mapping(uint64 chainId => address[] bridgeAddresses) storage bridgeAddresses = BRIDGE_ADDRESSES;
         bridgeAddresses[ETH] = [
