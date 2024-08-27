@@ -9,6 +9,7 @@ export OPSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/OPSCAN_API_KEY/c
 export BASESCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BASESCAN_API_KEY/credential)
 export FTMSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/FTMSCAN_API_KEY/credential)
 export LINEASCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/LINEASCAN_API_KEY/credential)
+export BLASTSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BLASTSCAN_API_KEY/credential)
 
 networks=(
     # 56
@@ -16,7 +17,8 @@ networks=(
     # 10
     # 8453
     # 250
-    59144
+    # 59144
+    81457
     # add more networks here if needed
 )
 
@@ -26,7 +28,8 @@ api_keys=(
     # $OPSCAN_API_KEY
     # $BASESCAN_API_KEY
     # $FTMSCAN_API_KEY
-    $LINEASCAN_API_KEY
+    # $LINEASCAN_API_KEY
+    $BLASTSCAN_API_KEY
     # add more API keys here if needed
 )
 

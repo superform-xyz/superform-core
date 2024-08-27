@@ -12,7 +12,7 @@ abstract contract MainnetBaseSetup is BaseSetup {
     string public folderToRead;
     uint64[] TARGET_DEPLOYMENT_CHAINS;
     string[] public chainNames =
-        ["Ethereum", "Binance", "Avalanche", "Polygon", "Arbitrum", "Optimism", "Base", "Fantom", "Linea"];
+        ["Ethereum", "Binance", "Avalanche", "Polygon", "Arbitrum", "Optimism", "Base", "Fantom", "Linea", "Blast"];
 
     enum Cycle {
         Dev,
@@ -43,8 +43,10 @@ abstract contract MainnetBaseSetup is BaseSetup {
         /// @dev BASE https://app.onchainden.com/safes/base:0x2f973806f8863e860a553d4f2e7c2ab4a9f3b87c
         0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1,
         /// @dev FANTOM https://safe.fantom.network/home?safe=ftm:0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1
-        address(0)
+        address(0),
         /// @dev LINEA
+        address(0)
+        /// @dev BLAST
     ];
 
     address[] public PROTOCOL_ADMINS_STAGING = [
@@ -58,8 +60,10 @@ abstract contract MainnetBaseSetup is BaseSetup {
         /// @dev BASE https://app.onchainden.com/safes/base:0xbd1F951F52FC7616E2F743F976295fDc5276Cfb9
         0xdc337f59a90B1F6a016c02851559AdbE81f0B889,
         /// @dev FANTOM https://safe.fantom.network/home?safe=ftm:0xdc337f59a90B1F6a016c02851559AdbE81f0B889
-        0xBbb23AE2e3816a178f8bd405fb101D064C5071d9
+        0xBbb23AE2e3816a178f8bd405fb101D064C5071d9,
         /// @dev LINEA https://safe.linea.build/home?safe=linea:0xBbb23AE2e3816a178f8bd405fb101D064C5071d9
+        0xBbb23AE2e3816a178f8bd405fb101D064C5071d9
+        /// @dev BLAST https://blast-safe.io/home?safe=blastmainnet:0xBbb23AE2e3816a178f8bd405fb101D064C5071d9
     ];
 
     /// @dev environment variable setup for upgrade
