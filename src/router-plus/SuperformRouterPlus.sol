@@ -3,7 +3,6 @@ pragma solidity ^0.8.23;
 
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
-import { DataLib } from "src/libraries/DataLib.sol";
 import { SuperPositions } from "src/SuperPositions.sol";
 import { Error } from "src/libraries/Error.sol";
 import { SingleVaultSFData, MultiVaultSFData } from "src/types/DataTypes.sol";
@@ -16,9 +15,7 @@ import {
     MultiDstMultiVaultStateReq,
     MultiDstSingleVaultStateReq
 } from "src/router-plus/BaseSuperformRouterPlus.sol";
-import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
-import { ISuperformRouterLike } from "src/router-plus/ISuperformRouterLike.sol";
 import { ISuperformRouterPlus, IERC20 } from "src/interfaces/ISuperformRouterPlus.sol";
 import { ISuperformRouterPlusAsync } from "src/interfaces/ISuperformRouterPlusAsync.sol";
 
@@ -26,8 +23,9 @@ import { ISuperformRouterPlusAsync } from "src/interfaces/ISuperformRouterPlusAs
 /// @dev Performs rebalances and deposits on the Superform platform
 /// @author Zeropoint Labs
 contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
-    using DataLib for uint256;
     using SafeERC20 for IERC20;
+
+    uint256 public ROUTER_PLUS_PAYLOAD_ID;
 
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
@@ -47,8 +45,11 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
         /// @dev transfers a single superPosition to this contract and approves router
         _transferSuperPositions(args.receiverAddressSP, args.id, args.sharesToRedeem);
+
         uint256[] memory sharesToRedeem = new uint256[](1);
+
         sharesToRedeem[0] = args.sharesToRedeem;
+
         _rebalancePositionsSync(
             RebalancePositionsSyncArgs(
                 Actions.REBALANCE_FROM_SINGLE,
@@ -59,19 +60,15 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 args.rebalanceFromMsgValue,
                 args.rebalanceToMsgValue,
                 args.receiverAddressSP,
-                args.smartWallet,
-                args.rebalanceToAmbIds,
-                args.rebalanceToDstChainIds,
-                args.rebalanceToSfData,
-                args.rebalanceToSelector,
                 balanceBefore
             ),
-            args.callData
+            args.callData,
+            args.rebalanceToCallData
         );
 
         _refundUnused(args.interimAsset, args.receiverAddressSP, balanceBefore, totalFee);
 
-        emit RebalanceSyncCompleted(args.receiverAddressSP, args.id, args.sharesToRedeem, args.smartWallet);
+        emit RebalanceSyncCompleted(args.receiverAddressSP, args.id, args.sharesToRedeem);
     }
 
     /// @inheritdoc ISuperformRouterPlus
@@ -97,30 +94,19 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 args.rebalanceFromMsgValue,
                 args.rebalanceToMsgValue,
                 args.receiverAddressSP,
-                args.smartWallet,
-                args.rebalanceToAmbIds,
-                args.rebalanceToDstChainIds,
-                args.rebalanceToSfData,
-                args.rebalanceToSelector,
                 balanceBefore
             ),
-            args.callData
+            args.callData,
+            args.rebalanceToCallData
         );
 
         _refundUnused(args.interimAsset, args.receiverAddressSP, balanceBefore, totalFee);
 
-        emit RebalanceMultiSyncCompleted(args.receiverAddressSP, args.ids, args.sharesToRedeem, args.smartWallet);
+        emit RebalanceMultiSyncCompleted(args.receiverAddressSP, args.ids, args.sharesToRedeem);
     }
 
     /// @inheritdoc ISuperformRouterPlus
     function startCrossChainRebalance(InitiateXChainRebalanceArgs calldata args) external payable override {
-        if (
-            args.rebalanceToAmbIds.length == 0 || args.rebalanceToDstChainIds.length == 0
-                || args.rebalanceToSfData.length == 0
-        ) {
-            revert EMPTY_REBALANCE_CALL_DATA();
-        }
-
         if (args.interimAsset == address(0) || args.receiverAddressSP == address(0)) {
             revert Error.ZERO_ADDRESS();
         }
@@ -167,13 +153,15 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         if (!whitelistedSelectors[Actions.DEPOSIT][args.rebalanceToSelector]) {
             revert INVALID_DEPOSIT_SELECTOR();
         }
+        ++ROUTER_PLUS_PAYLOAD_ID;
+
+        uint256 routerPlusPayloadId = ROUTER_PLUS_PAYLOAD_ID;
 
         ISuperformRouterPlusAsync(ROUTER_PLUS_ASYNC).setXChainRebalanceCallData(
             args.receiverAddressSP,
-            ISuperformRouterLike(_getAddress(keccak256("SUPERFORM_ROUTER"))).payloadIds(),
+            routerPlusPayloadId,
             XChainRebalanceData({
                 rebalanceSelector: args.rebalanceToSelector,
-                smartWallet: args.smartWallet,
                 interimAsset: args.interimAsset,
                 slippage: args.finalizeSlippage,
                 expectedAmountInterimAsset: args.expectedAmountInterimAsset,
@@ -185,9 +173,9 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
         emit XChainRebalanceInitiated(
             args.receiverAddressSP,
+            routerPlusPayloadId,
             args.id,
             args.sharesToRedeem,
-            args.smartWallet,
             args.interimAsset,
             args.finalizeSlippage,
             args.expectedAmountInterimAsset,
@@ -199,13 +187,6 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     function startCrossChainRebalanceMulti(InitiateXChainRebalanceMultiArgs calldata args) external payable override {
         if (args.ids.length != args.sharesToRedeem.length) {
             revert Error.ARRAY_LENGTH_MISMATCH();
-        }
-
-        if (
-            args.rebalanceToAmbIds.length == 0 || args.rebalanceToDstChainIds.length == 0
-                || args.rebalanceToSfData.length == 0
-        ) {
-            revert EMPTY_REBALANCE_CALL_DATA();
         }
 
         if (args.interimAsset == address(0) || args.receiverAddressSP == address(0)) {
@@ -220,7 +201,6 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         _transferBatchSuperPositions(args.receiverAddressSP, args.ids, args.sharesToRedeem);
 
         /// @dev validate the call data
-
         bytes4 selector = _parseSelectorMem(args.callData);
 
         if (!whitelistedSelectors[Actions.REBALANCE_X_CHAIN_FROM_MULTI][selector]) {
@@ -309,13 +289,16 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             revert INVALID_DEPOSIT_SELECTOR();
         }
 
+        ++ROUTER_PLUS_PAYLOAD_ID;
+
+        uint256 routerPlusPayloadId = ROUTER_PLUS_PAYLOAD_ID;
+
         /// @dev in multiDst multiple payloads ids will be generated on source chain
         ISuperformRouterPlusAsync(ROUTER_PLUS_ASYNC).setXChainRebalanceCallData(
             args.receiverAddressSP,
-            ISuperformRouterLike(_getAddress(keccak256("SUPERFORM_ROUTER"))).payloadIds(),
+            routerPlusPayloadId,
             XChainRebalanceData({
                 rebalanceSelector: args.rebalanceToSelector,
-                smartWallet: args.smartWallet,
                 interimAsset: args.interimAsset,
                 slippage: args.finalizeSlippage,
                 expectedAmountInterimAsset: args.expectedAmountInterimAsset,
@@ -327,9 +310,9 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
         emit XChainRebalanceMultiInitiated(
             args.receiverAddressSP,
+            routerPlusPayloadId,
             args.ids,
             args.sharesToRedeem,
-            args.smartWallet,
             args.interimAsset,
             args.finalizeSlippage,
             args.expectedAmountInterimAsset,
@@ -338,7 +321,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     }
 
     /// @inheritdoc ISuperformRouterPlus
-    function deposit4626(address vault_, DepositArgs calldata args) external payable override {
+    function deposit4626(address vault_, Deposit4626Args calldata args) external payable override {
         _transferERC20In(IERC20(vault_), args.receiverAddressSP, args.amount);
         IERC4626 vault = IERC4626(vault_);
         uint256 amountRedeemed = _redeemShare(vault, args.amount);
@@ -346,63 +329,33 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         address assetAdr = vault.asset();
         IERC20 asset = IERC20(assetAdr);
 
-        if (!whitelistedSelectors[Actions.DEPOSIT][args.depositSelector]) {
+        if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(args.depositCallData)]) {
             revert INVALID_DEPOSIT_SELECTOR();
         }
 
-        /// @dev re-construct calldata
-        (bytes memory rebalanceToCallData, bool[] memory sameChain, uint256[][] memory superformIds) =
-        _generateRebalanceToCallData(
-            args.depositAmbIds, args.depositDstChainIds, args.depositSfData, args.depositSelector, args.smartWallet
-        );
-
         uint256 balanceBefore = asset.balanceOf(address(this));
 
-        args.smartWallet
-            ? _depositUsingSmartWallet(
-                asset, amountRedeemed, msg.value, args.receiverAddressSP, rebalanceToCallData, sameChain, superformIds
-            )
-            : _deposit(asset, amountRedeemed, msg.value, rebalanceToCallData);
+        _deposit(asset, amountRedeemed, msg.value, args.depositCallData);
 
         _tokenRefunds(assetAdr, args.receiverAddressSP, balanceBefore);
 
         emit Deposit4626Completed(args.receiverAddressSP, vault_);
     }
 
-    /// @inheritdoc ISuperformRouterPlus
-    function deposit(IERC20 asset_, DepositArgs calldata args) public payable override {
-        _transferERC20In(asset_, args.receiverAddressSP, args.amount);
-
-        if (!whitelistedSelectors[Actions.DEPOSIT][args.depositSelector]) {
-            revert INVALID_DEPOSIT_SELECTOR();
-        }
-        /// @dev re-construct calldata
-        (bytes memory rebalanceToCallData, bool[] memory sameChain, uint256[][] memory superformIds) =
-        _generateRebalanceToCallData(
-            args.depositAmbIds, args.depositDstChainIds, args.depositSfData, args.depositSelector, args.smartWallet
-        );
-
-        uint256 balanceBefore = IERC20(asset_).balanceOf(address(this));
-
-        args.smartWallet
-            ? _depositUsingSmartWallet(
-                asset_, args.amount, msg.value, args.receiverAddressSP, rebalanceToCallData, sameChain, superformIds
-            )
-            : _deposit(asset_, args.amount, msg.value, rebalanceToCallData);
-
-        _tokenRefunds(address(asset_), args.receiverAddressSP, balanceBefore);
-
-        emit DepositCompleted(args.receiverAddressSP, args.smartWallet);
-    }
-
     //////////////////////////////////////////////////////////////
     //                   INTERNAL FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
 
-    function _rebalancePositionsSync(RebalancePositionsSyncArgs memory args, bytes calldata callData) internal {
+    function _rebalancePositionsSync(
+        RebalancePositionsSyncArgs memory args,
+        bytes calldata callData,
+        bytes calldata rebalanceToCallData
+    )
+        internal
+    {
         IERC20 asset = IERC20(args.asset);
 
-        /// @dev validate the call data
+        /// @dev validate the call dataREBALANCE_SINGLE_POSITIONS_DIFFERENT_AMOUNT
         if (!whitelistedSelectors[args.action][_parseSelectorMem(callData)]) {
             revert INVALID_REBALANCE_FROM_SELECTOR();
         }
@@ -451,158 +404,11 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         }
 
         /// @dev step 3: rebalance into a new superform with rebalanceCallData
-        if (!whitelistedSelectors[Actions.DEPOSIT][args.rebalanceToSelector]) {
+        if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(rebalanceToCallData)]) {
             revert INVALID_DEPOSIT_SELECTOR();
         }
 
-        /// @dev re-construct calldata
-        (bytes memory rebalanceToCallData, bool[] memory sameChain, uint256[][] memory superformIds) =
-        _generateRebalanceToCallData(
-            args.rebalanceToAmbIds,
-            args.rebalanceToDstChainIds,
-            args.rebalanceToSfData,
-            args.rebalanceToSelector,
-            args.smartWallet
-        );
-
-        args.smartWallet
-            ? _depositUsingSmartWallet(
-                asset,
-                amountToDeposit,
-                args.rebalanceToMsgValue,
-                args.receiverAddressSP,
-                rebalanceToCallData,
-                sameChain,
-                superformIds
-            )
-            : _deposit(asset, amountToDeposit, args.rebalanceToMsgValue, rebalanceToCallData);
-    }
-
-    function _generateRebalanceToCallData(
-        bytes memory rebalanceToAmbIds,
-        bytes memory rebalanceToDstChainIds,
-        bytes memory rebalanceToSfData,
-        bytes4 rebalanceSelector,
-        bool smartWallet
-    )
-        internal
-        returns (bytes memory rebalanceToCallData, bool[] memory sameChain, uint256[][] memory superformIds)
-    {
-        if (rebalanceSelector == IBaseRouter.singleDirectSingleVaultDeposit.selector) {
-            SingleVaultSFData memory superformData = abi.decode(rebalanceToSfData, (SingleVaultSFData));
-
-            if (smartWallet) {
-                superformIds = new uint256[][](1);
-                uint256[] memory superformIdsTemp = new uint256[](1);
-                superformIdsTemp[0] = superformData.superformId;
-                superformIds[0] = superformIdsTemp;
-                sameChain = new bool[](1);
-                sameChain[0] = true;
-                superformData.receiverAddressSP = address(this);
-            }
-
-            rebalanceToCallData =
-                abi.encodeWithSelector(rebalanceSelector, SingleDirectSingleVaultStateReq(superformData));
-        } else if (rebalanceSelector == IBaseRouter.singleXChainSingleVaultDeposit.selector) {
-            SingleVaultSFData memory superformData = abi.decode(rebalanceToSfData, (SingleVaultSFData));
-
-            if (smartWallet) {
-                superformData.receiverAddressSP = address(this);
-            }
-            rebalanceToCallData = abi.encodeWithSelector(
-                rebalanceSelector,
-                SingleXChainSingleVaultStateReq(
-                    abi.decode(rebalanceToAmbIds, (uint8[])),
-                    abi.decode(rebalanceToDstChainIds, (uint64)),
-                    superformData
-                )
-            );
-        } else if (rebalanceSelector == IBaseRouter.singleDirectMultiVaultDeposit.selector) {
-            MultiVaultSFData memory multiSuperformData = abi.decode(rebalanceToSfData, (MultiVaultSFData));
-
-            if (smartWallet) {
-                superformIds = new uint256[][](1);
-                superformIds[0] = multiSuperformData.superformIds;
-                sameChain = new bool[](1);
-                sameChain[0] = true;
-                multiSuperformData.receiverAddressSP = address(this);
-            }
-            rebalanceToCallData =
-                abi.encodeWithSelector(rebalanceSelector, SingleDirectMultiVaultStateReq(multiSuperformData));
-        } else if (rebalanceSelector == IBaseRouter.singleXChainMultiVaultDeposit.selector) {
-            MultiVaultSFData memory multiSuperformData = abi.decode(rebalanceToSfData, (MultiVaultSFData));
-
-            if (smartWallet) {
-                multiSuperformData.receiverAddressSP = address(this);
-            }
-            rebalanceToCallData = abi.encodeWithSelector(
-                rebalanceSelector,
-                SingleXChainMultiVaultStateReq(
-                    abi.decode(rebalanceToAmbIds, (uint8[])),
-                    abi.decode(rebalanceToDstChainIds, (uint64)),
-                    multiSuperformData
-                )
-            );
-        } else if (rebalanceSelector == IBaseRouter.multiDstSingleVaultDeposit.selector) {
-            SingleVaultSFData[] memory superformsData = abi.decode(rebalanceToSfData, (SingleVaultSFData[]));
-
-            uint64[] memory dstChains = abi.decode(rebalanceToDstChainIds, (uint64[]));
-
-            if (smartWallet) {
-                uint256 len = superformsData.length;
-
-                superformIds = new uint256[][](len);
-                sameChain = new bool[](len);
-
-                for (uint256 i; i < len; ++i) {
-                    superformIds[i] = new uint256[](1);
-                    superformIds[i][0] = superformsData[i].superformId;
-                    if (dstChains[i] == CHAIN_ID) {
-                        sameChain[i] = true;
-                    }
-                    superformsData[i].receiverAddressSP = address(this);
-                }
-            }
-
-            rebalanceToCallData = abi.encodeWithSelector(
-                rebalanceSelector,
-                MultiDstSingleVaultStateReq(abi.decode(rebalanceToAmbIds, (uint8[][])), dstChains, superformsData)
-            );
-        } else if (rebalanceSelector == IBaseRouter.multiDstMultiVaultDeposit.selector) {
-            MultiVaultSFData[] memory multiSuperformData = abi.decode(rebalanceToSfData, (MultiVaultSFData[]));
-            uint64[] memory dstChains = abi.decode(rebalanceToDstChainIds, (uint64[]));
-
-            if (smartWallet) {
-                uint256 len = multiSuperformData.length;
-
-                superformIds = new uint256[][](len);
-                sameChain = new bool[](len);
-
-                for (uint256 i; i < len; ++i) {
-                    multiSuperformData[i].receiverAddressSP = address(this);
-                    if (dstChains[i] == CHAIN_ID) {
-                        sameChain[i] = true;
-                    }
-                    uint256 lenSfs = multiSuperformData[i].superformIds.length;
-                    uint256[] memory superformIdsTemp = new uint256[](lenSfs);
-                    for (uint256 j; j < lenSfs; ++j) {
-                        superformIdsTemp[j] = multiSuperformData[i].superformIds[j];
-                    }
-                    superformIds[i] = superformIdsTemp;
-                }
-            }
-
-            rebalanceToCallData = abi.encodeWithSelector(
-                rebalanceSelector,
-                MultiDstMultiVaultStateReq(
-                    abi.decode(rebalanceToAmbIds, (uint8[][])),
-                    abi.decode(rebalanceToDstChainIds, (uint64[])),
-                    multiSuperformData
-                )
-            );
-        } else {
-            revert INVALID_REBALANCE_SELECTOR();
-        }
+        _deposit(asset, amountToDeposit, args.rebalanceToMsgValue, rebalanceToCallData);
     }
 
     function _transferSuperPositions(address user_, uint256 id_, uint256 amount_) internal {

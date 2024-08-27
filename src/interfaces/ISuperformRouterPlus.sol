@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { IBaseSuperformRouterPlus, IERC20 } from "./IBaseSuperformRouterPlus.sol";
+import { IBaseSuperformRouterPlus } from "./IBaseSuperformRouterPlus.sol";
+
+import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
 interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
     //////////////////////////////////////////////////////////////
@@ -38,9 +40,6 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
     /// @notice thrown if msg.value is lower than the required fee
     error INVALID_FEE();
 
-    /// @notice thrown if rebalance to calldata is empty
-    error EMPTY_REBALANCE_CALL_DATA();
-
     //////////////////////////////////////////////////////////////
     //                       EVENTS                             //
     //////////////////////////////////////////////////////////////
@@ -49,30 +48,28 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
     /// @param receiver The address receiving the rebalanced position
     /// @param id The ID of the rebalanced position
     /// @param amount The amount of tokens rebalanced
-    /// @param smartWallet Whether a smart wallet was used
-    event RebalanceSyncCompleted(address indexed receiver, uint256 indexed id, uint256 amount, bool smartWallet);
+    event RebalanceSyncCompleted(address indexed receiver, uint256 indexed id, uint256 amount);
 
     /// @notice emitted when multiple positions are rebalanced
     /// @param receiver The address receiving the rebalanced positions
     /// @param ids The IDs of the rebalanced positions
     /// @param amounts The amounts of tokens rebalanced for each position
-    /// @param smartWallet Whether a smart wallet was used
-    event RebalanceMultiSyncCompleted(address indexed receiver, uint256[] ids, uint256[] amounts, bool smartWallet);
+    event RebalanceMultiSyncCompleted(address indexed receiver, uint256[] ids, uint256[] amounts);
 
     /// @notice emitted when a cross-chain rebalance is initiated
     /// @param receiver The address receiving the rebalanced position
+    /// @param routerPlusPayloadId The router plus payload Id
     /// @param id The ID of the position being rebalanced
     /// @param amount The amount of tokens being rebalanced
-    /// @param smartWallet Whether a smart wallet is being used
     /// @param interimAsset The address of the interim asset used in the cross-chain transfer
     /// @param finalizeSlippage The slippage tolerance for the finalization step
     /// @param expectedAmountInterimAsset The expected amount of interim asset to be received
     /// @param rebalanceToSelector The selector for the rebalance to function
     event XChainRebalanceInitiated(
         address indexed receiver,
-        uint256 indexed id,
+        uint256 indexed routerPlusPayloadId,
+        uint256 id,
         uint256 amount,
-        bool smartWallet,
         address interimAsset,
         uint256 finalizeSlippage,
         uint256 expectedAmountInterimAsset,
@@ -81,18 +78,18 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
 
     /// @notice emitted when multiple cross-chain rebalances are initiated
     /// @param receiver The address receiving the rebalanced positions
+    /// @param routerPlusPayloadId The router plus payload Id
     /// @param ids The IDs of the positions being rebalanced
     /// @param amounts The amounts of tokens being rebalanced for each position
-    /// @param smartWallet Whether a smart wallet is being used
     /// @param interimAsset The address of the interim asset used in the cross-chain transfer
     /// @param finalizeSlippage The slippage tolerance for the finalization step
     /// @param expectedAmountInterimAsset The expected amount of interim asset to be received
     /// @param rebalanceToSelector The selector for the rebalance to function
     event XChainRebalanceMultiInitiated(
         address indexed receiver,
+        uint256 indexed routerPlusPayloadId,
         uint256[] ids,
         uint256[] amounts,
-        bool smartWallet,
         address interimAsset,
         uint256 finalizeSlippage,
         uint256 expectedAmountInterimAsset,
@@ -104,10 +101,6 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
     /// @param vault The address of the ERC4626 vault
     event Deposit4626Completed(address indexed receiver, address indexed vault);
 
-    /// @notice emitted when a deposit is completed
-    /// @param receiver The address receiving the deposited tokens
-    /// @param smartWallet Whether a smart wallet was used
-    event DepositCompleted(address indexed receiver, bool smartWallet);
     //////////////////////////////////////////////////////////////
     //                       STRUCTS                            //
     //////////////////////////////////////////////////////////////
@@ -121,12 +114,8 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
         address interimAsset;
         uint256 slippage;
         address receiverAddressSP;
-        bool smartWallet;
         bytes callData;
-        bytes rebalanceToAmbIds;
-        bytes rebalanceToDstChainIds;
-        bytes rebalanceToSfData;
-        bytes4 rebalanceToSelector;
+        bytes rebalanceToCallData;
     }
 
     struct RebalanceMultiPositionsSyncArgs {
@@ -138,12 +127,8 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
         address interimAsset;
         uint256 slippage;
         address receiverAddressSP;
-        bool smartWallet;
         bytes callData;
-        bytes rebalanceToAmbIds;
-        bytes rebalanceToDstChainIds;
-        bytes rebalanceToSfData;
-        bytes4 rebalanceToSelector;
+        bytes rebalanceToCallData;
     }
 
     struct RebalancePositionsSyncArgs {
@@ -155,11 +140,6 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
         uint256 rebalanceFromMsgValue;
         uint256 rebalanceToMsgValue;
         address receiverAddressSP;
-        bool smartWallet;
-        bytes rebalanceToAmbIds;
-        bytes rebalanceToDstChainIds;
-        bytes rebalanceToSfData;
-        bytes4 rebalanceToSelector;
         uint256 balanceBefore;
     }
 
@@ -170,7 +150,6 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
         address interimAsset;
         uint256 finalizeSlippage;
         uint256 expectedAmountInterimAsset;
-        bool smartWallet;
         bytes4 rebalanceToSelector;
         bytes callData;
         bytes rebalanceToAmbIds;
@@ -185,7 +164,6 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
         address interimAsset;
         uint256 finalizeSlippage;
         uint256 expectedAmountInterimAsset;
-        bool smartWallet;
         bytes4 rebalanceToSelector;
         bytes callData;
         bytes rebalanceToAmbIds;
@@ -193,14 +171,10 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
         bytes rebalanceToSfData;
     }
 
-    struct DepositArgs {
+    struct Deposit4626Args {
         uint256 amount;
         address receiverAddressSP;
-        bool smartWallet;
-        bytes depositAmbIds;
-        bytes depositDstChainIds;
-        bytes depositSfData;
-        bytes4 depositSelector;
+        bytes depositCallData;
     }
 
     //////////////////////////////////////////////////////////////
@@ -231,26 +205,6 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
 
     /// @notice deposits ERC4626 vault shares into superform
     /// @param vault_ The ERC4626 vault to redeem from
-    /// @param args Rest of the arguments containing:
-    /// - amount_ The ERC4626 vault share amount to redeem
-    /// - receiverAddressSP_ The receiver of the superform shares
-    /// - smartWallet_ Whether to use smart wallet or not
-    /// - depositAmbIds_ The array of AMB bridge IDs for the deposit
-    /// - depositDstChainIds_ The array of destination chain IDs for the deposit
-    /// - depositSfData_ The array of superform data for the deposit
-    /// - depositSelector_ The selector for the deposit function
-    function deposit4626(address vault_, DepositArgs calldata args) external payable;
-
-    /// @notice deposits tokens into superform
-    /// @dev should only allow a single asset to be deposited
-    /// @param asset_ The ERC20 asset to deposit
-    /// @param args Rest of the arguments containing:
-    /// - amount_ The ERC4626 vault share amount to redeem
-    /// - receiverAddressSP_ The receiver of the superform shares
-    /// - smartWallet_ Whether to use smart wallet or not
-    /// - depositAmbIds_ The array of AMB bridge IDs for the deposit
-    /// - depositDstChainIds_ The array of destination chain IDs for the deposit
-    /// - depositSfData_ The array of superform data for the deposit
-    /// - depositSelector_ The selector for the deposit function
-    function deposit(IERC20 asset_, DepositArgs calldata args) external payable;
+    /// @param args Rest of the arguments to deposit 4626
+    function deposit4626(address vault_, Deposit4626Args calldata args) external payable;
 }
