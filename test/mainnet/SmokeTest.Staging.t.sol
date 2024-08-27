@@ -483,7 +483,7 @@ contract SmokeTestStaging is MainnetBaseSetup {
         }
     }
 
-    function test_paymentHelperlala() public {
+    function test_paymentHelper() public {
         PaymentHelper paymentHelper;
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {

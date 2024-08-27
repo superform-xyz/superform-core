@@ -638,7 +638,6 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
 
         /// @dev 11 - Deploy SuperPositions
-        /// FIMXE: check if the uri is right for linea
         vars.superPositions = address(
             new SuperPositions{ salt: salt }(
                 "https://ipfs-gateway.superform.xyz/ipns/k51qzi5uqu5dg90fqdo9j63m556wlddeux4mlgyythp30zousgh3huhyzouyq8/JSON/",
