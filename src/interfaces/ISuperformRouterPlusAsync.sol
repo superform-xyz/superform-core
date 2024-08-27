@@ -15,17 +15,23 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
     /// @notice thrown if the caller is not router plus
     error NOT_ROUTER_PLUS();
 
-    /// @notice thrown if the rebalance to txData update is invalid
+    /// @notice thrown if the rebalance to update is invalid
     error COMPLETE_REBALANCE_INVALID_TX_DATA_UPDATE();
 
-    /// @notice thrown if the rebalance to txData update is invalid
+    /// @notice thrown if the rebalance to update is invalid
     error COMPLETE_REBALANCE_DIFFERENT_TOKEN();
 
-    /// @notice thrown if the rebalance to txData update is invalid
+    /// @notice thrown if the rebalance to update is invalid
     error COMPLETE_REBALANCE_DIFFERENT_BRIDGE_ID();
 
-    /// @notice thrown if the rebalance to txData update is invalid
+    /// @notice thrown if the rebalance to update is invalid
     error COMPLETE_REBALANCE_DIFFERENT_CHAIN();
+
+    /// @notice thrown if the rebalance to update is invalid
+    error COMPLETE_REBALANCE_DIFFERENT_RECEIVER();
+
+    /// @notice thrown to avoid processing the same rebalance payload twice
+    error REBALANCE_ALREADY_PROCESSED();
 
     /// @notice thrown when the refund proposer is invalid
     error INVALID_PROPOSER();
@@ -83,6 +89,13 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
         uint256 proposedTime;
     }
 
+    struct CompleteCrossChainRebalanceArgs {
+        address receiverAddressSP;
+        uint256 routerPlusPayloadId;
+        uint256 amountReceivedInterimAsset;
+        LiqRequest[][] liqRequests;
+    }
+
     //////////////////////////////////////////////////////////////
     //                  EXTERNAL VIEW FUNCTIONS                //
     //////////////////////////////////////////////////////////////
@@ -115,17 +128,9 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
         external;
 
     /// @notice completes the rebalance process for positions on different chains
-    /// @param receiverAddressSP_ The receiver of the superform shares
-    /// @param routerPlusPayloadId_ The first step payload ID
-    /// @param amountReceivedInterimAsset_ The amount of interim asset received
-    /// @param liqRequests_ The liquidity requests for the txdata update
+    /// @param args_ The arguments of the rebalance
     /// @return rebalanceSuccessful Whether the rebalance was successful
-    function completeCrossChainRebalance(
-        address receiverAddressSP_,
-        uint256 routerPlusPayloadId_,
-        uint256 amountReceivedInterimAsset_,
-        LiqRequest[][] memory liqRequests_
-    )
+    function completeCrossChainRebalance(CompleteCrossChainRebalanceArgs memory args_)
         external
         payable
         returns (bool rebalanceSuccessful);

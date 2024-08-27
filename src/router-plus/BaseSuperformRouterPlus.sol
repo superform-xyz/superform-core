@@ -122,6 +122,10 @@ abstract contract BaseSuperformRouterPlus is IBaseSuperformRouterPlus, IERC1155R
         /// @dev approves superform router on demand
         asset_.approve(_getAddress(keccak256("SUPERFORM_ROUTER")), amountToDeposit_);
 
+        /// TODO confirm if we should validate depositCallData with receiverAddressSP and other parameters?
+        /// @notice this is used in all actions. In cross chain rebalances, most key data is validated, but not on
+        /// @notice same chain rebalances or deposits
+
         _callSuperformRouter(callData_, msgValue_);
     }
 
