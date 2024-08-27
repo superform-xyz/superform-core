@@ -9,6 +9,7 @@ export OPSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/OPSCAN_API_KEY/c
 export BASESCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BASESCAN_API_KEY/credential)
 export FTMSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/FTMSCAN_API_KEY/credential)
 export LINEASCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/LINEASCAN_API_KEY/credential)
+export BLASTSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BLASTSCAN_API_KEY/credential)
 
 networks=(
     # 56
@@ -16,7 +17,8 @@ networks=(
     # 10
     # 8453
     # 250
-    59144
+    # 59144
+    81457
     # add more networks here if needed
 )
 
@@ -26,7 +28,8 @@ api_keys=(
     # $OPSCAN_API_KEY
     # $BASESCAN_API_KEY
     # $FTMSCAN_API_KEY
-    $LINEASCAN_API_KEY
+    # $LINEASCAN_API_KEY
+    $BLASTSCAN_API_KEY
     # add more API keys here if needed
 )
 
@@ -131,8 +134,8 @@ contract_addresses=(
     0x9736b60c4f749232d400B5605f21AE137a5Ebb71
     0xf1930eD240cF9c4F1840aDB689E5d231687922C5
     0x5767897fc69A77AC68a75001a56fcA6c421adc6f
-    0x0000000000000000000000000000000000000000
-    0x0000000000000000000000000000000000000000
+    0x71ec658F19AcF74D258c55A025ADC534c34EcaDA
+    0x44b451Ca87267a62A0C853ECFbaaC1C3E528a82C
     0xe7fB724Fe23836C8dB2C5A9ce910310F0F97521F
     0xA02dE92807c9620c362C7a485b6392dF7531E302
     0x0000000000000000000000000000000000000000
