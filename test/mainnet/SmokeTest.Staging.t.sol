@@ -162,15 +162,12 @@ contract SmokeTestStaging is MainnetBaseSetup {
                 }
             }
 
-            if (chainId != LINEA) {
-                assert(srbac.hasRole(keccak256("PROTOCOL_ADMIN_ROLE"), 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92));
-            }
-
+            assert(srbac.hasRole(keccak256("PROTOCOL_ADMIN_ROLE"), 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92));
             assert(srbac.hasRole(keccak256("PROTOCOL_ADMIN_ROLE"), PROTOCOL_ADMINS_STAGING[i]));
 
             //assert(srbac.hasRole(keccak256("EMERGENCY_ADMIN_ROLE"), EMERGENCY_ADMIN));
-            assertEq(srbac.getRoleMemberCount(keccak256("PROTOCOL_ADMIN_ROLE")), chainId == LINEA ? 1 : 2);
-            assertEq(srbac.getRoleMemberCount(keccak256("EMERGENCY_ADMIN_ROLE")), chainId == LINEA ? 1 : 2);
+            assertEq(srbac.getRoleMemberCount(keccak256("PROTOCOL_ADMIN_ROLE")), 2);
+            assertEq(srbac.getRoleMemberCount(keccak256("EMERGENCY_ADMIN_ROLE")), 2);
         }
     }
 
@@ -407,7 +404,7 @@ contract SmokeTestStaging is MainnetBaseSetup {
         ambIds_[2] = uint16(24);
         ambIds_[3] = uint16(30);
         ambIds_[4] = uint16(10);
-        ambIds_[5] = uint16(36);
+        ambIds_[6] = uint16(36);
 
         address relayer = 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92;
 
@@ -477,9 +474,7 @@ contract SmokeTestStaging is MainnetBaseSetup {
             vm.selectFork(FORKS[chainId]);
             axelar = AxelarImplementation(getContract(chainId, "AxelarImplementation"));
 
-            /// @notice LINEA is wrongly configured on staging.
-            /// FIXME: remove this check later
-            if (chainId != LINEA) assertEq(address(axelar.gateway()), axelar_gateways[i]);
+            assertEq(address(axelar.gateway()), axelar_gateways[i]);
             assertEq(address(axelar.gasService()), axelar_gasServices[i]);
             assertEq(address(axelar.gasEstimator()), axelar_gasServices[i]);
 
@@ -559,7 +554,7 @@ contract SmokeTestStaging is MainnetBaseSetup {
             superFactory = SuperformFactory(getContract(chainId, "SuperformFactory"));
 
             assertEq(superFactory.getFormImplementation(5), getContract(chainId, "ERC5115Form"));
-            assertEq(superFactory.getFormCount(), (chainId == LINEA || chainId == BLAST) ? 3 : 5);
+            assertEq(superFactory.getFormCount(), chainId == LINEA ? 3 : chainId == BLAST ? 2 : 5);
             assertEq(superFactory.getFormStateRegistryId(5), 1);
         }
     }
