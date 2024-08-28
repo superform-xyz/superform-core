@@ -84,7 +84,6 @@ struct SetupVars {
     address superPositions;
     address superRBAC;
     address lifiValidator;
-    address socketValidator;
     address socketOneInchValidator;
     address deBridgeValidator;
     address deBridgeForwarderValidator;
@@ -178,7 +177,7 @@ abstract contract AbstractDeploySingle is BatchScript {
     /// 4 is one inch implementation
     /// 5 is debridge implementation
     /// 6 is debridge crosschain forwarder
-    uint8[] public bridgeIds = [101, 2, 3, 4, 5, 6];
+    uint8[] public bridgeIds = [101, 3, 4, 5, 6];
 
     mapping(uint64 chainId => address[] bridgeAddresses) public BRIDGE_ADDRESSES;
 
@@ -610,13 +609,10 @@ abstract contract AbstractDeploySingle is BatchScript {
         }
 
         bridgeValidators[0] = vars.lifiValidator;
-        bridgeValidators[1] = vars.socketValidator;
-
-        bridgeValidators[2] = vars.socketOneInchValidator;
-
-        bridgeValidators[3] = vars.oneInchValidator;
-        bridgeValidators[4] = vars.deBridgeValidator;
-        bridgeValidators[5] = vars.deBridgeForwarderValidator;
+        bridgeValidators[1] = vars.socketOneInchValidator;
+        bridgeValidators[2] = vars.oneInchValidator;
+        bridgeValidators[3] = vars.deBridgeValidator;
+        bridgeValidators[4] = vars.deBridgeForwarderValidator;
 
         /// @dev 7 - Deploy SuperformFactory
         vars.factory = address(new SuperformFactory{ salt: salt }(vars.superRegistry));
@@ -1560,7 +1556,6 @@ abstract contract AbstractDeploySingle is BatchScript {
         mapping(uint64 chainId => address[] bridgeAddresses) storage bridgeAddresses = BRIDGE_ADDRESSES;
         bridgeAddresses[ETH] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
-            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
             0x2ddf16BA6d0180e5357d5e170eF1917a01b41fc0,
             0x111111125421cA6dc452d289314280a0f8842A65,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
@@ -1569,7 +1564,6 @@ abstract contract AbstractDeploySingle is BatchScript {
 
         bridgeAddresses[BSC] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
-            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
             0xd286595d2e3D879596FAB51f83A702D10a6db27b,
             0x111111125421cA6dc452d289314280a0f8842A65,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
@@ -1577,7 +1571,6 @@ abstract contract AbstractDeploySingle is BatchScript {
         ];
         bridgeAddresses[AVAX] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
-            0x2b42AFFD4b7C14d9B7C2579229495c052672Ccd3,
             0xbDf50eAe568ECef74796ed6022a0d453e8432410,
             0x111111125421cA6dc452d289314280a0f8842A65,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
@@ -1585,7 +1578,6 @@ abstract contract AbstractDeploySingle is BatchScript {
         ];
         bridgeAddresses[POLY] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
-            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
             0x2ddf16BA6d0180e5357d5e170eF1917a01b41fc0,
             0x111111125421cA6dc452d289314280a0f8842A65,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
@@ -1593,7 +1585,6 @@ abstract contract AbstractDeploySingle is BatchScript {
         ];
         bridgeAddresses[ARBI] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
-            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
             0xaa3d9fA3aB930aE635b001d00C612aa5b14d750e,
             0x111111125421cA6dc452d289314280a0f8842A65,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
@@ -1601,7 +1592,6 @@ abstract contract AbstractDeploySingle is BatchScript {
         ];
         bridgeAddresses[OP] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
-            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
             0xbDf50eAe568ECef74796ed6022a0d453e8432410,
             0x111111125421cA6dc452d289314280a0f8842A65,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
@@ -1610,14 +1600,12 @@ abstract contract AbstractDeploySingle is BatchScript {
         bridgeAddresses[BASE] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
             address(0),
-            address(0),
             0x111111125421cA6dc452d289314280a0f8842A65,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
             0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
         ];
         bridgeAddresses[FANTOM] = [
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE,
-            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
             0x565810cbfa3Cf1390963E5aFa2fB953795686339,
             0x111111125421cA6dc452d289314280a0f8842A65,
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
@@ -1627,12 +1615,11 @@ abstract contract AbstractDeploySingle is BatchScript {
             0xDE1E598b81620773454588B85D6b5D4eEC32573e,
             address(0),
             address(0),
-            address(0),
             0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
             0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
         ];
         bridgeAddresses[BLAST] =
-            [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE, address(0), address(0), address(0), address(0), address(0)];
+            [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE, address(0), address(0), address(0), address(0)];
 
         /// price feeds on all chains
         mapping(uint64 => mapping(uint64 => address)) storage priceFeeds = PRICE_FEEDS;
