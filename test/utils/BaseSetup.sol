@@ -256,8 +256,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         0x3c2269811836af69497E5F486A85D7316753cf62,
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7,
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7,
-        address(0),
-        address(0)
+        0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7,
+        0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7
     ];
 
     address[] public hyperlaneMailboxes = [
@@ -728,20 +728,23 @@ abstract contract BaseSetup is StdInvariant, Test {
                 contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
             }
 
-            /// @dev 6.3- deploy Wormhole Automatic Relayer Implementation
-            vars.wormholeImplementation = address(new WormholeARImplementation{ salt: salt }(vars.superRegistryC));
-            contracts[vars.chainId][bytes32(bytes("WormholeARImplementation"))] = vars.wormholeImplementation;
+            if (vars.chainId != LINEA) {
+                /// @dev 6.3- deploy Wormhole Automatic Relayer Implementation
+                vars.wormholeImplementation = address(new WormholeARImplementation{ salt: salt }(vars.superRegistryC));
+                contracts[vars.chainId][bytes32(bytes("WormholeARImplementation"))] = vars.wormholeImplementation;
 
-            WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayer);
-            /// set refund chain id to wormhole chain id
-            WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(wormhole_chainIds[i]);
+                WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayer);
+                /// set refund chain id to wormhole chain id
+                WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(wormhole_chainIds[i]);
 
-            /// @dev 6.4- deploy Wormhole Specialized Relayer Implementation
-            vars.wormholeSRImplementation = address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC, 3));
-            contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
+                /// @dev 6.4- deploy Wormhole Specialized Relayer Implementation
+                vars.wormholeSRImplementation =
+                    address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC, 3));
+                contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
 
-            WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[i]);
-            WormholeSRImplementation(vars.wormholeSRImplementation).setRelayer(deployer);
+                WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[i]);
+                WormholeSRImplementation(vars.wormholeSRImplementation).setRelayer(deployer);
+            }
 
             /// @dev 6.5- deploy Axelar Implementation
             vars.axelarImplementation = address(new AxelarImplementation{ salt: salt }(vars.superRegistryC));
@@ -1149,13 +1152,23 @@ abstract contract BaseSetup is StdInvariant, Test {
                         );
                     }
 
-                    WormholeARImplementation(payable(vars.wormholeImplementation)).setReceiver(
-                        vars.dstWormholeChainId, vars.dstWormholeARImplementation
-                    );
+                    if (!(vars.chainId == LINEA || vars.dstChainId == LINEA)) {
+                        WormholeARImplementation(payable(vars.wormholeImplementation)).setReceiver(
+                            vars.dstWormholeChainId, vars.dstWormholeARImplementation
+                        );
 
-                    WormholeARImplementation(payable(vars.wormholeImplementation)).setChainId(
-                        vars.dstChainId, vars.dstWormholeChainId
-                    );
+                        WormholeARImplementation(payable(vars.wormholeImplementation)).setChainId(
+                            vars.dstChainId, vars.dstWormholeChainId
+                        );
+
+                        WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setChainId(
+                            vars.dstChainId, vars.dstWormholeChainId
+                        );
+
+                        WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setReceiver(
+                            vars.dstWormholeChainId, vars.dstWormholeSRImplementation
+                        );
+                    }
 
                     AxelarImplementation(payable(vars.axelarImplementation)).setChainId(
                         vars.dstChainId, axelar_chainIds[j]
@@ -1163,14 +1176,6 @@ abstract contract BaseSetup is StdInvariant, Test {
 
                     AxelarImplementation(payable(vars.axelarImplementation)).setReceiver(
                         axelar_chainIds[j], vars.dstAxelarImplementation
-                    );
-
-                    WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setChainId(
-                        vars.dstChainId, vars.dstWormholeChainId
-                    );
-
-                    WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setReceiver(
-                        vars.dstWormholeChainId, vars.dstWormholeSRImplementation
                     );
 
                     /// sets the relayer address on all subsequent chains
@@ -2017,15 +2022,16 @@ abstract contract BaseSetup is StdInvariant, Test {
     function _broadcastPayloadHelper(uint64 currentChainId, Vm.Log[] memory logs) internal {
         vm.stopPrank();
 
-        address[] memory dstTargets = new address[](chainIds.length - 1);
-        address[] memory dstWormhole = new address[](chainIds.length - 1);
+        address[] memory dstTargets = new address[](chainIds.length - 2);
+        address[] memory dstWormhole = new address[](chainIds.length - 2);
 
-        uint256[] memory forkIds = new uint256[](chainIds.length - 1);
+        uint256[] memory forkIds = new uint256[](chainIds.length - 2);
 
         uint16 currWormholeChainId;
 
         uint256 j;
         for (uint256 i = 0; i < chainIds.length; ++i) {
+            if (chainIds[i] == LINEA) continue;
             if (chainIds[i] != currentChainId) {
                 dstWormhole[j] = wormholeCore[i];
                 dstTargets[j] = getContract(chainIds[i], "WormholeSRImplementation");
