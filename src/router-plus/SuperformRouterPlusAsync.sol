@@ -84,20 +84,11 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
 
             SingleVaultSFData memory superformData = abi.decode(data.rebalanceToSfData, (SingleVaultSFData));
 
-            uint256[] memory tSuperformIds = new uint256[](1);
-            tSuperformIds[0] = superformData.superformId;
+            D.superformIds[0] = _castUint256ToArray(superformData.superformId);
 
-            D.superformIds[0] = tSuperformIds;
+            D.amounts[0] = _castUint256ToArray(superformData.amount);
 
-            uint256[] memory tAmounts = new uint256[](1);
-            tAmounts[0] = superformData.amount;
-
-            D.amounts[0] = tAmounts;
-
-            uint256[] memory tOutputAmounts = new uint256[](1);
-            tOutputAmounts[0] = superformData.outputAmount;
-
-            D.outputAmounts[0] = tOutputAmounts;
+            D.outputAmounts[0] = _castUint256ToArray(superformData.outputAmount);
 
             D.receiverAddress = new address[](1);
             D.receiverAddress[0] = superformData.receiverAddress;
@@ -108,17 +99,11 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
 
             SingleVaultSFData memory superformData = abi.decode(data.rebalanceToSfData, (SingleVaultSFData));
 
-            uint256[] memory tSuperformIds = new uint256[](1);
-            tSuperformIds[0] = superformData.superformId;
-            D.superformIds[0] = tSuperformIds;
+            D.superformIds[0] = _castUint256ToArray(superformData.superformId);
 
-            uint256[] memory tAmounts = new uint256[](1);
-            tAmounts[0] = superformData.amount;
-            D.amounts[0] = tAmounts;
+            D.amounts[0] = _castUint256ToArray(superformData.amount);
 
-            uint256[] memory tOutputAmounts = new uint256[](1);
-            tOutputAmounts[0] = superformData.outputAmount;
-            D.outputAmounts[0] = tOutputAmounts;
+            D.outputAmounts[0] = _castUint256ToArray(superformData.outputAmount);
 
             D.receiverAddress = new address[](1);
             D.receiverAddress[0] = superformData.receiverAddress;
@@ -309,8 +294,9 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             superformData.liqRequest.txData = multiSuperformData.liqRequests[0].txData;
             superformData.liqRequest.nativeAmount = multiSuperformData.liqRequests[0].nativeAmount;
 
-            vars.rebalanceToCallData =
-                abi.encodeWithSelector(data.rebalanceSelector, SingleDirectSingleVaultStateReq(superformData));
+            vars.rebalanceToCallData = abi.encodeCall(
+                IBaseRouter.singleDirectSingleVaultDeposit, (SingleDirectSingleVaultStateReq(superformData))
+            );
         } else if (data.rebalanceSelector == IBaseRouter.singleXChainSingleVaultDeposit.selector) {
             SingleVaultSFData memory superformData = abi.decode(data.rebalanceToSfData, (SingleVaultSFData));
 
@@ -328,12 +314,14 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             superformData.liqRequest.txData = multiSuperformData.liqRequests[0].txData;
             superformData.liqRequest.nativeAmount = multiSuperformData.liqRequests[0].nativeAmount;
 
-            vars.rebalanceToCallData = abi.encodeWithSelector(
-                data.rebalanceSelector,
-                SingleXChainSingleVaultStateReq(
-                    abi.decode(data.rebalanceToAmbIds, (uint8[])),
-                    abi.decode(data.rebalanceToDstChainIds, (uint64)),
-                    superformData
+            vars.rebalanceToCallData = abi.encodeCall(
+                IBaseRouter.singleXChainSingleVaultDeposit,
+                (
+                    SingleXChainSingleVaultStateReq(
+                        abi.decode(data.rebalanceToAmbIds, (uint8[])),
+                        abi.decode(data.rebalanceToDstChainIds, (uint64)),
+                        superformData
+                    )
                 )
             );
         } else if (data.rebalanceSelector == IBaseRouter.singleDirectMultiVaultDeposit.selector) {
@@ -348,8 +336,9 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
                 data.slippage
             );
 
-            vars.rebalanceToCallData =
-                abi.encodeWithSelector(data.rebalanceSelector, SingleDirectMultiVaultStateReq(multiSuperformData));
+            vars.rebalanceToCallData = abi.encodeCall(
+                IBaseRouter.singleDirectMultiVaultDeposit, (SingleDirectMultiVaultStateReq(multiSuperformData))
+            );
         } else if (data.rebalanceSelector == IBaseRouter.singleXChainMultiVaultDeposit.selector) {
             MultiVaultSFData memory multiSuperformData = abi.decode(data.rebalanceToSfData, (MultiVaultSFData));
 
@@ -362,12 +351,14 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
                 data.slippage
             );
 
-            vars.rebalanceToCallData = abi.encodeWithSelector(
-                data.rebalanceSelector,
-                SingleXChainMultiVaultStateReq(
-                    abi.decode(data.rebalanceToAmbIds, (uint8[])),
-                    abi.decode(data.rebalanceToDstChainIds, (uint64)),
-                    multiSuperformData
+            vars.rebalanceToCallData = abi.encodeCall(
+                IBaseRouter.singleXChainMultiVaultDeposit,
+                (
+                    SingleXChainMultiVaultStateReq(
+                        abi.decode(data.rebalanceToAmbIds, (uint8[])),
+                        abi.decode(data.rebalanceToDstChainIds, (uint64)),
+                        multiSuperformData
+                    )
                 )
             );
         } else if (data.rebalanceSelector == IBaseRouter.multiDstSingleVaultDeposit.selector) {
@@ -395,12 +386,14 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
                 superformsData[i].liqRequest.nativeAmount = multiSuperformData[i].liqRequests[0].nativeAmount;
             }
 
-            vars.rebalanceToCallData = abi.encodeWithSelector(
-                data.rebalanceSelector,
-                MultiDstSingleVaultStateReq(
-                    abi.decode(data.rebalanceToAmbIds, (uint8[][])),
-                    abi.decode(data.rebalanceToDstChainIds, (uint64[])),
-                    superformsData
+            vars.rebalanceToCallData = abi.encodeCall(
+                IBaseRouter.multiDstSingleVaultDeposit,
+                (
+                    MultiDstSingleVaultStateReq(
+                        abi.decode(data.rebalanceToAmbIds, (uint8[][])),
+                        abi.decode(data.rebalanceToDstChainIds, (uint64[])),
+                        superformsData
+                    )
                 )
             );
         } else if (data.rebalanceSelector == IBaseRouter.multiDstMultiVaultDeposit.selector) {
@@ -421,12 +414,14 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
                 );
             }
 
-            vars.rebalanceToCallData = abi.encodeWithSelector(
-                data.rebalanceSelector,
-                MultiDstMultiVaultStateReq(
-                    abi.decode(data.rebalanceToAmbIds, (uint8[][])),
-                    abi.decode(data.rebalanceToDstChainIds, (uint64[])),
-                    multiSuperformData
+            vars.rebalanceToCallData = abi.encodeCall(
+                IBaseRouter.multiDstMultiVaultDeposit,
+                (
+                    MultiDstMultiVaultStateReq(
+                        abi.decode(data.rebalanceToAmbIds, (uint8[][])),
+                        abi.decode(data.rebalanceToDstChainIds, (uint64[])),
+                        multiSuperformData
+                    )
                 )
             );
         } else {
@@ -505,41 +500,6 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         return delay;
     }
 
-    function _castToMultiVaultData(SingleVaultSFData memory data_)
-        internal
-        pure
-        returns (MultiVaultSFData memory castedData_)
-    {
-        uint256[] memory superformIds = new uint256[](1);
-        superformIds[0] = data_.superformId;
-
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = data_.amount;
-
-        uint256[] memory outputAmounts = new uint256[](1);
-        outputAmounts[0] = data_.outputAmount;
-
-        uint256[] memory maxSlippage = new uint256[](1);
-        maxSlippage[0] = data_.maxSlippage;
-
-        LiqRequest[] memory liqData = new LiqRequest[](1);
-        liqData[0] = data_.liqRequest;
-
-        castedData_ = MultiVaultSFData(
-            superformIds,
-            amounts,
-            outputAmounts,
-            maxSlippage,
-            liqData,
-            data_.permit2data,
-            ArrayCastLib.castBoolToArray(data_.hasDstSwap),
-            ArrayCastLib.castBoolToArray(data_.retain4626),
-            data_.receiverAddress,
-            data_.receiverAddressSP,
-            data_.extraFormData
-        );
-    }
-
     function _updateSuperformData(
         MultiVaultSFData memory sfData,
         LiqRequest[] memory liqRequests,
@@ -608,5 +568,33 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
     /// @dev returns if an address has a specific role
     function _hasRole(bytes32 id_, address addressToCheck_) internal view returns (bool) {
         return ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(id_, addressToCheck_);
+    }
+
+    function _castToMultiVaultData(SingleVaultSFData memory data_)
+        internal
+        pure
+        returns (MultiVaultSFData memory castedData_)
+    {
+        LiqRequest[] memory liqData = new LiqRequest[](1);
+        liqData[0] = data_.liqRequest;
+
+        castedData_ = MultiVaultSFData(
+            _castUint256ToArray(data_.superformId),
+            _castUint256ToArray(data_.amount),
+            _castUint256ToArray(data_.outputAmount),
+            _castUint256ToArray(data_.maxSlippage),
+            liqData,
+            data_.permit2data,
+            ArrayCastLib.castBoolToArray(data_.hasDstSwap),
+            ArrayCastLib.castBoolToArray(data_.retain4626),
+            data_.receiverAddress,
+            data_.receiverAddressSP,
+            data_.extraFormData
+        );
+    }
+
+    function _castUint256ToArray(uint256 value_) internal pure returns (uint256[] memory casted) {
+        casted = new uint256[](1);
+        casted[0] = value_;
     }
 }
