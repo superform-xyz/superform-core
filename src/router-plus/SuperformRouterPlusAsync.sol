@@ -63,19 +63,6 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc ISuperformRouterPlusAsync
-    function getXChainRebalanceCallData(
-        address receiverAddressSP_,
-        uint256 routerPlusPayloadId_
-    )
-        external
-        view
-        override
-        returns (XChainRebalanceData memory)
-    {
-        return xChainRebalanceCallData[receiverAddressSP_][routerPlusPayloadId_];
-    }
-
-    /// @inheritdoc ISuperformRouterPlusAsync
     function decodeXChainRebalanceCallData(
         address receiverAddressSP_,
         uint256 routerPlusPayloadId_
@@ -241,6 +228,10 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         override
         onlyRouterPlus
     {
+        XChainRebalanceData memory currentData = xChainRebalanceCallData[receiverAddressSP_][routerPlusPayloadId_];
+
+        if (currentData.interimAsset != address(0)) revert ALREADY_SET();
+
         xChainRebalanceCallData[receiverAddressSP_][routerPlusPayloadId_] = data_;
     }
 
@@ -442,7 +433,13 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             revert INVALID_REBALANCE_SELECTOR();
         }
 
-        _deposit(vars.interimAsset, vars.amountToDeposit, msg.value, vars.rebalanceToCallData);
+        _deposit(
+            _getAddress(keccak256("SUPERFORM_ROUTER")),
+            vars.interimAsset,
+            vars.amountToDeposit,
+            msg.value,
+            vars.rebalanceToCallData
+        );
 
         emit XChainRebalanceComplete(args_.receiverAddressSP, args_.routerPlusPayloadId);
 
@@ -552,6 +549,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         uint256 userSlippage
     )
         internal
+        pure
         returns (MultiVaultSFData memory)
     {
         uint256 sfDataLen = sfData.liqRequests.length;

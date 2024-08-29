@@ -25,6 +25,9 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
     /// @notice thrown if the amounts to redeem differ
     error REBALANCE_SINGLE_POSITIONS_DIFFERENT_AMOUNT();
 
+    /// @notice thrown if the receiver address is invalid (not the router plus)
+    error REBALANCE_SINGLE_POSITIONS_UNEXPECTED_RECEIVER_ADDRESS();
+
     /// @notice thrown if the interimToken is different than expected in the array
     error REBALANCE_MULTI_POSITIONS_DIFFERENT_TOKEN();
 
@@ -35,10 +38,16 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
     error REBALANCE_MULTI_POSITIONS_DIFFERENT_AMOUNTS();
 
     /// @notice thrown if the receiver address is invalid (not the router plus)
+    error REBALANCE_MULTI_POSITIONS_UNEXPECTED_RECEIVER_ADDRESS();
+
+    /// @notice thrown if the receiver address is invalid (not the router plus)
     error REBALANCE_XCHAIN_INVALID_RECEIVER_ADDRESS();
 
     /// @notice thrown if msg.value is lower than the required fee
     error INVALID_FEE();
+
+    /// @notice thrown if the amount of assets received is lower than the slippage
+    error ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
 
     //////////////////////////////////////////////////////////////
     //                       EVENTS                             //
@@ -100,6 +109,11 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
     /// @param receiver The address receiving the deposited tokens
     /// @param vault The address of the ERC4626 vault
     event Deposit4626Completed(address indexed receiver, address indexed vault);
+
+    /// @notice emitted when dust is forwarded to the paymaster
+    /// @param token The address of the token
+    /// @param amount The amount of tokens forwarded
+    event RouterPlusDustForwardedToPaymaster(address indexed token, uint256 amount);
 
     //////////////////////////////////////////////////////////////
     //                       STRUCTS                            //
@@ -173,6 +187,8 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
 
     struct Deposit4626Args {
         uint256 amount;
+        uint256 expectedOutputAmount;
+        uint256 maxSlippage;
         address receiverAddressSP;
         bytes depositCallData;
     }
@@ -207,4 +223,8 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
     /// @param vault_ The ERC4626 vault to redeem from
     /// @param args Rest of the arguments to deposit 4626
     function deposit4626(address vault_, Deposit4626Args calldata args) external payable;
+
+    /// @dev Forwards dust to Paymaster
+    /// @param token_ the token to forward
+    function forwardDustToPaymaster(address token_) external;
 }
