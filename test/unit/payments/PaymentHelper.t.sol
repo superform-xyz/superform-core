@@ -181,6 +181,7 @@ contract PaymentHelperTest is ProtocolActions {
             ),
             false
         );
+
         assertGt(fees, 0);
     }
 
@@ -527,26 +528,6 @@ contract PaymentHelperTest is ProtocolActions {
 
     function test_estimateSingleDirectSingleVault() public view {
         bytes memory emptyBytes;
-        (,, uint256 fees) = paymentHelper.estimateSingleDirectSingleVault(
-            SingleDirectSingleVaultStateReq(
-                SingleVaultSFData(
-                    _generateSuperformPackWithShift(),
-                    420,
-                    420,
-                    420,
-                    LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420),
-                    emptyBytes,
-                    false,
-                    false,
-                    receiverAddress,
-                    receiverAddress,
-                    emptyBytes
-                )
-            ),
-            false
-        );
-
-        assertGt(fees, 0);
 
         (,, uint256 fees2) = paymentHelper.estimateSingleDirectSingleVault(
             SingleDirectSingleVaultStateReq(
@@ -623,7 +604,7 @@ contract PaymentHelperTest is ProtocolActions {
             false
         );
 
-        assertGt(fees, 0);
+        assertEq(fees, 0);
 
         (,, uint256 fees2) = paymentHelper.estimateSingleDirectMultiVault(
             SingleDirectMultiVaultStateReq(

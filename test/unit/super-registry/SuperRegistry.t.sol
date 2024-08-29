@@ -41,6 +41,12 @@ contract SuperRegistryTest is BaseSetup {
         bond = address(7);
         /// @dev (who's a brokie)
         vm.deal(bond, 1 ether);
+
+        /// @dev this is removed from base setup, so adding it here
+        /// @custom:deprecated timelock state registry is deprecated and preserved for coverage
+        vm.startPrank(deployer);
+        superRegistry.setAddress(superRegistry.TIMELOCK_STATE_REGISTRY(), address(420), ETH);
+        vm.stopPrank();
     }
 
     function test_setPermit2_and_revert_invalidCaller() public {
