@@ -5,6 +5,8 @@ import { Address } from "openzeppelin-contracts/contracts/utils/Address.sol";
 import { IERC1155Receiver } from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { IBaseSuperformRouterPlus } from "src/interfaces/IBaseSuperformRouterPlus.sol";
 import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
@@ -19,6 +21,8 @@ import {
 } from "src/types/DataTypes.sol";
 
 abstract contract BaseSuperformRouterPlus is IBaseSuperformRouterPlus, IERC1155Receiver {
+    using SafeERC20 for IERC20;
+
     //////////////////////////////////////////////////////////////
     //                       CONSTANTS                          //
     //////////////////////////////////////////////////////////////
@@ -111,22 +115,29 @@ abstract contract BaseSuperformRouterPlus is IBaseSuperformRouterPlus, IERC1155R
     //                   INTERNAL FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
 
-    function _callSuperformRouter(bytes memory callData_, uint256 msgValue_) internal {
-        (bool success, bytes memory returndata) =
-            _getAddress(keccak256("SUPERFORM_ROUTER")).call{ value: msgValue_ }(callData_);
+    function _callSuperformRouter(address router_, bytes memory callData_, uint256 msgValue_) internal {
+        (bool success, bytes memory returndata) = router_.call{ value: msgValue_ }(callData_);
 
         Address.verifyCallResult(success, returndata);
     }
 
-    function _deposit(IERC20 asset_, uint256 amountToDeposit_, uint256 msgValue_, bytes memory callData_) internal {
+    function _deposit(
+        address router_,
+        IERC20 asset_,
+        uint256 amountToDeposit_,
+        uint256 msgValue_,
+        bytes memory callData_
+    )
+        internal
+    {
         /// @dev approves superform router on demand
-        asset_.approve(_getAddress(keccak256("SUPERFORM_ROUTER")), amountToDeposit_);
+        asset_.forceApprove(router_, amountToDeposit_);
 
         /// TODO confirm if we should validate depositCallData with receiverAddressSP and other parameters?
         /// @notice this is used in all actions. In cross chain rebalances, most key data is validated, but not on
         /// @notice same chain rebalances or deposits
 
-        _callSuperformRouter(callData_, msgValue_);
+        _callSuperformRouter(router_, callData_, msgValue_);
     }
 
     /// @dev returns the address from super registry

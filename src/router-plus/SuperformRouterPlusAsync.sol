@@ -62,19 +62,6 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
     //                  EXTERNAL VIEW FUNCTIONS                //
     //////////////////////////////////////////////////////////////
 
-    /// @inheritdoc ISuperformRouterPlusAsync
-    function getXChainRebalanceCallData(
-        address receiverAddressSP_,
-        uint256 routerPlusPayloadId_
-    )
-        external
-        view
-        override
-        returns (XChainRebalanceData memory)
-    {
-        return xChainRebalanceCallData[receiverAddressSP_][routerPlusPayloadId_];
-    }
-
     //////////////////////////////////////////////////////////////
     //                  EXTERNAL WRITE FUNCTIONS                //
     //////////////////////////////////////////////////////////////
@@ -89,10 +76,12 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         override
         onlyRouterPlus
     {
+        XChainRebalanceData memory currentData = xChainRebalanceCallData[receiverAddressSP_][routerPlusPayloadId_];
+
+        if (currentData.interimAsset != address(0)) revert ALREADY_SET();
+
         xChainRebalanceCallData[receiverAddressSP_][routerPlusPayloadId_] = data_;
     }
-
-
 
     /// @inheritdoc ISuperformRouterPlusAsync
     function completeCrossChainRebalance(CompleteCrossChainRebalanceArgs memory args_)
@@ -251,7 +240,9 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             revert INVALID_REBALANCE_SELECTOR();
         }
 
-        _deposit(interimAsset, amountToDeposit, msg.value, rebalanceToCallData);
+        _deposit(
+            _getAddress(keccak256("SUPERFORM_ROUTER")), interimAsset, amountToDeposit, msg.value, rebalanceToCallData
+        );
 
         emit XChainRebalanceComplete(args_.receiverAddressSP, args_.routerPlusPayloadId);
 
@@ -358,6 +349,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         address receiverAddressSP_
     )
         internal
+        pure
         returns (MultiVaultSFData memory)
     {
         uint256 sfDataLen = sfData.liqRequests.length;

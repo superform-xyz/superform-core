@@ -8,6 +8,8 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
     //////////////////////////////////////////////////////////////
     //                       ERRORS                             //
     //////////////////////////////////////////////////////////////
+    /// @notice thrown if the XChainRebalanceData is already set
+    error ALREADY_SET();
 
     /// @notice thrown when a non-processor attempts to call a processor-only function
     error NOT_ROUTER_PLUS_PROCESSOR();
@@ -99,18 +101,6 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
     //////////////////////////////////////////////////////////////
     //                  EXTERNAL VIEW FUNCTIONS                //
     //////////////////////////////////////////////////////////////
-
-    /// @notice returns the call data for a cross-chain rebalance
-    /// @param receiverAddressSP_ The address of the receiver
-    /// @param routerPlusPayloadId_ The router plus payload id
-    /// @return data_ The XChainRebalanceData struct
-    function getXChainRebalanceCallData(
-        address receiverAddressSP_,
-        uint256 routerPlusPayloadId_
-    )
-        external
-        view
-        returns (XChainRebalanceData memory);
 
     //////////////////////////////////////////////////////////////
     //                  EXTERNAL WRITE FUNCTIONS                //
