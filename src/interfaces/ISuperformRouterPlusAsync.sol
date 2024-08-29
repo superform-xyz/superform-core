@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import { LiqRequest } from "src/types/DataTypes.sol";
 import { IBaseSuperformRouterPlus } from "./IBaseSuperformRouterPlus.sol";
+import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
 interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
     //////////////////////////////////////////////////////////////
@@ -31,6 +32,14 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
 
     /// @notice thrown if the rebalance to update is invalid
     error COMPLETE_REBALANCE_DIFFERENT_RECEIVER();
+
+    /// @notice thrown if the rebalance to update is invalid
+    error COMPLETE_REBALANCE_AMOUNT_OUT_OF_SLIPPAGE(uint256 newAmount, uint256 expectedAmount, uint256 userSlippage);
+
+    /// @notice thrown if the rebalance to update is invalid
+    error COMPLETE_REBALANCE_OUTPUTAMOUNT_OUT_OF_SLIPPAGE(
+        uint256 newOutputAmount, uint256 expectedOutputAmount, uint256 userSlippage
+    );
 
     /// @notice thrown to avoid processing the same rebalance payload twice
     error REBALANCE_ALREADY_PROCESSED();
@@ -91,16 +100,49 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
         uint256 proposedTime;
     }
 
+    struct DecodedRouterPlusRebalanceCallData {
+        address interimAsset;
+        bytes4 rebalanceSelector;
+        uint256 userSlippage;
+        address[] receiverAddress;
+        uint256[][] superformIds;
+        uint256[][] amounts;
+        uint256[][] outputAmounts;
+        uint8[][] ambIds;
+        uint64[] dstChainIds;
+    }
+
     struct CompleteCrossChainRebalanceArgs {
         address receiverAddressSP;
         uint256 routerPlusPayloadId;
         uint256 amountReceivedInterimAsset;
+        uint256[][] newAmounts;
+        uint256[][] newOutputAmounts;
         LiqRequest[][] liqRequests;
+    }
+
+    struct CompleteCrossChainRebalanceLocalVars {
+        uint256 balanceOfInterim;
+        IERC20 interimAsset;
+        uint256 amountToDeposit;
+        bytes rebalanceToCallData;
     }
 
     //////////////////////////////////////////////////////////////
     //                  EXTERNAL VIEW FUNCTIONS                //
     //////////////////////////////////////////////////////////////
+
+    /// @notice returns the decoded call data for a cross-chain rebalance
+    /// @param receiverAddressSP_ The address of the receiver
+    /// @param routerPlusPayloadId_ The router plus payload id
+    /// @return D The DecodedRouterPlusRebalanceCallData struct
+    function decodeXChainRebalanceCallData(
+        address receiverAddressSP_,
+        uint256 routerPlusPayloadId_
+    )
+        external
+        view
+        returns (DecodedRouterPlusRebalanceCallData memory D);
 
     //////////////////////////////////////////////////////////////
     //                  EXTERNAL WRITE FUNCTIONS                //
