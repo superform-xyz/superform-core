@@ -21,21 +21,21 @@ contract MDMVW0102408NativeInputSlipageAMB13 is ProtocolActions {
         TARGET_VAULTS[ETH][0] = [0, 0];
         TARGET_FORM_KINDS[ETH][0] = [0, 0];
 
-        TARGET_UNDERLYINGS[POLY][0] = [0, 1, 2];
-        TARGET_VAULTS[POLY][0] = [0, 0, 0];
-        TARGET_FORM_KINDS[POLY][0] = [0, 0, 0];
-
-        TARGET_UNDERLYINGS[AVAX][0] = [2, 0];
-        TARGET_VAULTS[AVAX][0] = [0, 2];
-        TARGET_FORM_KINDS[AVAX][0] = [0, 0];
-
         TARGET_UNDERLYINGS[ETH][1] = [1, 0];
         TARGET_VAULTS[ETH][1] = [0, 0];
         TARGET_FORM_KINDS[ETH][1] = [0, 0];
 
+        TARGET_UNDERLYINGS[POLY][0] = [0, 1, 2];
+        TARGET_VAULTS[POLY][0] = [0, 0, 0];
+        TARGET_FORM_KINDS[POLY][0] = [0, 0, 0];
+
         TARGET_UNDERLYINGS[POLY][1] = [0, 1, 2];
         TARGET_VAULTS[POLY][1] = [0, 0, 0];
         TARGET_FORM_KINDS[POLY][1] = [0, 0, 0];
+
+        TARGET_UNDERLYINGS[AVAX][0] = [2, 0];
+        TARGET_VAULTS[AVAX][0] = [0, 2];
+        TARGET_FORM_KINDS[AVAX][0] = [0, 0];
 
         /// all superforms are different
         TARGET_UNDERLYINGS[AVAX][1] = [2, 0];
@@ -43,7 +43,6 @@ contract MDMVW0102408NativeInputSlipageAMB13 is ProtocolActions {
         TARGET_FORM_KINDS[AVAX][1] = [0, 0];
 
         PARTIAL[ETH][1] = [true, false];
-
         PARTIAL[POLY][1] = [false, false, true];
 
         MAX_SLIPPAGE = 1000;
@@ -97,7 +96,7 @@ contract MDMVW0102408NativeInputSlipageAMB13 is ProtocolActions {
                 revertRole: "",
                 slippage: 643, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
     }

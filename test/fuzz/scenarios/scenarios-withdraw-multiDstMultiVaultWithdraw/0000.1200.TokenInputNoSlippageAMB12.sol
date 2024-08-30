@@ -25,14 +25,14 @@ contract MDMVW00001200TokenInputSlippageAMB12 is ProtocolActions {
         TARGET_VAULTS[ARBI][0] = [0, 0];
         TARGET_FORM_KINDS[ARBI][0] = [0, 0];
 
+        TARGET_UNDERLYINGS[ARBI][1] = [2, 0];
+        TARGET_VAULTS[ARBI][1] = [0, 0];
+        TARGET_FORM_KINDS[ARBI][1] = [0, 0];
+
         /// all superforms are different
         TARGET_UNDERLYINGS[POLY][0] = [0, 2];
         TARGET_VAULTS[POLY][0] = [0, 0];
         TARGET_FORM_KINDS[POLY][0] = [0, 0];
-
-        TARGET_UNDERLYINGS[ARBI][1] = [2, 0];
-        TARGET_VAULTS[ARBI][1] = [0, 0];
-        TARGET_FORM_KINDS[ARBI][1] = [0, 0];
 
         TARGET_UNDERLYINGS[POLY][1] = [0, 2];
         TARGET_VAULTS[POLY][1] = [0, 0];
@@ -70,7 +70,7 @@ contract MDMVW00001200TokenInputSlippageAMB12 is ProtocolActions {
                 revertRole: "",
                 slippage: 222, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
 
@@ -84,7 +84,7 @@ contract MDMVW00001200TokenInputSlippageAMB12 is ProtocolActions {
                 revertRole: "",
                 slippage: 222, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
     }
