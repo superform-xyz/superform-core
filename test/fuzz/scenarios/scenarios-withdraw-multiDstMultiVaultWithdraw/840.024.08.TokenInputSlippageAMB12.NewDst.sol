@@ -23,11 +23,9 @@ contract MDMVW84002408NativeInputSlipageAMB12NewDst is ProtocolActions {
         TARGET_VAULTS[ETH][0] = [2, 0, 0];
         TARGET_FORM_KINDS[ETH][0] = [0, 0, 0];
 
-        /// @dev normal vault failing on withdraw, timelocked vault failing on withdraw, normal vault
         TARGET_UNDERLYINGS[POLY][0] = [0, 1, 2];
         TARGET_VAULTS[POLY][0] = [0, 0, 0];
         TARGET_FORM_KINDS[POLY][0] = [0, 0, 0];
-        /// @dev normal vault, kyc vault, timelocked vault failing on withdraw
 
         TARGET_UNDERLYINGS[AVAX][0] = [1, 2];
         TARGET_VAULTS[AVAX][0] = [0, 2];

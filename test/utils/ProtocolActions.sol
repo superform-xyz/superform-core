@@ -73,9 +73,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
     /// @dev to be aware which destinations have been 'used' already
     mapping(uint64 chainId => UniqueDSTInfo info) public usedDSTs;
 
-    /// @dev used to detect which forms are timelocked
-    mapping(uint64 chainId => mapping(uint256 timelockId => uint256 index)) public timeLockedIndexes;
-
     /// @dev all target underlyings used to build superforms
     mapping(uint64 chainId => mapping(uint256 action => uint256[] underlyingTokenIds)) public TARGET_UNDERLYINGS;
 
@@ -239,7 +236,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         uint256[][] memory amountsToRemintPerDst;
 
-        /// @dev for all form kinds including timelocked (first stage)
         /// @dev if there is a failure we immediately re-mint superShares
         /// @dev stage 6 is only required if there is any failed cross chain withdraws
         /// @dev this is only for x-chain actions

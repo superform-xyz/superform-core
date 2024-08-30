@@ -184,7 +184,6 @@ abstract contract BaseSetup is StdInvariant, Test {
     mapping(uint64 chainId => mapping(uint32 formImplementationId => address[][] vaults)) public vaults;
     mapping(uint64 chainId => address[] wrapped5115vaults) public wrapped5115vaults;
     mapping(uint64 chainId => uint256 payloadId) PAYLOAD_ID;
-    mapping(uint64 chainId => uint256 payloadId) TIMELOCK_PAYLOAD_ID;
 
     /// @dev liquidity bridge ids
     uint8[] bridgeIds;
@@ -1959,35 +1958,6 @@ abstract contract BaseSetup is StdInvariant, Test {
         PaymentHelper paymentHelper;
         PayloadHelper payloadHelper;
         bytes message;
-    }
-
-    /// @dev Generates the acknowledgement amb params for the entire action
-    /// @dev TODO - Sujith to comment further
-    function _generateAckGasFeesAndParamsForTimeLock(
-        bytes memory chainIds_,
-        uint8[] memory selectedAmbIds,
-        uint256 timelockPayloadId
-    )
-        internal
-        view
-        returns (uint256 msgValue)
-    {
-        LocalAckVars memory vars;
-        (vars.srcChainId, vars.dstChainId) = abi.decode(chainIds_, (uint64, uint64));
-
-        address _paymentHelper = contracts[vars.dstChainId][bytes32(bytes("PaymentHelper"))];
-        vars.paymentHelper = PaymentHelper(_paymentHelper);
-
-        address _payloadHelper = contracts[vars.dstChainId][bytes32(bytes("PayloadHelper"))];
-        vars.payloadHelper = PayloadHelper(_payloadHelper);
-
-        (,, uint256 payloadId, uint256 superformId, uint256 amount) =
-            vars.payloadHelper.decodeTimeLockPayload(timelockPayloadId);
-
-        vars.message =
-            abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superformId, amount))));
-
-        (msgValue,) = vars.paymentHelper.calculateAMBData(vars.srcChainId, selectedAmbIds, vars.message);
     }
 
     function _payload(address registry, uint64 chainId, uint256 payloadId_) internal returns (bytes memory payload_) {
