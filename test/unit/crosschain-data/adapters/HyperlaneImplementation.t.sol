@@ -5,7 +5,7 @@ import "../../../utils/BaseSetup.sol";
 
 import { DataLib } from "src/libraries/DataLib.sol";
 import { ProofLib } from "src/libraries/ProofLib.sol";
-import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { IAmbImplementationV2 } from "src/interfaces/IAmbImplementationV2.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
 import { Error } from "src/libraries/Error.sol";
@@ -55,7 +55,7 @@ contract HyperlaneImplementationUnitTest is BaseSetup {
         );
 
         vm.prank(address(hyperlaneImplementation.mailbox()));
-        vm.expectRevert(IAmbImplementation.MALICIOUS_DELIVERY.selector);
+        vm.expectRevert(IAmbImplementationV2.MALICIOUS_DELIVERY.selector);
         hyperlaneImplementation.handle(origin, sender, abi.encode(ambMessageWithProof));
     }
 }

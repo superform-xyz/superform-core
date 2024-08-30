@@ -423,6 +423,7 @@ contract SuperPositionsTest is BaseSetup {
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
 
         for (uint256 i; i < chainIds.length; ++i) {
+            if (chainIds[i] == LINEA) continue;
             if (chainIds[i] != ETH) {
                 vm.selectFork(FORKS[chainIds[i]]);
                 BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(1);
