@@ -22,7 +22,7 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
     //!WARNING ENUSRE output folder has correct addresses of the deployment!
     //!WARNING CHECK LATEST PAYMENT HELPER CONFIGURATION TO ENSURE IT'S UP TO DATE
 
-    uint64[] TARGET_DEPLOYMENT_CHAINS = [FANTOM];
+    uint64[] TARGET_DEPLOYMENT_CHAINS = [BLAST];
     uint64[] FINAL_DEPLOYED_CHAINS;
 
     function _setEnvironment(uint256 env, bool useNewSalt) internal {
@@ -64,6 +64,7 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
             TARGET_CHAINS.push(OP);
             TARGET_CHAINS.push(BASE);
             TARGET_CHAINS.push(FANTOM);
+            TARGET_CHAINS.push(LINEA);
 
             salt = "StagingV1_0";
 

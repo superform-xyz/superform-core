@@ -5,7 +5,6 @@ pragma solidity ^0.8.23;
 /// @dev Interface for PayloadHelper
 /// @author ZeroPoint Labs
 interface IPayloadHelper {
-
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
     //////////////////////////////////////////////////////////////
@@ -36,6 +35,7 @@ interface IPayloadHelper {
         uint256 srcPayloadId;
         bytes extraFormData;
         uint8 multi;
+        bool[] retain4626;
     }
 
     //////////////////////////////////////////////////////////////

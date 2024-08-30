@@ -23,6 +23,21 @@ contract Mock5115Vault {
     }
 }
 
+contract Mock5115Vault2 {
+    address public constant asset = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
+
+    address constant WETH = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+    address constant USDC = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
+
+    function isValidTokenIn(address) external pure returns (bool isValid) {
+        isValid = true;
+    }
+
+    function isValidTokenOut(address) external pure returns (bool isValid) {
+        isValid = true;
+    }
+}
+
 contract ERC5115To4626WrapperTest is ProtocolActions {
     uint64 internal chainId = ARBI;
     uint32 FORM_ID = 4;
@@ -32,7 +47,10 @@ contract ERC5115To4626WrapperTest is ProtocolActions {
     SuperRBAC superRBAC;
 
     Mock5115Vault mockVault;
+    Mock5115Vault2 mockVault2;
+
     address tokenIn = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
+    address tokenIn2 = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
     address tokenOut = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
 
     function setUp() public override {
@@ -44,6 +62,7 @@ contract ERC5115To4626WrapperTest is ProtocolActions {
         wrapperFactory = ERC5115To4626WrapperFactory(getContract(chainId, "ERC5115To4626WrapperFactory"));
 
         mockVault = new Mock5115Vault();
+        mockVault2 = new Mock5115Vault2();
     }
 
     /// Test constructor validation
@@ -109,6 +128,60 @@ contract ERC5115To4626WrapperTest is ProtocolActions {
         assertEq(wrapperTokenIn, tokenIn);
         assertEq(wrapperTokenOut, tokenOut);
         assertEq(wrapperAddr, wrapper);
+    }
+
+    function test_BatchCreateWrapperWithSuperform() public {
+        uint32[] memory formIds = new uint32[](2);
+        formIds[0] = FORM_ID;
+        formIds[1] = FORM_ID;
+
+        address[] memory vaults = new address[](2);
+        vaults[0] = address(mockVault);
+        vaults[1] = address(mockVault2);
+
+        address[] memory tokensIn = new address[](1);
+        tokensIn[0] = tokenIn;
+
+        address[] memory tokensOut = new address[](2);
+        tokensOut[0] = tokenOut;
+        tokensOut[1] = tokenOut;
+
+        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
+        wrapperFactory.batchCreateWrappersWithSuperform(formIds, vaults, tokensIn, tokensOut);
+
+        tokensIn = new address[](2);
+        tokensIn[0] = tokenIn;
+        tokensIn[1] = tokenIn2;
+
+        address[] memory wrappers =
+            wrapperFactory.batchCreateWrappersWithSuperform(formIds, vaults, tokensIn, tokensOut);
+
+        bytes32 wrapperKeys1 = keccak256(abi.encodePacked(address(mockVault), tokenIn, tokenOut));
+        bytes32 wrapperKeys2 = keccak256(abi.encodePacked(address(mockVault2), tokenIn2, tokenOut));
+
+        address formImpl;
+        address underlyingVault;
+        address wrapperTokenIn;
+        address wrapperTokenOut;
+        address wrapperAddr;
+
+        (formImpl, underlyingVault, wrapperTokenIn, wrapperTokenOut, wrapperAddr) =
+            wrapperFactory.wrappers(wrapperKeys1);
+
+        assertEq(formImpl, getContract(chainId, "ERC5115Form"));
+        assertEq(underlyingVault, address(mockVault));
+        assertEq(wrapperTokenIn, tokenIn);
+        assertEq(wrapperTokenOut, tokenOut);
+        assertEq(wrapperAddr, wrappers[0]);
+
+        (formImpl, underlyingVault, wrapperTokenIn, wrapperTokenOut, wrapperAddr) =
+            wrapperFactory.wrappers(wrapperKeys2);
+
+        assertEq(formImpl, getContract(chainId, "ERC5115Form"));
+        assertEq(underlyingVault, address(mockVault2));
+        assertEq(wrapperTokenIn, tokenIn2);
+        assertEq(wrapperTokenOut, tokenOut);
+        assertEq(wrapperAddr, wrappers[1]);
     }
 
     // Test creating a superform for an existing wrapper
