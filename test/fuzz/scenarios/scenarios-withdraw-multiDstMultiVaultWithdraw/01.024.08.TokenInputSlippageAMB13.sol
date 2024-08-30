@@ -15,9 +15,9 @@ contract MDMVW0102408NativeInputSlipageAMB13 is ProtocolActions {
         MultiDstAMBs = [AMBs, AMBs, AMBs];
 
         CHAIN_0 = ETH;
-        DST_CHAINS = [ETH, POLY, AVAX];
+        DST_CHAINS = [ETH];
 
-        TARGET_UNDERLYINGS[ETH][0] = [2, 2];
+        TARGET_UNDERLYINGS[ETH][0] = [1, 0];
         TARGET_VAULTS[ETH][0] = [0, 0];
         TARGET_FORM_KINDS[ETH][0] = [0, 0];
 
@@ -25,11 +25,11 @@ contract MDMVW0102408NativeInputSlipageAMB13 is ProtocolActions {
         TARGET_VAULTS[POLY][0] = [0, 0, 0];
         TARGET_FORM_KINDS[POLY][0] = [0, 0, 0];
 
-        TARGET_UNDERLYINGS[AVAX][0] = [2, 2];
+        TARGET_UNDERLYINGS[AVAX][0] = [2, 0];
         TARGET_VAULTS[AVAX][0] = [0, 2];
         TARGET_FORM_KINDS[AVAX][0] = [0, 0];
 
-        TARGET_UNDERLYINGS[ETH][1] = [2, 2];
+        TARGET_UNDERLYINGS[ETH][1] = [1, 0];
         TARGET_VAULTS[ETH][1] = [0, 0];
         TARGET_FORM_KINDS[ETH][1] = [0, 0];
 
@@ -38,7 +38,7 @@ contract MDMVW0102408NativeInputSlipageAMB13 is ProtocolActions {
         TARGET_FORM_KINDS[POLY][1] = [0, 0, 0];
 
         /// all superforms are different
-        TARGET_UNDERLYINGS[AVAX][1] = [2, 2];
+        TARGET_UNDERLYINGS[AVAX][1] = [2, 0];
         TARGET_VAULTS[AVAX][1] = [0, 2];
         TARGET_FORM_KINDS[AVAX][1] = [0, 0];
 

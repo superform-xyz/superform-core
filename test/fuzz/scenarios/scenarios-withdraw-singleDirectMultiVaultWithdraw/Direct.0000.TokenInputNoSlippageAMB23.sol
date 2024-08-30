@@ -18,23 +18,23 @@ contract SDiMVW0000TokenInputNoSlippage2AMB23 is ProtocolActions {
         DST_CHAINS = [ARBI];
 
         /// @dev 3 vaults normal deposit equal, 1 normal
-        TARGET_UNDERLYINGS[ARBI][0] = [1, 2, 0, 0];
-        TARGET_VAULTS[ARBI][0] = [0, 0, 0, 0];
-        TARGET_FORM_KINDS[ARBI][0] = [0, 0, 0, 0];
+        TARGET_UNDERLYINGS[ARBI][0] = [1, 2, 0];
+        TARGET_VAULTS[ARBI][0] = [0, 0, 0];
+        TARGET_FORM_KINDS[ARBI][0] = [0, 0, 0];
 
-        TARGET_UNDERLYINGS[ARBI][1] = [1, 2, 0, 0];
-        TARGET_VAULTS[ARBI][1] = [0, 0, 0, 0];
-        TARGET_FORM_KINDS[ARBI][1] = [0, 0, 0, 0];
+        TARGET_UNDERLYINGS[ARBI][1] = [1, 2, 0];
+        TARGET_VAULTS[ARBI][1] = [0, 0, 0];
+        TARGET_FORM_KINDS[ARBI][1] = [0, 0, 0];
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[ARBI][0] = [1, 1, 1, 1];
-        LIQ_BRIDGES[ARBI][1] = [1, 1, 1, 1];
+        LIQ_BRIDGES[ARBI][0] = [1, 1, 1];
+        LIQ_BRIDGES[ARBI][1] = [1, 1, 1];
 
-        RECEIVE_4626[ARBI][0] = [false, false, false, false];
-        RECEIVE_4626[ARBI][1] = [false, false, false, false];
+        RECEIVE_4626[ARBI][0] = [false, false, false];
+        RECEIVE_4626[ARBI][1] = [false, false, false];
 
-        FINAL_LIQ_DST_WITHDRAW[ARBI] = [ARBI, ARBI, ARBI, ARBI];
+        FINAL_LIQ_DST_WITHDRAW[ARBI] = [ARBI, ARBI, ARBI];
 
         /// @dev push in order the actions should be executed
         actions.push(
@@ -70,12 +70,12 @@ contract SDiMVW0000TokenInputNoSlippage2AMB23 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_, uint128 amountFour_) public {
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
         amountOne_ = uint128(bound(amountOne_, 2e18, 20e18));
         amountTwo_ = uint128(bound(amountTwo_, 2e18, 20e18));
         amountThree_ = uint128(bound(amountThree_, 2e18, 20e18));
-        amountFour_ = uint128(bound(amountFour_, 2e18, 20e18));
-        AMOUNTS[ARBI][0] = [amountOne_, amountTwo_, amountThree_, amountFour_];
+
+        AMOUNTS[ARBI][0] = [amountOne_, amountTwo_, amountThree_];
 
         for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
@@ -96,8 +96,7 @@ contract SDiMVW0000TokenInputNoSlippage2AMB23 is ProtocolActions {
                         DST_CHAINS[i]
                     );
 
-                    AMOUNTS[DST_CHAINS[i]][1] =
-                        [superPositions[0], superPositions[1], superPositions[2], superPositions[3]];
+                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0], superPositions[1], superPositions[2]];
                 }
             }
 

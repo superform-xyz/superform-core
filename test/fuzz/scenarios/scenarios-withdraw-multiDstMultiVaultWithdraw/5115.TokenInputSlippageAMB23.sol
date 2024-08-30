@@ -20,7 +20,7 @@ contract MDMVW5115TokenInputSlipageAMB23 is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         /// first 3 superforms are equal
-        TARGET_UNDERLYINGS[ETH][0] = [2, 2, 1];
+        TARGET_UNDERLYINGS[ETH][0] = [2, 0, 1];
         TARGET_VAULTS[ETH][0] = [0, 0, 0];
 
         TARGET_FORM_KINDS[ETH][0] = [0, 0, 0];
@@ -32,12 +32,12 @@ contract MDMVW5115TokenInputSlipageAMB23 is ProtocolActions {
         TARGET_FORM_KINDS[OP][0] = [0, 0, 0];
 
         /// all superforms are different
-        TARGET_UNDERLYINGS[AVAX][0] = [2, 2];
+        TARGET_UNDERLYINGS[AVAX][0] = [2, 1];
         TARGET_VAULTS[AVAX][0] = [0, 0];
 
         TARGET_FORM_KINDS[AVAX][0] = [0, 0];
 
-        TARGET_UNDERLYINGS[ETH][1] = [2, 2, 1];
+        TARGET_UNDERLYINGS[ETH][1] = [2, 0, 1];
         TARGET_VAULTS[ETH][1] = [0, 0, 0];
 
         TARGET_FORM_KINDS[ETH][1] = [0, 0, 0];
@@ -49,7 +49,7 @@ contract MDMVW5115TokenInputSlipageAMB23 is ProtocolActions {
         TARGET_FORM_KINDS[OP][1] = [0, 0, 1];
 
         /// all superforms are different
-        TARGET_UNDERLYINGS[AVAX][1] = [2, 2];
+        TARGET_UNDERLYINGS[AVAX][1] = [2, 1];
         TARGET_VAULTS[AVAX][1] = [0, 8];
 
         TARGET_FORM_KINDS[AVAX][1] = [0, 0];
