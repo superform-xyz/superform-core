@@ -17,21 +17,21 @@ contract MDMVW0102408NativeInputSlipageAMB13 is ProtocolActions {
         CHAIN_0 = ETH;
         DST_CHAINS = [ETH];
 
-        TARGET_UNDERLYINGS[ETH][0] = [1, 0];
+        TARGET_UNDERLYINGS[ETH][0] = [2, 0];
         TARGET_VAULTS[ETH][0] = [0, 0];
         TARGET_FORM_KINDS[ETH][0] = [0, 0];
 
-        TARGET_UNDERLYINGS[ETH][1] = [1, 0];
+        TARGET_UNDERLYINGS[ETH][1] = [2, 0];
         TARGET_VAULTS[ETH][1] = [0, 0];
         TARGET_FORM_KINDS[ETH][1] = [0, 0];
 
-        TARGET_UNDERLYINGS[POLY][0] = [0, 1, 2];
-        TARGET_VAULTS[POLY][0] = [0, 0, 0];
-        TARGET_FORM_KINDS[POLY][0] = [0, 0, 0];
+        TARGET_UNDERLYINGS[POLY][0] = [0, 2];
+        TARGET_VAULTS[POLY][0] = [0, 0];
+        TARGET_FORM_KINDS[POLY][0] = [0, 0];
 
-        TARGET_UNDERLYINGS[POLY][1] = [0, 1, 2];
-        TARGET_VAULTS[POLY][1] = [0, 0, 0];
-        TARGET_FORM_KINDS[POLY][1] = [0, 0, 0];
+        TARGET_UNDERLYINGS[POLY][1] = [0, 2];
+        TARGET_VAULTS[POLY][1] = [0, 0];
+        TARGET_FORM_KINDS[POLY][1] = [0, 0];
 
         TARGET_UNDERLYINGS[AVAX][0] = [2, 0];
         TARGET_VAULTS[AVAX][0] = [0, 2];
@@ -50,8 +50,8 @@ contract MDMVW0102408NativeInputSlipageAMB13 is ProtocolActions {
         LIQ_BRIDGES[ETH][0] = [1, 1];
         LIQ_BRIDGES[ETH][1] = [1, 1];
 
-        LIQ_BRIDGES[POLY][0] = [1, 1, 1];
-        LIQ_BRIDGES[POLY][1] = [1, 1, 1];
+        LIQ_BRIDGES[POLY][0] = [1, 1];
+        LIQ_BRIDGES[POLY][1] = [1, 1];
 
         LIQ_BRIDGES[AVAX][0] = [1, 1];
         LIQ_BRIDGES[AVAX][1] = [1, 1];
@@ -59,8 +59,8 @@ contract MDMVW0102408NativeInputSlipageAMB13 is ProtocolActions {
         RECEIVE_4626[ETH][0] = [false, false];
         RECEIVE_4626[ETH][1] = [false, false];
 
-        RECEIVE_4626[POLY][0] = [false, false, false];
-        RECEIVE_4626[POLY][1] = [false, false, false];
+        RECEIVE_4626[POLY][0] = [false, false];
+        RECEIVE_4626[POLY][1] = [false, false];
 
         RECEIVE_4626[AVAX][0] = [false, false];
         RECEIVE_4626[AVAX][1] = [false, false];
@@ -68,7 +68,7 @@ contract MDMVW0102408NativeInputSlipageAMB13 is ProtocolActions {
         GENERATE_WITHDRAW_TX_DATA_ON_DST = true;
 
         FINAL_LIQ_DST_WITHDRAW[ETH] = [ETH, ETH];
-        FINAL_LIQ_DST_WITHDRAW[POLY] = [ETH, ETH, ETH];
+        FINAL_LIQ_DST_WITHDRAW[POLY] = [ETH, ETH];
         FINAL_LIQ_DST_WITHDRAW[AVAX] = [ETH, ETH];
 
         /// @dev push in order the actions should be executed
@@ -82,7 +82,7 @@ contract MDMVW0102408NativeInputSlipageAMB13 is ProtocolActions {
                 revertRole: "",
                 slippage: 643, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 69_420 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
 
@@ -96,7 +96,7 @@ contract MDMVW0102408NativeInputSlipageAMB13 is ProtocolActions {
                 revertRole: "",
                 slippage: 643, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
     }
@@ -105,23 +105,15 @@ contract MDMVW0102408NativeInputSlipageAMB13 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario(
-        uint128 amountOne_,
-        uint128 amountOneWithdraw_,
-        uint128 amountTwo_,
-        uint128 amountThree_
-    )
-        public
-    {
+    function test_scenario(uint128 amountOne_, uint128 amountOneWithdraw_, uint128 amountTwo_) public {
         amountOne_ = uint128(bound(amountOne_, 2e18, 20e18));
         amountTwo_ = uint128(bound(amountTwo_, 2e18, 20e18));
-        amountThree_ = uint128(bound(amountThree_, 2e18, 20e18));
 
         /// @dev notice partial withdrawals in ETH->0 and POLY->2
         AMOUNTS[ETH][0] = [amountOne_, amountTwo_];
-        AMOUNTS[POLY][0] = [amountTwo_, amountThree_, amountOne_];
+        AMOUNTS[POLY][0] = [amountTwo_, amountOne_];
         /// @dev shuffled order of amounts to randomise
-        AMOUNTS[AVAX][0] = [amountThree_, amountTwo_];
+        AMOUNTS[AVAX][0] = [amountOne_, amountTwo_];
 
         for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
@@ -147,7 +139,7 @@ contract MDMVW0102408NativeInputSlipageAMB13 is ProtocolActions {
                         AMOUNTS[DST_CHAINS[i]][1] = [amountOneWithdraw_, superPositions[1]];
                     } else if (DST_CHAINS[i] == POLY) {
                         amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[2] - 1));
-                        AMOUNTS[POLY][1] = [superPositions[0], superPositions[1], amountOneWithdraw_];
+                        AMOUNTS[POLY][1] = [superPositions[0], amountOneWithdraw_];
                     } else if (DST_CHAINS[i] == AVAX) {
                         AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0], superPositions[1]];
                     }
