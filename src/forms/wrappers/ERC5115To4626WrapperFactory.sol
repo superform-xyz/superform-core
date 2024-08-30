@@ -92,27 +92,35 @@ contract ERC5115To4626WrapperFactory is IERC5115To4626WrapperFactory {
         override
         returns (address wrapper)
     {
-        bytes32 wrapperKey = keccak256(abi.encodePacked(underlyingVaultAddress_, tokenIn_, tokenOut_));
+        wrapper = _createWrapperWithSuperform(formImplementationId_, underlyingVaultAddress_, tokenIn_, tokenOut_);
+    }
 
-        WrapperMetadata storage metadata = wrappers[wrapperKey];
-        if (metadata.wrapper != address(0)) revert WRAPPER_ALREADY_EXISTS();
+    /// @inheritdoc IERC5115To4626WrapperFactory
+    function batchCreateWrappersWithSuperform(
+        uint32[] calldata formImplementationIds_,
+        address[] calldata underlyingVaultAddresses,
+        address[] calldata tokenIns,
+        address[] calldata tokenOuts
+    )
+        external
+        override
+        returns (address[] memory wrappers_)
+    {
+        uint256 len = underlyingVaultAddresses.length;
 
-        ISuperformFactory sf = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+        if (
+            len != tokenIns.length || tokenIns.length != tokenOuts.length
+                || tokenOuts.length != formImplementationIds_.length
+        ) {
+            revert Error.ARRAY_LENGTH_MISMATCH();
+        }
 
-        address formImplementation = sf.getFormImplementation(formImplementationId_);
-        if (formImplementation == address(0)) revert Error.FORM_DOES_NOT_EXIST();
-
-        wrapper = address(new ERC5115To4626Wrapper(underlyingVaultAddress_, tokenIn_, tokenOut_));
-
-        metadata.formImplementation = formImplementation;
-        metadata.underlyingVaultAddress = underlyingVaultAddress_;
-        metadata.tokenIn = tokenIn_;
-        metadata.tokenOut = tokenOut_;
-        metadata.wrapper = wrapper;
-
-        (uint256 superformId, address superform) = sf.createSuperform(formImplementationId_, wrapper);
-
-        emit WrapperCreatedWithSuperform(wrapper, wrapperKey, superformId, superform);
+        wrappers_ = new address[](len);
+        for (uint256 i; i < len; i++) {
+            wrappers_[i] = _createWrapperWithSuperform(
+                formImplementationIds_[i], underlyingVaultAddresses[i], tokenIns[i], tokenOuts[i]
+            );
+        }
     }
 
     /// @inheritdoc IERC5115To4626WrapperFactory
@@ -161,6 +169,44 @@ contract ERC5115To4626WrapperFactory is IERC5115To4626WrapperFactory {
             if (newFormImpl == address(0)) revert Error.FORM_DOES_NOT_EXIST();
 
             metadata.formImplementation = newFormImpl;
+
+            emit WrapperUpdatedWithImplementation(metadata.wrapper, wrapperKeys[i], newFormImpl);
         }
+    }
+
+    //////////////////////////////////////////////////////////////
+    //                  INTERNAL  FUNCTIONS                     //
+    //////////////////////////////////////////////////////////////
+
+    function _createWrapperWithSuperform(
+        uint32 formImplementationId_,
+        address underlyingVaultAddress_,
+        address tokenIn_,
+        address tokenOut_
+    )
+        internal
+        returns (address wrapper)
+    {
+        bytes32 wrapperKey = keccak256(abi.encodePacked(underlyingVaultAddress_, tokenIn_, tokenOut_));
+
+        WrapperMetadata storage metadata = wrappers[wrapperKey];
+        if (metadata.wrapper != address(0)) revert WRAPPER_ALREADY_EXISTS();
+
+        ISuperformFactory sf = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")));
+
+        address formImplementation = sf.getFormImplementation(formImplementationId_);
+        if (formImplementation == address(0)) revert Error.FORM_DOES_NOT_EXIST();
+
+        wrapper = address(new ERC5115To4626Wrapper(underlyingVaultAddress_, tokenIn_, tokenOut_));
+
+        metadata.formImplementation = formImplementation;
+        metadata.underlyingVaultAddress = underlyingVaultAddress_;
+        metadata.tokenIn = tokenIn_;
+        metadata.tokenOut = tokenOut_;
+        metadata.wrapper = wrapper;
+
+        (uint256 superformId, address superform) = sf.createSuperform(formImplementationId_, wrapper);
+
+        emit WrapperCreatedWithSuperform(wrapper, wrapperKey, superformId, superform);
     }
 }

@@ -88,29 +88,74 @@ abstract contract AbstractDeployOneInchValidator is EnvironmentUtils {
 
         mapping(uint64 chainId => address[] bridgeAddresses) storage bridgeAddresses = NEW_BRIDGE_ADDRESSES;
 
-        bridgeAddresses[ETH] = [0x111111125421cA6dc452d289314280a0f8842A65];
-        bridgeAddresses[BSC] = [0x111111125421cA6dc452d289314280a0f8842A65];
-        bridgeAddresses[AVAX] = [0x111111125421cA6dc452d289314280a0f8842A65];
-        bridgeAddresses[POLY] = [0x111111125421cA6dc452d289314280a0f8842A65];
-        bridgeAddresses[ARBI] = [0x111111125421cA6dc452d289314280a0f8842A65];
-        bridgeAddresses[OP] = [0x111111125421cA6dc452d289314280a0f8842A65];
-        bridgeAddresses[BASE] = [0x111111125421cA6dc452d289314280a0f8842A65];
-        bridgeAddresses[FANTOM] = [0x111111125421cA6dc452d289314280a0f8842A65];
+        bridgeAddresses[ETH] = [
+            0x111111125421cA6dc452d289314280a0f8842A65,
+            0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
+        ];
+        bridgeAddresses[BSC] = [
+            0x111111125421cA6dc452d289314280a0f8842A65,
+            0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
+        ];
+        bridgeAddresses[AVAX] = [
+            0x111111125421cA6dc452d289314280a0f8842A65,
+            0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
+        ];
+        bridgeAddresses[POLY] = [
+            0x111111125421cA6dc452d289314280a0f8842A65,
+            0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
+        ];
+        bridgeAddresses[ARBI] = [
+            0x111111125421cA6dc452d289314280a0f8842A65,
+            0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
+        ];
+        bridgeAddresses[OP] = [
+            0x111111125421cA6dc452d289314280a0f8842A65,
+            0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
+        ];
+        bridgeAddresses[BASE] = [
+            0x111111125421cA6dc452d289314280a0f8842A65,
+            0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
+        ];
+        bridgeAddresses[FANTOM] = [
+            0x111111125421cA6dc452d289314280a0f8842A65,
+            0xeF4fB24aD0916217251F553c0596F8Edc630EB66,
+            0x663DC15D3C1aC63ff12E45Ab68FeA3F0a883C251
+        ];
 
-        address[] memory bridgeValidators = new address[](1);
-        uint8[] memory newBridgeids = new uint8[](1);
+        address[] memory bridgeValidators = new address[](3);
+        uint8[] memory newBridgeids = new uint8[](3);
 
         bridgeValidators[0] = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "OneInchValidator");
-        newBridgeids[0] = 9;
+        newBridgeids[0] = 4;
+
+        bridgeValidators[1] = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "DeBridgeValidator");
+        newBridgeids[1] = 5;
+
+        bridgeValidators[2] = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "DeBridgeForwarderValidator");
+        newBridgeids[2] = 6;
 
         assert(NEW_BRIDGE_ADDRESSES[vars.chainId][0] != address(0));
+        assert(NEW_BRIDGE_ADDRESSES[vars.chainId][1] != address(0));
+        assert(NEW_BRIDGE_ADDRESSES[vars.chainId][2] != address(0));
+
         assert(bridgeValidators[0] != address(0));
+        assert(bridgeValidators[1] != address(0));
+        assert(bridgeValidators[2] != address(0));
 
         vars.superRegistryC =
             SuperRegistry(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry")));
+
         address expectedSr = vars.chainId == 250
             ? 0x7feB31d18E43E2faeC718EEd2D7f34402c3e27b4
             : 0x17A332dC7B40aE701485023b219E9D6f493a2514;
+
         assert(address(vars.superRegistryC) == expectedSr);
 
         bytes memory txn = abi.encodeWithSelector(

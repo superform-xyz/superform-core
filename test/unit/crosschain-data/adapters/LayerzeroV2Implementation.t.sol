@@ -7,6 +7,8 @@ import "src/crosschain-data/adapters/layerzero-v2/LayerzeroV2Implementation.sol"
 import "src/interfaces/ISuperRegistry.sol";
 import "src/types/DataTypes.sol";
 
+import { IAmbImplementationV2 } from "src/interfaces/IAmbImplementationV2.sol";
+
 contract LayerzeroV2ImplementationTest is BaseSetup {
     LayerzeroV2Implementation layerzeroImpl;
     ISuperRegistry superRegistry;
@@ -273,7 +275,7 @@ contract LayerzeroV2ImplementationTest is BaseSetup {
         vm.prank(lzEndpoint);
         layerzeroImpl.lzReceive(origin, guid, message, address(0), bytes(""));
 
-        vm.expectRevert(IAmbImplementation.MALICIOUS_DELIVERY.selector);
+        vm.expectRevert(IAmbImplementationV2.MALICIOUS_DELIVERY.selector);
         vm.prank(lzEndpoint);
         layerzeroImpl.lzReceive(origin, bytes32(uint256(12)), message, address(0), bytes(""));
     }
