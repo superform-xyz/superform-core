@@ -18,16 +18,16 @@ contract SXSVWRevertTimelockNativeNoSlippageAMB13 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[AVAX][0] = [2];
 
-        TARGET_VAULTS[AVAX][0] = [4];
+        TARGET_VAULTS[AVAX][0] = [0];
 
-        TARGET_FORM_KINDS[AVAX][0] = [1];
+        TARGET_FORM_KINDS[AVAX][0] = [0];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[AVAX][1] = [2];
 
-        TARGET_VAULTS[AVAX][1] = [4];
+        TARGET_VAULTS[AVAX][1] = [0];
 
-        TARGET_FORM_KINDS[AVAX][1] = [1];
+        TARGET_FORM_KINDS[AVAX][1] = [0];
 
         MAX_SLIPPAGE = 1000;
 

@@ -18,28 +18,28 @@ contract MDMVW0102408NativeInputSlipageAMB13 is ProtocolActions {
         DST_CHAINS = [ETH, POLY, AVAX];
 
         TARGET_UNDERLYINGS[ETH][0] = [2, 2];
-        TARGET_VAULTS[ETH][0] = [0, 1];
-        TARGET_FORM_KINDS[ETH][0] = [0, 1];
+        TARGET_VAULTS[ETH][0] = [0, 0];
+        TARGET_FORM_KINDS[ETH][0] = [0, 0];
 
         TARGET_UNDERLYINGS[POLY][0] = [0, 1, 2];
-        TARGET_VAULTS[POLY][0] = [0, 1, 1];
-        TARGET_FORM_KINDS[POLY][0] = [0, 1, 1];
+        TARGET_VAULTS[POLY][0] = [0, 0, 0];
+        TARGET_FORM_KINDS[POLY][0] = [0, 0, 0];
 
         TARGET_UNDERLYINGS[AVAX][0] = [2, 2];
-        TARGET_VAULTS[AVAX][0] = [0, 8];
+        TARGET_VAULTS[AVAX][0] = [0, 2];
         TARGET_FORM_KINDS[AVAX][0] = [0, 0];
 
         TARGET_UNDERLYINGS[ETH][1] = [2, 2];
-        TARGET_VAULTS[ETH][1] = [0, 1];
-        TARGET_FORM_KINDS[ETH][1] = [0, 1];
+        TARGET_VAULTS[ETH][1] = [0, 0];
+        TARGET_FORM_KINDS[ETH][1] = [0, 0];
 
         TARGET_UNDERLYINGS[POLY][1] = [0, 1, 2];
-        TARGET_VAULTS[POLY][1] = [0, 1, 1];
-        TARGET_FORM_KINDS[POLY][1] = [0, 1, 1];
+        TARGET_VAULTS[POLY][1] = [0, 0, 0];
+        TARGET_FORM_KINDS[POLY][1] = [0, 0, 0];
 
         /// all superforms are different
         TARGET_UNDERLYINGS[AVAX][1] = [2, 2];
-        TARGET_VAULTS[AVAX][1] = [0, 8];
+        TARGET_VAULTS[AVAX][1] = [0, 2];
         TARGET_FORM_KINDS[AVAX][1] = [0, 0];
 
         PARTIAL[ETH][1] = [true, false];

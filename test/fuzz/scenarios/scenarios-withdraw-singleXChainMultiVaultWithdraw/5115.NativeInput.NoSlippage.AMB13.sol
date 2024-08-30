@@ -18,14 +18,14 @@ contract SXMVW5115NativeInputNoSlippageAMB13 is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[OP][0] = [0, 4];
-        TARGET_VAULTS[OP][0] = [8, 9];
+        TARGET_VAULTS[OP][0] = [2, 3];
 
-        TARGET_FORM_KINDS[OP][0] = [0, 3];
+        TARGET_FORM_KINDS[OP][0] = [0, 1];
 
         TARGET_UNDERLYINGS[OP][1] = [0, 4];
-        TARGET_VAULTS[OP][1] = [8, 9];
+        TARGET_VAULTS[OP][1] = [2, 3];
 
-        TARGET_FORM_KINDS[OP][1] = [0, 3];
+        TARGET_FORM_KINDS[OP][1] = [0, 1];
 
         MAX_SLIPPAGE = 1000;
 

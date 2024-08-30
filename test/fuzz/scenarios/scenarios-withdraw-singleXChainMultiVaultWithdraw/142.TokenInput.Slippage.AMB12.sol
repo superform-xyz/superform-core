@@ -18,12 +18,12 @@ contract SDMVW142TokenInputSlippageAMB12 is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[AVAX][0] = [1, 1, 2];
-        TARGET_VAULTS[AVAX][0] = [1, 4, 1];
-        TARGET_FORM_KINDS[AVAX][0] = [1, 1, 1];
+        TARGET_VAULTS[AVAX][0] = [0, 0, 0];
+        TARGET_FORM_KINDS[AVAX][0] = [0, 0, 0];
 
         TARGET_UNDERLYINGS[AVAX][1] = [1, 1, 2];
-        TARGET_VAULTS[AVAX][1] = [1, 4, 1];
-        TARGET_FORM_KINDS[AVAX][1] = [1, 1, 1];
+        TARGET_VAULTS[AVAX][1] = [0, 0, 0];
+        TARGET_FORM_KINDS[AVAX][1] = [0, 0, 0];
 
         PARTIAL[AVAX][1] = [true, false, false];
 
@@ -48,7 +48,7 @@ contract SDMVW142TokenInputSlippageAMB12 is ProtocolActions {
                 revertRole: "",
                 slippage: 86, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
 

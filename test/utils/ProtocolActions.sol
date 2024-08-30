@@ -2009,11 +2009,11 @@ abstract contract ProtocolActions is CommonProtocolActions {
             underlyingDstTokensMem[i] = getContract(chain1, vars.underlyingToken);
             vaultMocksMem[i] = getContract(chain1, VAULT_NAMES[vars.vaultIds[i]][vars.underlyingTokens[i]]);
 
-            if (vars.vaultIds[i] == 3 || vars.vaultIds[i] == 5 || vars.vaultIds[i] == 6) {
+            if (vars.vaultIds[i] == 1) {
                 revertingDepositSFsPerDst.push(vars.superformIdsTemp[i]);
             }
 
-            if (vars.vaultIds[i] == 7 || vars.vaultIds[i] == 8) {
+            if (vars.vaultIds[i] == 2) {
                 revertingWithdrawSFsPerDst.push(vars.superformIdsTemp[i]);
             }
         }

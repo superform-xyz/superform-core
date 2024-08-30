@@ -19,12 +19,12 @@ contract SDiMVW0000TokenInputNoSlippage2AMB23 is ProtocolActions {
 
         /// @dev 3 vaults normal deposit equal, 1 normal
         TARGET_UNDERLYINGS[ARBI][0] = [1, 2, 0, 0];
-        TARGET_VAULTS[ARBI][0] = [0, 0, 0, 2];
-        TARGET_FORM_KINDS[ARBI][0] = [0, 0, 0, 2];
+        TARGET_VAULTS[ARBI][0] = [0, 0, 0, 0];
+        TARGET_FORM_KINDS[ARBI][0] = [0, 0, 0, 0];
 
         TARGET_UNDERLYINGS[ARBI][1] = [1, 2, 0, 0];
-        TARGET_VAULTS[ARBI][1] = [0, 0, 0, 2];
-        TARGET_FORM_KINDS[ARBI][1] = [0, 0, 0, 2];
+        TARGET_VAULTS[ARBI][1] = [0, 0, 0, 0];
+        TARGET_FORM_KINDS[ARBI][1] = [0, 0, 0, 0];
 
         MAX_SLIPPAGE = 1000;
 

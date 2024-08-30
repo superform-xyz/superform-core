@@ -23,12 +23,12 @@ contract MDSVW010NativeSlippage2AMB12 is ProtocolActions {
 
         TARGET_VAULTS[ARBI][0] = [0];
 
-        TARGET_VAULTS[OP][0] = [1];
+        TARGET_VAULTS[OP][0] = [0];
 
         TARGET_VAULTS[AVAX][0] = [0];
 
         TARGET_FORM_KINDS[ARBI][0] = [0];
-        TARGET_FORM_KINDS[OP][0] = [1];
+        TARGET_FORM_KINDS[OP][0] = [0];
         TARGET_FORM_KINDS[AVAX][0] = [0];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
@@ -38,12 +38,12 @@ contract MDSVW010NativeSlippage2AMB12 is ProtocolActions {
 
         TARGET_VAULTS[ARBI][1] = [0];
 
-        TARGET_VAULTS[OP][1] = [1];
+        TARGET_VAULTS[OP][1] = [0];
 
         TARGET_VAULTS[AVAX][1] = [0];
 
         TARGET_FORM_KINDS[ARBI][1] = [0];
-        TARGET_FORM_KINDS[OP][1] = [1];
+        TARGET_FORM_KINDS[OP][1] = [0];
         TARGET_FORM_KINDS[AVAX][1] = [0];
 
         MAX_SLIPPAGE = 1000;
