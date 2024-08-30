@@ -122,7 +122,7 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
     struct RebalanceSinglePositionSyncArgs {
         uint256 id;
         uint256 sharesToRedeem;
-        uint256 previewRedeemAmount;
+        uint256 expectedAmountToReceivePostRebalanceFrom;
         uint256 rebalanceFromMsgValue;
         uint256 rebalanceToMsgValue;
         address interimAsset;
@@ -135,7 +135,7 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
     struct RebalanceMultiPositionsSyncArgs {
         uint256[] ids;
         uint256[] sharesToRedeem;
-        uint256 previewRedeemAmount;
+        uint256 expectedAmountToReceivePostRebalanceFrom;
         uint256 rebalanceFromMsgValue;
         uint256 rebalanceToMsgValue;
         address interimAsset;
@@ -148,8 +148,8 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
     struct RebalancePositionsSyncArgs {
         Actions action;
         uint256[] sharesToRedeem;
-        uint256 previewRedeemAmount;
-        address asset;
+        uint256 expectedAmountToReceivePostRebalanceFrom;
+        address interimAsset;
         uint256 slippage;
         uint256 rebalanceFromMsgValue;
         uint256 rebalanceToMsgValue;
