@@ -17,25 +17,25 @@ contract SDMVW142TokenInputSlippageAMB12 is ProtocolActions {
         DST_CHAINS = [AVAX];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[AVAX][0] = [1, 1, 2];
-        TARGET_VAULTS[AVAX][0] = [1, 4, 1];
-        TARGET_FORM_KINDS[AVAX][0] = [1, 1, 1];
+        TARGET_UNDERLYINGS[AVAX][0] = [0, 2];
+        TARGET_VAULTS[AVAX][0] = [0, 0];
+        TARGET_FORM_KINDS[AVAX][0] = [0, 0];
 
-        TARGET_UNDERLYINGS[AVAX][1] = [1, 1, 2];
-        TARGET_VAULTS[AVAX][1] = [1, 4, 1];
-        TARGET_FORM_KINDS[AVAX][1] = [1, 1, 1];
+        TARGET_UNDERLYINGS[AVAX][1] = [0, 2];
+        TARGET_VAULTS[AVAX][1] = [0, 0];
+        TARGET_FORM_KINDS[AVAX][1] = [0, 0];
 
-        PARTIAL[AVAX][1] = [true, false, false];
+        PARTIAL[AVAX][1] = [true, false];
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[AVAX][0] = [1, 1, 1];
-        LIQ_BRIDGES[AVAX][1] = [1, 1, 1];
+        LIQ_BRIDGES[AVAX][0] = [1, 1];
+        LIQ_BRIDGES[AVAX][1] = [1, 1];
 
-        RECEIVE_4626[AVAX][0] = [false, false, false];
-        RECEIVE_4626[AVAX][1] = [false, false, false];
+        RECEIVE_4626[AVAX][0] = [false, false];
+        RECEIVE_4626[AVAX][1] = [false, false];
 
-        FINAL_LIQ_DST_WITHDRAW[AVAX] = [ETH, ETH, ETH];
+        FINAL_LIQ_DST_WITHDRAW[AVAX] = [ETH, ETH];
 
         /// @dev push in order the actions should be executed
         actions.push(
@@ -48,7 +48,7 @@ contract SDMVW142TokenInputSlippageAMB12 is ProtocolActions {
                 revertRole: "",
                 slippage: 86, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
 
@@ -62,7 +62,7 @@ contract SDMVW142TokenInputSlippageAMB12 is ProtocolActions {
                 revertRole: "",
                 slippage: 86, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
     }
@@ -71,19 +71,11 @@ contract SDMVW142TokenInputSlippageAMB12 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario(
-        uint128 amountOne_,
-        uint128 amountOneWithdraw_,
-        uint128 amountTwo_,
-        uint128 amountThree_
-    )
-        public
-    {
+    function test_scenario(uint128 amountOne_, uint128 amountOneWithdraw_, uint128 amountTwo_) public {
         amountOne_ = uint128(bound(amountOne_, 12 * 10 ** 6, TOTAL_SUPPLY_USDC / 3));
         amountTwo_ = uint128(bound(amountTwo_, 11 * 10 ** 6, TOTAL_SUPPLY_USDC / 3));
-        amountThree_ = uint128(bound(amountThree_, 12 * 10 ** 6, TOTAL_SUPPLY_USDC / 3));
 
-        AMOUNTS[AVAX][0] = [amountOne_, amountTwo_, amountThree_];
+        AMOUNTS[AVAX][0] = [amountOne_, amountTwo_];
 
         for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
@@ -106,7 +98,7 @@ contract SDMVW142TokenInputSlippageAMB12 is ProtocolActions {
                 /// @dev amount = 1 after slippage will become 0, hence starting with 2
                 amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 2, superPositions[0] - 1));
 
-                AMOUNTS[AVAX][1] = [amountOneWithdraw_, superPositions[1], superPositions[2]];
+                AMOUNTS[AVAX][1] = [amountOneWithdraw_, superPositions[1]];
             }
 
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);

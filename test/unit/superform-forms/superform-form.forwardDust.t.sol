@@ -10,7 +10,6 @@ import { DataLib } from "src/libraries/DataLib.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
 import { SuperPositions } from "src/SuperPositions.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
-import { IERC4626TimelockForm } from "src/forms/interfaces/IERC4626TimelockForm.sol";
 import "src/types/DataTypes.sol";
 
 contract ForwardDustFormTest is ProtocolActions {
@@ -37,17 +36,6 @@ contract ForwardDustFormTest is ProtocolActions {
 
         uint256 balanceBefore = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
         assertEq(balanceBefore, 0);
-        IBaseForm(superform).forwardDustToPaymaster(getContract(ARBI, "WETH"));
-        uint256 balanceAfter = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
-
-        assertEq(balanceAfter, 0);
-    }
-
-    function test_forwardDustToPaymasterTimelocked() public {
-        address superform = _successfulDepositWithdraw("ERC4626TimelockMock", 1, 1e18, 0, true, deployer);
-
-        uint256 balanceBefore = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
-        assertGt(balanceBefore, 0);
         IBaseForm(superform).forwardDustToPaymaster(getContract(ARBI, "WETH"));
         uint256 balanceAfter = MockERC20(getContract(ARBI, "WETH")).balanceOf(superform);
 
@@ -160,11 +148,6 @@ contract ForwardDustFormTest is ProtocolActions {
         if (formImplementationId_ != 1) {
             vm.prank(getContract(ARBI, "CoreStateRegistry"));
             IBaseForm(superform).xChainWithdrawFromVault(data2, user, ETH);
-        } else {
-            vm.prank(getContract(ARBI, "TimelockStateRegistry"));
-            IERC4626TimelockForm(superform).withdrawAfterCoolDown(
-                TimelockPayload(1, ETH, block.timestamp, data2, TimelockStatus.PENDING)
-            );
         }
     }
 }

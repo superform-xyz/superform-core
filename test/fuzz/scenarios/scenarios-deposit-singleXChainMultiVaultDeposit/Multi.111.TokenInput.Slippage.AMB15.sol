@@ -18,10 +18,8 @@ contract SDMVDMulti111NoTokenInputSlippageAMB15 is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[AVAX][0] = [2, 2, 2];
-
-        TARGET_VAULTS[AVAX][0] = [1, 1, 1];
-
-        TARGET_FORM_KINDS[AVAX][0] = [1, 1, 1];
+        TARGET_VAULTS[AVAX][0] = [0, 0, 0];
+        TARGET_FORM_KINDS[AVAX][0] = [0, 0, 0];
 
         AMOUNTS[AVAX][0] = [214 * 10e18, 798 * 10e18, 55_312 * 10e18];
 
@@ -41,7 +39,7 @@ contract SDMVDMulti111NoTokenInputSlippageAMB15 is ProtocolActions {
                 revertRole: "",
                 slippage: 512, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
     }

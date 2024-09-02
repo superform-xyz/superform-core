@@ -19,9 +19,9 @@ contract SDiMVDMulti26NativeNoSlippageAMB13 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[POLY][0] = [0, 0];
 
-        TARGET_VAULTS[POLY][0] = [2, 6];
+        TARGET_VAULTS[POLY][0] = [0, 0];
 
-        TARGET_FORM_KINDS[POLY][0] = [2, 2];
+        TARGET_FORM_KINDS[POLY][0] = [0, 0];
 
         MAX_SLIPPAGE = 1000;
 
