@@ -152,17 +152,13 @@ struct SetupVars {
     address liFiMockBlacklisted;
     address liFiMockSwapToAttacker;
     address erc4626Form;
-    address erc4626TimelockForm;
-    address kycDao4626Form;
     address erc5115form;
     address coreStateRegistry;
     address PayloadHelper;
     address paymentHelper;
-    address timelockStateRegistry;
     address broadcastRegistry;
     address UNDERLYING_TOKEN;
     address vault;
-    address timelockVault;
     address superformRouter;
     address dstLzImplementation;
     address dstHyperlaneImplementation;
@@ -185,7 +181,6 @@ struct SetupVars {
     address eRC5115To4626WrapperFactory;
     Vm.Log[] logs;
     address superPositions;
-    address kycDAOMock;
     SuperRegistry superRegistryC;
     SuperRBAC superRBACC;
 }

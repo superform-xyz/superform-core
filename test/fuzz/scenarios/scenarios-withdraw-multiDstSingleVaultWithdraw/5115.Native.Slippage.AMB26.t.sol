@@ -20,20 +20,20 @@ contract MDSVW5115NativeSlippageAMB26 is ProtocolActions {
         TARGET_UNDERLYINGS[OP][0] = [4];
         TARGET_UNDERLYINGS[AVAX][0] = [2];
 
-        TARGET_VAULTS[OP][0] = [9];
+        TARGET_VAULTS[OP][0] = [3];
         TARGET_VAULTS[AVAX][0] = [0];
 
-        TARGET_FORM_KINDS[OP][0] = [3];
+        TARGET_FORM_KINDS[OP][0] = [1];
         TARGET_FORM_KINDS[AVAX][0] = [0];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[OP][1] = [4];
         TARGET_UNDERLYINGS[AVAX][1] = [2];
 
-        TARGET_VAULTS[OP][1] = [9];
+        TARGET_VAULTS[OP][1] = [3];
         TARGET_VAULTS[AVAX][1] = [0];
 
-        TARGET_FORM_KINDS[OP][1] = [3];
+        TARGET_FORM_KINDS[OP][1] = [1];
         TARGET_FORM_KINDS[AVAX][1] = [0];
 
         PARTIAL[OP][1] = [true];

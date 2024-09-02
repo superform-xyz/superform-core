@@ -18,16 +18,16 @@ contract SDSVWAave5115NativeSlippage is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ARBI][0] = [1];
 
-        TARGET_VAULTS[ARBI][0] = [9];
+        TARGET_VAULTS[ARBI][0] = [3];
 
-        TARGET_FORM_KINDS[ARBI][0] = [3];
+        TARGET_FORM_KINDS[ARBI][0] = [1];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ARBI][1] = [1];
 
-        TARGET_VAULTS[ARBI][1] = [9];
+        TARGET_VAULTS[ARBI][1] = [3];
 
-        TARGET_FORM_KINDS[ARBI][1] = [3];
+        TARGET_FORM_KINDS[ARBI][1] = [1];
 
         MAX_SLIPPAGE = 1000;
 

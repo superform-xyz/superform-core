@@ -21,12 +21,11 @@ contract MDMVDMulti5115NoTokenInputSlippageAMB26 is ProtocolActions {
         TARGET_UNDERLYINGS[AVAX][0] = [2, 2, 2];
         TARGET_UNDERLYINGS[OP][0] = [2, 2, 4];
 
-        TARGET_VAULTS[AVAX][0] = [1, 1, 1];
+        TARGET_VAULTS[AVAX][0] = [0, 0, 0];
+        TARGET_VAULTS[OP][0] = [0, 0, 3];
 
-        TARGET_VAULTS[OP][0] = [5, 5, 9];
-
-        TARGET_FORM_KINDS[AVAX][0] = [1, 1, 1];
-        TARGET_FORM_KINDS[OP][0] = [1, 1, 3];
+        TARGET_FORM_KINDS[AVAX][0] = [0, 0, 0];
+        TARGET_FORM_KINDS[OP][0] = [0, 0, 1];
 
         MAX_SLIPPAGE = 1000;
 
@@ -46,7 +45,7 @@ contract MDMVDMulti5115NoTokenInputSlippageAMB26 is ProtocolActions {
                 revertRole: "",
                 slippage: 512, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
     }

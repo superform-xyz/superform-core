@@ -14,6 +14,7 @@ import { WormholeHelper } from "pigeon/wormhole/automatic-relayer/WormholeHelper
 import "pigeon/wormhole/specialized-relayer/WormholeHelper.sol" as WormholeBroadcastHelper;
 
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
+import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 
 /// @dev test utils & mocks
 import { LiFiMock } from "../mocks/LiFiMock.sol";
@@ -30,20 +31,12 @@ import { MockERC20 } from "../mocks/MockERC20.sol";
 import { VaultMock } from "../mocks/VaultMock.sol";
 import { VaultMockRevertDeposit } from "../mocks/VaultMockRevertDeposit.sol";
 import { VaultMockRevertWithdraw } from "../mocks/VaultMockRevertWithdraw.sol";
-import { ERC4626TimelockMockRevertWithdrawal } from "../mocks/ERC4626TimelockMockRevertWithdrawal.sol";
-import { ERC4626TimelockMockRevertDeposit } from "../mocks/ERC4626TimelockMockRevertDeposit.sol";
-import { ERC4626TimelockMock } from "../mocks/ERC4626TimelockMock.sol";
-import { kycDAO4626 } from "super-vaults/kycdao-4626/kycdao4626.sol";
-import { kycDAO4626RevertDeposit } from "../mocks/kycDAO4626RevertDeposit.sol";
-import { kycDAO4626RevertWithdraw } from "../mocks/kycDAO4626RevertWithdraw.sol";
 import { Permit2Clone } from "../mocks/Permit2Clone.sol";
-import { KYCDaoNFTMock } from "../mocks/KYCDaoNFTMock.sol";
 
 /// @dev Protocol imports
 import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
 import { BroadcastRegistry } from "src/crosschain-data/BroadcastRegistry.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
-import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
 import { EmergencyQueue } from "src/EmergencyQueue.sol";
@@ -52,8 +45,6 @@ import { SuperRBAC } from "src/settings/SuperRBAC.sol";
 import { SuperPositions } from "src/SuperPositions.sol";
 import { SuperformFactory } from "src/SuperformFactory.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
-import { ERC4626TimelockForm } from "src/forms/ERC4626TimelockForm.sol";
-import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
 import { ERC5115Form } from "src/forms/ERC5115Form.sol";
 import { ERC5115To4626Wrapper } from "src/forms/wrappers/ERC5115To4626Wrapper.sol";
 import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
@@ -84,7 +75,6 @@ import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
 import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
 import ".././utils/AmbParams.sol";
 import { IPermit2 } from "src/vendor/dragonfly-xyz/IPermit2.sol";
-import { TimelockStateRegistry } from "src/crosschain-data/extensions/TimelockStateRegistry.sol";
 import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
 import { PaymentHelper } from "src/payments/PaymentHelper.sol";
 import { IPaymentHelperV2 as IPaymentHelper } from "src/interfaces/IPaymentHelperV2.sol";
@@ -130,7 +120,6 @@ abstract contract BaseSetup is StdInvariant, Test {
 
     string[41] public contractNames = [
         "CoreStateRegistry",
-        "TimelockStateRegistry",
         "BroadcastRegistry",
         "LayerzeroImplementation",
         "LayerzeroV2Implementation",
@@ -143,8 +132,6 @@ abstract contract BaseSetup is StdInvariant, Test {
         "DstSwapper",
         "SuperformFactory",
         "ERC4626Form",
-        "ERC4626TimelockForm",
-        "ERC4626KYCDaoForm",
         "SuperformRouter",
         "SuperPositions",
         "SuperRegistry",
@@ -179,22 +166,11 @@ abstract contract BaseSetup is StdInvariant, Test {
     /// @dev we should fork these instead of mocking.
     string[] public UNDERLYING_TOKENS = ["DAI", "USDC", "WETH", "ezETH", "wstETH", "sUSDe", "USDe"];
 
-    /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm, 4 = ERC511§5
-    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(2), uint32(3), uint32(4)];
+    /// @dev 1 = ERC4626Form, 4 = ERC5115
+    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(4)];
 
     /// @dev WARNING!! THESE VAULT NAMES MUST BE THE EXACT NAMES AS FILLED IN vaultKinds
-    string[] public VAULT_KINDS = [
-        "VaultMock",
-        "ERC4626TimelockMock",
-        "kycDAO4626",
-        "VaultMockRevertDeposit",
-        "ERC4626TimelockMockRevertWithdrawal",
-        "ERC4626TimelockMockRevertDeposit",
-        "kycDAO4626RevertDeposit",
-        "kycDAO4626RevertWithdraw",
-        "VaultMockRevertWithdraw",
-        "ERC5115"
-    ];
+    string[] public VAULT_KINDS = ["VaultMock", "VaultMockRevertDeposit", "VaultMockRevertWithdraw", "ERC5115"];
 
     struct VaultInfo {
         bytes[] vaultBytecode;
@@ -208,7 +184,6 @@ abstract contract BaseSetup is StdInvariant, Test {
     mapping(uint64 chainId => mapping(uint32 formImplementationId => address[][] vaults)) public vaults;
     mapping(uint64 chainId => address[] wrapped5115vaults) public wrapped5115vaults;
     mapping(uint64 chainId => uint256 payloadId) PAYLOAD_ID;
-    mapping(uint64 chainId => uint256 payloadId) TIMELOCK_PAYLOAD_ID;
 
     /// @dev liquidity bridge ids
     uint8[] bridgeIds;
@@ -672,15 +647,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                 vars.superRegistryC.CORE_STATE_REGISTRY(), vars.coreStateRegistry, vars.chainId
             );
 
-            /// @dev 4.2 - deploy Form State Registry
-            vars.timelockStateRegistry = address(new TimelockStateRegistry{ salt: salt }(vars.superRegistryC));
-            contracts[vars.chainId][bytes32(bytes("TimelockStateRegistry"))] = vars.timelockStateRegistry;
-
-            vars.superRegistryC.setAddress(
-                vars.superRegistryC.TIMELOCK_STATE_REGISTRY(), vars.timelockStateRegistry, vars.chainId
-            );
-
-            /// @dev 4.3 - deploy Broadcast State Registry
+            /// @dev 4.2 - deploy Broadcast State Registry
             vars.broadcastRegistry = address(new BroadcastRegistry{ salt: salt }(vars.superRegistryC));
             contracts[vars.chainId][bytes32(bytes("BroadcastRegistry"))] = vars.broadcastRegistry;
 
@@ -688,15 +655,13 @@ abstract contract BaseSetup is StdInvariant, Test {
                 vars.superRegistryC.BROADCAST_REGISTRY(), vars.broadcastRegistry, vars.chainId
             );
 
-            address[] memory registryAddresses = new address[](3);
+            address[] memory registryAddresses = new address[](2);
             registryAddresses[0] = vars.coreStateRegistry;
-            registryAddresses[1] = vars.timelockStateRegistry;
-            registryAddresses[2] = vars.broadcastRegistry;
+            registryAddresses[1] = vars.broadcastRegistry;
 
-            uint8[] memory registryIds = new uint8[](3);
+            uint8[] memory registryIds = new uint8[](2);
             registryIds[0] = 1;
-            registryIds[1] = 2;
-            registryIds[2] = 3;
+            registryIds[1] = 3;
 
             vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
 
@@ -821,10 +786,6 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.oneInchValidator = address(new OneInchValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("OneInchValidator"))] = vars.oneInchValidator;
 
-            /// @dev 7.3- kycDAO NFT used to test kycDAO vaults
-            vars.kycDAOMock = address(new KYCDaoNFTMock{ salt: salt }());
-            contracts[vars.chainId][bytes32(bytes("KYCDAOMock"))] = vars.kycDAOMock;
-
             bridgeAddresses.push(vars.lifiRouter);
             bridgeAddresses.push(vars.socketRouter);
             bridgeAddresses.push(vars.socketOneInch);
@@ -863,9 +824,9 @@ abstract contract BaseSetup is StdInvariant, Test {
             bytes memory bytecodeWithArgs;
             /// NOTE: This loop deploys all vaults on all chainIds with all of the UNDERLYING TOKENS (id x form) x
             /// chainId
-            for (uint32 j = 0; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
+            for (uint32 j; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
                 /// @dev don't do this for 5115
-                if (j != 3) {
+                if (j != 1) {
                     address[][] memory doubleVaults = new address[][](UNDERLYING_TOKENS.length);
 
                     for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
@@ -888,16 +849,6 @@ abstract contract BaseSetup is StdInvariant, Test {
                                     );
 
                                     vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
-                                } else {
-                                    /// deploy the kycDAOVault wrapper with different args
-                                    bytecodeWithArgs = abi.encodePacked(
-                                        vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode[l],
-                                        abi.encode(
-                                            MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])), vars.kycDAOMock
-                                        )
-                                    );
-
-                                    vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
                                 }
                             }
 
@@ -910,6 +861,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                     vaults[vars.chainId][FORM_IMPLEMENTATION_IDS[j]] = doubleVaults;
                 }
             }
+
             /// @dev deploy wrapper factory
             vars.eRC5115To4626WrapperFactory =
                 address(new ERC5115To4626WrapperFactory{ salt: salt }(vars.superRegistry));
@@ -941,28 +893,13 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.erc4626Form = address(new ERC4626Form{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars.erc4626Form;
 
-            // Timelock + ERC4626 Form
-            vars.erc4626TimelockForm = address(new ERC4626TimelockForm{ salt: salt }(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("ERC4626TimelockForm"))] = vars.erc4626TimelockForm;
-
-            // KYCDao ERC4626 Form
-            vars.kycDao4626Form = address(new ERC4626KYCDaoForm{ salt: salt }(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
-
             // Pendle ERC5115 Form
             vars.erc5115form = address(new ERC5115Form{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("ERC5115Form"))] = vars.erc5115form;
 
             /// @dev 11 - Add newly deployed form implementations to Factory
             ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0], 1);
-
-            ISuperformFactory(vars.factory).addFormImplementation(
-                vars.erc4626TimelockForm, FORM_IMPLEMENTATION_IDS[1], 2
-            );
-
-            ISuperformFactory(vars.factory).addFormImplementation(vars.kycDao4626Form, FORM_IMPLEMENTATION_IDS[2], 1);
-
-            ISuperformFactory(vars.factory).addFormImplementation(vars.erc5115form, FORM_IMPLEMENTATION_IDS[3], 1);
+            ISuperformFactory(vars.factory).addFormImplementation(vars.erc5115form, FORM_IMPLEMENTATION_IDS[1], 1);
 
             /// @dev 12 - Deploy SuperformRouter
             vars.superformRouter = address(new SuperformRouter{ salt: salt }(vars.superRegistry));
@@ -1247,12 +1184,6 @@ abstract contract BaseSetup is StdInvariant, Test {
                     );
 
                     vars.superRegistryC.setAddress(
-                        vars.superRegistryC.TIMELOCK_STATE_REGISTRY(),
-                        getContract(vars.dstChainId, "TimelockStateRegistry"),
-                        vars.dstChainId
-                    );
-
-                    vars.superRegistryC.setAddress(
                         vars.superRegistryC.BROADCAST_REGISTRY(),
                         getContract(vars.dstChainId, "BroadcastRegistry"),
                         vars.dstChainId
@@ -1345,9 +1276,8 @@ abstract contract BaseSetup is StdInvariant, Test {
             vm.selectFork(FORKS[chainIds[i]]);
 
             /// @dev 18 - create test superforms when the whole state registry is configured
-
             for (uint256 j = 0; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
-                if (j != 3) {
+                if (j == 0) {
                     for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
                         uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
 
@@ -1358,11 +1288,6 @@ abstract contract BaseSetup is StdInvariant, Test {
                             (superformId, vars.superform) = ISuperformFactory(
                                 contracts[chainIds[i]][bytes32(bytes("SuperformFactory"))]
                             ).createSuperform(FORM_IMPLEMENTATION_IDS[j], vault);
-
-                            if (FORM_IMPLEMENTATION_IDS[j] == 3) {
-                                /// mint a kycDAO Nft to the newly kycDAO superform
-                                ERC4626KYCDaoForm(vars.superform).mintKYC(1);
-                            }
 
                             contracts[chainIds[i]][bytes32(
                                 bytes(
@@ -1376,7 +1301,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                             )] = vars.superform;
                         }
                     }
-                } else if (j == 3) {
+                } else {
                     if (NUMBER_OF_5115S[chainIds[i]] > 0) {
                         for (uint256 k = 0; k < NUMBER_OF_5115S[chainIds[i]]; ++k) {
                             uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
@@ -1402,11 +1327,6 @@ abstract contract BaseSetup is StdInvariant, Test {
                     }
                 }
             }
-
-            /// mint a kycDAO Nft to the test users in all chains
-            KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[0]);
-            KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[1]);
-            KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[2]);
         }
         _setTokenPriceFeeds();
 
@@ -1793,25 +1713,10 @@ abstract contract BaseSetup is StdInvariant, Test {
         vaultBytecodes2[1].vaultBytecode.push(type(VaultMock).creationCode);
         vaultBytecodes2[1].vaultBytecode.push(type(VaultMockRevertDeposit).creationCode);
         vaultBytecodes2[1].vaultBytecode.push(type(VaultMockRevertWithdraw).creationCode);
+
         vaultBytecodes2[1].vaultKinds.push("VaultMock");
         vaultBytecodes2[1].vaultKinds.push("VaultMockRevertDeposit");
         vaultBytecodes2[1].vaultKinds.push("VaultMockRevertWithdraw");
-
-        /// @dev form 2 (timelocked 4626)
-        vaultBytecodes2[2].vaultBytecode.push(type(ERC4626TimelockMock).creationCode);
-        vaultBytecodes2[2].vaultKinds.push("ERC4626TimelockMock");
-        vaultBytecodes2[2].vaultBytecode.push(type(ERC4626TimelockMockRevertWithdrawal).creationCode);
-        vaultBytecodes2[2].vaultKinds.push("ERC4626TimelockMockRevertWithdrawal");
-        vaultBytecodes2[2].vaultBytecode.push(type(ERC4626TimelockMockRevertDeposit).creationCode);
-        vaultBytecodes2[2].vaultKinds.push("ERC4626TimelockMockRevertDeposit");
-
-        /// @dev form 3 (kycdao 4626)
-        vaultBytecodes2[3].vaultBytecode.push(type(kycDAO4626).creationCode);
-        vaultBytecodes2[3].vaultKinds.push("kycDAO4626");
-        vaultBytecodes2[3].vaultBytecode.push(type(kycDAO4626RevertDeposit).creationCode);
-        vaultBytecodes2[3].vaultKinds.push("kycDAO4626RevertDeposit");
-        vaultBytecodes2[3].vaultBytecode.push(type(kycDAO4626RevertWithdraw).creationCode);
-        vaultBytecodes2[3].vaultKinds.push("kycDAO4626RevertWithdraw");
 
         /// @dev form 4 (pendle 5115)
         vaultBytecodes2[4].vaultBytecode.push(type(ERC5115To4626Wrapper).creationCode);
@@ -2137,35 +2042,6 @@ abstract contract BaseSetup is StdInvariant, Test {
         PaymentHelper paymentHelper;
         PayloadHelper payloadHelper;
         bytes message;
-    }
-
-    /// @dev Generates the acknowledgement amb params for the entire action
-    /// @dev TODO - Sujith to comment further
-    function _generateAckGasFeesAndParamsForTimeLock(
-        bytes memory chainIds_,
-        uint8[] memory selectedAmbIds,
-        uint256 timelockPayloadId
-    )
-        internal
-        view
-        returns (uint256 msgValue)
-    {
-        LocalAckVars memory vars;
-        (vars.srcChainId, vars.dstChainId) = abi.decode(chainIds_, (uint64, uint64));
-
-        address _paymentHelper = contracts[vars.dstChainId][bytes32(bytes("PaymentHelper"))];
-        vars.paymentHelper = PaymentHelper(_paymentHelper);
-
-        address _payloadHelper = contracts[vars.dstChainId][bytes32(bytes("PayloadHelper"))];
-        vars.payloadHelper = PayloadHelper(_payloadHelper);
-
-        (,, uint256 payloadId, uint256 superformId, uint256 amount) =
-            vars.payloadHelper.decodeTimeLockPayload(timelockPayloadId);
-
-        vars.message =
-            abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superformId, amount))));
-
-        (msgValue,) = vars.paymentHelper.calculateAMBData(vars.srcChainId, selectedAmbIds, vars.message);
     }
 
     function _payload(address registry, uint64 chainId, uint256 payloadId_) internal returns (bytes memory payload_) {
