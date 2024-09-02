@@ -76,9 +76,23 @@ ityfuzz: check-ityfuzz
 generate: build ## Generates go bindings for smart contracts
 	./script/utils/retrieve-abis.sh
 
-	# Superform router plus contracts
-	abigen --abi out/SuperformRouterPlus.sol/SuperformRouterPlus.abi --pkg routerplus --type SuperformRouterPlus --out contracts/routerplus/SuperformRouterPlus.go
-	abigen --abi out/SuperformRouterPlusAsync.sol/SuperformRouterPlusAsync.abi --pkg routerplusasync --type SuperformRouterPlusAsync --out contracts/routerplusasync/SuperformRouterPlusAsync.go
+	# General
+	abigen --abi out/SuperformRouter.sol/SuperformRouter.abi --pkg contracts --type SFRouter --out contracts/SuperformRouter.go
+	abigen --abi out/SuperformFactory.sol/SuperformFactory.abi --pkg contracts --type SFFactory --out contracts/SuperformFactory.go
+	abigen --abi out/SuperPositions.sol/SuperPositions.abi --pkg contracts --type SuperPositions --out contracts/SuperPositions.go
+	abigen --abi out/VaultClaimer.sol/VaultClaimer.abi --pkg contracts --type VaultClaimer --out contracts/VaultClaimer.go
+	abigen --abi out/CoreStateRegistry.sol/CoreStateRegistry.abi --pkg contracts --type CoreStateRegistry --out contracts/CoreStateRegistry.go
+
+	# Payments
+	abigen --abi out/PaymentHelper.sol/PaymentHelper.abi --pkg contracts --type PaymentHelper --out contracts/PaymentHelper.go
+	abigen --abi out/PayMaster.sol/PayMaster.abi --pkg contracts --type PayMaster --out contracts/PayMaster.go
+
+	# Forms
+	abigen --abi out/ERC4626Form.sol/ERC4626Form.abi --pkg contracts --type ERC4626Form --out contracts/ERC4626Form.go
+
+	# Superform router plus
+	abigen --abi out/SuperformRouterPlus.sol/SuperformRouterPlus.abi --pkg contracts --type SuperformRouterPlus --out contracts/SuperformRouterPlus.go
+	abigen --abi out/SuperformRouterPlusAsync.sol/SuperformRouterPlusAsync.abi --pkg contracts --type SuperformRouterPlusAsync --out contracts/SuperformRouterPlusAsync.go
 
 .PHONY: install
 install: ## Installs the project

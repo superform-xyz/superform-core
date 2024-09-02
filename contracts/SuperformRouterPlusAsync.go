@@ -1,7 +1,7 @@
 // Code generated - DO NOT EDIT.
 // This file is a generated binding and any manual changes will be lost.
 
-package routerplusasync
+package contracts
 
 import (
 	"errors"
@@ -61,16 +61,6 @@ type ISuperformRouterPlusAsyncDecodedRouterPlusRebalanceCallData struct {
 	OutputAmounts     [][]*big.Int
 	AmbIds            [][]uint8
 	DstChainIds       []uint64
-}
-
-// LiqRequest is an auto generated low-level Go binding around an user-defined struct.
-type LiqRequest struct {
-	TxData        []byte
-	Token         common.Address
-	InterimToken  common.Address
-	BridgeId      uint8
-	LiqDstChainId uint64
-	NativeAmount  *big.Int
 }
 
 // SuperformRouterPlusAsyncMetaData contains all meta data concerning the SuperformRouterPlusAsync contract.
