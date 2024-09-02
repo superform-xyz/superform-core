@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract MDSVTimelocked4626TokenInputSlippageAMB13 is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, AVAX, BSC];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE

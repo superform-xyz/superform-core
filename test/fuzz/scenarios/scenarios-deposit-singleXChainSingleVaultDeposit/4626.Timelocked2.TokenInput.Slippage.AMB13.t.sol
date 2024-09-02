@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract SXSVDTimelocked2TokenInputSlippageAMB13 is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, BSC];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE

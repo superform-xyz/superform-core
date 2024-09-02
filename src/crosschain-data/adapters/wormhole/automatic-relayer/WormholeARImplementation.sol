@@ -13,8 +13,6 @@ import { IWormholeRelayer, VaaKey } from "src/vendor/wormhole/IWormholeRelayer.s
 import { IWormholeReceiver } from "src/vendor/wormhole/IWormholeReceiver.sol";
 import "src/vendor/wormhole/Utils.sol";
 
-import "forge-std/console.sol";
-
 /// @title WormholeImplementation
 /// @dev Allows state registries to use Wormhole AR's for crosschain communication
 /// @author Zeropoint Labs
@@ -216,8 +214,6 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
-        console.log("source address:", fromWormholeFormat(sourceAddress_));
-        console.log("authorized impl:", authorizedImpl[sourceChain_]);
         if (fromWormholeFormat(sourceAddress_) != authorizedImpl[sourceChain_]) {
             revert Error.INVALID_SRC_SENDER();
         }

@@ -100,20 +100,6 @@ interface IPayloadHelper {
         view
         returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
 
-    /// @dev returns decoded async deposit form payloads
-    /// @param asyncDepositPayloadId_ is the unique identifier of payload in async state registry
-    function decodeAsyncDepositPayload(uint256 asyncDepositPayloadId_)
-        external
-        view
-        returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
-
-    /// @dev returns decoded async withdraw form payloads
-    /// @param asyncWithdrawPayloadId_ is the unique identifier of payload in async state registry
-    function decodeAsyncWithdrawPayload(uint256 asyncWithdrawPayloadId_)
-        external
-        view
-        returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
-
     /// @dev returns decoded sync withdraw form payloads
     /// @param syncWithdrawPayloadId_ is the unique identifier of payload in async state registry
     function decodeSyncWithdrawPayload(uint256 syncWithdrawPayloadId_)

@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract SDSVD4626KycNoSwapTokenInputNoSlippage is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, POLY];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE

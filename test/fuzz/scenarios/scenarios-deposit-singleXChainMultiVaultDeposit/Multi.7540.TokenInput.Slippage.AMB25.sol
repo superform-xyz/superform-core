@@ -4,35 +4,33 @@ pragma solidity ^0.8.23;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract MDMVDMulti021120NoNativeSlippageAMB23 is ProtocolActions {
+contract SDMVDMulti7540NoTokenInputSlippageAMB25 is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, OP];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
         //////////////////////////////////////////////////////////////*/
 
-        AMBs = [3, 2];
-        MultiDstAMBs = [AMBs, AMBs];
+        AMBs = [2, 5];
 
-        CHAIN_0 = ARBI;
-        DST_CHAINS = [ETH, OP];
+        CHAIN_0 = ETH;
+        DST_CHAINS = [OP];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[ETH][0] = [1, 1, 1];
-        TARGET_UNDERLYINGS[OP][0] = [2, 2, 2];
+        TARGET_UNDERLYINGS[OP][0] = [2, 2, 4];
 
-        TARGET_VAULTS[ETH][0] = [0, 1, 1];
-        TARGET_VAULTS[OP][0] = [1, 1, 0];
+        TARGET_VAULTS[OP][0] = [1, 10, 9];
 
-        TARGET_FORM_KINDS[ETH][0] = [0, 1, 1];
-        TARGET_FORM_KINDS[OP][0] = [1, 1, 0];
+        TARGET_FORM_KINDS[OP][0] = [1, 4, 3];
+
+        AMOUNTS[OP][0] = [214 * 10e18, 798 * 10e18, 55_312 * 10e18];
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[ETH][0] = [1, 1, 1];
         LIQ_BRIDGES[OP][0] = [1, 1, 1];
 
-        RECEIVE_4626[ETH][0] = [false, false, false];
         RECEIVE_4626[OP][0] = [false, false, false];
 
         actions.push(
@@ -43,9 +41,9 @@ contract MDMVDMulti021120NoNativeSlippageAMB23 is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 777, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 512, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 69_420 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
     }
@@ -54,14 +52,7 @@ contract MDMVDMulti021120NoNativeSlippageAMB23 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
-        /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        amountOne_ = uint128(bound(amountOne_, 2e18, 20e18));
-        amountTwo_ = uint128(bound(amountTwo_, 2e18, 20e18));
-        amountThree_ = uint128(bound(amountThree_, 2e18, 20e18));
-        AMOUNTS[ETH][0] = [amountOne_, amountTwo_, amountThree_];
-        AMOUNTS[OP][0] = [amountThree_, amountOne_, amountTwo_];
-
+    function test_scenario() public {
         for (uint256 act; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
