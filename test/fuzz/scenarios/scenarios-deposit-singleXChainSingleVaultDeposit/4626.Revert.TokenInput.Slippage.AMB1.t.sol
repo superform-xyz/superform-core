@@ -18,8 +18,8 @@ contract SXSVDNormal4626RevertNoTokenInputSlippageAMB1 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[POLY][0] = [1];
 
-        TARGET_VAULTS[POLY][0] = [3];
-        /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
+        TARGET_VAULTS[POLY][0] = [1];
+        /// @dev vault index 1 is failedDepositMock, check VAULT_KINDS
 
         TARGET_FORM_KINDS[POLY][0] = [0];
 

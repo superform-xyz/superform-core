@@ -1358,6 +1358,58 @@ contract SuperformERC4626FormTest is ProtocolActions {
         ERC4626Form(payable(superform)).emergencyWithdraw(address(0), 0);
     }
 
+    function test_xChainDepositIntoVault_InvalidChainId() public {
+        vm.selectFork(FORKS[ETH]);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
+        InitSingleVaultData memory data = InitSingleVaultData(
+            0,
+            superformId,
+            0,
+            0,
+            0,
+            LiqRequest(bytes(""), address(0), address(0), 0, 0, 0),
+            false,
+            false,
+            address(0),
+            ""
+        );
+
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        vm.prank(getContract(ETH, "CoreStateRegistry"));
+        ERC4626Form(payable(superform)).xChainDepositIntoVault(data, users[0], 0);
+    }
+
+    function test_xChainWithdrawFromVault_InvalidChainId() public {
+        vm.selectFork(FORKS[ETH]);
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
+        InitSingleVaultData memory data = InitSingleVaultData(
+            0,
+            superformId,
+            0,
+            0,
+            0,
+            LiqRequest(bytes(""), address(0), address(0), 0, 0, 0),
+            false,
+            false,
+            address(0),
+            ""
+        );
+
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        vm.prank(getContract(ETH, "CoreStateRegistry"));
+        ERC4626Form(payable(superform)).xChainWithdrawFromVault(data, users[0], 0);
+    }
+
     /*///////////////////////////////////////////////////////////////
                         INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/

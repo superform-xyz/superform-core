@@ -822,10 +822,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             ? getContract(
                 AVAX,
                 string.concat(
-                    "DAI",
-                    "ERC4626TimelockMock",
-                    "Superform",
-                    Strings.toString(FORM_IMPLEMENTATION_IDS[formImplementationId])
+                    "DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[formImplementationId])
                 )
             )
             : getContract(

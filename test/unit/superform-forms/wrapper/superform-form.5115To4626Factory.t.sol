@@ -219,7 +219,7 @@ contract ERC5115To4626WrapperTest is ProtocolActions {
 
         uint32[] memory formImplementationIds = new uint32[](2);
         formImplementationIds[0] = 1;
-        formImplementationIds[1] = 2;
+        formImplementationIds[1] = 1;
 
         (address formImpl1BeforeUpdate,,,,) = wrapperFactory.wrappers(wrapperKey1);
         (address formImpl2BeforeUpdate,,,,) = wrapperFactory.wrappers(wrapperKey2);

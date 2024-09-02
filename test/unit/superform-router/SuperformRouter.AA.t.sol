@@ -114,24 +114,6 @@ contract SuperformRouterAATest is ProtocolActions {
         _xChainWithdraw_SmartContractWallet(AVAX, address(walletDestinationAVAX), false, "VaultMock", 0, false);
     }
 
-    function test_withdrawWithSmartContractWallet_timelock() public {
-        _xChainDeposit_SmartContractWallet(false, true, 0, "ERC4626TimelockMock", 1);
-
-        _xChainWithdraw_SmartContractWallet(ETH, address(walletDestination), false, "ERC4626TimelockMock", 1, false);
-    }
-
-    function test_withdrawWithSmartContractWallet_3rdChainId_timelock() public {
-        _xChainDeposit_SmartContractWallet(false, true, 0, "ERC4626TimelockMock", 1);
-        vm.selectFork(FORKS[AVAX]);
-        SmartContractWallet walletDestinationAVAX = new SmartContractWallet(
-            SuperformRouter(payable(getContract(AVAX, "SuperformRouter"))), getContract(AVAX, "DAI")
-        );
-
-        _xChainWithdraw_SmartContractWallet(
-            AVAX, address(walletDestinationAVAX), false, "ERC4626TimelockMock", 1, false
-        );
-    }
-
     function test_withdrawWithSmartContractWallet_retain4626() public {
         _xChainDeposit_SmartContractWallet(false, true, 0, "VaultMock", 0);
 
@@ -148,32 +130,10 @@ contract SuperformRouterAATest is ProtocolActions {
         _xChainWithdraw_SmartContractWallet(ARBI, address(walletDestinationAVAX), false, "VaultMock", 0, true);
     }
 
-    function test_withdrawWithSmartContractWallet_timelock_retain4626() public {
-        _xChainDeposit_SmartContractWallet(false, true, 0, "ERC4626TimelockMock", 1);
-
-        _xChainWithdraw_SmartContractWallet(ARBI, address(walletDestination), false, "ERC4626TimelockMock", 1, true);
-    }
-
-    function test_withdrawWithSmartContractWallet_3rdChainId_timelock_retain4626() public {
-        _xChainDeposit_SmartContractWallet(false, true, 0, "ERC4626TimelockMock", 1);
-        vm.selectFork(FORKS[AVAX]);
-        SmartContractWallet walletDestinationAVAX = new SmartContractWallet(
-            SuperformRouter(payable(getContract(AVAX, "SuperformRouter"))), getContract(AVAX, "DAI")
-        );
-
-        _xChainWithdraw_SmartContractWallet(ARBI, address(walletDestinationAVAX), false, "ERC4626TimelockMock", 1, true);
-    }
-
     function test_direct_withdrawWithSmartContractWallet_retain4626() public {
         _directDeposit_SmartContractWallet(false, true, 0, "VaultMock", 0);
 
         _directWithdraw_SmartContractWallet(ARBI, address(walletDestination), false, "VaultMock", 0, true);
-    }
-
-    function test_direct_withdrawWithSmartContractWallet_timelock_retain4626() public {
-        _directDeposit_SmartContractWallet(false, true, 0, "ERC4626TimelockMock", 1);
-
-        _directWithdraw_SmartContractWallet(ARBI, address(walletDestination), false, "ERC4626TimelockMock", 1, true);
     }
 
     function _directDeposit_SmartContractWallet(
@@ -484,7 +444,6 @@ contract SuperformRouterAATest is ProtocolActions {
             ""
         );
 
-
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
         /// @dev approves before call
@@ -499,7 +458,6 @@ contract SuperformRouterAATest is ProtocolActions {
         walletDestination.singleDirectSingleVaultWithdraw{ value: 2 ether }(req);
 
         if (receive4626_) {
-
             assertGt(IERC4626(IBaseForm(v.superform).getVaultAddress()).balanceOf(scWalletAtLiqDst_), 0);
         }
     }
@@ -572,7 +530,6 @@ contract SuperformRouterAATest is ProtocolActions {
         ambIds_[0] = 1;
         ambIds_[1] = 2;
 
-
         SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds_, ARBI, data);
 
         /// @dev approves before call
@@ -607,15 +564,7 @@ contract SuperformRouterAATest is ProtocolActions {
         vm.prank(deployer);
         CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload(2);
 
-        if (formImplId == 1 && !receive4626_) {
-            vm.warp(block.timestamp + (86_400 * 5));
-            vm.prank(deployer);
-
-            TimelockStateRegistry(getContract(ARBI, "TimelockStateRegistry")).finalizePayload{ value: 2 ether }(1, "");
-        }
-
         if (receive4626_) {
-
             assertGt(IERC4626(IBaseForm(v.superform).getVaultAddress()).balanceOf(scWalletAtLiqDst_), 0);
         }
         vm.selectFork(FORKS[ETH]);
