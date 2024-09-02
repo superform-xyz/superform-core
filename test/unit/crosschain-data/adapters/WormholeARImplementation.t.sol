@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import "test/utils/BaseSetup.sol";
-import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { IAmbImplementationV2 } from "src/interfaces/IAmbImplementationV2.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { Error } from "src/libraries/Error.sol";
 import { ProofLib } from "src/libraries/ProofLib.sol";
@@ -302,7 +302,7 @@ contract WormholeARImplementationTest is BaseSetup {
         );
 
         vm.prank(relayer);
-        vm.expectRevert(IAmbImplementation.MALICIOUS_DELIVERY.selector);
+        vm.expectRevert(IAmbImplementationV2.MALICIOUS_DELIVERY.selector);
         WormholeARImplementation(wormholeARArbi).receiveWormholeMessages(
             abi.encode(ambMessageWithProof),
             new bytes[](0),

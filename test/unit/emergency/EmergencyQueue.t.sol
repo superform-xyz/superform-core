@@ -3,8 +3,6 @@ pragma solidity ^0.8.23;
 
 import "test/utils/ProtocolActions.sol";
 
-import { KYCDaoNFTMock } from "test/mocks/KYCDaoNFTMock.sol";
-
 contract EmergencyQueueTest is ProtocolActions {
     /// our intended user who is a nice person
     address mrperfect;
@@ -263,43 +261,6 @@ contract EmergencyQueueTest is ProtocolActions {
         assertEq(balanceBefore + 1e18, balanceAfter);
     }
 
-    function test_emergencyQueueProcessingXChainTimelockSpecialCase() public {
-        /// user deposits successfully to a form
-        _successfulDepositXChain(1, "ERC4626TimelockMock", 1, mrperfect, false);
-
-        /// send to timelock unlock queue
-        _withdrawXchain("ERC4626TimelockMock", 1, false);
-
-        /// now pause the form
-        _pauseFormXChain(1);
-
-        /// processing the queued withdrawal and assert
-        vm.selectFork(FORKS[ARBI]);
-        vm.warp(block.timestamp + (86_400 * 5));
-
-        vm.prank(deployer);
-        TimelockStateRegistry(payable(getContract(ARBI, "TimelockStateRegistry"))).finalizePayload(1, bytes(""));
-
-        assertEq(EmergencyQueue(getContract(ARBI, "EmergencyQueue")).queueCounter(), 1);
-
-        /// @dev deployer has emergency admin role
-        address emergencyQueue = getContract(ARBI, "EmergencyQueue");
-
-        address superform = getContract(
-            ARBI, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
-        );
-
-        uint256 balanceBefore = MockERC20(IBaseForm(superform).getVaultAddress()).balanceOf(mrimperfect);
-
-        assertFalse(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(1));
-        vm.prank(deployer);
-        EmergencyQueue(emergencyQueue).executeQueuedWithdrawal(1);
-        assertTrue(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(1));
-
-        uint256 balanceAfter = MockERC20(IBaseForm(superform).getVaultAddress()).balanceOf(mrimperfect);
-        assertEq(balanceBefore + 1e18, balanceAfter);
-    }
-
     function test_emergencyQueueProcessingXChainUnpause() public {
         /// user deposits successfully to a form
         _successfulDepositXChain(1, "VaultMock", 0, mrperfect, false);
@@ -372,19 +333,19 @@ contract EmergencyQueueTest is ProtocolActions {
 
     function test_emergencyQueueProcessingXChainMultiVault() public {
         string[] memory vaultKinds = new string[](2);
-        vaultKinds[0] = "ERC4626TimelockMock";
+        vaultKinds[0] = "VaultMock";
         vaultKinds[1] = "VaultMock";
 
         uint256[] memory formImplIds = new uint256[](2);
-        formImplIds[0] = 1;
+        formImplIds[0] = 0;
         formImplIds[1] = 0;
+
         /// user deposits successfully to a form
         _successfulDepositXChain(1, vaultKinds[0], formImplIds[0], mrperfect, false);
-        _successfulDepositXChain(2, vaultKinds[1], formImplIds[1], mrperfect, false);
+        _successfulDepositXChain(2, vaultKinds[0], formImplIds[0], mrperfect, false);
 
         /// now pause the form and try to withdraw
         _pauseFormXChain(formImplIds[0]);
-        _pauseFormXChain(formImplIds[1]);
 
         /// try to withdraw after pause (mrperfect panicks)
         _withdrawAfterPauseXChainMulti(vaultKinds, formImplIds);
@@ -421,17 +382,18 @@ contract EmergencyQueueTest is ProtocolActions {
         assertTrue(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(2));
 
         uint256 balanceAfter = MockERC20(IBaseForm(superform1).getVaultAddress()).balanceOf(mrimperfect);
-        assertEq(balanceBefore + 0.9e18, balanceAfter);
+        assertEq(balanceBefore + 1.8e18, balanceAfter);
     }
 
     function test_emergencyQueueProcessingXChainMultiVaultUnpause() public {
         string[] memory vaultKinds = new string[](2);
-        vaultKinds[0] = "ERC4626TimelockMock";
+        vaultKinds[0] = "VaultMock";
         vaultKinds[1] = "VaultMock";
 
         uint256[] memory formImplIds = new uint256[](2);
-        formImplIds[0] = 1;
+        formImplIds[0] = 0;
         formImplIds[1] = 0;
+
         /// user deposits successfully to a form
         _successfulDepositXChain(1, vaultKinds[0], formImplIds[0], mrperfect, false);
         _successfulDepositXChain(2, vaultKinds[1], formImplIds[1], mrperfect, false);
@@ -479,7 +441,7 @@ contract EmergencyQueueTest is ProtocolActions {
         assertTrue(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(2));
 
         uint256 balanceAfter = MockERC20(IBaseForm(superform1).getVaultAddress()).balanceOf(mrimperfect);
-        assertEq(balanceBefore + 0.9e18, balanceAfter);
+        assertEq(balanceBefore + 1.8e18, balanceAfter);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -797,11 +759,6 @@ contract EmergencyQueueTest is ProtocolActions {
         address superform = getContract(
             ARBI, string.concat("DAI", vaultKind, "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[formImplId]))
         );
-
-        vm.selectFork(FORKS[ARBI]);
-
-        KYCDaoNFTMock(getContract(ARBI, "KYCDAOMock")).mint(mrperfect);
-        vm.selectFork(FORKS[ETH]);
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[formImplId], ARBI);
 

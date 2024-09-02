@@ -18,7 +18,7 @@ contract SDSVD4626RevertNoSwapNativeNoSlippage is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ARBI][0] = [0];
 
-        TARGET_VAULTS[ARBI][0] = [3];
+        TARGET_VAULTS[ARBI][0] = [1];
 
         TARGET_FORM_KINDS[ARBI][0] = [0];
 

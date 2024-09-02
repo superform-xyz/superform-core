@@ -24,7 +24,6 @@ import {
 /// @dev Helps decode payload data for off-chain purposes
 /// @author ZeroPoint Labs
 contract PayloadHelper is IPayloadHelper {
-
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
@@ -81,16 +80,7 @@ contract PayloadHelper is IPayloadHelper {
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
             (v.amounts, v.srcPayloadId) = _decodeReturnData(dstPayloadId_, v.multi, _getCoreStateRegistry());
         } else if (v.callbackType == uint256(CallbackType.INIT)) {
-            (
-                v.amounts,
-                v.outputAmounts,
-                v.slippages,
-                v.superformIds,
-                v.hasDstSwaps,
-                v.extraFormData,
-                v.receiverAddress,
-                v.srcPayloadId
-            ) = _decodeInitData(dstPayloadId_, v.multi, _getCoreStateRegistry());
+            _decodeInitData(dstPayloadId_, v.multi, _getCoreStateRegistry(), v);
         } else {
             revert Error.INVALID_PAYLOAD();
         }
@@ -264,64 +254,50 @@ contract PayloadHelper is IPayloadHelper {
     function _decodeInitData(
         uint256 dstPayloadId_,
         uint8 multi_,
-        IBaseStateRegistry coreStateRegistry_
+        IBaseStateRegistry coreStateRegistry_,
+        DecodedDstPayload memory v
     )
         internal
         view
-        returns (
-            uint256[] memory amounts,
-            uint256[] memory outputAmounts,
-            uint256[] memory slippages,
-            uint256[] memory superformIds,
-            bool[] memory hasDstSwaps,
-            bytes memory extraFormData,
-            address receiverAddress,
-            uint256 srcPayloadId
-        )
     {
         if (multi_ == 1) {
             InitMultiVaultData memory imvd =
                 abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (InitMultiVaultData));
 
-            return (
-                imvd.amounts,
-                imvd.outputAmounts,
-                imvd.maxSlippages,
-                imvd.superformIds,
-                imvd.hasDstSwaps,
-                imvd.extraFormData,
-                imvd.receiverAddress,
-                imvd.payloadId
-            );
+            v.amounts = imvd.amounts;
+            v.outputAmounts = imvd.outputAmounts;
+            v.slippages = imvd.maxSlippages;
+            v.superformIds = imvd.superformIds;
+            v.hasDstSwaps = imvd.hasDstSwaps;
+            v.extraFormData = imvd.extraFormData;
+            v.receiverAddress = imvd.receiverAddress;
+            v.srcPayloadId = imvd.payloadId;
+            v.retain4626 = imvd.retain4626s;
         } else {
             InitSingleVaultData memory isvd =
                 abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (InitSingleVaultData));
 
-            amounts = new uint256[](1);
-            amounts[0] = isvd.amount;
+            v.amounts = new uint256[](1);
+            v.amounts[0] = isvd.amount;
 
-            outputAmounts = new uint256[](1);
-            outputAmounts[0] = isvd.outputAmount;
+            v.outputAmounts = new uint256[](1);
+            v.outputAmounts[0] = isvd.outputAmount;
 
-            slippages = new uint256[](1);
-            slippages[0] = isvd.maxSlippage;
+            v.slippages = new uint256[](1);
+            v.slippages[0] = isvd.maxSlippage;
 
-            superformIds = new uint256[](1);
-            superformIds[0] = isvd.superformId;
-            hasDstSwaps = new bool[](1);
-            hasDstSwaps[0] = isvd.hasDstSwap;
-            receiverAddress = isvd.receiverAddress;
+            v.superformIds = new uint256[](1);
+            v.superformIds[0] = isvd.superformId;
 
-            return (
-                amounts,
-                outputAmounts,
-                slippages,
-                superformIds,
-                hasDstSwaps,
-                isvd.extraFormData,
-                isvd.receiverAddress,
-                isvd.payloadId
-            );
+            v.hasDstSwaps = new bool[](1);
+            v.hasDstSwaps[0] = isvd.hasDstSwap;
+
+            v.retain4626 = new bool[](1);
+            v.retain4626[0] = isvd.retain4626;
+
+            v.extraFormData = isvd.extraFormData;
+            v.receiverAddress = isvd.receiverAddress;
+            v.srcPayloadId = isvd.payloadId;
         }
     }
 

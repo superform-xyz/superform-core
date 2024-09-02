@@ -19,9 +19,9 @@ contract SDiMVDMulti5115NoTokenInput is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[OP][0] = [2, 2, 4];
 
-        TARGET_VAULTS[OP][0] = [1, 1, 9];
+        TARGET_VAULTS[OP][0] = [0, 0, 0];
 
-        TARGET_FORM_KINDS[OP][0] = [1, 1, 3];
+        TARGET_FORM_KINDS[OP][0] = [0, 0, 0];
 
         MAX_SLIPPAGE = 1000;
 

@@ -142,10 +142,11 @@ contract PayMasterTest is ProtocolActions {
 
         superRegistry.setAddress(keccak256("CORE_REGISTRY_PROCESSOR"), txProcessorETH, ETH);
 
+        uint256 balanceBefore = txProcessorETH.balance;
         /// @dev admin moves the payment from fee collector to tx processor
         PayMaster(payable(feeCollector)).withdrawNativeTo(keccak256("CORE_REGISTRY_PROCESSOR"), 1 wei);
         assertEq(feeCollector.balance, 0);
-        assertEq(txProcessorETH.balance, 1 wei);
+        assertEq(txProcessorETH.balance - balanceBefore, 1 wei);
     }
 
     function test_withdrawNativeToSuperformReceiver() public {
