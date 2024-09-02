@@ -21,9 +21,9 @@ contract MDSVDNormal4626RevertTokenInputSlippageAMB1 is ProtocolActions {
         TARGET_UNDERLYINGS[AVAX][0] = [1];
         TARGET_UNDERLYINGS[OP][0] = [2];
 
-        TARGET_VAULTS[POLY][0] = [3];
-        TARGET_VAULTS[AVAX][0] = [3];
-        TARGET_VAULTS[OP][0] = [3];
+        TARGET_VAULTS[POLY][0] = [1];
+        TARGET_VAULTS[AVAX][0] = [1];
+        TARGET_VAULTS[OP][0] = [1];
 
         TARGET_FORM_KINDS[POLY][0] = [0];
         TARGET_FORM_KINDS[AVAX][0] = [0];
