@@ -3512,6 +3512,7 @@ contract SuperformRouterTest is ProtocolActions {
 
         for (uint256 i = 0; i < chainIds.length; ++i) {
             if (chainIds[i] == LINEA || chainIds[i] == SEPOLIA || chainIds[i] == BSC_TESTNET) continue;
+
             if (chainIds[i] != ARBI) {
                 vm.selectFork(FORKS[chainIds[i]]);
 

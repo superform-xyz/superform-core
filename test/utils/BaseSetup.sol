@@ -91,6 +91,7 @@ import { IAuthorizeOperator } from "src/vendor/centrifuge/IERC7540.sol";
 import { IERC7540Vault as IERC7540 } from "src/vendor/centrifuge/IERC7540.sol";
 import { AsyncStateRegistry } from "src/crosschain-data/extensions/AsyncStateRegistry.sol";
 import { RequestConfig } from "src/interfaces/IAsyncStateRegistry.sol";
+
 import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
 import { PaymentHelper } from "src/payments/PaymentHelper.sol";
 import { IPaymentHelperV2 as IPaymentHelper } from "src/interfaces/IPaymentHelperV2.sol";
@@ -815,6 +816,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                 WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(
                     wormholeCore[vars.trueChainIdIndex]
                 );
+
                 WormholeSRImplementation(vars.wormholeSRImplementation).setRelayer(deployer);
             }
 
@@ -1716,6 +1718,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         rpcURLs[FANTOM] = FANTOM_RPC_URL;
         rpcURLs[SEPOLIA] = SEPOLIA_RPC_URL_QN;
         rpcURLs[BSC_TESTNET] = BSC_TESTNET_RPC_URL_QN;
+
         rpcURLs[LINEA] = LINEA_RPC_URL;
         rpcURLs[BLAST] = BLAST_RPC_URL;
 
@@ -1732,6 +1735,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[FANTOM][3] = abi.encode(643_315);
         gasUsed[SEPOLIA][3] = abi.encode(400_000);
         gasUsed[BSC_TESTNET][3] = abi.encode(650_000);
+
         gasUsed[LINEA][3] = abi.encode(600_000);
         gasUsed[BLAST][3] = abi.encode(600_000);
 
@@ -1746,6 +1750,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[FANTOM][4] = abi.encode(734_757);
         gasUsed[SEPOLIA][4] = abi.encode(225_000);
         gasUsed[BSC_TESTNET][4] = abi.encode(225_000);
+
         gasUsed[LINEA][4] = abi.encode(200_000);
         gasUsed[BLAST][4] = abi.encode(200_000);
 
@@ -1760,6 +1765,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[FANTOM][6] = abi.encode(567_881);
         gasUsed[SEPOLIA][6] = abi.encode(1_272_330);
         gasUsed[BSC_TESTNET][6] = abi.encode(837_167);
+
         gasUsed[LINEA][6] = abi.encode(1_178_778);
         gasUsed[BLAST][6] = abi.encode(1_178_778);
 
@@ -1774,6 +1780,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[FANTOM][13] = abi.encode(2_003_157);
         gasUsed[SEPOLIA][13] = abi.encode(356_828);
         gasUsed[BSC_TESTNET][13] = abi.encode(900_085);
+
         gasUsed[LINEA][13] = abi.encode(919_466);
         gasUsed[BLAST][13] = abi.encode(919_466);
 
@@ -1831,6 +1838,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[ETH][FANTOM] = address(0);
         priceFeeds[ETH][SEPOLIA] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][BSC_TESTNET] = 0x14e613AC84a31f709eadbdF89C6CC390fDc9540A;
+
         priceFeeds[ETH][LINEA] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][BLAST] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
 
@@ -1845,6 +1853,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[BSC][FANTOM] = 0xe2A47e87C0f4134c8D06A41975F6860468b2F925;
         priceFeeds[BSC][SEPOLIA] = address(0);
         priceFeeds[BSC][BSC_TESTNET] = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
+
         priceFeeds[BSC][LINEA] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
         priceFeeds[BSC][BLAST] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
 
@@ -1859,6 +1868,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[AVAX][FANTOM] = 0x2dD517B2f9ba49CedB0573131FD97a5AC19ff648;
         priceFeeds[AVAX][SEPOLIA] = address(0);
         priceFeeds[AVAX][BSC_TESTNET] = address(0);
+
         priceFeeds[AVAX][LINEA] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
         priceFeeds[AVAX][BLAST] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
 
@@ -1873,6 +1883,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[POLY][FANTOM] = 0x58326c0F831b2Dbf7234A4204F28Bba79AA06d5f;
         priceFeeds[POLY][SEPOLIA] = address(0);
         priceFeeds[POLY][BSC_TESTNET] = 0x82a6c4AF830caa6c97bb504425f6A66165C2c26e;
+
         priceFeeds[POLY][LINEA] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][BLAST] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
 

@@ -488,9 +488,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         superRegistryOP.setStateRegistryAddress(registryId_, registryAddress_);
     }
 
-    function _setupBroadcastPayloadAMBData(
-        address _srcSender
-    )
+    function _setupBroadcastPayloadAMBData(address _srcSender)
         internal
         returns (AMBMessage memory, BroadCastAMBExtraData memory, address)
     {

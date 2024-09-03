@@ -77,7 +77,7 @@ contract PayloadHelper is IPayloadHelper {
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
             _decodeReturnData(v, dstPayloadId_, _getCoreStateRegistry());
         } else if (v.callbackType == uint256(CallbackType.INIT)) {
-            _decodeInitData(v, dstPayloadId_, v.multi, _getCoreStateRegistry());
+            _decodeInitData(v, dstPayloadId_, _getCoreStateRegistry());
         } else {
             revert Error.INVALID_PAYLOAD();
         }
@@ -253,7 +253,6 @@ contract PayloadHelper is IPayloadHelper {
     function _decodeInitData(
         DecodedDstPayload memory v_,
         uint256 dstPayloadId_,
-        uint8 multi_,
         IBaseStateRegistry coreStateRegistry_
     )
         internal
