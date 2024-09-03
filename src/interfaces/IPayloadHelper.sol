@@ -94,13 +94,6 @@ interface IPayloadHelper {
             uint64 srcChainId
         );
 
-    /// @dev returns decoded timelock form payloads
-    /// @param timelockPayloadId_ is the unique identifier of payload in timelock state registry
-    function decodeTimeLockPayload(uint256 timelockPayloadId_)
-        external
-        view
-        returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
-
     /// @dev returns decoded sync withdraw form payloads
     /// @param syncWithdrawPayloadId_ is the unique identifier of payload in async state registry
     function decodeSyncWithdrawPayload(uint256 syncWithdrawPayloadId_)
