@@ -31,9 +31,17 @@ abstract contract AbstractDeployDeBridgeValidators is EnvironmentUtils {
         cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
 
         address superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
-        address expectedSr = env == 0
-            ? 0x17A332dC7B40aE701485023b219E9D6f493a2514
-            : vars.chainId == 250 ? 0x7B8d68f90dAaC67C577936d3Ce451801864EF189 : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
+        address expectedSr;
+
+        if (env == 0) {
+            expectedSr = vars.chainId == 250
+                ? 0x7feB31d18E43E2faeC718EEd2D7f34402c3e27b4
+                : 0x17A332dC7B40aE701485023b219E9D6f493a2514;
+        } else {
+            expectedSr = vars.chainId == 250
+                ? 0x7B8d68f90dAaC67C577936d3Ce451801864EF189
+                : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
+        }
         assert(superRegistry == expectedSr);
 
         vars.deBridgeValidator = address(new DeBridgeValidator{ salt: salt }(superRegistry));
@@ -85,10 +93,10 @@ abstract contract AbstractDeployDeBridgeValidators is EnvironmentUtils {
         uint8[] memory newBridgeids = new uint8[](2);
 
         bridgeValidators[0] = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "DeBridgeValidator");
-        newBridgeids[0] = 7;
+        newBridgeids[0] = 12;
 
         bridgeValidators[1] = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "DeBridgeForwarderValidator");
-        newBridgeids[1] = 8;
+        newBridgeids[1] = 13;
 
         assert(NEW_BRIDGE_ADDRESSES[vars.chainId][0] != address(0));
         assert(NEW_BRIDGE_ADDRESSES[vars.chainId][1] != address(0));

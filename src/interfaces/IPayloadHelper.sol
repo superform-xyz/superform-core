@@ -36,6 +36,7 @@ interface IPayloadHelper {
         uint256 srcPayloadId;
         bytes extraFormData;
         uint8 multi;
+        bool[] retain4626;
     }
 
     //////////////////////////////////////////////////////////////

@@ -67,7 +67,9 @@ contract PayloadHelper is IPayloadHelper {
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IPayloadHelper
-    function decodeCoreStateRegistryPayload(uint256 dstPayloadId_)
+    function decodeCoreStateRegistryPayload(
+        uint256 dstPayloadId_
+    )
         external
         view
         override
@@ -79,14 +81,16 @@ contract PayloadHelper is IPayloadHelper {
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
             _decodeReturnData(v, dstPayloadId_, _getCoreStateRegistry());
         } else if (v.callbackType == uint256(CallbackType.INIT)) {
-            _decodeInitData(v, dstPayloadId_, _getCoreStateRegistry());
+            _decodeInitData(dstPayloadId_, v.multi, _getCoreStateRegistry(), v);
         } else {
             revert Error.INVALID_PAYLOAD();
         }
     }
 
     /// @inheritdoc IPayloadHelper
-    function decodeCoreStateRegistryPayloadLiqData(uint256 dstPayloadId_)
+    function decodeCoreStateRegistryPayloadLiqData(
+        uint256 dstPayloadId_
+    )
         external
         view
         override
@@ -114,7 +118,9 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     /// @inheritdoc IPayloadHelper
-    function decodePayloadHistory(uint256 srcPayloadId_)
+    function decodePayloadHistory(
+        uint256 srcPayloadId_
+    )
         external
         view
         override
@@ -139,7 +145,9 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     /// @inheritdoc IPayloadHelper
-    function decodeTimeLockPayload(uint256 timelockPayloadId_)
+    function decodeTimeLockPayload(
+        uint256 timelockPayloadId_
+    )
         external
         view
         override
@@ -164,7 +172,9 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     /// @inheritdoc IPayloadHelper
-    function decodeSyncWithdrawPayload(uint256 syncWithdrawPayloadId_)
+    function decodeSyncWithdrawPayload(
+        uint256 syncWithdrawPayloadId_
+    )
         external
         view
         override
@@ -200,7 +210,9 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     /// @inheritdoc IPayloadHelper
-    function decodeTimeLockFailedPayload(uint256 payloadId_)
+    function decodeTimeLockFailedPayload(
+        uint256 payloadId_
+    )
         external
         view
         override
@@ -231,7 +243,9 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     /// @inheritdoc IPayloadHelper
-    function decodeAsyncAckPayload(uint256 payloadId_)
+    function decodeAsyncAckPayload(
+        uint256 payloadId_
+    )
         external
         view
         override
@@ -311,7 +325,9 @@ contract PayloadHelper is IPayloadHelper {
     function _decodeInitData(
         DecodedDstPayload memory v_,
         uint256 dstPayloadId_,
-        IBaseStateRegistry coreStateRegistry_
+        uint8 multi_,
+        IBaseStateRegistry coreStateRegistry_,
+        DecodedDstPayload memory v
     )
         internal
         view
@@ -320,39 +336,40 @@ contract PayloadHelper is IPayloadHelper {
             InitMultiVaultData memory imvd =
                 abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (InitMultiVaultData));
 
-            v_.amounts = imvd.amounts;
-            v_.outputAmounts = imvd.outputAmounts;
-            v_.slippages = imvd.maxSlippages;
-            v_.superformIds = imvd.superformIds;
-            v_.hasDstSwaps = imvd.hasDstSwaps;
-            v_.retain4626s = imvd.retain4626s;
-            v_.extraFormData = imvd.extraFormData;
-            v_.receiverAddress = imvd.receiverAddress;
-            v_.srcPayloadId = imvd.payloadId;
+            v.amounts = imvd.amounts;
+            v.outputAmounts = imvd.outputAmounts;
+            v.slippages = imvd.maxSlippages;
+            v.superformIds = imvd.superformIds;
+            v.hasDstSwaps = imvd.hasDstSwaps;
+            v.extraFormData = imvd.extraFormData;
+            v.receiverAddress = imvd.receiverAddress;
+            v.srcPayloadId = imvd.payloadId;
+            v.retain4626 = imvd.retain4626s;
         } else {
             InitSingleVaultData memory isvd =
                 abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (InitSingleVaultData));
 
-            v_.amounts = new uint256[](1);
-            v_.amounts[0] = isvd.amount;
+            v.amounts = new uint256[](1);
+            v.amounts[0] = isvd.amount;
 
-            v_.outputAmounts = new uint256[](1);
-            v_.outputAmounts[0] = isvd.outputAmount;
+            v.outputAmounts = new uint256[](1);
+            v.outputAmounts[0] = isvd.outputAmount;
 
-            v_.slippages = new uint256[](1);
-            v_.slippages[0] = isvd.maxSlippage;
+            v.slippages = new uint256[](1);
+            v.slippages[0] = isvd.maxSlippage;
 
-            v_.superformIds = new uint256[](1);
-            v_.superformIds[0] = isvd.superformId;
+            v.superformIds = new uint256[](1);
+            v.superformIds[0] = isvd.superformId;
 
-            v_.hasDstSwaps = new bool[](1);
-            v_.hasDstSwaps[0] = isvd.hasDstSwap;
+            v.hasDstSwaps = new bool[](1);
+            v.hasDstSwaps[0] = isvd.hasDstSwap;
 
-            v_.retain4626s = new bool[](1);
-            v_.retain4626s[0] = isvd.retain4626;
+            v.retain4626 = new bool[](1);
+            v.retain4626[0] = isvd.retain4626;
 
-            v_.srcPayloadId = isvd.payloadId;
-            v_.receiverAddress = isvd.receiverAddress;
+            v.extraFormData = isvd.extraFormData;
+            v.receiverAddress = isvd.receiverAddress;
+            v.srcPayloadId = isvd.payloadId;
         }
     }
 

@@ -2955,20 +2955,16 @@ contract SuperformRouterTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
         address superformRouter = getContract(ETH, "SuperformRouter");
-        address superform1 = getContract(
+
+        address superform = getContract(
             ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
         );
 
-        address superform2 = getContract(
-            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
-        );
-
-        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_IMPLEMENTATION_IDS[0], ETH);
-        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_IMPLEMENTATION_IDS[1], ETH);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
 
         uint256[] memory superformIds = new uint256[](2);
-        superformIds[0] = superformId1;
-        superformIds[1] = superformId2;
+        superformIds[0] = superformId;
+        superformIds[1] = superformId;
 
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = 1e18;
@@ -3015,20 +3011,16 @@ contract SuperformRouterTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
         address superformRouter = getContract(ETH, "SuperformRouter");
-        address superform1 = getContract(
+
+        address superform = getContract(
             ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
         );
 
-        address superform2 = getContract(
-            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
-        );
-
-        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_IMPLEMENTATION_IDS[0], ETH);
-        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_IMPLEMENTATION_IDS[1], ETH);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
 
         uint256[] memory superformIds = new uint256[](2);
-        superformIds[0] = superformId1;
-        superformIds[1] = superformId2;
+        superformIds[0] = superformId;
+        superformIds[1] = superformId;
 
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = 1e18;
@@ -3072,9 +3064,7 @@ contract SuperformRouterTest is ProtocolActions {
 
         SuperformRouter(payable(superformRouter)).singleDirectMultiVaultDeposit{ value: 10 ether }(req);
 
-        assertEq(SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(deployer, superformId1), 0);
-        assertEq(SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(deployer, superformId2), 0);
-
+        assertEq(SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(deployer, superformId), 0);
         vm.stopPrank();
     }
 
@@ -3521,6 +3511,7 @@ contract SuperformRouterTest is ProtocolActions {
         _broadcastPayloadHelper(ARBI, vm.getRecordedLogs());
 
         for (uint256 i = 0; i < chainIds.length; ++i) {
+            if (chainIds[i] == LINEA) continue;
             if (chainIds[i] != ARBI) {
                 vm.selectFork(FORKS[chainIds[i]]);
 

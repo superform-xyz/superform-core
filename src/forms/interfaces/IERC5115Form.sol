@@ -22,6 +22,9 @@ interface IERC5115Form {
     /// @dev Thrown when the tokenOut is not set as the interimToken
     error ERC5115FORM_TOKEN_OUT_NOT_SET();
 
+    /// @dev Thrown when the transfer from slippage exceeds allowed limit
+    error TRANSFER_FROM_EXCEEDS_TOLERANCE();
+
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
     //////////////////////////////////////////////////////////////
@@ -49,7 +52,7 @@ interface IERC5115Form {
     //////////////////////////////////////////////////////////////
 
     /// @notice Claims reward tokens for the caller
-    function claimRewardTokens() external;
+    function claimRewardTokens(bool avoidRevert) external;
 
     //////////////////////////////////////////////////////////////
     //              EXTERNAL VIEW FUNCTIONS                     //

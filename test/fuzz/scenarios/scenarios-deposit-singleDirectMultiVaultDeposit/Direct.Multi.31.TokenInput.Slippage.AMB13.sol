@@ -21,9 +21,9 @@ contract SDiMVDMulti31TokenInputSlippageAMB13 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[OP][0] = [1, 0];
 
-        TARGET_VAULTS[OP][0] = [3, 1];
+        TARGET_VAULTS[OP][0] = [1, 0];
 
-        TARGET_FORM_KINDS[OP][0] = [0, 1];
+        TARGET_FORM_KINDS[OP][0] = [0, 0];
 
         MAX_SLIPPAGE = 1000;
 

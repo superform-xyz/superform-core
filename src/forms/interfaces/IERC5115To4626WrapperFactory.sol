@@ -43,6 +43,12 @@ interface IERC5115To4626WrapperFactory {
         address indexed wrapper, bytes32 wrapperKey, uint256 superformId, address superform
     );
 
+    /// @notice Emitted when a wrapper is updated with a form implementation
+    /// @param wrapper the address of the wrapper
+    /// @param wrapperKey the key of the wrapper
+    /// @param formImplementation the address of the form implementation
+    event WrapperUpdatedWithImplementation(address indexed wrapper, bytes32 wrapperKey, address formImplementation);
+
     //////////////////////////////////////////////////////////////
     //                          ERRORS                          //
     //////////////////////////////////////////////////////////////
@@ -52,6 +58,9 @@ interface IERC5115To4626WrapperFactory {
 
     /// @notice Reverts if the wrapper does not exist
     error WRAPPER_DOES_NOT_EXIST();
+
+    /// @notice Revert if the wrapper already has a form implementation associated with it
+    error WRAPPER_ALREADY_HAS_FORM();
 
     //////////////////////////////////////////////////////////////
     //                  EXTERNAL  FUNCTIONS                     //
@@ -82,6 +91,20 @@ interface IERC5115To4626WrapperFactory {
     )
         external
         returns (address wrapper);
+
+    /// @notice Batch creates wrappers with superforms
+    /// @param formImplementationIds_ the form implementation ids
+    /// @param underlyingVaultAddresses the addresses of the underlying vaults
+    /// @param tokenIns the addresses of the tokens to be deposited
+    /// @param tokenOuts the addresses of the tokens to be withdrawn
+    function batchCreateWrappersWithSuperform(
+        uint32[] calldata formImplementationIds_,
+        address[] calldata underlyingVaultAddresses,
+        address[] calldata tokenIns,
+        address[] calldata tokenOuts
+    )
+        external
+        returns (address[] memory wrappers_);
 
     /// @notice Creates a superform for an existing wrapper
     /// @param wrapperKey the key of the wrapper

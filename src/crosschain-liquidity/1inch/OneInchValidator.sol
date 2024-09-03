@@ -6,7 +6,6 @@ import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { Error } from "src/libraries/Error.sol";
 import "src/vendor/1inch/IAggregationRouterV6.sol";
 
-
 /// @title OneInchValidator
 /// @dev Asserts OneInch txData is valid
 /// @author Zeropoint Labs
@@ -114,7 +113,9 @@ contract OneInchValidator {
 
     /// @dev helps decode the 1inch user request
     /// returns useful parameters for validaiton
-    function _decodeTxData(bytes calldata txData_)
+    function _decodeTxData(
+        bytes calldata txData_
+    )
         internal
         view
         returns (address fromToken, uint256 fromAmount, address toToken, address receiver)

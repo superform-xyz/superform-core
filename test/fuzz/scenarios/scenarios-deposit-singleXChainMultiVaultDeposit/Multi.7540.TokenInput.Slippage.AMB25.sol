@@ -21,11 +21,19 @@ contract SDMVDMulti7540NoTokenInputSlippageAMB25 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[OP][0] = [2, 2, 4];
 
+<<<<<<< HEAD:test/fuzz/scenarios/scenarios-deposit-singleXChainMultiVaultDeposit/Multi.7540.TokenInput.Slippage.AMB25.sol
         TARGET_VAULTS[OP][0] = [1, 10, 9];
 
         TARGET_FORM_KINDS[OP][0] = [1, 4, 3];
 
         AMOUNTS[OP][0] = [214 * 10e18, 798 * 10e18, 55_312 * 10e18];
+=======
+        TARGET_VAULTS[ETH][0] = [0, 0, 0];
+        TARGET_VAULTS[OP][0] = [0, 0, 0];
+
+        TARGET_FORM_KINDS[ETH][0] = [0, 0, 0];
+        TARGET_FORM_KINDS[OP][0] = [0, 0, 0];
+>>>>>>> origin/v1:test/fuzz/scenarios/scenarios-deposit-multiDstMultiVaultDeposit/Multi.021.120.Native.Slippage.AMB23.sol
 
         MAX_SLIPPAGE = 1000;
 

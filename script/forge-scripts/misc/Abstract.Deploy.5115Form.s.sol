@@ -94,7 +94,7 @@ abstract contract AbstractDeploy5115Form is EnvironmentUtils {
 
         assert(address(vars.superformFactory) == expectedFactory);
 
-        vars.superformFactory.addFormImplementation(erc5115Form, FORM_IMPLEMENTATION_IDS[1], 1);
+        vars.superformFactory.addFormImplementation(erc5115Form, 5, 1);
 
         vm.stopBroadcast();
     }

@@ -6,7 +6,7 @@ import { DataLib } from "src/libraries/DataLib.sol";
 import { ProofLib } from "src/libraries/ProofLib.sol";
 import { AMBMessage } from "src/types/DataTypes.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
-import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { IAmbImplementationV2 as IAmbImplementation } from "src/interfaces/IAmbImplementationV2.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { IAxelarGasService } from "src/vendor/axelar/IAxelarGasService.sol";
@@ -178,7 +178,10 @@ contract AxelarImplementation is IAmbImplementation, IAxelarExecutable {
             revert Error.INVALID_CHAIN_ID();
         }
 
-        string memory axelerDstImpl = authorizedImpl[axelarChainId].toString();
+        address authImpl = authorizedImpl[axelarChainId];
+        if (authImpl == address(0)) revert Error.ZERO_ADDRESS();
+
+        string memory axelerDstImpl = authImpl.toString();
 
         gateway.callContract(axelarChainId, axelerDstImpl, message_);
         gasService.payNativeGasForContractCall{ value: msg.value }(

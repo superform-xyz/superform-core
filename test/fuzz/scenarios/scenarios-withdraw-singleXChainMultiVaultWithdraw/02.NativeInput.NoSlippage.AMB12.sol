@@ -19,15 +19,15 @@ contract SDMVW02NativeInputNoSlippageAMB12 is ProtocolActions {
         DST_CHAINS = [OP];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[OP][0] = [2, 2];
-        TARGET_VAULTS[OP][0] = [0, 1];
+        TARGET_UNDERLYINGS[OP][0] = [1, 2];
+        TARGET_VAULTS[OP][0] = [0, 0];
 
-        TARGET_FORM_KINDS[OP][0] = [0, 1];
+        TARGET_FORM_KINDS[OP][0] = [0, 0];
 
-        TARGET_UNDERLYINGS[OP][1] = [2, 2];
-        TARGET_VAULTS[OP][1] = [0, 1];
+        TARGET_UNDERLYINGS[OP][1] = [1, 2];
+        TARGET_VAULTS[OP][1] = [0, 0];
 
-        TARGET_FORM_KINDS[OP][1] = [0, 1];
+        TARGET_FORM_KINDS[OP][1] = [0, 0];
 
         PARTIAL[OP][1] = [false, true];
 

@@ -20,9 +20,9 @@ contract SDSVD5115SwapNativeSlippagePermit2 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[OP][0] = [4];
 
-        TARGET_VAULTS[OP][0] = [9];
+        TARGET_VAULTS[OP][0] = [3];
 
-        TARGET_FORM_KINDS[OP][0] = [3];
+        TARGET_FORM_KINDS[OP][0] = [1];
 
         MAX_SLIPPAGE = 1000;
 

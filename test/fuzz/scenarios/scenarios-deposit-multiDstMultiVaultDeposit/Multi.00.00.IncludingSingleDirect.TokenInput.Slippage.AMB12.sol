@@ -24,11 +24,10 @@ contract MDMVDMulti0000NoIncludingSingleDirectTokenInputSlippageAMB12 is Protoco
         TARGET_UNDERLYINGS[ETH][0] = [1, 0];
 
         TARGET_VAULTS[ARBI][0] = [0, 0];
-
-        TARGET_VAULTS[ETH][0] = [1, 1];
+        TARGET_VAULTS[ETH][0] = [0, 0];
 
         TARGET_FORM_KINDS[ARBI][0] = [0, 0];
-        TARGET_FORM_KINDS[ETH][0] = [1, 1];
+        TARGET_FORM_KINDS[ETH][0] = [0, 0];
 
         MAX_SLIPPAGE = 1000;
 

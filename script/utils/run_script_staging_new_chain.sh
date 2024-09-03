@@ -9,107 +9,156 @@ export ARBITRUM_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/ARBITRUM_RPC_U
 export OPTIMISM_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/OPTIMISM_RPC_URL/credential)
 export BASE_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BASE_RPC_URL/credential)
 export FANTOM_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/FANTOM_RPC_URL/credential)
+export LINEA_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/LINEA_RPC_URL/credential)
+export BLAST_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BLAST_RPC_URL/credential)
 
 # Run the script
 
-<<comment
-Addresses obtained with a sample deployment to Polygon
-{
-  "BroadcastRegistry": "0x5767897fc69A77AC68a75001a56fcA6c421adc6f",
-  "CoreStateRegistry": "0x80AAb0eA1243817E22D6ad76ebe06385900e906d",
-  "DstSwapper": "0xAACA228C3fca21c41C4Ea82EBb2d8843bd830B3b",
-  "ERC4626Form": "0xB2f32B62B7537304b830dE6575Fe73c41ea52991",
-  "EmergencyQueue": "0x7FE59421D6b85afa86d982E3186a74c72f6c4c03",
-  "HyperlaneImplementation": "0x207BFE0Fb040F17cC61B67e4aaDfC59C9e170671",
-  "LayerzeroImplementation": "0x1863862794cD8ec60daBF8B473fcA928B78cE563",
-  "LiFiValidator": "0xA96ced02619a4648884c3e897eD4280cd7Dfe15D",  -> Diff due to surl
-  "PayMaster": "0x4E3Bcd5B7571aAf8e000D9641df8c16d70B1a4b0", -> Diff due to surl
-  "PayloadHelper": "0x5Ae08549F266a9B4cC95Ad8aac57bE6Af236b647",
-  "PaymentHelper": "0xe14BCe82D4a72e4C95402a83fEF3C2299a61fD8C", -> Diff due to surl + IpaymentHelper
-  "RewardsDistributor": "0xb779de9C79AC9B1d9B90cc61b593C5aE4aad51D3", -> Diff due to surl
-  "SocketOneInchValidator": "0x055c58C02A18105Fd44Ba18F57a79E219Ed37c43",
-  "SocketValidator": "0x71060c588Aa01e61253EE4ac231Ac1a2bC672Bb8",
-  "SuperPositions": "0x9AB6Dd8c4FC98F859a3271db98B81777aC2893b0",
-  "SuperRBAC": "0x9736b60c4f749232d400B5605f21AE137a5Ebb71",
-  "SuperRegistry": "0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47",
-  "SuperformFactory": "0x9CA4480B65E5F3d57cFb942ac44A0A6Ab0B2C843",
-  "SuperformRouter": "0x21b69aC55e3B620aCF74b4362D34d5E51a8187b8",
-  "VaultClaimer": "0xf1930eD240cF9c4F1840aDB689E5d231687922C5",
-  "WormholeARImplementation": "0x3b6FABE94a5d0B160e2E1519495e7Fe9dD009Ea3",
-  "WormholeSRImplementation": "0x44b451Ca87267a62A0C853ECFbaaC1C3E528a82C"
-}
-comment
-<<comment
+# Addresses obtained with a sample deployment to Polygon
+# {
+#   "BroadcastRegistry": "0x5767897fc69A77AC68a75001a56fcA6c421adc6f",
+#   "CoreStateRegistry": "0x80AAb0eA1243817E22D6ad76ebe06385900e906d",
+#   "DstSwapper": "0xAACA228C3fca21c41C4Ea82EBb2d8843bd830B3b",
+#   "ERC4626Form": "0xB2f32B62B7537304b830dE6575Fe73c41ea52991",
+#   "EmergencyQueue": "0x7FE59421D6b85afa86d982E3186a74c72f6c4c03",
+#   "HyperlaneImplementation": "0x207BFE0Fb040F17cC61B67e4aaDfC59C9e170671",
+#   "LayerzeroImplementation": "0x1863862794cD8ec60daBF8B473fcA928B78cE563",
+#   "LiFiValidator": "0xA96ced02619a4648884c3e897eD4280cd7Dfe15D",  -> Diff due to surl
+#   "PayMaster": "0x4E3Bcd5B7571aAf8e000D9641df8c16d70B1a4b0", -> Diff due to surl
+#   "PayloadHelper": "0x5Ae08549F266a9B4cC95Ad8aac57bE6Af236b647",
+#   "PaymentHelper": "0xe14BCe82D4a72e4C95402a83fEF3C2299a61fD8C", -> Diff due to surl + IpaymentHelper
+#   "RewardsDistributor": "0xb779de9C79AC9B1d9B90cc61b593C5aE4aad51D3", -> Diff due to surl
+#   "SocketOneInchValidator": "0x055c58C02A18105Fd44Ba18F57a79E219Ed37c43",
+#   "SocketValidator": "0x71060c588Aa01e61253EE4ac231Ac1a2bC672Bb8",
+#   "SuperPositions": "0x9AB6Dd8c4FC98F859a3271db98B81777aC2893b0",
+#   "SuperRBAC": "0x9736b60c4f749232d400B5605f21AE137a5Ebb71",
+#   "SuperRegistry": "0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47",
+#   "SuperformFactory": "0x9CA4480B65E5F3d57cFb942ac44A0A6Ab0B2C843",
+#   "SuperformRouter": "0x21b69aC55e3B620aCF74b4362D34d5E51a8187b8",
+#   "VaultClaimer": "0xf1930eD240cF9c4F1840aDB689E5d231687922C5",
+#   "WormholeARImplementation": "0x3b6FABE94a5d0B160e2E1519495e7Fe9dD009Ea3",
+#   "WormholeSRImplementation": "0x44b451Ca87267a62A0C853ECFbaaC1C3E528a82C"
+# }
 
-echo Running Stage 1: ...
+# echo Running Stage 1: ...
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "deployStage1(uint256,uint256)" 1 0 --rpc-url $POLYGON_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "deployStage1(uint256,uint256,uint256)" 1 0 0 --rpc-url $BLAST_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --broadcast
 
-wait
+# wait
 
-echo Running Stage 2: ...
+# echo Running Stage 2: ...
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "deployStage2(uint256,uint256)" 1 0 --rpc-url $FANTOM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --broadcast
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "deployStage2(uint256,uint256,uint256)" 1 0 0 --rpc-url $BLAST_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --broadcast
 
-wait
 
-echo Running Stage 3: ...
+# wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "deployStage3(uint256,uint256)" 1 0 --rpc-url $FANTOM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --broadcast
+# echo Running Stage 3: ...
 
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "deployStage3(uint256,uint256,uint256)" 1 0 0 --rpc-url $BLAST_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --broadcast
 
-echo Configuring new chain on Stage 2 of previous chains: ...
+# wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChains(uint256,uint256)" 1 0 --rpc-url $BSC_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --broadcast
+# echo Configuring previous chains based on new chains: ...
 
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChainsWithEmergencyAdmin(uint256,uint256)" 1 0 --rpc-url $BSC_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --broadcast
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChains(uint256,uint256)" 1 1 --rpc-url $ARBITRUM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy --broadcast
+# wait
 
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChainsWithEmergencyAdmin(uint256,uint256)" 1 1 --rpc-url $ARBITRUM_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy --broadcast
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChains(uint256,uint256)" 1 2 --rpc-url $OPTIMISM_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy --broadcast
+# wait
 
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChainsWithEmergencyAdmin(uint256,uint256)" 1 2 --rpc-url $OPTIMISM_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy --broadcast
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChains(uint256,uint256)" 1 3 --rpc-url $BASE_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy --broadcast
+# wait
 
-wait
-comment
-echo Configure all other chains based on new chain payment helper gas values: ...
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChainsWithEmergencyAdmin(uint256,uint256)" 1 3 --rpc-url $BASE_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy --broadcast
 
-export FIREBLOCKS_API_KEY=$(op read op://zry2qwhqux2w6qtjitg44xb7b4/FB_STAGING_PAYMASTER_ACTION/credential)
-export FIREBLOCKS_API_PRIVATE_KEY_PATH=$(op read op://zry2qwhqux2w6qtjitg44xb7b4/FB_STAGING_PAYMASTER_SECRET_SSH/private_key)
-export FOUNDRY_PROFILE=production
-export FIREBLOCKS_VAULT_ACCOUNT_IDS=13 #PaymentAdmin Staging
-#export FIREBLOCKS_VAULT_ACCOUNT_IDS=5 #PaymentAdmin Prod
-<<comment
+# wait
 
-export FIREBLOCKS_RPC_URL=$BSC_RPC_URL
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChainsWithEmergencyAdmin(uint256,uint256)" 1 4 --rpc-url $FANTOM_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy --broadcast
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 1 0 \
-  --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3 --broadcast --unlocked --slow
+# wait
 
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChainsWithEmergencyAdmin(uint256,uint256)" 1 5 --rpc-url $LINEA_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy --broadcast
 
-export FIREBLOCKS_RPC_URL=$ARBITRUM_RPC_URL
+# wait
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 1 1 \
-  --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3 --broadcast --unlocked --slow
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChainsWithProtocolAdmin(uint256,uint256)" 1 0 --rpc-url $BSC_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --broadcast
+
+# wait
+
+
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChainsWithProtocolAdmin(uint256,uint256)" 1 1 --rpc-url $ARBITRUM_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy --broadcast
 
 wait
 
-export FIREBLOCKS_RPC_URL=$OPTIMISM_RPC_URL
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChainsWithProtocolAdmin(uint256,uint256)" 1 2 --rpc-url $OPTIMISM_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy --broadcast
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 1 2 \
-  --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3 --broadcast --unlocked --slow
+# wait
 
-wait
-comment
-export FIREBLOCKS_RPC_URL=$BASE_RPC_URL
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChainsWithProtocolAdmin(uint256,uint256)" 1 3 --rpc-url $BASE_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy --broadcast 
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 1 3 \
-  --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3 --broadcast --unlocked --slow
+# wait
 
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChainsWithProtocolAdmin(uint256,uint256)" 1 4 --rpc-url $FANTOM_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy --broadcast
+
+# wait
+
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChainsWithProtocolAdmin(uint256,uint256)" 1 5 --rpc-url $LINEA_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy --broadcast
+
+# wait
+
+# echo Configure all other chains based on new chain payment helper gas values: ...
+
+# export FIREBLOCKS_API_KEY=$(op read op://zry2qwhqux2w6qtjitg44xb7b4/FB_STAGING_PAYMASTER_ACTION/credential)
+# export FIREBLOCKS_API_PRIVATE_KEY_PATH=$(op read op://zry2qwhqux2w6qtjitg44xb7b4/FB_STAGING_PAYMASTER_SECRET_SSH/private_key)
+# export FOUNDRY_PROFILE=production
+# export FIREBLOCKS_VAULT_ACCOUNT_IDS=13 #PaymentAdmin Staging
+# #export FIREBLOCKS_VAULT_ACCOUNT_IDS=5 #PaymentAdmin Prod
+
+# export FIREBLOCKS_RPC_URL=$BASE_RPC_URL
+
+# fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 1 3 \
+#   --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3  --unlocked --slow --broadcast
+
+# wait
+
+# export FIREBLOCKS_RPC_URL=$BSC_RPC_URL
+
+# fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 1 0 \
+#   --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3  --unlocked --slow --broadcast
+
+# wait
+
+# export FIREBLOCKS_RPC_URL=$ARBITRUM_RPC_URL
+
+# fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 1 1 \
+#   --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3  --unlocked --slow --broadcast
+
+# wait
+
+
+# export FIREBLOCKS_RPC_URL=$OPTIMISM_RPC_URL
+
+# fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 1 2 \
+#   --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3  --unlocked --slow --broadcast
+
+# wait
+
+# export FIREBLOCKS_RPC_URL=$FANTOM_RPC_URL
+
+# fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 1 4 \
+#   --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3  --unlocked --slow --broadcast
+
+# wait
+
+# export FIREBLOCKS_RPC_URL=$LINEA_RPC_URL
+
+# fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 1 5 \
+#   --rpc-url {} --sender 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3  --unlocked --slow --broadcast
+
+# wait
+
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "revokeBurnerAddress(uint256,uint256)" 1 0 --rpc-url $LINEA_RPC_URL --slow --account defaultKey --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy

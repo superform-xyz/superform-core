@@ -21,9 +21,9 @@ contract SDMVDMulti4TokenInputNoSlippageAMB23 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ETH][0] = [2];
 
-        TARGET_VAULTS[ETH][0] = [4];
+        TARGET_VAULTS[ETH][0] = [0];
 
-        TARGET_FORM_KINDS[ETH][0] = [1];
+        TARGET_FORM_KINDS[ETH][0] = [0];
 
         MAX_SLIPPAGE = 1000;
 

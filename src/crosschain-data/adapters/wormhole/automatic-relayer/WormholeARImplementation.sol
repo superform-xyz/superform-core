@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { IAmbImplementationV2 as IAmbImplementation } from "src/interfaces/IAmbImplementationV2.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
@@ -137,6 +137,13 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     //              EXTERNAL WRITE FUNCTIONS                    //
     //////////////////////////////////////////////////////////////
 
+    struct DispatchPayloadVars {
+        uint16 dstChainId;
+        uint256 dstNativeAirdrop;
+        uint256 dstGasLimit;
+        address authImpl;
+    }
+
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
         address srcSender_,
@@ -154,12 +161,17 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
             revert Error.REFUND_CHAIN_ID_NOT_SET();
         }
 
-        uint16 dstChainId = ambChainId[dstChainId_];
-        (uint256 dstNativeAirdrop, uint256 dstGasLimit) = abi.decode(extraData_, (uint256, uint256));
+        DispatchPayloadVars memory v;
+
+        v.dstChainId = ambChainId[dstChainId_];
+        (v.dstNativeAirdrop, v.dstGasLimit) = abi.decode(extraData_, (uint256, uint256));
+
+        v.authImpl = authorizedImpl[v.dstChainId];
+        if (v.authImpl == address(0)) revert Error.ZERO_ADDRESS();
 
         /// @dev refunds any excess on this chain back to srcSender_
         relayer.sendPayloadToEvm{ value: msg.value }(
-            dstChainId, authorizedImpl[dstChainId], message_, dstNativeAirdrop, dstGasLimit, refundChainId, srcSender_
+            v.dstChainId, v.authImpl, message_, v.dstNativeAirdrop, v.dstGasLimit, refundChainId, srcSender_
         );
     }
 

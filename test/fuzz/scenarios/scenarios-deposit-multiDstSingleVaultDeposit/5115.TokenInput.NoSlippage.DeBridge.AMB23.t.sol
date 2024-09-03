@@ -24,13 +24,11 @@ contract MDSVDNormal5115MultiTokenInputNoSlippageDebridgeAMB23 is ProtocolAction
         TARGET_UNDERLYINGS[POLY][0] = [1];
 
         TARGET_VAULTS[ETH][0] = [0];
-
-        TARGET_VAULTS[OP][0] = [9];
-
+        TARGET_VAULTS[OP][0] = [3];
         TARGET_VAULTS[POLY][0] = [0];
 
         TARGET_FORM_KINDS[ETH][0] = [0];
-        TARGET_FORM_KINDS[OP][0] = [3];
+        TARGET_FORM_KINDS[OP][0] = [1];
         TARGET_FORM_KINDS[POLY][0] = [0];
 
         MAX_SLIPPAGE = 1000;

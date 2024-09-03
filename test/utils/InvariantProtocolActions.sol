@@ -1189,7 +1189,9 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         uint256 decimal3;
     }
 
-    function _buildSingleVaultWithdrawCallData(SingleVaultCallDataArgs memory args)
+    function _buildSingleVaultWithdrawCallData(
+        SingleVaultCallDataArgs memory args
+    )
         internal
         returns (SingleVaultSFData memory superformData)
     {
@@ -1556,53 +1558,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                 value: nativeFee
             }(payloadId_);
         }
-
-        vm.selectFork(initialFork);
-        return true;
-    }
-
-    function _processTimelockPayload(
-        uint256 payloadId_,
-        uint64 srcChainId_,
-        uint64 targetChainId_,
-        TestType, /*testType*/
-        bytes4,
-        uint256 msgValue
-    )
-        internal
-        returns (bool)
-    {
-        uint256 initialFork = vm.activeFork();
-
-        vm.selectFork(FORKS[targetChainId_]);
-
-        /// @dev tries to increase quorum and check if quorum validations are good
-        vm.prank(deployer);
-        SuperRegistry(getContract(targetChainId_, "SuperRegistry")).setRequiredMessagingQuorum(
-            srcChainId_, type(uint256).max
-        );
-
-        vm.prank(deployer);
-        vm.expectRevert(Error.INSUFFICIENT_QUORUM.selector);
-        TimelockStateRegistry(payable(getContract(targetChainId_, "TimelockStateRegistry"))).processPayload{
-            value: msgValue
-        }(payloadId_);
-
-        /// @dev resets quorum and process payload
-        vm.prank(deployer);
-        SuperRegistry(getContract(targetChainId_, "SuperRegistry")).setRequiredMessagingQuorum(srcChainId_, 1);
-
-        vm.prank(deployer);
-        TimelockStateRegistry(payable(getContract(targetChainId_, "TimelockStateRegistry"))).processPayload{
-            value: msgValue
-        }(payloadId_);
-
-        /// @dev maliciously tries to process the payload again
-        vm.prank(deployer);
-        vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
-        TimelockStateRegistry(payable(getContract(targetChainId_, "TimelockStateRegistry"))).processPayload{
-            value: msgValue
-        }(payloadId_);
 
         vm.selectFork(initialFork);
         return true;

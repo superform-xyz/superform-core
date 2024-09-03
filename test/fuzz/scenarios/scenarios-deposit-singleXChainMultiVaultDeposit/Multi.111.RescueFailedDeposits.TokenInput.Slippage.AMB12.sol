@@ -20,14 +20,14 @@ contract SDMVDMulti111RescueFailedDepositsNoTokenInputSlippageAMB12 is ProtocolA
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[AVAX][0] = [2, 2, 2];
-        TARGET_VAULTS[AVAX][0] = [3, 3, 3];
-        /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
+        TARGET_VAULTS[AVAX][0] = [1, 1, 1];
+        /// @dev vault index 1 is failedDepositMock, check VAULT_KINDS
         TARGET_FORM_KINDS[AVAX][0] = [0, 0, 0];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ETH][1] = [2, 2, 2];
-        TARGET_VAULTS[ETH][1] = [3, 3, 3];
-        /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
+        TARGET_VAULTS[ETH][1] = [1, 1, 1];
+        /// @dev vault index 1 is failedDepositMock, check VAULT_KINDS
         TARGET_FORM_KINDS[ETH][1] = [0, 0, 0];
 
         MAX_SLIPPAGE = 1000;
