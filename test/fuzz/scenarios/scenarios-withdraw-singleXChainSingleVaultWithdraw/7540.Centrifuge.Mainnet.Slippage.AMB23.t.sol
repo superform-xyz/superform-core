@@ -18,16 +18,12 @@ contract SXSVW7540CentrifugeMainnetSlippageAMB23 is ProtocolActions {
         DST_CHAINS = [ETH];
 
         TARGET_UNDERLYINGS[ETH][0] = [1];
-
-        TARGET_VAULTS[ETH][0] = [10];
-
-        TARGET_FORM_KINDS[ETH][0] = [4];
+        TARGET_VAULTS[ETH][0] = [4];
+        TARGET_FORM_KINDS[ETH][0] = [2];
 
         TARGET_UNDERLYINGS[ETH][1] = [1];
-
-        TARGET_VAULTS[ETH][1] = [10];
-
-        TARGET_FORM_KINDS[ETH][1] = [4];
+        TARGET_VAULTS[ETH][1] = [4];
+        TARGET_FORM_KINDS[ETH][1] = [2];
 
         MAX_SLIPPAGE = 1000;
 

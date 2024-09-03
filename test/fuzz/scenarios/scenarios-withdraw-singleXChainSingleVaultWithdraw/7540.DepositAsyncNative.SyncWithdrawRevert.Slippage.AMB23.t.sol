@@ -19,16 +19,12 @@ contract SXSVW7540DepositAsyncSyncWithdrawRevertNativeSlippageAMB23 is ProtocolA
         DST_CHAINS = [ETH];
 
         TARGET_UNDERLYINGS[ETH][0] = [0];
-
-        TARGET_VAULTS[ETH][0] = [15];
-
-        TARGET_FORM_KINDS[ETH][0] = [4];
+        TARGET_VAULTS[ETH][0] = [9];
+        TARGET_FORM_KINDS[ETH][0] = [2];
 
         TARGET_UNDERLYINGS[ETH][1] = [0];
-
-        TARGET_VAULTS[ETH][1] = [15];
-
-        TARGET_FORM_KINDS[ETH][1] = [4];
+        TARGET_VAULTS[ETH][1] = [9];
+        TARGET_FORM_KINDS[ETH][1] = [2];
 
         MAX_SLIPPAGE = 1000;
 

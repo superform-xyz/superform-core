@@ -19,16 +19,12 @@ contract SXMVW754051154626SlippageAMB23 is ProtocolActions {
         DST_CHAINS = [ETH];
 
         TARGET_UNDERLYINGS[ETH][0] = [0, 3, 5, 4];
-
-        TARGET_VAULTS[ETH][0] = [10, 9, 9, 0];
-
-        TARGET_FORM_KINDS[ETH][0] = [4, 3, 3, 0];
+        TARGET_VAULTS[ETH][0] = [4, 3, 3, 0];
+        TARGET_FORM_KINDS[ETH][0] = [2, 1, 1, 0];
 
         TARGET_UNDERLYINGS[ETH][1] = [0, 3, 5, 4];
-
-        TARGET_VAULTS[ETH][1] = [10, 9, 9, 0];
-
-        TARGET_FORM_KINDS[ETH][1] = [4, 3, 3, 0];
+        TARGET_VAULTS[ETH][1] = [4, 3, 3, 0];
+        TARGET_FORM_KINDS[ETH][1] = [2, 1, 1, 0];
 
         MAX_SLIPPAGE = 1000;
 

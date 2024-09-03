@@ -948,7 +948,7 @@ abstract contract BaseSetup is StdInvariant, Test {
 
                             if (vars.vault == address(0)) {
                                 /// @dev 8.2 - Deploy mock Vault
-                                if (j < 2) {
+                                if (j == 0) {
                                     bytecodeWithArgs = abi.encodePacked(
                                         vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode[l],
                                         abi.encode(
@@ -959,8 +959,8 @@ abstract contract BaseSetup is StdInvariant, Test {
                                     );
 
                                     vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
-                                } else if (j > 3) {
-                                    /// deploy the 7540 wrappers (skips j = 3 which is 5115)
+                                } else if (j == 2) {
+                                    /// deploy the 7540 wrappers (skips j = 1 which is 5115)
                                     /// @dev all wrappers created with rids = 0
                                     /// TODO create a wrapper with fungible rid later
                                     bytecodeWithArgs = abi.encodePacked(

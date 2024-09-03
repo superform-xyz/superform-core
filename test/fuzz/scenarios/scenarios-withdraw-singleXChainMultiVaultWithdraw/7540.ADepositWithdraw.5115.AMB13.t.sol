@@ -19,16 +19,12 @@ contract SXMVW7540ADepositAWithdraw5115SlippageDstSwapAMB13 is ProtocolActions {
         DST_CHAINS = [OP];
 
         TARGET_UNDERLYINGS[OP][0] = [0, 4, 2];
-
-        TARGET_VAULTS[OP][0] = [11, 9, 12];
-
-        TARGET_FORM_KINDS[OP][0] = [4, 3, 4];
+        TARGET_VAULTS[OP][0] = [5, 3, 6];
+        TARGET_FORM_KINDS[OP][0] = [2, 1, 2];
 
         TARGET_UNDERLYINGS[OP][1] = [0, 4, 2];
-
-        TARGET_VAULTS[OP][1] = [11, 9, 12];
-
-        TARGET_FORM_KINDS[OP][1] = [4, 3, 4];
+        TARGET_VAULTS[OP][1] = [5, 3, 6];
+        TARGET_FORM_KINDS[OP][1] = [2, 1, 2];
 
         MAX_SLIPPAGE = 1000;
 

@@ -127,7 +127,7 @@ contract SuperPositionsTest is BaseSetup {
 
         /// add the invalid state registry to super registry
         uint8[] memory registryId = new uint8[](1);
-        registryId[0] = 5;
+        registryId[0] = 7;
 
         address[] memory registryAddress = new address[](1);
         registryAddress[0] = address(420);
@@ -155,7 +155,7 @@ contract SuperPositionsTest is BaseSetup {
 
         /// add the invalid state registry to super registry
         uint8[] memory registryId = new uint8[](1);
-        registryId[0] = 5;
+        registryId[0] = 7;
 
         address[] memory registryAddress = new address[](1);
         registryAddress[0] = address(420);

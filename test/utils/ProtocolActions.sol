@@ -2513,9 +2513,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         int256 USDPerUnderlyingToken;
     }
 
-    function _buildSingleVaultWithdrawCallData(
-        SingleVaultCallDataArgs memory args
-    )
+    function _buildSingleVaultWithdrawCallData(SingleVaultCallDataArgs memory args)
         internal
         returns (SingleVaultSFData memory superformData)
     {
@@ -2700,26 +2698,28 @@ abstract contract ProtocolActions is CommonProtocolActions {
             underlyingDstTokensMem[i] = getContract(chain1, vars.underlyingToken);
             vaultMocksMem[i] = getContract(chain1, VAULT_NAMES[vars.vaultIds[i]][vars.underlyingTokens[i]]);
             if (firstPass) {
-                if (vars.vaultIds[i] == 3 || vars.vaultIds[i] == 5 || vars.vaultIds[i] == 6) {
+                if (vars.vaultIds[i] == 1) {
                     revertingDepositSFsPerDst.push(vars.superformIdsTemp[i]);
                 }
-                if (vars.vaultIds[i] == 7 || vars.vaultIds[i] == 8) {
+
+                if (vars.vaultIds[i] == 2) {
                     revertingWithdrawSFsPerDst.push(vars.superformIdsTemp[i]);
                 }
-                if (vars.vaultIds[i] == 10 || vars.vaultIds[i] == 11) {
+
+                if (vars.vaultIds[i] == 4 || vars.vaultIds[i] == 5) {
                     asyncDepositSFsPerDst.push(vars.superformIdsTemp[i]);
                 }
-                if (vars.vaultIds[i] == 10 || vars.vaultIds[i] == 12) {
+                if (vars.vaultIds[i] == 4 || vars.vaultIds[i] == 6) {
                     asyncWithdrawSFsPerDst.push(vars.superformIdsTemp[i]);
                 }
 
-                if (vars.vaultIds[i] == 13) {
+                if (vars.vaultIds[i] == 7) {
                     revertingAsyncDepositSFsPerDst.push(vars.superformIdsTemp[i]);
                 }
-                if (vars.vaultIds[i] == 14) {
+                if (vars.vaultIds[i] == 8) {
                     revertingAsyncWithdrawSFsPerDst.push(vars.superformIdsTemp[i]);
                 }
-                if (vars.vaultIds[i] == 15) {
+                if (vars.vaultIds[i] == 9) {
                     revertingRedeemAsyncDepositSFsPerDst.push(vars.superformIdsTemp[i]);
                 }
             }
@@ -2748,19 +2748,18 @@ abstract contract ProtocolActions is CommonProtocolActions {
             delete revertingAsyncWithdrawSFsPerDst;
             delete revertingRedeemAsyncDepositSFsPerDst;
 
-            /// @dev detects timelocked forms in scenario and counts them
+            /// @dev detects 7540 forms in scenario and counts them
             for (uint256 j; j < vars.formKinds.length; ++j) {
                 if (
-                    vars.formKinds[j] == 4
+                    vars.formKinds[j] == 2
                         && (
-                            vars.vaultIds[j] == 10 || vars.vaultIds[j] == 11 || vars.vaultIds[j] == 13
-                                || vars.vaultIds[j] == 15
+                            vars.vaultIds[j] == 4 || vars.vaultIds[j] == 5 || vars.vaultIds[j] == 7 || vars.vaultIds[j] == 9
                         )
                 ) {
                     ++countAsyncDeposit[dst];
                     asyncDepositIndexes[chain1][countAsyncDeposit[dst]] = j;
                 }
-                if (vars.formKinds[j] == 4 && (vars.vaultIds[j] == 10 || vars.vaultIds[j] == 12)) {
+                if (vars.vaultIds[j] == 4 || vars.vaultIds[j] == 6) {
                     ++countAsyncWithdraw[dst];
 
                     asyncRedeemIndexes[chain1][countAsyncWithdraw[dst]] = j;

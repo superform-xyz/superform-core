@@ -18,16 +18,12 @@ contract SXSVW7540FAsyncNativeSlippageAMB23 is ProtocolActions {
         DST_CHAINS = [OP];
 
         TARGET_UNDERLYINGS[OP][0] = [1];
-
-        TARGET_VAULTS[OP][0] = [10];
-
-        TARGET_FORM_KINDS[OP][0] = [4];
+        TARGET_VAULTS[OP][0] = [4];
+        TARGET_FORM_KINDS[OP][0] = [2];
 
         TARGET_UNDERLYINGS[OP][1] = [1];
-
-        TARGET_VAULTS[OP][1] = [10];
-
-        TARGET_FORM_KINDS[OP][1] = [4];
+        TARGET_VAULTS[OP][1] = [4];
+        TARGET_FORM_KINDS[OP][1] = [2];
 
         MAX_SLIPPAGE = 1000;
 

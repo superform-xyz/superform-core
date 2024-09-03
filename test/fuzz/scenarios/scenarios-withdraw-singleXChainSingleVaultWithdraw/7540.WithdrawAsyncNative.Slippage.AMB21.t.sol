@@ -19,16 +19,12 @@ contract SXSVW7540WithdrawAsyncNativeDstSwapSlippageAMB21 is ProtocolActions {
         DST_CHAINS = [OP];
 
         TARGET_UNDERLYINGS[OP][0] = [3];
-
-        TARGET_VAULTS[OP][0] = [12];
-
-        TARGET_FORM_KINDS[OP][0] = [4];
+        TARGET_VAULTS[OP][0] = [6];
+        TARGET_FORM_KINDS[OP][0] = [2];
 
         TARGET_UNDERLYINGS[OP][1] = [3];
-
-        TARGET_VAULTS[OP][1] = [12];
-
-        TARGET_FORM_KINDS[OP][1] = [4];
+        TARGET_VAULTS[OP][1] = [6];
+        TARGET_FORM_KINDS[OP][1] = [2];
 
         MAX_SLIPPAGE = 1000;
 
