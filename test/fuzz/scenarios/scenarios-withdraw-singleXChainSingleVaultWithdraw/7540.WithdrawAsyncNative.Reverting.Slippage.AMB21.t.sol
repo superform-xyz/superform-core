@@ -19,16 +19,12 @@ contract SXSVW7540WithdrawAsyncNativeRevertingDstSwapSlippageAMB23 is ProtocolAc
         DST_CHAINS = [ARBI];
 
         TARGET_UNDERLYINGS[ARBI][0] = [4];
-
-        TARGET_VAULTS[ARBI][0] = [14];
-
-        TARGET_FORM_KINDS[ARBI][0] = [4];
+        TARGET_VAULTS[ARBI][0] = [8];
+        TARGET_FORM_KINDS[ARBI][0] = [2];
 
         TARGET_UNDERLYINGS[ARBI][1] = [4];
-
-        TARGET_VAULTS[ARBI][1] = [14];
-
-        TARGET_FORM_KINDS[ARBI][1] = [4];
+        TARGET_VAULTS[ARBI][1] = [8];
+        TARGET_FORM_KINDS[ARBI][1] = [2];
 
         MAX_SLIPPAGE = 1000;
 

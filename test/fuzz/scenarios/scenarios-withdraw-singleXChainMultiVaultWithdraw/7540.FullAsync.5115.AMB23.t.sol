@@ -19,16 +19,12 @@ contract SXMVW7540FullAsync5115SlippageAMB23 is ProtocolActions {
         DST_CHAINS = [OP];
 
         TARGET_UNDERLYINGS[OP][0] = [0, 4];
-
-        TARGET_VAULTS[OP][0] = [10, 9];
-
-        TARGET_FORM_KINDS[OP][0] = [4, 3];
+        TARGET_VAULTS[OP][0] = [4, 3];
+        TARGET_FORM_KINDS[OP][0] = [2, 1];
 
         TARGET_UNDERLYINGS[OP][1] = [0, 4];
-
-        TARGET_VAULTS[OP][1] = [10, 9];
-
-        TARGET_FORM_KINDS[OP][1] = [4, 3];
+        TARGET_VAULTS[OP][1] = [4, 3];
+        TARGET_FORM_KINDS[OP][1] = [2, 1];
 
         MAX_SLIPPAGE = 1000;
 

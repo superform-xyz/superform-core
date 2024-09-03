@@ -14,6 +14,7 @@ import { WormholeHelper } from "pigeon/wormhole/automatic-relayer/WormholeHelper
 import "pigeon/wormhole/specialized-relayer/WormholeHelper.sol" as WormholeBroadcastHelper;
 
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
+import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 
 /// @dev test utils & mocks
 import { LiFiMock } from "../mocks/LiFiMock.sol";
@@ -30,32 +31,12 @@ import { MockERC20 } from "../mocks/MockERC20.sol";
 import { VaultMock } from "../mocks/VaultMock.sol";
 import { VaultMockRevertDeposit } from "../mocks/VaultMockRevertDeposit.sol";
 import { VaultMockRevertWithdraw } from "../mocks/VaultMockRevertWithdraw.sol";
-import { ERC4626TimelockMockRevertWithdrawal } from "../mocks/ERC4626TimelockMockRevertWithdrawal.sol";
-import { ERC4626TimelockMockRevertDeposit } from "../mocks/ERC4626TimelockMockRevertDeposit.sol";
-import { ERC4626TimelockMock } from "../mocks/ERC4626TimelockMock.sol";
-import { kycDAO4626 } from "super-vaults/kycdao-4626/kycdao4626.sol";
-import { kycDAO4626RevertDeposit } from "../mocks/kycDAO4626RevertDeposit.sol";
-import { kycDAO4626RevertWithdraw } from "../mocks/kycDAO4626RevertWithdraw.sol";
 import { Permit2Clone } from "../mocks/Permit2Clone.sol";
-import { KYCDaoNFTMock } from "../mocks/KYCDaoNFTMock.sol";
-import { ERC7540AsyncDepositMock } from "../mocks/ERC7540AsyncDepositMock.sol";
-import { ERC7540AsyncDepositMockRevert } from "../mocks/ERC7540AsyncDepositMockRevert.sol";
-import { ERC7540AsyncDepositMockRedeemRevert } from "../mocks/ERC7540AsyncDepositMockRedeemRevert.sol";
-
-import { ERC7540AsyncRedeemMock } from "../mocks/ERC7540AsyncRedeemMock.sol";
-import { ERC7540AsyncRedeemMockRevert } from "../mocks/ERC7540AsyncRedeemMockRevert.sol";
-import { ERC7540FullyAsyncMock } from "../mocks/ERC7540FullyAsyncMock.sol";
-
-import { TrancheTokenLike } from "../mocks/7540MockUtils/TrancheTokenLike.sol";
-import { RestrictionManagerLike } from "../mocks/7540MockUtils/RestrictionManagerLike.sol";
-
-import { IERC7540Vault as IERC7540 } from "src/vendor/centrifuge/IERC7540.sol";
 
 /// @dev Protocol imports
 import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
 import { BroadcastRegistry } from "src/crosschain-data/BroadcastRegistry.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
-import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
 import { EmergencyQueue } from "src/EmergencyQueue.sol";
@@ -64,8 +45,6 @@ import { SuperRBAC } from "src/settings/SuperRBAC.sol";
 import { SuperPositions } from "src/SuperPositions.sol";
 import { SuperformFactory } from "src/SuperformFactory.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
-import { ERC4626TimelockForm } from "src/forms/ERC4626TimelockForm.sol";
-import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
 import { ERC5115Form } from "src/forms/ERC5115Form.sol";
 import { ERC5115To4626Wrapper } from "src/forms/wrappers/ERC5115To4626Wrapper.sol";
 import { ERC7540Form } from "src/forms/ERC7540Form.sol";
@@ -97,9 +76,19 @@ import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
 import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
 import ".././utils/AmbParams.sol";
 import { IPermit2 } from "src/vendor/dragonfly-xyz/IPermit2.sol";
+import { ERC7540AsyncDepositMock } from "../mocks/ERC7540AsyncDepositMock.sol";
+import { ERC7540AsyncDepositMockRevert } from "../mocks/ERC7540AsyncDepositMockRevert.sol";
+import { ERC7540AsyncDepositMockRedeemRevert } from "../mocks/ERC7540AsyncDepositMockRedeemRevert.sol";
 
+import { ERC7540AsyncRedeemMock } from "../mocks/ERC7540AsyncRedeemMock.sol";
+import { ERC7540AsyncRedeemMockRevert } from "../mocks/ERC7540AsyncRedeemMockRevert.sol";
+import { ERC7540FullyAsyncMock } from "../mocks/ERC7540FullyAsyncMock.sol";
+
+import { TrancheTokenLike } from "../mocks/7540MockUtils/TrancheTokenLike.sol";
+import { RestrictionManagerLike } from "../mocks/7540MockUtils/RestrictionManagerLike.sol";
 import { IAuthorizeOperator } from "src/vendor/centrifuge/IERC7540.sol";
-import { TimelockStateRegistry } from "src/crosschain-data/extensions/TimelockStateRegistry.sol";
+
+import { IERC7540Vault as IERC7540 } from "src/vendor/centrifuge/IERC7540.sol";
 import { AsyncStateRegistry } from "src/crosschain-data/extensions/AsyncStateRegistry.sol";
 import { RequestConfig } from "src/interfaces/IAsyncStateRegistry.sol";
 import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
@@ -149,7 +138,6 @@ abstract contract BaseSetup is StdInvariant, Test {
 
     string[44] public contractNames = [
         "CoreStateRegistry",
-        "TimelockStateRegistry",
         "AsyncStateRegistry",
         "BroadcastRegistry",
         "LayerzeroImplementation",
@@ -163,8 +151,6 @@ abstract contract BaseSetup is StdInvariant, Test {
         "DstSwapper",
         "SuperformFactory",
         "ERC4626Form",
-        "ERC4626TimelockForm",
-        "ERC4626KYCDaoForm",
         "ERC5115Form",
         "ERC7540Form",
         "SuperformRouter",
@@ -202,19 +188,13 @@ abstract contract BaseSetup is StdInvariant, Test {
     /// @notice tUSD is a test token on sepolia
     string[] public UNDERLYING_TOKENS = ["DAI", "USDC", "WETH", "ezETH", "wstETH", "sUSDe", "USDe", "tUSD"];
 
-    /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm, 4 = ERC5115, 5 = ERC7540
-    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(2), uint32(3), uint32(4), uint32(5)];
+    /// @dev 1 = ERC4626Form, 4 = ERC5115, 5 is ERC7540
+    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(4), uint32(5)];
 
     /// @dev WARNING!! THESE VAULT NAMES MUST BE THE EXACT NAMES AS FILLED IN vaultKinds
     string[] public VAULT_KINDS = [
         "VaultMock",
-        "ERC4626TimelockMock", // 7540 async withdraw (this is current timelocked)
-        "kycDAO4626",
         "VaultMockRevertDeposit",
-        "ERC4626TimelockMockRevertWithdrawal", // async withdraw revert withdraw
-        "ERC4626TimelockMockRevertDeposit", // async deposit revert deposit
-        "kycDAO4626RevertDeposit",
-        "kycDAO4626RevertWithdraw",
         "VaultMockRevertWithdraw",
         "ERC5115",
         "ERC7540FullyAsyncMock",
@@ -237,7 +217,7 @@ abstract contract BaseSetup is StdInvariant, Test {
     mapping(uint64 chainId => mapping(uint32 formImplementationId => address[][] vaults)) public vaults;
     mapping(uint64 chainId => address[] wrapped5115vaults) public wrapped5115vaults;
     mapping(uint64 chainId => uint256 payloadId) PAYLOAD_ID;
-    mapping(uint64 chainId => uint256 payloadId) TIMELOCK_PAYLOAD_ID;
+
     mapping(uint64 chainId => uint256 payloadId) ASYNC_DEPOSIT_PAYLOAD_ID;
     mapping(uint64 chainId => uint256 payloadId) SYNC_WITHDRAW_PAYLOAD_ID;
 
@@ -290,7 +270,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7,
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7,
         0xae92d5aD7583AD66E49A0c67BAd18F6ba52dDDc1,
-        0x6Fcb97553D41516Cb228ac03FdC8B9a0a9df04A1
+        0x6Fcb97553D41516Cb228ac03FdC8B9a0a9df04A1,
+        0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7,
+        0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7
     ];
 
     address[] public hyperlaneMailboxes = [
@@ -303,7 +285,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         0xeA87ae93Fa0019a82A727bfd3eBd1cFCa8f64f1D,
         address(0),
         0xfFAEF09B3cd11D9b20d1a19bECca54EEC2884766,
-        0xF9F6F5646F478d5ab4e20B0F910C92F1CCC9Cc6D
+        0xF9F6F5646F478d5ab4e20B0F910C92F1CCC9Cc6D,
+        0x02d16BC51af6BfD153d67CA61754cF912E82C4d9,
+        0x3a867fCfFeC2B790970eeBDC9023E75B0a172aa7
     ];
 
     address[] public hyperlanePaymasters = [
@@ -316,7 +300,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         0xc3F23848Ed2e04C0c6d41bd7804fa8f89F940B94,
         address(0),
         0x6f2756380FD49228ae25Aa7F2817993cB74Ecc56,
-        0x0dD20e410bdB95404f71c5a4e7Fa67B892A5f949
+        0x0dD20e410bdB95404f71c5a4e7Fa67B892A5f949,
+        0x8105a095368f1a184CceA86cCe21318B5Ee5BE28,
+        0xB3fCcD379ad66CED0c91028520C64226611A48c9
     ];
 
     address[] public wormholeCore = [
@@ -329,7 +315,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6,
         0x126783A6Cb203a3E35344528B26ca3a0489a1485,
         0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78,
-        0x68605AD7b15c732a30b1BbC62BE8F2A509D74b4D
+        0x68605AD7b15c732a30b1BbC62BE8F2A509D74b4D,
+        address(0),
+        0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6
     ];
 
     address[] public axelarGateway = [
@@ -342,7 +330,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         0xe432150cce91c13a887f7D836923d5597adD8E31,
         0x304acf330bbE08d1e512eefaa92F6a57871fD895,
         0xe432150cce91c13a887f7D836923d5597adD8E31,
-        0x4D147dCb984e6affEEC47e44293DA442580A3Ec0
+        0x4D147dCb984e6affEEC47e44293DA442580A3Ec0,
+        0xe432150cce91c13a887f7D836923d5597adD8E31,
+        0xe432150cce91c13a887f7D836923d5597adD8E31
     ];
 
     address[] public axelarGasService = [
@@ -355,7 +345,10 @@ abstract contract BaseSetup is StdInvariant, Test {
         0x2d5d7d31F671F86C782533cc367F14109a082712,
         0x2d5d7d31F671F86C782533cc367F14109a082712,
         0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6,
-        0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6
+        0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712
     ];
 
     /*//////////////////////////////////////////////////////////////
@@ -382,6 +375,8 @@ abstract contract BaseSetup is StdInvariant, Test {
     uint32 public constant LZ_V2_FANTOM = 30_112;
     uint32 public constant LZ_V2_SEPOLIA = 40_161;
     uint32 public constant LZ_V2_BSC_TESTNET = 40_102;
+    uint32 public constant LZ_V2_LINEA = 30_183;
+    uint32 public constant LZ_V2_BLAST = 30_243;
 
     /*//////////////////////////////////////////////////////////////
                         HYPERLANE VARIABLES
@@ -396,9 +391,11 @@ abstract contract BaseSetup is StdInvariant, Test {
     uint64 public constant FANTOM = 250;
     uint64 public constant SEPOLIA = 11_155_111;
     uint64 public constant BSC_TESTNET = 97;
+    uint64 public constant LINEA = 59_144;
+    uint64 public constant BLAST = 81_457;
 
-    uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
-    uint64[] public defaultChainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 11_155_111, 97];
+    uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 11_155_111, 97, 59_144, 81_457];
+    uint64[] public defaultChainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 11_155_111, 97, 59_144, 81_457];
 
     mapping(uint64 chainId => bool selected) selectedChainIds;
     /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
@@ -412,11 +409,14 @@ abstract contract BaseSetup is StdInvariant, Test {
     uint16 public constant LZ_FANTOM = 112;
     uint16 public constant LZ_SEPOLIA = 10_161;
     uint16 public constant LZ_BSC_TESTNET = 10_102;
+    uint16 public constant LZ_LINEA = 183;
+    uint32 public constant LZ_BLAST = 243;
 
-    uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111, 184, 112, 10_161, 10_102];
-    uint32[] public lz_v2_chainIds = [30_101, 30_102, 30_106, 30_109, 30_110, 30_111, 30_184, 30_112, 40_161, 40_102];
-    uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 11_155_111, 97];
-    uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30, 10, 10_002, 10_003];
+    uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111, 184, 112, 10_161, 10_102, 183, 243];
+    uint32[] public lz_v2_chainIds =
+        [30_101, 30_102, 30_106, 30_109, 30_110, 30_111, 30_184, 30_112, 40_161, 40_102, 30_183, 30_243];
+    uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 11_155_111, 97, 59_144, 81_457];
+    uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30, 10, 10_002, 10_003, 38, 36];
     string[] public axelar_chainIds = [
         "Ethereum",
         "binance",
@@ -427,7 +427,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         "base",
         "Fantom",
         "ethereum-sepolia",
-        "binance-testnet"
+        "binance-testnet",
+        "linea",
+        "blast"
     ];
 
     /// @dev minting enough tokens to be able to fuzz with bigger amounts (DAI's 3.6B supply etc)
@@ -447,7 +449,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         1_000_000, // BASE
         4 * 10e9, // FANTOM
         50_000_000_000, // SEPOLIA
-        3_000_000_000 // BSC
+        3_000_000_000, // BSC
+        60_000_000, // LINEA
+        60_000_000 // BLAST
     ];
 
     /// @dev !WARNING: update these for Fantom
@@ -462,7 +466,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         253_400_000_000, // BASE
         4 * 10e9, // FANTOM
         253_400_000_000, // SEPOLIA
-        31_439_000_000 // BSC
+        31_439_000_000, // BSC
+        253_400_000_000, // LINEA
+        253_400_000_000 // BLAST
     ];
 
     /*//////////////////////////////////////////////////////////////
@@ -505,8 +511,10 @@ abstract contract BaseSetup is StdInvariant, Test {
     string public POLYGON_RPC_URL = vm.envString("POLYGON_RPC_URL"); // Native token: MATIC
     string public ARBITRUM_RPC_URL = vm.envString("ARBITRUM_RPC_URL"); // Native token: ETH
     string public OPTIMISM_RPC_URL = vm.envString("OPTIMISM_RPC_URL"); // Native token: ETH
-    string public BASE_RPC_URL = vm.envString("BASE_RPC_URL"); // Native token: ETH
+    string public BASE_RPC_URL = vm.envString("BASE_RPC_URL"); // Native token: BASE
     string public FANTOM_RPC_URL = vm.envString("FANTOM_RPC_URL"); // Native token: FTM
+    string public LINEA_RPC_URL = vm.envString("LINEA_RPC_URL"); // Native token: ETH
+    string public BLAST_RPC_URL = vm.envString("BLAST_RPC_URL"); // Native token: ETH
 
     string public ETHEREUM_RPC_URL_QN = vm.envString("ETHEREUM_RPC_URL_QN"); // Native token: ETH
     string public BSC_RPC_URL_QN = vm.envString("BSC_RPC_URL_QN"); // Native token: BNB
@@ -518,6 +526,8 @@ abstract contract BaseSetup is StdInvariant, Test {
     string public FANTOM_RPC_URL_QN = vm.envString("FANTOM_RPC_URL_QN"); // Native token: FTM
     string public SEPOLIA_RPC_URL_QN = vm.envString("SEPOLIA_RPC_URL_QN"); // Native token: ETH
     string public BSC_TESTNET_RPC_URL_QN = vm.envString("BSC_TESTNET_RPC_URL_QN"); // Native token: BNB
+    string public LINEA_RPC_URL_QN = vm.envString("LINEA_RPC_URL_QN"); // Native token: ETH
+    string public BLAST_RPC_URL_QN = vm.envString("BLAST_RPC_URL_QN"); // Native token: ETH
 
     bool public LAUNCH_TESTNETS = false;
     /*//////////////////////////////////////////////////////////////
@@ -726,15 +736,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                 vars.superRegistryC.CORE_STATE_REGISTRY(), vars.coreStateRegistry, vars.chainId
             );
 
-            /// @dev 4.2 - deploy Form State Registry
-            vars.timelockStateRegistry = address(new TimelockStateRegistry{ salt: salt }(vars.superRegistryC));
-            contracts[vars.chainId][bytes32(bytes("TimelockStateRegistry"))] = vars.timelockStateRegistry;
-
-            vars.superRegistryC.setAddress(
-                vars.superRegistryC.TIMELOCK_STATE_REGISTRY(), vars.timelockStateRegistry, vars.chainId
-            );
-
-            /// @dev 4.3 - deploy Broadcast State Registry
+            /// @dev 4.2 - deploy Broadcast State Registry
             vars.broadcastRegistry = address(new BroadcastRegistry{ salt: salt }(vars.superRegistryC));
             contracts[vars.chainId][bytes32(bytes("BroadcastRegistry"))] = vars.broadcastRegistry;
 
@@ -752,20 +754,16 @@ abstract contract BaseSetup is StdInvariant, Test {
             );
             vars.superRBACC.grantRole(keccak256("ASYNC_STATE_REGISTRY_PROCESSOR_ROLE"), deployer);
 
-            /// TODO: REPLACE TIMELOCK STATE REGISTRY EVERYWHERE WITH ASYNC ONE
-
-            address[] memory registryAddresses = new address[](4);
+            address[] memory registryAddresses = new address[](3);
             registryAddresses[0] = vars.coreStateRegistry;
-            registryAddresses[1] = vars.timelockStateRegistry;
-            registryAddresses[2] = vars.broadcastRegistry;
-            registryAddresses[3] = vars.asyncStateRegistry;
+            registryAddresses[1] = vars.broadcastRegistry;
+            registryAddresses[2] = vars.asyncStateRegistry;
 
-            uint8[] memory registryIds = new uint8[](4);
+            uint8[] memory registryIds = new uint8[](3);
             registryIds[0] = 1;
             registryIds[1] = 2;
-            registryIds[2] = 3;
             /// @dev  TODO temporarily as id 5 to match 7540 form implementation id. later this will change to 2
-            registryIds[3] = 5;
+            registryIds[2] = 5;
 
             vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
 
@@ -798,22 +796,27 @@ abstract contract BaseSetup is StdInvariant, Test {
                 contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
             }
 
-            /// @dev 6.3- deploy Wormhole Automatic Relayer Implementation
-            vars.wormholeImplementation = address(new WormholeARImplementation{ salt: salt }(vars.superRegistryC));
-            contracts[vars.chainId][bytes32(bytes("WormholeARImplementation"))] = vars.wormholeImplementation;
+            if (vars.chainId != LINEA) {
+                /// @dev 6.3- deploy Wormhole Automatic Relayer Implementation
+                vars.wormholeImplementation = address(new WormholeARImplementation{ salt: salt }(vars.superRegistryC));
+                contracts[vars.chainId][bytes32(bytes("WormholeARImplementation"))] = vars.wormholeImplementation;
 
-            WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayer);
-            /// set refund chain id to wormhole chain id
-            WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(
-                wormhole_chainIds[vars.trueChainIdIndex]
-            );
+                WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayer);
+                /// set refund chain id to wormhole chain id
+                WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(
+                    wormhole_chainIds[vars.trueChainIdIndex]
+                );
 
-            /// @dev 6.4- deploy Wormhole Specialized Relayer Implementation
-            vars.wormholeSRImplementation = address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC, 3));
-            contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
+                /// @dev 6.4- deploy Wormhole Specialized Relayer Implementation
+                vars.wormholeSRImplementation =
+                    address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC, 2));
+                contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
 
-            WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[vars.trueChainIdIndex]);
-            WormholeSRImplementation(vars.wormholeSRImplementation).setRelayer(deployer);
+                WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(
+                    wormholeCore[vars.trueChainIdIndex]
+                );
+                WormholeSRImplementation(vars.wormholeSRImplementation).setRelayer(deployer);
+            }
 
             /// @dev 6.5- deploy Axelar Implementation
             vars.axelarImplementation = address(new AxelarImplementation{ salt: salt }(vars.superRegistryC));
@@ -893,10 +896,6 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.oneInchValidator = address(new OneInchValidator{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("OneInchValidator"))] = vars.oneInchValidator;
 
-            /// @dev 7.3- kycDAO NFT used to test kycDAO vaults
-            vars.kycDAOMock = address(new KYCDaoNFTMock{ salt: salt }());
-            contracts[vars.chainId][bytes32(bytes("KYCDAOMock"))] = vars.kycDAOMock;
-
             bridgeAddresses.push(vars.lifiRouter);
             bridgeAddresses.push(vars.socketRouter);
             bridgeAddresses.push(vars.socketOneInch);
@@ -935,9 +934,9 @@ abstract contract BaseSetup is StdInvariant, Test {
             bytes memory bytecodeWithArgs;
             /// NOTE: This loop deploys all vaults on all chainIds with all of the UNDERLYING TOKENS (id x form) x
             /// chainId
-            for (uint32 j = 0; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
+            for (uint32 j; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
                 /// @dev don't do this for 5115
-                if (j != 3) {
+                if (j != 1) {
                     address[][] memory doubleVaults = new address[][](UNDERLYING_TOKENS.length);
 
                     for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
@@ -949,7 +948,7 @@ abstract contract BaseSetup is StdInvariant, Test {
 
                             if (vars.vault == address(0)) {
                                 /// @dev 8.2 - Deploy mock Vault
-                                if (j < 2) {
+                                if (j == 0) {
                                     bytecodeWithArgs = abi.encodePacked(
                                         vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode[l],
                                         abi.encode(
@@ -961,17 +960,7 @@ abstract contract BaseSetup is StdInvariant, Test {
 
                                     vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
                                 } else if (j == 2) {
-                                    /// deploy the kycDAOVault wrapper with different args
-                                    bytecodeWithArgs = abi.encodePacked(
-                                        vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode[l],
-                                        abi.encode(
-                                            MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])), vars.kycDAOMock
-                                        )
-                                    );
-
-                                    vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
-                                } else if (j > 3) {
-                                    /// deploy the 7540 wrappers (skips j = 3 which is 5115)
+                                    /// deploy the 7540 wrappers (skips j = 1 which is 5115)
                                     /// @dev all wrappers created with rids = 0
                                     /// TODO create a wrapper with fungible rid later
                                     bytecodeWithArgs = abi.encodePacked(
@@ -997,6 +986,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                     vaults[vars.chainId][FORM_IMPLEMENTATION_IDS[j]] = doubleVaults;
                 }
             }
+
             /// @dev deploy wrapper factory
             vars.eRC5115To4626WrapperFactory =
                 address(new ERC5115To4626WrapperFactory{ salt: salt }(vars.superRegistry));
@@ -1028,14 +1018,6 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.erc4626Form = address(new ERC4626Form{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars.erc4626Form;
 
-            // Timelock + ERC4626 Form
-            vars.erc4626TimelockForm = address(new ERC4626TimelockForm{ salt: salt }(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("ERC4626TimelockForm"))] = vars.erc4626TimelockForm;
-
-            // KYCDao ERC4626 Form
-            vars.kycDao4626Form = address(new ERC4626KYCDaoForm{ salt: salt }(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
-
             // Pendle ERC5115 Form
             vars.erc5115form = address(new ERC5115Form{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("ERC5115Form"))] = vars.erc5115form;
@@ -1048,17 +1030,10 @@ abstract contract BaseSetup is StdInvariant, Test {
 
             /// @dev 11 - Add newly deployed form implementations to Factory
             ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0], 1);
-
-            ISuperformFactory(vars.factory).addFormImplementation(
-                vars.erc4626TimelockForm, FORM_IMPLEMENTATION_IDS[1], 2
-            );
-
-            ISuperformFactory(vars.factory).addFormImplementation(vars.kycDao4626Form, FORM_IMPLEMENTATION_IDS[2], 1);
-
-            ISuperformFactory(vars.factory).addFormImplementation(vars.erc5115form, FORM_IMPLEMENTATION_IDS[3], 1);
+            ISuperformFactory(vars.factory).addFormImplementation(vars.erc5115form, FORM_IMPLEMENTATION_IDS[1], 1);
 
             /// @dev TODO temporarily as id 5, to become id 2
-            ISuperformFactory(vars.factory).addFormImplementation(vars.erc7540form, FORM_IMPLEMENTATION_IDS[4], 5);
+            ISuperformFactory(vars.factory).addFormImplementation(vars.erc7540form, FORM_IMPLEMENTATION_IDS[2], 5);
 
             /// @dev 12 - Deploy SuperformRouter
             vars.superformRouter = address(new SuperformRouter{ salt: salt }(vars.superRegistry));
@@ -1204,11 +1179,13 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.superRegistryC = SuperRegistry(payable(vars.superRegistry));
             vars.superRegistryC.setVaultLimitPerDestination(vars.chainId, 5);
 
-            /// @dev Set all trusted remotes for each chain, configure amb chains ids, setupQuorum for all chains as 1
+            /// @dev Set all trusted remotes for each chain, configure amb chains ids, setupQuorum for all chains as
+            /// 1
             /// and setup PaymentHelper
             /// @dev has to be performed after all main contracts have been deployed on all chains
             for (uint256 j = 0; j < chainIds.length; ++j) {
                 uint256 trueChainIdIndex;
+
                 // find selected chain ids and assign to selectedChainIds mapping
                 for (uint256 k = 0; k < defaultChainIds.length; k++) {
                     if (chainIds[j] == defaultChainIds[k]) {
@@ -1216,6 +1193,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                         break;
                     }
                 }
+
                 if (vars.chainId != chainIds[j]) {
                     vars.dstChainId = chainIds[j];
 
@@ -1256,13 +1234,23 @@ abstract contract BaseSetup is StdInvariant, Test {
                         );
                     }
 
-                    WormholeARImplementation(payable(vars.wormholeImplementation)).setReceiver(
-                        vars.dstWormholeChainId, vars.dstWormholeARImplementation
-                    );
+                    if (!(vars.chainId == LINEA || vars.dstChainId == LINEA)) {
+                        WormholeARImplementation(payable(vars.wormholeImplementation)).setReceiver(
+                            vars.dstWormholeChainId, vars.dstWormholeARImplementation
+                        );
 
-                    WormholeARImplementation(payable(vars.wormholeImplementation)).setChainId(
-                        vars.dstChainId, vars.dstWormholeChainId
-                    );
+                        WormholeARImplementation(payable(vars.wormholeImplementation)).setChainId(
+                            vars.dstChainId, vars.dstWormholeChainId
+                        );
+
+                        WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setChainId(
+                            vars.dstChainId, vars.dstWormholeChainId
+                        );
+
+                        WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setReceiver(
+                            vars.dstWormholeChainId, vars.dstWormholeSRImplementation
+                        );
+                    }
 
                     AxelarImplementation(payable(vars.axelarImplementation)).setChainId(
                         vars.dstChainId, axelar_chainIds[trueChainIdIndex]
@@ -1270,14 +1258,6 @@ abstract contract BaseSetup is StdInvariant, Test {
 
                     AxelarImplementation(payable(vars.axelarImplementation)).setReceiver(
                         axelar_chainIds[trueChainIdIndex], vars.dstAxelarImplementation
-                    );
-
-                    WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setChainId(
-                        vars.dstChainId, vars.dstWormholeChainId
-                    );
-
-                    WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setReceiver(
-                        vars.dstWormholeChainId, vars.dstWormholeSRImplementation
                     );
 
                     /// sets the relayer address on all subsequent chains
@@ -1310,7 +1290,6 @@ abstract contract BaseSetup is StdInvariant, Test {
                             750,
                             2_000_000,
                             /// @dev ackGasCost to move a msg from dst to source
-                            10_000,
                             10_000,
                             abi.decode(GAS_USED[vars.dstChainId][13], (uint256))
                         )
@@ -1346,12 +1325,6 @@ abstract contract BaseSetup is StdInvariant, Test {
 
                     vars.superRegistryC.setAddress(
                         vars.superRegistryC.DST_SWAPPER(), getContract(vars.dstChainId, "DstSwapper"), vars.dstChainId
-                    );
-
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.TIMELOCK_STATE_REGISTRY(),
-                        getContract(vars.dstChainId, "TimelockStateRegistry"),
-                        vars.dstChainId
                     );
 
                     vars.superRegistryC.setAddress(
@@ -1453,41 +1426,48 @@ abstract contract BaseSetup is StdInvariant, Test {
             vm.selectFork(FORKS[chainIds[i]]);
 
             /// @dev 18 - create test superforms when the whole state registry is configured
-
             for (uint256 j = 0; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
-                if (j != 3) {
+                if (j != 1) {
                     for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
                         uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
 
                         for (uint256 l = 0; l < lenBytecodes; l++) {
                             address vault = vaults[chainIds[i]][FORM_IMPLEMENTATION_IDS[j]][k][l];
 
+                            if (vault == address(0)) continue;
+
                             uint256 superformId;
                             (superformId, vars.superform) = ISuperformFactory(
                                 contracts[chainIds[i]][bytes32(bytes("SuperformFactory"))]
                             ).createSuperform(FORM_IMPLEMENTATION_IDS[j], vault);
 
-                            if (FORM_IMPLEMENTATION_IDS[j] == 3) {
-                                /// mint a kycDAO Nft to the newly kycDAO superform
-                                ERC4626KYCDaoForm(vars.superform).mintKYC(1);
-                            } else if (FORM_IMPLEMENTATION_IDS[j] == 5) {
+                            if (FORM_IMPLEMENTATION_IDS[j] == 5) {
                                 // triggers _vaultKindCheck to set async type
                                 ERC7540Form(vars.superform).forwardDustToPaymaster(
                                     ERC7540Form(vars.superform).getVaultAsset()
                                 );
-                                /// @dev activating centrifuge real vault (note: this flow will be needed in production)
+                                /// @dev activating centrifuge real vault (note: this flow will be needed in
+                                /// production)
                                 if (
                                     (vault == 0x3b33D257E77E018326CCddeCA71cf9350C585A66 && LAUNCH_TESTNETS)
                                         || vault == 0x1d01Ef1997d44206d839b78bA6813f60F1B3A970
                                 ) {
-                                    address token = IERC7540(vault).share();
-                                    address mgr = TrancheTokenLike(token).hook();
-                                    vm.startPrank(RestrictionManagerLike(mgr).root());
+                                    vars.token = IERC7540(vault).share();
+                                    vars.mgr = TrancheTokenLike(vars.token).hook();
+                                    vm.startPrank(RestrictionManagerLike(vars.mgr).root());
                                     /// @dev TODO remove updateMemeber can be removed for superform
-                                    RestrictionManagerLike(mgr).updateMember(token, vars.superform, type(uint64).max);
-                                    RestrictionManagerLike(mgr).updateMember(token, users[0], type(uint64).max);
-                                    RestrictionManagerLike(mgr).updateMember(token, users[1], type(uint64).max);
-                                    RestrictionManagerLike(mgr).updateMember(token, users[2], type(uint64).max);
+                                    RestrictionManagerLike(vars.mgr).updateMember(
+                                        vars.token, vars.superform, type(uint64).max
+                                    );
+                                    RestrictionManagerLike(vars.mgr).updateMember(
+                                        vars.token, users[0], type(uint64).max
+                                    );
+                                    RestrictionManagerLike(vars.mgr).updateMember(
+                                        vars.token, users[1], type(uint64).max
+                                    );
+                                    RestrictionManagerLike(vars.mgr).updateMember(
+                                        vars.token, users[2], type(uint64).max
+                                    );
 
                                     vm.startPrank(deployer);
                                 }
@@ -1505,7 +1485,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                             )] = vars.superform;
                         }
                     }
-                } else if (j == 3) {
+                } else if (j == 1) {
                     if (NUMBER_OF_5115S[chainIds[i]] > 0) {
                         for (uint256 k = 0; k < NUMBER_OF_5115S[chainIds[i]]; ++k) {
                             uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
@@ -1531,12 +1511,8 @@ abstract contract BaseSetup is StdInvariant, Test {
                     }
                 }
             }
-
-            /// mint a kycDAO Nft to the test users in all chains
-            KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[0]);
-            KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[1]);
-            KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[2]);
         }
+
         _setTokenPriceFeeds();
 
         vm.stopPrank();
@@ -1716,10 +1692,16 @@ abstract contract BaseSetup is StdInvariant, Test {
                 ? pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 82_228_344) : vm.createFork(FANTOM_RPC_URL_QN)
                 : 999;
             forks[SEPOLIA] = selectedChainIds[SEPOLIA]
-                ? pinnedBlock ? vm.createFork(SEPOLIA_RPC_URL_QN, 6_541_394) : vm.createFork(SEPOLIA_RPC_URL_QN)
+                ? pinnedBlock ? vm.createFork(SEPOLIA_RPC_URL_QN, 6_624_692) : vm.createFork(SEPOLIA_RPC_URL_QN)
                 : 999;
             forks[BSC_TESTNET] = selectedChainIds[BSC_TESTNET]
                 ? pinnedBlock ? vm.createFork(BSC_TESTNET_RPC_URL_QN, 41_624_319) : vm.createFork(BSC_TESTNET_RPC_URL_QN)
+                : 999;
+            forks[LINEA] = selectedChainIds[LINEA]
+                ? pinnedBlock ? vm.createFork(LINEA_RPC_URL, 8_630_899) : vm.createFork(LINEA_RPC_URL_QN)
+                : 999;
+            forks[BLAST] = selectedChainIds[BLAST]
+                ? pinnedBlock ? vm.createFork(BLAST_RPC_URL, 7_957_906) : vm.createFork(BLAST_RPC_URL_QN)
                 : 999;
         }
 
@@ -1734,6 +1716,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         rpcURLs[FANTOM] = FANTOM_RPC_URL;
         rpcURLs[SEPOLIA] = SEPOLIA_RPC_URL_QN;
         rpcURLs[BSC_TESTNET] = BSC_TESTNET_RPC_URL_QN;
+        rpcURLs[LINEA] = LINEA_RPC_URL;
+        rpcURLs[BLAST] = BLAST_RPC_URL;
 
         mapping(uint64 => mapping(uint256 => bytes)) storage gasUsed = GAS_USED;
 
@@ -1748,6 +1732,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[FANTOM][3] = abi.encode(643_315);
         gasUsed[SEPOLIA][3] = abi.encode(400_000);
         gasUsed[BSC_TESTNET][3] = abi.encode(650_000);
+        gasUsed[LINEA][3] = abi.encode(600_000);
+        gasUsed[BLAST][3] = abi.encode(600_000);
 
         // updateDepositGasUsed == 4 (only used on deposits for now)
         gasUsed[ETH][4] = abi.encode(225_000);
@@ -1760,6 +1746,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[FANTOM][4] = abi.encode(734_757);
         gasUsed[SEPOLIA][4] = abi.encode(225_000);
         gasUsed[BSC_TESTNET][4] = abi.encode(225_000);
+        gasUsed[LINEA][4] = abi.encode(200_000);
+        gasUsed[BLAST][4] = abi.encode(200_000);
 
         // withdrawGasUsed == 6
         gasUsed[ETH][6] = abi.encode(1_272_330);
@@ -1772,6 +1760,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[FANTOM][6] = abi.encode(567_881);
         gasUsed[SEPOLIA][6] = abi.encode(1_272_330);
         gasUsed[BSC_TESTNET][6] = abi.encode(837_167);
+        gasUsed[LINEA][6] = abi.encode(1_178_778);
+        gasUsed[BLAST][6] = abi.encode(1_178_778);
 
         // updateWithdrawGasUsed == 13
         gasUsed[ETH][13] = abi.encode(356_828);
@@ -1784,6 +1774,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[FANTOM][13] = abi.encode(2_003_157);
         gasUsed[SEPOLIA][13] = abi.encode(356_828);
         gasUsed[BSC_TESTNET][13] = abi.encode(900_085);
+        gasUsed[LINEA][13] = abi.encode(919_466);
+        gasUsed[BLAST][13] = abi.encode(919_466);
 
         mapping(uint64 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
         lzEndpointsStorage[ETH] = ETH_lzEndpoint;
@@ -1839,6 +1831,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[ETH][FANTOM] = address(0);
         priceFeeds[ETH][SEPOLIA] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][BSC_TESTNET] = 0x14e613AC84a31f709eadbdF89C6CC390fDc9540A;
+        priceFeeds[ETH][LINEA] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        priceFeeds[ETH][BLAST] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
 
         /// BSC
         priceFeeds[BSC][BSC] = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
@@ -1851,6 +1845,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[BSC][FANTOM] = 0xe2A47e87C0f4134c8D06A41975F6860468b2F925;
         priceFeeds[BSC][SEPOLIA] = address(0);
         priceFeeds[BSC][BSC_TESTNET] = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
+        priceFeeds[BSC][LINEA] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+        priceFeeds[BSC][BLAST] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
 
         /// AVAX
         priceFeeds[AVAX][AVAX] = 0x0A77230d17318075983913bC2145DB16C7366156;
@@ -1863,6 +1859,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[AVAX][FANTOM] = 0x2dD517B2f9ba49CedB0573131FD97a5AC19ff648;
         priceFeeds[AVAX][SEPOLIA] = address(0);
         priceFeeds[AVAX][BSC_TESTNET] = address(0);
+        priceFeeds[AVAX][LINEA] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+        priceFeeds[AVAX][BLAST] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
 
         /// POLYGON
         priceFeeds[POLY][POLY] = 0xAB594600376Ec9fD91F8e885dADF0CE036862dE0;
@@ -1875,6 +1873,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[POLY][FANTOM] = 0x58326c0F831b2Dbf7234A4204F28Bba79AA06d5f;
         priceFeeds[POLY][SEPOLIA] = address(0);
         priceFeeds[POLY][BSC_TESTNET] = 0x82a6c4AF830caa6c97bb504425f6A66165C2c26e;
+        priceFeeds[POLY][LINEA] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+        priceFeeds[POLY][BLAST] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
 
         /// OPTIMISM
         priceFeeds[OP][OP] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
@@ -1887,6 +1887,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[OP][FANTOM] = 0xc19d58652d6BfC6Db6FB3691eDA6Aa7f3379E4E9;
         priceFeeds[OP][SEPOLIA] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         priceFeeds[OP][BSC_TESTNET] = 0xD38579f7cBD14c22cF1997575eA8eF7bfe62ca2c;
+        priceFeeds[OP][LINEA] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+        priceFeeds[OP][BLAST] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
 
         /// ARBITRUM
         priceFeeds[ARBI][ARBI] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
@@ -1899,6 +1901,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[ARBI][FANTOM] = 0xFeaC1A3936514746e70170c0f539e70b23d36F19;
         priceFeeds[ARBI][SEPOLIA] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         priceFeeds[ARBI][BSC_TESTNET] = 0x6970460aabF80C5BE983C6b74e5D06dEDCA95D4A;
+        priceFeeds[ARBI][LINEA] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+        priceFeeds[ARBI][BLAST] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
 
         /// BASE
         priceFeeds[BASE][BASE] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
@@ -1911,6 +1915,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[BASE][FANTOM] = address(0);
         priceFeeds[BASE][SEPOLIA] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
         priceFeeds[BASE][BSC_TESTNET] = 0x4b7836916781CAAfbb7Bd1E5FDd20ED544B453b1;
+        priceFeeds[BASE][LINEA] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
+        priceFeeds[BASE][BLAST] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
 
         /// FANTOM
         priceFeeds[FANTOM][FANTOM] = 0xf4766552D15AE4d256Ad41B6cf2933482B0680dc;
@@ -1923,8 +1929,10 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[FANTOM][ARBI] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
         priceFeeds[FANTOM][SEPOLIA] = address(0);
         priceFeeds[FANTOM][BSC_TESTNET] = 0x6dE70f4791C4151E00aD02e969bD900DC961f92a;
+        priceFeeds[FANTOM][LINEA] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+        priceFeeds[FANTOM][BLAST] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
 
-        /// FANTOM
+        /// SEPOLIA
         priceFeeds[SEPOLIA][SEPOLIA] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
         priceFeeds[SEPOLIA][FANTOM] = address(0);
         priceFeeds[SEPOLIA][OP] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
@@ -1935,6 +1943,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[SEPOLIA][BASE] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
         priceFeeds[SEPOLIA][ARBI] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
         priceFeeds[SEPOLIA][BSC_TESTNET] = address(0);
+        priceFeeds[SEPOLIA][LINEA] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        priceFeeds[SEPOLIA][BLAST] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
 
         /// BSC_TESTNET
         priceFeeds[BSC_TESTNET][BSC_TESTNET] = 0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526;
@@ -1947,6 +1957,36 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[BSC_TESTNET][ETH] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
         priceFeeds[BSC_TESTNET][BASE] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
         priceFeeds[BSC_TESTNET][ARBI] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
+        priceFeeds[BSC_TESTNET][LINEA] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
+        priceFeeds[BSC_TESTNET][BLAST] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
+
+        /// LINEA
+        priceFeeds[LINEA][LINEA] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        priceFeeds[LINEA][OP] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        priceFeeds[LINEA][POLY] = 0x9ce4473B42a639d010eD741df3CA829E6e480803;
+        priceFeeds[LINEA][AVAX] = address(0);
+        priceFeeds[LINEA][BSC] = address(0);
+        priceFeeds[LINEA][ETH] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        priceFeeds[LINEA][BASE] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        priceFeeds[LINEA][ARBI] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        priceFeeds[LINEA][FANTOM] = address(0);
+        priceFeeds[LINEA][BLAST] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        priceFeeds[LINEA][BSC_TESTNET] = address(0);
+        priceFeeds[LINEA][SEPOLIA] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+
+        /// BLAST
+        priceFeeds[BLAST][LINEA] = address(0);
+        priceFeeds[BLAST][OP] = address(0);
+        priceFeeds[BLAST][POLY] = address(0);
+        priceFeeds[BLAST][AVAX] = address(0);
+        priceFeeds[BLAST][BSC] = address(0);
+        priceFeeds[BLAST][ETH] = address(0);
+        priceFeeds[BLAST][BASE] = address(0);
+        priceFeeds[BLAST][ARBI] = address(0);
+        priceFeeds[BLAST][FANTOM] = address(0);
+        priceFeeds[BLAST][BLAST] = address(0);
+        priceFeeds[BLAST][BSC_TESTNET] = address(0);
+        priceFeeds[BLAST][SEPOLIA] = address(0);
 
         /// @dev setup bridges.
         /// 1 is lifi
@@ -1985,25 +2025,10 @@ abstract contract BaseSetup is StdInvariant, Test {
         vaultBytecodes2[1].vaultBytecode.push(type(VaultMock).creationCode);
         vaultBytecodes2[1].vaultBytecode.push(type(VaultMockRevertDeposit).creationCode);
         vaultBytecodes2[1].vaultBytecode.push(type(VaultMockRevertWithdraw).creationCode);
+
         vaultBytecodes2[1].vaultKinds.push("VaultMock");
         vaultBytecodes2[1].vaultKinds.push("VaultMockRevertDeposit");
         vaultBytecodes2[1].vaultKinds.push("VaultMockRevertWithdraw");
-
-        /// @dev form 2 (timelocked 4626)
-        vaultBytecodes2[2].vaultBytecode.push(type(ERC4626TimelockMock).creationCode);
-        vaultBytecodes2[2].vaultKinds.push("ERC4626TimelockMock");
-        vaultBytecodes2[2].vaultBytecode.push(type(ERC4626TimelockMockRevertWithdrawal).creationCode);
-        vaultBytecodes2[2].vaultKinds.push("ERC4626TimelockMockRevertWithdrawal");
-        vaultBytecodes2[2].vaultBytecode.push(type(ERC4626TimelockMockRevertDeposit).creationCode);
-        vaultBytecodes2[2].vaultKinds.push("ERC4626TimelockMockRevertDeposit");
-
-        /// @dev form 3 (kycdao 4626)
-        vaultBytecodes2[3].vaultBytecode.push(type(kycDAO4626).creationCode);
-        vaultBytecodes2[3].vaultKinds.push("kycDAO4626");
-        vaultBytecodes2[3].vaultBytecode.push(type(kycDAO4626RevertDeposit).creationCode);
-        vaultBytecodes2[3].vaultKinds.push("kycDAO4626RevertDeposit");
-        vaultBytecodes2[3].vaultBytecode.push(type(kycDAO4626RevertWithdraw).creationCode);
-        vaultBytecodes2[3].vaultKinds.push("kycDAO4626RevertWithdraw");
 
         /// @dev form 4 (pendle 5115)
         vaultBytecodes2[4].vaultBytecode.push(type(ERC5115To4626Wrapper).creationCode);
@@ -2237,15 +2262,16 @@ abstract contract BaseSetup is StdInvariant, Test {
     function _broadcastPayloadHelper(uint64 currentChainId, Vm.Log[] memory logs) internal {
         vm.stopPrank();
 
-        address[] memory dstTargets = new address[](chainIds.length - 1);
-        address[] memory dstWormhole = new address[](chainIds.length - 1);
+        address[] memory dstTargets = new address[](chainIds.length - 4);
+        address[] memory dstWormhole = new address[](chainIds.length - 4);
 
-        uint256[] memory forkIds = new uint256[](chainIds.length - 1);
+        uint256[] memory forkIds = new uint256[](chainIds.length - 4);
 
         uint16 currWormholeChainId;
 
         uint256 j;
         for (uint256 i = 0; i < chainIds.length; ++i) {
+            if (chainIds[i] == LINEA || chainIds[i] == SEPOLIA || chainIds[i] == BSC_TESTNET) continue;
             if (chainIds[i] != currentChainId) {
                 dstWormhole[j] = wormholeCore[i];
                 dstTargets[j] = getContract(chainIds[i], "WormholeSRImplementation");
@@ -2401,34 +2427,6 @@ abstract contract BaseSetup is StdInvariant, Test {
         PaymentHelper paymentHelper;
         PayloadHelper payloadHelper;
         bytes message;
-    }
-
-    /// @dev Generates the acknowledgement amb params for the entire action
-    function _generateAckGasFeesAndParamsForTimelockRegistryCallback(
-        bytes memory chainIds_,
-        uint8[] memory selectedAmbIds,
-        uint256 timelockPayloadId
-    )
-        internal
-        view
-        returns (uint256 msgValue)
-    {
-        LocalAckVars memory vars;
-        (vars.srcChainId, vars.dstChainId) = abi.decode(chainIds_, (uint64, uint64));
-
-        address _paymentHelper = contracts[vars.dstChainId][bytes32(bytes("PaymentHelper"))];
-        vars.paymentHelper = PaymentHelper(_paymentHelper);
-
-        address _payloadHelper = contracts[vars.dstChainId][bytes32(bytes("PayloadHelper"))];
-        vars.payloadHelper = PayloadHelper(_payloadHelper);
-
-        (,, uint256 payloadId, uint256 superformId, uint256 amount) =
-            vars.payloadHelper.decodeTimeLockPayload(timelockPayloadId);
-
-        vars.message =
-            abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superformId, amount))));
-
-        (msgValue,) = vars.paymentHelper.calculateAMBData(vars.srcChainId, selectedAmbIds, vars.message);
     }
 
     /// @dev Generates the acknowledgement amb params for the async deposit action

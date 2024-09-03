@@ -79,7 +79,7 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         assertEq(totalSuperformsAfter, totalSuperformsBefore + 1);
 
         uint256 totalFormImplementations = SuperformFactory(getContract(chainId, "SuperformFactory")).getFormCount();
-        assertEq(totalFormImplementations, 6);
+        assertEq(totalFormImplementations, 4);
 
         bool superformExists =
             SuperformFactory(getContract(chainId, "SuperformFactory")).isSuperform(superformIdCreated);

@@ -20,14 +20,14 @@ contract SDMVW5115NativeSlippage is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[OP][0] = [2, 4];
-        TARGET_VAULTS[OP][0] = [0, 9];
+        TARGET_VAULTS[OP][0] = [0, 3];
 
-        TARGET_FORM_KINDS[OP][0] = [0, 3];
+        TARGET_FORM_KINDS[OP][0] = [0, 1];
 
         TARGET_UNDERLYINGS[OP][1] = [2, 4];
-        TARGET_VAULTS[OP][1] = [0, 9];
+        TARGET_VAULTS[OP][1] = [0, 3];
 
-        TARGET_FORM_KINDS[OP][1] = [0, 3];
+        TARGET_FORM_KINDS[OP][1] = [0, 1];
 
         PARTIAL[OP][1] = [false, true];
 

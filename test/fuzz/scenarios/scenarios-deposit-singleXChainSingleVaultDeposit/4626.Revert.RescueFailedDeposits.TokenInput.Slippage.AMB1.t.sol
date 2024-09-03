@@ -20,14 +20,14 @@ contract SXSVDNormal4626RevertRescueFailedDepositsNoTokenInputSlippageAMB1 is Pr
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[POLY][0] = [2];
-        TARGET_VAULTS[POLY][0] = [3];
-        /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
+        TARGET_VAULTS[POLY][0] = [1];
+        /// @dev vault index 1 is failedDepositMock, check VAULT_KINDS
         TARGET_FORM_KINDS[POLY][0] = [0];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[OP][1] = [2];
-        TARGET_VAULTS[OP][1] = [3];
-        /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
+        TARGET_VAULTS[OP][1] = [1];
+        /// @dev vault index 1 is failedDepositMock, check VAULT_KINDS
         TARGET_FORM_KINDS[OP][1] = [0];
 
         MAX_SLIPPAGE = 1000;

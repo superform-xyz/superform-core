@@ -99,8 +99,7 @@ contract PaymentHelperTest is ProtocolActions {
         paymentHelper.estimateSingleDirectSingleVault(
             SingleDirectSingleVaultStateReq(
                 SingleVaultSFData(
-                    _generateTimelockSuperformPackWithShift(),
-                    /// timelock
+                    _generateSuperformPackWithShift(),
                     420,
                     420,
                     420,
@@ -136,8 +135,7 @@ contract PaymentHelperTest is ProtocolActions {
         paymentHelper.estimateSingleDirectSingleVault(
             SingleDirectSingleVaultStateReq(
                 SingleVaultSFData(
-                    _generateTimelockSuperformPackWithShift(),
-                    /// timelock
+                    _generateSuperformPackWithShift(),
                     420,
                     420,
                     420,
@@ -159,15 +157,14 @@ contract PaymentHelperTest is ProtocolActions {
     function test_estimateSingleDirectSingleVault_formImplPaused() public {
         vm.prank(deployer);
         SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
-            2, ISuperformFactory.PauseStatus(1), ""
+            1, ISuperformFactory.PauseStatus(1), ""
         );
-        /// @dev scenario: single vault withdrawal involving timelock with paused implementation
+        /// @dev scenario: single vault withdrawal with paused implementation
         bytes memory emptyBytes;
         (,, uint256 fees) = paymentHelper.estimateSingleDirectSingleVault(
             SingleDirectSingleVaultStateReq(
                 SingleVaultSFData(
-                    _generateTimelockSuperformPackWithShift(),
-                    /// timelock
+                    _generateSuperformPackWithShift(),
                     420,
                     420,
                     420,
@@ -182,17 +179,18 @@ contract PaymentHelperTest is ProtocolActions {
             ),
             false
         );
-        assertGt(fees, 0);
+
+        assertEq(fees, 0);
     }
 
     function test_estimateSingleDirectMultiVault_formImplPaused() public {
         vm.prank(deployer);
         SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
-            2, ISuperformFactory.PauseStatus(1), ""
+            1, ISuperformFactory.PauseStatus(1), ""
         );
         bytes memory emptyBytes;
         uint256[] memory superFormIds = new uint256[](1);
-        superFormIds[0] = _generateTimelockSuperformPackWithShift();
+        superFormIds[0] = _generateSuperformPackWithShift();
 
         uint256[] memory uint256MemoryArray = new uint256[](1);
         uint256MemoryArray[0] = 420;
@@ -204,7 +202,6 @@ contract PaymentHelperTest is ProtocolActions {
             SingleDirectMultiVaultStateReq(
                 MultiVaultSFData(
                     superFormIds,
-                    /// timelock
                     uint256MemoryArray,
                     uint256MemoryArray,
                     uint256MemoryArray,
@@ -219,13 +216,13 @@ contract PaymentHelperTest is ProtocolActions {
             ),
             false
         );
-        assertGt(fees, 0);
+        assertEq(fees, 0);
     }
 
     function test_estimateSingleXChainSingleVault_formImplPaused() public {
         vm.prank(deployer);
         SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
-            2, ISuperformFactory.PauseStatus(1), ""
+            1, ISuperformFactory.PauseStatus(1), ""
         );
 
         uint8[] memory ambIds = new uint8[](1);
@@ -233,15 +230,14 @@ contract PaymentHelperTest is ProtocolActions {
         ambIds[0] = 1;
         ambIds[0] = 2;
 
-        /// @dev scenario: single vault withdrawal involving timelock with paused implementation
+        /// @dev scenario: single vault withdrawal with paused implementation
         bytes memory emptyBytes;
         (,,, uint256 fees) = paymentHelper.estimateSingleXChainSingleVault(
             SingleXChainSingleVaultStateReq(
                 ambIds,
                 ARBI,
                 SingleVaultSFData(
-                    _generateTimelockSuperformPackWithShift(),
-                    /// timelock
+                    _generateSuperformPackWithShift(),
                     420,
                     420,
                     420,
@@ -262,7 +258,7 @@ contract PaymentHelperTest is ProtocolActions {
     function test_estimateSingleXChainMultiVault_formImplPaused() public {
         vm.prank(deployer);
         SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
-            2, ISuperformFactory.PauseStatus(1), ""
+            1, ISuperformFactory.PauseStatus(1), ""
         );
 
         uint8[] memory ambIds = new uint8[](1);
@@ -272,7 +268,7 @@ contract PaymentHelperTest is ProtocolActions {
 
         bytes memory emptyBytes;
         uint256[] memory superFormIds = new uint256[](1);
-        superFormIds[0] = _generateTimelockSuperformPackWithShift();
+        superFormIds[0] = _generateSuperformPackWithShift();
 
         uint256[] memory uint256MemoryArray = new uint256[](1);
         uint256MemoryArray[0] = 420;
@@ -286,7 +282,6 @@ contract PaymentHelperTest is ProtocolActions {
                 ARBI,
                 MultiVaultSFData(
                     superFormIds,
-                    /// timelock
                     uint256MemoryArray,
                     uint256MemoryArray,
                     uint256MemoryArray,
@@ -312,7 +307,7 @@ contract PaymentHelperTest is ProtocolActions {
 
         bytes memory emptyBytes;
         uint256[] memory superFormIds = new uint256[](1);
-        superFormIds[0] = _generateTimelockSuperformPackWithShift();
+        superFormIds[0] = _generateSuperformPackWithShift();
 
         uint256[] memory uint256MemoryArray = new uint256[](1);
         uint256MemoryArray[0] = 420;
@@ -329,7 +324,6 @@ contract PaymentHelperTest is ProtocolActions {
                 ARBI,
                 MultiVaultSFData(
                     superFormIds,
-                    /// timelock
                     uint256MemoryArray,
                     uint256MemoryArray,
                     uint256MemoryArray,
@@ -355,7 +349,7 @@ contract PaymentHelperTest is ProtocolActions {
 
         bytes memory emptyBytes;
         uint256[] memory superFormIds = new uint256[](1);
-        superFormIds[0] = _generateTimelockSuperformPackWithShift();
+        superFormIds[0] = _generateSuperformPackWithShift();
 
         uint256[] memory uint256MemoryArray = new uint256[](1);
         uint256MemoryArray[0] = 420;
@@ -369,7 +363,6 @@ contract PaymentHelperTest is ProtocolActions {
                 ETH,
                 MultiVaultSFData(
                     superFormIds,
-                    /// timelock
                     uint256MemoryArray,
                     uint256MemoryArray,
                     uint256MemoryArray,
@@ -390,7 +383,7 @@ contract PaymentHelperTest is ProtocolActions {
     function test_estimateMultiDstSingleVault_formImplPaused() public {
         vm.prank(deployer);
         SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
-            2, ISuperformFactory.PauseStatus(1), ""
+            1, ISuperformFactory.PauseStatus(1), ""
         );
         bytes memory emptyBytes;
 
@@ -407,8 +400,7 @@ contract PaymentHelperTest is ProtocolActions {
         SingleVaultSFData[] memory superformsData = new SingleVaultSFData[](1);
 
         superformsData[0] = SingleVaultSFData(
-            _generateTimelockSuperformPackWithShift(),
-            /// timelock
+            _generateSuperformPackWithShift(),
             420,
             420,
             420,
@@ -421,7 +413,7 @@ contract PaymentHelperTest is ProtocolActions {
             emptyBytes
         );
 
-        /// @dev scenario: single vault withdrawal involving timelock with paused implementation
+        /// @dev scenario: single vault withdrawal with paused implementation
         (,,, uint256 fees) = paymentHelper.estimateMultiDstSingleVault(
             MultiDstSingleVaultStateReq(ambIdsMulti, dstChainIds, superformsData), false
         );
@@ -431,7 +423,7 @@ contract PaymentHelperTest is ProtocolActions {
     function test_estimateMultiDstMultiVault_formImplPaused() public {
         vm.prank(deployer);
         SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
-            2, ISuperformFactory.PauseStatus(1), ""
+            1, ISuperformFactory.PauseStatus(1), ""
         );
         bytes memory emptyBytes;
 
@@ -445,7 +437,7 @@ contract PaymentHelperTest is ProtocolActions {
 
         ambIdsMulti[0] = ambIds;
         uint256[] memory superFormIds = new uint256[](1);
-        superFormIds[0] = _generateTimelockSuperformPackWithShift();
+        superFormIds[0] = _generateSuperformPackWithShift();
 
         uint256[] memory uint256MemoryArray = new uint256[](1);
         uint256MemoryArray[0] = 420;
@@ -456,7 +448,6 @@ contract PaymentHelperTest is ProtocolActions {
 
         superformsData[0] = MultiVaultSFData(
             superFormIds,
-            /// timelock
             uint256MemoryArray,
             uint256MemoryArray,
             uint256MemoryArray,
@@ -469,7 +460,7 @@ contract PaymentHelperTest is ProtocolActions {
             emptyBytes
         );
 
-        /// @dev scenario: single vault withdrawal involving timelock with paused implementation
+        /// @dev scenario: single vault withdrawal with paused implementation
         (,,, uint256 fees) = paymentHelper.estimateMultiDstMultiVault(
             MultiDstMultiVaultStateReq(ambIdsMulti, dstChainIds, superformsData), false
         );
@@ -479,7 +470,7 @@ contract PaymentHelperTest is ProtocolActions {
     function test_estimateSingleXChainSingleVault_sameDst() public {
         vm.prank(deployer);
         SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormImplementationPauseStatus(
-            2, ISuperformFactory.PauseStatus(1), ""
+            1, ISuperformFactory.PauseStatus(1), ""
         );
 
         uint8[] memory ambIds = new uint8[](1);
@@ -487,15 +478,14 @@ contract PaymentHelperTest is ProtocolActions {
         ambIds[0] = 1;
         ambIds[0] = 2;
 
-        /// @dev scenario: single vault withdrawal involving timelock with paused implementation
+        /// @dev scenario: single vault withdrawal with paused implementation
         bytes memory emptyBytes;
         (,,, uint256 fees) = paymentHelper.estimateSingleXChainSingleVault(
             SingleXChainSingleVaultStateReq(
                 ambIds,
                 ETH,
                 SingleVaultSFData(
-                    _generateTimelockSuperformPackWithShift(),
-                    /// timelock
+                    _generateSuperformPackWithShift(),
                     420,
                     420,
                     420,
@@ -510,7 +500,7 @@ contract PaymentHelperTest is ProtocolActions {
             ),
             false
         );
-        assertGt(fees, 0);
+        assertEq(fees, 0);
     }
 
     function test_estimateAMBFees_differentChainId() public view {
@@ -535,36 +525,12 @@ contract PaymentHelperTest is ProtocolActions {
     }
 
     function test_estimateSingleDirectSingleVault() public view {
-        /// @dev scenario: single vault withdrawal involving timelock
-        /// expected fees to be greater than zero
         bytes memory emptyBytes;
-        (,, uint256 fees) = paymentHelper.estimateSingleDirectSingleVault(
-            SingleDirectSingleVaultStateReq(
-                SingleVaultSFData(
-                    _generateTimelockSuperformPackWithShift(),
-                    /// timelock
-                    420,
-                    420,
-                    420,
-                    LiqRequest(emptyBytes, address(0), address(0), 1, ETH, 420),
-                    emptyBytes,
-                    false,
-                    false,
-                    receiverAddress,
-                    receiverAddress,
-                    emptyBytes
-                )
-            ),
-            false
-        );
-
-        assertGt(fees, 0);
 
         (,, uint256 fees2) = paymentHelper.estimateSingleDirectSingleVault(
             SingleDirectSingleVaultStateReq(
                 SingleVaultSFData(
-                    _generateTimelockSuperformPackWithShift(),
-                    /// timelock
+                    _generateSuperformPackWithShift(),
                     420,
                     420,
                     420,
@@ -586,7 +552,6 @@ contract PaymentHelperTest is ProtocolActions {
             SingleDirectSingleVaultStateReq(
                 SingleVaultSFData(
                     _generateSuperformPackWithShift(),
-                    /// timelock
                     420,
                     420,
                     420,
@@ -606,11 +571,11 @@ contract PaymentHelperTest is ProtocolActions {
     }
 
     function test_estimateSingleDirectMultiVault() public view {
-        /// @dev scenario: single vault withdrawal involving timelock
+        /// @dev scenario: single vault withdrawal
         /// expected fees to be greater than zero
         bytes memory emptyBytes;
         uint256[] memory superFormIds = new uint256[](1);
-        superFormIds[0] = _generateTimelockSuperformPackWithShift();
+        superFormIds[0] = _generateSuperformPackWithShift();
 
         uint256[] memory uint256MemoryArray = new uint256[](1);
         uint256MemoryArray[0] = 420;
@@ -622,7 +587,6 @@ contract PaymentHelperTest is ProtocolActions {
             SingleDirectMultiVaultStateReq(
                 MultiVaultSFData(
                     superFormIds,
-                    /// timelock
                     uint256MemoryArray,
                     uint256MemoryArray,
                     uint256MemoryArray,
@@ -638,13 +602,12 @@ contract PaymentHelperTest is ProtocolActions {
             false
         );
 
-        assertGt(fees, 0);
+        assertEq(fees, 0);
 
         (,, uint256 fees2) = paymentHelper.estimateSingleDirectMultiVault(
             SingleDirectMultiVaultStateReq(
                 MultiVaultSFData(
                     superFormIds,
-                    /// timelock
                     uint256MemoryArray,
                     uint256MemoryArray,
                     uint256MemoryArray,
@@ -696,8 +659,7 @@ contract PaymentHelperTest is ProtocolActions {
                 ambIds,
                 137,
                 SingleVaultSFData(
-                    _generateTimelockSuperformPackWithShift(),
-                    /// timelock
+                    _generateSuperformPackWithShift(),
                     420,
                     420,
                     420,
@@ -747,8 +709,7 @@ contract PaymentHelperTest is ProtocolActions {
                 ambIds,
                 137,
                 SingleVaultSFData(
-                    _generateTimelockSuperformPackWithShift(),
-                    /// timelock
+                    _generateSuperformPackWithShift(),
                     420,
                     420,
                     420,
@@ -791,8 +752,7 @@ contract PaymentHelperTest is ProtocolActions {
                 ambIds,
                 137,
                 SingleVaultSFData(
-                    _generateTimelockSuperformPackWithShift(),
-                    /// timelock
+                    _generateSuperformPackWithShift(),
                     420,
                     420,
                     420,
@@ -857,8 +817,7 @@ contract PaymentHelperTest is ProtocolActions {
                 ambIds,
                 137,
                 SingleVaultSFData(
-                    _generateTimelockSuperformPackWithShift(),
-                    /// timelock
+                    _generateSuperformPackWithShift(),
                     420,
                     420,
                     420,
@@ -931,8 +890,7 @@ contract PaymentHelperTest is ProtocolActions {
                 ambIds,
                 137,
                 SingleVaultSFData(
-                    _generateTimelockSuperformPackWithShift(),
-                    /// timelock
+                    _generateSuperformPackWithShift(),
                     420,
                     420,
                     420,
@@ -991,8 +949,7 @@ contract PaymentHelperTest is ProtocolActions {
                 ambIds,
                 137,
                 SingleVaultSFData(
-                    _generateTimelockSuperformPackWithShift(),
-                    /// timelock
+                    _generateSuperformPackWithShift(),
                     420,
                     420,
                     420,
@@ -1042,8 +999,7 @@ contract PaymentHelperTest is ProtocolActions {
                 ambIds,
                 137,
                 SingleVaultSFData(
-                    _generateTimelockSuperformPackWithShift(),
-                    /// timelock
+                    _generateSuperformPackWithShift(),
                     420,
                     420,
                     420,
@@ -1147,9 +1103,6 @@ contract PaymentHelperTest is ProtocolActions {
         /// set config type: 11
         vm.prank(deployer);
         paymentHelper.updateRemoteChain(1, 11, abi.encode(430));
-
-        uint256 result11 = paymentHelper.timelockCost(1);
-        assertEq(result11, 430);
     }
 
     function test_addRemoteChain_NOT_PROTOCOL_ADMIN() public {
@@ -1157,9 +1110,7 @@ contract PaymentHelperTest is ProtocolActions {
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         paymentHelper.addRemoteChain(
             420,
-            IPaymentHelper.PaymentHelperConfig(
-                address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
-            )
+            IPaymentHelper.PaymentHelperConfig(address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 432)
         );
     }
 
@@ -1168,9 +1119,8 @@ contract PaymentHelperTest is ProtocolActions {
         chainIds_[0] = 422;
 
         IPaymentHelper.PaymentHelperConfig[] memory configs = new IPaymentHelper.PaymentHelperConfig[](1);
-        configs[0] = IPaymentHelper.PaymentHelperConfig(
-            address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
-        );
+        configs[0] =
+            IPaymentHelper.PaymentHelperConfig(address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 432);
         vm.prank(address(0x8282));
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         paymentHelper.addRemoteChains(chainIds_, configs);
@@ -1180,9 +1130,7 @@ contract PaymentHelperTest is ProtocolActions {
         vm.startPrank(deployer);
         paymentHelper.addRemoteChain(
             420,
-            IPaymentHelper.PaymentHelperConfig(
-                address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
-            )
+            IPaymentHelper.PaymentHelperConfig(address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 432)
         );
 
         paymentHelper.addRemoteChain(
@@ -1199,7 +1147,6 @@ contract PaymentHelperTest is ProtocolActions {
                 428,
                 429,
                 430,
-                431,
                 432
             )
         );
@@ -1210,7 +1157,7 @@ contract PaymentHelperTest is ProtocolActions {
         paymentHelper.addRemoteChain(
             421,
             IPaymentHelper.PaymentHelperConfig(
-                mock, 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
+                mock, 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, 422, 423, 424, 425, 426, 427, 428, 429, 430, 432
             )
         );
 
@@ -1218,7 +1165,7 @@ contract PaymentHelperTest is ProtocolActions {
         paymentHelper.addRemoteChain(
             421,
             IPaymentHelper.PaymentHelperConfig(
-                0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, mock, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
+                0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, mock, 422, 423, 424, 425, 426, 427, 428, 429, 430, 432
             )
         );
 
@@ -1232,9 +1179,8 @@ contract PaymentHelperTest is ProtocolActions {
         chainIds[1] = 423;
 
         IPaymentHelper.PaymentHelperConfig[] memory configs = new IPaymentHelper.PaymentHelperConfig[](2);
-        configs[0] = IPaymentHelper.PaymentHelperConfig(
-            address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
-        );
+        configs[0] =
+            IPaymentHelper.PaymentHelperConfig(address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 432);
         configs[1] = IPaymentHelper.PaymentHelperConfig(
             0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
             0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
@@ -1247,7 +1193,6 @@ contract PaymentHelperTest is ProtocolActions {
             428,
             429,
             430,
-            431,
             432
         );
         paymentHelper.addRemoteChains(chainIds, configs);
@@ -1261,9 +1206,8 @@ contract PaymentHelperTest is ProtocolActions {
         chainIds[0] = 422;
 
         IPaymentHelper.PaymentHelperConfig[] memory configs = new IPaymentHelper.PaymentHelperConfig[](2);
-        configs[0] = IPaymentHelper.PaymentHelperConfig(
-            address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
-        );
+        configs[0] =
+            IPaymentHelper.PaymentHelperConfig(address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 432);
         configs[1] = IPaymentHelper.PaymentHelperConfig(
             0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
             0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
@@ -1276,7 +1220,6 @@ contract PaymentHelperTest is ProtocolActions {
             428,
             429,
             430,
-            431,
             432
         );
 
@@ -1291,9 +1234,8 @@ contract PaymentHelperTest is ProtocolActions {
         uint64[] memory chainIds;
 
         IPaymentHelper.PaymentHelperConfig[] memory configs = new IPaymentHelper.PaymentHelperConfig[](2);
-        configs[0] = IPaymentHelper.PaymentHelperConfig(
-            address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
-        );
+        configs[0] =
+            IPaymentHelper.PaymentHelperConfig(address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 432);
         configs[1] = IPaymentHelper.PaymentHelperConfig(
             0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
             0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
@@ -1306,7 +1248,6 @@ contract PaymentHelperTest is ProtocolActions {
             428,
             429,
             430,
-            431,
             432
         );
 
@@ -1399,9 +1340,6 @@ contract PaymentHelperTest is ProtocolActions {
         vm.prank(deployer);
         paymentHelper.updateRemoteChain(1, 11, abi.encode(430));
 
-        uint256 result11 = paymentHelper.timelockCost(1);
-        assertEq(result11, 430);
-
         /// set config type: 12
         vm.prank(deployer);
         paymentHelper.updateRemoteChain(1, 12, abi.encode(431));
@@ -1481,9 +1419,6 @@ contract PaymentHelperTest is ProtocolActions {
 
         uint256 result10 = paymentHelper.ackGasCost(420);
         assertEq(result10, 429);
-
-        uint256 result11 = paymentHelper.timelockCost(420);
-        assertEq(result11, 430);
 
         uint256 result12 = paymentHelper.emergencyCost(420);
         assertEq(result12, 431);
@@ -1636,11 +1571,6 @@ contract PaymentHelperTest is ProtocolActions {
         result10 = paymentHelper.ackGasCost(423);
         assertEq(result10, 429);
 
-        uint256 result11 = paymentHelper.timelockCost(422);
-        assertEq(result11, 430);
-        result11 = paymentHelper.timelockCost(423);
-        assertEq(result11, 430);
-
         uint256 result12 = paymentHelper.emergencyCost(422);
         assertEq(result12, 431);
         result12 = paymentHelper.emergencyCost(423);
@@ -1710,16 +1640,6 @@ contract PaymentHelperTest is ProtocolActions {
         vm.prank(deployer);
         vm.expectRevert(Error.ZERO_INPUT_VALUE.selector);
         paymentHelper.batchUpdateRemoteChains(chainIds, configTypes, configs);
-    }
-
-    function _generateTimelockSuperformPackWithShift() internal pure returns (uint256 superformId_) {
-        address superform_ = address(111);
-        uint32 formImplementationId_ = 2;
-        uint64 chainId_ = 1;
-
-        superformId_ = uint256(uint160(superform_));
-        superformId_ |= uint256(formImplementationId_) << 160;
-        superformId_ |= uint256(chainId_) << 192;
     }
 
     function _generateSuperformPackWithShift() internal pure returns (uint256 superformId_) {

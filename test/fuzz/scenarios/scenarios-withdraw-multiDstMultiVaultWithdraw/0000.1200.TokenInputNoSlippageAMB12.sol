@@ -23,43 +23,43 @@ contract MDMVW00001200TokenInputSlippageAMB12 is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         /// first 3 superforms are equal
-        TARGET_UNDERLYINGS[ARBI][0] = [1, 1, 1, 0];
-        TARGET_VAULTS[ARBI][0] = [0, 0, 0, 0];
-        TARGET_FORM_KINDS[ARBI][0] = [0, 0, 0, 0];
+        TARGET_UNDERLYINGS[ARBI][0] = [2, 0];
+        TARGET_VAULTS[ARBI][0] = [0, 0];
+        TARGET_FORM_KINDS[ARBI][0] = [0, 0];
+
+        TARGET_UNDERLYINGS[ARBI][1] = [2, 0];
+        TARGET_VAULTS[ARBI][1] = [0, 0];
+        TARGET_FORM_KINDS[ARBI][1] = [0, 0];
 
         /// all superforms are different
-        TARGET_UNDERLYINGS[POLY][0] = [0, 1, 0, 2];
-        TARGET_VAULTS[POLY][0] = [1, 1, 0, 0];
-        TARGET_FORM_KINDS[POLY][0] = [1, 1, 0, 0];
+        TARGET_UNDERLYINGS[POLY][0] = [0, 2];
+        TARGET_VAULTS[POLY][0] = [0, 0];
+        TARGET_FORM_KINDS[POLY][0] = [0, 0];
 
-        TARGET_UNDERLYINGS[ARBI][1] = [1, 1, 1, 0];
-        TARGET_VAULTS[ARBI][1] = [0, 0, 0, 0];
-        TARGET_FORM_KINDS[ARBI][1] = [0, 0, 0, 0];
-
-        TARGET_UNDERLYINGS[POLY][1] = [0, 1, 0, 2];
-        TARGET_VAULTS[POLY][1] = [1, 1, 0, 0];
-        TARGET_FORM_KINDS[POLY][1] = [1, 1, 0, 0];
+        TARGET_UNDERLYINGS[POLY][1] = [0, 2];
+        TARGET_VAULTS[POLY][1] = [0, 0];
+        TARGET_FORM_KINDS[POLY][1] = [0, 0];
 
         /// @dev first 3 vaults are equal, we mark them all as partial, even if only 1 amount is partial, otherwise
         /// assertions do not pass
-        PARTIAL[ARBI][1] = [true, true, true, false];
+        PARTIAL[ARBI][1] = [true, true];
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[ARBI][0] = [1, 1, 1, 1];
-        LIQ_BRIDGES[ARBI][1] = [1, 1, 1, 1];
+        LIQ_BRIDGES[ARBI][0] = [1, 1];
+        LIQ_BRIDGES[ARBI][1] = [1, 1];
 
-        LIQ_BRIDGES[POLY][0] = [1, 1, 1, 1];
-        LIQ_BRIDGES[POLY][1] = [1, 1, 1, 1];
+        LIQ_BRIDGES[POLY][0] = [1, 1];
+        LIQ_BRIDGES[POLY][1] = [1, 1];
 
-        RECEIVE_4626[ARBI][0] = [false, false, false, false];
-        RECEIVE_4626[ARBI][1] = [false, false, false, false];
+        RECEIVE_4626[ARBI][0] = [false, false];
+        RECEIVE_4626[ARBI][1] = [false, false];
 
-        RECEIVE_4626[POLY][0] = [false, false, false, false];
-        RECEIVE_4626[POLY][1] = [false, false, false, false];
+        RECEIVE_4626[POLY][0] = [false, false];
+        RECEIVE_4626[POLY][1] = [false, false];
 
-        FINAL_LIQ_DST_WITHDRAW[ARBI] = [ETH, ETH, ETH, ETH];
-        FINAL_LIQ_DST_WITHDRAW[POLY] = [ETH, ETH, ETH, ETH];
+        FINAL_LIQ_DST_WITHDRAW[ARBI] = [ETH, ETH];
+        FINAL_LIQ_DST_WITHDRAW[POLY] = [ETH, ETH];
 
         /// @dev push in order the actions should be executed
         actions.push(
@@ -72,7 +72,7 @@ contract MDMVW00001200TokenInputSlippageAMB12 is ProtocolActions {
                 revertRole: "",
                 slippage: 222, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
 
@@ -99,19 +99,16 @@ contract MDMVW00001200TokenInputSlippageAMB12 is ProtocolActions {
         uint128 amountOne_,
         uint128 amountOneWithdraw_,
         uint128 amountTwo_,
-        uint128 amountTwoWithdraw_,
-        uint128 amountThree_,
-        uint128 amountThreeWithdraw_
+        uint128 amountTwoWithdraw_
     )
         public
     {
         /// @dev min amountOne_ and amountThree_ need to be 3 as their withdraw amount >= 2
         amountOne_ = uint128(bound(amountOne_, 2e6, 2e10));
         amountTwo_ = uint128(bound(amountTwo_, 2e6, 2e10));
-        amountThree_ = uint128(bound(amountThree_, 2e6, 2e10));
 
-        AMOUNTS[ARBI][0] = [amountOne_, amountTwo_, amountThree_, amountOne_];
-        AMOUNTS[POLY][0] = [amountOne_, amountOne_, amountTwo_, amountThree_];
+        AMOUNTS[ARBI][0] = [amountOne_, amountTwo_];
+        AMOUNTS[POLY][0] = [amountOne_, amountOne_];
 
         for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
@@ -135,14 +132,11 @@ contract MDMVW00001200TokenInputSlippageAMB12 is ProtocolActions {
                     /// superform)
                     amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 0.1e6, (superPositions[0] / 3) + 1));
                     amountTwoWithdraw_ = uint128(bound(amountTwoWithdraw_, 0.1e6, (superPositions[1] / 3) + 1));
-                    amountThreeWithdraw_ = uint128(bound(amountThreeWithdraw_, 0.1e6, (superPositions[2] / 3) + 1));
 
                     if (PARTIAL[DST_CHAINS[i]][1].length > 0) {
-                        AMOUNTS[DST_CHAINS[i]][1] =
-                            [amountOneWithdraw_, amountTwoWithdraw_, amountThreeWithdraw_, superPositions[3]];
+                        AMOUNTS[DST_CHAINS[i]][1] = [amountOneWithdraw_, amountTwoWithdraw_];
                     } else {
-                        AMOUNTS[DST_CHAINS[i]][1] =
-                            [superPositions[0], superPositions[1], superPositions[2], superPositions[3]];
+                        AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0], superPositions[1]];
                     }
                 }
             }

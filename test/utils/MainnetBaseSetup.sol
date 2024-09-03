@@ -11,8 +11,20 @@ abstract contract MainnetBaseSetup is BaseSetup {
 
     string public folderToRead;
     uint64[] TARGET_DEPLOYMENT_CHAINS;
-    string[] public chainNames =
-        ["Ethereum", "Binance", "Avalanche", "Polygon", "Arbitrum", "Optimism", "Base", "Fantom"];
+    string[] public chainNames = [
+        "Ethereum",
+        "Binance",
+        "Avalanche",
+        "Polygon",
+        "Arbitrum",
+        "Optimism",
+        "Base",
+        "Fantom",
+        "Sepolia",
+        "Binance_testnet",
+        "Linea",
+        "Blast"
+    ];
 
     enum Cycle {
         Dev,
@@ -41,8 +53,12 @@ abstract contract MainnetBaseSetup is BaseSetup {
         /// @dev OP https://app.onchainden.com/safes/oeth:0x99620a926d68746d5f085b3f7cd62f4ffb71f0c1
         0x2F973806f8863E860A553d4F2E7c2AB4A9F3b87C,
         /// @dev BASE https://app.onchainden.com/safes/base:0x2f973806f8863e860a553d4f2e7c2ab4a9f3b87c
-        0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1
+        0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1,
         /// @dev FANTOM https://safe.fantom.network/home?safe=ftm:0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1
+        address(0),
+        /// @dev LINEA
+        address(0)
+        /// @dev BLAST
     ];
 
     address[] public PROTOCOL_ADMINS_STAGING = [
@@ -54,8 +70,12 @@ abstract contract MainnetBaseSetup is BaseSetup {
         /// @dev OP https://app.onchainden.com/safes/oeth:0xfe3A0C3c4980Eef00C2Ec73D8770a2D9A489fdE5
         0xbd1F951F52FC7616E2F743F976295fDc5276Cfb9,
         /// @dev BASE https://app.onchainden.com/safes/base:0xbd1F951F52FC7616E2F743F976295fDc5276Cfb9
-        0xdc337f59a90B1F6a016c02851559AdbE81f0B889
+        0xdc337f59a90B1F6a016c02851559AdbE81f0B889,
         /// @dev FANTOM https://safe.fantom.network/home?safe=ftm:0xdc337f59a90B1F6a016c02851559AdbE81f0B889
+        0xBbb23AE2e3816a178f8bd405fb101D064C5071d9,
+        /// @dev LINEA https://safe.linea.build/home?safe=linea:0xBbb23AE2e3816a178f8bd405fb101D064C5071d9
+        0xBbb23AE2e3816a178f8bd405fb101D064C5071d9
+        /// @dev BLAST https://blast-safe.io/home?safe=blastmainnet:0xBbb23AE2e3816a178f8bd405fb101D064C5071d9
     ];
 
     /// @dev environment variable setup for upgrade
@@ -83,7 +103,7 @@ abstract contract MainnetBaseSetup is BaseSetup {
                     break;
                 }
             }
-
+            console.log(trueIndex);
             _grabAddresses(j, trueIndex, Cycle.Prod, TARGET_DEPLOYMENT_CHAINS);
         }
     }
@@ -186,8 +206,20 @@ abstract contract MainnetBaseSetup is BaseSetup {
         contracts[chainId][bytes32(bytes("RewardsDistributor"))] =
             _readContract(chainNames[trueIndex], chainId, "RewardsDistributor");
 
-        /// @dev 15  5115Form
+        /// @dev 16  5115Form
         contracts[chainId][bytes32(bytes("ERC5115Form"))] = _readContract(chainNames[trueIndex], chainId, "ERC5115Form");
+
+        /// @dev 17  DeBridgeValidator
+        contracts[chainId][bytes32(bytes("DeBridgeValidator"))] =
+            _readContract(chainNames[trueIndex], chainId, "DeBridgeValidator");
+
+        /// @dev 18  DeBridgeForwarderValidator
+        contracts[chainId][bytes32(bytes("DeBridgeForwarderValidator"))] =
+            _readContract(chainNames[trueIndex], chainId, "DeBridgeForwarderValidator");
+
+        /// @dev 19  OneInchValidator
+        contracts[chainId][bytes32(bytes("OneInchValidator"))] =
+            _readContract(chainNames[trueIndex], chainId, "OneInchValidator");
     }
 
     function _readContract(

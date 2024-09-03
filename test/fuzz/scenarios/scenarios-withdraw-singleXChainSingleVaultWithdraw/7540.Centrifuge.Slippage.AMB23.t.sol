@@ -18,16 +18,12 @@ contract SXSVW7540CentrifugeNativeSlippageAMB23 is ProtocolActions {
         DST_CHAINS = [SEPOLIA];
 
         TARGET_UNDERLYINGS[SEPOLIA][0] = [7];
-
-        TARGET_VAULTS[SEPOLIA][0] = [10];
-
-        TARGET_FORM_KINDS[SEPOLIA][0] = [4];
+        TARGET_VAULTS[SEPOLIA][0] = [4];
+        TARGET_FORM_KINDS[SEPOLIA][0] = [2];
 
         TARGET_UNDERLYINGS[SEPOLIA][1] = [7];
-
-        TARGET_VAULTS[SEPOLIA][1] = [10];
-
-        TARGET_FORM_KINDS[SEPOLIA][1] = [4];
+        TARGET_VAULTS[SEPOLIA][1] = [4];
+        TARGET_FORM_KINDS[SEPOLIA][1] = [2];
 
         MAX_SLIPPAGE = 1000;
 

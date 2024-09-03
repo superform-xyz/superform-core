@@ -24,7 +24,7 @@ contract MDSVDNormal4626RevertNoTokenInputSlippageAMB1121 is ProtocolActions {
         TARGET_UNDERLYINGS[POLY][0] = [1];
 
         TARGET_VAULTS[OP][0] = [0];
-        TARGET_VAULTS[ETH][0] = [3];
+        TARGET_VAULTS[ETH][0] = [1];
         TARGET_VAULTS[POLY][0] = [0];
 
         TARGET_FORM_KINDS[OP][0] = [0];

@@ -10,7 +10,7 @@ import { AMBMessage } from "src/types/DataTypes.sol";
 import { ProofLib } from "src/libraries/ProofLib.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { IAmbImplementationV2 as IAmbImplementation } from "src/interfaces/IAmbImplementationV2.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 
 /// @title LayerzeroV2Implementation
@@ -261,21 +261,6 @@ contract LayerzeroV2Implementation is IAmbImplementation, ILayerZeroReceiver {
         return 0;
     }
 
-    /// @notice indicates whether an address is an approved composeMsg sender to the endpoint.
-    /// @dev the default sender IS the OAppReceiver implementer.
-    function isComposeMsgSender(
-        Origin calldata, /*_origin*/
-        bytes calldata, /*_message*/
-        address _sender
-    )
-        public
-        view
-        virtual
-        returns (bool)
-    {
-        return _sender == address(this);
-    }
-
     //////////////////////////////////////////////////////////////
     //                  INTERNAL FUNCTIONS                      //
     //////////////////////////////////////////////////////////////
@@ -317,7 +302,7 @@ contract LayerzeroV2Implementation is IAmbImplementation, ILayerZeroReceiver {
         returns (MessagingReceipt memory receipt)
     {
         // @dev push corresponding fees to the endpoint
-        if (msg.value != _fee.nativeFee || _fee.lzTokenFee != 0) revert INVALID_MSG_FEE();
+        if (msg.value < _fee.nativeFee || _fee.lzTokenFee != 0) revert INVALID_MSG_FEE();
 
         return endpoint.send{ value: msg.value }(
             MessagingParams(_dstEid, _getPeerOrRevert(_dstEid), _message, _options, false), _refundAddress

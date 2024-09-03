@@ -157,7 +157,6 @@ abstract contract AbstractDeployPaymentHelperV2 is EnvironmentUtils {
                 2_000_000,
                 /// @dev ackGasCost to move a msg from dst to source
                 10_000,
-                10_000,
                 abi.decode(GAS_USED[remoteChainIds[j]][13], (uint256))
             );
         }
@@ -248,7 +247,6 @@ abstract contract AbstractDeployPaymentHelperV2 is EnvironmentUtils {
                 750,
                 2_000_000,
                 /// @dev ackGasCost to move a msg from dst to source
-                10_000,
                 10_000,
                 abi.decode(GAS_USED[remoteChainIds[j]][13], (uint256))
             );

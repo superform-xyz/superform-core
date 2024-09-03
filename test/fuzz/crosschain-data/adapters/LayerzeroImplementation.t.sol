@@ -329,8 +329,8 @@ contract LayerzeroImplementationTest is BaseSetup {
 
         vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
         vm.assume(
-            malice_ != getContract(ETH, "CoreStateRegistry") && malice_ != getContract(ETH, "TimelockStateRegistry")
-                && malice_ != getContract(ETH, "BroadcastRegistry") && malice_ != getContract(ETH, "AsyncStateRegistry")
+            malice_ != getContract(ETH, "CoreStateRegistry") && malice_ != getContract(ETH, "BroadcastRegistry")
+                && malice_ != getContract(ETH, "AsyncStateRegistry")
         );
         vm.deal(malice_, 100 ether);
         vm.prank(malice_);
@@ -488,7 +488,9 @@ contract LayerzeroImplementationTest is BaseSetup {
         superRegistryOP.setStateRegistryAddress(registryId_, registryAddress_);
     }
 
-    function _setupBroadcastPayloadAMBData(address _srcSender)
+    function _setupBroadcastPayloadAMBData(
+        address _srcSender
+    )
         internal
         returns (AMBMessage memory, BroadCastAMBExtraData memory, address)
     {

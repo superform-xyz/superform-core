@@ -7,6 +7,8 @@ import "src/crosschain-data/adapters/layerzero-v2/LayerzeroV2Implementation.sol"
 import "src/interfaces/ISuperRegistry.sol";
 import "src/types/DataTypes.sol";
 
+import { IAmbImplementationV2 } from "src/interfaces/IAmbImplementationV2.sol";
+
 contract LayerzeroV2ImplementationTest is BaseSetup {
     LayerzeroV2Implementation layerzeroImpl;
     ISuperRegistry superRegistry;
@@ -273,7 +275,7 @@ contract LayerzeroV2ImplementationTest is BaseSetup {
         vm.prank(lzEndpoint);
         layerzeroImpl.lzReceive(origin, guid, message, address(0), bytes(""));
 
-        vm.expectRevert(IAmbImplementation.MALICIOUS_DELIVERY.selector);
+        vm.expectRevert(IAmbImplementationV2.MALICIOUS_DELIVERY.selector);
         vm.prank(lzEndpoint);
         layerzeroImpl.lzReceive(origin, bytes32(uint256(12)), message, address(0), bytes(""));
     }
@@ -304,12 +306,6 @@ contract LayerzeroV2ImplementationTest is BaseSetup {
     function testNextNonce() public view {
         uint64 nonce = layerzeroImpl.nextNonce(30_101, bytes32(uint256(uint160(address(layerzeroImpl)))));
         assertEq(nonce, 0);
-    }
-
-    function testIsComposeMessage() public view {
-        Origin memory origin = Origin(eid, bytes32(uint256(uint160(address(layerzeroImpl)))), 0);
-        bool isComposer = layerzeroImpl.isComposeMsgSender(origin, bytes(""), address(layerzeroImpl));
-        assertTrue(isComposer);
     }
 
     function testRevertRetryMessage() public {

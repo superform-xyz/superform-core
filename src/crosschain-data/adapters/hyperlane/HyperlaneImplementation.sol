@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { IAmbImplementationV2 as IAmbImplementation } from "src/interfaces/IAmbImplementationV2.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
@@ -151,8 +151,11 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
             revert Error.INVALID_CHAIN_ID();
         }
 
+        address authImpl = authorizedImpl[domain];
+        if (authImpl == address(0)) revert Error.ZERO_ADDRESS();
+
         mailbox.dispatch{ value: msg.value }(
-            domain, _castAddr(authorizedImpl[domain]), message_, _generateHookMetadata(extraData_, srcSender_)
+            domain, _castAddr(authImpl), message_, _generateHookMetadata(extraData_, srcSender_)
         );
     }
 

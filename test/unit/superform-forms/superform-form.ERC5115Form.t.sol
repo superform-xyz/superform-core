@@ -19,6 +19,8 @@ contract MaliciousVault {
     function balanceOf(address) external pure returns (uint256) {
         return 0;
     }
+
+    function getRewardTokens() external pure returns (address[] memory) { }
 }
 
 contract VaultThatDontSpendApprovals {
@@ -62,7 +64,7 @@ contract MaliciousWithdrawVault {
     }
 
     function redeem(address, uint256, uint256) external pure returns (uint256) {
-        return 0;
+        return 10 wei;
     }
 
     function balanceOf(address) external view returns (uint256) {
@@ -78,6 +80,8 @@ contract MaliciousWithdrawVault {
     }
 
     function approve(address, uint256) external pure { }
+
+    function getRewardTokens() external pure returns (address[] memory) { }
 }
 
 contract Mock5115VaultWithNoRewards is Test {
@@ -258,7 +262,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
     /// @dev Test malicious rewards claim
     function test_malicious_rewardClaim() public {
         vm.expectRevert(Error.CANNOT_FORWARD_4646_TOKEN.selector);
-        malSuperformVaultTokenReward.claimRewardTokens();
+        malSuperformVaultTokenReward.claimRewardTokens(false);
     }
 
     /// @dev Test Vault Symbol
@@ -398,7 +402,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
     /// @dev Test Revert Claim Reward Tokens
     function test_superformRevertClaimRewardTokensERC5115() public {
         vm.expectRevert(IERC5115Form.FUNCTION_NOT_IMPLEMENTED.selector);
-        noRewardsSuperform.claimRewardTokens();
+        noRewardsSuperform.claimRewardTokens(false);
     }
 
     /// @dev Test Revert Get Accrued Rewards
@@ -426,7 +430,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
             rewardsBalanceBefore[i] = IERC20(rewardsSuperform.getRewardTokens()[i]).balanceOf(address(this));
         }
 
-        rewardsSuperform.claimRewardTokens();
+        rewardsSuperform.claimRewardTokens(false);
 
         for (uint256 i; i < rewardsBalanceBefore.length; ++i) {
             uint256 rewardsBalanceAfter = IERC20(rewardsSuperform.getRewardTokens()[i]).balanceOf(address(this));
@@ -1400,7 +1404,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
         SuperRegistry(getContract(ARBI, "SuperRegistry")).setAddress(rewardsId, address(0), ARBI);
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        rewardsSuperform.claimRewardTokens();
+        rewardsSuperform.claimRewardTokens(false);
     }
 
     /// @dev Test balance and transfer properties of wrapper
@@ -1474,5 +1478,60 @@ contract SuperformERC5115FormTest is ProtocolActions {
     function test_redeem5115InvalidReceiver() external {
         vm.expectRevert(ERC5115To4626Wrapper.INVALID_RECEIVER.selector);
         targetWrapper.redeem(address(targetWrapper), 1e6, 0);
+    }
+
+    /// @dev Test xchain deposit exceeds tolerance
+    function test_5115DepositTransferExceedsTolerance() public {
+        address vault = targetSuperform.getVaultAddress();
+
+        bytes32 vaultFormImplementationCombination = keccak256(abi.encode(getContract(ARBI, "ERC5115Form"), vault));
+        uint256 superformId = SuperformFactory(getContract(ARBI, "SuperformFactory"))
+            .vaultFormImplCombinationToSuperforms(vaultFormImplementationCombination);
+
+        bytes[] memory extra5115Data = new bytes[](1);
+
+        extra5115Data[0] = abi.encode(superformId, abi.encode(0x5979D7b546E38E414F7E9822514be443A4800529));
+
+        LiqRequest memory liqRequest = LiqRequest(
+            bytes(""),
+            0x5979D7b546E38E414F7E9822514be443A4800529,
+            0x5979D7b546E38E414F7E9822514be443A4800529,
+            0,
+            ARBI,
+            0
+        );
+
+        InitSingleVaultData memory sfData = InitSingleVaultData(
+            1, superformId, 2e6, 2e6, 100, liqRequest, false, false, deployer, abi.encode(1, extra5115Data)
+        );
+
+        address token = 0x5979D7b546E38E414F7E9822514be443A4800529;
+        deal(token, getContract(ARBI, "CoreStateRegistry"), 100e6);
+
+        vm.prank(getContract(ARBI, "CoreStateRegistry"));
+        MockERC20(token).approve(address(targetSuperform), 100e6);
+
+        // Mock the transferFrom function to return true but transfer less than expected
+        vm.mockCall(
+            token,
+            abi.encodeWithSelector(
+                IERC20.transferFrom.selector, getContract(ARBI, "CoreStateRegistry"), address(targetSuperform), 2e6
+            ),
+            abi.encode(true)
+        );
+
+        // Mock the balanceOf function to return a value less than expected
+        vm.mockCall(
+            token,
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(targetSuperform)),
+            abi.encode(1e6) // Return half of the expected amount
+        );
+
+        vm.startPrank(SuperRegistry(getContract(ARBI, "SuperRegistry")).getAddress(keccak256("CORE_STATE_REGISTRY")));
+        vm.expectRevert(IERC5115Form.TRANSFER_FROM_EXCEEDS_TOLERANCE.selector);
+        targetSuperform.xChainDepositIntoVault(sfData, deployer, OP);
+
+        // Clear the mocks after the test
+        vm.clearMockedCalls();
     }
 }

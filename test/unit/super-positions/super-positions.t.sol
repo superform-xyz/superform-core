@@ -117,15 +117,26 @@ contract SuperPositionsTest is BaseSetup {
     function test_revert_stateSync_NotMinterStateRegistry_InvalidRegistryId() public {
         uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
         address superform = getContract(
-            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[2]))
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
         );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[2], ETH);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
 
         ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, superformId, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
-        vm.broadcast(getContract(ETH, "TimelockStateRegistry"));
+        /// add the invalid state registry to super registry
+        uint8[] memory registryId = new uint8[](1);
+        registryId[0] = 7;
+
+        address[] memory registryAddress = new address[](1);
+        registryAddress[0] = address(420);
+
+        vm.prank(deployer);
+        SuperRegistry(getContract(ETH, "SuperRegistry")).setStateRegistryAddress(registryId, registryAddress);
+
+        /// invalid state registry
+        vm.broadcast(address(420));
         vm.expectRevert(Error.NOT_MINTER_STATE_REGISTRY_ROLE.selector);
         superPositions.stateSync(maliciousMessage);
     }
@@ -142,7 +153,18 @@ contract SuperPositionsTest is BaseSetup {
         ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, superformId, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
-        vm.broadcast(getContract(ETH, "TimelockStateRegistry"));
+        /// add the invalid state registry to super registry
+        uint8[] memory registryId = new uint8[](1);
+        registryId[0] = 7;
+
+        address[] memory registryAddress = new address[](1);
+        registryAddress[0] = address(420);
+
+        vm.prank(deployer);
+        SuperRegistry(getContract(ETH, "SuperRegistry")).setStateRegistryAddress(registryId, registryAddress);
+
+        /// non existent registry
+        vm.broadcast(address(420));
         vm.expectRevert(Error.INVALID_FORM_REGISTRY_ID.selector);
         superPositions.stateSync(maliciousMessage);
     }
@@ -288,9 +310,10 @@ contract SuperPositionsTest is BaseSetup {
 
     function test_mintBatch_NOT_MINTER() public {
         address superform = getContract(
-            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
+            ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
         );
-        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[1], ETH);
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
 
         uint256[] memory superformIds = new uint256[](1);
         superformIds[0] = superformId;
@@ -313,7 +336,7 @@ contract SuperPositionsTest is BaseSetup {
         vm.expectRevert(Error.NOT_MINTER.selector);
         superPositions.mintBatch(address(0x888), superformIds, amounts);
 
-        vm.prank(getContract(ETH, "TimelockStateRegistry"));
+        vm.prank(getContract(ETH, "CoreStateRegistry"));
         superPositions.mintBatch(address(0x888), superformIds, amounts);
     }
 
@@ -401,6 +424,7 @@ contract SuperPositionsTest is BaseSetup {
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
 
         for (uint256 i; i < chainIds.length; ++i) {
+            if (chainIds[i] == LINEA || chainIds[i] == SEPOLIA || chainIds[i] == BSC_TESTNET) continue;
             if (chainIds[i] != ETH) {
                 vm.selectFork(FORKS[chainIds[i]]);
                 BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(1);

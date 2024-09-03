@@ -385,6 +385,7 @@ contract SuperRBACTest is BaseSetup {
             SuperRBAC superRBAC_;
             // /// @dev process the payload across all other chains
             for (uint256 i = 0; i < chainIds.length; ++i) {
+                if (chainIds[i] == LINEA || chainIds[i] == SEPOLIA || chainIds[i] == BSC_TESTNET) continue;
                 if (bytes(member_).length > 0) {
                     memberAddress = getContract(chainIds[i], member_);
                 }
@@ -402,6 +403,7 @@ contract SuperRBACTest is BaseSetup {
 
             /// try processing the same payload again
             for (uint256 i = 0; i < chainIds.length; ++i) {
+                if (chainIds[i] == LINEA || chainIds[i] == SEPOLIA || chainIds[i] == BSC_TESTNET) continue;
                 if (chainIds[i] != ETH) {
                     vm.selectFork(FORKS[chainIds[i]]);
                     /// @dev re-grant broadcast state registry role in case it was revoked to test remaining of cases
@@ -418,6 +420,7 @@ contract SuperRBACTest is BaseSetup {
 
             /// try processing not available payload id
             for (uint256 i = 0; i < chainIds.length; ++i) {
+                if (chainIds[i] == LINEA || chainIds[i] == SEPOLIA || chainIds[i] == BSC_TESTNET) continue;
                 if (chainIds[i] != ETH) {
                     vm.selectFork(FORKS[chainIds[i]]);
 

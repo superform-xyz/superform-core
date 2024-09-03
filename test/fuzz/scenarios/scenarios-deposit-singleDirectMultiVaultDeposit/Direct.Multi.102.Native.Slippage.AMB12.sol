@@ -20,10 +20,8 @@ contract SDiMVDMulti102NativeSlippageAMB12 is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[OP][0] = [2, 1, 0];
-
-        TARGET_VAULTS[OP][0] = [1, 0, 2];
-
-        TARGET_FORM_KINDS[OP][0] = [1, 0, 2];
+        TARGET_VAULTS[OP][0] = [0, 0, 0];
+        TARGET_FORM_KINDS[OP][0] = [0, 0, 0];
 
         MAX_SLIPPAGE = 1000;
 

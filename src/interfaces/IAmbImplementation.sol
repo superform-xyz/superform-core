@@ -5,13 +5,6 @@ pragma solidity ^0.8.23;
 /// @dev Interface for arbitrary message bridge (AMB) implementations
 /// @author ZeroPoint Labs
 interface IAmbImplementation {
-     //////////////////////////////////////////////////////////////
-    //                      AMB  ERRORS                         //
-    //////////////////////////////////////////////////////////////
-
-    /// @dev thrown if same amb tries to deliver a payload and proof
-    error MALICIOUS_DELIVERY();
-
     //////////////////////////////////////////////////////////////
     //                          EVENTS                          //
     //////////////////////////////////////////////////////////////

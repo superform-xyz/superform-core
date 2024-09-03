@@ -17,10 +17,8 @@ contract SDSVD7540DepositAsyncSlippage is ProtocolActions {
         DST_CHAINS = [ETH];
 
         TARGET_UNDERLYINGS[ETH][0] = [0];
-
-        TARGET_VAULTS[ETH][0] = [11];
-
-        TARGET_FORM_KINDS[ETH][0] = [4];
+        TARGET_VAULTS[ETH][0] = [5];
+        TARGET_FORM_KINDS[ETH][0] = [2];
 
         MAX_SLIPPAGE = 1000;
 

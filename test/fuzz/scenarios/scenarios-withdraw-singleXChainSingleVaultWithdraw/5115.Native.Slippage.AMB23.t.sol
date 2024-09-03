@@ -21,17 +21,17 @@ contract SXSVW5115NativeSlippageAMB23 is ProtocolActions {
         /// supported by the vault (as long as there is a wrapper for it)
         TARGET_UNDERLYINGS[OP][0] = [4];
 
-        TARGET_VAULTS[OP][0] = [9];
+        TARGET_VAULTS[OP][0] = [3];
 
-        TARGET_FORM_KINDS[OP][0] = [3];
+        TARGET_FORM_KINDS[OP][0] = [1];
 
         /// @dev The base output token selected here is 4 (wstETH), in the case of this vault it is the same as the
         /// input
         TARGET_UNDERLYINGS[OP][1] = [4];
 
-        TARGET_VAULTS[OP][1] = [9];
+        TARGET_VAULTS[OP][1] = [3];
 
-        TARGET_FORM_KINDS[OP][1] = [3];
+        TARGET_FORM_KINDS[OP][1] = [1];
 
         MAX_SLIPPAGE = 1000;
 

@@ -146,13 +146,6 @@ contract PayloadHelperSingleTest is ProtocolActions {
         IPayloadHelper(contracts[ETH][bytes32(bytes("PayloadHelper"))]).decodePayloadHistory(2);
     }
 
-    function test_decodeTimelockPayload_InvalidPayloadId() public {
-        vm.selectFork(FORKS[ETH]);
-
-        vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);
-        IPayloadHelper(contracts[ETH][bytes32(bytes("PayloadHelper"))]).decodeTimeLockPayload(2);
-    }
-
     function test_decodeCoreStateRegistryPayload_invalidPayload() public {
         uint8[] memory ambIds_ = new uint8[](2);
         ambIds_[0] = 1;
