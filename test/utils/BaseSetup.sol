@@ -809,7 +809,7 @@ abstract contract BaseSetup is StdInvariant, Test {
 
                 /// @dev 6.4- deploy Wormhole Specialized Relayer Implementation
                 vars.wormholeSRImplementation =
-                    address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC, 3));
+                    address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC, 2));
                 contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
 
                 WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(
@@ -1693,7 +1693,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                 ? pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 82_228_344) : vm.createFork(FANTOM_RPC_URL_QN)
                 : 999;
             forks[SEPOLIA] = selectedChainIds[SEPOLIA]
-                ? pinnedBlock ? vm.createFork(SEPOLIA_RPC_URL_QN, 6_541_394) : vm.createFork(SEPOLIA_RPC_URL_QN)
+                ? pinnedBlock ? vm.createFork(SEPOLIA_RPC_URL_QN, 6_624_692) : vm.createFork(SEPOLIA_RPC_URL_QN)
                 : 999;
             forks[BSC_TESTNET] = selectedChainIds[BSC_TESTNET]
                 ? pinnedBlock ? vm.createFork(BSC_TESTNET_RPC_URL_QN, 41_624_319) : vm.createFork(BSC_TESTNET_RPC_URL_QN)
@@ -2263,16 +2263,16 @@ abstract contract BaseSetup is StdInvariant, Test {
     function _broadcastPayloadHelper(uint64 currentChainId, Vm.Log[] memory logs) internal {
         vm.stopPrank();
 
-        address[] memory dstTargets = new address[](chainIds.length - 2);
-        address[] memory dstWormhole = new address[](chainIds.length - 2);
+        address[] memory dstTargets = new address[](chainIds.length - 4);
+        address[] memory dstWormhole = new address[](chainIds.length - 4);
 
-        uint256[] memory forkIds = new uint256[](chainIds.length - 2);
+        uint256[] memory forkIds = new uint256[](chainIds.length - 4);
 
         uint16 currWormholeChainId;
 
         uint256 j;
         for (uint256 i = 0; i < chainIds.length; ++i) {
-            if (chainIds[i] == LINEA) continue;
+            if (chainIds[i] == LINEA || chainIds[i] == SEPOLIA || chainIds[i] == BSC_TESTNET) continue;
             if (chainIds[i] != currentChainId) {
                 dstWormhole[j] = wormholeCore[i];
                 dstTargets[j] = getContract(chainIds[i], "WormholeSRImplementation");

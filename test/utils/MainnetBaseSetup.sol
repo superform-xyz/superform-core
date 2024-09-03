@@ -11,8 +11,20 @@ abstract contract MainnetBaseSetup is BaseSetup {
 
     string public folderToRead;
     uint64[] TARGET_DEPLOYMENT_CHAINS;
-    string[] public chainNames =
-        ["Ethereum", "Binance", "Avalanche", "Polygon", "Arbitrum", "Optimism", "Base", "Fantom", "Linea", "Blast"];
+    string[] public chainNames = [
+        "Ethereum",
+        "Binance",
+        "Avalanche",
+        "Polygon",
+        "Arbitrum",
+        "Optimism",
+        "Base",
+        "Fantom",
+        "Sepolia",
+        "Binance_testnet",
+        "Linea",
+        "Blast"
+    ];
 
     enum Cycle {
         Dev,
@@ -91,7 +103,7 @@ abstract contract MainnetBaseSetup is BaseSetup {
                     break;
                 }
             }
-
+            console.log(trueIndex);
             _grabAddresses(j, trueIndex, Cycle.Prod, TARGET_DEPLOYMENT_CHAINS);
         }
     }

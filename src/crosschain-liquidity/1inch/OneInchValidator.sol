@@ -113,9 +113,7 @@ contract OneInchValidator {
 
     /// @dev helps decode the 1inch user request
     /// returns useful parameters for validaiton
-    function _decodeTxData(
-        bytes calldata txData_
-    )
+    function _decodeTxData(bytes calldata txData_)
         internal
         view
         returns (address fromToken, uint256 fromAmount, address toToken, address receiver)

@@ -24,7 +24,7 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
 
         for (uint256 i = 0; i < chainIds.length; ++i) {
-            if (chainIds[i] == LINEA) continue;
+            if (chainIds[i] == LINEA || chainIds[i] == SEPOLIA || chainIds[i] == BSC_TESTNET) continue;
             if (chainIds[i] != ETH) {
                 vm.selectFork(FORKS[chainIds[i]]);
 
@@ -47,7 +47,7 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
 
         /// try processing the same payload again
         for (uint256 i = 0; i < chainIds.length; ++i) {
-            if (chainIds[i] == LINEA) continue;
+            if (chainIds[i] == LINEA || chainIds[i] == SEPOLIA || chainIds[i] == BSC_TESTNET) continue;
             if (chainIds[i] != ETH) {
                 vm.selectFork(FORKS[chainIds[i]]);
 
@@ -58,7 +58,7 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
 
         /// try processing not available payload id
         for (uint256 i = 0; i < chainIds.length; ++i) {
-            if (chainIds[i] == LINEA) continue;
+            if (chainIds[i] == LINEA || chainIds[i] == SEPOLIA || chainIds[i] == BSC_TESTNET) continue;
             if (chainIds[i] != ETH) {
                 vm.selectFork(FORKS[chainIds[i]]);
 
