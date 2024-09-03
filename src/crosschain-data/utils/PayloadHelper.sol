@@ -2,7 +2,6 @@
 pragma solidity ^0.8.23;
 
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
-import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.sol";
 import { IAsyncStateRegistry, SyncWithdrawTxDataPayload } from "src/interfaces/IAsyncStateRegistry.sol";
 import { IPayloadHelper } from "src/interfaces/IPayloadHelper.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
@@ -142,33 +141,6 @@ contract PayloadHelper is IPayloadHelper {
         }
 
         (txType, callbackType, multi,, srcSender, srcChainId) = txInfo.decodeTxInfo();
-    }
-
-    /// @inheritdoc IPayloadHelper
-    function decodeTimeLockPayload(
-        uint256 timelockPayloadId_
-    )
-        external
-        view
-        override
-        returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
-    {
-        ITimelockStateRegistry timelockStateRegistry =
-            ITimelockStateRegistry(superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY")));
-
-        if (timelockPayloadId_ > timelockStateRegistry.timelockPayloadCounter()) {
-            revert Error.INVALID_PAYLOAD_ID();
-        }
-
-        TimelockPayload memory payload = timelockStateRegistry.getTimelockPayload(timelockPayloadId_);
-
-        return (
-            payload.data.receiverAddress,
-            payload.srcChainId,
-            payload.data.payloadId,
-            payload.data.superformId,
-            payload.data.amount
-        );
     }
 
     /// @inheritdoc IPayloadHelper
