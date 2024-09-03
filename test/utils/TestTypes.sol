@@ -182,6 +182,9 @@ struct SetupVars {
     address debridgeForwarderValidator;
     address rewardsDistributor;
     address eRC5115To4626WrapperFactory;
+    uint256 superformId;
+    address token;
+    address mgr;
     Vm.Log[] logs;
     address superPositions;
     SuperRegistry superRegistryC;
