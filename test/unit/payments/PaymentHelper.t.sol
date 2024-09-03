@@ -1110,7 +1110,9 @@ contract PaymentHelperTest is ProtocolActions {
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         paymentHelper.addRemoteChain(
             420,
-            IPaymentHelper.PaymentHelperConfig(address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 432)
+            IPaymentHelper.PaymentHelperConfig(
+                address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
+            )
         );
     }
 
@@ -1119,8 +1121,9 @@ contract PaymentHelperTest is ProtocolActions {
         chainIds_[0] = 422;
 
         IPaymentHelper.PaymentHelperConfig[] memory configs = new IPaymentHelper.PaymentHelperConfig[](1);
-        configs[0] =
-            IPaymentHelper.PaymentHelperConfig(address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 432);
+        configs[0] = IPaymentHelper.PaymentHelperConfig(
+            address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
+        );
         vm.prank(address(0x8282));
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         paymentHelper.addRemoteChains(chainIds_, configs);
@@ -1130,7 +1133,9 @@ contract PaymentHelperTest is ProtocolActions {
         vm.startPrank(deployer);
         paymentHelper.addRemoteChain(
             420,
-            IPaymentHelper.PaymentHelperConfig(address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 432)
+            IPaymentHelper.PaymentHelperConfig(
+                address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
+            )
         );
 
         paymentHelper.addRemoteChain(
@@ -1147,6 +1152,7 @@ contract PaymentHelperTest is ProtocolActions {
                 428,
                 429,
                 430,
+                431,
                 432
             )
         );
@@ -1157,7 +1163,7 @@ contract PaymentHelperTest is ProtocolActions {
         paymentHelper.addRemoteChain(
             421,
             IPaymentHelper.PaymentHelperConfig(
-                mock, 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, 422, 423, 424, 425, 426, 427, 428, 429, 430, 432
+                mock, 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
             )
         );
 
@@ -1165,7 +1171,7 @@ contract PaymentHelperTest is ProtocolActions {
         paymentHelper.addRemoteChain(
             421,
             IPaymentHelper.PaymentHelperConfig(
-                0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, mock, 422, 423, 424, 425, 426, 427, 428, 429, 430, 432
+                0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, mock, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
             )
         );
 
@@ -1179,8 +1185,9 @@ contract PaymentHelperTest is ProtocolActions {
         chainIds[1] = 423;
 
         IPaymentHelper.PaymentHelperConfig[] memory configs = new IPaymentHelper.PaymentHelperConfig[](2);
-        configs[0] =
-            IPaymentHelper.PaymentHelperConfig(address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 432);
+        configs[0] = IPaymentHelper.PaymentHelperConfig(
+            address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
+        );
         configs[1] = IPaymentHelper.PaymentHelperConfig(
             0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
             0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
@@ -1193,6 +1200,7 @@ contract PaymentHelperTest is ProtocolActions {
             428,
             429,
             430,
+            431,
             432
         );
         paymentHelper.addRemoteChains(chainIds, configs);
@@ -1206,8 +1214,9 @@ contract PaymentHelperTest is ProtocolActions {
         chainIds[0] = 422;
 
         IPaymentHelper.PaymentHelperConfig[] memory configs = new IPaymentHelper.PaymentHelperConfig[](2);
-        configs[0] =
-            IPaymentHelper.PaymentHelperConfig(address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 432);
+        configs[0] = IPaymentHelper.PaymentHelperConfig(
+            address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
+        );
         configs[1] = IPaymentHelper.PaymentHelperConfig(
             0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
             0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
@@ -1220,6 +1229,7 @@ contract PaymentHelperTest is ProtocolActions {
             428,
             429,
             430,
+            431,
             432
         );
 
@@ -1234,8 +1244,9 @@ contract PaymentHelperTest is ProtocolActions {
         uint64[] memory chainIds;
 
         IPaymentHelper.PaymentHelperConfig[] memory configs = new IPaymentHelper.PaymentHelperConfig[](2);
-        configs[0] =
-            IPaymentHelper.PaymentHelperConfig(address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 432);
+        configs[0] = IPaymentHelper.PaymentHelperConfig(
+            address(0), address(0), 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432
+        );
         configs[1] = IPaymentHelper.PaymentHelperConfig(
             0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
             0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
@@ -1248,6 +1259,7 @@ contract PaymentHelperTest is ProtocolActions {
             428,
             429,
             430,
+            431,
             432
         );
 
