@@ -1159,7 +1159,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 if (v.token.allowance(srcSender_, address(this)) < v.totalAmount) {
                     revert Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT();
                 }
-                
+
                 /// @dev moves the tokens from the user to the router
                 v.token.safeTransferFrom(srcSender_, address(this), v.totalAmount);
             }
