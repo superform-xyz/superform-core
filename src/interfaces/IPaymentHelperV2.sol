@@ -28,6 +28,7 @@ interface IPaymentHelperV2 {
     /// @param defaultGasPrice is the gas price on the specified chain
     /// @param dstGasPerByte is the gas per size of data on the specified chain
     /// @param ackGasCost is the gas cost for sending and processing from dst->src
+    /// @param timelockCost is the extra cost for processing timelocked payloads
     /// @param emergencyCost is the extra cost for processing emergency payloads
     /// @param updateWithdrawGasUsed is the update gas params for withdraws
     struct PaymentHelperConfig {
@@ -41,6 +42,7 @@ interface IPaymentHelperV2 {
         uint256 defaultGasPrice;
         uint256 dstGasPerByte;
         uint256 ackGasCost;
+        uint256 timelockCost;
         uint256 emergencyCost;
         uint256 updateWithdrawGasUsed;
     }
