@@ -51,7 +51,6 @@ contract PaymentHelper is IPaymentHelper {
 
     uint256 private constant PROOF_LENGTH = 160;
     uint8 private constant SUPPORTED_FEED_PRECISION = 8;
-    uint32 private constant TIMELOCK_FORM_ID = 2;
     uint256 private constant MAX_UINT256 = type(uint256).max;
 
     ISuperRegistry public immutable superRegistry;
@@ -73,7 +72,6 @@ contract PaymentHelper is IPaymentHelper {
     mapping(uint64 chainId => uint256 defaultGasPrice) public gasPrice;
     mapping(uint64 chainId => uint256 gasPerByte) public gasPerByte;
     mapping(uint64 chainId => uint256 gasForAck) public ackGasCost;
-    mapping(uint64 chainId => uint256 gasForTimelock) public timelockCost;
     mapping(uint64 chainId => uint256 gasForEmergency) public emergencyCost;
 
     /// @dev register transmuter params
@@ -562,7 +560,6 @@ contract PaymentHelper is IPaymentHelper {
         gasPrice[chainId_] = config_.defaultGasPrice;
         gasPerByte[chainId_] = config_.dstGasPerByte;
         ackGasCost[chainId_] = config_.ackGasCost;
-        timelockCost[chainId_] = config_.timelockCost;
         emergencyCost[chainId_] = config_.emergencyCost;
         updateWithdrawGasUsed[chainId_] = config_.updateWithdrawGasUsed;
 
@@ -639,11 +636,6 @@ contract PaymentHelper is IPaymentHelper {
         /// @dev Type 10: ACK GAS COST
         if (configType_ == 10) {
             ackGasCost[chainId_] = abi.decode(config_, (uint256));
-        }
-
-        /// @dev Type 11: TIMELOCK PROCESSING COST
-        if (configType_ == 11) {
-            timelockCost[chainId_] = abi.decode(config_, (uint256));
         }
 
         /// @dev Type 12: EMERGENCY PROCESSING COST
@@ -1086,18 +1078,6 @@ contract PaymentHelper is IPaymentHelper {
                 v.totalGas += _estimateSwapFees(req_.dstChainIds[req_.i], hasDstSwaps);
             }
         } else {
-            if (multiVaults) {
-                /// @dev step 6: estimate if timelock form processing costs are involved
-                for (uint256 j; j < v.superformIdsLen; ++j) {
-                    v.totalGas += _calculateTotalDstGasTimelockEmergency(
-                        req_.superformsData[req_.i].superformIds[j], req_.dstChainIds[req_.i], req_.factory
-                    );
-                }
-            } else {
-                v.totalGas += _calculateTotalDstGasTimelockEmergency(
-                    req_.superformData[req_.i].superformId, req_.dstChainIds[req_.i], req_.factory
-                );
-            }
             if (xChain) {
                 /// @dev step 7: estimate update withdraw cost if no txData is present
                 v.totalGas += _estimateUpdateWithdrawCost(req_.dstChainIds[req_.i], liqRequests);
@@ -1111,25 +1091,5 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev step 8: convert all dst/same chain gas estimates to src chain estimate  (withdraw / deposit)
         dstOrSameChainAmt += _convertToNativeFee(req_.dstChainIds[req_.i], v.totalGas, xChain);
-    }
-
-    /// @dev calculates the srcAmount cost for single direct withdrawal
-    function _calculateTotalDstGasTimelockEmergency(
-        uint256 superformId_,
-        uint64 dstChainId_,
-        ISuperformFactory factory_
-    )
-        internal
-        view
-        returns (uint256 totalDstGas)
-    {
-        (, uint32 formId,) = superformId_.getSuperform();
-        bool paused = factory_.isFormImplementationPaused(formId);
-
-        if (!paused && formId == TIMELOCK_FORM_ID) {
-            totalDstGas += timelockCost[dstChainId_];
-        } else if (paused) {
-            totalDstGas += emergencyCost[dstChainId_];
-        }
     }
 }

@@ -16,7 +16,6 @@ import {
     ReturnSingleData,
     InitMultiVaultData,
     InitSingleVaultData,
-    TimelockPayload,
     AMBMessage
 } from "src/types/DataTypes.sol";
 
@@ -66,9 +65,7 @@ contract PayloadHelper is IPayloadHelper {
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc IPayloadHelper
-    function decodeCoreStateRegistryPayload(
-        uint256 dstPayloadId_
-    )
+    function decodeCoreStateRegistryPayload(uint256 dstPayloadId_)
         external
         view
         override
@@ -87,9 +84,7 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     /// @inheritdoc IPayloadHelper
-    function decodeCoreStateRegistryPayloadLiqData(
-        uint256 dstPayloadId_
-    )
+    function decodeCoreStateRegistryPayloadLiqData(uint256 dstPayloadId_)
         external
         view
         override
@@ -117,9 +112,7 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     /// @inheritdoc IPayloadHelper
-    function decodePayloadHistory(
-        uint256 srcPayloadId_
-    )
+    function decodePayloadHistory(uint256 srcPayloadId_)
         external
         view
         override
@@ -144,9 +137,7 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     /// @inheritdoc IPayloadHelper
-    function decodeSyncWithdrawPayload(
-        uint256 syncWithdrawPayloadId_
-    )
+    function decodeSyncWithdrawPayload(uint256 syncWithdrawPayloadId_)
         external
         view
         override
@@ -182,42 +173,7 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     /// @inheritdoc IPayloadHelper
-    function decodeTimeLockFailedPayload(
-        uint256 payloadId_
-    )
-        external
-        view
-        override
-        returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
-    {
-        IBaseStateRegistry timelockPayloadRegistry =
-            IBaseStateRegistry(superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY")));
-
-        _isValidPayloadId(payloadId_, timelockPayloadRegistry);
-
-        bytes memory payloadBody = timelockPayloadRegistry.payloadBody(payloadId_);
-        uint256 payloadHeader = timelockPayloadRegistry.payloadHeader(payloadId_);
-
-        (, uint8 callbackType_,,, address srcSender_, uint64 srcChainId_) = payloadHeader.decodeTxInfo();
-
-        /// @dev callback type can never be INIT / RETURN
-        if (callbackType_ == uint256(CallbackType.FAIL)) {
-            ReturnSingleData memory rsd = abi.decode(payloadBody, (ReturnSingleData));
-            amount = rsd.amount;
-            superformId = rsd.superformId;
-            srcPayloadId = rsd.payloadId;
-        } else {
-            revert Error.INVALID_PAYLOAD();
-        }
-
-        srcSender = srcSender_;
-        srcChainId = srcChainId_;
-    }
-
-    /// @inheritdoc IPayloadHelper
-    function decodeAsyncAckPayload(
-        uint256 payloadId_
-    )
+    function decodeAsyncAckPayload(uint256 payloadId_)
         external
         view
         override

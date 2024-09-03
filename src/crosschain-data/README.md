@@ -51,8 +51,6 @@ Every AMB has their identifier for different chains/networks. In state registrie
 
 - **Core State Registry [CoreStateRegistry.sol](./extensions/CoreStateRegistry.sol)**: Contract inheriting BaseStateRegistry which enables core contracts, including routers & form implementations, to communicate with their counterparts on a different network. Contains its custom logic for payload processing & updating (during deposits).
 
-- **Timelock Form State Registry [TimelockStateRegistry.sol](./extensions/TimelockStateRegistry.sol)**: Contract inheriting BaseStateRegistry, specifically designed to process withdrawal request for ERC4626TimelockForm. Inherits BaseStateRegistry to send acknowledgements on failed withdrawals for timelock forms.
-
 - **Broadcast State Registry [BroadcastRegistry.sol](./BroadcastRegistry.sol)**: BroadcastRegistry proposes a unique form of communication from Chain A to all chains Superform is on, as opposed to BaseStateRegistry which assumes communication between only two chains. 
 
 Each individual AMB is in the adapters folder and is named after the Arbitrary Message Bridge (AMB).
