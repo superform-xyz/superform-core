@@ -1032,10 +1032,17 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.superRBACC.grantRole(keccak256("REWARDS_ADMIN_ROLE"), deployer);
 
             /// @dev 21 deploy Superform Router Plus
-            contracts[vars.chainId][bytes32(bytes("SuperformRouterPlus"))] =
-                address(new SuperformRouterPlus{ salt: salt }(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("SuperformRouterPlusAsync"))] =
-                address(new SuperformRouterPlusAsync{ salt: salt }(vars.superRegistry));
+            vars.superformRouterPlus = address(new SuperformRouterPlus{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("SuperformRouterPlus"))] = vars.superformRouterPlus;
+
+            vars.superformRouterPlusAsync = address(new SuperformRouterPlusAsync{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("SuperformRouterPlusAsync"))] = vars.superformRouterPlusAsync;
+
+            bytes32 routerPlusId = keccak256("SUPERFORM_ROUTER_PLUS");
+            vars.superRegistryC.setAddress(routerPlusId, vars.superformRouterPlus, vars.chainId);
+
+            vars.superRBACC.setRoleAdmin(keccak256("ROUTER_PLUS_PROCESSOR_ROLE"), vars.superRBACC.PROTOCOL_ADMIN_ROLE());
+            vars.superRBACC.grantRole(keccak256("ROUTER_PLUS_PROCESSOR_ROLE"), deployer);
         }
 
         for (uint256 i = 0; i < chainIds.length; ++i) {
