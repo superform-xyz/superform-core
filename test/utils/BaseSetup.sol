@@ -76,6 +76,19 @@ import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
 import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
 import ".././utils/AmbParams.sol";
 import { IPermit2 } from "src/vendor/dragonfly-xyz/IPermit2.sol";
+import { ERC7540AsyncDepositMock } from "../mocks/ERC7540AsyncDepositMock.sol";
+import { ERC7540AsyncDepositMockRevert } from "../mocks/ERC7540AsyncDepositMockRevert.sol";
+import { ERC7540AsyncDepositMockRedeemRevert } from "../mocks/ERC7540AsyncDepositMockRedeemRevert.sol";
+
+import { ERC7540AsyncRedeemMock } from "../mocks/ERC7540AsyncRedeemMock.sol";
+import { ERC7540AsyncRedeemMockRevert } from "../mocks/ERC7540AsyncRedeemMockRevert.sol";
+import { ERC7540FullyAsyncMock } from "../mocks/ERC7540FullyAsyncMock.sol";
+
+import { TrancheTokenLike } from "../mocks/7540MockUtils/TrancheTokenLike.sol";
+import { RestrictionManagerLike } from "../mocks/7540MockUtils/RestrictionManagerLike.sol";
+import { IAuthorizeOperator } from "src/vendor/centrifuge/IERC7540.sol";
+
+import { IERC7540Vault as IERC7540 } from "src/vendor/centrifuge/IERC7540.sol";
 import { AsyncStateRegistry } from "src/crosschain-data/extensions/AsyncStateRegistry.sol";
 import { RequestConfig } from "src/interfaces/IAsyncStateRegistry.sol";
 import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
@@ -179,12 +192,18 @@ abstract contract BaseSetup is StdInvariant, Test {
     uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(4), uint32(5)];
 
     /// @dev WARNING!! THESE VAULT NAMES MUST BE THE EXACT NAMES AS FILLED IN vaultKinds
-    string[] public VAULT_KINDS = ["VaultMock", "VaultMockRevertDeposit", "VaultMockRevertWithdraw", "ERC5115",         "ERC7540FullyAsyncMock",
+    string[] public VAULT_KINDS = [
+        "VaultMock",
+        "VaultMockRevertDeposit",
+        "VaultMockRevertWithdraw",
+        "ERC5115",
+        "ERC7540FullyAsyncMock",
         "ERC7540AsyncDepositMock",
         "ERC7540AsyncRedeemMock",
         "ERC7540AsyncDepositMockRevert",
         "ERC7540AsyncRedeemMockRevert",
-        "ERC7540AsyncDepositMockRedeemRevert"];
+        "ERC7540AsyncDepositMockRedeemRevert"
+    ];
 
     struct VaultInfo {
         bytes[] vaultBytecode;
@@ -251,7 +270,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7,
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7,
         0xae92d5aD7583AD66E49A0c67BAd18F6ba52dDDc1,
-        0x6Fcb97553D41516Cb228ac03FdC8B9a0a9df04A1
+        0x6Fcb97553D41516Cb228ac03FdC8B9a0a9df04A1,
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7,
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7
     ];
@@ -266,7 +285,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         0xeA87ae93Fa0019a82A727bfd3eBd1cFCa8f64f1D,
         address(0),
         0xfFAEF09B3cd11D9b20d1a19bECca54EEC2884766,
-        0xF9F6F5646F478d5ab4e20B0F910C92F1CCC9Cc6D
+        0xF9F6F5646F478d5ab4e20B0F910C92F1CCC9Cc6D,
         0x02d16BC51af6BfD153d67CA61754cF912E82C4d9,
         0x3a867fCfFeC2B790970eeBDC9023E75B0a172aa7
     ];
@@ -281,7 +300,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         0xc3F23848Ed2e04C0c6d41bd7804fa8f89F940B94,
         address(0),
         0x6f2756380FD49228ae25Aa7F2817993cB74Ecc56,
-        0x0dD20e410bdB95404f71c5a4e7Fa67B892A5f949
+        0x0dD20e410bdB95404f71c5a4e7Fa67B892A5f949,
         0x8105a095368f1a184CceA86cCe21318B5Ee5BE28,
         0xB3fCcD379ad66CED0c91028520C64226611A48c9
     ];
@@ -296,7 +315,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6,
         0x126783A6Cb203a3E35344528B26ca3a0489a1485,
         0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78,
-        0x68605AD7b15c732a30b1BbC62BE8F2A509D74b4D
+        0x68605AD7b15c732a30b1BbC62BE8F2A509D74b4D,
         address(0),
         0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6
     ];
@@ -311,7 +330,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         0xe432150cce91c13a887f7D836923d5597adD8E31,
         0x304acf330bbE08d1e512eefaa92F6a57871fD895,
         0xe432150cce91c13a887f7D836923d5597adD8E31,
-        0x4D147dCb984e6affEEC47e44293DA442580A3Ec0
+        0x4D147dCb984e6affEEC47e44293DA442580A3Ec0,
         0xe432150cce91c13a887f7D836923d5597adD8E31
     ];
 
@@ -325,7 +344,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         0x2d5d7d31F671F86C782533cc367F14109a082712,
         0x2d5d7d31F671F86C782533cc367F14109a082712,
         0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6,
-        0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6
+        0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6,
         0x2d5d7d31F671F86C782533cc367F14109a082712,
         0x2d5d7d31F671F86C782533cc367F14109a082712
     ];
@@ -371,12 +390,10 @@ abstract contract BaseSetup is StdInvariant, Test {
     uint64 public constant SEPOLIA = 11_155_111;
     uint64 public constant BSC_TESTNET = 97;
 
-    uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
+    uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 59_144, 81_457];
     uint64[] public defaultChainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 11_155_111, 97];
     uint64 public constant LINEA = 59_144;
     uint64 public constant BLAST = 81_457;
-
-    uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 59_144, 81_457];
 
     mapping(uint64 chainId => bool selected) selectedChainIds;
     /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
@@ -390,11 +407,14 @@ abstract contract BaseSetup is StdInvariant, Test {
     uint16 public constant LZ_FANTOM = 112;
     uint16 public constant LZ_SEPOLIA = 10_161;
     uint16 public constant LZ_BSC_TESTNET = 10_102;
+    uint16 public constant LZ_LINEA = 183;
+    uint32 public constant LZ_BLAST = 243;
 
-    uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111, 184, 112, 10_161, 10_102];
-    uint32[] public lz_v2_chainIds = [30_101, 30_102, 30_106, 30_109, 30_110, 30_111, 30_184, 30_112, 40_161, 40_102];
-    uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 11_155_111, 97];
-    uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30, 10, 10_002, 10_003];
+    uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111, 184, 112, 10_161, 10_102, 183, 243];
+    uint32[] public lz_v2_chainIds =
+        [30_101, 30_102, 30_106, 30_109, 30_110, 30_111, 30_184, 30_112, 40_161, 40_102, 30_183, 30_243];
+    uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 11_155_111, 97, 59_144, 81_457];
+    uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30, 10, 10_002, 10_003, 38, 36];
     string[] public axelar_chainIds = [
         "Ethereum",
         "binance",
@@ -405,17 +425,10 @@ abstract contract BaseSetup is StdInvariant, Test {
         "base",
         "Fantom",
         "ethereum-sepolia",
-        "binance-testnet"
+        "binance-testnet",
+        "linea",
+        "blast"
     ];
-    uint16 public constant LZ_LINEA = 183;
-    uint32 public constant LZ_BLAST = 243;
-
-    uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111, 184, 112, 183, 243];
-    uint32[] public lz_v2_chainIds = [30_101, 30_102, 30_106, 30_109, 30_110, 30_111, 30_184, 30_112, 30_183, 30_243];
-    uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 59_144, 81_457];
-    uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30, 10, 38, 36];
-    string[] public axelar_chainIds =
-        ["Ethereum", "binance", "Avalanche", "Polygon", "arbitrum", "optimism", "base", "Fantom", "linea", "blast"];
 
     /// @dev minting enough tokens to be able to fuzz with bigger amounts (DAI's 3.6B supply etc)
     uint256 public constant hundredBilly = 100 * 1e9 * 1e18;
@@ -434,7 +447,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         1_000_000, // BASE
         4 * 10e9, // FANTOM
         50_000_000_000, // SEPOLIA
-        3_000_000_000 // BSC
+        3_000_000_000, // BSC
         60_000_000, // LINEA
         60_000_000 // BLAST
     ];
@@ -451,7 +464,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         253_400_000_000, // BASE
         4 * 10e9, // FANTOM
         253_400_000_000, // SEPOLIA
-        31_439_000_000 // BSC
+        31_439_000_000, // BSC
         253_400_000_000, // LINEA
         253_400_000_000 // BLAST
     ];
@@ -786,691 +799,692 @@ abstract contract BaseSetup is StdInvariant, Test {
                 vars.wormholeImplementation = address(new WormholeARImplementation{ salt: salt }(vars.superRegistryC));
                 contracts[vars.chainId][bytes32(bytes("WormholeARImplementation"))] = vars.wormholeImplementation;
 
-            WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayer);
-            /// set refund chain id to wormhole chain id
-            WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(
-                wormhole_chainIds[vars.trueChainIdIndex]
-            );
+                WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayer);
+                /// set refund chain id to wormhole chain id
+                WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(
+                    wormhole_chainIds[vars.trueChainIdIndex]
+                );
 
                 /// @dev 6.4- deploy Wormhole Specialized Relayer Implementation
                 vars.wormholeSRImplementation =
                     address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC, 3));
                 contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
 
-            WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[vars.trueChainIdIndex]);
-            WormholeSRImplementation(vars.wormholeSRImplementation).setRelayer(deployer);
-
-            /// @dev 6.5- deploy Axelar Implementation
-            vars.axelarImplementation = address(new AxelarImplementation{ salt: salt }(vars.superRegistryC));
-            contracts[vars.chainId][bytes32(bytes("AxelarImplementation"))] = vars.axelarImplementation;
-
-            AxelarImplementation(vars.axelarImplementation).setAxelarConfig(
-                IAxelarGateway(axelarGateway[vars.trueChainIdIndex])
-            );
-            AxelarImplementation(vars.axelarImplementation).setAxelarGasService(
-                IAxelarGasService(axelarGasService[vars.trueChainIdIndex]),
-                IInterchainGasEstimation(axelarGasService[vars.trueChainIdIndex])
-            );
-
-            vars.ambAddresses[0] = vars.lzImplementation;
-            vars.ambAddresses[1] = vars.hyperlaneImplementation;
-            vars.ambAddresses[2] = vars.wormholeImplementation;
-            vars.ambAddresses[3] = vars.wormholeSRImplementation;
-            vars.ambAddresses[4] = vars.axelarImplementation;
-            vars.ambAddresses[5] = vars.lzV2Implementation;
-
-            contracts[vars.chainId][bytes32(bytes("LiFiMock"))] = vars.lifiRouter;
-
-            contracts[vars.chainId][bytes32(bytes("SocketMock"))] = vars.socketRouter;
-
-            contracts[vars.chainId][bytes32(bytes("SocketOneInchMock"))] = vars.socketOneInch;
-
-            contracts[vars.chainId][bytes32(bytes("LiFiMockRugpull"))] = vars.liFiMockRugpull;
-
-            contracts[vars.chainId][bytes32(bytes("LiFiMockBlacklisted"))] = vars.liFiMockBlacklisted;
-
-            contracts[vars.chainId][bytes32(bytes("LiFiMockBlacklisted"))] = vars.liFiMockSwapToAttacker;
-
-            contracts[vars.chainId][bytes32(bytes("DeBridgeMock"))] = vars.deBridgeMock;
-
-            contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderMock"))] = vars.debridgeForwarderMock;
-
-            contracts[vars.chainId][bytes32(bytes("OneInchMock"))] = vars.debridgeForwarderMock;
-
-            /// @dev 7.2.1- deploy  lifi validator
-            vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
-
-            /// @dev 7.2.2- deploy socket validator
-            vars.socketValidator = address(new SocketValidator{ salt: salt }(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars.socketValidator;
-
-            if (vars.chainId == 1) {
-                // Mainnet Hop
-                SocketValidator(vars.socketValidator).addToBlacklist(18);
-            } else if (vars.chainId == 10) {
-                // Optimism Hop
-                SocketValidator(vars.socketValidator).addToBlacklist(15);
-            } else if (vars.chainId == 42_161) {
-                // Arbitrum hop
-                SocketValidator(vars.socketValidator).addToBlacklist(16);
-            } else if (vars.chainId == 137) {
-                // Polygon hop
-                SocketValidator(vars.socketValidator).addToBlacklist(21);
-            } else if (vars.chainId == 8453) {
-                // Base hop
-                SocketValidator(vars.socketValidator).addToBlacklist(1);
-            }
-
-            /// @dev 7.2.3- deploy socket one inch validator
-            vars.socketOneInchValidator = address(new SocketOneInchValidator{ salt: salt }(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("SocketOneInchValidator"))] = vars.socketOneInchValidator;
-
-            /// @dev 7.2.4- deploy deBridge validator
-            vars.debridgeValidator = address(new DeBridgeValidator{ salt: salt }(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("DeBridgeValidator"))] = vars.debridgeValidator;
-
-            /// @dev 7.2.5- deploy deBridge forwarder validator
-            vars.debridgeForwarderValidator = address(new DeBridgeForwarderValidator{ salt: salt }(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderValidator"))] = vars.debridgeForwarderValidator;
-
-            /// @dev 7.2.6- deploy socket one inch validator
-            vars.oneInchValidator = address(new OneInchValidator{ salt: salt }(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("OneInchValidator"))] = vars.oneInchValidator;
-
-            bridgeAddresses.push(vars.lifiRouter);
-            bridgeAddresses.push(vars.socketRouter);
-            bridgeAddresses.push(vars.socketOneInch);
-            bridgeAddresses.push(vars.liFiMockRugpull);
-            bridgeAddresses.push(vars.liFiMockBlacklisted);
-            bridgeAddresses.push(vars.liFiMockSwapToAttacker);
-            bridgeAddresses.push(vars.deBridgeMock);
-            bridgeAddresses.push(vars.debridgeForwarderMock);
-            bridgeAddresses.push(vars.oneInchMock);
-
-            bridgeValidators.push(vars.lifiValidator);
-            bridgeValidators.push(vars.socketValidator);
-            bridgeValidators.push(vars.socketOneInchValidator);
-            bridgeValidators.push(vars.lifiValidator);
-            bridgeValidators.push(vars.lifiValidator);
-            bridgeValidators.push(vars.lifiValidator);
-            bridgeValidators.push(vars.debridgeValidator);
-            bridgeValidators.push(vars.debridgeForwarderValidator);
-            bridgeValidators.push(vars.oneInchValidator);
-
-            /// @dev 8.1 - Deploy UNDERLYING_TOKENS and VAULTS
-            for (uint256 j = 0; j < UNDERLYING_TOKENS.length; ++j) {
-                vm.selectFork(FORKS[vars.chainId]);
-                vars.UNDERLYING_TOKEN = UNDERLYING_EXISTING_TOKENS[vars.chainId][UNDERLYING_TOKENS[j]];
-
-                if (vars.UNDERLYING_TOKEN == address(0)) {
-                    vars.UNDERLYING_TOKEN = address(
-                        new MockERC20{ salt: salt }(UNDERLYING_TOKENS[j], UNDERLYING_TOKENS[j], deployer, hundredBilly)
-                    );
-                } else {
-                    deal(vars.UNDERLYING_TOKEN, deployer, hundredBilly);
-                }
-                contracts[vars.chainId][bytes32(bytes(UNDERLYING_TOKENS[j]))] = vars.UNDERLYING_TOKEN;
-            }
-
-            bytes memory bytecodeWithArgs;
-            /// NOTE: This loop deploys all vaults on all chainIds with all of the UNDERLYING TOKENS (id x form) x
-            /// chainId
-            for (uint32 j; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
-                /// @dev don't do this for 5115
-                if (j != 1) {
-                    address[][] memory doubleVaults = new address[][](UNDERLYING_TOKENS.length);
-
-                    for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
-                        uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
-                        address[] memory vaultsT = new address[](lenBytecodes);
-                        for (uint256 l = 0; l < lenBytecodes; l++) {
-                            vars.vault =
-                                REAL_VAULT_ADDRESS[vars.chainId][FORM_IMPLEMENTATION_IDS[j]][UNDERLYING_TOKENS[k]][l];
-
-                            if (vars.vault == address(0)) {
-                                /// @dev 8.2 - Deploy mock Vault
-                                if (j < 2) {
-                                    bytecodeWithArgs = abi.encodePacked(
-                                        vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode[l],
-                                        abi.encode(
-                                            MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])),
-                                            VAULT_NAMES[l][k],
-                                            VAULT_NAMES[l][k]
-                                        )
-                                    );
-
-                                    vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
-                                } else if (j > 3) {
-                                    /// deploy the 7540 wrappers (skips j = 3 which is 5115)
-                                    /// @dev all wrappers created with rids = 0
-                                    /// TODO create a wrapper with fungible rid later
-                                    bytecodeWithArgs = abi.encodePacked(
-                                        vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode[l],
-                                        abi.encode(MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])), false)
-                                    );
-
-                                    vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
-                                }
-                            }
-                            /// @dev Add VaultMock
-                            contracts[vars.chainId][bytes32(
-                                bytes(
-                                    string.concat(
-                                        UNDERLYING_TOKENS[k], vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultKinds[l]
-                                    )
-                                )
-                            )] = vars.vault;
-                            vaultsT[l] = vars.vault;
-                        }
-                        doubleVaults[k] = vaultsT;
-                    }
-                    vaults[vars.chainId][FORM_IMPLEMENTATION_IDS[j]] = doubleVaults;
-                }
-            }
-
-            /// @dev deploy wrapper factory
-            vars.eRC5115To4626WrapperFactory =
-                address(new ERC5115To4626WrapperFactory{ salt: salt }(vars.superRegistry));
-
-            contracts[vars.chainId][bytes32(bytes("ERC5115To4626WrapperFactory"))] = vars.eRC5115To4626WrapperFactory;
-
-            if (NUMBER_OF_5115S[vars.chainId] > 0) {
-                for (uint256 j = 0; j < NUMBER_OF_5115S[vars.chainId]; ++j) {
-                    address new5115WrapperVault = ERC5115To4626WrapperFactory(vars.eRC5115To4626WrapperFactory)
-                        .createWrapper(
-                        ERC5115_VAULTS[vars.chainId][j],
-                        ERC5115S_CHOSEN_ASSETS[vars.chainId][ERC5115_VAULTS[vars.chainId][j]].assetIn,
-                        ERC5115S_CHOSEN_ASSETS[vars.chainId][ERC5115_VAULTS[vars.chainId][j]].assetOut
-                    );
-
-                    wrapped5115vaults[vars.chainId].push(new5115WrapperVault);
-                }
-            }
-
-            /// @dev 9 - Deploy SuperformFactory
-            vars.factory = address(new SuperformFactory{ salt: salt }(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("SuperformFactory"))] = vars.factory;
-
-            vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_FACTORY(), vars.factory, vars.chainId);
-            vars.superRBACC.grantRole(vars.superRBACC.BROADCASTER_ROLE(), vars.factory);
-
-            /// @dev 10 - Deploy 4626Form implementations
-            // Standard ERC4626 Form
-            vars.erc4626Form = address(new ERC4626Form{ salt: salt }(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars.erc4626Form;
-
-            // Pendle ERC5115 Form
-            vars.erc5115form = address(new ERC5115Form{ salt: salt }(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("ERC5115Form"))] = vars.erc5115form;
-
-            //  ERC7540 Form
-            /// @dev TODO: change id of form to 2
-            vars.erc7540form = address(new ERC7540Form{ salt: salt }(vars.superRegistry, 5));
-
-            contracts[vars.chainId][bytes32(bytes("ERC7540Form"))] = vars.erc7540form;
-
-            /// @dev 11 - Add newly deployed form implementations to Factory
-            ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0], 1);
-            ISuperformFactory(vars.factory).addFormImplementation(vars.erc5115form, FORM_IMPLEMENTATION_IDS[1], 1);
-
-            /// @dev TODO temporarily as id 5, to become id 2
-            ISuperformFactory(vars.factory).addFormImplementation(vars.erc7540form, FORM_IMPLEMENTATION_IDS[4], 5);
-
-            /// @dev 12 - Deploy SuperformRouter
-            vars.superformRouter = address(new SuperformRouter{ salt: salt }(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
-
-            vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
-
-            /// @dev 13 - Deploy SuperPositions
-            vars.superPositions = address(
-                new SuperPositions{ salt: salt }(
-                    "https://ipfs-gateway.superform.xyz/ipns/k51qzi5uqu5dg90fqdo9j63m556wlddeux4mlgyythp30zousgh3huhyzouyq8/JSON/",
-                    vars.superRegistry,
-                    "SuperPositions",
-                    "SP"
-                )
-            );
-
-            contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
-            vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);
-
-            vars.superRBACC.grantRole(
-                vars.superRBACC.BROADCASTER_ROLE(), contracts[vars.chainId][bytes32(bytes("SuperPositions"))]
-            );
-
-            /// @dev 14- deploy Payload Helper
-            vars.PayloadHelper = address(new PayloadHelper{ salt: salt }(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
-            vars.superRegistryC.setAddress(vars.superRegistryC.PAYLOAD_HELPER(), vars.PayloadHelper, vars.chainId);
-
-            /// @dev 15 - Deploy PayMaster
-            vars.payMaster = address(new PayMaster{ salt: salt }(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes32("PayMaster"))] = vars.payMaster;
-
-            vars.superRegistryC.setAddress(vars.superRegistryC.PAYMASTER(), vars.payMaster, vars.chainId);
-
-            /// @dev 16 - Deploy Dst Swapper
-            vars.dstSwapper = address(new DstSwapper{ salt: salt }(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes32("DstSwapper"))] = vars.dstSwapper;
-
-            vars.superRegistryC.setAddress(vars.superRegistryC.DST_SWAPPER(), vars.dstSwapper, vars.chainId);
-
-            /// @dev 17 - Super Registry extra setters
-            /// @dev BASE does not have SocketV1 available
-            if (vars.chainId == BASE) {
-                uint8[] memory bridgeIdsBase = new uint8[](6);
-                bridgeIdsBase[0] = bridgeIds[0];
-                bridgeIdsBase[1] = bridgeIds[3];
-                bridgeIdsBase[2] = bridgeIds[4];
-                bridgeIdsBase[3] = bridgeIds[5];
-                bridgeIdsBase[4] = bridgeIds[6];
-                bridgeIdsBase[5] = bridgeIds[7];
-
-                address[] memory bridgeAddressesBase = new address[](6);
-                bridgeAddressesBase[0] = bridgeAddresses[0];
-                bridgeAddressesBase[1] = bridgeAddresses[3];
-                bridgeAddressesBase[2] = bridgeAddresses[4];
-                bridgeAddressesBase[3] = bridgeAddresses[5];
-                bridgeAddressesBase[4] = bridgeAddresses[6];
-                bridgeAddressesBase[5] = bridgeAddresses[7];
-
-                address[] memory bridgeValidatorsBase = new address[](6);
-                bridgeValidatorsBase[0] = bridgeValidators[0];
-                bridgeValidatorsBase[1] = bridgeValidators[3];
-                bridgeValidatorsBase[2] = bridgeValidators[4];
-                bridgeValidatorsBase[3] = bridgeValidators[5];
-                bridgeValidatorsBase[4] = bridgeValidators[6];
-                bridgeValidatorsBase[5] = bridgeValidators[7];
-
-                vars.superRegistryC.setBridgeAddresses(bridgeIdsBase, bridgeAddressesBase, bridgeValidatorsBase);
-            } else {
-                SuperRegistry(vars.superRegistry).setBridgeAddresses(bridgeIds, bridgeAddresses, bridgeValidators);
-            }
-
-            /// @dev configures ambImplementations to super registry
-            if (vars.chainId == FANTOM) {
-                uint8[] memory ambIdsFantom = new uint8[](3);
-                ambIdsFantom[0] = 1;
-                ambIdsFantom[1] = 3;
-                ambIdsFantom[2] = 4;
-
-                address[] memory ambAddressesFantom = new address[](3);
-                ambAddressesFantom[0] = vars.lzImplementation;
-                ambAddressesFantom[1] = vars.wormholeImplementation;
-                ambAddressesFantom[2] = vars.wormholeSRImplementation;
-
-                bool[] memory broadcastAMBFantom = new bool[](3);
-                broadcastAMBFantom[0] = false;
-                broadcastAMBFantom[1] = false;
-                broadcastAMBFantom[2] = true;
-
-                SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(
-                    ambIdsFantom, ambAddressesFantom, broadcastAMBFantom
+                WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(
+                    wormholeCore[vars.trueChainIdIndex]
                 );
-            } else {
-                vars.superRegistryC.setAmbAddress(ambIds, vars.ambAddresses, isBroadcastAMB);
-            }
+                WormholeSRImplementation(vars.wormholeSRImplementation).setRelayer(deployer);
 
-            /// @dev 18 setup setup srcChain keepers
-            vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), deployer, vars.chainId);
-            vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), deployer, vars.chainId);
-            vars.superRegistryC.setAddress(vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR(), deployer, vars.chainId);
-            vars.superRegistryC.setAddress(vars.superRegistryC.TIMELOCK_REGISTRY_PROCESSOR(), deployer, vars.chainId);
-            vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_UPDATER(), deployer, vars.chainId);
-            vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_RESCUER(), deployer, vars.chainId);
-            vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_DISPUTER(), deployer, vars.chainId);
-            vars.superRegistryC.setAddress(vars.superRegistryC.DST_SWAPPER_PROCESSOR(), deployer, vars.chainId);
-            vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_RECEIVER(), deployer, vars.chainId);
+                /// @dev 6.5- deploy Axelar Implementation
+                vars.axelarImplementation = address(new AxelarImplementation{ salt: salt }(vars.superRegistryC));
+                contracts[vars.chainId][bytes32(bytes("AxelarImplementation"))] = vars.axelarImplementation;
 
-            vars.superRegistryC.setDelay(86_400);
-            /// @dev 19 deploy emergency queue
-            vars.emergencyQueue = address(new EmergencyQueue{ salt: salt }(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("EmergencyQueue"))] = vars.emergencyQueue;
-            vars.superRegistryC.setAddress(vars.superRegistryC.EMERGENCY_QUEUE(), vars.emergencyQueue, vars.chainId);
-            delete bridgeAddresses;
-            delete bridgeValidators;
+                AxelarImplementation(vars.axelarImplementation).setAxelarConfig(
+                    IAxelarGateway(axelarGateway[vars.trueChainIdIndex])
+                );
+                AxelarImplementation(vars.axelarImplementation).setAxelarGasService(
+                    IAxelarGasService(axelarGasService[vars.trueChainIdIndex]),
+                    IInterchainGasEstimation(axelarGasService[vars.trueChainIdIndex])
+                );
 
-            /// @dev 20 deploy Rewards Distributor
-            vars.rewardsDistributor = address(new RewardsDistributor{ salt: salt }(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("RewardsDistributor"))] = vars.rewardsDistributor;
+                vars.ambAddresses[0] = vars.lzImplementation;
+                vars.ambAddresses[1] = vars.hyperlaneImplementation;
+                vars.ambAddresses[2] = vars.wormholeImplementation;
+                vars.ambAddresses[3] = vars.wormholeSRImplementation;
+                vars.ambAddresses[4] = vars.axelarImplementation;
+                vars.ambAddresses[5] = vars.lzV2Implementation;
 
-            bytes32 rewardsId = keccak256("REWARDS_DISTRIBUTOR");
-            vars.superRegistryC.setAddress(rewardsId, vars.rewardsDistributor, vars.chainId);
-            vars.superRBACC.setRoleAdmin(keccak256("REWARDS_ADMIN_ROLE"), vars.superRBACC.PROTOCOL_ADMIN_ROLE());
-            vars.superRBACC.grantRole(keccak256("REWARDS_ADMIN_ROLE"), deployer);
-        }
+                contracts[vars.chainId][bytes32(bytes("LiFiMock"))] = vars.lifiRouter;
 
-        for (uint256 i = 0; i < chainIds.length; ++i) {
-            vars.chainId = chainIds[i];
-            vars.fork = FORKS[vars.chainId];
+                contracts[vars.chainId][bytes32(bytes("SocketMock"))] = vars.socketRouter;
 
-            vm.selectFork(vars.fork);
+                contracts[vars.chainId][bytes32(bytes("SocketOneInchMock"))] = vars.socketOneInch;
 
-            vars.lzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
-            vars.lzV2Implementation = getContract(vars.chainId, "LayerzeroV2Implementation");
-            vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
-            vars.wormholeImplementation = getContract(vars.chainId, "WormholeARImplementation");
-            vars.wormholeSRImplementation = getContract(vars.chainId, "WormholeSRImplementation");
-            vars.axelarImplementation = getContract(vars.chainId, "AxelarImplementation");
-            vars.superRBAC = getContract(vars.chainId, "SuperRBAC");
+                contracts[vars.chainId][bytes32(bytes("LiFiMockRugpull"))] = vars.liFiMockRugpull;
 
-            vars.superRegistry = getContract(vars.chainId, "SuperRegistry");
-            vars.paymentHelper = getContract(vars.chainId, "PaymentHelper");
-            vars.superRegistryC = SuperRegistry(payable(vars.superRegistry));
-            vars.superRegistryC.setVaultLimitPerDestination(vars.chainId, 5);
+                contracts[vars.chainId][bytes32(bytes("LiFiMockBlacklisted"))] = vars.liFiMockBlacklisted;
 
-            /// @dev Set all trusted remotes for each chain, configure amb chains ids, setupQuorum for all chains as 1
-            /// and setup PaymentHelper
-            /// @dev has to be performed after all main contracts have been deployed on all chains
-            for (uint256 j = 0; j < chainIds.length; ++j) {
-                uint256 trueChainIdIndex;
-                // find selected chain ids and assign to selectedChainIds mapping
-                for (uint256 k = 0; k < defaultChainIds.length; k++) {
-                    if (chainIds[j] == defaultChainIds[k]) {
-                        trueChainIdIndex = k;
-                        break;
-                    }
+                contracts[vars.chainId][bytes32(bytes("LiFiMockBlacklisted"))] = vars.liFiMockSwapToAttacker;
+
+                contracts[vars.chainId][bytes32(bytes("DeBridgeMock"))] = vars.deBridgeMock;
+
+                contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderMock"))] = vars.debridgeForwarderMock;
+
+                contracts[vars.chainId][bytes32(bytes("OneInchMock"))] = vars.debridgeForwarderMock;
+
+                /// @dev 7.2.1- deploy  lifi validator
+                vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
+                contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
+
+                /// @dev 7.2.2- deploy socket validator
+                vars.socketValidator = address(new SocketValidator{ salt: salt }(vars.superRegistry));
+                contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars.socketValidator;
+
+                if (vars.chainId == 1) {
+                    // Mainnet Hop
+                    SocketValidator(vars.socketValidator).addToBlacklist(18);
+                } else if (vars.chainId == 10) {
+                    // Optimism Hop
+                    SocketValidator(vars.socketValidator).addToBlacklist(15);
+                } else if (vars.chainId == 42_161) {
+                    // Arbitrum hop
+                    SocketValidator(vars.socketValidator).addToBlacklist(16);
+                } else if (vars.chainId == 137) {
+                    // Polygon hop
+                    SocketValidator(vars.socketValidator).addToBlacklist(21);
+                } else if (vars.chainId == 8453) {
+                    // Base hop
+                    SocketValidator(vars.socketValidator).addToBlacklist(1);
                 }
-                if (vars.chainId != chainIds[j]) {
-                    vars.dstChainId = chainIds[j];
 
-                    vars.dstLzChainId = lz_chainIds[trueChainIdIndex];
-                    vars.dstHypChainId = hyperlane_chainIds[trueChainIdIndex];
-                    vars.dstWormholeChainId = wormhole_chainIds[trueChainIdIndex];
+                /// @dev 7.2.3- deploy socket one inch validator
+                vars.socketOneInchValidator = address(new SocketOneInchValidator{ salt: salt }(vars.superRegistry));
+                contracts[vars.chainId][bytes32(bytes("SocketOneInchValidator"))] = vars.socketOneInchValidator;
 
-                    vars.dstLzImplementation = getContract(vars.dstChainId, "LayerzeroImplementation");
-                    vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
-                    vars.dstWormholeARImplementation = getContract(vars.dstChainId, "WormholeARImplementation");
-                    vars.dstWormholeSRImplementation = getContract(vars.dstChainId, "WormholeSRImplementation");
-                    vars.dstwormholeBroadcastHelper = getContract(vars.dstChainId, "WormholeBroadcastHelper");
-                    vars.dstAxelarImplementation = getContract(vars.dstChainId, "AxelarImplementation");
+                /// @dev 7.2.4- deploy deBridge validator
+                vars.debridgeValidator = address(new DeBridgeValidator{ salt: salt }(vars.superRegistry));
+                contracts[vars.chainId][bytes32(bytes("DeBridgeValidator"))] = vars.debridgeValidator;
 
-                    LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
-                        vars.dstLzChainId, abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
-                    );
-                    LayerzeroImplementation(payable(vars.lzImplementation)).setChainId(
-                        vars.dstChainId, vars.dstLzChainId
-                    );
+                /// @dev 7.2.5- deploy deBridge forwarder validator
+                vars.debridgeForwarderValidator =
+                    address(new DeBridgeForwarderValidator{ salt: salt }(vars.superRegistry));
+                contracts[vars.chainId][bytes32(bytes("DeBridgeForwarderValidator"))] = vars.debridgeForwarderValidator;
 
-                    LayerzeroV2Implementation(payable(vars.lzV2Implementation)).setPeer(
-                        lz_v2_chainIds[trueChainIdIndex],
-                        bytes32(uint256(uint160(getContract(vars.dstChainId, "LayerzeroV2Implementation"))))
-                    );
+                /// @dev 7.2.6- deploy socket one inch validator
+                vars.oneInchValidator = address(new OneInchValidator{ salt: salt }(vars.superRegistry));
+                contracts[vars.chainId][bytes32(bytes("OneInchValidator"))] = vars.oneInchValidator;
 
-                    LayerzeroV2Implementation(payable(vars.lzV2Implementation)).setChainId(
-                        vars.dstChainId, lz_v2_chainIds[trueChainIdIndex]
-                    );
+                bridgeAddresses.push(vars.lifiRouter);
+                bridgeAddresses.push(vars.socketRouter);
+                bridgeAddresses.push(vars.socketOneInch);
+                bridgeAddresses.push(vars.liFiMockRugpull);
+                bridgeAddresses.push(vars.liFiMockBlacklisted);
+                bridgeAddresses.push(vars.liFiMockSwapToAttacker);
+                bridgeAddresses.push(vars.deBridgeMock);
+                bridgeAddresses.push(vars.debridgeForwarderMock);
+                bridgeAddresses.push(vars.oneInchMock);
 
-                    if (!(vars.chainId == FANTOM || vars.dstChainId == FANTOM)) {
-                        HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setReceiver(
-                            vars.dstHypChainId, vars.dstHyperlaneImplementation
+                bridgeValidators.push(vars.lifiValidator);
+                bridgeValidators.push(vars.socketValidator);
+                bridgeValidators.push(vars.socketOneInchValidator);
+                bridgeValidators.push(vars.lifiValidator);
+                bridgeValidators.push(vars.lifiValidator);
+                bridgeValidators.push(vars.lifiValidator);
+                bridgeValidators.push(vars.debridgeValidator);
+                bridgeValidators.push(vars.debridgeForwarderValidator);
+                bridgeValidators.push(vars.oneInchValidator);
+
+                /// @dev 8.1 - Deploy UNDERLYING_TOKENS and VAULTS
+                for (uint256 j = 0; j < UNDERLYING_TOKENS.length; ++j) {
+                    vm.selectFork(FORKS[vars.chainId]);
+                    vars.UNDERLYING_TOKEN = UNDERLYING_EXISTING_TOKENS[vars.chainId][UNDERLYING_TOKENS[j]];
+
+                    if (vars.UNDERLYING_TOKEN == address(0)) {
+                        vars.UNDERLYING_TOKEN = address(
+                            new MockERC20{ salt: salt }(
+                                UNDERLYING_TOKENS[j], UNDERLYING_TOKENS[j], deployer, hundredBilly
+                            )
                         );
-
-                        HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setChainId(
-                            vars.dstChainId, vars.dstHypChainId
-                        );
+                    } else {
+                        deal(vars.UNDERLYING_TOKEN, deployer, hundredBilly);
                     }
-
-                    if (!(vars.chainId == LINEA || vars.dstChainId == LINEA)) {
-                        WormholeARImplementation(payable(vars.wormholeImplementation)).setReceiver(
-                            vars.dstWormholeChainId, vars.dstWormholeARImplementation
-                        );
-
-                        WormholeARImplementation(payable(vars.wormholeImplementation)).setChainId(
-                            vars.dstChainId, vars.dstWormholeChainId
-                        );
-
-                        WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setChainId(
-                            vars.dstChainId, vars.dstWormholeChainId
-                        );
-
-                        WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setReceiver(
-                            vars.dstWormholeChainId, vars.dstWormholeSRImplementation
-                        );
-                    }
-
-                    AxelarImplementation(payable(vars.axelarImplementation)).setChainId(
-                        vars.dstChainId, axelar_chainIds[trueChainIdIndex]
-                    );
-
-                    AxelarImplementation(payable(vars.axelarImplementation)).setReceiver(
-                        axelar_chainIds[trueChainIdIndex], vars.dstAxelarImplementation
-                    );
-
-                    /// sets the relayer address on all subsequent chains
-                    SuperRBAC(vars.superRBAC).grantRole(
-                        SuperRBAC(vars.superRBAC).WORMHOLE_VAA_RELAYER_ROLE(), vars.dstwormholeBroadcastHelper
-                    );
-
-                    vars.superRegistryC.setRequiredMessagingQuorum(vars.dstChainId, 1);
-                    vars.superRegistryC.setVaultLimitPerDestination(vars.dstChainId, 5);
-                    vars.superRegistryC.setAddress(
-                        keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), deployer, vars.dstChainId
-                    );
-
-                    /// swap gas cost: 50000
-                    /// update gas cost: 40000
-                    /// deposit gas cost: 70000
-                    /// withdraw gas cost: 80000
-                    /// default gas price: 50 Gwei
-                    PaymentHelper(payable(vars.paymentHelper)).addRemoteChain(
-                        vars.dstChainId,
-                        IPaymentHelper.PaymentHelperConfig(
-                            PRICE_FEEDS[vars.chainId][vars.dstChainId],
-                            address(0),
-                            abi.decode(GAS_USED[vars.dstChainId][3], (uint256)),
-                            abi.decode(GAS_USED[vars.dstChainId][4], (uint256)),
-                            vars.dstChainId == ARBI ? 1_000_000 : 200_000,
-                            abi.decode(GAS_USED[vars.dstChainId][6], (uint256)),
-                            nativePrices[trueChainIdIndex],
-                            gasPrices[trueChainIdIndex],
-                            750,
-                            2_000_000,
-                            /// @dev ackGasCost to move a msg from dst to source
-                            10_000,
-                            10_000,
-                            abi.decode(GAS_USED[vars.dstChainId][13], (uint256))
-                        )
-                    );
-
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.SUPERFORM_ROUTER(),
-                        getContract(vars.dstChainId, "SuperformRouter"),
-                        vars.dstChainId
-                    );
-
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.SUPERFORM_FACTORY(),
-                        getContract(vars.dstChainId, "SuperformFactory"),
-                        vars.dstChainId
-                    );
-
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.PAYMASTER(), getContract(vars.dstChainId, "PayMaster"), vars.dstChainId
-                    );
-
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.PAYMENT_HELPER(),
-                        getContract(vars.dstChainId, "PaymentHelper"),
-                        vars.dstChainId
-                    );
-
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.CORE_STATE_REGISTRY(),
-                        getContract(vars.dstChainId, "CoreStateRegistry"),
-                        vars.dstChainId
-                    );
-
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.DST_SWAPPER(), getContract(vars.dstChainId, "DstSwapper"), vars.dstChainId
-                    );
-
-                    vars.superRegistryC.setAddress(
-                        keccak256("ASYNC_STATE_REGISTRY"),
-                        getContract(vars.dstChainId, "AsyncStateRegistry"),
-                        vars.dstChainId
-                    );
-
-                    vars.superRegistryC.setAddress(
-
-                        vars.superRegistryC.BROADCAST_REGISTRY(),
-                        getContract(vars.dstChainId, "BroadcastRegistry"),
-                        vars.dstChainId
-                    );
-
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.SUPER_POSITIONS(),
-                        getContract(vars.dstChainId, "SuperPositions"),
-                        vars.dstChainId
-                    );
-
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.SUPER_RBAC(), getContract(vars.dstChainId, "SuperRBAC"), vars.dstChainId
-                    );
-
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.PAYLOAD_HELPER(),
-                        getContract(vars.dstChainId, "PayloadHelper"),
-                        vars.dstChainId
-                    );
-
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.EMERGENCY_QUEUE(),
-                        getContract(vars.dstChainId, "EmergencyQueue"),
-                        vars.dstChainId
-                    );
-
-                    vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), deployer, vars.dstChainId);
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), deployer, vars.dstChainId
-                    );
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.CORE_REGISTRY_UPDATER(), deployer, vars.dstChainId
-                    );
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR(), deployer, vars.dstChainId
-                    );
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.TIMELOCK_REGISTRY_PROCESSOR(), deployer, vars.dstChainId
-                    );
-
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.CORE_REGISTRY_RESCUER(), deployer, vars.dstChainId
-                    );
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.CORE_REGISTRY_DISPUTER(), deployer, vars.dstChainId
-                    );
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.DST_SWAPPER_PROCESSOR(), deployer, vars.dstChainId
-                    );
-                    vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_RECEIVER(), deployer, vars.dstChainId);
-
-                    vars.superRegistryC.setAddress(keccak256("REWARDS_DISTRIBUTOR"), deployer, vars.dstChainId);
-                } else {
-                    /// ack gas cost: 40000
-                    /// timelock step form cost: 50000
-                    /// default gas price: 50 Gwei
-                    PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
-                        vars.chainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
-                    );
-                    PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
-                        vars.chainId, 7, abi.encode(nativePrices[trueChainIdIndex])
-                    );
-                    PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
-                        vars.chainId, 8, abi.encode(gasPrices[trueChainIdIndex])
-                    );
-
-                    /// @dev gas per byte
-                    PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 9, abi.encode(750));
-
-                    /// @dev ackGasCost to mint superPositions
-                    PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
-                        vars.chainId, 10, abi.encode(vars.chainId == ARBI ? 500_000 : 150_000)
-                    );
-
-                    PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 11, abi.encode(50_000));
-
-                    PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 12, abi.encode(10_000));
-
-                    /// @dev !WARNING - Default value for updateWithdrawGas for now
-                    /// @dev 0.01 ether is just a mock value. Wormhole fees are currently 0 on mainnet
-                    PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(
-                        generateBroadcastParams(0.01 ether)
-                    );
+                    contracts[vars.chainId][bytes32(bytes(UNDERLYING_TOKENS[j]))] = vars.UNDERLYING_TOKEN;
                 }
-            }
-        }
 
-        for (uint256 i = 0; i < chainIds.length; ++i) {
-            vm.selectFork(FORKS[chainIds[i]]);
+                bytes memory bytecodeWithArgs;
+                /// NOTE: This loop deploys all vaults on all chainIds with all of the UNDERLYING TOKENS (id x form) x
+                /// chainId
+                for (uint32 j; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
+                    /// @dev don't do this for 5115
+                    if (j != 1) {
+                        address[][] memory doubleVaults = new address[][](UNDERLYING_TOKENS.length);
 
-            /// @dev 18 - create test superforms when the whole state registry is configured
-            for (uint256 j = 0; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
-                if (j == 0) {
-                    for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
-                        uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
+                        for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
+                            uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
+                            address[] memory vaultsT = new address[](lenBytecodes);
+                            for (uint256 l = 0; l < lenBytecodes; l++) {
+                                vars.vault = REAL_VAULT_ADDRESS[vars.chainId][FORM_IMPLEMENTATION_IDS[j]][UNDERLYING_TOKENS[k]][l];
 
-                        for (uint256 l = 0; l < lenBytecodes; l++) {
-                            address vault = vaults[chainIds[i]][FORM_IMPLEMENTATION_IDS[j]][k][l];
+                                if (vars.vault == address(0)) {
+                                    /// @dev 8.2 - Deploy mock Vault
+                                    if (j < 2) {
+                                        bytecodeWithArgs = abi.encodePacked(
+                                            vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode[l],
+                                            abi.encode(
+                                                MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])),
+                                                VAULT_NAMES[l][k],
+                                                VAULT_NAMES[l][k]
+                                            )
+                                        );
 
-                            uint256 superformId;
-                            (superformId, vars.superform) = ISuperformFactory(
-                                contracts[chainIds[i]][bytes32(bytes("SuperformFactory"))]
-                            ).createSuperform(FORM_IMPLEMENTATION_IDS[j], vault);
+                                        vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
+                                    } else if (j > 3) {
+                                        /// deploy the 7540 wrappers (skips j = 3 which is 5115)
+                                        /// @dev all wrappers created with rids = 0
+                                        /// TODO create a wrapper with fungible rid later
+                                        bytecodeWithArgs = abi.encodePacked(
+                                            vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode[l],
+                                            abi.encode(
+                                                MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])), false
+                                            )
+                                        );
 
-                            if (FORM_IMPLEMENTATION_IDS[j] == 5) {
-                                // triggers _vaultKindCheck to set async type
-                                ERC7540Form(vars.superform).forwardDustToPaymaster(
-                                    ERC7540Form(vars.superform).getVaultAsset()
-                                );
-                                /// @dev activating centrifuge real vault (note: this flow will be needed in production)
-                                if (
-                                    (vault == 0x3b33D257E77E018326CCddeCA71cf9350C585A66 && LAUNCH_TESTNETS)
-                                        || vault == 0x1d01Ef1997d44206d839b78bA6813f60F1B3A970
-                                ) {
-                                    address token = IERC7540(vault).share();
-                                    address mgr = TrancheTokenLike(token).hook();
-                                    vm.startPrank(RestrictionManagerLike(mgr).root());
-                                    /// @dev TODO remove updateMemeber can be removed for superform
-                                    RestrictionManagerLike(mgr).updateMember(token, vars.superform, type(uint64).max);
-                                    RestrictionManagerLike(mgr).updateMember(token, users[0], type(uint64).max);
-                                    RestrictionManagerLike(mgr).updateMember(token, users[1], type(uint64).max);
-                                    RestrictionManagerLike(mgr).updateMember(token, users[2], type(uint64).max);
-
-                                    vm.startPrank(deployer);
+                                        vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
+                                    }
                                 }
-                            }
-
-
-                            contracts[chainIds[i]][bytes32(
-                                bytes(
-                                    string.concat(
-                                        UNDERLYING_TOKENS[k],
-                                        vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultKinds[l],
-                                        "Superform",
-                                        Strings.toString(FORM_IMPLEMENTATION_IDS[j])
+                                /// @dev Add VaultMock
+                                contracts[vars.chainId][bytes32(
+                                    bytes(
+                                        string.concat(
+                                            UNDERLYING_TOKENS[k],
+                                            vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultKinds[l]
+                                        )
                                     )
-                                )
-                            )] = vars.superform;
+                                )] = vars.vault;
+                                vaultsT[l] = vars.vault;
+                            }
+                            doubleVaults[k] = vaultsT;
+                        }
+                        vaults[vars.chainId][FORM_IMPLEMENTATION_IDS[j]] = doubleVaults;
+                    }
+                }
+
+                /// @dev deploy wrapper factory
+                vars.eRC5115To4626WrapperFactory =
+                    address(new ERC5115To4626WrapperFactory{ salt: salt }(vars.superRegistry));
+
+                contracts[vars.chainId][bytes32(bytes("ERC5115To4626WrapperFactory"))] =
+                    vars.eRC5115To4626WrapperFactory;
+
+                if (NUMBER_OF_5115S[vars.chainId] > 0) {
+                    for (uint256 j = 0; j < NUMBER_OF_5115S[vars.chainId]; ++j) {
+                        address new5115WrapperVault = ERC5115To4626WrapperFactory(vars.eRC5115To4626WrapperFactory)
+                            .createWrapper(
+                            ERC5115_VAULTS[vars.chainId][j],
+                            ERC5115S_CHOSEN_ASSETS[vars.chainId][ERC5115_VAULTS[vars.chainId][j]].assetIn,
+                            ERC5115S_CHOSEN_ASSETS[vars.chainId][ERC5115_VAULTS[vars.chainId][j]].assetOut
+                        );
+
+                        wrapped5115vaults[vars.chainId].push(new5115WrapperVault);
+                    }
+                }
+
+                /// @dev 9 - Deploy SuperformFactory
+                vars.factory = address(new SuperformFactory{ salt: salt }(vars.superRegistry));
+                contracts[vars.chainId][bytes32(bytes("SuperformFactory"))] = vars.factory;
+
+                vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_FACTORY(), vars.factory, vars.chainId);
+                vars.superRBACC.grantRole(vars.superRBACC.BROADCASTER_ROLE(), vars.factory);
+
+                /// @dev 10 - Deploy 4626Form implementations
+                // Standard ERC4626 Form
+                vars.erc4626Form = address(new ERC4626Form{ salt: salt }(vars.superRegistry));
+                contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars.erc4626Form;
+
+                // Pendle ERC5115 Form
+                vars.erc5115form = address(new ERC5115Form{ salt: salt }(vars.superRegistry));
+                contracts[vars.chainId][bytes32(bytes("ERC5115Form"))] = vars.erc5115form;
+
+                //  ERC7540 Form
+                /// @dev TODO: change id of form to 2
+                vars.erc7540form = address(new ERC7540Form{ salt: salt }(vars.superRegistry, 5));
+
+                contracts[vars.chainId][bytes32(bytes("ERC7540Form"))] = vars.erc7540form;
+
+                /// @dev 11 - Add newly deployed form implementations to Factory
+                ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0], 1);
+                ISuperformFactory(vars.factory).addFormImplementation(vars.erc5115form, FORM_IMPLEMENTATION_IDS[1], 1);
+
+                /// @dev TODO temporarily as id 5, to become id 2
+                ISuperformFactory(vars.factory).addFormImplementation(vars.erc7540form, FORM_IMPLEMENTATION_IDS[4], 5);
+
+                /// @dev 12 - Deploy SuperformRouter
+                vars.superformRouter = address(new SuperformRouter{ salt: salt }(vars.superRegistry));
+                contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
+
+                vars.superRegistryC.setAddress(
+                    vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId
+                );
+
+                /// @dev 13 - Deploy SuperPositions
+                vars.superPositions = address(
+                    new SuperPositions{ salt: salt }(
+                        "https://ipfs-gateway.superform.xyz/ipns/k51qzi5uqu5dg90fqdo9j63m556wlddeux4mlgyythp30zousgh3huhyzouyq8/JSON/",
+                        vars.superRegistry,
+                        "SuperPositions",
+                        "SP"
+                    )
+                );
+
+                contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
+                vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);
+
+                vars.superRBACC.grantRole(
+                    vars.superRBACC.BROADCASTER_ROLE(), contracts[vars.chainId][bytes32(bytes("SuperPositions"))]
+                );
+
+                /// @dev 14- deploy Payload Helper
+                vars.PayloadHelper = address(new PayloadHelper{ salt: salt }(vars.superRegistry));
+                contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
+                vars.superRegistryC.setAddress(vars.superRegistryC.PAYLOAD_HELPER(), vars.PayloadHelper, vars.chainId);
+
+                /// @dev 15 - Deploy PayMaster
+                vars.payMaster = address(new PayMaster{ salt: salt }(vars.superRegistry));
+                contracts[vars.chainId][bytes32(bytes32("PayMaster"))] = vars.payMaster;
+
+                vars.superRegistryC.setAddress(vars.superRegistryC.PAYMASTER(), vars.payMaster, vars.chainId);
+
+                /// @dev 16 - Deploy Dst Swapper
+                vars.dstSwapper = address(new DstSwapper{ salt: salt }(vars.superRegistry));
+                contracts[vars.chainId][bytes32(bytes32("DstSwapper"))] = vars.dstSwapper;
+
+                vars.superRegistryC.setAddress(vars.superRegistryC.DST_SWAPPER(), vars.dstSwapper, vars.chainId);
+
+                /// @dev 17 - Super Registry extra setters
+                /// @dev BASE does not have SocketV1 available
+                if (vars.chainId == BASE) {
+                    uint8[] memory bridgeIdsBase = new uint8[](6);
+                    bridgeIdsBase[0] = bridgeIds[0];
+                    bridgeIdsBase[1] = bridgeIds[3];
+                    bridgeIdsBase[2] = bridgeIds[4];
+                    bridgeIdsBase[3] = bridgeIds[5];
+                    bridgeIdsBase[4] = bridgeIds[6];
+                    bridgeIdsBase[5] = bridgeIds[7];
+
+                    address[] memory bridgeAddressesBase = new address[](6);
+                    bridgeAddressesBase[0] = bridgeAddresses[0];
+                    bridgeAddressesBase[1] = bridgeAddresses[3];
+                    bridgeAddressesBase[2] = bridgeAddresses[4];
+                    bridgeAddressesBase[3] = bridgeAddresses[5];
+                    bridgeAddressesBase[4] = bridgeAddresses[6];
+                    bridgeAddressesBase[5] = bridgeAddresses[7];
+
+                    address[] memory bridgeValidatorsBase = new address[](6);
+                    bridgeValidatorsBase[0] = bridgeValidators[0];
+                    bridgeValidatorsBase[1] = bridgeValidators[3];
+                    bridgeValidatorsBase[2] = bridgeValidators[4];
+                    bridgeValidatorsBase[3] = bridgeValidators[5];
+                    bridgeValidatorsBase[4] = bridgeValidators[6];
+                    bridgeValidatorsBase[5] = bridgeValidators[7];
+
+                    vars.superRegistryC.setBridgeAddresses(bridgeIdsBase, bridgeAddressesBase, bridgeValidatorsBase);
+                } else {
+                    SuperRegistry(vars.superRegistry).setBridgeAddresses(bridgeIds, bridgeAddresses, bridgeValidators);
+                }
+
+                /// @dev configures ambImplementations to super registry
+                if (vars.chainId == FANTOM) {
+                    uint8[] memory ambIdsFantom = new uint8[](3);
+                    ambIdsFantom[0] = 1;
+                    ambIdsFantom[1] = 3;
+                    ambIdsFantom[2] = 4;
+
+                    address[] memory ambAddressesFantom = new address[](3);
+                    ambAddressesFantom[0] = vars.lzImplementation;
+                    ambAddressesFantom[1] = vars.wormholeImplementation;
+                    ambAddressesFantom[2] = vars.wormholeSRImplementation;
+
+                    bool[] memory broadcastAMBFantom = new bool[](3);
+                    broadcastAMBFantom[0] = false;
+                    broadcastAMBFantom[1] = false;
+                    broadcastAMBFantom[2] = true;
+
+                    SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(
+                        ambIdsFantom, ambAddressesFantom, broadcastAMBFantom
+                    );
+                } else {
+                    vars.superRegistryC.setAmbAddress(ambIds, vars.ambAddresses, isBroadcastAMB);
+                }
+
+                /// @dev 18 setup setup srcChain keepers
+                vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), deployer, vars.chainId);
+                vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), deployer, vars.chainId);
+                vars.superRegistryC.setAddress(
+                    vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR(), deployer, vars.chainId
+                );
+                vars.superRegistryC.setAddress(
+                    vars.superRegistryC.TIMELOCK_REGISTRY_PROCESSOR(), deployer, vars.chainId
+                );
+                vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_UPDATER(), deployer, vars.chainId);
+                vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_RESCUER(), deployer, vars.chainId);
+                vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_DISPUTER(), deployer, vars.chainId);
+                vars.superRegistryC.setAddress(vars.superRegistryC.DST_SWAPPER_PROCESSOR(), deployer, vars.chainId);
+                vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_RECEIVER(), deployer, vars.chainId);
+
+                vars.superRegistryC.setDelay(86_400);
+                /// @dev 19 deploy emergency queue
+                vars.emergencyQueue = address(new EmergencyQueue{ salt: salt }(vars.superRegistry));
+                contracts[vars.chainId][bytes32(bytes("EmergencyQueue"))] = vars.emergencyQueue;
+                vars.superRegistryC.setAddress(vars.superRegistryC.EMERGENCY_QUEUE(), vars.emergencyQueue, vars.chainId);
+                delete bridgeAddresses;
+                delete bridgeValidators;
+
+                /// @dev 20 deploy Rewards Distributor
+                vars.rewardsDistributor = address(new RewardsDistributor{ salt: salt }(vars.superRegistry));
+                contracts[vars.chainId][bytes32(bytes("RewardsDistributor"))] = vars.rewardsDistributor;
+
+                bytes32 rewardsId = keccak256("REWARDS_DISTRIBUTOR");
+                vars.superRegistryC.setAddress(rewardsId, vars.rewardsDistributor, vars.chainId);
+                vars.superRBACC.setRoleAdmin(keccak256("REWARDS_ADMIN_ROLE"), vars.superRBACC.PROTOCOL_ADMIN_ROLE());
+                vars.superRBACC.grantRole(keccak256("REWARDS_ADMIN_ROLE"), deployer);
+            }
+
+            for (uint256 i = 0; i < chainIds.length; ++i) {
+                vars.chainId = chainIds[i];
+                vars.fork = FORKS[vars.chainId];
+
+                vm.selectFork(vars.fork);
+
+                vars.lzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
+                vars.lzV2Implementation = getContract(vars.chainId, "LayerzeroV2Implementation");
+                vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
+                vars.wormholeImplementation = getContract(vars.chainId, "WormholeARImplementation");
+                vars.wormholeSRImplementation = getContract(vars.chainId, "WormholeSRImplementation");
+                vars.axelarImplementation = getContract(vars.chainId, "AxelarImplementation");
+                vars.superRBAC = getContract(vars.chainId, "SuperRBAC");
+
+                vars.superRegistry = getContract(vars.chainId, "SuperRegistry");
+                vars.paymentHelper = getContract(vars.chainId, "PaymentHelper");
+                vars.superRegistryC = SuperRegistry(payable(vars.superRegistry));
+                vars.superRegistryC.setVaultLimitPerDestination(vars.chainId, 5);
+
+                /// @dev Set all trusted remotes for each chain, configure amb chains ids, setupQuorum for all chains as
+                /// 1
+                /// and setup PaymentHelper
+                /// @dev has to be performed after all main contracts have been deployed on all chains
+                for (uint256 j = 0; j < chainIds.length; ++j) {
+                    uint256 trueChainIdIndex;
+                    // find selected chain ids and assign to selectedChainIds mapping
+                    for (uint256 k = 0; k < defaultChainIds.length; k++) {
+                        if (chainIds[j] == defaultChainIds[k]) {
+                            trueChainIdIndex = k;
+                            break;
                         }
                     }
-                } else {
-                    if (NUMBER_OF_5115S[chainIds[i]] > 0) {
-                        for (uint256 k = 0; k < NUMBER_OF_5115S[chainIds[i]]; ++k) {
+                    if (vars.chainId != chainIds[j]) {
+                        vars.dstChainId = chainIds[j];
+
+                        vars.dstLzChainId = lz_chainIds[trueChainIdIndex];
+                        vars.dstHypChainId = hyperlane_chainIds[trueChainIdIndex];
+                        vars.dstWormholeChainId = wormhole_chainIds[trueChainIdIndex];
+
+                        vars.dstLzImplementation = getContract(vars.dstChainId, "LayerzeroImplementation");
+                        vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
+                        vars.dstWormholeARImplementation = getContract(vars.dstChainId, "WormholeARImplementation");
+                        vars.dstWormholeSRImplementation = getContract(vars.dstChainId, "WormholeSRImplementation");
+                        vars.dstwormholeBroadcastHelper = getContract(vars.dstChainId, "WormholeBroadcastHelper");
+                        vars.dstAxelarImplementation = getContract(vars.dstChainId, "AxelarImplementation");
+
+                        LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
+                            vars.dstLzChainId, abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
+                        );
+                        LayerzeroImplementation(payable(vars.lzImplementation)).setChainId(
+                            vars.dstChainId, vars.dstLzChainId
+                        );
+
+                        LayerzeroV2Implementation(payable(vars.lzV2Implementation)).setPeer(
+                            lz_v2_chainIds[trueChainIdIndex],
+                            bytes32(uint256(uint160(getContract(vars.dstChainId, "LayerzeroV2Implementation"))))
+                        );
+
+                        LayerzeroV2Implementation(payable(vars.lzV2Implementation)).setChainId(
+                            vars.dstChainId, lz_v2_chainIds[trueChainIdIndex]
+                        );
+
+                        if (!(vars.chainId == FANTOM || vars.dstChainId == FANTOM)) {
+                            HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setReceiver(
+                                vars.dstHypChainId, vars.dstHyperlaneImplementation
+                            );
+
+                            HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setChainId(
+                                vars.dstChainId, vars.dstHypChainId
+                            );
+                        }
+
+                        if (!(vars.chainId == LINEA || vars.dstChainId == LINEA)) {
+                            WormholeARImplementation(payable(vars.wormholeImplementation)).setReceiver(
+                                vars.dstWormholeChainId, vars.dstWormholeARImplementation
+                            );
+
+                            WormholeARImplementation(payable(vars.wormholeImplementation)).setChainId(
+                                vars.dstChainId, vars.dstWormholeChainId
+                            );
+
+                            WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setChainId(
+                                vars.dstChainId, vars.dstWormholeChainId
+                            );
+
+                            WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setReceiver(
+                                vars.dstWormholeChainId, vars.dstWormholeSRImplementation
+                            );
+                        }
+
+                        AxelarImplementation(payable(vars.axelarImplementation)).setChainId(
+                            vars.dstChainId, axelar_chainIds[trueChainIdIndex]
+                        );
+
+                        AxelarImplementation(payable(vars.axelarImplementation)).setReceiver(
+                            axelar_chainIds[trueChainIdIndex], vars.dstAxelarImplementation
+                        );
+
+                        /// sets the relayer address on all subsequent chains
+                        SuperRBAC(vars.superRBAC).grantRole(
+                            SuperRBAC(vars.superRBAC).WORMHOLE_VAA_RELAYER_ROLE(), vars.dstwormholeBroadcastHelper
+                        );
+
+                        vars.superRegistryC.setRequiredMessagingQuorum(vars.dstChainId, 1);
+                        vars.superRegistryC.setVaultLimitPerDestination(vars.dstChainId, 5);
+                        vars.superRegistryC.setAddress(
+                            keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), deployer, vars.dstChainId
+                        );
+
+                        /// swap gas cost: 50000
+                        /// update gas cost: 40000
+                        /// deposit gas cost: 70000
+                        /// withdraw gas cost: 80000
+                        /// default gas price: 50 Gwei
+                        PaymentHelper(payable(vars.paymentHelper)).addRemoteChain(
+                            vars.dstChainId,
+                            IPaymentHelper.PaymentHelperConfig(
+                                PRICE_FEEDS[vars.chainId][vars.dstChainId],
+                                address(0),
+                                abi.decode(GAS_USED[vars.dstChainId][3], (uint256)),
+                                abi.decode(GAS_USED[vars.dstChainId][4], (uint256)),
+                                vars.dstChainId == ARBI ? 1_000_000 : 200_000,
+                                abi.decode(GAS_USED[vars.dstChainId][6], (uint256)),
+                                nativePrices[trueChainIdIndex],
+                                gasPrices[trueChainIdIndex],
+                                750,
+                                2_000_000,
+                                /// @dev ackGasCost to move a msg from dst to source
+                                10_000,
+                                10_000,
+                                abi.decode(GAS_USED[vars.dstChainId][13], (uint256))
+                            )
+                        );
+
+                        vars.superRegistryC.setAddress(
+                            vars.superRegistryC.SUPERFORM_ROUTER(),
+                            getContract(vars.dstChainId, "SuperformRouter"),
+                            vars.dstChainId
+                        );
+
+                        vars.superRegistryC.setAddress(
+                            vars.superRegistryC.SUPERFORM_FACTORY(),
+                            getContract(vars.dstChainId, "SuperformFactory"),
+                            vars.dstChainId
+                        );
+
+                        vars.superRegistryC.setAddress(
+                            vars.superRegistryC.PAYMASTER(), getContract(vars.dstChainId, "PayMaster"), vars.dstChainId
+                        );
+
+                        vars.superRegistryC.setAddress(
+                            vars.superRegistryC.PAYMENT_HELPER(),
+                            getContract(vars.dstChainId, "PaymentHelper"),
+                            vars.dstChainId
+                        );
+
+                        vars.superRegistryC.setAddress(
+                            vars.superRegistryC.CORE_STATE_REGISTRY(),
+                            getContract(vars.dstChainId, "CoreStateRegistry"),
+                            vars.dstChainId
+                        );
+
+                        vars.superRegistryC.setAddress(
+                            vars.superRegistryC.DST_SWAPPER(),
+                            getContract(vars.dstChainId, "DstSwapper"),
+                            vars.dstChainId
+                        );
+
+                        vars.superRegistryC.setAddress(
+                            keccak256("ASYNC_STATE_REGISTRY"),
+                            getContract(vars.dstChainId, "AsyncStateRegistry"),
+                            vars.dstChainId
+                        );
+
+                        vars.superRegistryC.setAddress(
+                            vars.superRegistryC.BROADCAST_REGISTRY(),
+                            getContract(vars.dstChainId, "BroadcastRegistry"),
+                            vars.dstChainId
+                        );
+
+                        vars.superRegistryC.setAddress(
+                            vars.superRegistryC.SUPER_POSITIONS(),
+                            getContract(vars.dstChainId, "SuperPositions"),
+                            vars.dstChainId
+                        );
+
+                        vars.superRegistryC.setAddress(
+                            vars.superRegistryC.SUPER_RBAC(), getContract(vars.dstChainId, "SuperRBAC"), vars.dstChainId
+                        );
+
+                        vars.superRegistryC.setAddress(
+                            vars.superRegistryC.PAYLOAD_HELPER(),
+                            getContract(vars.dstChainId, "PayloadHelper"),
+                            vars.dstChainId
+                        );
+
+                        vars.superRegistryC.setAddress(
+                            vars.superRegistryC.EMERGENCY_QUEUE(),
+                            getContract(vars.dstChainId, "EmergencyQueue"),
+                            vars.dstChainId
+                        );
+
+                        vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), deployer, vars.dstChainId);
+                        vars.superRegistryC.setAddress(
+                            vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), deployer, vars.dstChainId
+                        );
+                        vars.superRegistryC.setAddress(
+                            vars.superRegistryC.CORE_REGISTRY_UPDATER(), deployer, vars.dstChainId
+                        );
+                        vars.superRegistryC.setAddress(
+                            vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR(), deployer, vars.dstChainId
+                        );
+                        vars.superRegistryC.setAddress(
+                            vars.superRegistryC.TIMELOCK_REGISTRY_PROCESSOR(), deployer, vars.dstChainId
+                        );
+
+                        vars.superRegistryC.setAddress(
+                            vars.superRegistryC.CORE_REGISTRY_RESCUER(), deployer, vars.dstChainId
+                        );
+                        vars.superRegistryC.setAddress(
+                            vars.superRegistryC.CORE_REGISTRY_DISPUTER(), deployer, vars.dstChainId
+                        );
+                        vars.superRegistryC.setAddress(
+                            vars.superRegistryC.DST_SWAPPER_PROCESSOR(), deployer, vars.dstChainId
+                        );
+                        vars.superRegistryC.setAddress(
+                            vars.superRegistryC.SUPERFORM_RECEIVER(), deployer, vars.dstChainId
+                        );
+
+                        vars.superRegistryC.setAddress(keccak256("REWARDS_DISTRIBUTOR"), deployer, vars.dstChainId);
+                    } else {
+                        /// ack gas cost: 40000
+                        /// timelock step form cost: 50000
+                        /// default gas price: 50 Gwei
+                        PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
+                            vars.chainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
+                        );
+                        PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
+                            vars.chainId, 7, abi.encode(nativePrices[trueChainIdIndex])
+                        );
+                        PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
+                            vars.chainId, 8, abi.encode(gasPrices[trueChainIdIndex])
+                        );
+
+                        /// @dev gas per byte
+                        PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(vars.chainId, 9, abi.encode(750));
+
+                        /// @dev ackGasCost to mint superPositions
+                        PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
+                            vars.chainId, 10, abi.encode(vars.chainId == ARBI ? 500_000 : 150_000)
+                        );
+
+                        PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
+                            vars.chainId, 11, abi.encode(50_000)
+                        );
+
+                        PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
+                            vars.chainId, 12, abi.encode(10_000)
+                        );
+
+                        /// @dev !WARNING - Default value for updateWithdrawGas for now
+                        /// @dev 0.01 ether is just a mock value. Wormhole fees are currently 0 on mainnet
+                        PaymentHelper(payable(vars.paymentHelper)).updateRegisterAERC20Params(
+                            generateBroadcastParams(0.01 ether)
+                        );
+                    }
+                }
+            }
+
+            for (uint256 i = 0; i < chainIds.length; ++i) {
+                vm.selectFork(FORKS[chainIds[i]]);
+
+                /// @dev 18 - create test superforms when the whole state registry is configured
+                for (uint256 j = 0; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
+                    if (j == 0) {
+                        for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
                             uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
 
                             for (uint256 l = 0; l < lenBytecodes; l++) {
-                                /// @dev warning: the true vault for 5115 is the one underneath the wrapped version
-                                (, vars.superform) = ISuperformFactory(
+                                address vault = vaults[chainIds[i]][FORM_IMPLEMENTATION_IDS[j]][k][l];
+
+                                uint256 superformId;
+                                (superformId, vars.superform) = ISuperformFactory(
                                     contracts[chainIds[i]][bytes32(bytes("SuperformFactory"))]
-                                ).createSuperform(FORM_IMPLEMENTATION_IDS[j], wrapped5115vaults[chainIds[i]][k]);
+                                ).createSuperform(FORM_IMPLEMENTATION_IDS[j], vault);
+
+                                if (FORM_IMPLEMENTATION_IDS[j] == 5) {
+                                    // triggers _vaultKindCheck to set async type
+                                    ERC7540Form(vars.superform).forwardDustToPaymaster(
+                                        ERC7540Form(vars.superform).getVaultAsset()
+                                    );
+                                    /// @dev activating centrifuge real vault (note: this flow will be needed in
+                                    /// production)
+                                    if (
+                                        (vault == 0x3b33D257E77E018326CCddeCA71cf9350C585A66 && LAUNCH_TESTNETS)
+                                            || vault == 0x1d01Ef1997d44206d839b78bA6813f60F1B3A970
+                                    ) {
+                                        address token = IERC7540(vault).share();
+                                        address mgr = TrancheTokenLike(token).hook();
+                                        vm.startPrank(RestrictionManagerLike(mgr).root());
+                                        /// @dev TODO remove updateMemeber can be removed for superform
+                                        RestrictionManagerLike(mgr).updateMember(
+                                            token, vars.superform, type(uint64).max
+                                        );
+                                        RestrictionManagerLike(mgr).updateMember(token, users[0], type(uint64).max);
+                                        RestrictionManagerLike(mgr).updateMember(token, users[1], type(uint64).max);
+                                        RestrictionManagerLike(mgr).updateMember(token, users[2], type(uint64).max);
+
+                                        vm.startPrank(deployer);
+                                    }
+                                }
 
                                 contracts[chainIds[i]][bytes32(
                                     bytes(
                                         string.concat(
-                                            ERC5115_VAULTS_NAMES[chainIds[i]][k],
+                                            UNDERLYING_TOKENS[k],
                                             vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultKinds[l],
                                             "Superform",
                                             Strings.toString(FORM_IMPLEMENTATION_IDS[j])
@@ -1479,13 +1493,38 @@ abstract contract BaseSetup is StdInvariant, Test {
                                 )] = vars.superform;
                             }
                         }
+                    } else {
+                        if (NUMBER_OF_5115S[chainIds[i]] > 0) {
+                            for (uint256 k = 0; k < NUMBER_OF_5115S[chainIds[i]]; ++k) {
+                                uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
+
+                                for (uint256 l = 0; l < lenBytecodes; l++) {
+                                    /// @dev warning: the true vault for 5115 is the one underneath the wrapped version
+                                    (, vars.superform) = ISuperformFactory(
+                                        contracts[chainIds[i]][bytes32(bytes("SuperformFactory"))]
+                                    ).createSuperform(FORM_IMPLEMENTATION_IDS[j], wrapped5115vaults[chainIds[i]][k]);
+
+                                    contracts[chainIds[i]][bytes32(
+                                        bytes(
+                                            string.concat(
+                                                ERC5115_VAULTS_NAMES[chainIds[i]][k],
+                                                vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultKinds[l],
+                                                "Superform",
+                                                Strings.toString(FORM_IMPLEMENTATION_IDS[j])
+                                            )
+                                        )
+                                    )] = vars.superform;
+                                }
+                            }
+                        }
                     }
                 }
             }
-        }
-        _setTokenPriceFeeds();
 
-        vm.stopPrank();
+            _setTokenPriceFeeds();
+
+            vm.stopPrank();
+        }
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -1667,8 +1706,12 @@ abstract contract BaseSetup is StdInvariant, Test {
             forks[BSC_TESTNET] = selectedChainIds[BSC_TESTNET]
                 ? pinnedBlock ? vm.createFork(BSC_TESTNET_RPC_URL_QN, 41_624_319) : vm.createFork(BSC_TESTNET_RPC_URL_QN)
                 : 999;
-            forks[LINEA] = selectedChainIds[LINEA] ? pinnedBlock ? vm.createFork(LINEA_RPC_URL, 8_630_899) : vm.createFork(LINEA_RPC_URL_QN) : 999;
-            forks[BLAST] = selectedChainIds[BLAST] ? pinnedBlock ? vm.createFork(BLAST_RPC_URL, 7_957_906) : vm.createFork(BLAST_RPC_URL_QN) : 999;
+            forks[LINEA] = selectedChainIds[LINEA]
+                ? pinnedBlock ? vm.createFork(LINEA_RPC_URL, 8_630_899) : vm.createFork(LINEA_RPC_URL_QN)
+                : 999;
+            forks[BLAST] = selectedChainIds[BLAST]
+                ? pinnedBlock ? vm.createFork(BLAST_RPC_URL, 7_957_906) : vm.createFork(BLAST_RPC_URL_QN)
+                : 999;
         }
 
         mapping(uint64 => string) storage rpcURLs = RPC_URLS;
@@ -1923,7 +1966,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[BSC_TESTNET][ETH] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
         priceFeeds[BSC_TESTNET][BASE] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
         priceFeeds[BSC_TESTNET][ARBI] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
-        priceFeeds[BSC_TESTNET][LINEA] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7; 
+        priceFeeds[BSC_TESTNET][LINEA] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
         priceFeeds[BSC_TESTNET][BLAST] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
 
         /// LINEA
@@ -1953,7 +1996,6 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[BLAST][BLAST] = address(0);
         priceFeeds[BLAST][BSC_TESTNET] = address(0);
         priceFeeds[BLAST][SEPOLIA] = address(0);
-
 
         /// @dev setup bridges.
         /// 1 is lifi

@@ -81,7 +81,7 @@ contract PayloadHelper is IPayloadHelper {
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
             _decodeReturnData(v, dstPayloadId_, _getCoreStateRegistry());
         } else if (v.callbackType == uint256(CallbackType.INIT)) {
-            _decodeInitData(dstPayloadId_, v.multi, _getCoreStateRegistry(), v);
+            _decodeInitData(v, dstPayloadId_, v.multi, _getCoreStateRegistry());
         } else {
             revert Error.INVALID_PAYLOAD();
         }
@@ -326,8 +326,7 @@ contract PayloadHelper is IPayloadHelper {
         DecodedDstPayload memory v_,
         uint256 dstPayloadId_,
         uint8 multi_,
-        IBaseStateRegistry coreStateRegistry_,
-        DecodedDstPayload memory v
+        IBaseStateRegistry coreStateRegistry_
     )
         internal
         view
@@ -336,40 +335,40 @@ contract PayloadHelper is IPayloadHelper {
             InitMultiVaultData memory imvd =
                 abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (InitMultiVaultData));
 
-            v.amounts = imvd.amounts;
-            v.outputAmounts = imvd.outputAmounts;
-            v.slippages = imvd.maxSlippages;
-            v.superformIds = imvd.superformIds;
-            v.hasDstSwaps = imvd.hasDstSwaps;
-            v.extraFormData = imvd.extraFormData;
-            v.receiverAddress = imvd.receiverAddress;
-            v.srcPayloadId = imvd.payloadId;
-            v.retain4626 = imvd.retain4626s;
+            v_.amounts = imvd.amounts;
+            v_.outputAmounts = imvd.outputAmounts;
+            v_.slippages = imvd.maxSlippages;
+            v_.superformIds = imvd.superformIds;
+            v_.hasDstSwaps = imvd.hasDstSwaps;
+            v_.extraFormData = imvd.extraFormData;
+            v_.receiverAddress = imvd.receiverAddress;
+            v_.srcPayloadId = imvd.payloadId;
+            v_.retain4626 = imvd.retain4626s;
         } else {
             InitSingleVaultData memory isvd =
                 abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (InitSingleVaultData));
 
-            v.amounts = new uint256[](1);
-            v.amounts[0] = isvd.amount;
+            v_.amounts = new uint256[](1);
+            v_.amounts[0] = isvd.amount;
 
-            v.outputAmounts = new uint256[](1);
-            v.outputAmounts[0] = isvd.outputAmount;
+            v_.outputAmounts = new uint256[](1);
+            v_.outputAmounts[0] = isvd.outputAmount;
 
-            v.slippages = new uint256[](1);
-            v.slippages[0] = isvd.maxSlippage;
+            v_.slippages = new uint256[](1);
+            v_.slippages[0] = isvd.maxSlippage;
 
-            v.superformIds = new uint256[](1);
-            v.superformIds[0] = isvd.superformId;
+            v_.superformIds = new uint256[](1);
+            v_.superformIds[0] = isvd.superformId;
 
-            v.hasDstSwaps = new bool[](1);
-            v.hasDstSwaps[0] = isvd.hasDstSwap;
+            v_.hasDstSwaps = new bool[](1);
+            v_.hasDstSwaps[0] = isvd.hasDstSwap;
 
-            v.retain4626 = new bool[](1);
-            v.retain4626[0] = isvd.retain4626;
+            v_.retain4626 = new bool[](1);
+            v_.retain4626[0] = isvd.retain4626;
 
-            v.extraFormData = isvd.extraFormData;
-            v.receiverAddress = isvd.receiverAddress;
-            v.srcPayloadId = isvd.payloadId;
+            v_.extraFormData = isvd.extraFormData;
+            v_.receiverAddress = isvd.receiverAddress;
+            v_.srcPayloadId = isvd.payloadId;
         }
     }
 
