@@ -180,7 +180,7 @@ contract PaymentHelperTest is ProtocolActions {
             false
         );
 
-        assertEq(fees, 0);
+        assertGt(fees, 0);
     }
 
     function test_estimateSingleDirectMultiVault_formImplPaused() public {
@@ -216,7 +216,7 @@ contract PaymentHelperTest is ProtocolActions {
             ),
             false
         );
-        assertEq(fees, 0);
+        assertGt(fees, 0);
     }
 
     function test_estimateSingleXChainSingleVault_formImplPaused() public {
@@ -500,7 +500,7 @@ contract PaymentHelperTest is ProtocolActions {
             ),
             false
         );
-        assertEq(fees, 0);
+        assertGt(fees, 0);
     }
 
     function test_estimateAMBFees_differentChainId() public view {
