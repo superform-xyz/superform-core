@@ -328,14 +328,10 @@ contract LayerzeroImplementationTest is BaseSetup {
         (ambMessage, ambExtraData, coreStateRegistry) = _setupBroadcastPayloadAMBData(users[userIndex]);
 
         vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
-<<<<<<< HEAD
         vm.assume(
-            malice_ != getContract(ETH, "CoreStateRegistry") && malice_ != getContract(ETH, "TimelockStateRegistry")
-                && malice_ != getContract(ETH, "BroadcastRegistry") && malice_ != getContract(ETH, "AsyncStateRegistry")
+            malice_ != getContract(ETH, "CoreStateRegistry") && malice_ != getContract(ETH, "BroadcastRegistry")
+                && malice_ != getContract(ETH, "AsyncStateRegistry")
         );
-=======
-        vm.assume(malice_ != getContract(ETH, "CoreStateRegistry") && malice_ != getContract(ETH, "BroadcastRegistry"));
->>>>>>> origin/v1
         vm.deal(malice_, 100 ether);
         vm.prank(malice_);
         layerzeroImplementation.dispatchPayload{ value: 0.1 ether }(
