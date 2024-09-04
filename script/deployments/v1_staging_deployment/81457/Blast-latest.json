@@ -11,6 +11,7 @@
   "EmergencyQueue": "0x7FE59421D6b85afa86d982E3186a74c72f6c4c03",
   "HyperlaneImplementation": "0xC2C1C18fBe84951F583E7D3719c2aBD0De0649ec",
   "LayerzeroImplementation": "0x7681ff195866f004d016EedfD33cC3977ac35532",
+  "LayerzeroV1Implementation": "0xF442FC47c5e8b6CA772a9b7345d9E6A663375258",
   "LiFiValidator": "0xA96ced02619a4648884c3e897eD4280cd7Dfe15D",
   "OneInchValidator": "0x0000000000000000000000000000000000000000",
   "PayMaster": "0x4E3Bcd5B7571aAf8e000D9641df8c16d70B1a4b0",

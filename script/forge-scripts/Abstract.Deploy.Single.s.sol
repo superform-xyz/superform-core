@@ -22,6 +22,7 @@ import { DeBridgeValidator } from "src/crosschain-liquidity/debridge/DeBridgeVal
 import { DeBridgeForwarderValidator } from "src/crosschain-liquidity/debridge/DeBridgeForwarderValidator.sol";
 import { OneInchValidator } from "src/crosschain-liquidity/1inch/OneInchValidator.sol";
 import { LayerzeroV2Implementation } from "src/crosschain-data/adapters/layerzero-v2/LayerzeroV2Implementation.sol";
+import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import {
     AxelarImplementation,
     IAxelarGateway,

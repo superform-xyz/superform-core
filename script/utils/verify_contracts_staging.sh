@@ -12,23 +12,23 @@ export LINEASCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/LINEASCAN_API
 export BLASTSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BLASTSCAN_API_KEY/credential)
 
 networks=(
-    # 56
-    # 42161
-    # 10
-    # 8453
-    # 250
-    # 59144
+    56
+    42161
+    10
+    8453
+    250
+    59144
     81457
     # add more networks here if needed
 )
 
 api_keys=(
-    # $BSCSCAN_API_KEY
-    # $ARBISCAN_API_KEY
-    # $OPSCAN_API_KEY
-    # $BASESCAN_API_KEY
-    # $FTMSCAN_API_KEY
-    # $LINEASCAN_API_KEY
+    $BSCSCAN_API_KEY
+    $ARBISCAN_API_KEY
+    $OPSCAN_API_KEY
+    $BASESCAN_API_KEY
+    $FTMSCAN_API_KEY
+    $LINEASCAN_API_KEY
     $BLASTSCAN_API_KEY
     # add more API keys here if needed
 )
@@ -76,6 +76,7 @@ file_names=(
     "src/crosschain-data/adapters/axelar/AxelarImplementation.sol"
     "src/crosschain-liquidity/1inch/OneInchValidator.sol"
     "src/forms/wrappers/ERC5115To4626WrapperFactory.sol"
+    "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol"
     # Add more file names here if needed
 )
 
@@ -108,6 +109,7 @@ contract_names=(
     "AxelarImplementation"
     "OneInchValidator"
     ERC5115To4626WrapperFactory
+    LayerzeroImplementation
     # Add more contract names here if needed
 )
 
@@ -140,6 +142,7 @@ contract_addresses=(
     0xA02dE92807c9620c362C7a485b6392dF7531E302
     0x0000000000000000000000000000000000000000
     0x14Bc2728DaE89FE7c828833a186DdC5E9AE439C3
+    0xF442FC47c5e8b6CA772a9b7345d9E6A663375258
     # Add more addresses here if needed
 )
 
@@ -172,6 +175,7 @@ contract_addresses_fantom=(
     0x1932D351AeCbCcf954169E6A64c3EB1fC10A2375
     0x16e9f8549c2b6a026dc2706d746beA76CeFF4098
     0x0df3d7D6daE058667e49C6b85F7b92458Ab06836
+    0x4c605a697c22254547289092337911078b56d5dc
     # Add more addresses here if needed
 )
 
@@ -204,6 +208,7 @@ constructor_args=(
     $super_constructor_arg
     $super_constructor_arg
     $super_constructor_arg
+    $super_constructor_arg
 )
 
 constructor_args_fantom=(
@@ -230,6 +235,7 @@ constructor_args_fantom=(
     $empty_constructor_arg
     $super_constructor_arg_ftm
     $wormhole_sr_arg_ftm
+    $super_constructor_arg_ftm
     $super_constructor_arg_ftm
     $super_constructor_arg_ftm
     $super_constructor_arg_ftm
