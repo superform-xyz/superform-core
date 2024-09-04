@@ -47,6 +47,7 @@ import { SuperformFactory } from "src/SuperformFactory.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
 import { ERC5115Form } from "src/forms/ERC5115Form.sol";
 import { ERC5115To4626Wrapper } from "src/forms/wrappers/ERC5115To4626Wrapper.sol";
+import { ERC7540Form } from "src/forms/ERC7540Form.sol";
 import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
 import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator.sol";
@@ -75,6 +76,22 @@ import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
 import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
 import ".././utils/AmbParams.sol";
 import { IPermit2 } from "src/vendor/dragonfly-xyz/IPermit2.sol";
+import { ERC7540AsyncDepositMock } from "../mocks/ERC7540AsyncDepositMock.sol";
+import { ERC7540AsyncDepositMockRevert } from "../mocks/ERC7540AsyncDepositMockRevert.sol";
+import { ERC7540AsyncDepositMockRedeemRevert } from "../mocks/ERC7540AsyncDepositMockRedeemRevert.sol";
+
+import { ERC7540AsyncRedeemMock } from "../mocks/ERC7540AsyncRedeemMock.sol";
+import { ERC7540AsyncRedeemMockRevert } from "../mocks/ERC7540AsyncRedeemMockRevert.sol";
+import { ERC7540FullyAsyncMock } from "../mocks/ERC7540FullyAsyncMock.sol";
+
+import { TrancheTokenLike } from "../mocks/7540MockUtils/TrancheTokenLike.sol";
+import { RestrictionManagerLike } from "../mocks/7540MockUtils/RestrictionManagerLike.sol";
+import { IAuthorizeOperator } from "src/vendor/centrifuge/IERC7540.sol";
+
+import { IERC7540Vault as IERC7540 } from "src/vendor/centrifuge/IERC7540.sol";
+import { AsyncStateRegistry } from "src/crosschain-data/extensions/AsyncStateRegistry.sol";
+import { RequestConfig } from "src/interfaces/IAsyncStateRegistry.sol";
+
 import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
 import { PaymentHelper } from "src/payments/PaymentHelper.sol";
 import { IPaymentHelperV2 as IPaymentHelper } from "src/interfaces/IPaymentHelperV2.sol";
@@ -97,6 +114,8 @@ abstract contract BaseSetup is StdInvariant, Test {
     bytes32 constant PERMIT_TRANSFER_FROM_TYPEHASH = keccak256(
         "PermitTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline)TokenPermissions(address token,uint256 amount)"
     );
+    bytes32 constant AUTHORIZE_OPERATOR_TYPEHASH =
+        keccak256("AuthorizeOperator(address controller,address operator,bool approved,bytes32 nonce,uint256 deadline)");
 
     /// @dev ETH mainnet values as on 22nd Aug, 2023
     uint256 public constant TOTAL_SUPPLY_DAI = 3_961_541_270_138_222_277_363_935_051;
@@ -118,8 +137,9 @@ abstract contract BaseSetup is StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[41] public contractNames = [
+    string[44] public contractNames = [
         "CoreStateRegistry",
+        "AsyncStateRegistry",
         "BroadcastRegistry",
         "LayerzeroImplementation",
         "LayerzeroV2Implementation",
@@ -132,6 +152,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         "DstSwapper",
         "SuperformFactory",
         "ERC4626Form",
+        "ERC5115Form",
+        "ERC7540Form",
         "SuperformRouter",
         "SuperPositions",
         "SuperRegistry",
@@ -164,13 +186,25 @@ abstract contract BaseSetup is StdInvariant, Test {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev we should fork these instead of mocking.
-    string[] public UNDERLYING_TOKENS = ["DAI", "USDC", "WETH", "ezETH", "wstETH", "sUSDe", "USDe"];
+    /// @notice tUSD is a test token on sepolia
+    string[] public UNDERLYING_TOKENS = ["DAI", "USDC", "WETH", "ezETH", "wstETH", "sUSDe", "USDe", "tUSD"];
 
-    /// @dev 1 = ERC4626Form, 4 = ERC5115
-    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(4)];
+    /// @dev 1 = ERC4626Form, 4 = ERC5115, 5 is ERC7540
+    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(4), uint32(5)];
 
     /// @dev WARNING!! THESE VAULT NAMES MUST BE THE EXACT NAMES AS FILLED IN vaultKinds
-    string[] public VAULT_KINDS = ["VaultMock", "VaultMockRevertDeposit", "VaultMockRevertWithdraw", "ERC5115"];
+    string[] public VAULT_KINDS = [
+        "VaultMock",
+        "VaultMockRevertDeposit",
+        "VaultMockRevertWithdraw",
+        "ERC5115",
+        "ERC7540FullyAsyncMock",
+        "ERC7540AsyncDepositMock",
+        "ERC7540AsyncRedeemMock",
+        "ERC7540AsyncDepositMockRevert",
+        "ERC7540AsyncRedeemMockRevert",
+        "ERC7540AsyncDepositMockRedeemRevert"
+    ];
 
     struct VaultInfo {
         bytes[] vaultBytecode;
@@ -184,6 +218,9 @@ abstract contract BaseSetup is StdInvariant, Test {
     mapping(uint64 chainId => mapping(uint32 formImplementationId => address[][] vaults)) public vaults;
     mapping(uint64 chainId => address[] wrapped5115vaults) public wrapped5115vaults;
     mapping(uint64 chainId => uint256 payloadId) PAYLOAD_ID;
+
+    mapping(uint64 chainId => uint256 payloadId) ASYNC_DEPOSIT_PAYLOAD_ID;
+    mapping(uint64 chainId => uint256 payloadId) SYNC_WITHDRAW_PAYLOAD_ID;
 
     /// @dev liquidity bridge ids
     uint8[] bridgeIds;
@@ -221,6 +258,8 @@ abstract contract BaseSetup is StdInvariant, Test {
     address public constant OP_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
     address public constant BASE_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
     address public constant FANTOM_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
+    address public constant SEPOLIA_lzEndpoint = 0xae92d5aD7583AD66E49A0c67BAd18F6ba52dDDc1;
+    address public constant BSC_TESTNET_lzEndpoint = 0x6Fcb97553D41516Cb228ac03FdC8B9a0a9df04A1;
 
     address[] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
@@ -231,6 +270,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         0x3c2269811836af69497E5F486A85D7316753cf62,
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7,
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7,
+        0xae92d5aD7583AD66E49A0c67BAd18F6ba52dDDc1,
+        0x6Fcb97553D41516Cb228ac03FdC8B9a0a9df04A1,
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7,
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7
     ];
@@ -244,6 +285,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         0xd4C1905BB1D26BC93DAC913e13CaCC278CdCC80D,
         0xeA87ae93Fa0019a82A727bfd3eBd1cFCa8f64f1D,
         address(0),
+        0xfFAEF09B3cd11D9b20d1a19bECca54EEC2884766,
+        0xF9F6F5646F478d5ab4e20B0F910C92F1CCC9Cc6D,
         0x02d16BC51af6BfD153d67CA61754cF912E82C4d9,
         0x3a867fCfFeC2B790970eeBDC9023E75B0a172aa7
     ];
@@ -257,6 +300,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         0xD8A76C4D91fCbB7Cc8eA795DFDF870E48368995C,
         0xc3F23848Ed2e04C0c6d41bd7804fa8f89F940B94,
         address(0),
+        0x6f2756380FD49228ae25Aa7F2817993cB74Ecc56,
+        0x0dD20e410bdB95404f71c5a4e7Fa67B892A5f949,
         0x8105a095368f1a184CceA86cCe21318B5Ee5BE28,
         0xB3fCcD379ad66CED0c91028520C64226611A48c9
     ];
@@ -270,6 +315,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         0xEe91C335eab126dF5fDB3797EA9d6aD93aeC9722,
         0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6,
         0x126783A6Cb203a3E35344528B26ca3a0489a1485,
+        0x4a8bc80Ed5a4067f1CCf107057b8270E0cC11A78,
+        0x68605AD7b15c732a30b1BbC62BE8F2A509D74b4D,
         address(0),
         0xbebdb6C8ddC678FfA9f8748f85C815C556Dd8ac6
     ];
@@ -284,6 +331,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         0xe432150cce91c13a887f7D836923d5597adD8E31,
         0x304acf330bbE08d1e512eefaa92F6a57871fD895,
         0xe432150cce91c13a887f7D836923d5597adD8E31,
+        0x4D147dCb984e6affEEC47e44293DA442580A3Ec0,
+        0xe432150cce91c13a887f7D836923d5597adD8E31,
         0xe432150cce91c13a887f7D836923d5597adD8E31
     ];
 
@@ -295,6 +344,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         0x2d5d7d31F671F86C782533cc367F14109a082712,
         0x2d5d7d31F671F86C782533cc367F14109a082712,
         0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0x2d5d7d31F671F86C782533cc367F14109a082712,
+        0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6,
+        0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6,
         0x2d5d7d31F671F86C782533cc367F14109a082712,
         0x2d5d7d31F671F86C782533cc367F14109a082712,
         0x2d5d7d31F671F86C782533cc367F14109a082712
@@ -322,6 +374,8 @@ abstract contract BaseSetup is StdInvariant, Test {
     uint32 public constant LZ_V2_OP = 30_111;
     uint32 public constant LZ_V2_BASE = 30_184;
     uint32 public constant LZ_V2_FANTOM = 30_112;
+    uint32 public constant LZ_V2_SEPOLIA = 40_161;
+    uint32 public constant LZ_V2_BSC_TESTNET = 40_102;
     uint32 public constant LZ_V2_LINEA = 30_183;
     uint32 public constant LZ_V2_BLAST = 30_243;
 
@@ -336,11 +390,15 @@ abstract contract BaseSetup is StdInvariant, Test {
     uint64 public constant OP = 10;
     uint64 public constant BASE = 8453;
     uint64 public constant FANTOM = 250;
+    uint64 public constant SEPOLIA = 11_155_111;
+    uint64 public constant BSC_TESTNET = 97;
     uint64 public constant LINEA = 59_144;
     uint64 public constant BLAST = 81_457;
 
-    uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 59_144, 81_457];
+    uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 11_155_111, 97, 59_144, 81_457];
+    uint64[] public defaultChainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 11_155_111, 97, 59_144, 81_457];
 
+    mapping(uint64 chainId => bool selected) selectedChainIds;
     /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
     uint16 public constant LZ_ETH = 101;
     uint16 public constant LZ_BSC = 102;
@@ -350,15 +408,30 @@ abstract contract BaseSetup is StdInvariant, Test {
     uint16 public constant LZ_OP = 111;
     uint16 public constant LZ_BASE = 184;
     uint16 public constant LZ_FANTOM = 112;
+    uint16 public constant LZ_SEPOLIA = 10_161;
+    uint16 public constant LZ_BSC_TESTNET = 10_102;
     uint16 public constant LZ_LINEA = 183;
     uint32 public constant LZ_BLAST = 243;
 
-    uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111, 184, 112, 183, 243];
-    uint32[] public lz_v2_chainIds = [30_101, 30_102, 30_106, 30_109, 30_110, 30_111, 30_184, 30_112, 30_183, 30_243];
-    uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 59_144, 81_457];
-    uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30, 10, 38, 36];
-    string[] public axelar_chainIds =
-        ["Ethereum", "binance", "Avalanche", "Polygon", "arbitrum", "optimism", "base", "Fantom", "linea", "blast"];
+    uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111, 184, 112, 10_161, 10_102, 183, 243];
+    uint32[] public lz_v2_chainIds =
+        [30_101, 30_102, 30_106, 30_109, 30_110, 30_111, 30_184, 30_112, 40_161, 40_102, 30_183, 30_243];
+    uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 11_155_111, 97, 59_144, 81_457];
+    uint16[] public wormhole_chainIds = [2, 4, 6, 5, 23, 24, 30, 10, 10_002, 10_003, 38, 36];
+    string[] public axelar_chainIds = [
+        "Ethereum",
+        "binance",
+        "Avalanche",
+        "Polygon",
+        "arbitrum",
+        "optimism",
+        "base",
+        "Fantom",
+        "ethereum-sepolia",
+        "binance-testnet",
+        "linea",
+        "blast"
+    ];
 
     /// @dev minting enough tokens to be able to fuzz with bigger amounts (DAI's 3.6B supply etc)
     uint256 public constant hundredBilly = 100 * 1e9 * 1e18;
@@ -376,6 +449,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         4_000_000, // OP
         1_000_000, // BASE
         4 * 10e9, // FANTOM
+        50_000_000_000, // SEPOLIA
+        3_000_000_000, // BSC
         60_000_000, // LINEA
         60_000_000 // BLAST
     ];
@@ -391,6 +466,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         253_400_000_000, // OP
         253_400_000_000, // BASE
         4 * 10e9, // FANTOM
+        253_400_000_000, // SEPOLIA
+        31_439_000_000, // BSC
         253_400_000_000, // LINEA
         253_400_000_000 // BLAST
     ];
@@ -446,11 +523,14 @@ abstract contract BaseSetup is StdInvariant, Test {
     string public POLYGON_RPC_URL_QN = vm.envString("POLYGON_RPC_URL_QN"); // Native token: MATIC
     string public ARBITRUM_RPC_URL_QN = vm.envString("ARBITRUM_RPC_URL_QN"); // Native token: ETH
     string public OPTIMISM_RPC_URL_QN = vm.envString("OPTIMISM_RPC_URL_QN"); // Native token: ETH
-    string public BASE_RPC_URL_QN = vm.envString("BASE_RPC_URL_QN"); // Native token: BASE
+    string public BASE_RPC_URL_QN = vm.envString("BASE_RPC_URL_QN"); // Native token: ETH
     string public FANTOM_RPC_URL_QN = vm.envString("FANTOM_RPC_URL_QN"); // Native token: FTM
+    string public SEPOLIA_RPC_URL_QN = vm.envString("SEPOLIA_RPC_URL_QN"); // Native token: ETH
+    string public BSC_TESTNET_RPC_URL_QN = vm.envString("BSC_TESTNET_RPC_URL_QN"); // Native token: BNB
     string public LINEA_RPC_URL_QN = vm.envString("LINEA_RPC_URL_QN"); // Native token: ETH
     string public BLAST_RPC_URL_QN = vm.envString("BLAST_RPC_URL_QN"); // Native token: ETH
 
+    bool public LAUNCH_TESTNETS = false;
     /*//////////////////////////////////////////////////////////////
                         KYC DAO VALIDITY VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -459,6 +539,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         [address(0), address(0), address(0), 0x205E10d3c4C87E26eB66B1B270b71b7708494dB9, address(0), address(0)];
 
     function setUp() public virtual {
+        //if (!LAUNCH_TESTNETS) chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250];
+
         _preDeploymentSetup(true, false);
 
         _fundNativeTokens();
@@ -568,6 +650,14 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev deployments
         for (uint256 i = 0; i < chainIds.length; ++i) {
             vars.chainId = chainIds[i];
+
+            for (uint256 j = 0; j < defaultChainIds.length; j++) {
+                if (vars.chainId == defaultChainIds[j]) {
+                    vars.trueChainIdIndex = j;
+                    break;
+                }
+            }
+
             vars.fork = FORKS[vars.chainId];
             vars.ambAddresses = new address[](ambIds.length);
             /// @dev salt unique to each chain
@@ -655,13 +745,26 @@ abstract contract BaseSetup is StdInvariant, Test {
                 vars.superRegistryC.BROADCAST_REGISTRY(), vars.broadcastRegistry, vars.chainId
             );
 
-            address[] memory registryAddresses = new address[](2);
+            /// @dev 4.4 - deploy Async State Registry
+            vars.asyncStateRegistry = address(new AsyncStateRegistry{ salt: salt }(vars.superRegistryC));
+            contracts[vars.chainId][bytes32(bytes("AsyncStateRegistry"))] = vars.asyncStateRegistry;
+
+            vars.superRegistryC.setAddress(keccak256("ASYNC_STATE_REGISTRY"), vars.asyncStateRegistry, vars.chainId);
+            vars.superRBACC.setRoleAdmin(
+                keccak256("ASYNC_STATE_REGISTRY_PROCESSOR_ROLE"), vars.superRBACC.PROTOCOL_ADMIN_ROLE()
+            );
+            vars.superRBACC.grantRole(keccak256("ASYNC_STATE_REGISTRY_PROCESSOR_ROLE"), deployer);
+
+            address[] memory registryAddresses = new address[](3);
             registryAddresses[0] = vars.coreStateRegistry;
             registryAddresses[1] = vars.broadcastRegistry;
+            registryAddresses[2] = vars.asyncStateRegistry;
 
-            uint8[] memory registryIds = new uint8[](2);
+            uint8[] memory registryIds = new uint8[](3);
             registryIds[0] = 1;
-            registryIds[1] = 3;
+            registryIds[1] = 2;
+            /// @dev  TODO temporarily as id 5 to match 7540 form implementation id. later this will change to 2
+            registryIds[2] = 5;
 
             vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
 
@@ -675,7 +778,7 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.lzImplementation = address(new LayerzeroImplementation{ salt: salt }(vars.superRegistryC));
             contracts[vars.chainId][bytes32(bytes("LayerzeroImplementation"))] = vars.lzImplementation;
 
-            LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[i]);
+            LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[vars.trueChainIdIndex]);
 
             /// @dev 6.1.1 - deploy Layerzero v2 implementation
             vars.lzV2Implementation = address(new LayerzeroV2Implementation{ salt: salt }(vars.superRegistryC));
@@ -688,7 +791,8 @@ abstract contract BaseSetup is StdInvariant, Test {
                 vars.hyperlaneImplementation =
                     address(new HyperlaneImplementation{ salt: salt }(SuperRegistry(vars.superRegistry)));
                 HyperlaneImplementation(vars.hyperlaneImplementation).setHyperlaneConfig(
-                    IMailbox(hyperlaneMailboxes[i]), IInterchainGasPaymaster(hyperlanePaymasters[i])
+                    IMailbox(hyperlaneMailboxes[vars.trueChainIdIndex]),
+                    IInterchainGasPaymaster(hyperlanePaymasters[vars.trueChainIdIndex])
                 );
                 contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
             }
@@ -700,14 +804,19 @@ abstract contract BaseSetup is StdInvariant, Test {
 
                 WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayer);
                 /// set refund chain id to wormhole chain id
-                WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(wormhole_chainIds[i]);
+                WormholeARImplementation(vars.wormholeImplementation).setRefundChainId(
+                    wormhole_chainIds[vars.trueChainIdIndex]
+                );
 
                 /// @dev 6.4- deploy Wormhole Specialized Relayer Implementation
                 vars.wormholeSRImplementation =
-                    address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC, 3));
+                    address(new WormholeSRImplementation{ salt: salt }(vars.superRegistryC, 2));
                 contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
 
-                WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[i]);
+                WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(
+                    wormholeCore[vars.trueChainIdIndex]
+                );
+
                 WormholeSRImplementation(vars.wormholeSRImplementation).setRelayer(deployer);
             }
 
@@ -715,9 +824,12 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.axelarImplementation = address(new AxelarImplementation{ salt: salt }(vars.superRegistryC));
             contracts[vars.chainId][bytes32(bytes("AxelarImplementation"))] = vars.axelarImplementation;
 
-            AxelarImplementation(vars.axelarImplementation).setAxelarConfig(IAxelarGateway(axelarGateway[i]));
+            AxelarImplementation(vars.axelarImplementation).setAxelarConfig(
+                IAxelarGateway(axelarGateway[vars.trueChainIdIndex])
+            );
             AxelarImplementation(vars.axelarImplementation).setAxelarGasService(
-                IAxelarGasService(axelarGasService[i]), IInterchainGasEstimation(axelarGasService[i])
+                IAxelarGasService(axelarGasService[vars.trueChainIdIndex]),
+                IInterchainGasEstimation(axelarGasService[vars.trueChainIdIndex])
             );
 
             vars.ambAddresses[0] = vars.lzImplementation;
@@ -838,7 +950,7 @@ abstract contract BaseSetup is StdInvariant, Test {
 
                             if (vars.vault == address(0)) {
                                 /// @dev 8.2 - Deploy mock Vault
-                                if (j != 2) {
+                                if (j == 0) {
                                     bytecodeWithArgs = abi.encodePacked(
                                         vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode[l],
                                         abi.encode(
@@ -849,11 +961,26 @@ abstract contract BaseSetup is StdInvariant, Test {
                                     );
 
                                     vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
+                                } else if (j == 2) {
+                                    /// deploy the 7540 wrappers (skips j = 1 which is 5115)
+                                    /// @dev all wrappers created with rids = 0
+                                    /// TODO create a wrapper with fungible rid later
+                                    bytecodeWithArgs = abi.encodePacked(
+                                        vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode[l],
+                                        abi.encode(MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])), false)
+                                    );
+
+                                    vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
                                 }
                             }
-
                             /// @dev Add VaultMock
-                            contracts[vars.chainId][bytes32(bytes(string.concat(VAULT_NAMES[l][k])))] = vars.vault;
+                            contracts[vars.chainId][bytes32(
+                                bytes(
+                                    string.concat(
+                                        UNDERLYING_TOKENS[k], vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultKinds[l]
+                                    )
+                                )
+                            )] = vars.vault;
                             vaultsT[l] = vars.vault;
                         }
                         doubleVaults[k] = vaultsT;
@@ -897,9 +1024,18 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.erc5115form = address(new ERC5115Form{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("ERC5115Form"))] = vars.erc5115form;
 
+            //  ERC7540 Form
+            /// @dev TODO: change id of form to 2
+            vars.erc7540form = address(new ERC7540Form{ salt: salt }(vars.superRegistry, 5));
+
+            contracts[vars.chainId][bytes32(bytes("ERC7540Form"))] = vars.erc7540form;
+
             /// @dev 11 - Add newly deployed form implementations to Factory
             ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0], 1);
             ISuperformFactory(vars.factory).addFormImplementation(vars.erc5115form, FORM_IMPLEMENTATION_IDS[1], 1);
+
+            /// @dev TODO temporarily as id 5, to become id 2
+            ISuperformFactory(vars.factory).addFormImplementation(vars.erc7540form, FORM_IMPLEMENTATION_IDS[2], 5);
 
             /// @dev 12 - Deploy SuperformRouter
             vars.superformRouter = address(new SuperformRouter{ salt: salt }(vars.superRegistry));
@@ -973,7 +1109,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                 SuperRegistry(vars.superRegistry).setBridgeAddresses(bridgeIds, bridgeAddresses, bridgeValidators);
             }
 
-            /// @dev configures ambImpkementations to super registry
+            /// @dev configures ambImplementations to super registry
             if (vars.chainId == FANTOM) {
                 uint8[] memory ambIdsFantom = new uint8[](3);
                 ambIdsFantom[0] = 1;
@@ -1045,16 +1181,27 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.superRegistryC = SuperRegistry(payable(vars.superRegistry));
             vars.superRegistryC.setVaultLimitPerDestination(vars.chainId, 5);
 
-            /// @dev Set all trusted remotes for each chain, configure amb chains ids, setupQuorum for all chains as 1
+            /// @dev Set all trusted remotes for each chain, configure amb chains ids, setupQuorum for all chains as
+            /// 1
             /// and setup PaymentHelper
             /// @dev has to be performed after all main contracts have been deployed on all chains
             for (uint256 j = 0; j < chainIds.length; ++j) {
+                uint256 trueChainIdIndex;
+
+                // find selected chain ids and assign to selectedChainIds mapping
+                for (uint256 k = 0; k < defaultChainIds.length; k++) {
+                    if (chainIds[j] == defaultChainIds[k]) {
+                        trueChainIdIndex = k;
+                        break;
+                    }
+                }
+
                 if (vars.chainId != chainIds[j]) {
                     vars.dstChainId = chainIds[j];
 
-                    vars.dstLzChainId = lz_chainIds[j];
-                    vars.dstHypChainId = hyperlane_chainIds[j];
-                    vars.dstWormholeChainId = wormhole_chainIds[j];
+                    vars.dstLzChainId = lz_chainIds[trueChainIdIndex];
+                    vars.dstHypChainId = hyperlane_chainIds[trueChainIdIndex];
+                    vars.dstWormholeChainId = wormhole_chainIds[trueChainIdIndex];
 
                     vars.dstLzImplementation = getContract(vars.dstChainId, "LayerzeroImplementation");
                     vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
@@ -1071,12 +1218,12 @@ abstract contract BaseSetup is StdInvariant, Test {
                     );
 
                     LayerzeroV2Implementation(payable(vars.lzV2Implementation)).setPeer(
-                        lz_v2_chainIds[j],
+                        lz_v2_chainIds[trueChainIdIndex],
                         bytes32(uint256(uint160(getContract(vars.dstChainId, "LayerzeroV2Implementation"))))
                     );
 
                     LayerzeroV2Implementation(payable(vars.lzV2Implementation)).setChainId(
-                        vars.dstChainId, lz_v2_chainIds[j]
+                        vars.dstChainId, lz_v2_chainIds[trueChainIdIndex]
                     );
 
                     if (!(vars.chainId == FANTOM || vars.dstChainId == FANTOM)) {
@@ -1108,11 +1255,11 @@ abstract contract BaseSetup is StdInvariant, Test {
                     }
 
                     AxelarImplementation(payable(vars.axelarImplementation)).setChainId(
-                        vars.dstChainId, axelar_chainIds[j]
+                        vars.dstChainId, axelar_chainIds[trueChainIdIndex]
                     );
 
                     AxelarImplementation(payable(vars.axelarImplementation)).setReceiver(
-                        axelar_chainIds[j], vars.dstAxelarImplementation
+                        axelar_chainIds[trueChainIdIndex], vars.dstAxelarImplementation
                     );
 
                     /// sets the relayer address on all subsequent chains
@@ -1140,8 +1287,8 @@ abstract contract BaseSetup is StdInvariant, Test {
                             abi.decode(GAS_USED[vars.dstChainId][4], (uint256)),
                             vars.dstChainId == ARBI ? 1_000_000 : 200_000,
                             abi.decode(GAS_USED[vars.dstChainId][6], (uint256)),
-                            nativePrices[j],
-                            gasPrices[j],
+                            nativePrices[trueChainIdIndex],
+                            gasPrices[trueChainIdIndex],
                             750,
                             2_000_000,
                             /// @dev ackGasCost to move a msg from dst to source
@@ -1181,6 +1328,12 @@ abstract contract BaseSetup is StdInvariant, Test {
 
                     vars.superRegistryC.setAddress(
                         vars.superRegistryC.DST_SWAPPER(), getContract(vars.dstChainId, "DstSwapper"), vars.dstChainId
+                    );
+
+                    vars.superRegistryC.setAddress(
+                        keccak256("ASYNC_STATE_REGISTRY"),
+                        getContract(vars.dstChainId, "AsyncStateRegistry"),
+                        vars.dstChainId
                     );
 
                     vars.superRegistryC.setAddress(
@@ -1245,10 +1398,10 @@ abstract contract BaseSetup is StdInvariant, Test {
                         vars.chainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
                     );
                     PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
-                        vars.chainId, 7, abi.encode(nativePrices[j])
+                        vars.chainId, 7, abi.encode(nativePrices[trueChainIdIndex])
                     );
                     PaymentHelper(payable(vars.paymentHelper)).updateRemoteChain(
-                        vars.chainId, 8, abi.encode(gasPrices[j])
+                        vars.chainId, 8, abi.encode(gasPrices[trueChainIdIndex])
                     );
 
                     /// @dev gas per byte
@@ -1277,17 +1430,51 @@ abstract contract BaseSetup is StdInvariant, Test {
 
             /// @dev 18 - create test superforms when the whole state registry is configured
             for (uint256 j = 0; j < FORM_IMPLEMENTATION_IDS.length; ++j) {
-                if (j == 0) {
+                if (j != 1) {
                     for (uint256 k = 0; k < UNDERLYING_TOKENS.length; ++k) {
                         uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
 
                         for (uint256 l = 0; l < lenBytecodes; l++) {
                             address vault = vaults[chainIds[i]][FORM_IMPLEMENTATION_IDS[j]][k][l];
 
+                            if (vault == address(0)) continue;
+
                             uint256 superformId;
                             (superformId, vars.superform) = ISuperformFactory(
                                 contracts[chainIds[i]][bytes32(bytes("SuperformFactory"))]
                             ).createSuperform(FORM_IMPLEMENTATION_IDS[j], vault);
+
+                            if (FORM_IMPLEMENTATION_IDS[j] == 5) {
+                                // triggers _vaultKindCheck to set async type
+                                ERC7540Form(vars.superform).forwardDustToPaymaster(
+                                    ERC7540Form(vars.superform).getVaultAsset()
+                                );
+                                /// @dev activating centrifuge real vault (note: this flow will be needed in
+                                /// production)
+                                if (
+                                    (vault == 0x3b33D257E77E018326CCddeCA71cf9350C585A66 && LAUNCH_TESTNETS)
+                                        || vault == 0x1d01Ef1997d44206d839b78bA6813f60F1B3A970
+                                ) {
+                                    vars.token = IERC7540(vault).share();
+                                    vars.mgr = TrancheTokenLike(vars.token).hook();
+                                    vm.startPrank(RestrictionManagerLike(vars.mgr).root());
+                                    /// @dev TODO remove updateMemeber can be removed for superform
+                                    RestrictionManagerLike(vars.mgr).updateMember(
+                                        vars.token, vars.superform, type(uint64).max
+                                    );
+                                    RestrictionManagerLike(vars.mgr).updateMember(
+                                        vars.token, users[0], type(uint64).max
+                                    );
+                                    RestrictionManagerLike(vars.mgr).updateMember(
+                                        vars.token, users[1], type(uint64).max
+                                    );
+                                    RestrictionManagerLike(vars.mgr).updateMember(
+                                        vars.token, users[2], type(uint64).max
+                                    );
+
+                                    vm.startPrank(deployer);
+                                }
+                            }
 
                             contracts[chainIds[i]][bytes32(
                                 bytes(
@@ -1301,7 +1488,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                             )] = vars.superform;
                         }
                     }
-                } else {
+                } else if (j == 1) {
                     if (NUMBER_OF_5115S[chainIds[i]] > 0) {
                         for (uint256 k = 0; k < NUMBER_OF_5115S[chainIds[i]]; ++k) {
                             uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
@@ -1328,6 +1515,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                 }
             }
         }
+
         _setTokenPriceFeeds();
 
         vm.stopPrank();
@@ -1349,6 +1537,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[ETH][getContract(ETH, "sUSDe")] = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
         tokenPriceFeeds[ETH][getContract(ETH, "USDe")] = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
+        tokenPriceFeeds[ETH][getContract(ETH, "tUSD")] = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
 
         /// BSC
         tokenPriceFeeds[BSC][getContract(BSC, "DAI")] = 0x132d3C0B1D2cEa0BC552588063bdBb210FDeecfA;
@@ -1361,6 +1550,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[BSC][getContract(BSC, "sUSDe")] = 0x51597f405303C4377E36123cBc172b13269EA163;
         tokenPriceFeeds[BSC][getContract(BSC, "USDe")] = 0x51597f405303C4377E36123cBc172b13269EA163;
+        tokenPriceFeeds[BSC][getContract(BSC, "tUSD")] = 0x51597f405303C4377E36123cBc172b13269EA163;
 
         /// AVAX
         tokenPriceFeeds[AVAX][getContract(AVAX, "DAI")] = 0x51D7180edA2260cc4F6e4EebB82FEF5c3c2B8300;
@@ -1373,6 +1563,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[AVAX][getContract(AVAX, "sUSDe")] = 0xF096872672F44d6EBA71458D74fe67F9a77a23B9;
         tokenPriceFeeds[AVAX][getContract(AVAX, "USDe")] = 0xF096872672F44d6EBA71458D74fe67F9a77a23B9;
+        tokenPriceFeeds[AVAX][getContract(AVAX, "tUSD")] = 0xF096872672F44d6EBA71458D74fe67F9a77a23B9;
 
         /// POLYGON
         tokenPriceFeeds[POLY][getContract(POLY, "DAI")] = 0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D;
@@ -1385,6 +1576,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[POLY][getContract(POLY, "sUSDe")] = 0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7;
         tokenPriceFeeds[POLY][getContract(POLY, "USDe")] = 0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7;
+        tokenPriceFeeds[POLY][getContract(POLY, "tUSD")] = 0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7;
 
         /// OPTIMISM
         tokenPriceFeeds[OP][getContract(OP, "DAI")] = 0x8dBa75e83DA73cc766A7e5a0ee71F656BAb470d6;
@@ -1397,6 +1589,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[OP][getContract(OP, "sUSDe")] = 0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3;
         tokenPriceFeeds[OP][getContract(OP, "USDe")] = 0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3;
+        tokenPriceFeeds[OP][getContract(OP, "tUSD")] = 0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3;
 
         /// ARBITRUM
         tokenPriceFeeds[ARBI][getContract(ARBI, "DAI")] = 0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB;
@@ -1409,6 +1602,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[ARBI][getContract(ARBI, "sUSDe")] = 0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3;
         tokenPriceFeeds[ARBI][getContract(ARBI, "USDe")] = 0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3;
+        tokenPriceFeeds[ARBI][getContract(ARBI, "tUSD")] = 0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3;
 
         /// BASE
         tokenPriceFeeds[BASE][getContract(BASE, "DAI")] = 0x591e79239a7d679378eC8c847e5038150364C78F;
@@ -1421,6 +1615,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[BASE][getContract(BASE, "sUSDe")] = 0x7e860098F58bBFC8648a4311b374B1D669a2bc6B;
         tokenPriceFeeds[BASE][getContract(BASE, "USDe")] = 0x7e860098F58bBFC8648a4311b374B1D669a2bc6B;
+        tokenPriceFeeds[BASE][getContract(BASE, "tUSD")] = 0x7e860098F58bBFC8648a4311b374B1D669a2bc6B;
 
         /// FANTOM
         tokenPriceFeeds[FANTOM][getContract(FANTOM, "DAI")] = 0x91d5DEFAFfE2854C7D02F50c80FA1fdc8A721e52;
@@ -1433,24 +1628,84 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[FANTOM][getContract(FANTOM, "sUSDe")] = 0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c;
         tokenPriceFeeds[FANTOM][getContract(FANTOM, "USDe")] = 0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c;
+        tokenPriceFeeds[FANTOM][getContract(FANTOM, "tUSD")] = 0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c;
+
+        /// SEPOLIA
+        tokenPriceFeeds[SEPOLIA][getContract(SEPOLIA, "DAI")] = 0x14866185B1962B63C3Ea9E03Bc1da838bab34C19;
+        tokenPriceFeeds[SEPOLIA][getContract(SEPOLIA, "USDC")] = 0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E;
+        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
+        tokenPriceFeeds[SEPOLIA][getContract(SEPOLIA, "WETH")] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        tokenPriceFeeds[SEPOLIA][NATIVE_TOKEN] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        tokenPriceFeeds[SEPOLIA][getContract(SEPOLIA, "ezETH")] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        tokenPriceFeeds[SEPOLIA][getContract(SEPOLIA, "wstETH")] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[SEPOLIA][getContract(SEPOLIA, "sUSDe")] = 0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E;
+        tokenPriceFeeds[SEPOLIA][getContract(SEPOLIA, "USDe")] = 0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E;
+        tokenPriceFeeds[SEPOLIA][getContract(SEPOLIA, "tUSD")] = 0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E;
+
+        /// BSC_TESTNET
+        tokenPriceFeeds[BSC_TESTNET][getContract(BSC_TESTNET, "DAI")] = 0xE4eE17114774713d2De0eC0f035d4F7665fc025D;
+        tokenPriceFeeds[BSC_TESTNET][getContract(BSC_TESTNET, "USDC")] = 0x90c069C4538adAc136E051052E14c1cD799C41B7;
+        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
+        tokenPriceFeeds[BSC_TESTNET][getContract(BSC_TESTNET, "WETH")] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
+        tokenPriceFeeds[BSC_TESTNET][NATIVE_TOKEN] = 0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526;
+        tokenPriceFeeds[BSC_TESTNET][getContract(BSC_TESTNET, "ezETH")] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
+        tokenPriceFeeds[BSC_TESTNET][getContract(BSC_TESTNET, "wstETH")] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[BSC_TESTNET][getContract(BSC_TESTNET, "sUSDe")] = 0x90c069C4538adAc136E051052E14c1cD799C41B7;
+        tokenPriceFeeds[BSC_TESTNET][getContract(BSC_TESTNET, "USDe")] = 0x90c069C4538adAc136E051052E14c1cD799C41B7;
+        tokenPriceFeeds[BSC_TESTNET][getContract(BSC_TESTNET, "tUSD")] = 0x90c069C4538adAc136E051052E14c1cD799C41B7;
     }
 
     function _preDeploymentSetup(bool pinnedBlock, bool invariant) internal {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            // find selected chain ids and assign to selectedChainIds mapping
+            for (uint256 j = 0; j < defaultChainIds.length; j++) {
+                if (chainIds[i] == defaultChainIds[j]) {
+                    selectedChainIds[chainIds[i]] = true;
+                    break;
+                }
+            }
+        }
         if (!invariant) {
-            forks[ETH] = pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 20_534_017) : vm.createFork(ETHEREUM_RPC_URL_QN);
-            forks[BSC] = pinnedBlock ? vm.createFork(BSC_RPC_URL, 41_384_944) : vm.createFork(BSC_RPC_URL_QN);
-            forks[AVAX] =
-                pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 49_288_281) : vm.createFork(AVALANCHE_RPC_URL_QN);
-            forks[POLY] = pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 60_619_414) : vm.createFork(POLYGON_RPC_URL_QN);
-            forks[ARBI] =
-                pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 243_122_707) : vm.createFork(ARBITRUM_RPC_URL_QN);
-            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 124_063_271) : vm.createFork(OPTIMISM_RPC_URL_QN);
-            forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL_QN);
-            forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 88_933_543) : vm.createFork(FANTOM_RPC_URL_QN);
-            forks[LINEA] = pinnedBlock ? vm.createFork(LINEA_RPC_URL, 8_630_899) : vm.createFork(LINEA_RPC_URL_QN);
-            forks[BLAST] = pinnedBlock ? vm.createFork(BLAST_RPC_URL, 7_957_906) : vm.createFork(BLAST_RPC_URL_QN);
+            forks[ETH] = selectedChainIds[ETH]
+                ? pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 20_574_913) : vm.createFork(ETHEREUM_RPC_URL_QN)
+                : 999;
+            forks[BSC] = selectedChainIds[BSC]
+                ? pinnedBlock ? vm.createFork(BSC_RPC_URL, 39_315_701) : vm.createFork(BSC_RPC_URL_QN)
+                : 999;
+            forks[AVAX] = selectedChainIds[AVAX]
+                ? pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 46_289_230) : vm.createFork(AVALANCHE_RPC_URL_QN)
+                : 999;
+            forks[POLY] = selectedChainIds[POLY]
+                ? pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 57_754_395) : vm.createFork(POLYGON_RPC_URL_QN)
+                : 999;
+            forks[ARBI] = selectedChainIds[ARBI]
+                ? pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 218_289_569) : vm.createFork(ARBITRUM_RPC_URL_QN)
+                : 999;
+            forks[OP] = selectedChainIds[OP]
+                ? pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 120_950_600) : vm.createFork(OPTIMISM_RPC_URL_QN)
+                : 999;
+            forks[BASE] = selectedChainIds[BASE]
+                ? pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL_QN)
+                : 999;
+            forks[FANTOM] = selectedChainIds[FANTOM]
+                ? pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 82_228_344) : vm.createFork(FANTOM_RPC_URL_QN)
+                : 999;
+            forks[SEPOLIA] = selectedChainIds[SEPOLIA]
+                ? pinnedBlock ? vm.createFork(SEPOLIA_RPC_URL_QN, 6_624_692) : vm.createFork(SEPOLIA_RPC_URL_QN)
+                : 999;
+            forks[BSC_TESTNET] = selectedChainIds[BSC_TESTNET]
+                ? pinnedBlock ? vm.createFork(BSC_TESTNET_RPC_URL_QN, 41_624_319) : vm.createFork(BSC_TESTNET_RPC_URL_QN)
+                : 999;
+            forks[LINEA] = selectedChainIds[LINEA]
+                ? pinnedBlock ? vm.createFork(LINEA_RPC_URL, 8_630_899) : vm.createFork(LINEA_RPC_URL_QN)
+                : 999;
+            forks[BLAST] = selectedChainIds[BLAST]
+                ? pinnedBlock ? vm.createFork(BLAST_RPC_URL, 7_957_906) : vm.createFork(BLAST_RPC_URL_QN)
+                : 999;
         }
 
         mapping(uint64 => string) storage rpcURLs = RPC_URLS;
@@ -1462,6 +1717,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         rpcURLs[OP] = OPTIMISM_RPC_URL;
         rpcURLs[BASE] = BASE_RPC_URL;
         rpcURLs[FANTOM] = FANTOM_RPC_URL;
+        rpcURLs[SEPOLIA] = SEPOLIA_RPC_URL_QN;
+        rpcURLs[BSC_TESTNET] = BSC_TESTNET_RPC_URL_QN;
+
         rpcURLs[LINEA] = LINEA_RPC_URL;
         rpcURLs[BLAST] = BLAST_RPC_URL;
 
@@ -1476,6 +1734,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[ARBI][3] = abi.encode(2_500_000);
         gasUsed[BASE][3] = abi.encode(600_000);
         gasUsed[FANTOM][3] = abi.encode(643_315);
+        gasUsed[SEPOLIA][3] = abi.encode(400_000);
+        gasUsed[BSC_TESTNET][3] = abi.encode(650_000);
+
         gasUsed[LINEA][3] = abi.encode(600_000);
         gasUsed[BLAST][3] = abi.encode(600_000);
 
@@ -1488,6 +1749,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[ARBI][4] = abi.encode(1_400_000);
         gasUsed[BASE][4] = abi.encode(200_000);
         gasUsed[FANTOM][4] = abi.encode(734_757);
+        gasUsed[SEPOLIA][4] = abi.encode(225_000);
+        gasUsed[BSC_TESTNET][4] = abi.encode(225_000);
+
         gasUsed[LINEA][4] = abi.encode(200_000);
         gasUsed[BLAST][4] = abi.encode(200_000);
 
@@ -1500,20 +1764,13 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[ARBI][6] = abi.encode(1_654_955);
         gasUsed[BASE][6] = abi.encode(1_178_778);
         gasUsed[FANTOM][6] = abi.encode(567_881);
+        gasUsed[SEPOLIA][6] = abi.encode(1_272_330);
+        gasUsed[BSC_TESTNET][6] = abi.encode(837_167);
+
         gasUsed[LINEA][6] = abi.encode(1_178_778);
         gasUsed[BLAST][6] = abi.encode(1_178_778);
 
         // updateWithdrawGasUsed == 13
-        /*
-        2049183 / 1.5 = 1366122 ARB
-        535243 / 1.5 = 356828  MAINNET
-        973861 / 1.5 = 649240 OP
-        901119  / 1.5 = 600746 AVAX
-        896967 / 1.5 = 597978 MATIC
-        1350127 / 1.5 = 900085 BSC
-        1379199 / 1.5 = 919466 BASE
-        */
-
         gasUsed[ETH][13] = abi.encode(356_828);
         gasUsed[BSC][13] = abi.encode(900_085);
         gasUsed[AVAX][13] = abi.encode(600_746);
@@ -1522,6 +1779,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[ARBI][13] = abi.encode(1_366_122);
         gasUsed[BASE][13] = abi.encode(919_466);
         gasUsed[FANTOM][13] = abi.encode(2_003_157);
+        gasUsed[SEPOLIA][13] = abi.encode(356_828);
+        gasUsed[BSC_TESTNET][13] = abi.encode(900_085);
+
         gasUsed[LINEA][13] = abi.encode(919_466);
         gasUsed[BLAST][13] = abi.encode(919_466);
 
@@ -1534,6 +1794,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         lzEndpointsStorage[OP] = OP_lzEndpoint;
         lzEndpointsStorage[BASE] = BASE_lzEndpoint;
         lzEndpointsStorage[FANTOM] = FANTOM_lzEndpoint;
+        lzEndpointsStorage[SEPOLIA] = SEPOLIA_lzEndpoint;
+        lzEndpointsStorage[BSC_TESTNET] = BSC_TESTNET_lzEndpoint;
 
         mapping(uint64 => address) storage hyperlaneMailboxesStorage = HYPERLANE_MAILBOXES;
         hyperlaneMailboxesStorage[ETH] = hyperlaneMailboxes[0];
@@ -1544,13 +1806,23 @@ abstract contract BaseSetup is StdInvariant, Test {
         hyperlaneMailboxesStorage[OP] = hyperlaneMailboxes[5];
         hyperlaneMailboxesStorage[BASE] = hyperlaneMailboxes[6];
         hyperlaneMailboxesStorage[FANTOM] = hyperlaneMailboxes[7];
+        hyperlaneMailboxesStorage[SEPOLIA] = hyperlaneMailboxes[8];
+        hyperlaneMailboxesStorage[BSC_TESTNET] = hyperlaneMailboxes[9];
 
         mapping(uint64 => uint16) storage wormholeChainIdsStorage = WORMHOLE_CHAIN_IDS;
 
         for (uint256 i = 0; i < chainIds.length; ++i) {
-            wormholeChainIdsStorage[chainIds[i]] = wormhole_chainIds[i];
-            AXELAR_GATEWAYS[chainIds[i]] = axelarGateway[i];
-            AXELAR_CHAIN_IDS[chainIds[i]] = axelar_chainIds[i];
+            uint256 trueChainIdIndex;
+
+            for (uint256 j = 0; j < defaultChainIds.length; j++) {
+                if (chainIds[i] == defaultChainIds[j]) {
+                    trueChainIdIndex = j;
+                    break;
+                }
+            }
+            wormholeChainIdsStorage[chainIds[i]] = wormhole_chainIds[trueChainIdIndex];
+            AXELAR_GATEWAYS[chainIds[i]] = axelarGateway[trueChainIdIndex];
+            AXELAR_CHAIN_IDS[chainIds[i]] = axelar_chainIds[trueChainIdIndex];
         }
 
         /// price feeds on all chains, for paymentHelper: chain => asset => priceFeed (against USD)
@@ -1565,6 +1837,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[ETH][ARBI] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][BASE] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][FANTOM] = address(0);
+        priceFeeds[ETH][SEPOLIA] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        priceFeeds[ETH][BSC_TESTNET] = 0x14e613AC84a31f709eadbdF89C6CC390fDc9540A;
+
         priceFeeds[ETH][LINEA] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][BLAST] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
 
@@ -1577,6 +1852,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[BSC][ARBI] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
         priceFeeds[BSC][BASE] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
         priceFeeds[BSC][FANTOM] = 0xe2A47e87C0f4134c8D06A41975F6860468b2F925;
+        priceFeeds[BSC][SEPOLIA] = address(0);
+        priceFeeds[BSC][BSC_TESTNET] = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
+
         priceFeeds[BSC][LINEA] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
         priceFeeds[BSC][BLAST] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
 
@@ -1589,6 +1867,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[AVAX][ARBI] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
         priceFeeds[AVAX][BASE] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
         priceFeeds[AVAX][FANTOM] = 0x2dD517B2f9ba49CedB0573131FD97a5AC19ff648;
+        priceFeeds[AVAX][SEPOLIA] = address(0);
+        priceFeeds[AVAX][BSC_TESTNET] = address(0);
+
         priceFeeds[AVAX][LINEA] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
         priceFeeds[AVAX][BLAST] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
 
@@ -1601,6 +1882,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[POLY][ARBI] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][BASE] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][FANTOM] = 0x58326c0F831b2Dbf7234A4204F28Bba79AA06d5f;
+        priceFeeds[POLY][SEPOLIA] = address(0);
+        priceFeeds[POLY][BSC_TESTNET] = 0x82a6c4AF830caa6c97bb504425f6A66165C2c26e;
+
         priceFeeds[POLY][LINEA] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][BLAST] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
 
@@ -1613,6 +1897,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[OP][ARBI] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         priceFeeds[OP][BASE] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         priceFeeds[OP][FANTOM] = 0xc19d58652d6BfC6Db6FB3691eDA6Aa7f3379E4E9;
+        priceFeeds[OP][SEPOLIA] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+        priceFeeds[OP][BSC_TESTNET] = 0xD38579f7cBD14c22cF1997575eA8eF7bfe62ca2c;
         priceFeeds[OP][LINEA] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         priceFeeds[OP][BLAST] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
 
@@ -1625,6 +1911,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[ARBI][ETH] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         priceFeeds[ARBI][BASE] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         priceFeeds[ARBI][FANTOM] = 0xFeaC1A3936514746e70170c0f539e70b23d36F19;
+        priceFeeds[ARBI][SEPOLIA] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+        priceFeeds[ARBI][BSC_TESTNET] = 0x6970460aabF80C5BE983C6b74e5D06dEDCA95D4A;
         priceFeeds[ARBI][LINEA] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         priceFeeds[ARBI][BLAST] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
 
@@ -1637,6 +1925,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[BASE][ETH] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
         priceFeeds[BASE][ARBI] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
         priceFeeds[BASE][FANTOM] = address(0);
+        priceFeeds[BASE][SEPOLIA] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
+        priceFeeds[BASE][BSC_TESTNET] = 0x4b7836916781CAAfbb7Bd1E5FDd20ED544B453b1;
         priceFeeds[BASE][LINEA] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
         priceFeeds[BASE][BLAST] = 0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70;
 
@@ -1649,8 +1939,38 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[FANTOM][ETH] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
         priceFeeds[FANTOM][BASE] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
         priceFeeds[FANTOM][ARBI] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+        priceFeeds[FANTOM][SEPOLIA] = address(0);
+        priceFeeds[FANTOM][BSC_TESTNET] = 0x6dE70f4791C4151E00aD02e969bD900DC961f92a;
         priceFeeds[FANTOM][LINEA] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
         priceFeeds[FANTOM][BLAST] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
+
+        /// SEPOLIA
+        priceFeeds[SEPOLIA][SEPOLIA] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        priceFeeds[SEPOLIA][FANTOM] = address(0);
+        priceFeeds[SEPOLIA][OP] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        priceFeeds[SEPOLIA][POLY] = address(0);
+        priceFeeds[SEPOLIA][AVAX] = address(0);
+        priceFeeds[SEPOLIA][BSC] = address(0);
+        priceFeeds[SEPOLIA][ETH] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        priceFeeds[SEPOLIA][BASE] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        priceFeeds[SEPOLIA][ARBI] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        priceFeeds[SEPOLIA][BSC_TESTNET] = address(0);
+        priceFeeds[SEPOLIA][LINEA] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+        priceFeeds[SEPOLIA][BLAST] = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
+
+        /// BSC_TESTNET
+        priceFeeds[BSC_TESTNET][BSC_TESTNET] = 0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526;
+        priceFeeds[BSC_TESTNET][SEPOLIA] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
+        priceFeeds[BSC_TESTNET][FANTOM] = address(0);
+        priceFeeds[BSC_TESTNET][OP] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
+        priceFeeds[BSC_TESTNET][POLY] = address(0);
+        priceFeeds[BSC_TESTNET][AVAX] = address(0);
+        priceFeeds[BSC_TESTNET][BSC] = 0x2514895c72f50D8bd4B4F9b1110F0D6bD2c97526;
+        priceFeeds[BSC_TESTNET][ETH] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
+        priceFeeds[BSC_TESTNET][BASE] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
+        priceFeeds[BSC_TESTNET][ARBI] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
+        priceFeeds[BSC_TESTNET][LINEA] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
+        priceFeeds[BSC_TESTNET][BLAST] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
 
         /// LINEA
         priceFeeds[LINEA][LINEA] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
@@ -1663,6 +1983,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[LINEA][ARBI] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
         priceFeeds[LINEA][FANTOM] = address(0);
         priceFeeds[LINEA][BLAST] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        priceFeeds[LINEA][BSC_TESTNET] = address(0);
+        priceFeeds[LINEA][SEPOLIA] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
 
         /// BLAST
         priceFeeds[BLAST][LINEA] = address(0);
@@ -1675,6 +1997,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[BLAST][ARBI] = address(0);
         priceFeeds[BLAST][FANTOM] = address(0);
         priceFeeds[BLAST][BLAST] = address(0);
+        priceFeeds[BLAST][BSC_TESTNET] = address(0);
+        priceFeeds[BLAST][SEPOLIA] = address(0);
 
         /// @dev setup bridges.
         /// 1 is lifi
@@ -1721,6 +2045,20 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev form 4 (pendle 5115)
         vaultBytecodes2[4].vaultBytecode.push(type(ERC5115To4626Wrapper).creationCode);
         vaultBytecodes2[4].vaultKinds.push("ERC5115");
+
+        /// @dev form 5 (7540)
+        vaultBytecodes2[5].vaultBytecode.push(type(ERC7540FullyAsyncMock).creationCode);
+        vaultBytecodes2[5].vaultKinds.push("ERC7540FullyAsyncMock");
+        vaultBytecodes2[5].vaultBytecode.push(type(ERC7540AsyncDepositMock).creationCode);
+        vaultBytecodes2[5].vaultKinds.push("ERC7540AsyncDepositMock");
+        vaultBytecodes2[5].vaultBytecode.push(type(ERC7540AsyncRedeemMock).creationCode);
+        vaultBytecodes2[5].vaultKinds.push("ERC7540AsyncRedeemMock");
+        vaultBytecodes2[5].vaultBytecode.push(type(ERC7540AsyncDepositMockRevert).creationCode);
+        vaultBytecodes2[5].vaultKinds.push("ERC7540AsyncDepositMockRevert");
+        vaultBytecodes2[5].vaultBytecode.push(type(ERC7540AsyncRedeemMockRevert).creationCode);
+        vaultBytecodes2[5].vaultKinds.push("ERC7540AsyncRedeemMockRevert");
+        vaultBytecodes2[5].vaultBytecode.push(type(ERC7540AsyncDepositMockRedeemRevert).creationCode);
+        vaultBytecodes2[5].vaultKinds.push("ERC7540AsyncDepositMockRedeemRevert");
 
         /// @dev populate VAULT_NAMES state arg with tokenNames + vaultKinds names
         string[] memory underlyingTokens = UNDERLYING_TOKENS;
@@ -1771,6 +2109,11 @@ abstract contract BaseSetup is StdInvariant, Test {
         existingTokens[250]["USDC"] = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
         existingTokens[250]["WETH"] = address(0);
 
+        existingTokens[11_155_111]["DAI"] = address(0);
+        existingTokens[11_155_111]["USDC"] = address(0);
+        existingTokens[11_155_111]["WETH"] = address(0);
+        existingTokens[11_155_111]["tUSD"] = 0x8503b4452Bf6238cC76CdbEE223b46d7196b1c93;
+
         mapping(
             uint64 chainId
                 => mapping(
@@ -1811,6 +2154,10 @@ abstract contract BaseSetup is StdInvariant, Test {
         existingVaults[250][1]["DAI"][0] = address(0);
         existingVaults[250][1]["USDC"][0] = 0xd55C59Da5872DE866e39b1e3Af2065330ea8Acd6;
         existingVaults[250][1]["WETH"][0] = address(0);
+
+        /// @dev 7540 real centrifuge vaults on mainnet & testnet
+        existingVaults[1][5]["USDC"][0] = 0x1d01Ef1997d44206d839b78bA6813f60F1B3A970;
+        existingVaults[11_155_111][5]["tUSD"][0] = 0x3b33D257E77E018326CCddeCA71cf9350C585A66;
 
         mapping(uint64 chainId => mapping(uint256 market => address realVault)) storage erc5115Vaults = ERC5115_VAULTS;
         mapping(uint64 chainId => mapping(uint256 market => string name)) storage erc5115VaultsNames =
@@ -1927,16 +2274,16 @@ abstract contract BaseSetup is StdInvariant, Test {
     function _broadcastPayloadHelper(uint64 currentChainId, Vm.Log[] memory logs) internal {
         vm.stopPrank();
 
-        address[] memory dstTargets = new address[](chainIds.length - 2);
-        address[] memory dstWormhole = new address[](chainIds.length - 2);
+        address[] memory dstTargets = new address[](chainIds.length - 4);
+        address[] memory dstWormhole = new address[](chainIds.length - 4);
 
-        uint256[] memory forkIds = new uint256[](chainIds.length - 2);
+        uint256[] memory forkIds = new uint256[](chainIds.length - 4);
 
         uint16 currWormholeChainId;
 
         uint256 j;
         for (uint256 i = 0; i < chainIds.length; ++i) {
-            if (chainIds[i] == LINEA) continue;
+            if (chainIds[i] == LINEA || chainIds[i] == SEPOLIA || chainIds[i] == BSC_TESTNET) continue;
             if (chainIds[i] != currentChainId) {
                 dstWormhole[j] = wormholeCore[i];
                 dstTargets[j] = getContract(chainIds[i], "WormholeSRImplementation");
@@ -1988,13 +2335,13 @@ abstract contract BaseSetup is StdInvariant, Test {
         view
         returns (bytes memory sig)
     {
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerKey, _getEIP712Hash(permit, spender, chainId));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerKey, _getPermitEIP712Hash(permit, spender, chainId));
         return abi.encodePacked(r, s, v);
     }
 
     // Compute the EIP712 hash of the permit object.
     // Normally this would be implemented off-chain.
-    function _getEIP712Hash(
+    function _getPermitEIP712Hash(
         IPermit2.PermitTransferFrom memory permit,
         address spender,
         uint64 chainId
@@ -2022,6 +2369,56 @@ abstract contract BaseSetup is StdInvariant, Test {
         );
     }
 
+    struct AuthorizeOperator {
+        address controller;
+        address operator;
+        bool approved;
+        uint256 deadline;
+        bytes32 nonce;
+    }
+    // Generate a signature for an authorize operator message.
+
+    function _signAuthorizeOperator(
+        AuthorizeOperator memory authorizeOperator,
+        address vault,
+        uint256 signerKey
+    )
+        internal
+        view
+        returns (bytes memory sig)
+    {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerKey, _getAuthorizeOperatorEIP712Hash(authorizeOperator, vault));
+        return abi.encodePacked(r, s, v);
+    }
+
+    // Compute the EIP712 hash of the authorize operator arguments
+    // Normally this would be implemented off-chain.
+    function _getAuthorizeOperatorEIP712Hash(
+        AuthorizeOperator memory authorizeOperator,
+        address vault
+    )
+        internal
+        view
+        returns (bytes32 h)
+    {
+        return keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                IAuthorizeOperator(vault).DOMAIN_SEPARATOR(),
+                keccak256(
+                    abi.encode(
+                        AUTHORIZE_OPERATOR_TYPEHASH,
+                        authorizeOperator.controller,
+                        authorizeOperator.operator,
+                        authorizeOperator.approved,
+                        authorizeOperator.nonce,
+                        authorizeOperator.deadline
+                    )
+                )
+            )
+        );
+    }
+
     ///@dev Compute the address of the contract to be deployed
     function getAddress(bytes memory bytecode_, bytes32 salt_, address deployer_) internal pure returns (address) {
         bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), deployer_, salt_, keccak256(bytecode_)));
@@ -2042,6 +2439,63 @@ abstract contract BaseSetup is StdInvariant, Test {
         PaymentHelper paymentHelper;
         PayloadHelper payloadHelper;
         bytes message;
+    }
+
+    /// @dev Generates the acknowledgement amb params for the async deposit action
+    function _generateAckGasFeesAndParamsForAsyncDepositCallback(
+        bytes memory chainIds_,
+        uint8[] memory selectedAmbIds,
+        address user_,
+        uint256 superformId_
+    )
+        internal
+        view
+        returns (uint256 msgValue)
+    {
+        LocalAckVars memory vars;
+        (vars.srcChainId, vars.dstChainId) = abi.decode(chainIds_, (uint64, uint64));
+
+        AsyncStateRegistry asr = AsyncStateRegistry(contracts[vars.dstChainId][bytes32(bytes("AsyncStateRegistry"))]);
+
+        RequestConfig memory config = asr.getRequestConfig(user_, superformId_);
+
+        vars.message = abi.encode(
+            AMBMessage(
+                2 ** 256 - 1,
+                abi.encode(ReturnSingleData(config.currentReturnDataPayloadId, superformId_, type(uint256).max))
+            )
+        );
+
+        vars.paymentHelper = PaymentHelper(contracts[vars.dstChainId][bytes32(bytes("PaymentHelper"))]);
+        (msgValue,) = vars.paymentHelper.calculateAMBData(vars.srcChainId, selectedAmbIds, vars.message);
+    }
+
+    /// @dev Generates the acknowledgement amb params for the sync deposit action
+    function _generateAckGasFeesAndParamsForSyncWithdrawCallback(
+        bytes memory chainIds_,
+        uint8[] memory selectedAmbIds,
+        uint256 asyncDepositPayloadId
+    )
+        internal
+        view
+        returns (uint256 msgValue)
+    {
+        LocalAckVars memory vars;
+        (vars.srcChainId, vars.dstChainId) = abi.decode(chainIds_, (uint64, uint64));
+
+        address _paymentHelper = contracts[vars.dstChainId][bytes32(bytes("PaymentHelper"))];
+        vars.paymentHelper = PaymentHelper(_paymentHelper);
+
+        address _payloadHelper = contracts[vars.dstChainId][bytes32(bytes("PayloadHelper"))];
+        vars.payloadHelper = PayloadHelper(_payloadHelper);
+
+        (,, uint256 payloadId, uint256 superformId, uint256 amount) =
+            vars.payloadHelper.decodeSyncWithdrawPayload(asyncDepositPayloadId);
+
+        vars.message =
+            abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superformId, amount))));
+
+        (msgValue,) = vars.paymentHelper.calculateAMBData(vars.srcChainId, selectedAmbIds, vars.message);
     }
 
     function _payload(address registry, uint64 chainId, uint256 payloadId_) internal returns (bytes memory payload_) {

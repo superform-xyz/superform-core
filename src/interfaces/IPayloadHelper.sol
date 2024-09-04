@@ -31,6 +31,7 @@ interface IPayloadHelper {
         uint256[] slippages;
         uint256[] superformIds;
         bool[] hasDstSwaps;
+        bool[] retain4626s;
         address receiverAddress;
         uint256 srcPayloadId;
         bytes extraFormData;
@@ -93,16 +94,16 @@ interface IPayloadHelper {
             uint64 srcChainId
         );
 
-    /// @dev returns decoded timelock form payloads
-    /// @param timelockPayloadId_ is the unique identifier of payload in timelock state registry
-    function decodeTimeLockPayload(uint256 timelockPayloadId_)
+    /// @dev returns decoded sync withdraw form payloads
+    /// @param syncWithdrawPayloadId_ is the unique identifier of payload in async state registry
+    function decodeSyncWithdrawPayload(uint256 syncWithdrawPayloadId_)
         external
         view
         returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
 
-    /// @dev returns decoded failed timelock form payloads
-    /// @param timelockPayloadId_ is the unique identifier of payload in timelock state registry
-    function decodeTimeLockFailedPayload(uint256 timelockPayloadId_)
+    /// @dev returns decoded successful async payloads
+    /// @param payloadId_ is the unique identifier of payload in async state registry
+    function decodeAsyncAckPayload(uint256 payloadId_)
         external
         view
         returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);

@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract SDSVD5115SwapTokenInputSlippage is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, ARBI];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE

@@ -19,9 +19,7 @@ contract AggregatorV3MockInvalidDecimals is AggregatorV3Interface {
         return 1;
     }
 
-    function getRoundData(
-        uint80 _roundId
-    )
+    function getRoundData(uint80 _roundId)
         external
         pure
         override
@@ -1105,9 +1103,6 @@ contract PaymentHelperTest is ProtocolActions {
         /// set config type: 11
         vm.prank(deployer);
         paymentHelper.updateRemoteChain(1, 11, abi.encode(430));
-
-        uint256 result11 = paymentHelper.timelockCost(1);
-        assertEq(result11, 430);
     }
 
     function test_addRemoteChain_NOT_PROTOCOL_ADMIN() public {
@@ -1357,9 +1352,6 @@ contract PaymentHelperTest is ProtocolActions {
         vm.prank(deployer);
         paymentHelper.updateRemoteChain(1, 11, abi.encode(430));
 
-        uint256 result11 = paymentHelper.timelockCost(1);
-        assertEq(result11, 430);
-
         /// set config type: 12
         vm.prank(deployer);
         paymentHelper.updateRemoteChain(1, 12, abi.encode(431));
@@ -1439,9 +1431,6 @@ contract PaymentHelperTest is ProtocolActions {
 
         uint256 result10 = paymentHelper.ackGasCost(420);
         assertEq(result10, 429);
-
-        uint256 result11 = paymentHelper.timelockCost(420);
-        assertEq(result11, 430);
 
         uint256 result12 = paymentHelper.emergencyCost(420);
         assertEq(result12, 431);
@@ -1593,11 +1582,6 @@ contract PaymentHelperTest is ProtocolActions {
         assertEq(result10, 429);
         result10 = paymentHelper.ackGasCost(423);
         assertEq(result10, 429);
-
-        uint256 result11 = paymentHelper.timelockCost(422);
-        assertEq(result11, 430);
-        result11 = paymentHelper.timelockCost(423);
-        assertEq(result11, 430);
 
         uint256 result12 = paymentHelper.emergencyCost(422);
         assertEq(result12, 431);

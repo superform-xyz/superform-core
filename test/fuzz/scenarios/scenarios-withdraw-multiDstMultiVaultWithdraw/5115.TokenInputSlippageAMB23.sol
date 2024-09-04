@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract MDMVW5115TokenInputSlipageAMB23 is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, OP, AVAX];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE

@@ -125,6 +125,7 @@ struct SetupVars {
     uint16 dstLzChainId;
     uint32 dstHypChainId;
     uint16 dstWormholeChainId;
+    uint256 trueChainIdIndex;
     uint256 fork;
     address[] ambAddresses;
     address superform;
@@ -153,10 +154,12 @@ struct SetupVars {
     address liFiMockSwapToAttacker;
     address erc4626Form;
     address erc5115form;
+    address erc7540form;
     address coreStateRegistry;
     address PayloadHelper;
     address paymentHelper;
     address broadcastRegistry;
+    address asyncStateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
     address superformRouter;
@@ -179,6 +182,9 @@ struct SetupVars {
     address debridgeForwarderValidator;
     address rewardsDistributor;
     address eRC5115To4626WrapperFactory;
+    uint256 superformId;
+    address token;
+    address mgr;
     Vm.Log[] logs;
     address superPositions;
     SuperRegistry superRegistryC;
