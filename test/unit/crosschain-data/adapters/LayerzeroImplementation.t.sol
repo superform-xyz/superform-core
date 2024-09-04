@@ -63,6 +63,9 @@ contract LayerzeroImplementationUnitTest is BaseSetup {
         AMBMessage memory ambMessage;
         ambMessage.txInfo = DataLib.packTxInfo(0, 0, 0, 1, address(0), 0);
 
+        uint8[] memory ambIds = new uint8[](1);
+        ambMessage.params = abi.encode(ambIds, bytes(""));
+
         layerzeroImplementation.lzReceive(0, bytes("test"), 420, abi.encode(ambMessage));
         assertGt(layerzeroImplementation.failedMessages(0, bytes("test"), 420).length, 0);
     }
