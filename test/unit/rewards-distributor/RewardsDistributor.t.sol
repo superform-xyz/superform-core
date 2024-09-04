@@ -7,7 +7,6 @@ import { MerkleReader } from "test/utils/merkle/helper/MerkleReader.sol";
 import { SuperRBAC } from "src/settings/SuperRBAC.sol";
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import "forge-std/console.sol";
 
 contract RewardsDistributorTests is MerkleReader {
     RewardsDistributor private rewards;
@@ -186,7 +185,6 @@ contract RewardsDistributorTests is MerkleReader {
         address user = testUsers[periodId][2];
         (,,,, bytes32[] memory proof_, address[] memory tokensToClaim, uint256[] memory amountsToClaim) =
             _generateMerkleTree(MerkleReader.MerkleArgs(periodId, user, OP));
-
 
         address[] memory tokensToClaimPartial = new address[](1);
         tokensToClaimPartial[0] = tokensToClaim[0];

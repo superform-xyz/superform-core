@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
-import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.sol";
+import { IAsyncStateRegistry, SyncWithdrawTxDataPayload } from "src/interfaces/IAsyncStateRegistry.sol";
 import { IPayloadHelper } from "src/interfaces/IPayloadHelper.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
@@ -16,7 +16,6 @@ import {
     ReturnSingleData,
     InitMultiVaultData,
     InitSingleVaultData,
-    TimelockPayload,
     AMBMessage
 } from "src/types/DataTypes.sol";
 
@@ -73,14 +72,12 @@ contract PayloadHelper is IPayloadHelper {
         returns (DecodedDstPayload memory v)
     {
         _isValidPayloadId(dstPayloadId_, _getCoreStateRegistry());
-
-        (v.txType, v.callbackType, v.multi, v.srcSender, v.srcChainId) =
-            _decodePayloadHeader(dstPayloadId_, _getCoreStateRegistry());
+        _decodePayloadHeader(v, dstPayloadId_, _getCoreStateRegistry());
 
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
-            (v.amounts, v.srcPayloadId) = _decodeReturnData(dstPayloadId_, v.multi, _getCoreStateRegistry());
+            _decodeReturnData(v, dstPayloadId_, _getCoreStateRegistry());
         } else if (v.callbackType == uint256(CallbackType.INIT)) {
-            _decodeInitData(dstPayloadId_, v.multi, _getCoreStateRegistry(), v);
+            _decodeInitData(v, dstPayloadId_, _getCoreStateRegistry());
         } else {
             revert Error.INVALID_PAYLOAD();
         }
@@ -105,7 +102,7 @@ contract PayloadHelper is IPayloadHelper {
         _isValidPayloadId(dstPayloadId_, coreStateRegistry);
 
         DecodeDstPayloadLiqDataInternalVars memory v;
-        (, v.callbackType, v.multi,,) = _decodePayloadHeader(dstPayloadId_, coreStateRegistry);
+        (, v.callbackType, v.multi,,,) = coreStateRegistry.payloadHeader(dstPayloadId_).decodeTxInfo();
 
         if (v.multi == 1) {
             return _decodeMultiLiqData(dstPayloadId_, coreStateRegistry);
@@ -140,20 +137,21 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     /// @inheritdoc IPayloadHelper
-    function decodeTimeLockPayload(uint256 timelockPayloadId_)
+    function decodeSyncWithdrawPayload(uint256 syncWithdrawPayloadId_)
         external
         view
         override
         returns (address receiverAddress, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
     {
-        ITimelockStateRegistry timelockStateRegistry =
-            ITimelockStateRegistry(superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY")));
+        IAsyncStateRegistry asyncStateRegistry =
+            IAsyncStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY")));
 
-        if (timelockPayloadId_ > timelockStateRegistry.timelockPayloadCounter()) {
+        if (syncWithdrawPayloadId_ > asyncStateRegistry.syncWithdrawTxDataPayloadCounter()) {
             revert Error.INVALID_PAYLOAD_ID();
         }
 
-        TimelockPayload memory payload = timelockStateRegistry.getTimelockPayload(timelockPayloadId_);
+        SyncWithdrawTxDataPayload memory payload =
+            asyncStateRegistry.getSyncWithdrawTxDataPayload(syncWithdrawPayloadId_);
 
         return (
             payload.data.receiverAddress,
@@ -175,24 +173,24 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     /// @inheritdoc IPayloadHelper
-    function decodeTimeLockFailedPayload(uint256 payloadId_)
+    function decodeAsyncAckPayload(uint256 payloadId_)
         external
         view
         override
         returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
     {
-        IBaseStateRegistry timelockPayloadRegistry =
-            IBaseStateRegistry(superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY")));
+        IBaseStateRegistry asyncStateRegistry =
+            IBaseStateRegistry(superRegistry.getAddress(keccak256("ASYNC_STATE_REGISTRY")));
 
-        _isValidPayloadId(payloadId_, timelockPayloadRegistry);
+        _isValidPayloadId(payloadId_, asyncStateRegistry);
 
-        bytes memory payloadBody = timelockPayloadRegistry.payloadBody(payloadId_);
-        uint256 payloadHeader = timelockPayloadRegistry.payloadHeader(payloadId_);
+        bytes memory payloadBody = asyncStateRegistry.payloadBody(payloadId_);
+        uint256 payloadHeader = asyncStateRegistry.payloadHeader(payloadId_);
 
         (, uint8 callbackType_,,, address srcSender_, uint64 srcChainId_) = payloadHeader.decodeTxInfo();
 
-        /// @dev callback type can never be INIT / RETURN
-        if (callbackType_ == uint256(CallbackType.FAIL)) {
+        /// @dev callback type can never be INIT
+        if (callbackType_ == uint256(CallbackType.RETURN) || callbackType_ == uint256(CallbackType.FAIL)) {
             ReturnSingleData memory rsd = abi.decode(payloadBody, (ReturnSingleData));
             amount = rsd.amount;
             superformId = rsd.superformId;
@@ -220,84 +218,84 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     function _decodePayloadHeader(
+        DecodedDstPayload memory v_,
         uint256 dstPayloadId_,
         IBaseStateRegistry coreStateRegistry_
     )
         internal
         view
-        returns (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId)
     {
-        (txType, callbackType, multi,, srcSender, srcChainId) =
+        (v_.txType, v_.callbackType, v_.multi,, v_.srcSender, v_.srcChainId) =
             coreStateRegistry_.payloadHeader(dstPayloadId_).decodeTxInfo();
     }
 
     function _decodeReturnData(
+        DecodedDstPayload memory v_,
         uint256 dstPayloadId_,
-        uint8 multi_,
         IBaseStateRegistry coreStateRegistry_
     )
         internal
         view
-        returns (uint256[] memory amounts, uint256 srcPayloadId)
     {
-        if (multi_ == 1) {
+        if (v_.multi == 1) {
             ReturnMultiData memory rd = abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (ReturnMultiData));
-            return (rd.amounts, rd.payloadId);
+            v_.amounts = rd.amounts;
+            v_.srcPayloadId = rd.payloadId;
         } else {
             ReturnSingleData memory rsd = abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (ReturnSingleData));
-            amounts = new uint256[](1);
-            amounts[0] = rsd.amount;
-            return (amounts, rsd.payloadId);
+            v_.amounts = new uint256[](1);
+            v_.amounts[0] = rsd.amount;
+
+            v_.srcPayloadId = rsd.payloadId;
         }
     }
 
     function _decodeInitData(
+        DecodedDstPayload memory v_,
         uint256 dstPayloadId_,
-        uint8 multi_,
-        IBaseStateRegistry coreStateRegistry_,
-        DecodedDstPayload memory v
+        IBaseStateRegistry coreStateRegistry_
     )
         internal
         view
     {
-        if (multi_ == 1) {
+        if (v_.multi == 1) {
             InitMultiVaultData memory imvd =
                 abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (InitMultiVaultData));
 
-            v.amounts = imvd.amounts;
-            v.outputAmounts = imvd.outputAmounts;
-            v.slippages = imvd.maxSlippages;
-            v.superformIds = imvd.superformIds;
-            v.hasDstSwaps = imvd.hasDstSwaps;
-            v.extraFormData = imvd.extraFormData;
-            v.receiverAddress = imvd.receiverAddress;
-            v.srcPayloadId = imvd.payloadId;
-            v.retain4626 = imvd.retain4626s;
+            v_.amounts = imvd.amounts;
+            v_.outputAmounts = imvd.outputAmounts;
+            v_.slippages = imvd.maxSlippages;
+            v_.superformIds = imvd.superformIds;
+            v_.hasDstSwaps = imvd.hasDstSwaps;
+            v_.extraFormData = imvd.extraFormData;
+            v_.receiverAddress = imvd.receiverAddress;
+            v_.srcPayloadId = imvd.payloadId;
+            v_.retain4626 = imvd.retain4626s;
         } else {
             InitSingleVaultData memory isvd =
                 abi.decode(coreStateRegistry_.payloadBody(dstPayloadId_), (InitSingleVaultData));
 
-            v.amounts = new uint256[](1);
-            v.amounts[0] = isvd.amount;
+            v_.amounts = new uint256[](1);
+            v_.amounts[0] = isvd.amount;
 
-            v.outputAmounts = new uint256[](1);
-            v.outputAmounts[0] = isvd.outputAmount;
+            v_.outputAmounts = new uint256[](1);
+            v_.outputAmounts[0] = isvd.outputAmount;
 
-            v.slippages = new uint256[](1);
-            v.slippages[0] = isvd.maxSlippage;
+            v_.slippages = new uint256[](1);
+            v_.slippages[0] = isvd.maxSlippage;
 
-            v.superformIds = new uint256[](1);
-            v.superformIds[0] = isvd.superformId;
+            v_.superformIds = new uint256[](1);
+            v_.superformIds[0] = isvd.superformId;
 
-            v.hasDstSwaps = new bool[](1);
-            v.hasDstSwaps[0] = isvd.hasDstSwap;
+            v_.hasDstSwaps = new bool[](1);
+            v_.hasDstSwaps[0] = isvd.hasDstSwap;
 
-            v.retain4626 = new bool[](1);
-            v.retain4626[0] = isvd.retain4626;
+            v_.retain4626 = new bool[](1);
+            v_.retain4626[0] = isvd.retain4626;
 
-            v.extraFormData = isvd.extraFormData;
-            v.receiverAddress = isvd.receiverAddress;
-            v.srcPayloadId = isvd.payloadId;
+            v_.extraFormData = isvd.extraFormData;
+            v_.receiverAddress = isvd.receiverAddress;
+            v_.srcPayloadId = isvd.payloadId;
         }
     }
 

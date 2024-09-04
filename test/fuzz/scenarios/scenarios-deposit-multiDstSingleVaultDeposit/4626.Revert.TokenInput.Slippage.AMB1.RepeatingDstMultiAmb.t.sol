@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract MDSVDNormal4626RevertNoTokenInputSlippageAMB1RepeatingDstMultiAmb is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, ARBI, OP];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE

@@ -86,11 +86,10 @@ contract LayerzeroImplementationTest is BaseSetup {
     }
 
     function test_estimateFeesWithInvalidChainId(uint64 chainId) public {
-        /// @dev chainIds = [1, 56, 43114, 137, 42161, 10];
-        /// @dev notice chainId = 1 is invalid
-        vm.assume(
-            chainId != 137 && chainId != 42_161 && chainId != 10 && chainId != 56 && chainId != 43_114 && chainId != 250
-        );
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            vm.assume(chainId != chainIds[i]);
+        }
+
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         layerzeroImplementation.estimateFees(chainId, abi.encode(420), bytes(""));
     }
@@ -100,6 +99,8 @@ contract LayerzeroImplementationTest is BaseSetup {
         uint64 chainId = chainIds[chainIdSeed_ % chainIds.length];
         /// @dev estimating fees for same chain is invalid
         vm.assume(chainId != 1);
+        vm.assume(chainId != 97);
+        vm.assume(chainId != 11_155_111);
         uint256 fees = layerzeroImplementation.estimateFees(chainId, abi.encode(420), bytes(""));
         assertGt(fees, 0);
     }
@@ -327,7 +328,10 @@ contract LayerzeroImplementationTest is BaseSetup {
         (ambMessage, ambExtraData, coreStateRegistry) = _setupBroadcastPayloadAMBData(users[userIndex]);
 
         vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
-        vm.assume(malice_ != getContract(ETH, "CoreStateRegistry") && malice_ != getContract(ETH, "BroadcastRegistry"));
+        vm.assume(
+            malice_ != getContract(ETH, "CoreStateRegistry") && malice_ != getContract(ETH, "BroadcastRegistry")
+                && malice_ != getContract(ETH, "AsyncStateRegistry")
+        );
         vm.deal(malice_, 100 ether);
         vm.prank(malice_);
         layerzeroImplementation.dispatchPayload{ value: 0.1 ether }(
@@ -484,9 +488,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         superRegistryOP.setStateRegistryAddress(registryId_, registryAddress_);
     }
 
-    function _setupBroadcastPayloadAMBData(
-        address _srcSender
-    )
+    function _setupBroadcastPayloadAMBData(address _srcSender)
         internal
         returns (AMBMessage memory, BroadCastAMBExtraData memory, address)
     {

@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract SXSVDNormal4626RevertTokenInputSlippageAMB1 is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, AVAX, POLY];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE

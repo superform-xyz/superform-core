@@ -22,6 +22,8 @@ ifeq ($(ENVIRONMENT), local)
 	export OPTIMISM_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/OPTIMISM_RPC_URL/credential)
 	export BASE_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/BASE_RPC_URL/credential)
 	export FANTOM_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/FANTOM_RPC_URL/credential)
+	export SEPOLIA_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/SEPOLIA_RPC_URL/credential)
+	export BSC_TESTNET_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/BSC_TESTNET_RPC_URL/credential)
 	export LINEA_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/LINEA_RPC_URL/credential)
 	export BLAST_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/BLAST_RPC_URL/credential)
 endif
@@ -31,6 +33,7 @@ CHECK_FORGE := $(shell command -v forge 2> /dev/null)
 CHECK_SOLC := $(shell command -v solc 2> /dev/null)
 CHECK_ABIGEN := $(shell command -v abigen 2> /dev/null)
 CHECK_ITYFUZZ := $(shell ityfuzz -v forge 2> /dev/null)
+
 
 check-forge:
 ifndef CHECK_FORGE
