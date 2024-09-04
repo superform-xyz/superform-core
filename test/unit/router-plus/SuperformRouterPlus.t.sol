@@ -163,7 +163,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         // Step 2: Start cross-chain rebalance
         vm.selectFork(FORKS[SOURCE_CHAIN]);
-        ISuperformRouterPlus.InitiateXChainRebalanceArgs memory args = _buildInitiateXChainRebalanceArgs();
+        ISuperformRouterPlus.InitiateXChainRebalanceArgs memory args =
+            _buildInitiateXChainRebalanceArgs(REBALANCE_FROM, REBALANCE_TO);
 
         vm.startPrank(deployer);
 
@@ -336,7 +337,10 @@ contract SuperformRouterPlusTest is ProtocolActions {
         args.rebalanceToCallData = _callDataRebalanceToOneVaultxChain(totalAmountToDeposit, args.interimAsset);
     }
 
-    function _buildInitiateXChainRebalanceArgs()
+    function _buildInitiateXChainRebalanceArgs(
+        uint64 REBALANCE_FROM,
+        uint64 REBALANCE_TO
+    )
         internal
         returns (ISuperformRouterPlus.InitiateXChainRebalanceArgs memory args)
     {
@@ -346,22 +350,26 @@ contract SuperformRouterPlusTest is ProtocolActions {
         args.sharesToRedeem = SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId5ETH);
         args.interimAsset = getContract(SOURCE_CHAIN, "USDC");
         args.receiverAddressSP = deployer;
-        vm.selectFork(FORKS[ETH]);
+        vm.selectFork(FORKS[REBALANCE_FROM]);
         uint256 expectedAmountOfRebalanceFrom = IBaseForm(superform5ETH).previewRedeemFrom(args.sharesToRedeem);
         // conversion from WETH on DSTCHAIN to USDC on SOURCE CHAIN
         args.expectedAmountInterimAsset = _convertDecimals(
-            expectedAmountOfRebalanceFrom, getContract(ETH, "WETH"), args.interimAsset, ETH, SOURCE_CHAIN
+            expectedAmountOfRebalanceFrom,
+            getContract(REBALANCE_FROM, "WETH"),
+            args.interimAsset,
+            REBALANCE_FROM,
+            SOURCE_CHAIN
         );
         vm.selectFork(initialFork);
         args.finalizeSlippage = 100; // 1%
-        args.callData = _callDataRebalanceFromXChain(args.interimAsset, superformId5ETH, ETH);
+        args.callData = _callDataRebalanceFromXChain(args.interimAsset, superformId5ETH, REBALANCE_FROM);
 
         /// @dev rebalance to call data formulation for a xchain deposit
         args.rebalanceToSelector = IBaseRouter.singleXChainSingleVaultDeposit.selector;
         args.rebalanceToAmbIds = abi.encode(AMBs);
-        args.rebalanceToDstChainIds = abi.encode(uint64(OP));
+        args.rebalanceToDstChainIds = abi.encode(uint64(REBALANCE_TO));
 
-        vm.selectFork(FORKS[OP]);
+        vm.selectFork(FORKS[REBALANCE_TO]);
 
         (address superformRebalanceTo,,) = superformId4OP.getSuperform();
         address underlyingTokenRebalanceTo = IBaseForm(superformRebalanceTo).getVaultAsset();
@@ -373,11 +381,11 @@ contract SuperformRouterPlusTest is ProtocolActions {
             underlyingTokenRebalanceTo,
             getContract(SOURCE_CHAIN, "SuperformRouter"),
             SOURCE_CHAIN,
-            OP,
-            OP,
+            REBALANCE_TO,
+            REBALANCE_TO,
             false,
-            getContract(OP, "CoreStateRegistry"),
-            uint256(OP),
+            getContract(REBALANCE_TO, "CoreStateRegistry"),
+            uint256(REBALANCE_TO),
             1e18,
             //1e18,
             false,
@@ -391,7 +399,11 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         // conversion from USDC on SOURCE CHAIN to DAI on DSTCHAIN
         uint256 expectedAmountToReceiveAfterBridge = _convertDecimals(
-            args.expectedAmountInterimAsset, args.interimAsset, getContract(OP, "DAI"), SOURCE_CHAIN, OP
+            args.expectedAmountInterimAsset,
+            args.interimAsset,
+            getContract(REBALANCE_TO, "DAI"),
+            SOURCE_CHAIN,
+            REBALANCE_TO
         );
 
         uint256 expectedOutputAmount = IBaseForm(superform4OP).previewDepositTo(expectedAmountToReceiveAfterBridge);
@@ -406,7 +418,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
                 token: args.interimAsset,
                 interimToken: address(0),
                 bridgeId: 1,
-                liqDstChainId: OP,
+                liqDstChainId: REBALANCE_TO,
                 nativeAmount: 0
             }),
             permit2data: "",
