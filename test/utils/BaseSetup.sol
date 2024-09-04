@@ -1177,6 +1177,9 @@ abstract contract BaseSetup is StdInvariant, Test {
             bytes32 routerPlusId = keccak256("SUPERFORM_ROUTER_PLUS");
             vars.superRegistryC.setAddress(routerPlusId, vars.superformRouterPlus, vars.chainId);
 
+            bytes32 routerPlusAsyncId = keccak256("SUPERFORM_ROUTER_PLUS_ASYNC");
+            vars.superRegistryC.setAddress(routerPlusAsyncId, vars.superformRouterPlusAsync, vars.chainId);
+
             vars.superRBACC.setRoleAdmin(keccak256("ROUTER_PLUS_PROCESSOR_ROLE"), vars.superRBACC.PROTOCOL_ADMIN_ROLE());
             vars.superRBACC.grantRole(keccak256("ROUTER_PLUS_PROCESSOR_ROLE"), deployer);
         }

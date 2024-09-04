@@ -264,7 +264,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         /// information in amounts/outputAmounts should have that reflected from the get go in the first step
         vars.interimAsset = IERC20(data.interimAsset);
 
-        if (vars.balanceOfInterim >= data.expectedAmountInterimAsset) {
+        if (vars.balanceOfInterim > data.expectedAmountInterimAsset) {
             vars.amountToDeposit = data.expectedAmountInterimAsset;
             /// @dev transfer the remaining balance to the paymaster
             vars.interimAsset.safeTransfer(
