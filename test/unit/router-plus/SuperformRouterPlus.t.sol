@@ -995,8 +995,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         // Perform processPayload on source chain to mint SuperPositions
         coreStateRegistry = CoreStateRegistry(getContract(fromChain, "CoreStateRegistry"));
-        console.log(coreStateRegistry.payloadsCount());
-        coreStateRegistry.processPayload(2);
+
+        coreStateRegistry.processPayload(coreStateRegistry.payloadsCount());
 
         vm.stopPrank();
     }

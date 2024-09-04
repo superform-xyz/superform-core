@@ -8,8 +8,6 @@ import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 import "./MockERC20.sol";
 
-import "forge-std/console.sol";
-
 /// @title LiFi Router Mock
 /// @dev eventually replace this by using a fork of the real registry contract
 
@@ -137,12 +135,6 @@ contract LiFiMock is Test {
             finalAmount =
                 ((amountOut_ * USDPerUnderlyingToken) * 10 ** (decimal2 - decimal1)) / USDPerUnderlyingTokenDst;
         }
-        console.log("amountOut_", amountOut_);
-        console.log("USDPerUnderlyingTokenDst", USDPerUnderlyingTokenDst);
-        console.log("USDPerUnderlyingToken", USDPerUnderlyingToken);
-        console.log("decimal1", decimal1);
-        console.log("decimal2", decimal2);
-        console.log("finalAmount", finalAmount);
 
         if (outputToken != NATIVE) {
             deal(outputToken, receiver_, MockERC20(outputToken).balanceOf(receiver_) + finalAmount);
