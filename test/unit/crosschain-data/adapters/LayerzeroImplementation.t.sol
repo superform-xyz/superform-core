@@ -8,12 +8,16 @@ import { DataLib } from "src/libraries/DataLib.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { Error } from "src/libraries/Error.sol";
+import { ProofLib } from "src/libraries/ProofLib.sol";
+import { IAmbImplementationV2 } from "src/interfaces/IAmbImplementationV2.sol";
 
 contract LayerzeroImplementationUnitTest is BaseSetup {
     ISuperRegistry public superRegistry;
     LayerzeroImplementation layerzeroImplementation;
     address public bond;
     bytes public srcAddressOP;
+
+    using ProofLib for bytes;
 
     function setUp() public override {
         super.setUp();
@@ -61,5 +65,32 @@ contract LayerzeroImplementationUnitTest is BaseSetup {
 
         layerzeroImplementation.lzReceive(0, bytes("test"), 420, abi.encode(ambMessage));
         assertGt(layerzeroImplementation.failedMessages(0, bytes("test"), 420).length, 0);
+    }
+
+    function test_revert_LzReceiveMaliciousDelivery() public {
+        vm.selectFork(FORKS[ETH]);
+        bytes memory trustedRemote = layerzeroImplementation.trustedRemoteLookup(106);
+
+        vm.prank(address(layerzeroImplementation.lzEndpoint()));
+
+        uint8[] memory ambIds = new uint8[](1);
+
+        AMBMessage memory ambMessage;
+        ambMessage.txInfo = DataLib.packTxInfo(0, 0, 0, 1, address(0), 0);
+        ambMessage.params = abi.encode(ambIds, bytes(""));
+
+        layerzeroImplementation.lzReceive(106, trustedRemote, 420, abi.encode(ambMessage));
+
+        AMBMessage memory proofAmbMessage;
+        proofAmbMessage.txInfo = DataLib.packTxInfo(0, 0, 0, 1, address(0), 0);
+        proofAmbMessage.params = bytes("");
+
+        proofAmbMessage.params = abi.encode(proofAmbMessage).computeProofBytes();
+
+        bytes memory proofEncoded = abi.encode(proofAmbMessage);
+
+        vm.prank(address(layerzeroImplementation.lzEndpoint()));
+        vm.expectRevert(IAmbImplementationV2.MALICIOUS_DELIVERY.selector);
+        layerzeroImplementation.lzReceive(106, trustedRemote, 420, proofEncoded);
     }
 }

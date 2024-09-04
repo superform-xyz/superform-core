@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { IAmbImplementationV2 as IAmbImplementation } from "src/interfaces/IAmbImplementationV2.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { Error } from "src/libraries/Error.sol";
+import { ProofLib } from "src/libraries/ProofLib.sol";
 import { AMBMessage } from "src/types/DataTypes.sol";
 import { ILayerZeroEndpoint } from "src/vendor/layerzero/ILayerZeroEndpoint.sol";
 import { ILayerZeroReceiver } from "src/vendor/layerzero/ILayerZeroReceiver.sol";
@@ -17,6 +18,7 @@ import { ILayerZeroUserApplicationConfig } from "src/vendor/layerzero/ILayerZero
 /// @author Zeropoint Labs
 contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicationConfig, ILayerZeroReceiver {
     using DataLib for uint256;
+    using ProofLib for AMBMessage;
 
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                         //
@@ -29,6 +31,8 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     //////////////////////////////////////////////////////////////
 
     ILayerZeroEndpoint public lzEndpoint;
+
+    mapping(bytes32 => bool) public ambProtect;
 
     mapping(uint64 => uint16) public ambChainId;
     mapping(uint16 => uint64) public superChainId;
@@ -262,6 +266,10 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         override
         onlyLzEndpoint
     {
+        /// @dev decodes payload received and check payload
+        AMBMessage memory decoded = abi.decode(payload_, (AMBMessage));
+        _ambProtect(decoded);
+
         bytes memory trustedRemote = trustedRemoteLookup[srcChainId_];
 
         if (
@@ -379,5 +387,22 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
             failedMessages[srcChainId_][srcAddress_][nonce_] = keccak256(payload_);
             emit MessageFailed(srcChainId_, srcAddress_, nonce_, payload_);
         }
+    }
+
+    /// @dev prevents the same AMB from delivery a payload and its proof
+    /// @dev is an additional protection against malicious ambs
+    function _ambProtect(AMBMessage memory _message) internal {
+        bytes32 proof;
+
+        /// @dev amb protect
+        if (_message.params.length != 32) {
+            (, bytes memory payloadBody) = abi.decode(_message.params, (uint8[], bytes));
+            proof = AMBMessage(_message.txInfo, payloadBody).computeProof();
+        } else {
+            proof = abi.decode(_message.params, (bytes32));
+        }
+
+        if (ambProtect[proof]) revert MALICIOUS_DELIVERY();
+        ambProtect[proof] = true;
     }
 }
