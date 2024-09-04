@@ -182,6 +182,8 @@ struct SetupVars {
     address debridgeForwarderValidator;
     address rewardsDistributor;
     address eRC5115To4626WrapperFactory;
+    address superformRouterPlus;
+    address superformRouterPlusAsync;
     uint256 superformId;
     address token;
     address mgr;

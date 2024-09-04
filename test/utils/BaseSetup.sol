@@ -99,6 +99,10 @@ import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { Error } from "src/libraries/Error.sol";
 import { RewardsDistributor } from "src/RewardsDistributor.sol";
+
+import { SuperformRouterPlus } from "src/router-plus/SuperformRouterPlus.sol";
+import { SuperformRouterPlusAsync } from "src/router-plus/SuperformRouterPlusAsync.sol";
+
 import "src/types/DataTypes.sol";
 import "./TestTypes.sol";
 
@@ -178,7 +182,9 @@ abstract contract BaseSetup is StdInvariant, Test {
         "DeBridgeValidator",
         "DeBridgeForwarderValidator",
         "RewardsDistributor",
-        "ERC5115To4626WrapperFactory"
+        "ERC5115To4626WrapperFactory",
+        "SuperformRouterPlus",
+        "SuperformRouterPlusAsync"
     ];
 
     /*//////////////////////////////////////////////////////////////
@@ -1160,6 +1166,22 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.superRegistryC.setAddress(rewardsId, vars.rewardsDistributor, vars.chainId);
             vars.superRBACC.setRoleAdmin(keccak256("REWARDS_ADMIN_ROLE"), vars.superRBACC.PROTOCOL_ADMIN_ROLE());
             vars.superRBACC.grantRole(keccak256("REWARDS_ADMIN_ROLE"), deployer);
+
+            /// @dev 21 deploy Superform Router Plus
+            vars.superformRouterPlus = address(new SuperformRouterPlus{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("SuperformRouterPlus"))] = vars.superformRouterPlus;
+
+            vars.superformRouterPlusAsync = address(new SuperformRouterPlusAsync{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("SuperformRouterPlusAsync"))] = vars.superformRouterPlusAsync;
+
+            bytes32 routerPlusId = keccak256("SUPERFORM_ROUTER_PLUS");
+            vars.superRegistryC.setAddress(routerPlusId, vars.superformRouterPlus, vars.chainId);
+
+            bytes32 routerPlusAsyncId = keccak256("SUPERFORM_ROUTER_PLUS_ASYNC");
+            vars.superRegistryC.setAddress(routerPlusAsyncId, vars.superformRouterPlusAsync, vars.chainId);
+
+            vars.superRBACC.setRoleAdmin(keccak256("ROUTER_PLUS_PROCESSOR_ROLE"), vars.superRBACC.PROTOCOL_ADMIN_ROLE());
+            vars.superRBACC.grantRole(keccak256("ROUTER_PLUS_PROCESSOR_ROLE"), deployer);
         }
 
         for (uint256 i = 0; i < chainIds.length; ++i) {

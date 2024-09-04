@@ -39,7 +39,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
     /// @inheritdoc ISuperformRouterPlus
     function rebalanceSinglePosition(RebalanceSinglePositionSyncArgs calldata args) external payable override {
-        ///@notice when building the data to rebalance to it is important to carefuly calculate previewRedeemAmount
+        ///@notice when building the data to rebalance to it is important to carefuly calculate expectedAmountToReceivePostRebalanceFrom
         /// this is especially important in multi vault rebalance
         address superPositions = _getAddress(keccak256("SUPER_POSITIONS"));
         address router = _getAddress(keccak256("SUPERFORM_ROUTER"));
@@ -60,7 +60,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             RebalancePositionsSyncArgs(
                 Actions.REBALANCE_FROM_SINGLE,
                 sharesToRedeem,
-                args.previewRedeemAmount,
+                args.expectedAmountToReceivePostRebalanceFrom,
                 args.interimAsset,
                 args.slippage,
                 args.rebalanceFromMsgValue,
@@ -81,7 +81,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
     /// @inheritdoc ISuperformRouterPlus
     function rebalanceMultiPositions(RebalanceMultiPositionsSyncArgs calldata args) external payable override {
-        ///@notice when building the data to rebalance to it is important to carefuly calculate previewRedeemAmount
+        ///@notice when building the data to rebalance to it is important to carefuly calculate expectedAmountToReceivePostRebalanceFrom
         /// this is especially important in multi vault rebalance
 
         address superPositions = _getAddress(keccak256("SUPER_POSITIONS"));
@@ -103,7 +103,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             RebalancePositionsSyncArgs(
                 Actions.REBALANCE_FROM_MULTI,
                 args.sharesToRedeem,
-                args.previewRedeemAmount,
+                args.expectedAmountToReceivePostRebalanceFrom,
                 args.interimAsset,
                 args.slippage,
                 args.rebalanceFromMsgValue,
@@ -400,7 +400,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     )
         internal
     {
-        IERC20 asset = IERC20(args.asset);
+        IERC20 interimAsset = IERC20(args.interimAsset);
 
         /// @dev validate the call dataREBALANCE_SINGLE_POSITIONS_DIFFERENT_AMOUNT
         if (!whitelistedSelectors[args.action][_parseSelectorMem(callData)]) {
@@ -411,7 +411,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             SingleDirectSingleVaultStateReq memory req =
                 abi.decode(_parseCallData(callData), (SingleDirectSingleVaultStateReq));
 
-            if (req.superformData.liqRequest.token != args.asset) {
+            if (req.superformData.liqRequest.token != args.interimAsset) {
                 revert REBALANCE_SINGLE_POSITIONS_DIFFERENT_TOKEN();
             }
             if (req.superformData.liqRequest.liqDstChainId != CHAIN_ID) {
@@ -431,7 +431,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
             for (uint256 i; i < len; ++i) {
                 // Validate that the token and chainId is equal in all indexes
-                if (req.superformData.liqRequests[i].token != args.asset) {
+                if (req.superformData.liqRequests[i].token != args.interimAsset) {
                     revert REBALANCE_MULTI_POSITIONS_DIFFERENT_TOKEN();
                 }
                 if (req.superformData.liqRequests[i].liqDstChainId != CHAIN_ID) {
@@ -448,11 +448,11 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         /// @dev send SPs to router
         _callSuperformRouter(router_, callData, args.rebalanceFromMsgValue);
 
-        uint256 amountToDeposit = asset.balanceOf(address(this)) - args.balanceBefore;
+        uint256 amountToDeposit = interimAsset.balanceOf(address(this)) - args.balanceBefore;
 
         if (amountToDeposit == 0) revert Error.ZERO_AMOUNT();
 
-        if (ENTIRE_SLIPPAGE * amountToDeposit < ((args.previewRedeemAmount * (ENTIRE_SLIPPAGE - args.slippage)))) {
+        if (ENTIRE_SLIPPAGE * amountToDeposit < ((args.expectedAmountToReceivePostRebalanceFrom * (ENTIRE_SLIPPAGE - args.slippage)))) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
 
@@ -461,7 +461,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             revert INVALID_DEPOSIT_SELECTOR();
         }
 
-        _deposit(router_, asset, amountToDeposit, args.rebalanceToMsgValue, rebalanceToCallData);
+        _deposit(router_, interimAsset, amountToDeposit, args.rebalanceToMsgValue, rebalanceToCallData);
     }
 
     function _transferSuperPositions(

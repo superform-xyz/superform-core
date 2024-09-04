@@ -35,6 +35,7 @@ CHECK_ABIGEN := $(shell command -v abigen 2> /dev/null)
 CHECK_ITYFUZZ := $(shell ityfuzz -v forge 2> /dev/null)
 
 
+
 check-forge:
 ifndef CHECK_FORGE
 	$(error "Forge is not installed. Please install Forge and retry.")
@@ -119,7 +120,7 @@ build-sizes: ## Builds the project and shows sizes
 
 .PHONY: test-vvv
 test-vvv: ## Runs tests with verbose output
-	forge test --match-test test_xChainWithdrawFromVault_InvalidChainId --evm-version cancun -vv
+	forge test --match-contract SuperformRouterPlusTest --evm-version cancun -vvv --decode-internal
 
 .PHONY: ftest
 ftest: ## Runs tests with cancun evm version

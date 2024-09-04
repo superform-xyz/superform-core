@@ -18,6 +18,7 @@ import {
 import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
 import { ISuperformRouterPlusAsync } from "src/interfaces/ISuperformRouterPlusAsync.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { SuperformFactory } from "src/SuperformFactory.sol";
 
 /// @title SuperformRouterPlusAsync
 /// @dev Completes the async step of cross chain rebalances and separates the balance from SuperformRouterPlus
@@ -46,7 +47,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
     }
 
     modifier onlyRouterPlusProcessor() {
-        if (!_hasRole(keccak256("ROUTER_PLUS_PROCESSOR"), msg.sender)) {
+        if (!_hasRole(keccak256("ROUTER_PLUS_PROCESSOR_ROLE"), msg.sender)) {
             revert NOT_ROUTER_PLUS_PROCESSOR();
         }
         _;
@@ -263,7 +264,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         /// information in amounts/outputAmounts should have that reflected from the get go in the first step
         vars.interimAsset = IERC20(data.interimAsset);
 
-        if (vars.balanceOfInterim >= data.expectedAmountInterimAsset) {
+        if (vars.balanceOfInterim > data.expectedAmountInterimAsset) {
             vars.amountToDeposit = data.expectedAmountInterimAsset;
             /// @dev transfer the remaining balance to the paymaster
             vars.interimAsset.safeTransfer(
@@ -486,6 +487,34 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
 
         emit RefundCompleted(routerPlusPayloadId_, msg.sender);
     }
+    /*
+    /// @inheritdoc ISuperformRouterPlusAsync
+    function forwardDustToPaymaster(address token_) external override {
+        if (token_ == address(0)) revert Error.ZERO_ADDRESS();
+
+        address paymaster = _getAddress(keccak256("PAYMASTER"));
+        IERC20 token = IERC20(token_);
+
+        SuperformFactory factory = SuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY")));
+
+        address[] memory formImplementations = factory.formImplementations();
+        uint256 len = formImplementations.length;
+
+        bool allPaused = true;
+        for (uint256 i; i < len; ++i) {
+            allPaused =
+    allPaused && factory.isFormImplementationPaused(factory.formImplementationIds(formImplementations[i]));
+        }
+
+        if (allPaused) {
+            uint256 dust = token.balanceOf(address(this));
+            if (dust != 0) {
+                token.safeTransfer(paymaster, dust);
+                emit RouterPlusDustForwardedToPaymaster(token_, dust);
+            }
+        }
+    }
+    */
 
     //////////////////////////////////////////////////////////////
     //                   INTERNAL FUNCTIONS                     //
