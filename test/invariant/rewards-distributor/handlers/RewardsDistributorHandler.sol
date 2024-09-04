@@ -8,7 +8,6 @@ import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { StdInvariant } from "forge-std/StdInvariant.sol";
 import { RewardsDistributorStore } from "../stores/RewardsDistributorStore.sol";
-import "forge-std/console.sol";
 
 contract RewardsDistributorHandler is StdInvariant, MerkleReader {
     RewardsDistributorStore public store;
@@ -63,7 +62,7 @@ contract RewardsDistributorHandler is StdInvariant, MerkleReader {
 
     constructor(
         uint64[] memory chainIds_,
-        string[43] memory contractNames_,
+        string[44] memory contractNames_,
         address[][] memory coreContracts,
         uint256[] memory forksArray,
         RewardsDistributorStore _rewardsDistributorStore
@@ -303,7 +302,7 @@ contract RewardsDistributorHandler is StdInvariant, MerkleReader {
 
     struct InitHandlerSetupVars {
         uint64[] chainIds;
-        string[43] contractNames;
+        string[44] contractNames;
         address[][] coreContracts;
         uint256[] forksArray;
     }

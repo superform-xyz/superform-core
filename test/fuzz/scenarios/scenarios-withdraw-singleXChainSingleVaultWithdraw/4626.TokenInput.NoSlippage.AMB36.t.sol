@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract SXSVWNormal4626NativeSlippageAMB36 is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, ARBI, AVAX];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
