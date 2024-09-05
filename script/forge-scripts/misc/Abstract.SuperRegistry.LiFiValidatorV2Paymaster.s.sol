@@ -97,6 +97,6 @@ abstract contract AbstractSuperRegistryLiFiValidatorV2 is EnvironmentUtils {
         addToBatch(address(vars.superRegistryC), 0, txn);
 
         /// Send to Safe to sign
-        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], true);
+        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], 0, true);
     }
 }

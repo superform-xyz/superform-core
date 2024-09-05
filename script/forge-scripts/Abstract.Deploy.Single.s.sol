@@ -1222,7 +1222,7 @@ abstract contract AbstractDeploySingle is BatchScript {
             addToBatch(vars.paymentHelper, 0, txn);
 
             /// Send to Safe to sign
-            executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], execute);
+            executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], 0, execute);
         }
     }
 

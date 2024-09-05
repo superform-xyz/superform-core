@@ -197,7 +197,7 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
         }
 
         /// Send to Safe to sign
-        executeBatch(vars.chainId, PROTOCOL_ADMINS[trueIndex], false);
+        executeBatch(vars.chainId, PROTOCOL_ADMINS[trueIndex], 0, false);
     }
 
     function _configureStaging(
