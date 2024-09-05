@@ -19,20 +19,6 @@ struct UpdateVars {
 }
 
 abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
-    uint16[10] public lz_v1_chainIds = [uint16(101), 102, 106, 109, 110, 111, 184, 112, 183, 243];
-    address[10] public lzEndpoints = [
-        0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
-        0x3c2269811836af69497E5F486A85D7316753cf62,
-        0x3c2269811836af69497E5F486A85D7316753cf62,
-        0x3c2269811836af69497E5F486A85D7316753cf62,
-        0x3c2269811836af69497E5F486A85D7316753cf62,
-        0x3c2269811836af69497E5F486A85D7316753cf62,
-        0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7,
-        0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7,
-        0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7,
-        0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7
-    ];
-
     function _deployLayerzeroV1(
         uint256 env,
         uint256 i,
