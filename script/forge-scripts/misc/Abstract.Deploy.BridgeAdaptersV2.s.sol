@@ -371,7 +371,7 @@ abstract contract AbstractDeployBridgeAdaptersV2 is EnvironmentUtils {
         addToBatch(address(vars.superRegistryC), 0, txn);
 
         /// Send to Safe to sign
-        executeBatch(vars.chainId, protocolAdmin, false);
+        executeBatch(vars.chainId, protocolAdmin, 0, false);
     }
 
     function _configureDeployedAdaptersStaging(

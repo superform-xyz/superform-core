@@ -7,7 +7,7 @@ import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
 
 contract AggregatorV3MockInvalidDecimals is AggregatorV3Interface {
     function decimals() external pure override returns (uint8) {
-        return 10;
+        return 20;
     }
 
     // You need to implement the rest of the AggregatorV3Interface functions
@@ -19,9 +19,7 @@ contract AggregatorV3MockInvalidDecimals is AggregatorV3Interface {
         return 1;
     }
 
-    function getRoundData(
-        uint80 _roundId
-    )
+    function getRoundData(uint80 _roundId)
         external
         pure
         override

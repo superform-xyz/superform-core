@@ -215,7 +215,7 @@ abstract contract AbstractDeployAxelar is EnvironmentUtils {
         }
 
         /// Send to Safe to sign
-        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], false);
+        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], 0, false);
     }
 
     function _getTrueIndex(uint256 chainId) public view returns (uint256 index) {
