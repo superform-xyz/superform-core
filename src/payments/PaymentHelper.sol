@@ -581,13 +581,12 @@ contract PaymentHelper is IPaymentHelper {
         if (configType_ == 1) {
             AggregatorV3Interface nativeFeedOracleContract = AggregatorV3Interface(abi.decode(config_, (address)));
 
-            uint256 oraclePrecision = _getOracleDecimals(nativeFeedOracleContract);
             /// @dev allows setting price feed to address(0), equivalent for resetting native price
-            if (
-                address(nativeFeedOracleContract) != address(0)
-                    && (oraclePrecision < MIN_FEED_PRECISION || oraclePrecision > MAX_FEED_PRECISION)
-            ) {
-                revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
+            if (address(nativeFeedOracleContract) != address(0)) {
+                uint256 oraclePrecision = _getOracleDecimals(nativeFeedOracleContract);
+                if (oraclePrecision < MIN_FEED_PRECISION || oraclePrecision > MAX_FEED_PRECISION) {
+                    revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
+                }
             }
 
             nativeFeedOracle[chainId_] = nativeFeedOracleContract;
@@ -597,13 +596,12 @@ contract PaymentHelper is IPaymentHelper {
         if (configType_ == 2) {
             AggregatorV3Interface gasPriceOracleContract = AggregatorV3Interface(abi.decode(config_, (address)));
 
-            uint256 oraclePrecision = _getOracleDecimals(gasPriceOracleContract);
             /// @dev allows setting gas price to address(0), equivalent for resetting gas price
-            if (
-                address(gasPriceOracleContract) != address(0)
-                    && (oraclePrecision < MIN_FEED_PRECISION || oraclePrecision > MAX_FEED_PRECISION)
-            ) {
-                revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
+            if (address(gasPriceOracleContract) != address(0)) {
+                uint256 oraclePrecision = _getOracleDecimals(gasPriceOracleContract);
+                if (oraclePrecision < MIN_FEED_PRECISION || oraclePrecision > MAX_FEED_PRECISION) {
+                    revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
+                }
             }
 
             gasPriceOracle[chainId_] = gasPriceOracleContract;
