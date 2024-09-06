@@ -100,7 +100,7 @@ abstract contract AbstractDeployPayloadHelper is EnvironmentUtils {
         addToBatch(address(vars.superRegistryC), 0, txn);
 
         /// Send to Safe to sign
-        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], false);
+        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], 0, false);
     }
 
     function _addPayloadHelperToSuperRegistryStaging(
