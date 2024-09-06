@@ -51,7 +51,7 @@ contract PaymentHelper is IPaymentHelper {
 
     uint256 private constant PROOF_LENGTH = 160;
     uint8 private constant MIN_FEED_PRECISION = 8;
-    uint8 private constant MAX_FEED_PRECISION = 8;
+    uint8 private constant MAX_FEED_PRECISION = 18;
     uint32 private constant TIMELOCK_FORM_ID = 2;
     uint256 private constant MAX_UINT256 = type(uint256).max;
 
