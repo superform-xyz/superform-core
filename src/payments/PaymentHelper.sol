@@ -1009,7 +1009,7 @@ contract PaymentHelper is IPaymentHelper {
                 uint256 oraclePrecision = _getOracleDecimals(AggregatorV3Interface(oracleAddr));
 
                 if (oraclePrecision == MIN_FEED_PRECISION) return uint256(value);
-                else return uint256(value) / (10 ** oraclePrecision - MIN_FEED_PRECISION);
+                else return uint256(value) / (10 ** (oraclePrecision - MIN_FEED_PRECISION));
             } catch {
                 /// @dev do nothing and return the default price at the end of the function
             }
@@ -1032,7 +1032,7 @@ contract PaymentHelper is IPaymentHelper {
                 uint256 oraclePrecision = _getOracleDecimals(AggregatorV3Interface(oracleAddr));
 
                 if (oraclePrecision == MIN_FEED_PRECISION) return uint256(dstTokenPrice);
-                else return uint256(dstTokenPrice) / (10 ** oraclePrecision - MIN_FEED_PRECISION);
+                else return uint256(dstTokenPrice) / (10 ** (oraclePrecision - MIN_FEED_PRECISION));
             } catch {
                 /// @dev do nothing and return the default price at the end of the function
             }
