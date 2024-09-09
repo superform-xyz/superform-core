@@ -221,6 +221,8 @@ abstract contract BaseSetup is StdInvariant, Test {
     address public constant OP_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
     address public constant BASE_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
     address public constant FANTOM_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
+    address public constant LINEA_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
+    address public constant BLAST_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
 
     address[] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
@@ -1433,6 +1435,18 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[FANTOM][getContract(FANTOM, "sUSDe")] = 0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c;
         tokenPriceFeeds[FANTOM][getContract(FANTOM, "USDe")] = 0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c;
+
+        /// LINEA
+        tokenPriceFeeds[LINEA][getContract(LINEA, "DAI")] = 0xAADAa473C1bDF7317ec07c915680Af29DeBfdCb5;
+        tokenPriceFeeds[LINEA][getContract(LINEA, "USDC")] = 0xAADAa473C1bDF7317ec07c915680Af29DeBfdCb5;
+        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
+        tokenPriceFeeds[LINEA][getContract(LINEA, "WETH")] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        tokenPriceFeeds[LINEA][NATIVE_TOKEN] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        tokenPriceFeeds[LINEA][getContract(LINEA, "ezETH")] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        tokenPriceFeeds[LINEA][getContract(LINEA, "wstETH")] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[LINEA][getContract(LINEA, "sUSDe")] = 0xAADAa473C1bDF7317ec07c915680Af29DeBfdCb5;
+        tokenPriceFeeds[LINEA][getContract(LINEA, "USDe")] = 0xAADAa473C1bDF7317ec07c915680Af29DeBfdCb5;
     }
 
     function _preDeploymentSetup(bool pinnedBlock, bool invariant) internal {
@@ -1446,10 +1460,10 @@ abstract contract BaseSetup is StdInvariant, Test {
             forks[POLY] = pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 60_619_414) : vm.createFork(POLYGON_RPC_URL_QN);
             forks[ARBI] =
                 pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 243_122_707) : vm.createFork(ARBITRUM_RPC_URL_QN);
-            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 124_063_271) : vm.createFork(OPTIMISM_RPC_URL_QN);
+            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 125_149_636) : vm.createFork(OPTIMISM_RPC_URL_QN);
             forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL_QN);
             forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 88_933_543) : vm.createFork(FANTOM_RPC_URL_QN);
-            forks[LINEA] = pinnedBlock ? vm.createFork(LINEA_RPC_URL, 9_012_611) : vm.createFork(LINEA_RPC_URL_QN);
+            forks[LINEA] = pinnedBlock ? vm.createFork(LINEA_RPC_URL, 9_241_361) : vm.createFork(LINEA_RPC_URL_QN);
             forks[BLAST] = pinnedBlock ? vm.createFork(BLAST_RPC_URL, 8_315_221) : vm.createFork(BLAST_RPC_URL_QN);
         }
 
@@ -1534,6 +1548,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         lzEndpointsStorage[OP] = OP_lzEndpoint;
         lzEndpointsStorage[BASE] = BASE_lzEndpoint;
         lzEndpointsStorage[FANTOM] = FANTOM_lzEndpoint;
+        lzEndpointsStorage[LINEA] = LINEA_lzEndpoint;
+        lzEndpointsStorage[BLAST] = BLAST_lzEndpoint;
 
         mapping(uint64 => address) storage hyperlaneMailboxesStorage = HYPERLANE_MAILBOXES;
         hyperlaneMailboxesStorage[ETH] = hyperlaneMailboxes[0];
@@ -1544,6 +1560,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         hyperlaneMailboxesStorage[OP] = hyperlaneMailboxes[5];
         hyperlaneMailboxesStorage[BASE] = hyperlaneMailboxes[6];
         hyperlaneMailboxesStorage[FANTOM] = hyperlaneMailboxes[7];
+        hyperlaneMailboxesStorage[LINEA] = hyperlaneMailboxes[8];
+        hyperlaneMailboxesStorage[BLAST] = hyperlaneMailboxes[9];
 
         mapping(uint64 => uint16) storage wormholeChainIdsStorage = WORMHOLE_CHAIN_IDS;
 

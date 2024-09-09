@@ -497,10 +497,19 @@ contract SmokeTestStaging is MainnetBaseSetup {
             paymentHelper = PaymentHelper(getContract(chainId, "PaymentHelper"));
 
             for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
-                assertEq(
-                    address(paymentHelper.nativeFeedOracle(TARGET_DEPLOYMENT_CHAINS[j])),
-                    PRICE_FEEDS[chainId][TARGET_DEPLOYMENT_CHAINS[j]]
-                );
+                /// @dev eoracle is not added in blast & linea
+                if (
+                    chainId != BLAST
+                        && (
+                            chainId == LINEA
+                                && (TARGET_DEPLOYMENT_CHAINS[j] != FANTOM && TARGET_DEPLOYMENT_CHAINS[j] != BSC)
+                        )
+                ) {
+                    assertEq(
+                        address(paymentHelper.nativeFeedOracle(TARGET_DEPLOYMENT_CHAINS[j])),
+                        PRICE_FEEDS[chainId][TARGET_DEPLOYMENT_CHAINS[j]]
+                    );
+                }
 
                 if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
                     assertEq(
@@ -550,8 +559,11 @@ contract SmokeTestStaging is MainnetBaseSetup {
             vm.selectFork(FORKS[chainId]);
             superFactory = SuperformFactory(getContract(chainId, "SuperformFactory"));
 
-            assertEq(superFactory.getFormImplementation(5), getContract(chainId, "ERC5115Form"));
-            assertEq(superFactory.getFormCount(), chainId == LINEA ? 3 : chainId == BLAST ? 2 : 5);
+            chainId != BLAST
+                ? assertEq(superFactory.getFormImplementation(5), getContract(chainId, "ERC5115Form"))
+                : assertEq(superFactory.getFormImplementation(205), getContract(chainId, "ERC5115Form"));
+            /// @dev in blast there are 6 forms (2 without operator, 2 with wrong state registry and 2 right superforms)
+            assertEq(superFactory.getFormCount(), chainId == LINEA ? 3 : chainId == BLAST ? 6 : 5);
             assertEq(superFactory.getFormStateRegistryId(5), 1);
         }
     }

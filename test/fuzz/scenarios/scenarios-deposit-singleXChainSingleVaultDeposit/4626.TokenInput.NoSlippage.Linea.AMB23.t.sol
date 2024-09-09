@@ -10,24 +10,21 @@ contract SXSVDNormal4626MultiTokenInputLineaNoSlippageAMB23 is ProtocolActions {
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        AMBs = [2, 3];
+        AMBs = [5, 6];
 
         CHAIN_0 = LINEA;
         DST_CHAINS = [OP];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[OP][0] = [1];
-
+        TARGET_UNDERLYINGS[OP][0] = [0];
         TARGET_VAULTS[OP][0] = [0];
-
         TARGET_FORM_KINDS[OP][0] = [0];
 
         AMOUNTS[OP][0] = [133];
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[OP][0] = [2];
-
+        LIQ_BRIDGES[OP][0] = [1];
         RECEIVE_4626[OP][0] = [false];
 
         actions.push(
@@ -39,8 +36,8 @@ contract SXSVDNormal4626MultiTokenInputLineaNoSlippageAMB23 is ProtocolActions {
                 revertError: "",
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                dstSwap: true,
-                externalToken: 1 // 0 = DAI, 1 = USDC, 2 = WETH
+                dstSwap: false,
+                externalToken: 0 // 0 = DAI, 1 = USDC, 2 = WETH
              })
         );
     }
