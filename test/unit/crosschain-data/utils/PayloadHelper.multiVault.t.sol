@@ -33,7 +33,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
         TARGET_FORM_KINDS[ETH][0] = [0, 0];
         TARGET_FORM_KINDS[ETH][1] = [0, 0];
 
-        AMOUNTS[ETH][0] = [20_000, 213];
+        AMOUNTS[ETH][0] = [222_222_222, 323];
 
         MAX_SLIPPAGE = 1000;
 
@@ -96,7 +96,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
                         DST_CHAINS[i]
                     );
 
-                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0] / 2, superPositions[0] / 2];
+                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0] / 2, superPositions[0] / 2 + 1];
                 }
             }
 
