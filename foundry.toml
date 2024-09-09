@@ -39,7 +39,6 @@ assertions_revert = true
 legacy_assertions = true
 gas_limit = "18446744073709551615"
 
-
 [profile.localdev]
 optimizer = false
 out = 'localdev'

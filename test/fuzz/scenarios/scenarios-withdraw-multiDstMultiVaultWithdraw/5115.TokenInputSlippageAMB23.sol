@@ -160,10 +160,10 @@ contract MDMVW5115TokenInputSlipageAMB23 is ProtocolActions {
 
                     /// @dev notice partial withdrawals in ETH->0 and OP->2
                     if (DST_CHAINS[i] == ETH) {
-                        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[0] - 1));
+                        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 10, superPositions[0] - 1));
                         AMOUNTS[DST_CHAINS[i]][1] = [amountOneWithdraw_, superPositions[1], superPositions[2]];
                     } else if (DST_CHAINS[i] == OP) {
-                        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[2] - 1));
+                        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 10, superPositions[2] - 1));
                         AMOUNTS[OP][1] = [superPositions[0], superPositions[1], amountOneWithdraw_];
                     } else if (DST_CHAINS[i] == AVAX) {
                         AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0], superPositions[1]];

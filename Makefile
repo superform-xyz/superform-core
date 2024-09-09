@@ -35,7 +35,6 @@ CHECK_ABIGEN := $(shell command -v abigen 2> /dev/null)
 CHECK_ITYFUZZ := $(shell ityfuzz -v forge 2> /dev/null)
 
 
-
 check-forge:
 ifndef CHECK_FORGE
 	$(error "Forge is not installed. Please install Forge and retry.")

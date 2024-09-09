@@ -50,7 +50,8 @@ contract PaymentHelper is IPaymentHelper {
     //////////////////////////////////////////////////////////////
 
     uint256 private constant PROOF_LENGTH = 160;
-    uint8 private constant SUPPORTED_FEED_PRECISION = 8;
+    uint8 private constant MIN_FEED_PRECISION = 8;
+    uint8 private constant MAX_FEED_PRECISION = 18;
     uint32 private constant TIMELOCK_FORM_ID = 2;
     uint256 private constant MAX_UINT256 = type(uint256).max;
 
@@ -538,7 +539,9 @@ contract PaymentHelper is IPaymentHelper {
     function _addRemoteChain(uint64 chainId_, PaymentHelperConfig calldata config_) internal {
         if (config_.nativeFeedOracle != address(0)) {
             AggregatorV3Interface nativeFeedOracleContract = AggregatorV3Interface(config_.nativeFeedOracle);
-            if (_getOracleDecimals(nativeFeedOracleContract) != SUPPORTED_FEED_PRECISION) {
+
+            uint256 oraclePrecision = _getOracleDecimals(nativeFeedOracleContract);
+            if (oraclePrecision < MIN_FEED_PRECISION || oraclePrecision > MAX_FEED_PRECISION) {
                 revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
             }
 
@@ -547,7 +550,10 @@ contract PaymentHelper is IPaymentHelper {
 
         if (config_.gasPriceOracle != address(0)) {
             AggregatorV3Interface gasPriceOracleContract = AggregatorV3Interface(config_.gasPriceOracle);
-            if (_getOracleDecimals(gasPriceOracleContract) != SUPPORTED_FEED_PRECISION) {
+
+            uint256 oraclePrecision = _getOracleDecimals(gasPriceOracleContract);
+
+            if (oraclePrecision < MIN_FEED_PRECISION || oraclePrecision > MAX_FEED_PRECISION) {
                 revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
             }
 
@@ -576,11 +582,11 @@ contract PaymentHelper is IPaymentHelper {
             AggregatorV3Interface nativeFeedOracleContract = AggregatorV3Interface(abi.decode(config_, (address)));
 
             /// @dev allows setting price feed to address(0), equivalent for resetting native price
-            if (
-                address(nativeFeedOracleContract) != address(0)
-                    && _getOracleDecimals(nativeFeedOracleContract) != SUPPORTED_FEED_PRECISION
-            ) {
-                revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
+            if (address(nativeFeedOracleContract) != address(0)) {
+                uint256 oraclePrecision = _getOracleDecimals(nativeFeedOracleContract);
+                if (oraclePrecision < MIN_FEED_PRECISION || oraclePrecision > MAX_FEED_PRECISION) {
+                    revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
+                }
             }
 
             nativeFeedOracle[chainId_] = nativeFeedOracleContract;
@@ -591,11 +597,11 @@ contract PaymentHelper is IPaymentHelper {
             AggregatorV3Interface gasPriceOracleContract = AggregatorV3Interface(abi.decode(config_, (address)));
 
             /// @dev allows setting gas price to address(0), equivalent for resetting gas price
-            if (
-                address(gasPriceOracleContract) != address(0)
-                    && _getOracleDecimals(gasPriceOracleContract) != SUPPORTED_FEED_PRECISION
-            ) {
-                revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
+            if (address(gasPriceOracleContract) != address(0)) {
+                uint256 oraclePrecision = _getOracleDecimals(gasPriceOracleContract);
+                if (oraclePrecision < MIN_FEED_PRECISION || oraclePrecision > MAX_FEED_PRECISION) {
+                    revert Error.CHAINLINK_UNSUPPORTED_DECIMAL();
+                }
             }
 
             gasPriceOracle[chainId_] = gasPriceOracleContract;
@@ -999,7 +1005,11 @@ contract PaymentHelper is IPaymentHelper {
             ) {
                 if (value <= 0) revert Error.CHAINLINK_MALFUNCTION();
                 if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
-                return uint256(value);
+
+                uint256 oraclePrecision = _getOracleDecimals(AggregatorV3Interface(oracleAddr));
+
+                if (oraclePrecision == MIN_FEED_PRECISION) return uint256(value);
+                else return uint256(value) / (10 ** (oraclePrecision - MIN_FEED_PRECISION));
             } catch {
                 /// @dev do nothing and return the default price at the end of the function
             }
@@ -1018,7 +1028,11 @@ contract PaymentHelper is IPaymentHelper {
             ) {
                 if (dstTokenPrice <= 0) revert Error.CHAINLINK_MALFUNCTION();
                 if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
-                return uint256(dstTokenPrice);
+
+                uint256 oraclePrecision = _getOracleDecimals(AggregatorV3Interface(oracleAddr));
+
+                if (oraclePrecision == MIN_FEED_PRECISION) return uint256(dstTokenPrice);
+                else return uint256(dstTokenPrice) / (10 ** (oraclePrecision - MIN_FEED_PRECISION));
             } catch {
                 /// @dev do nothing and return the default price at the end of the function
             }

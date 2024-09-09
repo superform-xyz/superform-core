@@ -370,10 +370,13 @@ contract LayerzeroImplementationTest is BaseSetup {
         vm.prank(bond);
         lzImplOP.lzReceive(101, srcAddressOP, 2, payload);
 
+        bytes memory crossChainMsg =
+            abi.encode(AMBMessage(DataLib.packTxInfo(0, 1, 1, 4, deployer, ETH), abi.encode(new uint8[](0), bytes(""))));
+
         vm.expectRevert(Error.INVALID_SRC_SENDER.selector);
         vm.prank(LZ_ENDPOINT_OP);
         /// @dev notice the use of 111 (OP's lz_chainId as srcChainId on OP) instead of 101 (ETH's)
-        lzImplOP.lzReceive(111, srcAddressOP, 2, payload);
+        lzImplOP.lzReceive(111, srcAddressOP, 2, crossChainMsg);
     }
 
     function test_revert_nonblockingLzReceive_invalidCaller(uint16 lzChainIdSeed_, address malice_) public {
