@@ -34,7 +34,7 @@ struct UlnConfig {
 }
 
 abstract contract AbstractConfigureNewDVN is EnvironmentUtils {
-    address[] public DVNs = [
+    address[] public BWareDVNs = [
         0x7a23612F07d81F16B26cF0b5a4C3eca0E8668df2,
         0xfE1cD27827E16b07E61A4AC96b521bDB35e00328,
         0xcFf5b0608Fa638333f66e0dA9d4f1eB906Ac18e3,
@@ -45,6 +45,19 @@ abstract contract AbstractConfigureNewDVN is EnvironmentUtils {
         0x247624e2143504730aeC22912ed41F092498bEf2,
         0xF45742BbfaBCEe739eA2a2d0BA2dd140F1f2C6A3,
         0xabC9b1819cc4D9846550F928B985993cF6240439
+    ];
+
+    address[] public LzDVNs = [
+        0x589dEDbD617e0CBcB916A9223F4d1300c294236b,
+        0xfD6865c841c2d64565562fCc7e05e619A30615f0,
+        0x962F502A63F5FBeB44DC9ab932122648E8352959,
+        0x23DE2FE932d9043291f870324B74F820e11dc81A,
+        0x2f55C492897526677C5B68fb199ea31E2c126416,
+        0x6A02D83e8d433304bba74EF1c427913958187142,
+        0x9e059a54699a285714207b43B055483E78FAac25,
+        0xE60A3959Ca23a92BF5aAf992EF837cA7F828628a,
+        0x129Ee430Cb2Ff2708CCADDBDb408a88Fe4FFd480,
+        0xc097ab8CD7b053326DFe9fB3E3a31a0CCe3B526f
     ];
 
     function _configureReceiveDVN(
@@ -79,14 +92,14 @@ abstract contract AbstractConfigureNewDVN is EnvironmentUtils {
 
         UlnConfig memory ulnConfig;
 
-        ulnConfig.confirmations = 10;
-        ulnConfig.requiredDVNCount = 1;
+        ulnConfig.confirmations = 15;
+        ulnConfig.requiredDVNCount = 2;
         ulnConfig.optionalDVNCount = 0;
 
         address[] memory optionalDVNs = new address[](0);
         ulnConfig.optionalDVNs = optionalDVNs;
 
-        address[] memory requiredDVNs = new address[](1);
+        address[] memory requiredDVNs = new address[](2);
 
         /// @dev set receive config
         for (uint256 j; j < finalDeployedChains.length; j++) {
@@ -97,7 +110,14 @@ abstract contract AbstractConfigureNewDVN is EnvironmentUtils {
             vars.dstTrueIndex = _getTrueIndex(finalDeployedChains[j]);
             vars.receiveLib = ILayerZeroEndpointV2(lzV2Endpoint).defaultReceiveLibrary(lz_chainIds[vars.dstTrueIndex]);
 
-            requiredDVNs[0] = DVNs[vars.dstTrueIndex];
+            requiredDVNs[0] = BWareDVNs[vars.dstTrueIndex];
+            requiredDVNs[1] = LzDVNs[vars.dstTrueIndex];
+
+            /// @dev sort DVNs
+            if (requiredDVNs[0] > requiredDVNs[1]) {
+                (requiredDVNs[0], requiredDVNs[1]) = (requiredDVNs[1], requiredDVNs[0]);
+            }
+
             ulnConfig.requiredDVNs = requiredDVNs;
 
             vars.config = abi.encode(ulnConfig);
@@ -142,15 +162,22 @@ abstract contract AbstractConfigureNewDVN is EnvironmentUtils {
         console.log("Setting config");
         UlnConfig memory ulnConfig;
 
-        ulnConfig.confirmations = 10;
-        ulnConfig.requiredDVNCount = 1;
+        ulnConfig.confirmations = 15;
+        ulnConfig.requiredDVNCount = 2;
         ulnConfig.optionalDVNCount = 0;
 
         address[] memory optionalDVNs = new address[](0);
         ulnConfig.optionalDVNs = optionalDVNs;
 
-        address[] memory requiredDVNs = new address[](1);
-        requiredDVNs[0] = DVNs[vars.srcTrueIndex];
+        address[] memory requiredDVNs = new address[](2);
+        requiredDVNs[0] = BWareDVNs[vars.srcTrueIndex];
+        requiredDVNs[1] = LzDVNs[vars.srcTrueIndex];
+
+        /// @dev sort DVNs
+        if (requiredDVNs[0] > requiredDVNs[1]) {
+            (requiredDVNs[0], requiredDVNs[1]) = (requiredDVNs[1], requiredDVNs[0]);
+        }
+
         ulnConfig.requiredDVNs = requiredDVNs;
 
         vars.config = abi.encode(ulnConfig);

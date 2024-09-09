@@ -15,25 +15,25 @@ export BLAST_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BLAST_RPC_URL/cre
 Run the script
 echo Configuring Receive DVNs ...
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Configure.NewDVN.s.sol --sig "configureReceiveDVN(uint256,uint256, uint256)" 1 6 0 --rpc-url $BLAST_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Configure.NewDVN.s.sol --sig "configureReceiveDVN(uint256,uint256, uint256)" 1 6 0 --rpc-url $BLAST_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 wait
 
 echo Configuring Send DVNs ...
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Configure.NewDVN.s.sol --sig "configureSendDVN(uint256, uint256, uint256, uint256)" 1 0 6 0 --rpc-url $BSC_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Configure.NewDVN.s.sol --sig "configureSendDVN(uint256, uint256, uint256, uint256)" 1 0 6 0 --rpc-url $BSC_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Configure.NewDVN.s.sol --sig "configureSendDVN(uint256, uint256, uint256, uint256)" 1 1 6 0 --rpc-url $ARBITRUM_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Configure.NewDVN.s.sol --sig "configureSendDVN(uint256, uint256, uint256, uint256)" 1 1 6 0 --rpc-url $ARBITRUM_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Configure.NewDVN.s.sol --sig "configureSendDVN(uint256, uint256, uint256, uint256)" 1 2 6 0 --rpc-url $OP_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Configure.NewDVN.s.sol --sig "configureSendDVN(uint256, uint256, uint256, uint256)" 1 2 6 0 --rpc-url $OP_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 wait 
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Configure.NewDVN.s.sol --sig "configureSendDVN(uint256, uint256, uint256, uint256)" 1 3 6 0 --rpc-url $BASE_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Configure.NewDVN.s.sol --sig "configureSendDVN(uint256, uint256, uint256, uint256)" 1 3 6 0 --rpc-url $BASE_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 wait 
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Configure.NewDVN.s.sol --sig "configureSendDVN(uint256, uint256, uint256, uint256)" 1 4 6 0 --rpc-url $FANTOM_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Configure.NewDVN.s.sol --sig "configureSendDVN(uint256, uint256, uint256, uint256)" 1 4 6 0 --rpc-url $FANTOM_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 wait 
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Configure.NewDVN.s.sol --sig "configureSendDVN(uint256, uint256, uint256, uint256)" 1 5 6 0 --rpc-url $LINEA_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Configure.NewDVN.s.sol --sig "configureSendDVN(uint256, uint256, uint256, uint256)" 1 5 6 0 --rpc-url $LINEA_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 wait
