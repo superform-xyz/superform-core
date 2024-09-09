@@ -110,8 +110,8 @@ abstract contract AbstractConfigureNewDVN is EnvironmentUtils {
             vars.dstTrueIndex = _getTrueIndex(finalDeployedChains[j]);
             vars.receiveLib = ILayerZeroEndpointV2(lzV2Endpoint).defaultReceiveLibrary(lz_chainIds[vars.dstTrueIndex]);
 
-            requiredDVNs[0] = BWareDVNs[vars.dstTrueIndex];
-            requiredDVNs[1] = LzDVNs[vars.dstTrueIndex];
+            requiredDVNs[0] = BWareDVNs[vars.srcTrueIndex];
+            requiredDVNs[1] = LzDVNs[vars.srcTrueIndex];
 
             /// @dev sort DVNs
             if (requiredDVNs[0] > requiredDVNs[1]) {
