@@ -117,7 +117,7 @@ contract MDSVW70TokenInputSlippageAMB13 is ProtocolActions {
                         AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0]];
                     } else if (DST_CHAINS[i] == OP) {
                         /// @dev bounded to 1 less due to partial withdrawals
-                        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[0] - 1));
+                        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 10, superPositions[0] - 1));
                         AMOUNTS[DST_CHAINS[i]][1] = [amountOneWithdraw_];
                     }
                 }

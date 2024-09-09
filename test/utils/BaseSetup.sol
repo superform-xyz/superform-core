@@ -221,6 +221,8 @@ abstract contract BaseSetup is StdInvariant, Test {
     address public constant OP_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
     address public constant BASE_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
     address public constant FANTOM_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
+    address public constant LINEA_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
+    address public constant BLAST_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
 
     address[] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
@@ -1433,6 +1435,18 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev using USDC price feed
         tokenPriceFeeds[FANTOM][getContract(FANTOM, "sUSDe")] = 0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c;
         tokenPriceFeeds[FANTOM][getContract(FANTOM, "USDe")] = 0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c;
+
+        /// LINEA
+        tokenPriceFeeds[LINEA][getContract(LINEA, "DAI")] = 0xAADAa473C1bDF7317ec07c915680Af29DeBfdCb5;
+        tokenPriceFeeds[LINEA][getContract(LINEA, "USDC")] = 0xAADAa473C1bDF7317ec07c915680Af29DeBfdCb5;
+        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
+        tokenPriceFeeds[LINEA][getContract(LINEA, "WETH")] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        tokenPriceFeeds[LINEA][NATIVE_TOKEN] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        tokenPriceFeeds[LINEA][getContract(LINEA, "ezETH")] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        tokenPriceFeeds[LINEA][getContract(LINEA, "wstETH")] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        /// @dev using USDC price feed
+        tokenPriceFeeds[LINEA][getContract(LINEA, "sUSDe")] = 0xAADAa473C1bDF7317ec07c915680Af29DeBfdCb5;
+        tokenPriceFeeds[LINEA][getContract(LINEA, "USDe")] = 0xAADAa473C1bDF7317ec07c915680Af29DeBfdCb5;
     }
 
     function _preDeploymentSetup(bool pinnedBlock, bool invariant) internal {
@@ -1446,11 +1460,11 @@ abstract contract BaseSetup is StdInvariant, Test {
             forks[POLY] = pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 60_619_414) : vm.createFork(POLYGON_RPC_URL_QN);
             forks[ARBI] =
                 pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 243_122_707) : vm.createFork(ARBITRUM_RPC_URL_QN);
-            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 124_063_271) : vm.createFork(OPTIMISM_RPC_URL_QN);
+            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 125_149_636) : vm.createFork(OPTIMISM_RPC_URL_QN);
             forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL_QN);
             forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 88_933_543) : vm.createFork(FANTOM_RPC_URL_QN);
-            forks[LINEA] = pinnedBlock ? vm.createFork(LINEA_RPC_URL, 8_630_899) : vm.createFork(LINEA_RPC_URL_QN);
-            forks[BLAST] = pinnedBlock ? vm.createFork(BLAST_RPC_URL, 7_957_906) : vm.createFork(BLAST_RPC_URL_QN);
+            forks[LINEA] = pinnedBlock ? vm.createFork(LINEA_RPC_URL, 9_241_361) : vm.createFork(LINEA_RPC_URL_QN);
+            forks[BLAST] = pinnedBlock ? vm.createFork(BLAST_RPC_URL, 8_315_221) : vm.createFork(BLAST_RPC_URL_QN);
         }
 
         mapping(uint64 => string) storage rpcURLs = RPC_URLS;
@@ -1534,6 +1548,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         lzEndpointsStorage[OP] = OP_lzEndpoint;
         lzEndpointsStorage[BASE] = BASE_lzEndpoint;
         lzEndpointsStorage[FANTOM] = FANTOM_lzEndpoint;
+        lzEndpointsStorage[LINEA] = LINEA_lzEndpoint;
+        lzEndpointsStorage[BLAST] = BLAST_lzEndpoint;
 
         mapping(uint64 => address) storage hyperlaneMailboxesStorage = HYPERLANE_MAILBOXES;
         hyperlaneMailboxesStorage[ETH] = hyperlaneMailboxes[0];
@@ -1544,6 +1560,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         hyperlaneMailboxesStorage[OP] = hyperlaneMailboxes[5];
         hyperlaneMailboxesStorage[BASE] = hyperlaneMailboxes[6];
         hyperlaneMailboxesStorage[FANTOM] = hyperlaneMailboxes[7];
+        hyperlaneMailboxesStorage[LINEA] = hyperlaneMailboxes[8];
+        hyperlaneMailboxesStorage[BLAST] = hyperlaneMailboxes[9];
 
         mapping(uint64 => uint16) storage wormholeChainIdsStorage = WORMHOLE_CHAIN_IDS;
 
@@ -1656,25 +1674,25 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[LINEA][LINEA] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
         priceFeeds[LINEA][OP] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
         priceFeeds[LINEA][POLY] = 0x9ce4473B42a639d010eD741df3CA829E6e480803;
-        priceFeeds[LINEA][AVAX] = address(0);
-        priceFeeds[LINEA][BSC] = address(0);
+        priceFeeds[LINEA][AVAX] = 0xD86d65fb17B5E0ee7152da12b4A4D31Bf5f4fDe9;
+        priceFeeds[LINEA][BSC] = 0x09E929D57969D8B996a62ee176Df214D87565bDE;
         priceFeeds[LINEA][ETH] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
         priceFeeds[LINEA][BASE] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
         priceFeeds[LINEA][ARBI] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
-        priceFeeds[LINEA][FANTOM] = address(0);
+        priceFeeds[LINEA][FANTOM] = 0xA40819f13aece3D0C8375522bF44DCC30290f655;
         priceFeeds[LINEA][BLAST] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
 
         /// BLAST
-        priceFeeds[BLAST][LINEA] = address(0);
-        priceFeeds[BLAST][OP] = address(0);
-        priceFeeds[BLAST][POLY] = address(0);
-        priceFeeds[BLAST][AVAX] = address(0);
-        priceFeeds[BLAST][BSC] = address(0);
-        priceFeeds[BLAST][ETH] = address(0);
-        priceFeeds[BLAST][BASE] = address(0);
-        priceFeeds[BLAST][ARBI] = address(0);
-        priceFeeds[BLAST][FANTOM] = address(0);
-        priceFeeds[BLAST][BLAST] = address(0);
+        priceFeeds[BLAST][LINEA] = 0x4AB67C7e24d94bd70502c44051274195215d8071;
+        priceFeeds[BLAST][OP] = 0x4AB67C7e24d94bd70502c44051274195215d8071;
+        priceFeeds[BLAST][POLY] = 0x4ebFA571bEF94Bd1292eA27EcCD958812986129d;
+        priceFeeds[BLAST][AVAX] = 0x057C39FD71b74F5f31992eB9865D36fb630ab2ac;
+        priceFeeds[BLAST][BSC] = 0x372b09083afDA47463022f8Cfb5dBFE186f2c13b;
+        priceFeeds[BLAST][ETH] = 0x4AB67C7e24d94bd70502c44051274195215d8071;
+        priceFeeds[BLAST][BASE] = 0x4AB67C7e24d94bd70502c44051274195215d8071;
+        priceFeeds[BLAST][ARBI] = 0x4AB67C7e24d94bd70502c44051274195215d8071;
+        priceFeeds[BLAST][FANTOM] = 0xde79aFAE86CAF94775f0388a15fC51059374f570;
+        priceFeeds[BLAST][BLAST] = 0x4AB67C7e24d94bd70502c44051274195215d8071;
 
         /// @dev setup bridges.
         /// 1 is lifi

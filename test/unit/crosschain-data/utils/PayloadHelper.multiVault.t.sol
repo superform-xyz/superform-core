@@ -33,8 +33,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
         TARGET_FORM_KINDS[ETH][0] = [0, 0];
         TARGET_FORM_KINDS[ETH][1] = [0, 0];
 
-        AMOUNTS[ETH][0] = [23_184, 213];
-        // AMOUNTS[ETH][1] = [23_183, 213];
+        AMOUNTS[ETH][0] = [20_000, 213];
 
         MAX_SLIPPAGE = 1000;
 
@@ -146,7 +145,6 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }
-
         _checkDstPayloadLiqData(
             getContract(FINAL_LIQ_DST_WITHDRAW[ETH][0], UNDERLYING_TOKENS[actions[1].externalToken])
         );

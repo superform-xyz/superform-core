@@ -66,7 +66,8 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
             TARGET_CHAINS.push(FANTOM);
             TARGET_CHAINS.push(LINEA);
 
-            salt = "StagingV1_0";
+            if (useNewSalt) salt = "StagingV1_1";
+            else salt = "StagingV1_0";
 
             PAYMENT_ADMIN = 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3;
             CSR_PROCESSOR = 0x2759142A9e3cBbcCc1E3d5F76490eEE4007B8943;
