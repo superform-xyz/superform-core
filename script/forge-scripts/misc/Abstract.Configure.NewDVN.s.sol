@@ -145,7 +145,6 @@ abstract contract AbstractConfigureNewDVN is EnvironmentUtils {
         UpdateVars memory vars;
 
         vars.chainId = finalDeployedChains[i];
-        vars.srcTrueIndex = _getTrueIndex(vars.chainId);
 
         cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
 
@@ -170,8 +169,8 @@ abstract contract AbstractConfigureNewDVN is EnvironmentUtils {
         ulnConfig.optionalDVNs = optionalDVNs;
 
         address[] memory requiredDVNs = new address[](2);
-        requiredDVNs[0] = BWareDVNs[vars.srcTrueIndex];
-        requiredDVNs[1] = LzDVNs[vars.srcTrueIndex];
+        requiredDVNs[0] = BWareDVNs[srcTrueIndex];
+        requiredDVNs[1] = LzDVNs[srcTrueIndex];
 
         /// @dev sort DVNs
         if (requiredDVNs[0] > requiredDVNs[1]) {
@@ -183,9 +182,9 @@ abstract contract AbstractConfigureNewDVN is EnvironmentUtils {
         vars.config = abi.encode(ulnConfig);
 
         vars.setConfigParams = new SetConfigParam[](1);
-        vars.setConfigParams[0] = SetConfigParam(uint32(lz_chainIds[vars.dstTrueIndex]), uint32(2), vars.config);
+        vars.setConfigParams[0] = SetConfigParam(uint32(lz_chainIds[dstTrueIndex]), uint32(2), vars.config);
 
-        address sendLib = ILayerZeroEndpointV2(lzV2Endpoint).defaultSendLibrary(lz_chainIds[vars.srcTrueIndex]);
+        address sendLib = ILayerZeroEndpointV2(lzV2Endpoint).defaultSendLibrary(lz_chainIds[dstTrueIndex]);
 
         /// @dev set send config
         ILayerZeroEndpointV2(lzV2Endpoint).setConfig(lzImpl, sendLib, vars.setConfigParams);

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import { AbstractConfigureNewDVN } from "./Abstract.Configure.NewDVN.s.sol";
+import "forge-std/console.sol";
 
 contract MainnetConfigDVN is AbstractConfigureNewDVN {
     function configureReceiveDVN(uint256 env, uint256 selectedChainIndex, uint256 useNewSalt) external {
