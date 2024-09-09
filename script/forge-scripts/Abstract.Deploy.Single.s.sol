@@ -13,6 +13,8 @@ import { SuperPositions } from "src/SuperPositions.sol";
 import { SuperformFactory } from "src/SuperformFactory.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
 import { ERC5115Form } from "src/forms/ERC5115Form.sol";
+import { ERC4626Form as BlastERC4626Form } from "script/forge-scripts/misc/blast/forms/BlastERC4626Form.sol";
+import { ERC5115Form as BlastERC5115Form } from "script/forge-scripts/misc/blast/forms/BlastERC5115Form.sol";
 import { ERC5115To4626WrapperFactory } from "src/forms/wrappers/ERC5115To4626WrapperFactory.sol";
 import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
@@ -648,13 +650,24 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.superRBACC.grantRole(vars.superRBACC.BROADCASTER_ROLE(), vars.factory);
 
         /// @dev 8 - Deploy 4626Form implementations
-        // Standard ERC4626 Form
-        vars.erc4626Form = address(new ERC4626Form{ salt: salt }(vars.superRegistry));
-        contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars.erc4626Form;
+        if (vars.chainId != BLAST) {
+            // Standard ERC4626 Form
 
-        /// @dev 8.1 - Deploy 5115Form implementation
-        vars.erc5115Form = address(new ERC5115Form{ salt: salt }(vars.superRegistry));
-        contracts[vars.chainId][bytes32(bytes("ERC5115Form"))] = vars.erc5115Form;
+            vars.erc4626Form = address(new ERC4626Form{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars.erc4626Form;
+
+            /// @dev 8.1 - Deploy 5115Form implementation
+            vars.erc5115Form = address(new ERC5115Form{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("ERC5115Form"))] = vars.erc5115Form;
+        } else {
+            // Standard ERC4626 Form
+            vars.erc4626Form = address(new BlastERC4626Form{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars.erc4626Form;
+
+            /// @dev 8.1 - Deploy 5115Form implementation
+            vars.erc5115Form = address(new BlastERC5115Form{ salt: salt }(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("ERC5115Form"))] = vars.erc5115Form;
+        }
 
         /// @dev 8.1.1 Deploy 5115 wrapper factory
         vars.erc5115To4626WrapperFactory = address(new ERC5115To4626WrapperFactory{ salt: salt }(vars.superRegistry));
@@ -774,7 +787,6 @@ abstract contract AbstractDeploySingle is BatchScript {
 
             address[] memory bridgeValidatorsBlast = new address[](1);
             bridgeValidatorsBlast[0] = bridgeValidators[0];
-
             vars.superRegistryC.setBridgeAddresses(bridgeIdsBlast, bridgeAddressesBlast, bridgeValidatorsBlast);
         } else {
             vars.superRegistryC.setBridgeAddresses(bridgeIds, BRIDGE_ADDRESSES[vars.chainId], bridgeValidators);
