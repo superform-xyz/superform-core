@@ -6,6 +6,10 @@ import "../EnvironmentUtils.s.sol";
 import { ILayerZeroEndpointV2 } from "src/vendor/layerzero/v2/ILayerZeroEndpointV2.sol";
 import { SetConfigParam } from "src/vendor/layerzero/v2/IMessageLibManager.sol";
 
+interface ILayerzeroEndpointV2Delegates is ILayerZeroEndpointV2 {
+    function delegates(address _impl) external view returns (address);
+}
+
 struct UpdateVars {
     uint64 chainId;
     uint64 dstChainId;
@@ -43,7 +47,7 @@ abstract contract AbstractConfigureNewDVN is EnvironmentUtils {
         0xabC9b1819cc4D9846550F928B985993cF6240439
     ];
 
-    function _configureNewDVN(
+    function _configureReceiveDVN(
         uint256 env,
         uint256 i,
         uint256 trueIndex,
@@ -59,16 +63,19 @@ abstract contract AbstractConfigureNewDVN is EnvironmentUtils {
         vars.chainId = finalDeployedChains[i];
         vars.srcTrueIndex = _getTrueIndex(vars.chainId);
 
+        console.log(vars.chainId);
+
         cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
 
-        /// @dev configure send DVN on the home chain
         /// @dev configure receive DVN on the destination chain
-
         address lzImpl = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
         assert(lzImpl != address(0));
 
-        /// @dev set delegate
-        LayerzeroV2Implementation(lzImpl).setDelegate(0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92);
+        console.log("Setting delegate");
+        if (ILayerzeroEndpointV2Delegates(lzV2Endpoint).delegates(lzImpl) == address(0)) {
+            /// @dev set delegate
+            LayerzeroV2Implementation(lzImpl).setDelegate(0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92);
+        }
 
         UlnConfig memory ulnConfig;
 
@@ -76,24 +83,10 @@ abstract contract AbstractConfigureNewDVN is EnvironmentUtils {
         ulnConfig.requiredDVNCount = 1;
         ulnConfig.optionalDVNCount = 0;
 
-        address[] memory requiredDVNs = new address[](1);
-        requiredDVNs[0] = DVNs[vars.srcTrueIndex];
-
-        ulnConfig.requiredDVNs = requiredDVNs;
-
         address[] memory optionalDVNs = new address[](0);
         ulnConfig.optionalDVNs = optionalDVNs;
 
-        vars.config = abi.encode(ulnConfig);
-
-        vars.setConfigParams = new SetConfigParam[](1);
-        vars.setConfigParams[0] = SetConfigParam(uint32(lz_chainIds[vars.srcTrueIndex]), uint32(2), vars.config);
-
-        address sendLib =
-            ILayerZeroEndpointV2(lzEndpoints[vars.srcTrueIndex]).defaultSendLibrary(lz_chainIds[vars.srcTrueIndex]);
-
-        /// @dev set send config
-        ILayerZeroEndpointV2(lzEndpoints[vars.srcTrueIndex]).setConfig(lzImpl, sendLib, vars.setConfigParams);
+        address[] memory requiredDVNs = new address[](1);
 
         /// @dev set receive config
         for (uint256 j; j < finalDeployedChains.length; j++) {
@@ -102,21 +95,74 @@ abstract contract AbstractConfigureNewDVN is EnvironmentUtils {
             }
 
             vars.dstTrueIndex = _getTrueIndex(finalDeployedChains[j]);
-            vars.dstLzImpl =
-                _readContractsV1(env, chainNames[vars.dstTrueIndex], finalDeployedChains[j], "LayerzeroImplementation");
-            vars.receiveLib = ILayerZeroEndpointV2(lzEndpoints[vars.dstTrueIndex]).defaultReceiveLibrary(
-                lz_chainIds[vars.dstTrueIndex]
-            );
+            vars.receiveLib = ILayerZeroEndpointV2(lzV2Endpoint).defaultReceiveLibrary(lz_chainIds[vars.dstTrueIndex]);
 
             requiredDVNs[0] = DVNs[vars.dstTrueIndex];
+            ulnConfig.requiredDVNs = requiredDVNs;
+
             vars.config = abi.encode(ulnConfig);
 
+            vars.setConfigParams = new SetConfigParam[](1);
             vars.setConfigParams[0] = SetConfigParam(uint32(lz_chainIds[vars.dstTrueIndex]), uint32(2), vars.config);
 
-            ILayerZeroEndpointV2(lzEndpoints[vars.dstTrueIndex]).setConfig(
-                vars.dstLzImpl, vars.receiveLib, vars.setConfigParams
-            );
+            ILayerZeroEndpointV2(lzV2Endpoint).setConfig(lzImpl, vars.receiveLib, vars.setConfigParams);
         }
+        vm.stopBroadcast();
+    }
+
+    function _configureSendDVN(
+        uint256 env,
+        uint256 i,
+        uint256 srcTrueIndex,
+        uint256 dstTrueIndex,
+        Cycle cycle,
+        uint64[] memory finalDeployedChains
+    )
+        internal
+        setEnvDeploy(cycle)
+    {
+        assert(salt.length > 0);
+        UpdateVars memory vars;
+
+        vars.chainId = finalDeployedChains[i];
+        vars.srcTrueIndex = _getTrueIndex(vars.chainId);
+
+        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
+
+        /// @dev configure send DVN on the home chain
+        address lzImpl = _readContractsV1(env, chainNames[srcTrueIndex], vars.chainId, "LayerzeroImplementation");
+        assert(lzImpl != address(0));
+
+        console.log("Setting delegate");
+        if (ILayerzeroEndpointV2Delegates(lzV2Endpoint).delegates(lzImpl) == address(0)) {
+            /// @dev set delegate
+            LayerzeroV2Implementation(lzImpl).setDelegate(0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92);
+        }
+
+        console.log("Setting config");
+        UlnConfig memory ulnConfig;
+
+        ulnConfig.confirmations = 10;
+        ulnConfig.requiredDVNCount = 1;
+        ulnConfig.optionalDVNCount = 0;
+
+        address[] memory optionalDVNs = new address[](0);
+        ulnConfig.optionalDVNs = optionalDVNs;
+
+        address[] memory requiredDVNs = new address[](1);
+        requiredDVNs[0] = DVNs[vars.srcTrueIndex];
+        ulnConfig.requiredDVNs = requiredDVNs;
+
+        vars.config = abi.encode(ulnConfig);
+
+        vars.setConfigParams = new SetConfigParam[](1);
+        vars.setConfigParams[0] = SetConfigParam(uint32(lz_chainIds[vars.dstTrueIndex]), uint32(2), vars.config);
+
+        address sendLib = ILayerZeroEndpointV2(lzV2Endpoint).defaultSendLibrary(lz_chainIds[vars.srcTrueIndex]);
+
+        /// @dev set send config
+        ILayerZeroEndpointV2(lzV2Endpoint).setConfig(lzImpl, sendLib, vars.setConfigParams);
+
         vm.stopBroadcast();
     }
 
