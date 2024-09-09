@@ -192,6 +192,68 @@ abstract contract AbstractConfigureNewDVN is EnvironmentUtils {
         vm.stopBroadcast();
     }
 
+    function _configureReceiveDVN(
+        uint256 env,
+        uint256 i,
+        uint256 srcTrueIndex,
+        uint256 dstTrueIndex,
+        Cycle cycle,
+        uint64[] memory finalDeployedChains
+    )
+        internal
+        setEnvDeploy(cycle)
+    {
+        assert(salt.length > 0);
+        UpdateVars memory vars;
+
+        vars.chainId = finalDeployedChains[i];
+
+        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
+
+        /// @dev configure send DVN on the home chain
+        address lzImpl = _readContractsV1(env, chainNames[srcTrueIndex], vars.chainId, "LayerzeroImplementation");
+        assert(lzImpl != address(0));
+
+        console.log("Setting delegate");
+        if (ILayerzeroEndpointV2Delegates(lzV2Endpoint).delegates(lzImpl) == address(0)) {
+            /// @dev set delegate
+            LayerzeroV2Implementation(lzImpl).setDelegate(0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92);
+        }
+
+        console.log("Setting config");
+        UlnConfig memory ulnConfig;
+
+        ulnConfig.confirmations = 15;
+        ulnConfig.requiredDVNCount = 2;
+        ulnConfig.optionalDVNCount = 0;
+
+        address[] memory optionalDVNs = new address[](0);
+        ulnConfig.optionalDVNs = optionalDVNs;
+
+        address[] memory requiredDVNs = new address[](2);
+        requiredDVNs[0] = BWareDVNs[srcTrueIndex];
+        requiredDVNs[1] = LzDVNs[srcTrueIndex];
+
+        /// @dev sort DVNs
+        if (requiredDVNs[0] > requiredDVNs[1]) {
+            (requiredDVNs[0], requiredDVNs[1]) = (requiredDVNs[1], requiredDVNs[0]);
+        }
+
+        ulnConfig.requiredDVNs = requiredDVNs;
+
+        vars.config = abi.encode(ulnConfig);
+
+        vars.setConfigParams = new SetConfigParam[](1);
+        vars.setConfigParams[0] = SetConfigParam(uint32(lz_chainIds[dstTrueIndex]), uint32(2), vars.config);
+
+        address receiveLib = ILayerZeroEndpointV2(lzV2Endpoint).defaultReceiveLibrary(lz_chainIds[dstTrueIndex]);
+
+        /// @dev set send config
+        ILayerZeroEndpointV2(lzV2Endpoint).setConfig(lzImpl, receiveLib, vars.setConfigParams);
+
+        vm.stopBroadcast();
+    }
+
     function _getTrueIndex(uint256 chainId) public view returns (uint256 index) {
         for (uint256 i; i < chainIds.length; i++) {
             if (chainId == chainIds[i]) {
