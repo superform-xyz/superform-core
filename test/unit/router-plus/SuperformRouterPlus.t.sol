@@ -91,6 +91,20 @@ contract SuperformRouterPlusTest is ProtocolActions {
         SUPER_POSITIONS_SOURCE = getContract(SOURCE_CHAIN, "SuperPositions");
     }
 
+    function test_zeroAddressConstructor() public {
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        new SuperformRouterPlus(address(0));
+    }
+
+    function test_supportsInterface() public view {
+        /// @dev IERC165 interfaceId
+        bytes4 interfaceId = 0x01ffc9a7;
+        assertTrue(SuperformRouterPlus(ROUTER_PLUS_SOURCE).supportsInterface(interfaceId));
+
+        interfaceId = 0xffffffff;
+        assertFalse(SuperformRouterPlus(ROUTER_PLUS_SOURCE).supportsInterface(interfaceId));
+    }
+
     function test_rebalanceFromSinglePosition_toOneVault() public {
         vm.startPrank(deployer);
 
