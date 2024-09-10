@@ -33,7 +33,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
         TARGET_FORM_KINDS[ETH][0] = [0, 0];
         TARGET_FORM_KINDS[ETH][1] = [0, 0];
 
-        AMOUNTS[ETH][0] = [222_222_222, 323];
+        AMOUNTS[ETH][0] = [222e18, 323e18];
 
         MAX_SLIPPAGE = 1000;
 
@@ -96,7 +96,11 @@ contract PayloadHelperMultiTest is ProtocolActions {
                         DST_CHAINS[i]
                     );
 
-                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0] / 2, superPositions[0] / 2 + 1];
+                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0] / 2, superPositions[0] / 2];
+
+                    if (superPositions[0] != AMOUNTS[DST_CHAINS[i]][1][0] + AMOUNTS[DST_CHAINS[i]][1][1]) {
+                        AMOUNTS[DST_CHAINS[i]][1][0] += 1;
+                    }
                 }
             }
 
@@ -140,6 +144,10 @@ contract PayloadHelperMultiTest is ProtocolActions {
                     );
 
                     AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0] / 2, superPositions[0] / 2];
+
+                    if (superPositions[0] != AMOUNTS[DST_CHAINS[i]][1][0] + AMOUNTS[DST_CHAINS[i]][1][1]) {
+                        AMOUNTS[DST_CHAINS[i]][1][0] += 1;
+                    }
                 }
             }
 
