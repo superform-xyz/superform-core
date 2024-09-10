@@ -50,6 +50,8 @@ import { AmarokFacetPacked } from "./misc/blacklistedFacets/AmarokFacetPacked.so
 import { RewardsDistributor } from "src/RewardsDistributor.sol";
 import "forge-std/console.sol";
 import { BatchScript } from "./safe/BatchScript.sol";
+import { SuperformRouterPlus } from "src/router-plus/SuperformRouterPlus.sol";
+import { SuperformRouterPlusAsync } from "src/router-plus/SuperformRouterPlusAsync.sol";
 
 struct SetupVars {
     uint64 chainId;
@@ -114,7 +116,7 @@ abstract contract AbstractDeploySingle is BatchScript {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[29] public contractNames = [
+    string[31] public contractNames = [
         "CoreStateRegistry",
         "BroadcastRegistry",
         "LayerzeroImplementation",
@@ -143,7 +145,9 @@ abstract contract AbstractDeploySingle is BatchScript {
         "OneInchValidator",
         "AxelarImplementation",
         "ERC5115Form",
-        "ERC5115To4626WrapperFactory"
+        "ERC5115To4626WrapperFactory",
+        "SuperformRouterPlus",
+        "SuperformRouterPlusAsync"
     ];
 
     enum Chains {

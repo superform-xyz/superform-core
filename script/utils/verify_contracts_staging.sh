@@ -23,13 +23,13 @@ networks=(
 )
 
 api_keys=(
-    $BSCSCAN_API_KEY
-    $ARBISCAN_API_KEY
-    $OPSCAN_API_KEY
+    # $BSCSCAN_API_KEY
+    # $ARBISCAN_API_KEY
+    # $OPSCAN_API_KEY
     $BASESCAN_API_KEY
-    $FTMSCAN_API_KEY
-    $LINEASCAN_API_KEY
-    $BLASTSCAN_API_KEY
+    # $FTMSCAN_API_KEY
+    # $LINEASCAN_API_KEY
+    # $BLASTSCAN_API_KEY
     # add more API keys here if needed
 )
 
@@ -77,6 +77,8 @@ file_names=(
     "src/crosschain-liquidity/1inch/OneInchValidator.sol"
     "src/forms/wrappers/ERC5115To4626WrapperFactory.sol"
     "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol"
+    "src/router-plus/SuperformRouterPlus.sol"
+    "src/router-plus/SuperformRouterPlusAsync.sol"
     # Add more file names here if needed
 )
 
@@ -110,6 +112,8 @@ contract_names=(
     "OneInchValidator"
     ERC5115To4626WrapperFactory
     LayerzeroImplementation
+    SuperformRouterPlus
+    SuperformRouterPlusAsync
     # Add more contract names here if needed
 )
 
@@ -143,6 +147,8 @@ contract_addresses=(
     0x0000000000000000000000000000000000000000
     0x14Bc2728DaE89FE7c828833a186DdC5E9AE439C3
     0xF442FC47c5e8b6CA772a9b7345d9E6A663375258
+    0xCd04A0B28e6CD30c7cf422FD664b791F8F61149A
+    0xF30Bd5F1e9ca008beD0a5499d67E80A2a59928a1
     # Add more addresses here if needed
 )
 
@@ -176,6 +182,8 @@ contract_addresses_fantom=(
     0x16e9f8549c2b6a026dc2706d746beA76CeFF4098
     0x0df3d7D6daE058667e49C6b85F7b92458Ab06836
     0x4c605a697c22254547289092337911078b56d5dc
+    0x8246465b67dc557C96086dd071d72982A08278d2
+    0x7BfB68d31ba9FF49d16dcDF6Fe8472B41C5fEFBA
     # Add more addresses here if needed
 )
 
@@ -209,6 +217,8 @@ constructor_args=(
     $super_constructor_arg
     $super_constructor_arg
     $super_constructor_arg
+    $super_constructor_arg
+    $super_constructor_arg
 )
 
 constructor_args_fantom=(
@@ -235,6 +245,8 @@ constructor_args_fantom=(
     $empty_constructor_arg
     $super_constructor_arg_ftm
     $wormhole_sr_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
     $super_constructor_arg_ftm
     $super_constructor_arg_ftm
     $super_constructor_arg_ftm
