@@ -20,9 +20,6 @@ import { IBlastPoints } from "script/forge-scripts/misc/blast/forms/IBlastPoints
 abstract contract BaseForm is IBaseForm, Initializable, ERC165 {
     using DataLib for uint256;
 
-    /// @dev Reverts if the caller is not the Blast Reward Distributor Admin
-    error NOT_BLAST_REWARD_DISTRIBUTOR_ADMIN();
-
     //////////////////////////////////////////////////////////////
     //                         CONSTANTS                        //
     //////////////////////////////////////////////////////////////
