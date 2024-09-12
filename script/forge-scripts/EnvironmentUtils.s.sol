@@ -65,6 +65,7 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
             TARGET_CHAINS.push(BASE);
             TARGET_CHAINS.push(FANTOM);
             TARGET_CHAINS.push(LINEA);
+            TARGET_CHAINS.push(BLAST);
 
             if (useNewSalt) salt = "StagingV1_1";
             else salt = "StagingV1_0";

@@ -12,6 +12,4 @@ Interaction with Superforms happens through the four implemented external functi
 
 **ERC4626Form.sol:** The standard implementation of a Form contract. This Form interacts with a corresponding ERC4626 compliant vault.
 
-**ERC4626KYCDAOForm.sol:** The standard implementation of a Form contract integrated with KYCDao's whitelist NFT. This Form interacts with a corresponding ERC4626 compliant vault.
-
-**ERC4626TimelockForm.sol:** A variant of the standard Form contract that includes timelock functionality. This Form contract is used when time-based conditions need to be met during the deposit or withdrawal process. This Form requires a [TimelockRegistry](../crosschain-data/extensions/TimelockStateRegistry.sol) to execute redemption at a later time through the processUnlock() function.
+**ERC5115Form.sol:** This Form interacts with a corresponding ERC5115 compliant vault.

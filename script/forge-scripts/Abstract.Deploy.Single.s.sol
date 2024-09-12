@@ -667,6 +667,7 @@ abstract contract AbstractDeploySingle is BatchScript {
             /// @dev 8.1 - Deploy 5115Form implementation
             vars.erc5115Form = address(new BlastERC5115Form{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("ERC5115Form"))] = vars.erc5115Form;
+            vars.superRegistryC.setAddress(keccak256("BLAST_REWARD_DISTRIBUTOR_ADMIN"), REWARDS_ADMIN, vars.chainId);
         }
 
         /// @dev 8.1.1 Deploy 5115 wrapper factory
