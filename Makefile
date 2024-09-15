@@ -119,7 +119,7 @@ build-sizes: ## Builds the project and shows sizes
 
 .PHONY: test-vvv
 test-vvv: ## Runs tests with verbose output
-	forge test --match-test test_supportsInterface --evm-version cancun -vvv --decode-internal
+	forge test --match-test test_crossChainRebalanceMultiPositions_toTwoVaultXChain --evm-version cancun -vvvvv
 
 .PHONY: ftest
 ftest: ## Runs tests with cancun evm version
@@ -131,7 +131,7 @@ test-ci: ## Runs tests  in CI mode
 
 .PHONY: coverage
 coverage: ## Runs coverage
-	FOUNDRY_PROFILE=coverage forge coverage --no-match-path "test/invariant/**/*.sol" --no-match-contract SmokeTest --evm-version cancun --report lcov
+	FOUNDRY_PROFILE=coverage forge coverage --no-match-path "test/invariant/**/*.sol" --no-match-contract SuperformRouterPlusTest --evm-version cancun --report lcov
 
 .PHONY: coverage-t
 coverage-t:	## Runs coverage for a specific contract
