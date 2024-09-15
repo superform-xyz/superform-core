@@ -119,7 +119,7 @@ build-sizes: ## Builds the project and shows sizes
 
 .PHONY: test-vvv
 test-vvv: ## Runs tests with verbose output
-	forge test --match-test test_crossChainRebalanceMultiDst_toSingleVaultXChain --evm-version cancun -vvvvv
+	forge test --match-test test_crossChainRebalanceMultiDstMultiVault_toSingleVaultXChain --evm-version cancun -vvvv
 
 .PHONY: ftest
 ftest: ## Runs tests with cancun evm version
