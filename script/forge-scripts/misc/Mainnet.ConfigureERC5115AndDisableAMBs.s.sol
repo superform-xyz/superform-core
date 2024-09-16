@@ -45,4 +45,18 @@ contract MainnetConfigure5115FormAndDisableAMB is AbstractConfigure5115FormAndDi
 
         _configureERC5115AndDisableOldAMBs(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
     }
+
+    function configureProdPaymentAdmin(uint256 env, uint256 selectedChainIndex, uint256 useNewSalt) external {
+        _setEnvironment(env, useNewSalt == 1 ? true : false);
+
+        uint256 trueIndex;
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            if (TARGET_CHAINS[selectedChainIndex] == chainIds[i]) {
+                trueIndex = i;
+                break;
+            }
+        }
+
+        _configureProdPaymentAdmin(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
+    }
 }

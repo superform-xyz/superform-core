@@ -168,45 +168,6 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
         );
         addToBatch(superRegistry, 0, txn);
 
-        txn = abi.encodeWithSelector(
-            PaymentHelper.updateRemoteChain.selector,
-            vars.chainId,
-            1,
-            abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
-        );
-        addToBatch(address(vars.paymentHelper), 0, txn);
-
-        txn = abi.encodeWithSelector(
-            PaymentHelper.updateRemoteChain.selector, vars.chainId, 7, abi.encode(nativePrices[trueIndex])
-        );
-        addToBatch(address(vars.paymentHelper), 0, txn);
-
-        txn = abi.encodeWithSelector(
-            PaymentHelper.updateRemoteChain.selector, vars.chainId, 8, abi.encode(gasPrices[trueIndex])
-        );
-        addToBatch(address(vars.paymentHelper), 0, txn);
-
-        txn = abi.encodeWithSelector(PaymentHelper.updateRemoteChain.selector, vars.chainId, 9, abi.encode(750));
-        addToBatch(address(vars.paymentHelper), 0, txn);
-
-        txn = abi.encodeWithSelector(
-            PaymentHelper.updateRemoteChain.selector,
-            vars.chainId,
-            10,
-            abi.encode(vars.chainId == ARBI ? 500_000 : 150_000)
-        );
-        addToBatch(address(vars.paymentHelper), 0, txn);
-
-        txn = abi.encodeWithSelector(PaymentHelper.updateRemoteChain.selector, vars.chainId, 11, abi.encode(50_000));
-        addToBatch(address(vars.paymentHelper), 0, txn);
-
-        txn = abi.encodeWithSelector(PaymentHelper.updateRemoteChain.selector, vars.chainId, 12, abi.encode(10_000));
-        addToBatch(address(vars.paymentHelper), 0, txn);
-
-        txn =
-            abi.encodeWithSelector(PaymentHelper.updateRegisterAERC20Params.selector, abi.encode(4, abi.encode(0, "")));
-        addToBatch(address(vars.paymentHelper), 0, txn);
-
         /// @notice new layerzero v1 implementation is at id:9 on prod
         vars.ambIds = new uint8[](1);
         vars.ambIds[0] = 9;
@@ -332,6 +293,64 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
 
         /// Send to Safe to sign
         executeBatch(vars.chainId, PROTOCOL_ADMINS[trueIndex], 0, false);
+    }
+
+    function _configureProdPaymentAdmin(
+        uint256 env,
+        uint256 i,
+        uint256 trueIndex,
+        Cycle cycle,
+        uint64[] memory finalDeployedChains
+    )
+        internal
+    {
+        assert(salt.length > 0);
+        UpdateVars memory vars;
+
+        vars.chainId = finalDeployedChains[i];
+
+        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
+
+        address superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
+        address expectedSr;
+        if (env == 0) {
+            expectedSr = vars.chainId == 250
+                ? 0x7feB31d18E43E2faeC718EEd2D7f34402c3e27b4
+                : 0x17A332dC7B40aE701485023b219E9D6f493a2514;
+        } else {
+            expectedSr = vars.chainId == 250
+                ? 0x7B8d68f90dAaC67C577936d3Ce451801864EF189
+                : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
+        }
+
+        assert(superRegistry == expectedSr);
+
+        vars.paymentHelper = PaymentHelper(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper"));
+        assert(address(vars.paymentHelper) != address(0));
+
+        uint256[] memory configTypes = new uint256[](7);
+        configTypes[0] = 1;
+        configTypes[1] = 7;
+        configTypes[2] = 8;
+        configTypes[3] = 9;
+        configTypes[4] = 10;
+        configTypes[5] = 11;
+        configTypes[6] = 12;
+
+        bytes[] memory configs = new bytes[](7);
+        configs[0] = abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId]);
+        configs[1] = abi.encode(nativePrices[trueIndex]);
+        configs[2] = abi.encode(gasPrices[trueIndex]);
+        configs[3] = abi.encode(750);
+        configs[4] = abi.encode(vars.chainId == ARBI ? 500_000 : 150_000);
+        configs[5] = abi.encode(50_000);
+        configs[6] = abi.encode(10_000);
+
+        vars.paymentHelper.batchUpdateRemoteChain(vars.chainId, configTypes, configs);
+
+        vars.paymentHelper.updateRegisterAERC20Params(abi.encode(4, abi.encode(0, "")));
+
+        vm.stopBroadcast();
     }
 
     function _configureStaging(
