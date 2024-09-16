@@ -138,6 +138,7 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
         UpdateVars memory vars;
 
         vars.chainId = finalDeployedChains[i];
+        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
 
         address superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
         address expectedSr;
