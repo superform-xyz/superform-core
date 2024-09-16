@@ -13,8 +13,8 @@ export FANTOM_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/FANTOM_RPC_URL/c
 Run the script
 echo Deploying new factory: ...
 
-# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.5115To4626Factory.s.sol:MainnetDeploy5115To4626Factory --sig "deploy5115To4626Factory(uint256,uint256,uint256)" 0 0 0 --rpc-url $ETHEREUM_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
-# wait
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.5115To4626Factory.s.sol:MainnetDeploy5115To4626Factory --sig "deploy5115To4626Factory(uint256,uint256,uint256)" 0 0 0 --rpc-url $ETHEREUM_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+wait
 
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.5115To4626Factory.s.sol:MainnetDeploy5115To4626Factory --sig "deploy5115To4626Factory(uint256,uint256,uint256)" 0 1 0 --rpc-url $BSC_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 wait
