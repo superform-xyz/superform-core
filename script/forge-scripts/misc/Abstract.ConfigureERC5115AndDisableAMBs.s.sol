@@ -49,8 +49,51 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
         }
         assert(superRegistry == expectedSr);
 
-        contracts[vars.chainId][bytes32(bytes("LayerzeroImplementation"))] =
+        contracts[vars.chainId][bytes32(bytes("LayerzeroV1Implementation"))] =
             address(new LayerzeroImplementation{ salt: salt }(ISuperRegistry(superRegistry)));
+
+        vm.stopBroadcast();
+
+        /// @dev we use normal export contract to not override v1 contracts
+        for (uint256 j; j < contractNames.length; j++) {
+            _exportContract(
+                chainNames[trueIndex], contractNames[j], getContract(vars.chainId, contractNames[j]), vars.chainId
+            );
+        }
+    }
+
+    function _deployPaymentHelperV2(
+        uint256 env,
+        uint256 i,
+        uint256 trueIndex,
+        Cycle cycle,
+        uint64[] memory s_superFormChainIds
+    )
+        internal
+        setEnvDeploy(cycle)
+    {
+        assert(salt.length > 0);
+        SetupVars memory vars;
+
+        vars.chainId = s_superFormChainIds[i];
+        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
+
+        address superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
+        address expectedSr;
+
+        if (env == 0) {
+            expectedSr = vars.chainId == 250
+                ? 0x7feB31d18E43E2faeC718EEd2D7f34402c3e27b4
+                : 0x17A332dC7B40aE701485023b219E9D6f493a2514;
+        } else {
+            expectedSr = vars.chainId == 250
+                ? 0x7B8d68f90dAaC67C577936d3Ce451801864EF189
+                : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
+        }
+        assert(superRegistry == expectedSr);
+
+        contracts[vars.chainId][bytes32(bytes("PaymentHelper"))] =
+            address(new PaymentHelper{ salt: salt }(ISuperRegistry(superRegistry)));
 
         vm.stopBroadcast();
 
@@ -111,22 +154,24 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
         bytes memory txn = abi.encodeWithSelector(SuperformFactory.addFormImplementation.selector, erc5115Form, 3, 1);
         addToBatch(superRegistry, 0, txn);
 
+        /// @notice new layerzero v1 implementation is at id:9 on prod
         uint8[] memory ambIds = new uint8[](1);
-        ambIds[0] = 10;
+        ambIds[0] = 9;
 
         address[] memory ambAddress = new address[](1);
         ambAddress[0] = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "LayerzeroV1Implementation");
         assert(ambAddress[0] != address(0));
 
-        /// @dev add the new layerzero v1 implementation to id 15 on staging
         txn = abi.encodeWithSelector(SuperRegistry.setAmbAddress.selector, ambIds, ambAddress, new bool[](1));
         addToBatch(superRegistry, 0, txn);
 
         vars.axelarImpl =
             AxelarImplementation(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "AxelarImplementation"));
+
         vars.lzV1Impl = LayerzeroImplementation(
             _readContractsV1(env, chainNames[trueIndex], vars.chainId, "LayerzeroV1Implementation")
         );
+
         assert(address(vars.axelarImpl) != address(0));
         assert(address(vars.lzV1Impl) != address(0));
 

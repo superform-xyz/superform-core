@@ -172,8 +172,8 @@ abstract contract AbstractDeploySingle is BatchScript {
     //////////////////////////////////////////////////////////////*/
     string public SUPER_POSITIONS_NAME;
 
-    /// @dev 1 = ERC4626Form, 2 = 5115Form
-    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(5)];
+    /// @dev 1 = ERC4626Form, 3 = 5115Form (2 will tenatively be used for ERC7540)
+    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(3)];
     string[] public VAULT_KINDS = ["Vault"];
 
     /// @dev liquidity bridge ids 101 is lifi v2,
@@ -676,7 +676,7 @@ abstract contract AbstractDeploySingle is BatchScript {
 
         /// @dev 9 - Add newly deployed form implementations to Factory,
         /// @notice formImplementationId for ERC4626 form is 1
-        /// @notice formImplementationId for ERC5115 form is 2 on prod and 5 on staging
+        /// @notice formImplementationId for ERC5115 form is 3 on prod and 5 on staging
         ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0], 1);
         ISuperformFactory(vars.factory).addFormImplementation(vars.erc5115Form, FORM_IMPLEMENTATION_IDS[1], 1);
 
