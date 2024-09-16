@@ -326,14 +326,14 @@ abstract contract AbstractDeploySingle is BatchScript {
     /// @dev !WARNING: update these for Fantom
     /// @dev check https://api-utils.superform.xyz/docs#/Utils/get_gas_prices_gwei_gas_get
     uint256[] public gasPrices = [
-        50_000_000_000, // ETH
-        3_000_000_000, // BSC
+        8_889_044_613, // ETH
+        1_000_000_000, // BSC
         25_000_000_000, // AVAX
-        50_000_000_000, // POLY
-        100_000_000, // ARBI
-        4_000_000, // OP
-        1_000_000, // BASE
-        4 * 10e9, // FANTOM
+        30_000_000_024, // POLY
+        10_000_000, // ARBI
+        1_321_409, // OP
+        6_020_565, // BASE
+        10_000_000_000, // FANTOM
         60_000_000, // LINEA (0.06 gwei)
         730_000_000 // BLAST (0.73 gwei)
     ];
@@ -341,16 +341,16 @@ abstract contract AbstractDeploySingle is BatchScript {
     /// @dev !WARNING: update these for Fantom
     /// @dev check https://api-utils.superform.xyz/docs#/Utils/get_native_prices_chainlink_native_get
     uint256[] public nativePrices = [
-        253_400_000_000, // ETH
-        31_439_000_000, // BSC
-        3_529_999_999, // AVAX
-        81_216_600, // POLY
-        253_400_000_000, // ARBI
-        253_400_000_000, // OP
-        253_400_000_000, // BASE
-        4 * 10e9, // FANTOM
-        253_400_000_000, // LINEA
-        253_400_000_000 // BLAST
+        229_221_000_000, // ETH
+        54_521_000_000, // BSC
+        2_392_000_000, // AVAX
+        38_017_300, // POLY
+        229_280_000_000, // ARBI
+        229_221_000_000, // OP
+        229_280_000_000, // BASE
+        50_892_796, // FANTOM
+        229_280_000_000, // LINEA
+        229_280_000_000 // BLAST
     ];
 
     /*//////////////////////////////////////////////////////////////
