@@ -305,7 +305,7 @@ abstract contract AbstractDeploySingle is BatchScript {
     uint64 public constant LINEA = 59_144;
     uint64 public constant BLAST = 81_457;
 
-    uint256[] public manualNonces = [16, 16, 16, 16, 15, 15, 14, 3, 0, 0];
+    uint256[] public manualNonces = [17, 17, 17, 17, 16, 16, 15, 4, 0, 0];
     uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 59_144, 81_457];
     string[] public chainNames =
         ["Ethereum", "Binance", "Avalanche", "Polygon", "Arbitrum", "Optimism", "Base", "Fantom", "Linea", "Blast"];
@@ -1251,7 +1251,12 @@ abstract contract AbstractDeploySingle is BatchScript {
             addToBatch(vars.paymentHelper, 0, txn);
 
             /// Send to Safe to sign
-            executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], 0, execute);
+            executeBatch(
+                vars.chainId,
+                env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i],
+                manualNonces[trueIndex],
+                execute
+            );
         }
     }
 
