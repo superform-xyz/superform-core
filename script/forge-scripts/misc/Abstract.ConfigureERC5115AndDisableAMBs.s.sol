@@ -160,7 +160,7 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
         bytes memory txn = abi.encodeWithSelector(
             SuperformFactory.addFormImplementation.selector, erc5115Form, FORM_IMPLEMENTATION_IDS[1], 1
         );
-        addToBatch(superRegistry, 0, txn);
+        addToBatch(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperformFactory"), 0, txn);
 
         vars.paymentHelper = PaymentHelper(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper"));
         txn = abi.encodeWithSelector(
@@ -175,7 +175,6 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
         vars.ambAddress = new address[](1);
         vars.ambAddress[0] = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "LayerzeroV1Implementation");
         assert(vars.ambAddress[0] != address(0));
-
         txn = abi.encodeWithSelector(SuperRegistry.setAmbAddress.selector, vars.ambIds, vars.ambAddress, new bool[](1));
         addToBatch(superRegistry, 0, txn);
 
@@ -203,7 +202,6 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
 
         vars.remoteChainIds = new uint64[](TARGET_CHAINS.length - 1);
         vars.addRemoteConfigs = new IPaymentHelper.PaymentHelperConfig[](TARGET_CHAINS.length - 1);
-
         for (uint256 j; j < TARGET_CHAINS.length; j++) {
             vars.dstChainId = TARGET_CHAINS[j];
             if (vars.chainId != vars.dstChainId) {
@@ -213,7 +211,7 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
                 txn = abi.encodeWithSelector(
                     SuperRegistry.setAddress.selector,
                     keccak256("PAYMENT_HELPER"),
-                    _readContractsV1(env, chainNames[trueIndex], vars.dstChainId, "PaymentHelper"),
+                    _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "PaymentHelper"),
                     vars.dstChainId
                 );
                 addToBatch(superRegistry, 0, txn);
@@ -235,11 +233,11 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
                     )
                 );
                 addToBatch(address(vars.lzV1Impl), 0, txn);
-
                 /// @dev set receivers to 0xDEAD
                 txn = abi.encodeWithSelector(
                     AxelarImplementation.setReceiver.selector, axelar_chainIds[vars.dstTrueIndex], address(0xDEAD)
                 );
+
                 addToBatch(address(vars.axelarImpl), 0, txn);
 
                 /// @dev old layerzero, hyperlane and wormhole are only deployed on the previous networks
@@ -252,18 +250,23 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
                     lz_v1_chainIds[vars.dstTrueIndex],
                     abi.encodePacked(address(0xDEAD), address(0xDEAD))
                 );
+
                 addToBatch(address(vars.layerzeroImpl), 0, txn);
 
                 txn = abi.encodeWithSelector(
                     WormholeARImplementation.setReceiver.selector, wormhole_chainIds[vars.dstTrueIndex], address(0xDEAD)
                 );
                 addToBatch(address(vars.wormholeImpl), 0, txn);
-
                 if (vars.chainId == FANTOM || vars.dstChainId == FANTOM) continue;
                 txn = abi.encodeWithSelector(
                     HyperlaneImplementation.setReceiver.selector, hyperlane_chainIds[vars.dstTrueIndex], address(0xDEAD)
                 );
                 addToBatch(address(vars.hyperlaneImpl), 0, txn);
+
+                assert(abi.decode(GAS_USED[vars.dstChainId][3], (uint256)) > 0);
+                assert(abi.decode(GAS_USED[vars.dstChainId][4], (uint256)) > 0);
+                assert(abi.decode(GAS_USED[vars.dstChainId][6], (uint256)) > 0);
+                assert(abi.decode(GAS_USED[vars.dstChainId][13], (uint256)) > 0);
 
                 /// @dev generate payment helper configs
                 vars.remoteChainIds[vars.helperConfigIndex] = vars.dstChainId;
@@ -283,16 +286,16 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
                     10_000,
                     abi.decode(GAS_USED[vars.dstChainId][13], (uint256))
                 );
+
                 ++vars.helperConfigIndex;
             }
         }
 
-        vars.paymentHelper.addRemoteChains(vars.remoteChainIds, vars.addRemoteConfigs);
         txn = abi.encodeWithSelector(PaymentHelper.addRemoteChains.selector, vars.remoteChainIds, vars.addRemoteConfigs);
         addToBatch(address(vars.paymentHelper), 0, txn);
 
         /// Send to Safe to sign
-        executeBatch(vars.chainId, PROTOCOL_ADMINS[trueIndex], 0, false);
+        executeBatch(vars.chainId, PROTOCOL_ADMINS[trueIndex], manualNonces[trueIndex], true);
     }
 
     function _configureProdPaymentAdmin(
