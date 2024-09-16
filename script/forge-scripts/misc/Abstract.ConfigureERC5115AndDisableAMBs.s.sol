@@ -138,7 +138,6 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
         UpdateVars memory vars;
 
         vars.chainId = finalDeployedChains[i];
-        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
 
         address superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
         address expectedSr;
@@ -190,13 +189,13 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
         assert(address(vars.lzV1Impl) != address(0));
 
         /// @dev adding the old implementations as variables here
-        vars.hyperlaneImpl = HyperlaneImplementation(0x207BFE0Fb040F17cC61B67e4aaDfC59C9e170671);
+        vars.hyperlaneImpl = HyperlaneImplementation(0x5417Fe6bA77106BCb5Ef1173fd901097BF08F234);
         vars.layerzeroImpl = vars.chainId == 250
-            ? LayerzeroImplementation(0x9061774Bd32D9C4552c540a822823949Fad006D9)
-            : LayerzeroImplementation(0x1863862794cD8ec60daBF8B473fcA928B78cE563);
+            ? LayerzeroImplementation(0x2551c2218a37e8e28BF3C1658d8A315cD4209847)
+            : LayerzeroImplementation(0x8a3E646d9FDAA5ce032743fCe4d81B5Fa8723Be2);
         vars.wormholeImpl = vars.chainId == 250
-            ? WormholeARImplementation(0x0545Ecc81aC5855b1D55578B03431d986eDEA746)
-            : WormholeARImplementation(0x3b6FABE94a5d0B160e2E1519495e7Fe9dD009Ea3);
+            ? WormholeARImplementation(0xE4350dFcB29Fd580B662522b3fC85Dc5c3E9aBC8)
+            : WormholeARImplementation(0xbD59F0B24d7A668f2c2CEAcfa056518bB3C06A9f);
 
         txn = abi.encodeWithSelector(LayerzeroImplementation.setLzEndpoint.selector, lzEndpoints[trueIndex]);
         addToBatch(address(vars.lzV1Impl), 0, txn);
