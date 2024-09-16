@@ -16,6 +16,12 @@ struct UpdateVars {
     LayerzeroImplementation layerzeroImpl;
     HyperlaneImplementation hyperlaneImpl;
     WormholeARImplementation wormholeImpl;
+    PaymentHelper paymentHelper;
+    uint8[] ambIds;
+    address[] ambAddress;
+    uint64[] remoteChainIds;
+    IPaymentHelper.PaymentHelperConfig[] addRemoteConfigs;
+    uint256 helperConfigIndex;
 }
 
 abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
@@ -93,7 +99,7 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
         assert(superRegistry == expectedSr);
 
         contracts[vars.chainId][bytes32(bytes("PaymentHelper"))] =
-            address(new PaymentHelper{ salt: salt }(ISuperRegistry(superRegistry)));
+            address(new PaymentHelper{ salt: salt }(superRegistry));
 
         vm.stopBroadcast();
 
@@ -154,21 +160,60 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
         bytes memory txn = abi.encodeWithSelector(SuperformFactory.addFormImplementation.selector, erc5115Form, 3, 1);
         addToBatch(superRegistry, 0, txn);
 
-        address paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
+        vars.paymentHelper = PaymentHelper(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper"));
         txn = abi.encodeWithSelector(
-            SuperRegistry.setAddress.selector, keccak256("PAYMENT_HELPER"), paymentHelper, vars.chainId
+            SuperRegistry.setAddress.selector, keccak256("PAYMENT_HELPER"), address(vars.paymentHelper), vars.chainId
         );
         addToBatch(superRegistry, 0, txn);
 
+        txn = abi.encodeWithSelector(
+            PaymentHelper.updateRemoteChain.selector,
+            vars.chainId,
+            1,
+            abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
+        );
+        addToBatch(address(vars.paymentHelper), 0, txn);
+
+        txn = abi.encodeWithSelector(
+            PaymentHelper.updateRemoteChain.selector, vars.chainId, 7, abi.encode(nativePrices[trueIndex])
+        );
+        addToBatch(address(vars.paymentHelper), 0, txn);
+
+        txn = abi.encodeWithSelector(
+            PaymentHelper.updateRemoteChain.selector, vars.chainId, 8, abi.encode(gasPrices[trueIndex])
+        );
+        addToBatch(address(vars.paymentHelper), 0, txn);
+
+        txn = abi.encodeWithSelector(PaymentHelper.updateRemoteChain.selector, vars.chainId, 9, abi.encode(750));
+        addToBatch(address(vars.paymentHelper), 0, txn);
+
+        txn = abi.encodeWithSelector(
+            PaymentHelper.updateRemoteChain.selector,
+            vars.chainId,
+            10,
+            abi.encode(vars.chainId == ARBI ? 500_000 : 150_000)
+        );
+        addToBatch(address(vars.paymentHelper), 0, txn);
+
+        txn = abi.encodeWithSelector(PaymentHelper.updateRemoteChain.selector, vars.chainId, 11, abi.encode(50_000));
+        addToBatch(address(vars.paymentHelper), 0, txn);
+
+        txn = abi.encodeWithSelector(PaymentHelper.updateRemoteChain.selector, vars.chainId, 12, abi.encode(10_000));
+        addToBatch(address(vars.paymentHelper), 0, txn);
+
+        txn =
+            abi.encodeWithSelector(PaymentHelper.updateRegisterAERC20Params.selector, abi.encode(4, abi.encode(0, "")));
+        addToBatch(address(vars.paymentHelper), 0, txn);
+
         /// @notice new layerzero v1 implementation is at id:9 on prod
-        uint8[] memory ambIds = new uint8[](1);
-        ambIds[0] = 9;
+        vars.ambIds = new uint8[](1);
+        vars.ambIds[0] = 9;
 
-        address[] memory ambAddress = new address[](1);
-        ambAddress[0] = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "LayerzeroV1Implementation");
-        assert(ambAddress[0] != address(0));
+        vars.ambAddress = new address[](1);
+        vars.ambAddress[0] = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "LayerzeroV1Implementation");
+        assert(vars.ambAddress[0] != address(0));
 
-        txn = abi.encodeWithSelector(SuperRegistry.setAmbAddress.selector, ambIds, ambAddress, new bool[](1));
+        txn = abi.encodeWithSelector(SuperRegistry.setAmbAddress.selector, vars.ambIds, vars.ambAddress, new bool[](1));
         addToBatch(superRegistry, 0, txn);
 
         vars.axelarImpl =
@@ -192,6 +237,9 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
 
         txn = abi.encodeWithSelector(LayerzeroImplementation.setLzEndpoint.selector, lzEndpoints[trueIndex]);
         addToBatch(address(vars.lzV1Impl), 0, txn);
+
+        vars.remoteChainIds = new uint64[](TARGET_CHAINS.length - 1);
+        vars.addRemoteConfigs = new IPaymentHelper.PaymentHelperConfig[](TARGET_CHAINS.length - 1);
 
         for (uint256 j; j < TARGET_CHAINS.length; j++) {
             vars.dstChainId = TARGET_CHAINS[j];
@@ -253,8 +301,32 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
                     HyperlaneImplementation.setReceiver.selector, hyperlane_chainIds[vars.dstTrueIndex], address(0xDEAD)
                 );
                 addToBatch(address(vars.hyperlaneImpl), 0, txn);
+
+                /// @dev generate payment helper configs
+                vars.remoteChainIds[vars.helperConfigIndex] = vars.dstChainId;
+                vars.addRemoteConfigs[vars.helperConfigIndex] = IPaymentHelper.PaymentHelperConfig(
+                    PRICE_FEEDS[vars.chainId][vars.dstChainId],
+                    address(0),
+                    abi.decode(GAS_USED[vars.dstChainId][3], (uint256)),
+                    abi.decode(GAS_USED[vars.dstChainId][4], (uint256)),
+                    vars.dstChainId == ARBI ? 1_000_000 : 200_000,
+                    abi.decode(GAS_USED[vars.dstChainId][6], (uint256)),
+                    nativePrices[vars.dstTrueIndex],
+                    gasPrices[vars.dstTrueIndex],
+                    750,
+                    2_000_000,
+                    /// @dev ackGasCost to move a msg from dst to source
+                    10_000,
+                    10_000,
+                    abi.decode(GAS_USED[vars.dstChainId][13], (uint256))
+                );
+                ++vars.helperConfigIndex;
             }
         }
+
+        vars.paymentHelper.addRemoteChains(vars.remoteChainIds, vars.addRemoteConfigs);
+        txn = abi.encodeWithSelector(PaymentHelper.addRemoteChains.selector, vars.remoteChainIds, vars.addRemoteConfigs);
+        addToBatch(address(vars.paymentHelper), 0, txn);
 
         /// Send to Safe to sign
         executeBatch(vars.chainId, PROTOCOL_ADMINS[trueIndex], 0, false);
