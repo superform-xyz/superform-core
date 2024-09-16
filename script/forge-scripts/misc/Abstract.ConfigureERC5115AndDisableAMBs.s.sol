@@ -154,6 +154,12 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
         bytes memory txn = abi.encodeWithSelector(SuperformFactory.addFormImplementation.selector, erc5115Form, 3, 1);
         addToBatch(superRegistry, 0, txn);
 
+        address paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
+        txn = abi.encodeWithSelector(
+            SuperRegistry.setAddress.selector, keccak256("PAYMENT_HELPER"), paymentHelper, vars.chainId
+        );
+        addToBatch(superRegistry, 0, txn);
+
         /// @notice new layerzero v1 implementation is at id:9 on prod
         uint8[] memory ambIds = new uint8[](1);
         ambIds[0] = 9;
@@ -191,6 +197,15 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
             vars.dstChainId = TARGET_CHAINS[j];
             if (vars.chainId != vars.dstChainId) {
                 vars.dstTrueIndex = _getTrueIndex(vars.dstChainId);
+
+                /// @dev set new payment helper for other chains
+                txn = abi.encodeWithSelector(
+                    SuperRegistry.setAddress.selector,
+                    keccak256("PAYMENT_HELPER"),
+                    _readContractsV1(env, chainNames[trueIndex], vars.dstChainId, "PaymentHelper"),
+                    vars.dstChainId
+                );
+                addToBatch(superRegistry, 0, txn);
 
                 /// @dev configure new Lz v1
                 txn = abi.encodeWithSelector(
