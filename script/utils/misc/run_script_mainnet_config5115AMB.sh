@@ -15,136 +15,136 @@ export BLAST_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BLAST_RPC_URL/cre
 Run the script
 echo Deploying layerzero v1: ...
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployLayerzeroV1( uint256,uint256, uint256)" 0 0 0 --rpc-url $ETHEREUM_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployLayerzeroV1( uint256,uint256, uint256)" 0 0 0 --rpc-url $ETHEREUM_RPC_URL --slow --broadcast  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployLayerzeroV1( uint256,uint256, uint256)" 0 1 0 --rpc-url $BSC_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployLayerzeroV1( uint256,uint256, uint256)" 0 1 0 --rpc-url $BSC_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployLayerzeroV1( uint256,uint256, uint256)" 0 2 0 --rpc-url $AVALANCHE_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployLayerzeroV1( uint256,uint256, uint256)" 0 2 0 --rpc-url $AVALANCHE_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployLayerzeroV1( uint256,uint256, uint256)" 0 3 0 --rpc-url $POLYGON_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployLayerzeroV1( uint256,uint256, uint256)" 0 3 0 --rpc-url $POLYGON_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployLayerzeroV1( uint256,uint256, uint256)" 0 4 0 --rpc-url $ARBITRUM_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployLayerzeroV1( uint256,uint256, uint256)" 0 4 0 --rpc-url $ARBITRUM_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployLayerzeroV1( uint256,uint256, uint256)" 0 5 0 --rpc-url $OPTIMISM_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployLayerzeroV1( uint256,uint256, uint256)" 0 5 0 --rpc-url $OPTIMISM_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployLayerzeroV1( uint256,uint256, uint256)" 0 6 0 --rpc-url $BASE_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployLayerzeroV1( uint256,uint256, uint256)" 0 6 0 --rpc-url $BASE_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployLayerzeroV1( uint256,uint256, uint256)" 0 7 1 --rpc-url $FANTOM_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployLayerzeroV1( uint256,uint256, uint256)" 0 7 1 --rpc-url $FANTOM_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 wait
 
-echo Deploying payment helper v2: ...
+# echo Deploying payment helper v2: ...
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployPaymentHelperV2( uint256,uint256, uint256)" 0 0 0 --rpc-url $ETHEREUM_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployPaymentHelperV2( uint256,uint256, uint256)" 0 0 0 --rpc-url $ETHEREUM_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployPaymentHelperV2( uint256,uint256, uint256)" 0 1 0 --rpc-url $BSC_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployPaymentHelperV2( uint256,uint256, uint256)" 0 1 0 --rpc-url $BSC_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployPaymentHelperV2( uint256,uint256, uint256)" 0 2 0 --rpc-url $AVALANCHE_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployPaymentHelperV2( uint256,uint256, uint256)" 0 2 0 --rpc-url $AVALANCHE_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployPaymentHelperV2( uint256,uint256, uint256)" 0 3 0 --rpc-url $POLYGON_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployPaymentHelperV2( uint256,uint256, uint256)" 0 3 0 --rpc-url $POLYGON_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployPaymentHelperV2( uint256,uint256, uint256)" 0 4 0 --rpc-url $ARBITRUM_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployPaymentHelperV2( uint256,uint256, uint256)" 0 4 0 --rpc-url $ARBITRUM_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployPaymentHelperV2( uint256,uint256, uint256)" 0 5 0 --rpc-url $OPTIMISM_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployPaymentHelperV2( uint256,uint256, uint256)" 0 5 0 --rpc-url $OPTIMISM_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployPaymentHelperV2( uint256,uint256, uint256)" 0 6 0 --rpc-url $BASE_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployPaymentHelperV2( uint256,uint256, uint256)" 0 6 0 --rpc-url $BASE_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployPaymentHelperV2( uint256,uint256, uint256)" 0 7 1 --rpc-url $FANTOM_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "deployPaymentHelperV2( uint256,uint256, uint256)" 0 7 1 --rpc-url $FANTOM_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# wait
 
-echo Configuring payment helper via payment admin: ...
+# echo Configuring payment helper via payment admin: ...
 
-export FIREBLOCKS_RPC_URL=$ETHEREUM_RPC_URL
+# export FIREBLOCKS_RPC_URL=$ETHEREUM_RPC_URL
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configureProdPaymentAdmin(uint256, uint256, uint256)" 0 0 0 \
-    --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
+# fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configureProdPaymentAdmin(uint256, uint256, uint256)" 0 0 0 \
+#     --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
 
-wait
+# wait
 
-export FIREBLOCKS_RPC_URL=$BSC_RPC_URL
+# export FIREBLOCKS_RPC_URL=$BSC_RPC_URL
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configureProdPaymentAdmin(uint256, uint256, uint256)" 0 1 0 \
-    --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
+# fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configureProdPaymentAdmin(uint256, uint256, uint256)" 0 1 0 \
+#     --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
 
-wait
+# wait
 
-export FIREBLOCKS_RPC_URL=$AVALANCHE_RPC_URL
+# export FIREBLOCKS_RPC_URL=$AVALANCHE_RPC_URL
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configureProdPaymentAdmin(uint256, uint256, uint256)" 0 2 0 \
-    --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
+# fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configureProdPaymentAdmin(uint256, uint256, uint256)" 0 2 0 \
+#     --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
 
-wait
+# wait
 
-export FIREBLOCKS_RPC_URL=$POLYGON_RPC_URL
+# export FIREBLOCKS_RPC_URL=$POLYGON_RPC_URL
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configureProdPaymentAdmin(uint256, uint256, uint256)" 0 3 0 \
-    --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
+# fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configureProdPaymentAdmin(uint256, uint256, uint256)" 0 3 0 \
+#     --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
 
-wait
+# wait
 
-export FIREBLOCKS_RPC_URL=$ARBITRUM_RPC_URL
+# export FIREBLOCKS_RPC_URL=$ARBITRUM_RPC_URL
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configureProdPaymentAdmin(uint256, uint256, uint256)" 0 4 0 \
-    --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
+# fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configureProdPaymentAdmin(uint256, uint256, uint256)" 0 4 0 \
+#     --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
 
-wait
+# wait
 
-export FIREBLOCKS_RPC_URL=$OPTIMISM_RPC_URL
+# export FIREBLOCKS_RPC_URL=$OPTIMISM_RPC_URL
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configureProdPaymentAdmin(uint256, uint256, uint256)" 0 5 0 \
-    --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
+# fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configureProdPaymentAdmin(uint256, uint256, uint256)" 0 5 0 \
+#     --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
 
-wait
+# wait
 
-export FIREBLOCKS_RPC_URL=$BASE_RPC_URL
+# export FIREBLOCKS_RPC_URL=$BASE_RPC_URL
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configureProdPaymentAdmin(uint256, uint256, uint256)" 0 6 0\
-    --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
+# fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configureProdPaymentAdmin(uint256, uint256, uint256)" 0 6 0\
+#     --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
 
-wait
+# wait
 
-export FIREBLOCKS_RPC_URL=$FANTOM_RPC_URL
+# export FIREBLOCKS_RPC_URL=$FANTOM_RPC_URL
 
-fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configureProdPaymentAdmin(uint256, uint256, uint256)" 0 7 1\
-    --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
+# fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configureProdPaymentAdmin(uint256, uint256, uint256)" 0 7 1\
+#     --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
 
-wait
+# wait
 
-echo configuring the new amb and disabling old ambs
+# echo configuring the new amb and disabling old ambs
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configure5115AndDisableAMB( uint256,uint256, uint256)" 0 0 0 --rpc-url $ETHEREUM_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configure5115AndDisableAMB( uint256,uint256, uint256)" 0 0 0 --rpc-url $ETHEREUM_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configure5115AndDisableAMB( uint256,uint256, uint256)" 0 1 0 --rpc-url $BSC_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configure5115AndDisableAMB( uint256,uint256, uint256)" 0 1 0 --rpc-url $BSC_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configure5115AndDisableAMB( uint256,uint256, uint256)" 0 2 0 --rpc-url $AVALANCHE_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configure5115AndDisableAMB( uint256,uint256, uint256)" 0 2 0 --rpc-url $AVALANCHE_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configure5115AndDisableAMB( uint256,uint256, uint256)" 0 3 0 --rpc-url $POLYGON_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configure5115AndDisableAMB( uint256,uint256, uint256)" 0 3 0 --rpc-url $POLYGON_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configure5115AndDisableAMB( uint256,uint256, uint256)" 0 4 1 --rpc-url $ARBITRUM_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configure5115AndDisableAMB( uint256,uint256, uint256)" 0 4 1 --rpc-url $ARBITRUM_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configure5115AndDisableAMB( uint256,uint256, uint256)" 0 5 0 --rpc-url $OPTIMISM_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configure5115AndDisableAMB( uint256,uint256, uint256)" 0 5 0 --rpc-url $OPTIMISM_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configure5115AndDisableAMB( uint256,uint256, uint256)" 0 6 0 --rpc-url $BASE_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configure5115AndDisableAMB( uint256,uint256, uint256)" 0 6 0 --rpc-url $BASE_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configure5115AndDisableAMB( uint256,uint256, uint256)" 0 7 1 --rpc-url $FANTOM_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configure5115AndDisableAMB( uint256,uint256, uint256)" 0 7 1 --rpc-url $FANTOM_RPC_URL --slow  --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# wait
