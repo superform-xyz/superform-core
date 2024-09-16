@@ -396,10 +396,10 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// @dev BASE https://app.onchainden.com/safes/base:0x2f973806f8863e860a553d4f2e7c2ab4a9f3b87c
         0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1,
         /// @dev FANTOM https://safe.fantom.network/home?safe=ftm:0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1
-        address(0),
-        /// FIXME: add protocol admin for LINEA HERE
-        address(0)
-        /// FIXME: add protocol admin for BLAST HERE
+        0x62Bbfe3ef3faAb7045d29bC388E5A0c5033D8b77,
+        /// @dev LINEA https://safe.linea.build/home?safe=linea:0x62Bbfe3ef3faAb7045d29bC388E5A0c5033D8b77
+        0x95B5837CF46E6ab340fFf3844ca5e7d8ead5B8AF
+        /// @dev BLAST https://blast-safe.io/home?safe=blastmainnet:0x95B5837CF46E6ab340fFf3844ca5e7d8ead5B8AF
     ];
 
     address[] public PROTOCOL_ADMINS_STAGING = [
@@ -733,6 +733,7 @@ abstract contract AbstractDeploySingle is BatchScript {
 
         vars.superRegistryC.setAddress(vars.superRegistryC.DST_SWAPPER(), vars.dstSwapper, vars.chainId);
 
+        console.log("entered here");
         /// @dev 15 - Super Registry extra setters
         /// @dev BASE does not have SocketV1 available
         if (vars.chainId == BASE) {
@@ -779,14 +780,14 @@ abstract contract AbstractDeploySingle is BatchScript {
             bridgeAddressesLinea[0] = BRIDGE_ADDRESSES[vars.chainId][0];
 
             /// and 4 is debridge and 5 is debridge forwarder
-            bridgeAddressesLinea[1] = BRIDGE_ADDRESSES[vars.chainId][4];
-            bridgeAddressesLinea[2] = BRIDGE_ADDRESSES[vars.chainId][5];
+            bridgeAddressesLinea[1] = BRIDGE_ADDRESSES[vars.chainId][3];
+            bridgeAddressesLinea[2] = BRIDGE_ADDRESSES[vars.chainId][4];
 
             address[] memory bridgeValidatorsLinea = new address[](3);
             bridgeValidatorsLinea[0] = bridgeValidators[0];
 
-            bridgeValidatorsLinea[1] = bridgeValidators[4];
-            bridgeValidatorsLinea[2] = bridgeValidators[5];
+            bridgeValidatorsLinea[1] = bridgeValidators[3];
+            bridgeValidatorsLinea[2] = bridgeValidators[4];
 
             vars.superRegistryC.setBridgeAddresses(bridgeIdsLinea, bridgeAddressesLinea, bridgeValidatorsLinea);
         } else if (vars.chainId == BLAST) {
