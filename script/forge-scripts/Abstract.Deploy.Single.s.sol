@@ -172,7 +172,10 @@ abstract contract AbstractDeploySingle is BatchScript {
     //////////////////////////////////////////////////////////////*/
     string public SUPER_POSITIONS_NAME;
 
-    /// @dev 1 = ERC4626Form, 3 = 5115Form (2 will tenatively be used for ERC7540)
+    /// @dev 1 = ERC4626Form, 5 = 5115Form (2 will tentatively be used for ERC7540)
+    uint32[] public STAGING_FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(5)];
+
+    /// @dev 1 = ERC4626Form, 3 = 5115Form (2 will tentatively be used for ERC7540)
     uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(3)];
     string[] public VAULT_KINDS = ["Vault"];
 
@@ -677,8 +680,17 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// @dev 9 - Add newly deployed form implementations to Factory,
         /// @notice formImplementationId for ERC4626 form is 1
         /// @notice formImplementationId for ERC5115 form is 3 on prod and 5 on staging
-        ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0], 1);
-        ISuperformFactory(vars.factory).addFormImplementation(vars.erc5115Form, FORM_IMPLEMENTATION_IDS[1], 1);
+        if (env == 0) {
+            ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0], 1);
+            ISuperformFactory(vars.factory).addFormImplementation(vars.erc5115Form, FORM_IMPLEMENTATION_IDS[1], 1);
+        } else {
+            ISuperformFactory(vars.factory).addFormImplementation(
+                vars.erc4626Form, STAGING_FORM_IMPLEMENTATION_IDS[0], 1
+            );
+            ISuperformFactory(vars.factory).addFormImplementation(
+                vars.erc5115Form, STAGING_FORM_IMPLEMENTATION_IDS[1], 1
+            );
+        }
 
         /// @dev 10 - Deploy SuperformRouter
         vars.superformRouter = address(new SuperformRouter{ salt: salt }(vars.superRegistry));
@@ -1112,7 +1124,9 @@ abstract contract AbstractDeploySingle is BatchScript {
 
         /// @dev pause forms
         SuperformFactory(vars.factory).changeFormImplementationPauseStatus(
-            FORM_IMPLEMENTATION_IDS[0], ISuperformFactory.PauseStatus(1), ""
+            env == 0 ? FORM_IMPLEMENTATION_IDS[0] : STAGING_FORM_IMPLEMENTATION_IDS[0],
+            ISuperformFactory.PauseStatus(1),
+            ""
         );
 
         vm.stopBroadcast();

@@ -157,7 +157,9 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
         assert(erc5115Form != address(0));
 
         /// @notice can ERC5115 be at id:3 on prod
-        bytes memory txn = abi.encodeWithSelector(SuperformFactory.addFormImplementation.selector, erc5115Form, 3, 1);
+        bytes memory txn = abi.encodeWithSelector(
+            SuperformFactory.addFormImplementation.selector, erc5115Form, FORM_IMPLEMENTATION_IDS[1], 1
+        );
         addToBatch(superRegistry, 0, txn);
 
         vars.paymentHelper = PaymentHelper(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper"));
