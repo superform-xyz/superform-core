@@ -305,7 +305,7 @@ abstract contract AbstractDeploySingle is BatchScript {
     uint64 public constant LINEA = 59_144;
     uint64 public constant BLAST = 81_457;
 
-    uint256[] public manualNonces = [18, 18, 18, 18, 17, 17, 16, 5, 0, 0];
+    uint256[] public manualNonces = [19, 19, 19, 19, 18, 18, 17, 6, 0, 0];
     uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 59_144, 81_457];
     string[] public chainNames =
         ["Ethereum", "Binance", "Avalanche", "Polygon", "Arbitrum", "Optimism", "Base", "Fantom", "Linea", "Blast"];
