@@ -241,7 +241,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
         vm.stopPrank();
     }
 
-    function test_startCrossChainRebalanceMulti_allErrors() public {
+    function test_startCrossChainRebalanceMulti_singleXChainMultiVaultWithdraw_allErrors() public {
         // Setup base valid arguments
         ISuperformRouterPlus.InitiateXChainRebalanceMultiArgs memory args = _setupValidXChainRebalanceMultiArgs();
 
@@ -316,6 +316,117 @@ contract SuperformRouterPlusTest is ProtocolActions {
         SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalanceMulti{ value: 3 ether }(args);
 
         vm.stopPrank();
+    }
+
+    function test_startCrossChainRebalanceMulti_multiDstMultiVaultWithdraw_allErrors() public {
+        vm.startPrank(deployer);
+
+        uint64 REBALANCE_FROM_1 = ETH;
+        uint64 REBALANCE_FROM_2 = OP;
+        uint64 REBALANCE_TO = OP;
+
+        _xChainDeposit(superformId5ETH, REBALANCE_FROM_1, 1);
+
+        vm.startPrank(deployer);
+        _xChainDeposit(superformId6ETH, REBALANCE_FROM_1, 2);
+
+        vm.startPrank(deployer);
+        _xChainDeposit(superformId4OP, REBALANCE_FROM_2, 1);
+
+        vm.selectFork(FORKS[SOURCE_CHAIN]);
+        ISuperformRouterPlus.InitiateXChainRebalanceMultiArgs memory args =
+            _buildInitiateXChainRebalanceMultiDstToMultiArgs(REBALANCE_FROM_1, REBALANCE_FROM_2, REBALANCE_TO);
+
+        vm.startPrank(deployer);
+        SuperPositions(SUPER_POSITIONS_SOURCE).setApprovalForAll(ROUTER_PLUS_SOURCE, true);
+
+        // Test REBALANCE_MULTI_POSITIONS_DIFFERENT_TOKEN error
+        args.interimAsset = getContract(SOURCE_CHAIN, "WETH");
+        vm.expectRevert(ISuperformRouterPlus.REBALANCE_MULTI_POSITIONS_DIFFERENT_TOKEN.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalanceMulti{ value: 3 ether }(args);
+
+        // Test REBALANCE_MULTI_POSITIONS_DIFFERENT_CHAIN error
+        args = _buildInitiateXChainRebalanceMultiDstToMultiArgs(REBALANCE_FROM_1, REBALANCE_FROM_2, REBALANCE_TO);
+        MultiDstMultiVaultStateReq memory req = abi.decode(_parseCallData(args.callData), (MultiDstMultiVaultStateReq));
+        req.superformsData[0].liqRequests[0].liqDstChainId = ETH;
+        args.callData = abi.encodeWithSelector(IBaseRouter.multiDstMultiVaultWithdraw.selector, req);
+        vm.expectRevert(ISuperformRouterPlus.REBALANCE_MULTI_POSITIONS_DIFFERENT_CHAIN.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalanceMulti{ value: 3 ether }(args);
+
+        // Test REBALANCE_MULTI_POSITIONS_DIFFERENT_AMOUNTS error
+        args = _buildInitiateXChainRebalanceMultiDstToMultiArgs(REBALANCE_FROM_1, REBALANCE_FROM_2, REBALANCE_TO);
+        req = abi.decode(_parseCallData(args.callData), (MultiDstMultiVaultStateReq));
+        req.superformsData[0].amounts[0] = req.superformsData[0].amounts[0] - 1;
+        args.callData = abi.encodeWithSelector(IBaseRouter.multiDstMultiVaultWithdraw.selector, req);
+        vm.expectRevert(ISuperformRouterPlus.REBALANCE_MULTI_POSITIONS_DIFFERENT_AMOUNTS.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalanceMulti{ value: 3 ether }(args);
+
+        // Test REBALANCE_XCHAIN_INVALID_RECEIVER_ADDRESS error
+        args = _buildInitiateXChainRebalanceMultiDstToMultiArgs(REBALANCE_FROM_1, REBALANCE_FROM_2, REBALANCE_TO);
+        req = abi.decode(_parseCallData(args.callData), (MultiDstMultiVaultStateReq));
+        req.superformsData[0].receiverAddress = address(0x123);
+        args.callData = abi.encodeWithSelector(IBaseRouter.multiDstMultiVaultWithdraw.selector, req);
+        vm.expectRevert(ISuperformRouterPlus.REBALANCE_XCHAIN_INVALID_RECEIVER_ADDRESS.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalanceMulti{ value: 3 ether }(args);
+    }
+
+    function test_startCrossChainRebalanceMulti_multiDstSingleVaultWithdraw_allErrors() public {
+        vm.startPrank(deployer);
+
+        uint64 REBALANCE_FROM_1 = ETH;
+        uint64 REBALANCE_FROM_2 = OP;
+        uint64 REBALANCE_TO = OP;
+
+        // Step 1: Initial XCHAIN Deposits
+        _xChainDeposit(superformId5ETH, REBALANCE_FROM_1, 1);
+
+        vm.startPrank(deployer);
+        _xChainDeposit(superformId4OP, REBALANCE_FROM_2, 1);
+
+        // // Step 2: Start cross-chain rebalance
+        vm.selectFork(FORKS[SOURCE_CHAIN]);
+        ISuperformRouterPlus.InitiateXChainRebalanceMultiArgs memory args =
+            _buildInitiateXChainRebalanceMultiDstArgs(REBALANCE_FROM_1, REBALANCE_FROM_2, REBALANCE_TO);
+
+        vm.startPrank(deployer);
+
+        SuperPositions(SUPER_POSITIONS_SOURCE).setApprovalForAll(ROUTER_PLUS_SOURCE, true);
+
+        // Test REBALANCE_MULTI_POSITIONS_DIFFERENT_TOKEN error
+        args.interimAsset = getContract(SOURCE_CHAIN, "WETH");
+        vm.expectRevert(ISuperformRouterPlus.REBALANCE_MULTI_POSITIONS_DIFFERENT_TOKEN.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalanceMulti{ value: 4 ether }(args);
+
+        // Test REBALANCE_MULTI_POSITIONS_DIFFERENT_CHAIN error
+        args = _buildInitiateXChainRebalanceMultiDstArgs(REBALANCE_FROM_1, REBALANCE_FROM_2, REBALANCE_TO);
+        MultiDstSingleVaultStateReq memory req =
+            abi.decode(_parseCallData(args.callData), (MultiDstSingleVaultStateReq));
+        req.superformsData[0].liqRequest.liqDstChainId = ETH;
+        args.callData = abi.encodeWithSelector(IBaseRouter.multiDstSingleVaultWithdraw.selector, req);
+        vm.expectRevert(ISuperformRouterPlus.REBALANCE_MULTI_POSITIONS_DIFFERENT_CHAIN.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalanceMulti{ value: 4 ether }(args);
+
+        // Test REBALANCE_MULTI_POSITIONS_DIFFERENT_AMOUNTS error
+        args = _buildInitiateXChainRebalanceMultiDstArgs(REBALANCE_FROM_1, REBALANCE_FROM_2, REBALANCE_TO);
+        req = abi.decode(_parseCallData(args.callData), (MultiDstSingleVaultStateReq));
+        req.superformsData[0].amount = req.superformsData[0].amount - 1;
+        args.callData = abi.encodeWithSelector(IBaseRouter.multiDstSingleVaultWithdraw.selector, req);
+        vm.expectRevert(ISuperformRouterPlus.REBALANCE_MULTI_POSITIONS_DIFFERENT_AMOUNTS.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalanceMulti{ value: 4 ether }(args);
+
+        // Test REBALANCE_XCHAIN_INVALID_RECEIVER_ADDRESS error
+        args = _buildInitiateXChainRebalanceMultiDstArgs(REBALANCE_FROM_1, REBALANCE_FROM_2, REBALANCE_TO);
+        req = abi.decode(_parseCallData(args.callData), (MultiDstSingleVaultStateReq));
+        req.superformsData[0].receiverAddress = address(0x123);
+        args.callData = abi.encodeWithSelector(IBaseRouter.multiDstSingleVaultWithdraw.selector, req);
+        vm.expectRevert(ISuperformRouterPlus.REBALANCE_XCHAIN_INVALID_RECEIVER_ADDRESS.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalanceMulti{ value: 4 ether }(args);
+
+        // Test INVALID_DEPOSIT_SELECTOR error
+        args = _buildInitiateXChainRebalanceMultiDstArgs(REBALANCE_FROM_1, REBALANCE_FROM_2, REBALANCE_TO);
+        args.rebalanceToSelector = bytes4(keccak256("invalidSelector()"));
+        vm.expectRevert(ISuperformRouterPlus.INVALID_DEPOSIT_SELECTOR.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalanceMulti{ value: 4 ether }(args);
     }
 
     function test_deposit4626_invalidDepositSelector() public {
