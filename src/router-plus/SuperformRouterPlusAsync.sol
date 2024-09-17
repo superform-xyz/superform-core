@@ -160,21 +160,21 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             D.ambIds = abi.decode(data.rebalanceToAmbIds, (uint8[][]));
             D.dstChainIds = abi.decode(data.rebalanceToDstChainIds, (uint64[]));
 
-            for (uint256 i; i < lenDsts; ++i) {
-                uint256[] memory tSuperformIds = new uint256[](1);
-                tSuperformIds[0] = superformsData[i].superformId;
-                D.superformIds[i] = tSuperformIds;
+            // for (uint256 i; i < lenDsts; ++i) {
+            //     uint256[] memory tSuperformIds = new uint256[](1);
+            //     tSuperformIds[0] = superformsData[i].superformId;
+            //     D.superformIds[i] = tSuperformIds;
 
-                uint256[] memory tAmounts = new uint256[](1);
-                tAmounts[0] = superformsData[i].amount;
-                D.amounts[i] = tAmounts;
+            //     uint256[] memory tAmounts = new uint256[](1);
+            //     tAmounts[0] = superformsData[i].amount;
+            //     D.amounts[i] = tAmounts;
 
-                uint256[] memory tOutputAmounts = new uint256[](1);
-                tOutputAmounts[0] = superformsData[i].outputAmount;
-                D.outputAmounts[i] = tOutputAmounts;
+            //     uint256[] memory tOutputAmounts = new uint256[](1);
+            //     tOutputAmounts[0] = superformsData[i].outputAmount;
+            //     D.outputAmounts[i] = tOutputAmounts;
 
-                D.receiverAddress[i] = superformsData[i].receiverAddress;
-            }
+            //     D.receiverAddress[i] = superformsData[i].receiverAddress;
+            // }
         } else if (data.rebalanceSelector == IBaseRouter.multiDstMultiVaultDeposit.selector) {
             MultiVaultSFData[] memory multiSuperformData = abi.decode(data.rebalanceToSfData, (MultiVaultSFData[]));
             uint256 lenDsts = multiSuperformData.length;

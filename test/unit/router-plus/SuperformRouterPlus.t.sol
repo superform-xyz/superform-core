@@ -5,6 +5,7 @@ import { Error } from "src/libraries/Error.sol";
 import "test/utils/ProtocolActions.sol";
 import { ISuperformRouterPlus } from "src/interfaces/ISuperformRouterPlus.sol";
 import { ISuperformRouterPlusAsync } from "src/interfaces/ISuperformRouterPlusAsync.sol";
+import { IBaseSuperformRouterPlus } from "src/interfaces/IBaseSuperformRouterPlus.sol";
 import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
 import { ERC20 } from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
@@ -116,7 +117,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
     }
 
     //////////////////////////////////////////////////////////////
-    //                      UNIT TESTS                          //
+    //                   ROUTER PLUS UNIT TESTS                 //
     //////////////////////////////////////////////////////////////
 
     function test_zeroAddressConstructor() public {
@@ -666,6 +667,411 @@ contract SuperformRouterPlusTest is ProtocolActions {
     }
 
     //////////////////////////////////////////////////////////////
+    //                  ASYNC ROUTER PLUS UNIT TESTS            //
+    //////////////////////////////////////////////////////////////
+
+    function test_setXChainRebalanceCallData_alreadySet() public {
+        IBaseSuperformRouterPlus.XChainRebalanceData memory data = IBaseSuperformRouterPlus.XChainRebalanceData({
+            rebalanceSelector: bytes4(keccak256("someRandomSelector()")),
+            interimAsset: getContract(SOURCE_CHAIN, "USDC"),
+            slippage: 100,
+            expectedAmountInterimAsset: 1e18,
+            rebalanceToAmbIds: abi.encode(new uint8[](0)),
+            rebalanceToDstChainIds: abi.encode(new uint64[](0)),
+            rebalanceToSfData: abi.encode(new bytes[](0))
+        });
+
+        vm.expectRevert(ISuperformRouterPlusAsync.NOT_ROUTER_PLUS.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).setXChainRebalanceCallData(deployer, 1, data);
+
+        vm.startPrank(ROUTER_PLUS_SOURCE);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).setXChainRebalanceCallData(deployer, 1, data);
+
+        vm.expectRevert(ISuperformRouterPlusAsync.ALREADY_SET.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).setXChainRebalanceCallData(deployer, 1, data);
+    }
+
+    function test_decodeXChainRebalanceCallData() public {
+        vm.startPrank(ROUTER_PLUS_SOURCE);
+
+        // Test case 1: singleDirectSingleVaultDeposit
+        {
+            IBaseSuperformRouterPlus.XChainRebalanceData memory data = IBaseSuperformRouterPlus.XChainRebalanceData({
+                rebalanceSelector: IBaseRouter.singleDirectSingleVaultDeposit.selector,
+                interimAsset: address(0x123),
+                slippage: 100,
+                expectedAmountInterimAsset: 1e18,
+                rebalanceToAmbIds: "",
+                rebalanceToDstChainIds: "",
+                rebalanceToSfData: abi.encode(
+                    SingleVaultSFData({
+                        superformId: 1,
+                        amount: 1e18,
+                        outputAmount: 1e18,
+                        maxSlippage: 100,
+                        liqRequest: LiqRequest({
+                            txData: "",
+                            token: address(0),
+                            interimToken: address(0),
+                            bridgeId: 0,
+                            liqDstChainId: 0,
+                            nativeAmount: 0
+                        }),
+                        permit2data: "",
+                        hasDstSwap: false,
+                        retain4626: false,
+                        receiverAddress: address(0x456),
+                        receiverAddressSP: address(0x789),
+                        extraFormData: ""
+                    })
+                )
+            });
+
+            SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).setXChainRebalanceCallData(deployer, 1, data);
+
+            ISuperformRouterPlusAsync.DecodedRouterPlusRebalanceCallData memory decoded =
+                SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).decodeXChainRebalanceCallData(deployer, 1);
+
+            assertEq(decoded.interimAsset, address(0x123));
+            assertEq(decoded.userSlippage, 100);
+            assertEq(decoded.rebalanceSelector, IBaseRouter.singleDirectSingleVaultDeposit.selector);
+            assertEq(decoded.superformIds[0][0], 1);
+            assertEq(decoded.amounts[0][0], 1e18);
+            assertEq(decoded.outputAmounts[0][0], 1e18);
+            assertEq(decoded.receiverAddress[0], address(0x456));
+        }
+
+        // Test case 2: singleXChainSingleVaultDeposit
+        {
+            IBaseSuperformRouterPlus.XChainRebalanceData memory data = IBaseSuperformRouterPlus.XChainRebalanceData({
+                rebalanceSelector: IBaseRouter.singleXChainSingleVaultDeposit.selector,
+                interimAsset: address(0x234),
+                slippage: 200,
+                expectedAmountInterimAsset: 2e18,
+                rebalanceToAmbIds: abi.encode(AMBs),
+                rebalanceToDstChainIds: abi.encode(uint64(OP)),
+                rebalanceToSfData: abi.encode(
+                    SingleVaultSFData({
+                        superformId: 2,
+                        amount: 2e18,
+                        outputAmount: 2e18,
+                        maxSlippage: 200,
+                        liqRequest: LiqRequest({
+                            txData: "",
+                            token: address(0),
+                            interimToken: address(0),
+                            bridgeId: 0,
+                            liqDstChainId: 0,
+                            nativeAmount: 0
+                        }),
+                        permit2data: "",
+                        hasDstSwap: false,
+                        retain4626: false,
+                        receiverAddress: address(0x567),
+                        receiverAddressSP: address(0x890),
+                        extraFormData: ""
+                    })
+                )
+            });
+
+            SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).setXChainRebalanceCallData(deployer, 2, data);
+
+            ISuperformRouterPlusAsync.DecodedRouterPlusRebalanceCallData memory decoded =
+                SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).decodeXChainRebalanceCallData(deployer, 2);
+
+            assertEq(decoded.interimAsset, address(0x234));
+            assertEq(decoded.userSlippage, 200);
+            assertEq(decoded.rebalanceSelector, IBaseRouter.singleXChainSingleVaultDeposit.selector);
+            assertEq(decoded.superformIds[0][0], 2);
+            assertEq(decoded.amounts[0][0], 2e18);
+            assertEq(decoded.outputAmounts[0][0], 2e18);
+            assertEq(decoded.receiverAddress[0], address(0x567));
+            assertEq(decoded.ambIds[0][0], AMBs[0]);
+            assertEq(decoded.ambIds[0][1], AMBs[1]);
+            assertEq(decoded.dstChainIds[0], OP);
+        }
+
+        // Test case 3: singleDirectMultiVaultDeposit
+        {
+            IBaseSuperformRouterPlus.XChainRebalanceData memory data = IBaseSuperformRouterPlus.XChainRebalanceData({
+                rebalanceSelector: IBaseRouter.singleDirectMultiVaultDeposit.selector,
+                interimAsset: address(0x345),
+                slippage: 300,
+                expectedAmountInterimAsset: 3e18,
+                rebalanceToAmbIds: "",
+                rebalanceToDstChainIds: "",
+                rebalanceToSfData: abi.encode(
+                    MultiVaultSFData({
+                        superformIds: new uint256[](2),
+                        amounts: new uint256[](2),
+                        outputAmounts: new uint256[](2),
+                        maxSlippages: new uint256[](2),
+                        liqRequests: new LiqRequest[](2),
+                        permit2data: "",
+                        hasDstSwaps: new bool[](2),
+                        retain4626s: new bool[](2),
+                        receiverAddress: address(0x678),
+                        receiverAddressSP: address(0x901),
+                        extraFormData: ""
+                    })
+                )
+            });
+
+            MultiVaultSFData memory sfData = abi.decode(data.rebalanceToSfData, (MultiVaultSFData));
+            sfData.superformIds[0] = 3;
+            sfData.superformIds[1] = 4;
+            sfData.amounts[0] = 1.5e18;
+            sfData.amounts[1] = 1.5e18;
+            sfData.outputAmounts[0] = 1.5e18;
+            sfData.outputAmounts[1] = 1.5e18;
+            sfData.maxSlippages[0] = 300;
+            sfData.maxSlippages[1] = 300;
+            data.rebalanceToSfData = abi.encode(sfData);
+
+            SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).setXChainRebalanceCallData(deployer, 3, data);
+
+            ISuperformRouterPlusAsync.DecodedRouterPlusRebalanceCallData memory decoded =
+                SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).decodeXChainRebalanceCallData(deployer, 3);
+
+            assertEq(decoded.interimAsset, address(0x345));
+            assertEq(decoded.userSlippage, 300);
+            assertEq(decoded.rebalanceSelector, IBaseRouter.singleDirectMultiVaultDeposit.selector);
+            assertEq(decoded.superformIds[0][0], 3);
+            assertEq(decoded.superformIds[0][1], 4);
+            assertEq(decoded.amounts[0][0], 1.5e18);
+            assertEq(decoded.amounts[0][1], 1.5e18);
+            assertEq(decoded.outputAmounts[0][0], 1.5e18);
+            assertEq(decoded.outputAmounts[0][1], 1.5e18);
+            assertEq(decoded.receiverAddress[0], address(0x678));
+        }
+
+        // Test case 4: singleXChainMultiVaultDeposit
+        {
+            MultiVaultSFData memory multiVaultData = MultiVaultSFData({
+                superformIds: new uint256[](2),
+                amounts: new uint256[](2),
+                outputAmounts: new uint256[](2),
+                maxSlippages: new uint256[](2),
+                liqRequests: new LiqRequest[](2),
+                permit2data: "",
+                hasDstSwaps: new bool[](2),
+                retain4626s: new bool[](2),
+                receiverAddress: address(0x789),
+                receiverAddressSP: address(0x012),
+                extraFormData: ""
+            });
+
+            multiVaultData.superformIds[0] = 5;
+            multiVaultData.superformIds[1] = 6;
+            multiVaultData.amounts[0] = 2e18;
+            multiVaultData.amounts[1] = 2e18;
+            multiVaultData.outputAmounts[0] = 2e18;
+            multiVaultData.outputAmounts[1] = 2e18;
+            multiVaultData.maxSlippages[0] = 400;
+            multiVaultData.maxSlippages[1] = 400;
+
+            IBaseSuperformRouterPlus.XChainRebalanceData memory data = IBaseSuperformRouterPlus.XChainRebalanceData({
+                rebalanceSelector: IBaseRouter.singleXChainMultiVaultDeposit.selector,
+                interimAsset: address(0x456),
+                slippage: 400,
+                expectedAmountInterimAsset: 4e18,
+                rebalanceToAmbIds: abi.encode(AMBs),
+                rebalanceToDstChainIds: abi.encode(uint64(ETH)),
+                rebalanceToSfData: abi.encode(multiVaultData)
+            });
+
+            SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).setXChainRebalanceCallData(deployer, 4, data);
+
+            ISuperformRouterPlusAsync.DecodedRouterPlusRebalanceCallData memory decoded =
+                SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).decodeXChainRebalanceCallData(deployer, 4);
+
+            assertEq(decoded.interimAsset, address(0x456));
+            assertEq(decoded.userSlippage, 400);
+            assertEq(decoded.rebalanceSelector, IBaseRouter.singleXChainMultiVaultDeposit.selector);
+            assertEq(decoded.superformIds[0][0], 5);
+            assertEq(decoded.superformIds[0][1], 6);
+            assertEq(decoded.amounts[0][0], 2e18);
+            assertEq(decoded.amounts[0][1], 2e18);
+            assertEq(decoded.outputAmounts[0][0], 2e18);
+            assertEq(decoded.outputAmounts[0][1], 2e18);
+            assertEq(decoded.receiverAddress[0], address(0x789));
+            assertEq(decoded.ambIds[0][0], AMBs[0]);
+            assertEq(decoded.ambIds[0][1], AMBs[1]);
+            assertEq(decoded.dstChainIds[0], ETH);
+        }
+
+        // Test case 5: multiDstSingleVaultDeposit
+        {
+            SingleVaultSFData[] memory singleVaultData = new SingleVaultSFData[](2);
+            singleVaultData[0] = SingleVaultSFData({
+                superformId: 7,
+                amount: 2.5e18,
+                outputAmount: 2.5e18,
+                maxSlippage: 500,
+                liqRequest: LiqRequest({
+                    txData: "",
+                    token: address(0),
+                    interimToken: address(0),
+                    bridgeId: 0,
+                    liqDstChainId: 0,
+                    nativeAmount: 0
+                }),
+                permit2data: "",
+                hasDstSwap: false,
+                retain4626: false,
+                receiverAddress: address(0x890),
+                receiverAddressSP: address(0x123),
+                extraFormData: ""
+            });
+            singleVaultData[1] = SingleVaultSFData({
+                superformId: 8,
+                amount: 2.5e18,
+                outputAmount: 2.5e18,
+                maxSlippage: 500,
+                liqRequest: LiqRequest({
+                    txData: "",
+                    token: address(0),
+                    interimToken: address(0),
+                    bridgeId: 0,
+                    liqDstChainId: 0,
+                    nativeAmount: 0
+                }),
+                permit2data: "",
+                hasDstSwap: false,
+                retain4626: false,
+                receiverAddress: address(0x901),
+                receiverAddressSP: address(0x234),
+                extraFormData: ""
+            });
+
+            IBaseSuperformRouterPlus.XChainRebalanceData memory data = IBaseSuperformRouterPlus.XChainRebalanceData({
+                rebalanceSelector: IBaseRouter.multiDstSingleVaultDeposit.selector,
+                interimAsset: address(0x567),
+                slippage: 500,
+                expectedAmountInterimAsset: 5e18,
+                rebalanceToAmbIds: abi.encode([AMBs, AMBs]),
+                rebalanceToDstChainIds: abi.encode([uint64(OP), uint64(ETH)]),
+                rebalanceToSfData: abi.encode(singleVaultData)
+            });
+
+            SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).setXChainRebalanceCallData(deployer, 5, data);
+
+            ISuperformRouterPlusAsync.DecodedRouterPlusRebalanceCallData memory decoded =
+                SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).decodeXChainRebalanceCallData(deployer, 5);
+
+            assertEq(decoded.interimAsset, address(0x567));
+            assertEq(decoded.userSlippage, 500);
+            assertEq(decoded.rebalanceSelector, IBaseRouter.multiDstSingleVaultDeposit.selector);
+            assertEq(decoded.superformIds[0][0], 7);
+            assertEq(decoded.superformIds[1][0], 8);
+            assertEq(decoded.amounts[0][0], 2.5e18);
+            assertEq(decoded.amounts[1][0], 2.5e18);
+            assertEq(decoded.outputAmounts[0][0], 2.5e18);
+            assertEq(decoded.outputAmounts[1][0], 2.5e18);
+            assertEq(decoded.receiverAddress[0], address(0x890));
+            assertEq(decoded.receiverAddress[1], address(0x901));
+            assertEq(decoded.ambIds[0][0], AMBs[0]);
+            assertEq(decoded.ambIds[0][1], AMBs[1]);
+            assertEq(decoded.ambIds[1][0], AMBs[0]);
+            assertEq(decoded.ambIds[1][1], AMBs[1]);
+            assertEq(decoded.dstChainIds[0], OP);
+            assertEq(decoded.dstChainIds[1], ETH);
+        }
+        // Test case 6: multiDstMultiVaultDeposit
+        {
+            MultiVaultSFData[] memory multiVaultData = new MultiVaultSFData[](2);
+            for (uint256 i = 0; i < 2; i++) {
+                multiVaultData[i] = MultiVaultSFData({
+                    superformIds: new uint256[](2),
+                    amounts: new uint256[](2),
+                    outputAmounts: new uint256[](2),
+                    maxSlippages: new uint256[](2),
+                    liqRequests: new LiqRequest[](2),
+                    permit2data: "",
+                    hasDstSwaps: new bool[](2),
+                    retain4626s: new bool[](2),
+                    receiverAddress: i == 0 ? address(0x012) : address(0x123),
+                    receiverAddressSP: i == 0 ? address(0x345) : address(0x456),
+                    extraFormData: ""
+                });
+                multiVaultData[i].superformIds[0] = i == 0 ? 9 : 11;
+                multiVaultData[i].superformIds[1] = i == 0 ? 10 : 12;
+                multiVaultData[i].amounts[0] = 1.5e18;
+                multiVaultData[i].amounts[1] = 1.5e18;
+                multiVaultData[i].outputAmounts[0] = 1.5e18;
+                multiVaultData[i].outputAmounts[1] = 1.5e18;
+                multiVaultData[i].maxSlippages[0] = 600;
+                multiVaultData[i].maxSlippages[1] = 600;
+            }
+
+            IBaseSuperformRouterPlus.XChainRebalanceData memory data = IBaseSuperformRouterPlus.XChainRebalanceData({
+                rebalanceSelector: IBaseRouter.multiDstMultiVaultDeposit.selector,
+                interimAsset: address(0x678),
+                slippage: 600,
+                expectedAmountInterimAsset: 6e18,
+                rebalanceToAmbIds: abi.encode([AMBs, AMBs]),
+                rebalanceToDstChainIds: abi.encode([uint64(OP), uint64(ETH)]),
+                rebalanceToSfData: abi.encode(multiVaultData)
+            });
+
+            SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).setXChainRebalanceCallData(deployer, 6, data);
+
+            ISuperformRouterPlusAsync.DecodedRouterPlusRebalanceCallData memory decoded =
+                SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).decodeXChainRebalanceCallData(deployer, 6);
+
+            assertEq(decoded.interimAsset, address(0x678));
+            assertEq(decoded.userSlippage, 600);
+            assertEq(decoded.rebalanceSelector, IBaseRouter.multiDstMultiVaultDeposit.selector);
+
+            // Check first destination
+            assertEq(decoded.superformIds[0][0], 9);
+            assertEq(decoded.superformIds[0][1], 10);
+            assertEq(decoded.amounts[0][0], 1.5e18);
+            assertEq(decoded.amounts[0][1], 1.5e18);
+            assertEq(decoded.outputAmounts[0][0], 1.5e18);
+            assertEq(decoded.outputAmounts[0][1], 1.5e18);
+            assertEq(decoded.receiverAddress[0], address(0x012));
+
+            // Check second destination
+            assertEq(decoded.superformIds[1][0], 11);
+            assertEq(decoded.superformIds[1][1], 12);
+            assertEq(decoded.amounts[1][0], 1.5e18);
+            assertEq(decoded.amounts[1][1], 1.5e18);
+            assertEq(decoded.outputAmounts[1][0], 1.5e18);
+            assertEq(decoded.outputAmounts[1][1], 1.5e18);
+            assertEq(decoded.receiverAddress[1], address(0x123));
+
+            // Check AMB IDs and destination chain IDs
+            assertEq(decoded.ambIds[0][0], AMBs[0]);
+            assertEq(decoded.ambIds[0][1], AMBs[1]);
+            assertEq(decoded.ambIds[1][0], AMBs[0]);
+            assertEq(decoded.ambIds[1][1], AMBs[1]);
+            assertEq(decoded.dstChainIds[0], OP);
+            assertEq(decoded.dstChainIds[1], ETH);
+        }
+
+        // Test case 7: Invalid rebalance selector
+        {
+            IBaseSuperformRouterPlus.XChainRebalanceData memory data = IBaseSuperformRouterPlus.XChainRebalanceData({
+                rebalanceSelector: bytes4(keccak256("invalidSelector()")),
+                interimAsset: address(0x789),
+                slippage: 700,
+                expectedAmountInterimAsset: 7e18,
+                rebalanceToAmbIds: "",
+                rebalanceToDstChainIds: "",
+                rebalanceToSfData: ""
+            });
+
+            SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).setXChainRebalanceCallData(deployer, 7, data);
+
+            vm.expectRevert(IBaseSuperformRouterPlus.INVALID_REBALANCE_SELECTOR.selector);
+            SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).decodeXChainRebalanceCallData(deployer, 7);
+        }
+
+        vm.stopPrank();
+    }
+
+    //////////////////////////////////////////////////////////////
     //                 SAME_CHAIN REBALANCING TESTS             //
     //////////////////////////////////////////////////////////////
 
@@ -927,6 +1333,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
         SuperPositions(SUPER_POSITIONS_SOURCE).setApprovalForAll(ROUTER_PLUS_SOURCE, true);
         vm.recordLogs();
         SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalanceMulti{ value: 4 ether }(args);
+
         Vm.Log[] memory logs = vm.getRecordedLogs();
 
         uint256 balanceOfInterimAssetBefore =
