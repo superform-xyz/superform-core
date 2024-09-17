@@ -184,7 +184,7 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
 
         bytes memory txn = abi.encodeWithSelector(
             SuperRegistry.setAddress.selector,
-            keccak256("PayloadHelper"),
+            keccak256("PAYLOAD_HELPER"),
             _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PayloadHelper"),
             vars.chainId
         );
