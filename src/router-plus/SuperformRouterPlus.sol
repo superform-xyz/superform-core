@@ -39,7 +39,8 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
     /// @inheritdoc ISuperformRouterPlus
     function rebalanceSinglePosition(RebalanceSinglePositionSyncArgs calldata args) external payable override {
-        ///@notice when building the data to rebalance to it is important to carefuly calculate expectedAmountToReceivePostRebalanceFrom
+        ///@notice when building the data to rebalance to it is important to carefuly calculate
+        /// expectedAmountToReceivePostRebalanceFrom
         /// this is especially important in multi vault rebalance
         address superPositions = _getAddress(keccak256("SUPER_POSITIONS"));
         address router = _getAddress(keccak256("SUPERFORM_ROUTER"));
@@ -81,7 +82,8 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
     /// @inheritdoc ISuperformRouterPlus
     function rebalanceMultiPositions(RebalanceMultiPositionsSyncArgs calldata args) external payable override {
-        ///@notice when building the data to rebalance to it is important to carefuly calculate expectedAmountToReceivePostRebalanceFrom
+        ///@notice when building the data to rebalance to it is important to carefuly calculate
+        /// expectedAmountToReceivePostRebalanceFrom
         /// this is especially important in multi vault rebalance
 
         address superPositions = _getAddress(keccak256("SUPER_POSITIONS"));
@@ -144,8 +146,11 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             revert INVALID_REBALANCE_FROM_SELECTOR();
         }
 
-        /// @dev validate the call data
+        if (!whitelistedSelectors[Actions.DEPOSIT][args.rebalanceToSelector]) {
+            revert INVALID_DEPOSIT_SELECTOR();
+        }
 
+        /// @dev validate the call data
         SingleXChainSingleVaultStateReq memory req =
             abi.decode(_parseCallData(args.callData), (SingleXChainSingleVaultStateReq));
 
@@ -171,10 +176,6 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         /// @notice msg.value here is the sum of rebalanceFromMsgValue and rebalanceToMsgValue (to be executed later by
         /// the keeper)
         _callSuperformRouter(router, args.callData, msg.value);
-
-        if (!whitelistedSelectors[Actions.DEPOSIT][args.rebalanceToSelector]) {
-            revert INVALID_DEPOSIT_SELECTOR();
-        }
 
         uint256 routerPlusPayloadId = ++ROUTER_PLUS_PAYLOAD_ID;
 
@@ -452,7 +453,10 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
         if (amountToDeposit == 0) revert Error.ZERO_AMOUNT();
 
-        if (ENTIRE_SLIPPAGE * amountToDeposit < ((args.expectedAmountToReceivePostRebalanceFrom * (ENTIRE_SLIPPAGE - args.slippage)))) {
+        if (
+            ENTIRE_SLIPPAGE * amountToDeposit
+                < ((args.expectedAmountToReceivePostRebalanceFrom * (ENTIRE_SLIPPAGE - args.slippage)))
+        ) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
 

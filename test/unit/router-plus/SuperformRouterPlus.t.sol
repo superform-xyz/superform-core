@@ -8,6 +8,21 @@ import { ISuperformRouterPlusAsync } from "src/interfaces/ISuperformRouterPlusAs
 import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
 import { ERC20 } from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
+contract RejectEther {
+    // This function will revert when called, simulating a contract that can't receive native tokens
+    receive() external payable {
+        revert("Cannot receive native tokens");
+    }
+
+    function onERC1155Received(address, address, uint256, uint256, bytes calldata) external pure returns (bytes4) {
+        return this.onERC1155Received.selector;
+    }
+
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        return true;
+    }
+}
+
 contract SuperformRouterPlusTest is ProtocolActions {
     using DataLib for uint256;
 
@@ -116,6 +131,284 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         interfaceId = 0xffffffff;
         assertFalse(SuperformRouterPlus(ROUTER_PLUS_SOURCE).supportsInterface(interfaceId));
+    }
+
+    function test_forwardDustToPaymaster_fromRouterPlus() public {
+        address dustToken = getContract(ARBI, "DAI");
+        deal(dustToken, ROUTER_PLUS_SOURCE, 1 ether);
+
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).forwardDustToPaymaster(dustToken);
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).forwardDustToPaymaster(address(0));
+    }
+
+    function test_rebalanceMultiPositions_arrayLengthMismatch() public {
+        vm.startPrank(deployer);
+
+        // Set up test data
+        uint256[] memory ids = new uint256[](2);
+        ids[0] = superformId1;
+        ids[1] = superformId2;
+
+        uint256[] memory sharesToRedeem = new uint256[](1); // Mismatch in length
+        sharesToRedeem[0] = 1e18;
+
+        ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs memory args = ISuperformRouterPlus
+            .RebalanceMultiPositionsSyncArgs({
+            ids: ids,
+            sharesToRedeem: sharesToRedeem,
+            rebalanceFromMsgValue: 1 ether,
+            rebalanceToMsgValue: 1 ether,
+            interimAsset: getContract(SOURCE_CHAIN, "USDC"),
+            slippage: 100,
+            receiverAddressSP: deployer,
+            callData: new bytes(0),
+            rebalanceToCallData: new bytes(0),
+            expectedAmountToReceivePostRebalanceFrom: 1e18
+        });
+
+        // Expect the function to revert with ARRAY_LENGTH_MISMATCH error
+        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceMultiPositions{ value: 2 ether }(args);
+
+        vm.stopPrank();
+    }
+
+    function test_startCrossChainRebalance_allErrors() public {
+        // Setup base valid arguments
+        ISuperformRouterPlus.InitiateXChainRebalanceArgs memory args = _setupValidXChainRebalanceArgs();
+
+        // Test ZERO_ADDRESS error
+        args.interimAsset = address(0);
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalance{ value: 2 ether }(args);
+
+        args = _setupValidXChainRebalanceArgs();
+        args.receiverAddressSP = address(0);
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalance{ value: 2 ether }(args);
+
+        // Test ZERO_AMOUNT error
+        args = _setupValidXChainRebalanceArgs();
+        args.expectedAmountInterimAsset = 0;
+        vm.expectRevert(Error.ZERO_AMOUNT.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalance{ value: 2 ether }(args);
+
+        // Test INVALID_REBALANCE_FROM_SELECTOR error
+        args = _setupValidXChainRebalanceArgs();
+        args.callData = abi.encodeWithSelector(bytes4(keccak256("invalidSelector()")));
+        vm.expectRevert(ISuperformRouterPlus.INVALID_REBALANCE_FROM_SELECTOR.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalance{ value: 2 ether }(args);
+
+        // Test REBALANCE_SINGLE_POSITIONS_DIFFERENT_TOKEN error
+        args = _setupValidXChainRebalanceArgs();
+        args.interimAsset = address(0x123); // Different from the one in callData
+        vm.expectRevert(ISuperformRouterPlus.REBALANCE_SINGLE_POSITIONS_DIFFERENT_TOKEN.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalance{ value: 2 ether }(args);
+
+        // Test REBALANCE_SINGLE_POSITIONS_DIFFERENT_CHAIN error
+        args = _setupValidXChainRebalanceArgs();
+        SingleXChainSingleVaultStateReq memory req =
+            abi.decode(_parseCallData(args.callData), (SingleXChainSingleVaultStateReq));
+        req.superformData.liqRequest.liqDstChainId = 9999; // Different chain
+        args.callData = abi.encodeWithSelector(IBaseRouter.singleXChainSingleVaultWithdraw.selector, req);
+        vm.expectRevert(ISuperformRouterPlus.REBALANCE_SINGLE_POSITIONS_DIFFERENT_CHAIN.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalance{ value: 2 ether }(args);
+
+        // Test REBALANCE_SINGLE_POSITIONS_DIFFERENT_AMOUNT error
+        args = _setupValidXChainRebalanceArgs();
+        req = abi.decode(_parseCallData(args.callData), (SingleXChainSingleVaultStateReq));
+        req.superformData.amount = args.sharesToRedeem - 1; // Different amount
+        args.callData = abi.encodeWithSelector(IBaseRouter.singleXChainSingleVaultWithdraw.selector, req);
+        vm.expectRevert(ISuperformRouterPlus.REBALANCE_SINGLE_POSITIONS_DIFFERENT_AMOUNT.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalance{ value: 2 ether }(args);
+
+        // Test REBALANCE_XCHAIN_INVALID_RECEIVER_ADDRESS error
+        args = _setupValidXChainRebalanceArgs();
+        req = abi.decode(_parseCallData(args.callData), (SingleXChainSingleVaultStateReq));
+        req.superformData.receiverAddress = address(0x123); // Invalid receiver
+        args.callData = abi.encodeWithSelector(IBaseRouter.singleXChainSingleVaultWithdraw.selector, req);
+        vm.expectRevert(ISuperformRouterPlus.REBALANCE_XCHAIN_INVALID_RECEIVER_ADDRESS.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalance{ value: 2 ether }(args);
+
+        // Test INVALID_DEPOSIT_SELECTOR error
+        args = _setupValidXChainRebalanceArgs();
+        args.rebalanceToSelector = bytes4(keccak256("invalidDepositSelector()"));
+        vm.expectRevert(ISuperformRouterPlus.INVALID_DEPOSIT_SELECTOR.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalance{ value: 2 ether }(args);
+
+        vm.stopPrank();
+    }
+
+    function test_startCrossChainRebalanceMulti_allErrors() public {
+        // Setup base valid arguments
+        ISuperformRouterPlus.InitiateXChainRebalanceMultiArgs memory args = _setupValidXChainRebalanceMultiArgs();
+
+        // Test ARRAY_LENGTH_MISMATCH error
+        args.ids = new uint256[](2);
+        args.sharesToRedeem = new uint256[](1);
+        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalanceMulti{ value: 3 ether }(args);
+
+        // Reset args
+        args = _setupValidXChainRebalanceMultiArgs();
+
+        // Test ZERO_ADDRESS error
+        args.interimAsset = address(0);
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalanceMulti{ value: 3 ether }(args);
+
+        args = _setupValidXChainRebalanceMultiArgs();
+        args.receiverAddressSP = address(0);
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalanceMulti{ value: 3 ether }(args);
+
+        // Test ZERO_AMOUNT error
+        args = _setupValidXChainRebalanceMultiArgs();
+        args.expectedAmountInterimAsset = 0;
+        vm.expectRevert(Error.ZERO_AMOUNT.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalanceMulti{ value: 3 ether }(args);
+
+        // Test INVALID_REBALANCE_FROM_SELECTOR error
+        args = _setupValidXChainRebalanceMultiArgs();
+        args.callData = abi.encodeWithSelector(bytes4(keccak256("invalidSelector()")));
+        vm.expectRevert(ISuperformRouterPlus.INVALID_REBALANCE_FROM_SELECTOR.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalanceMulti{ value: 3 ether }(args);
+
+        // Test errors for singleXChainMultiVaultWithdraw
+        args = _setupValidXChainRebalanceMultiArgs();
+        args.callData = _buildSingleXChainMultiVaultWithdrawCallData(args.interimAsset, args.ids, ETH);
+
+        // Test REBALANCE_MULTI_POSITIONS_DIFFERENT_TOKEN error
+        SingleXChainMultiVaultStateReq memory req =
+            abi.decode(_parseCallData(args.callData), (SingleXChainMultiVaultStateReq));
+        req.superformsData.liqRequests[0].token = address(0x123);
+        args.callData = abi.encodeWithSelector(IBaseRouter.singleXChainMultiVaultWithdraw.selector, req);
+        vm.expectRevert(ISuperformRouterPlus.REBALANCE_MULTI_POSITIONS_DIFFERENT_TOKEN.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalanceMulti{ value: 3 ether }(args);
+
+        // Test REBALANCE_MULTI_POSITIONS_DIFFERENT_CHAIN error
+        args = _setupValidXChainRebalanceMultiArgs();
+        args.callData = _buildSingleXChainMultiVaultWithdrawCallData(args.interimAsset, args.ids, ETH);
+        req = abi.decode(_parseCallData(args.callData), (SingleXChainMultiVaultStateReq));
+        req.superformsData.liqRequests[0].liqDstChainId = 9999;
+        args.callData = abi.encodeWithSelector(IBaseRouter.singleXChainMultiVaultWithdraw.selector, req);
+        vm.expectRevert(ISuperformRouterPlus.REBALANCE_MULTI_POSITIONS_DIFFERENT_CHAIN.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalanceMulti{ value: 3 ether }(args);
+
+        // Test REBALANCE_MULTI_POSITIONS_DIFFERENT_AMOUNTS error
+        args = _setupValidXChainRebalanceMultiArgs();
+        args.callData = _buildSingleXChainMultiVaultWithdrawCallData(args.interimAsset, args.ids, ETH);
+        req = abi.decode(_parseCallData(args.callData), (SingleXChainMultiVaultStateReq));
+        req.superformsData.amounts[0] = args.sharesToRedeem[0] + 1;
+        args.callData = abi.encodeWithSelector(IBaseRouter.singleXChainMultiVaultWithdraw.selector, req);
+        vm.expectRevert(ISuperformRouterPlus.REBALANCE_MULTI_POSITIONS_DIFFERENT_AMOUNTS.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalanceMulti{ value: 3 ether }(args);
+
+        // Test REBALANCE_XCHAIN_INVALID_RECEIVER_ADDRESS error
+        args = _setupValidXChainRebalanceMultiArgs();
+        args.callData = _buildSingleXChainMultiVaultWithdrawCallData(args.interimAsset, args.ids, ETH);
+        req = abi.decode(_parseCallData(args.callData), (SingleXChainMultiVaultStateReq));
+        req.superformsData.receiverAddress = address(0x123);
+        args.callData = abi.encodeWithSelector(IBaseRouter.singleXChainMultiVaultWithdraw.selector, req);
+        vm.expectRevert(ISuperformRouterPlus.REBALANCE_XCHAIN_INVALID_RECEIVER_ADDRESS.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalanceMulti{ value: 3 ether }(args);
+
+        vm.stopPrank();
+    }
+
+    function test_deposit4626_invalidDepositSelector() public {
+        vm.startPrank(deployer);
+
+        // Deploy a mock ERC4626 vault
+        VaultMock mockVault = new VaultMock(IERC20(getContract(SOURCE_CHAIN, "DAI")), "Mock Vault", "mVLT");
+
+        // Mint some DAI to the deployer
+        uint256 daiAmount = 1e18;
+
+        // Approve and deposit DAI into the mock vault
+        MockERC20(getContract(SOURCE_CHAIN, "DAI")).approve(address(mockVault), daiAmount);
+        uint256 vaultTokenAmount = mockVault.deposit(daiAmount, deployer);
+
+        // Prepare deposit4626 args with an invalid deposit selector
+        ISuperformRouterPlus.Deposit4626Args memory args = ISuperformRouterPlus.Deposit4626Args({
+            amount: vaultTokenAmount,
+            expectedOutputAmount: daiAmount,
+            maxSlippage: 100, // 1%
+            receiverAddressSP: deployer,
+            depositCallData: abi.encodeWithSelector(bytes4(keccak256("invalidDepositSelector()")), superformId1, daiAmount)
+        });
+
+        // Approve RouterPlus to spend vault tokens
+        mockVault.approve(ROUTER_PLUS_SOURCE, vaultTokenAmount);
+
+        // Expect the function to revert with INVALID_DEPOSIT_SELECTOR error
+        vm.expectRevert(ISuperformRouterPlus.INVALID_DEPOSIT_SELECTOR.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).deposit4626{ value: 1 ether }(address(mockVault), args);
+
+        vm.stopPrank();
+    }
+
+    function test_rebalanceSinglePosition_zeroAddressInterimAsset() public {
+        vm.startPrank(deployer);
+
+        ISuperformRouterPlus.RebalanceSinglePositionSyncArgs memory args =
+            _buildRebalanceSinglePositionToOneVaultArgs(deployer);
+        args.interimAsset = address(0); // Set interim asset to zero address
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceSinglePosition{ value: 2 ether }(args);
+
+        vm.stopPrank();
+    }
+
+    function test_rebalanceSinglePosition_zeroAddressReceiverAddressSP() public {
+        vm.startPrank(deployer);
+
+        ISuperformRouterPlus.RebalanceSinglePositionSyncArgs memory args =
+            _buildRebalanceSinglePositionToOneVaultArgs(deployer);
+        args.receiverAddressSP = address(0); // Set receiver address to zero address
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceSinglePosition{ value: 2 ether }(args);
+
+        vm.stopPrank();
+    }
+
+    function test_rebalanceSinglePosition_invalidFee() public {
+        vm.startPrank(deployer);
+
+        ISuperformRouterPlus.RebalanceSinglePositionSyncArgs memory args =
+            _buildRebalanceSinglePositionToOneVaultArgs(deployer);
+        args.rebalanceFromMsgValue = 1 ether;
+        args.rebalanceToMsgValue = 1 ether;
+
+        // Send less value than required
+        vm.expectRevert(ISuperformRouterPlus.INVALID_FEE.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceSinglePosition{ value: 1.5 ether }(args);
+
+        vm.stopPrank();
+    }
+
+    function test_refundUnusedAndResetApprovals_failedToSendNative() public {
+        address rejectEther = address(new RejectEther());
+        deal(rejectEther, 3 ether);
+
+        vm.startPrank(deployer);
+        _directDeposit(superformId1);
+
+        SuperPositions(SUPER_POSITIONS_SOURCE).safeTransferFrom(deployer, rejectEther, superformId1, 1e18, abi.encode());
+
+        ISuperformRouterPlus.RebalanceSinglePositionSyncArgs memory args =
+            _buildRebalanceSinglePositionToOneVaultArgs(rejectEther);
+
+        vm.startPrank(rejectEther);
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId1, args.sharesToRedeem);
+        vm.expectRevert(Error.FAILED_TO_SEND_NATIVE.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceSinglePosition{ value: 3 ether }(args);
+
+        vm.stopPrank();
     }
 
     //////////////////////////////////////////////////////////////
@@ -627,7 +920,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
         args.rebalanceToMsgValue = 1 ether;
         args.interimAsset = getContract(SOURCE_CHAIN, "USDC");
         args.slippage = 100;
-        args.receiverAddressSP = deployer;
+        args.receiverAddressSP = user;
         args.callData = _callDataRebalanceFrom(args.interimAsset);
 
         uint256 decimal1 = MockERC20(getContract(SOURCE_CHAIN, "DAI")).decimals();
@@ -2147,5 +2440,177 @@ contract SuperformRouterPlusTest is ProtocolActions {
         coreStateRegistry.processPayload{ value: nativeAmount }(payloadIdToProcess);
 
         vm.stopPrank();
+    }
+
+    function _setupValidXChainRebalanceArgs()
+        internal
+        returns (ISuperformRouterPlus.InitiateXChainRebalanceArgs memory)
+    {
+        uint256[] memory superformIds = new uint256[](1);
+        superformIds[0] = superformId5ETH;
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 1e18;
+
+        vm.startPrank(getContract(SOURCE_CHAIN, "SuperformRouter"));
+        SuperPositions(SUPER_POSITIONS_SOURCE).mintBatch(deployer, superformIds, amounts);
+
+        vm.startPrank(deployer);
+        SuperPositions(SUPER_POSITIONS_SOURCE).setApprovalForOne(
+            getContract(SOURCE_CHAIN, "SuperformRouterPlus"), superformId5ETH, 1e18
+        );
+
+        address interimAsset = getContract(SOURCE_CHAIN, "USDC");
+        uint256 sharesToRedeem = 1e18;
+
+        SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq({
+            ambIds: AMBs,
+            dstChainId: OP,
+            superformData: SingleVaultSFData({
+                superformId: superformId4OP,
+                amount: sharesToRedeem,
+                outputAmount: 1e18,
+                maxSlippage: 100,
+                liqRequest: LiqRequest({
+                    txData: "",
+                    token: interimAsset,
+                    interimToken: address(0),
+                    bridgeId: 1,
+                    liqDstChainId: SOURCE_CHAIN,
+                    nativeAmount: 0
+                }),
+                permit2data: "",
+                hasDstSwap: false,
+                retain4626: false,
+                receiverAddress: getContract(SOURCE_CHAIN, "SuperformRouterPlus"),
+                receiverAddressSP: deployer,
+                extraFormData: ""
+            })
+        });
+
+        return ISuperformRouterPlus.InitiateXChainRebalanceArgs({
+            id: superformId5ETH,
+            sharesToRedeem: sharesToRedeem,
+            interimAsset: interimAsset,
+            receiverAddressSP: deployer,
+            expectedAmountInterimAsset: 1e18,
+            finalizeSlippage: 100,
+            callData: abi.encodeWithSelector(IBaseRouter.singleXChainSingleVaultWithdraw.selector, req),
+            rebalanceToSelector: IBaseRouter.singleXChainSingleVaultDeposit.selector,
+            rebalanceToAmbIds: abi.encode(AMBs),
+            rebalanceToDstChainIds: abi.encode(uint64(OP)),
+            rebalanceToSfData: ""
+        });
+    }
+
+    function _setupValidXChainRebalanceMultiArgs()
+        internal
+        returns (ISuperformRouterPlus.InitiateXChainRebalanceMultiArgs memory)
+    {
+        uint256[] memory superformIds = new uint256[](2);
+        superformIds[0] = superformId5ETH;
+        superformIds[1] = superformId6ETH;
+
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 1e18;
+        amounts[1] = 1e18;
+
+        vm.startPrank(getContract(SOURCE_CHAIN, "SuperformRouter"));
+        SuperPositions(SUPER_POSITIONS_SOURCE).mintBatch(deployer, superformIds, amounts);
+
+        vm.startPrank(deployer);
+        SuperPositions(SUPER_POSITIONS_SOURCE).setApprovalForAll(getContract(SOURCE_CHAIN, "SuperformRouterPlus"), true);
+
+        address interimAsset = getContract(SOURCE_CHAIN, "USDC");
+        uint256[] memory sharesToRedeem = new uint256[](2);
+        sharesToRedeem[0] = 1e18;
+        sharesToRedeem[1] = 1e18;
+
+        uint64 REBALANCE_FROM = ETH;
+        uint64 REBALANCE_TO = OP;
+
+        return ISuperformRouterPlus.InitiateXChainRebalanceMultiArgs({
+            ids: superformIds,
+            sharesToRedeem: sharesToRedeem,
+            interimAsset: interimAsset,
+            receiverAddressSP: deployer,
+            expectedAmountInterimAsset: 2e18, // Assuming 1:1 conversion for simplicity
+            finalizeSlippage: 100,
+            callData: _buildSingleXChainMultiVaultWithdrawCallData(interimAsset, superformIds, REBALANCE_FROM),
+            rebalanceToSelector: IBaseRouter.singleXChainSingleVaultDeposit.selector,
+            rebalanceToAmbIds: abi.encode(AMBs),
+            rebalanceToDstChainIds: abi.encode(REBALANCE_TO),
+            rebalanceToSfData: "" // This would typically contain encoded data for the destination superform
+         });
+    }
+
+    function _buildSingleXChainMultiVaultWithdrawCallData(
+        address interimToken,
+        uint256[] memory superformIds,
+        uint64 superformChainId
+    )
+        internal
+        returns (bytes memory)
+    {
+        uint256 initialFork = vm.activeFork();
+        vm.selectFork(FORKS[superformChainId]);
+
+        MultiVaultSFData memory data = MultiVaultSFData({
+            superformIds: superformIds,
+            amounts: new uint256[](superformIds.length),
+            outputAmounts: new uint256[](superformIds.length),
+            maxSlippages: new uint256[](superformIds.length),
+            liqRequests: new LiqRequest[](superformIds.length),
+            permit2data: "",
+            hasDstSwaps: new bool[](superformIds.length),
+            retain4626s: new bool[](superformIds.length),
+            receiverAddress: getContract(SOURCE_CHAIN, "SuperformRouterPlusAsync"),
+            receiverAddressSP: deployer,
+            extraFormData: ""
+        });
+
+        for (uint256 i = 0; i < superformIds.length; i++) {
+            (address superform,,) = superformIds[i].getSuperform();
+            address underlyingToken = IBaseForm(superform).getVaultAsset();
+
+            LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+                1,
+                underlyingToken,
+                underlyingToken,
+                interimToken,
+                superform,
+                superformChainId,
+                SOURCE_CHAIN,
+                SOURCE_CHAIN,
+                false,
+                getContract(SOURCE_CHAIN, "SuperformRouterPlusAsync"),
+                uint256(SOURCE_CHAIN),
+                1e18, // This should be updated with the actual amount if available
+                true,
+                0,
+                1,
+                1,
+                1,
+                address(0)
+            );
+
+            data.amounts[i] = 1e18; // This should be updated with the actual amount if available
+            data.outputAmounts[i] = 1e18; // This should be updated with the actual output amount if available
+            data.maxSlippages[i] = 100; // 1% slippage, adjust as needed
+            data.liqRequests[i] = LiqRequest(
+                _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), interimToken, address(0), 1, SOURCE_CHAIN, 0
+            );
+        }
+
+        vm.selectFork(initialFork);
+        return abi.encodeCall(
+            IBaseRouter.singleXChainMultiVaultWithdraw, SingleXChainMultiVaultStateReq(AMBs, superformChainId, data)
+        );
+    }
+
+    function _parseCallData(bytes memory data) internal pure returns (bytes memory calldata_) {
+        assembly {
+            calldata_ := add(data, 0x04)
+        }
     }
 }
