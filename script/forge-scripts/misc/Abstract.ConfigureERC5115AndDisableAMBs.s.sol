@@ -111,6 +111,89 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
         }
     }
 
+    function _deployPayloadHelperV2(
+        uint256 env,
+        uint256 i,
+        uint256 trueIndex,
+        Cycle cycle,
+        uint64[] memory s_superFormChainIds
+    )
+        internal
+        setEnvDeploy(cycle)
+    {
+        assert(salt.length > 0);
+        SetupVars memory vars;
+
+        vars.chainId = s_superFormChainIds[i];
+        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
+
+        address superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
+        address expectedSr;
+
+        if (env == 0) {
+            expectedSr = vars.chainId == 250
+                ? 0x7feB31d18E43E2faeC718EEd2D7f34402c3e27b4
+                : 0x17A332dC7B40aE701485023b219E9D6f493a2514;
+        } else {
+            expectedSr = vars.chainId == 250
+                ? 0x7B8d68f90dAaC67C577936d3Ce451801864EF189
+                : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
+        }
+        assert(superRegistry == expectedSr);
+
+        contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] =
+            address(new PayloadHelper{ salt: salt }(superRegistry));
+
+        vm.stopBroadcast();
+
+        /// @dev we use normal export contract to not override v1 contracts
+        for (uint256 j; j < contractNames.length; j++) {
+            _exportContract(
+                chainNames[trueIndex], contractNames[j], getContract(vars.chainId, contractNames[j]), vars.chainId
+            );
+        }
+    }
+
+    function _configureProdPayloadHelper(
+        uint256 env,
+        uint256 i,
+        uint256 trueIndex,
+        Cycle cycle,
+        uint64[] memory finalDeployedChains
+    )
+        internal
+    {
+        assert(salt.length > 0);
+        UpdateVars memory vars;
+
+        vars.chainId = finalDeployedChains[i];
+
+        address superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
+        address expectedSr;
+        if (env == 0) {
+            expectedSr = vars.chainId == 250
+                ? 0x7feB31d18E43E2faeC718EEd2D7f34402c3e27b4
+                : 0x17A332dC7B40aE701485023b219E9D6f493a2514;
+        } else {
+            expectedSr = vars.chainId == 250
+                ? 0x7B8d68f90dAaC67C577936d3Ce451801864EF189
+                : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
+        }
+
+        assert(superRegistry == expectedSr);
+
+        bytes memory txn = abi.encodeWithSelector(
+            SuperRegistry.setAddress.selector,
+            keccak256("PayloadHelper"),
+            _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PayloadHelper"),
+            vars.chainId
+        );
+        addToBatch(superRegistry, 0, txn);
+
+        /// Send to Safe to sign
+        executeBatch(vars.chainId, PROTOCOL_ADMINS[trueIndex], manualNonces[trueIndex], true);
+    }
+
     function _configureERC5115AndDisableOldAMBs(
         uint256 env,
         uint256 i,

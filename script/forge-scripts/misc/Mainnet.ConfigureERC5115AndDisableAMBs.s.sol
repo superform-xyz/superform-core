@@ -34,6 +34,36 @@ contract MainnetConfigure5115FormAndDisableAMB is AbstractConfigure5115FormAndDi
         _deployPaymentHelperV2(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
     }
 
+    function deployPayloadHelperV2(uint256 env, uint256 selectedChainIndex, uint256 useNewSalt) external {
+        _setEnvironment(env, useNewSalt == 1 ? true : false);
+        _preDeploymentSetup();
+
+        uint256 trueIndex;
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            if (TARGET_CHAINS[selectedChainIndex] == chainIds[i]) {
+                trueIndex = i;
+                break;
+            }
+        }
+
+        _deployPayloadHelperV2(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
+    }
+
+    function configureProdPayloadHelperv2(uint256 env, uint256 selectedChainIndex, uint256 useNewSalt) external {
+        _setEnvironment(env, useNewSalt == 1 ? true : false);
+        _preDeploymentSetup();
+
+        uint256 trueIndex;
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            if (TARGET_CHAINS[selectedChainIndex] == chainIds[i]) {
+                trueIndex = i;
+                break;
+            }
+        }
+
+        _configureProdPayloadHelper(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
+    }
+
     function configure5115AndDisableAMB(uint256 env, uint256 selectedChainIndex, uint256 useNewSalt) external {
         _setEnvironment(env, useNewSalt == 1 ? true : false);
         _preDeploymentSetup();

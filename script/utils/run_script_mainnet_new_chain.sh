@@ -47,27 +47,28 @@ export FIREBLOCKS_VAULT_ACCOUNT_IDS=6 #Emergency admin prod
  }
 
 
+<<comment
 echo Running Stage 1: ...
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "deployStage1(uint256,uint256,uint256)" 0 0 0 --rpc-url $LINEA_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --broadcast
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "deployStage1(uint256,uint256,uint256)" 0 0 0 --rpc-url $BLAST_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --broadcast
 
 wait
-
 
 # All stage 1 must be done up until here, addresses must be copied to v1 folder
 
 echo Running Stage 2: ...
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "deployStage2(uint256,uint256,uint256)" 0 0 0 --rpc-url $LINEA_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --broadcast
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "deployStage2(uint256,uint256,uint256)" 0 0 0 --rpc-url $BLAST_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --broadcast
 
 wait
 
 echo Running Stage 3: ...
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "deployStage3(uint256,uint256,uint256)" 0 0 0 --rpc-url $LINEA_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --broadcast
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "deployStage3(uint256,uint256,uint256)" 0 0 0 --rpc-url $BLAST_RPC_URL --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --broadcast
 
 wait
-
+comment
+<<comment
 echo Configuring new chain on Stage 2 of previous chains with emergency admin: ...
 export FIREBLOCKS_RPC_URL=$ETHEREUM_RPC_URL
 
@@ -125,7 +126,14 @@ fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Dep
 
 wait
 comment
+export FIREBLOCKS_RPC_URL=$LINEA_RPC_URL
 
+fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChainsWithEmergencyAdmin(uint256,uint256)" 0 8 \
+    --rpc-url {} --sender 0x73009CE7cFFc6C4c5363734d1b429f0b848e0490 --broadcast --unlocked --slow
+
+wait
+
+<<comment
 echo Configuring new chain on Stage 2 of previous chains with protocol admin: ...
 
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChainsWithProtocolAdmin(uint256,uint256)" 0 0 --rpc-url $ETHEREUM_RPC_URL --broadcast --slow --sender 0x1985df46791BEBb1e3ed9Ec60417F38CECc1D349
@@ -160,7 +168,10 @@ FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy
 
 wait
 
-<<comment
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configurePreviousChainsWithProtocolAdmin(uint256,uint256)" 0 8 --rpc-url $LINEA_RPC_URL --broadcast --slow --sender 0x1985df46791BEBb1e3ed9Ec60417F38CECc1D349 --legacy
+
+wait
+
 
 echo Configure all other chains based on new chain payment helper gas values: ...
 
@@ -221,6 +232,13 @@ wait
 export FIREBLOCKS_RPC_URL=$FANTOM_RPC_URL
 
 fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 0 7 \
+    --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
+
+wait
+comment
+export FIREBLOCKS_RPC_URL=$LINEA_RPC_URL
+
+fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.Deploy.NewChain.s.sol:MainnetDeployNewChain --sig "configureGasAmountOfNewChainInAllChains(uint256,uint256)" 0 8 \
     --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
 
 wait
