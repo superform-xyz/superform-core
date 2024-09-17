@@ -8,6 +8,8 @@ export ARBISCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/ARBISCAN_API_K
 export OPSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/OPSCAN_API_KEY/credential)
 export BASESCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BASESCAN_API_KEY/credential)
 export FTMSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/FTMSCAN_API_KEY/credential)
+export LINEASCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/LINEASCAN_API_KEY/credential)
+export BLASTSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BLASTSCAN_API_KEY/credential)
 
 networks=(
     1
@@ -18,6 +20,7 @@ networks=(
     10
     8453
     250
+    59144
     # add more networks here if needed
 )
 
@@ -30,6 +33,7 @@ api_keys=(
     $OPSCAN_API_KEY
     $BASESCAN_API_KEY
     $FTMSCAN_API_KEY
+    $LINEASCAN_API_KEY
     # add more API keys here if needed
 )
 
@@ -73,6 +77,9 @@ file_names=(
     "src/crosschain-liquidity/debridge/DeBridgeForwarderValidator.sol"
     "src/crosschain-liquidity/debridge/DeBridgeValidator.sol"
     "src/crosschain-data/adapters/axelar/AxelarImplementation.sol"
+    "src/RewardsDistributor.sol"
+    "src/forms/ERC5115Form.sol"
+    "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol"
     # Add more file names here if needed
 )
 
@@ -102,6 +109,9 @@ contract_names=(
     "DeBridgeForwarderValidator"
     "DeBridgeValidator"
     "AxelarImplementation"
+    "RewardsDistributor"
+    "ERC5115Form"
+    "LayerzeroImplementation"
     # Add more contract names here if needed
 )
 
@@ -115,7 +125,7 @@ contract_addresses=(
     0x7fa95363c82b2baceb73627988dc12eeb17e4c2b
     0xF1b9e0E57D134B7dFede001ccE5e879D8C2b8C1B
     0x92f98d698d2c8E0f29D1bb4d75C3A03e05e811bc
-    0x722669cbE532F08bb4EB81127e6Ef386627E90be
+    0x69c531E5bdf2458FFb4f5E0dB3DE41745151b2Bd
     0x7483486862BDa9BA68Be4923E7E9945c2771Ec28
     0xD85ec15A9F814D6173bF1a89273bFB3964aAdaEC
     0xa195608C2306A26f727d5199D5A382a4508308DA
@@ -131,6 +141,9 @@ contract_addresses=(
     0xDEa392D62cA1Edb74FB9210Aed714ad8F12b3E60
     0x04A9e7318544DA4dd8c3d76E9c72d2087e285a8d
     0xD8d5B00C1c99174897488E3dCa157B6849731E6A
+    0xce23bD7205bF2B543F6B4eeC00Add0C111FEFc3B
+    0x35E3057FF29ebC5b8dEF18EC66FEde16f1B237F5
+    0xc100592b40eeb4CBC7524092A00400917421ab64
     # Add more addresses here if needed
 )
 
@@ -144,7 +157,7 @@ contract_addresses_fantom=(
     0xbB7d1453487043Aa8db8512eC22498a8F2fB652B
     0xeE8695cDa4697987e1Fcd191F3c69FFF5Ef02eD0
     0xEBDf673A9A0c40149641E50244415C67DD2B5CE8
-    0xA7fEEE543b40d9Ca37722A8bda03D1fff4b2EE53
+    0xb69929AC813125EdFaCFad366643c3787C0d1500
     0xfDf661e1e7e8F617b383516688A8aFC9c6176A04
     0xbc85043544CC2b3Fd095d54b6431822979BBB62A
     0x50DFeb29B462a64867f421C585BDaE89cf4656d4
@@ -160,6 +173,9 @@ contract_addresses_fantom=(
     0xDEDaA19236743EfB77a20042AA5Bb8C8A005C388
     0x3456E9f41a4039d127aCfff4708ffC6CE0Ca83e2
     0x03a1480B5B6114B5D6c801bB4C71fc142488a41a
+    0xd6cea5c8853c3fb4bbd77ef5e924c4e647c03a94
+    0x168EFbe9bc32f1b4FCCbd7B0704331CBacB53e86
+    0xAcceD01769200d6Fe399b88789FC8a044e094112
     # Add more addresses here if needed
 )
 
@@ -168,8 +184,6 @@ constructor_args=(
     $super_constructor_arg
     $super_constructor_arg
     $super_constructor_arg
-    $super_constructor_arg_ftm
-    $super_constructor_arg_ftm
     $super_constructor_arg
     $super_constructor_arg
     $super_constructor_arg
@@ -177,7 +191,9 @@ constructor_args=(
     $super_constructor_arg
     $super_constructor_arg
     $super_constructor_arg
-    $super_constructor_arg_ftm
+    $super_constructor_arg
+    $super_constructor_arg
+    $super_constructor_arg
     $superposition_constructor_arg
     $superregistry_constructor_arg
     $super_rbac_arg
@@ -189,6 +205,40 @@ constructor_args=(
     $super_constructor_arg
     $super_constructor_arg
     $super_constructor_arg
+    $super_constructor_arg
+    $super_constructor_arg
+    $super_constructor_arg
+)
+
+constructor_args_ftm=(
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $superposition_constructor_arg_ftm
+    $superregistry_constructor_arg_ftm
+    $super_rbac_arg_ftm
+    $empty_constructor_arg
+    $super_constructor_arg_ftm
+    $wormhole_sr_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
 )
 
 # loop through networks
@@ -203,7 +253,7 @@ for i in "${!networks[@]}"; do
         contract_address="${contract_addresses[$j]}"
         contract_address_fantom="${contract_addresses_fantom[$j]}"
         constructor_arg="${constructor_args[$j]}"
-
+        constructor_arg_ftm="${constructor_args_ftm[$j]}"
         # verify the contract
         if [[ $network == 43114 ]]; then
             forge verify-contract $contract_address \
@@ -219,7 +269,7 @@ for i in "${!networks[@]}"; do
                 --chain-id $network \
                 --num-of-optimizations 200 \
                 --watch --compiler-version v0.8.23+commit.f704f362 \
-                --constructor-args "$constructor_arg" \
+                --constructor-args "$constructor_arg_ftm" \
                 "$file_name:$contract_name" \
                 --etherscan-api-key "$api_key"
         else

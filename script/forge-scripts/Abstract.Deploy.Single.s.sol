@@ -1497,8 +1497,6 @@ abstract contract AbstractDeploySingle is BatchScript {
 
             SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
 
-            vars.superRegistryC.setVaultLimitPerDestination(vars.dstChainId, 5);
-
             vars.superRegistryC.batchSetAddress(ids, newAddresses, chainIdsSetAddresses);
         } else {
             bytes memory txn = abi.encodeWithSelector(
@@ -1578,9 +1576,6 @@ abstract contract AbstractDeploySingle is BatchScript {
             }
 
             txn = abi.encodeWithSelector(SuperRegistry.setRequiredMessagingQuorum.selector, vars.dstChainId, 1);
-            addToBatch(vars.superRegistry, 0, txn);
-
-            txn = abi.encodeWithSelector(vars.superRegistryC.setVaultLimitPerDestination.selector, vars.dstChainId, 5);
             addToBatch(vars.superRegistry, 0, txn);
 
             txn = abi.encodeWithSelector(
