@@ -340,11 +340,6 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
                     WormholeARImplementation.setReceiver.selector, wormhole_chainIds[vars.dstTrueIndex], address(0xDEAD)
                 );
                 addToBatch(address(vars.wormholeImpl), 0, txn);
-                if (vars.chainId == FANTOM || vars.dstChainId == FANTOM) continue;
-                txn = abi.encodeWithSelector(
-                    HyperlaneImplementation.setReceiver.selector, hyperlane_chainIds[vars.dstTrueIndex], address(0xDEAD)
-                );
-                addToBatch(address(vars.hyperlaneImpl), 0, txn);
 
                 assert(abi.decode(GAS_USED[vars.dstChainId][3], (uint256)) > 0);
                 assert(abi.decode(GAS_USED[vars.dstChainId][4], (uint256)) > 0);
@@ -371,6 +366,12 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
                 );
 
                 ++vars.helperConfigIndex;
+
+                if (vars.chainId == FANTOM || vars.dstChainId == FANTOM) continue;
+                txn = abi.encodeWithSelector(
+                    HyperlaneImplementation.setReceiver.selector, hyperlane_chainIds[vars.dstTrueIndex], address(0xDEAD)
+                );
+                addToBatch(address(vars.hyperlaneImpl), 0, txn);
             }
         }
 
