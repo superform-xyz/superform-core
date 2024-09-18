@@ -74,4 +74,32 @@ contract MainnetConfigDVN is AbstractConfigureNewDVN {
 
         _configureReceiveDVN(env, selectedSrcChainIndex, srcTrueIndex, dstTrueIndex, Cycle.Prod, TARGET_CHAINS);
     }
+
+    function configureSendAndReceiveDVN(
+        uint256 env,
+        uint256 selectedSrcChainIndex,
+        uint256 selectedDstChainIndex,
+        uint256 useNewSalt
+    )
+        external
+    {
+        _setEnvironment(env, useNewSalt == 1 ? true : false);
+
+        uint256 srcTrueIndex;
+        uint256 dstTrueIndex;
+
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            if (TARGET_CHAINS[selectedSrcChainIndex] == chainIds[i]) {
+                srcTrueIndex = i;
+            }
+
+            if (TARGET_CHAINS[selectedDstChainIndex] == chainIds[i]) {
+                dstTrueIndex = i;
+            }
+
+            if (srcTrueIndex != 0 && dstTrueIndex != 0) break;
+        }
+
+        _configureSendAndReceiveDVN(env, selectedSrcChainIndex, srcTrueIndex, dstTrueIndex, Cycle.Prod, TARGET_CHAINS);
+    }
 }

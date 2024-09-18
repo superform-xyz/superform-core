@@ -3,7 +3,7 @@
 pragma solidity ^0.8.23;
 
 import "../EnvironmentUtils.s.sol";
-import { ILayerZeroEndpointV2 } from "src/vendor/layerzero/v2/ILayerZeroEndpointV2.sol";
+import { ILayerZeroEndpointV2, IMessageLibManager } from "src/vendor/layerzero/v2/ILayerZeroEndpointV2.sol";
 import { SetConfigParam } from "src/vendor/layerzero/v2/IMessageLibManager.sol";
 
 interface ILayerzeroEndpointV2Delegates is ILayerZeroEndpointV2 {
@@ -21,6 +21,7 @@ struct UpdateVars {
     SuperRegistry superRegistryC;
     SuperformFactory superformFactory;
     SetConfigParam[] setConfigParams;
+    address sendLib;
 }
 
 struct UlnConfig {
@@ -59,6 +60,76 @@ abstract contract AbstractConfigureNewDVN is EnvironmentUtils {
         0x129Ee430Cb2Ff2708CCADDBDb408a88Fe4FFd480,
         0xc097ab8CD7b053326DFe9fB3E3a31a0CCe3B526f
     ];
+
+    function _configureSendAndReceiveDVN(
+        uint256 env,
+        uint256 i,
+        uint256 srcChainIndex,
+        uint256 dstChainIndex,
+        Cycle cycle,
+        uint64[] memory finalDeployedChains
+    )
+        internal
+        setEnvDeploy(cycle)
+    {
+        assert(salt.length > 0);
+        UpdateVars memory vars;
+
+        vars.chainId = finalDeployedChains[srcChainIndex];
+        vars.dstChainId = finalDeployedChains[dstChainIndex];
+
+        // Configure for the source chain
+        address srcLzImpl = _readContractsV1(env, chainNames[srcChainIndex], vars.chainId, "LayerzeroImplementation");
+        assert(srcLzImpl != address(0));
+
+        console.log("Setting delegate for source chain");
+        bytes memory txn;
+        if (ILayerzeroEndpointV2Delegates(lzV2Endpoint).delegates(srcLzImpl) == address(0)) {
+            txn = abi.encodeWithSelector(LayerzeroV2Implementation.setDelegate.selector, PROTOCOL_ADMINS[srcChainIndex]);
+            addToBatch(srcLzImpl, 0, txn);
+        }
+
+        console.log("Setting config");
+        UlnConfig memory ulnConfig;
+
+        ulnConfig.confirmations = 15;
+        ulnConfig.requiredDVNCount = 2;
+        ulnConfig.optionalDVNCount = 0;
+
+        address[] memory optionalDVNs = new address[](0);
+        ulnConfig.optionalDVNs = optionalDVNs;
+
+        address[] memory requiredDVNs = new address[](2);
+        requiredDVNs[0] = BWareDVNs[srcChainIndex];
+        requiredDVNs[1] = LzDVNs[srcChainIndex];
+
+        // Sort DVNs
+        if (requiredDVNs[0] > requiredDVNs[1]) {
+            (requiredDVNs[0], requiredDVNs[1]) = (requiredDVNs[1], requiredDVNs[0]);
+        }
+
+        ulnConfig.requiredDVNs = requiredDVNs;
+        vars.config = abi.encode(ulnConfig);
+
+        vars.setConfigParams = new SetConfigParam[](1);
+        vars.setConfigParams[0] = SetConfigParam(uint32(lz_chainIds[dstChainIndex]), uint32(2), vars.config);
+
+        // Set send config on source chain
+        vars.sendLib = ILayerZeroEndpointV2(lzV2Endpoint).defaultSendLibrary(lz_chainIds[dstChainIndex]);
+        txn =
+            abi.encodeWithSelector(IMessageLibManager.setConfig.selector, srcLzImpl, vars.sendLib, vars.setConfigParams);
+        addToBatch(lzV2Endpoint, 0, txn);
+
+        // Set receive config on source chain
+        vars.receiveLib = ILayerZeroEndpointV2(lzV2Endpoint).defaultReceiveLibrary(lz_chainIds[dstChainIndex]);
+        txn = abi.encodeWithSelector(
+            IMessageLibManager.setConfig.selector, srcLzImpl, vars.receiveLib, vars.setConfigParams
+        );
+        addToBatch(lzV2Endpoint, 0, txn);
+
+        // Send the batch
+        executeBatch(vars.chainId, PROTOCOL_ADMINS[srcChainIndex], manualNonces[srcChainIndex], true);
+    }
 
     function _configureReceiveDVN(
         uint256 env,

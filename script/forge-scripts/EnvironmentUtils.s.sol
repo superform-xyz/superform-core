@@ -35,8 +35,9 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
             TARGET_CHAINS.push(ARBI);
             TARGET_CHAINS.push(OP);
             TARGET_CHAINS.push(BASE);
-            //TARGET_CHAINS.push(FANTOM);
-            //TARGET_CHAINS.push(LINEA);
+            TARGET_CHAINS.push(FANTOM);
+            TARGET_CHAINS.push(LINEA);
+            TARGET_CHAINS.push(BLAST);
 
             if (useNewSalt) {
                 salt = "SunNeverSetsOnSuperformRealmV2";
