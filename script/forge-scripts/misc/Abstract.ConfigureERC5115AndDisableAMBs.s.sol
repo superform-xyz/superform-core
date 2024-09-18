@@ -221,6 +221,7 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
         UpdateVars memory vars;
 
         vars.chainId = finalDeployedChains[i];
+        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
 
         uint256[] memory configTypes = new uint256[](12);
         configTypes[0] = 1;
@@ -258,6 +259,8 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
         vars.paymentHelper = PaymentHelper(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper"));
 
         vars.paymentHelper.batchUpdateRemoteChain(FANTOM, configTypes, configs);
+
+        vm.stopBroadcast();
     }
 
     function _configureProd(
