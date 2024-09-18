@@ -208,6 +208,61 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
         else _configureStaging(env, i, trueIndex, cycle, finalDeployedChains);
     }
 
+    function _configurePaymentHelperViaPaymentAdmin(
+        uint256 env,
+        uint256 i,
+        uint256 trueIndex,
+        Cycle cycle,
+        uint64[] memory finalDeployedChains
+    )
+        internal
+    {
+        assert(salt.length > 0);
+        UpdateVars memory vars;
+
+        vars.chainId = finalDeployedChains[i];
+        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
+
+        uint256[] memory configTypes = new uint256[](12);
+        configTypes[0] = 1;
+        /// config type 2 skipped
+        configTypes[1] = 3;
+        configTypes[2] = 4;
+        configTypes[3] = 5;
+        configTypes[4] = 6;
+        configTypes[5] = 7;
+        configTypes[6] = 8;
+        configTypes[7] = 9;
+        configTypes[8] = 10;
+        configTypes[9] = 11;
+        configTypes[10] = 12;
+        configTypes[11] = 13;
+
+        bytes[] memory configs = new bytes[](12);
+
+        vars.dstTrueIndex = _getTrueIndex(FANTOM);
+
+        /// @dev generate payment helper configs
+        configs[0] = abi.encode(PRICE_FEEDS[vars.chainId][FANTOM]);
+        configs[1] = GAS_USED[FANTOM][3];
+        configs[2] = GAS_USED[FANTOM][4];
+        configs[3] = abi.encode(200_000);
+        configs[4] = GAS_USED[FANTOM][6];
+        configs[5] = abi.encode(nativePrices[vars.dstTrueIndex]);
+        configs[6] = abi.encode(gasPrices[vars.dstTrueIndex]);
+        configs[7] = abi.encode(750);
+        configs[8] = abi.encode(2_000_000);
+        configs[9] = abi.encode(10_000);
+        configs[10] = abi.encode(10_000);
+        configs[11] = GAS_USED[FANTOM][13];
+
+        vars.paymentHelper = PaymentHelper(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper"));
+
+        vars.paymentHelper.batchUpdateRemoteChain(FANTOM, configTypes, configs);
+
+        vm.stopBroadcast();
+    }
+
     function _configureProd(
         uint256 env,
         uint256 i,
