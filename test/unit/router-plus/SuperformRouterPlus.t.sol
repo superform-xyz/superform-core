@@ -945,6 +945,16 @@ contract SuperformRouterPlusTest is ProtocolActions {
             });
 
             uint8[][] memory ambIds = new uint8[][](2);
+            ambIds[0] = new uint8[](2);
+            ambIds[0][0] = AMBs[0];
+            ambIds[0][1] = AMBs[1];
+            ambIds[1] = new uint8[](2);
+            ambIds[1][0] = AMBs[0];
+            ambIds[1][1] = AMBs[1];
+
+            uint64[] memory dstChainIds = new uint64[](2);
+            dstChainIds[0] = OP;
+            dstChainIds[1] = ETH;
 
             IBaseSuperformRouterPlus.XChainRebalanceData memory data = IBaseSuperformRouterPlus.XChainRebalanceData({
                 rebalanceSelector: IBaseRouter.multiDstSingleVaultDeposit.selector,
@@ -952,7 +962,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
                 slippage: 500,
                 expectedAmountInterimAsset: 5e18,
                 rebalanceToAmbIds: abi.encode(ambIds),
-                rebalanceToDstChainIds: abi.encode([uint64(OP), uint64(ETH)]),
+                rebalanceToDstChainIds: abi.encode(dstChainIds),
                 rebalanceToSfData: abi.encode(singleVaultData)
             });
 
@@ -1007,13 +1017,25 @@ contract SuperformRouterPlusTest is ProtocolActions {
                 multiVaultData[i].maxSlippages[1] = 600;
             }
 
+            uint8[][] memory ambIds = new uint8[][](2);
+            ambIds[0] = new uint8[](2);
+            ambIds[0][0] = AMBs[0];
+            ambIds[0][1] = AMBs[1];
+            ambIds[1] = new uint8[](2);
+            ambIds[1][0] = AMBs[0];
+            ambIds[1][1] = AMBs[1];
+
+            uint64[] memory dstChainIds = new uint64[](2);
+            dstChainIds[0] = OP;
+            dstChainIds[1] = ETH;
+
             IBaseSuperformRouterPlus.XChainRebalanceData memory data = IBaseSuperformRouterPlus.XChainRebalanceData({
                 rebalanceSelector: IBaseRouter.multiDstMultiVaultDeposit.selector,
                 interimAsset: address(0x678),
                 slippage: 600,
                 expectedAmountInterimAsset: 6e18,
-                rebalanceToAmbIds: abi.encode([AMBs, AMBs]),
-                rebalanceToDstChainIds: abi.encode([uint64(OP), uint64(ETH)]),
+                rebalanceToAmbIds: abi.encode(ambIds),
+                rebalanceToDstChainIds: abi.encode(dstChainIds),
                 rebalanceToSfData: abi.encode(multiVaultData)
             });
 
