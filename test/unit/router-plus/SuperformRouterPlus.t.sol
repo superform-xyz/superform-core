@@ -944,12 +944,14 @@ contract SuperformRouterPlusTest is ProtocolActions {
                 extraFormData: ""
             });
 
+            uint8[][] memory ambIds = new uint8[][](2);
+
             IBaseSuperformRouterPlus.XChainRebalanceData memory data = IBaseSuperformRouterPlus.XChainRebalanceData({
                 rebalanceSelector: IBaseRouter.multiDstSingleVaultDeposit.selector,
                 interimAsset: address(0x567),
                 slippage: 500,
                 expectedAmountInterimAsset: 5e18,
-                rebalanceToAmbIds: abi.encode([AMBs, AMBs]),
+                rebalanceToAmbIds: abi.encode(ambIds),
                 rebalanceToDstChainIds: abi.encode([uint64(OP), uint64(ETH)]),
                 rebalanceToSfData: abi.encode(singleVaultData)
             });
@@ -977,6 +979,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
             assertEq(decoded.dstChainIds[0], OP);
             assertEq(decoded.dstChainIds[1], ETH);
         }
+
         // Test case 6: multiDstMultiVaultDeposit
         {
             MultiVaultSFData[] memory multiVaultData = new MultiVaultSFData[](2);

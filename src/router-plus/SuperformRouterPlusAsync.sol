@@ -157,8 +157,10 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             D.ambIds = new uint8[][](lenDsts);
             D.dstChainIds = new uint64[](lenDsts);
 
-            D.ambIds = abi.decode(data.rebalanceToAmbIds, (uint8[][]));
-            D.dstChainIds = abi.decode(data.rebalanceToDstChainIds, (uint64[]));
+            uint8[][] memory ambIds = abi.decode(data.rebalanceToAmbIds, (uint8[][]));
+            D.ambIds = ambIds;
+
+            // D.dstChainIds = abi.decode(data.rebalanceToDstChainIds, (uint64[]));
 
             // for (uint256 i; i < lenDsts; ++i) {
             //     uint256[] memory tSuperformIds = new uint256[](1);
