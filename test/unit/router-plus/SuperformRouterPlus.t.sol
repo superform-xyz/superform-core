@@ -1145,11 +1145,109 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         completeArgs =
             _buildCompleteCrossChainRebalanceArgs(interimAmountOnRouterPlusAsync, superformId4OP, REBALANCE_TO);
-        args.expectedAmountInterimAsset = args.expectedAmountInterimAsset - 1;
+        args.expectedAmountInterimAsset = args.expectedAmountInterimAsset - 10 wei;
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
 
         vm.expectRevert(ISuperformRouterPlusAsync.REBALANCE_ALREADY_PROCESSED.selector);
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
+    }
+
+    function test_crossChainRebalance_refundFlow() public {
+        vm.startPrank(deployer);
+
+        uint64 REBALANCE_FROM = ETH;
+        uint64 REBALANCE_TO = OP;
+
+        // Step 1: Initial XCHAIN Deposit
+        _xChainDeposit(superformId5ETH, REBALANCE_FROM, 1);
+
+        // Step 2: Start cross-chain rebalance
+        vm.selectFork(FORKS[SOURCE_CHAIN]);
+        ISuperformRouterPlus.InitiateXChainRebalanceArgs memory args =
+            _buildInitiateXChainRebalanceArgs(REBALANCE_FROM, REBALANCE_TO, deployer);
+
+        vm.startPrank(deployer);
+
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(
+            ROUTER_PLUS_SOURCE, superformId5ETH, args.sharesToRedeem
+        );
+        vm.recordLogs();
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalance{ value: 2 ether }(args);
+
+        // Step 3: Process XChain Withdraw (rebalance from)
+        uint256 balanceOfInterimAssetBefore =
+            MockERC20(args.interimAsset).balanceOf(getContract(SOURCE_CHAIN, "SuperformRouterPlusAsync"));
+
+        _processXChainWithdrawOneVault(SOURCE_CHAIN, REBALANCE_FROM, vm.getRecordedLogs(), 2);
+
+        vm.selectFork(FORKS[SOURCE_CHAIN]);
+        uint256 balanceOfInterimAssetAfter =
+            MockERC20(args.interimAsset).balanceOf(getContract(SOURCE_CHAIN, "SuperformRouterPlusAsync"));
+
+        uint256 interimAmountOnRouterPlusAsync = balanceOfInterimAssetAfter - balanceOfInterimAssetBefore;
+
+        ISuperformRouterPlusAsync.CompleteCrossChainRebalanceArgs memory completeArgs =
+            _buildCompleteCrossChainRebalanceArgs(interimAmountOnRouterPlusAsync, superformId4OP, REBALANCE_TO);
+
+        // Step 4: Complete cross-chain rebalance
+        vm.startPrank(deployer);
+
+        completeArgs =
+            _buildCompleteCrossChainRebalanceArgs(interimAmountOnRouterPlusAsync, superformId4OP, REBALANCE_TO);
+        completeArgs.amountReceivedInterimAsset = completeArgs.amountReceivedInterimAsset / 3;
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
+        vm.stopPrank();
+
+        vm.expectRevert(Error.NOT_VALID_DISPUTER.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).disputeRefund(1);
+
+        vm.startPrank(deployer);
+        vm.mockCall(
+            address(getContract(SOURCE_CHAIN, "SuperRegistry")),
+            abi.encodeWithSelector(ISuperRegistry.delay.selector),
+            abi.encode(0)
+        );
+        vm.expectRevert(Error.DELAY_NOT_SET.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).disputeRefund(1);
+        vm.clearMockedCalls();
+
+        vm.warp(block.timestamp + 100 days);
+        vm.expectRevert(Error.DISPUTE_TIME_ELAPSED.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).disputeRefund(1);
+
+        vm.warp(block.timestamp - 100 days);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).disputeRefund(1);
+
+        vm.expectRevert(Error.DISPUTE_TIME_ELAPSED.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).disputeRefund(1);
+        vm.stopPrank();
+
+        vm.expectRevert(ISuperformRouterPlusAsync.INVALID_PROPOSER.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).proposeRefund(1, completeArgs.amountReceivedInterimAsset);
+
+        vm.startPrank(deployer);
+        vm.expectRevert(ISuperformRouterPlusAsync.INVALID_REFUND_DATA.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).proposeRefund(2, completeArgs.amountReceivedInterimAsset);
+
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).proposeRefund(1, completeArgs.amountReceivedInterimAsset);
+
+        vm.expectRevert(ISuperformRouterPlusAsync.REFUND_ALREADY_PROPOSED.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).proposeRefund(1, completeArgs.amountReceivedInterimAsset);
+
+        vm.expectRevert(ISuperformRouterPlusAsync.IN_DISPUTE_PHASE.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).finalizeRefund(1);
+
+        (, address refundToken,,) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
+        uint256 balanceBefore = MockERC20(refundToken).balanceOf(deployer);
+
+        vm.warp(block.timestamp + 100 days);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).finalizeRefund(1);
+        uint256 balanceAfter = MockERC20(refundToken).balanceOf(deployer);
+
+        assertGt(balanceAfter, balanceBefore);
+
+        vm.expectRevert(ISuperformRouterPlusAsync.IN_DISPUTE_PHASE.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).finalizeRefund(1);
     }
 
     //////////////////////////////////////////////////////////////
