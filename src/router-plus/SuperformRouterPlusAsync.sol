@@ -277,7 +277,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         /// @dev validate the update of txData by the keeper and re-construct calldata
         /// @notice if there is any failure here because of rebalanceToData misconfiguration a refund should be
         /// initiated
-
+        /// @notice the selectors are validated in SuperformRouterPlus
         if (data.rebalanceSelector == IBaseRouter.singleDirectSingleVaultDeposit.selector) {
             SingleVaultSFData memory superformData = abi.decode(data.rebalanceToSfData, (SingleVaultSFData));
 
@@ -425,8 +425,6 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
                     )
                 )
             );
-        } else {
-            revert INVALID_REBALANCE_SELECTOR();
         }
 
         _deposit(
