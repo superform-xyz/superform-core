@@ -206,7 +206,6 @@ wait
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configureProdPayloadHelperv2( uint256,uint256, uint256)" 0 7 1 --rpc-url $FANTOM_RPC_URL --broadcast --slow --sender 0x1985df46791BEBb1e3ed9Ec60417F38CECc1D349
 wait
 comment
-
 echo Configuring payment helper via payment admin: ...
 
 export FIREBLOCKS_API_KEY=$(op read op://zry2qwhqux2w6qtjitg44xb7b4/V1_PAYMASTER_ACTION_KEY/credential)
@@ -215,6 +214,7 @@ export FOUNDRY_PROFILE=production
 export FIREBLOCKS_VAULT_ACCOUNT_IDS=13 #PaymentAdmin Staging
 export FIREBLOCKS_VAULT_ACCOUNT_IDS=5  #PaymentAdmin Prod
 
+<<comment
 export FIREBLOCKS_RPC_URL=$ETHEREUM_RPC_URL
 
 fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configureProdPaymentHelperViaPaymentAdmin(uint256, uint256, uint256)" 0 0 0 \
@@ -260,6 +260,13 @@ wait
 export FIREBLOCKS_RPC_URL=$BASE_RPC_URL
 
 fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configureProdPaymentHelperViaPaymentAdmin(uint256, uint256, uint256)" 0 6 0 \
+    --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
+
+wait
+comment
+export FIREBLOCKS_RPC_URL=$FANTOM_RPC_URL
+
+fireblocks-json-rpc --http -- forge script script/forge-scripts/misc/Mainnet.ConfigureERC5115AndDisableAMBs.s.sol --sig "configureProdPaymentHelperViaPaymentAdminFantom(uint256, uint256, uint256)" 0 7 1 \
     --rpc-url {} --sender 0xD911673eAF0D3e15fe662D58De15511c5509bAbB --broadcast --unlocked --slow
 
 wait
