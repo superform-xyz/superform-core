@@ -1453,18 +1453,18 @@ abstract contract BaseSetup is StdInvariant, Test {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
         if (!invariant) {
-            forks[ETH] = pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 20_534_017) : vm.createFork(ETHEREUM_RPC_URL_QN);
-            forks[BSC] = pinnedBlock ? vm.createFork(BSC_RPC_URL, 41_384_944) : vm.createFork(BSC_RPC_URL_QN);
+            forks[ETH] = pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 20_783_896) : vm.createFork(ETHEREUM_RPC_URL_QN);
+            forks[BSC] = pinnedBlock ? vm.createFork(BSC_RPC_URL, 42_387_565) : vm.createFork(BSC_RPC_URL_QN);
             forks[AVAX] =
-                pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 49_288_281) : vm.createFork(AVALANCHE_RPC_URL_QN);
-            forks[POLY] = pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 60_619_414) : vm.createFork(POLYGON_RPC_URL_QN);
+                pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 50_725_091) : vm.createFork(AVALANCHE_RPC_URL_QN);
+            forks[POLY] = pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 62_011_724) : vm.createFork(POLYGON_RPC_URL_QN);
             forks[ARBI] =
-                pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 243_122_707) : vm.createFork(ARBITRUM_RPC_URL_QN);
-            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 125_149_636) : vm.createFork(OPTIMISM_RPC_URL_QN);
+                pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 255_108_578) : vm.createFork(ARBITRUM_RPC_URL_QN);
+            forks[OP] = pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 125_571_151) : vm.createFork(OPTIMISM_RPC_URL_QN);
             forks[BASE] = pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL_QN);
-            forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 88_933_543) : vm.createFork(FANTOM_RPC_URL_QN);
-            forks[LINEA] = pinnedBlock ? vm.createFork(LINEA_RPC_URL, 9_241_361) : vm.createFork(LINEA_RPC_URL_QN);
-            forks[BLAST] = pinnedBlock ? vm.createFork(BLAST_RPC_URL, 8_315_221) : vm.createFork(BLAST_RPC_URL_QN);
+            forks[FANTOM] = pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 92_071_502) : vm.createFork(FANTOM_RPC_URL_QN);
+            forks[LINEA] = pinnedBlock ? vm.createFork(LINEA_RPC_URL, 9_662_695) : vm.createFork(LINEA_RPC_URL_QN);
+            forks[BLAST] = pinnedBlock ? vm.createFork(BLAST_RPC_URL, 8_965_641) : vm.createFork(BLAST_RPC_URL_QN);
         }
 
         mapping(uint64 => string) storage rpcURLs = RPC_URLS;
