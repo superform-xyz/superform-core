@@ -263,6 +263,59 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
         vm.stopBroadcast();
     }
 
+    function _configureProdPaymentHelperFTM(
+        uint256 env,
+        uint256 i,
+        uint256 trueIndex,
+        Cycle cycle,
+        uint64[] memory finalDeployedChains
+    )
+        internal
+    {
+        assert(salt.length > 0);
+        UpdateVars memory vars;
+
+        vars.chainId = finalDeployedChains[i];
+        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
+
+        vars.remoteChainIds = new uint64[](TARGET_CHAINS.length - 1);
+        vars.addRemoteConfigs = new IPaymentHelper.PaymentHelperConfig[](TARGET_CHAINS.length - 1);
+        for (uint256 j; j < TARGET_CHAINS.length; j++) {
+            vars.dstChainId = TARGET_CHAINS[j];
+            if (vars.chainId != vars.dstChainId) {
+                vars.dstTrueIndex = _getTrueIndex(vars.dstChainId);
+
+                assert(abi.decode(GAS_USED[vars.dstChainId][3], (uint256)) > 0);
+                assert(abi.decode(GAS_USED[vars.dstChainId][4], (uint256)) > 0);
+                assert(abi.decode(GAS_USED[vars.dstChainId][6], (uint256)) > 0);
+                assert(abi.decode(GAS_USED[vars.dstChainId][13], (uint256)) > 0);
+
+                /// @dev generate payment helper configs
+                vars.remoteChainIds[vars.helperConfigIndex] = vars.dstChainId;
+                vars.addRemoteConfigs[vars.helperConfigIndex] = IPaymentHelper.PaymentHelperConfig(
+                    PRICE_FEEDS[vars.chainId][vars.dstChainId],
+                    address(0),
+                    abi.decode(GAS_USED[vars.dstChainId][3], (uint256)),
+                    abi.decode(GAS_USED[vars.dstChainId][4], (uint256)),
+                    vars.dstChainId == ARBI ? 1_000_000 : 200_000,
+                    abi.decode(GAS_USED[vars.dstChainId][6], (uint256)),
+                    nativePrices[vars.dstTrueIndex],
+                    gasPrices[vars.dstTrueIndex],
+                    750,
+                    2_000_000,
+                    /// @dev ackGasCost to move a msg from dst to source
+                    10_000,
+                    10_000,
+                    abi.decode(GAS_USED[vars.dstChainId][13], (uint256))
+                );
+
+                ++vars.helperConfigIndex;
+            }
+        }
+
+        txn = abi.encodeWithSelector(PaymentHelper.addRemoteChains.selector, vars.remoteChainIds, vars.addRemoteConfigs);
+    }
+
     function _configureProd(
         uint256 env,
         uint256 i,
