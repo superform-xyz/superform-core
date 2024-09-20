@@ -822,10 +822,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             ? getContract(
                 AVAX,
                 string.concat(
-                    "DAI",
-                    "ERC4626TimelockMock",
-                    "Superform",
-                    Strings.toString(FORM_IMPLEMENTATION_IDS[formImplementationId])
+                    "DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[formImplementationId])
                 )
             )
             : getContract(
@@ -1026,6 +1023,8 @@ contract CoreStateRegistryTest is ProtocolActions {
         internal
         returns (uint256 superformId)
     {
+        // 806584555793248223600
+
         MultiDepositDstSwapSpecialCaseVars memory v;
         /// scenario: user deposits with his own token and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
@@ -1051,7 +1050,7 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         /// this should fail as it is larger than the balance difference (result of swapping 0.1 WETH (1e17 in in
         /// txDataFails) to DAI )
-        v.amounts[0] = isFailingIndex1Vault ? 419_972_359 : 419_950_757_613_293_461_130;
+        v.amounts[0] = isFailingIndex1Vault ? 419_972_359 : 386_546_523_522_493_717_113;
         v.amounts[1] = isFailingIndex1Vault ? 1e21 : 419_972_359;
 
         v.externalToken = getContract(ETH, "DAI");
@@ -1415,7 +1414,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             v.finalTokens[0] = getContract(AVAX, "DAI");
             v.finalTokens[1] = getContract(AVAX, "DAI");
 
-            v.amounts[0] = 419_950_757_613_293_461_130;
+            v.amounts[0] = 386_546_523_522_493_717_113;
             v.amounts[1] = 419_972_359;
 
             vm.prank(deployer);

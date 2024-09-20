@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import "test/utils/MainnetBaseSetup.sol";
+import "forge-std/console.sol";
 
 contract SmokeTest is MainnetBaseSetup {
     function setUp() public override {
@@ -490,7 +491,7 @@ contract SmokeTest is MainnetBaseSetup {
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
-
+            console.log("chainId", chainId);
             vm.selectFork(FORKS[chainId]);
             axelar = AxelarImplementation(getContract(chainId, "AxelarImplementation"));
 
@@ -500,10 +501,7 @@ contract SmokeTest is MainnetBaseSetup {
 
             for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
                 if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
-                    assertEq(
-                        axelar.authorizedImpl(ambIds_[j]),
-                        getContract(TARGET_DEPLOYMENT_CHAINS[j], "AxelarImplementation")
-                    );
+                    assertEq(axelar.authorizedImpl(ambIds_[j]), address(0xDEAD));
                     assertEq(axelar.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds_[j]);
                     assertEq(axelar.superChainId(ambIds_[j]), TARGET_DEPLOYMENT_CHAINS[j]);
                 }

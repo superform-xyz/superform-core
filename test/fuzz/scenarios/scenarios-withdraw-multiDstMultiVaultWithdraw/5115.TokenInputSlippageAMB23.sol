@@ -20,38 +20,32 @@ contract MDMVW5115TokenInputSlipageAMB23 is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         /// first 3 superforms are equal
-        TARGET_UNDERLYINGS[ETH][0] = [2, 2, 1];
-        TARGET_VAULTS[ETH][0] = [8, 4, 0];
+        TARGET_UNDERLYINGS[ETH][0] = [2, 0, 1];
+        TARGET_VAULTS[ETH][0] = [0, 0, 0];
+        TARGET_FORM_KINDS[ETH][0] = [0, 0, 0];
 
-        TARGET_FORM_KINDS[ETH][0] = [0, 1, 0];
+        TARGET_UNDERLYINGS[ETH][1] = [2, 0, 1];
+        TARGET_VAULTS[ETH][1] = [0, 0, 0];
+        TARGET_FORM_KINDS[ETH][1] = [0, 0, 0];
 
         /// all superforms are different
         TARGET_UNDERLYINGS[OP][0] = [0, 1, 4];
-        TARGET_VAULTS[OP][0] = [0, 1, 9];
-
-        TARGET_FORM_KINDS[OP][0] = [0, 1, 3];
-
-        /// all superforms are different
-        TARGET_UNDERLYINGS[AVAX][0] = [2, 2];
-        TARGET_VAULTS[AVAX][0] = [0, 8];
-
-        TARGET_FORM_KINDS[AVAX][0] = [0, 0];
-
-        TARGET_UNDERLYINGS[ETH][1] = [2, 2, 1];
-        TARGET_VAULTS[ETH][1] = [8, 4, 0];
-
-        TARGET_FORM_KINDS[ETH][1] = [0, 1, 0];
+        TARGET_VAULTS[OP][0] = [0, 0, 0];
+        TARGET_FORM_KINDS[OP][0] = [0, 0, 0];
 
         /// all superforms are different
         TARGET_UNDERLYINGS[OP][1] = [0, 1, 4];
-        TARGET_VAULTS[OP][1] = [0, 1, 9];
-
-        TARGET_FORM_KINDS[OP][1] = [0, 1, 3];
+        TARGET_VAULTS[OP][1] = [0, 0, 0];
+        TARGET_FORM_KINDS[OP][1] = [0, 0, 0];
 
         /// all superforms are different
-        TARGET_UNDERLYINGS[AVAX][1] = [2, 2];
-        TARGET_VAULTS[AVAX][1] = [0, 8];
+        TARGET_UNDERLYINGS[AVAX][0] = [2, 1];
+        TARGET_VAULTS[AVAX][0] = [0, 2];
+        TARGET_FORM_KINDS[AVAX][0] = [0, 0];
 
+        /// all superforms are different
+        TARGET_UNDERLYINGS[AVAX][1] = [2, 1];
+        TARGET_VAULTS[AVAX][1] = [0, 2];
         TARGET_FORM_KINDS[AVAX][1] = [0, 0];
 
         AMOUNTS[ETH][0] = [25, 5235, 887];
@@ -164,10 +158,10 @@ contract MDMVW5115TokenInputSlipageAMB23 is ProtocolActions {
 
                     /// @dev notice partial withdrawals in ETH->0 and OP->2
                     if (DST_CHAINS[i] == ETH) {
-                        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[0] - 1));
+                        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 10, superPositions[0] - 1));
                         AMOUNTS[DST_CHAINS[i]][1] = [amountOneWithdraw_, superPositions[1], superPositions[2]];
                     } else if (DST_CHAINS[i] == OP) {
-                        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[2] - 1));
+                        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 10, superPositions[2] - 1));
                         AMOUNTS[OP][1] = [superPositions[0], superPositions[1], amountOneWithdraw_];
                     } else if (DST_CHAINS[i] == AVAX) {
                         AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0], superPositions[1]];

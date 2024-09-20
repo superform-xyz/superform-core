@@ -22,7 +22,7 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
     //!WARNING ENUSRE output folder has correct addresses of the deployment!
     //!WARNING CHECK LATEST PAYMENT HELPER CONFIGURATION TO ENSURE IT'S UP TO DATE
 
-    uint64[] TARGET_DEPLOYMENT_CHAINS = [FANTOM];
+    uint64[] TARGET_DEPLOYMENT_CHAINS = [BLAST];
     uint64[] FINAL_DEPLOYED_CHAINS;
 
     function _setEnvironment(uint256 env, bool useNewSalt) internal {
@@ -36,6 +36,8 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
             TARGET_CHAINS.push(OP);
             TARGET_CHAINS.push(BASE);
             TARGET_CHAINS.push(FANTOM);
+            TARGET_CHAINS.push(LINEA);
+            TARGET_CHAINS.push(BLAST);
 
             if (useNewSalt) {
                 salt = "SunNeverSetsOnSuperformRealmV2";
@@ -64,8 +66,11 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
             TARGET_CHAINS.push(OP);
             TARGET_CHAINS.push(BASE);
             TARGET_CHAINS.push(FANTOM);
+            TARGET_CHAINS.push(LINEA);
+            TARGET_CHAINS.push(BLAST);
 
-            salt = "StagingV1_0";
+            if (useNewSalt) salt = "StagingV1_1";
+            else salt = "StagingV1_0";
 
             PAYMENT_ADMIN = 0xc5c971e6B9F01dcf06bda896AEA3648eD6e3EFb3;
             CSR_PROCESSOR = 0x2759142A9e3cBbcCc1E3d5F76490eEE4007B8943;
@@ -87,6 +92,7 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
             TARGET_CHAINS.push(ETH);
             TARGET_CHAINS.push(OP);
             TARGET_CHAINS.push(ARBI);
+            TARGET_CHAINS.push(LINEA);
 
             PAYMENT_ADMIN = 0xD911673eAF0D3e15fe662D58De15511c5509bAbB;
             CSR_PROCESSOR = 0x23c658FE050B4eAeB9401768bF5911D11621629c;

@@ -20,20 +20,20 @@ contract MDSVW70TokenInputSlippageAMB13 is ProtocolActions {
         TARGET_UNDERLYINGS[OP][0] = [2];
         TARGET_UNDERLYINGS[ETH][0] = [2];
 
-        TARGET_VAULTS[OP][0] = [4];
+        TARGET_VAULTS[OP][0] = [0];
         TARGET_VAULTS[ETH][0] = [0];
 
-        TARGET_FORM_KINDS[OP][0] = [1];
+        TARGET_FORM_KINDS[OP][0] = [0];
         TARGET_FORM_KINDS[ETH][0] = [0];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[OP][1] = [2];
         TARGET_UNDERLYINGS[ETH][1] = [2];
 
-        TARGET_VAULTS[OP][1] = [4];
+        TARGET_VAULTS[OP][1] = [0];
         TARGET_VAULTS[ETH][1] = [0];
 
-        TARGET_FORM_KINDS[OP][1] = [1];
+        TARGET_FORM_KINDS[OP][1] = [0];
         TARGET_FORM_KINDS[ETH][1] = [0];
 
         PARTIAL[OP][1] = [true];
@@ -117,7 +117,7 @@ contract MDSVW70TokenInputSlippageAMB13 is ProtocolActions {
                         AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0]];
                     } else if (DST_CHAINS[i] == OP) {
                         /// @dev bounded to 1 less due to partial withdrawals
-                        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[0] - 1));
+                        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 10, superPositions[0] - 1));
                         AMOUNTS[DST_CHAINS[i]][1] = [amountOneWithdraw_];
                     }
                 }

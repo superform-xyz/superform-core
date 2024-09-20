@@ -4,38 +4,28 @@ pragma solidity ^0.8.23;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract MDSVD4626RevertTimelockedNativeNoSlippageAMB23 is ProtocolActions {
+contract SXSVDNormal4626MultiTokenInputLineaNoSlippageAMB23 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        AMBs = [2, 3];
-        MultiDstAMBs = [AMBs, AMBs, AMBs];
+        AMBs = [5, 6];
 
-        CHAIN_0 = OP;
-        DST_CHAINS = [ETH, ARBI];
+        CHAIN_0 = LINEA;
+        DST_CHAINS = [OP];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[ETH][0] = [0];
-        TARGET_UNDERLYINGS[ARBI][0] = [1];
+        TARGET_UNDERLYINGS[OP][0] = [0];
+        TARGET_VAULTS[OP][0] = [0];
+        TARGET_FORM_KINDS[OP][0] = [0];
 
-        TARGET_VAULTS[ETH][0] = [0];
-        TARGET_VAULTS[ARBI][0] = [5];
-
-        TARGET_FORM_KINDS[ETH][0] = [0];
-        TARGET_FORM_KINDS[ARBI][0] = [1];
+        AMOUNTS[OP][0] = [133];
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[ETH][0] = [1];
-        LIQ_BRIDGES[ARBI][0] = [1];
-
-        RECEIVE_4626[ETH][0] = [false];
-        RECEIVE_4626[ARBI][0] = [false];
-
-        /// if testing a revert, do we test the revert on the whole destination?
-        /// to assert values, it is best to find the indexes that didn't revert
+        LIQ_BRIDGES[OP][0] = [1];
+        RECEIVE_4626[OP][0] = [false];
 
         actions.push(
             TestAction({
@@ -47,7 +37,7 @@ contract MDSVD4626RevertTimelockedNativeNoSlippageAMB23 is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 69_420 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 0 // 0 = DAI, 1 = USDC, 2 = WETH
              })
         );
     }
@@ -56,19 +46,18 @@ contract MDSVD4626RevertTimelockedNativeNoSlippageAMB23 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
-        amountOne_ = uint128(bound(amountOne_, 1e18, 5e18));
-        amountTwo_ = uint128(bound(amountTwo_, 1e18, 5e18));
-        AMOUNTS[ETH][0] = [amountOne_];
-        AMOUNTS[ARBI][0] = [amountTwo_];
+    function test_scenario(uint128 amount_) public {
+        amount_ = uint128(bound(amount_, 1 * 10 ** 6, TOTAL_SUPPLY_USDC));
+        AMOUNTS[OP][0] = [amount_];
 
-        for (uint256 act; act < actions.length; ++act) {
+        for (uint256 act = 0; act < actions.length; ++act) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
+
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }
     }

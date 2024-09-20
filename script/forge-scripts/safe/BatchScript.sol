@@ -118,10 +118,11 @@ abstract contract BatchScript is Script, DelegatePrank {
 
     // Simulate then send the batch to the Safe API. If `send_` is `false`, the
     // batch will only be simulated.
-    function executeBatch(uint256 chainId_, address safe_, bool send_) public {
+    function executeBatch(uint256 chainId_, address safe_, uint256 manualNonce_, bool send_) public {
         _initialize(chainId_);
-        Batch memory batch = _createBatch(safe_);
+        Batch memory batch = _createBatch(safe_, manualNonce_);
         _simulateBatch(safe_, batch);
+
         if (send_) {
             batch = _signBatch(safe_, batch);
             _sendBatch(safe_, batch);
@@ -139,6 +140,18 @@ abstract contract BatchScript is Script, DelegatePrank {
                 rpcUrl: "https://fantom.blockpi.network/v1/rpc/public"
             });
             setChain("fantom", ftmChain);
+        } else if (chainId_ == 59_144) {
+            Chain memory lineaChain = Chain({
+                name: "LINEA",
+                chainId: 59_144,
+                chainAlias: "linea",
+                rpcUrl: "https://linea.blockpi.network/v1/rpc/public"
+            });
+            setChain("linea", lineaChain);
+        } else if (chainId_ == 81_457) {
+            Chain memory blastChain =
+                Chain({ name: "BLAST", chainId: 81_457, chainAlias: "blast", rpcUrl: "https://rpc.blast.io" });
+            setChain("blast", blastChain);
         }
 
         // Set the chain ID
@@ -173,6 +186,12 @@ abstract contract BatchScript is Script, DelegatePrank {
         } else if (chainId == 250) {
             SAFE_API_BASE_URL = "https://safe-txservice.fantom.network/api/v1/safes/";
             SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
+        } else if (chainId == 59_144) {
+            SAFE_API_BASE_URL = "https://safe-transaction-linea.safe.global/api/v1/safes/";
+            SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
+        } else if (chainId == 81_457) {
+            SAFE_API_BASE_URL = "https://safe-transaction-blast.safe.global/api/v1/safes/";
+            SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
         } else {
             revert("Unsupported chain");
         }
@@ -191,7 +210,7 @@ abstract contract BatchScript is Script, DelegatePrank {
     }
 
     // Encodes the stored encoded transactions into a single Multisend transaction
-    function _createBatch(address safe_) internal returns (Batch memory batch) {
+    function _createBatch(address safe_, uint256 manualNonce_) internal returns (Batch memory batch) {
         // Set initial batch fields
         batch.to = SAFE_MULTISEND_ADDRESS;
         batch.value = 0;
@@ -208,7 +227,7 @@ abstract contract BatchScript is Script, DelegatePrank {
         // Batch gas parameters can all be zero and don't need to be set
 
         // Get the safe nonce
-        batch.nonce = _getNonce(safe_);
+        batch.nonce = manualNonce_ > 0 ? manualNonce_ : _getNonce(safe_);
 
         // Get the transaction hash
         batch.txHash = _getTransactionHash(safe_, batch);
