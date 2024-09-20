@@ -108,8 +108,8 @@ contract_names=(
     "RewardsDistributor"
     "AxelarImplementation"
     "OneInchValidator"
-    ERC5115To4626WrapperFactory
-    LayerzeroImplementation
+    "ERC5115To4626WrapperFactory"
+    "LayerzeroImplementation"
     # Add more contract names here if needed
 )
 

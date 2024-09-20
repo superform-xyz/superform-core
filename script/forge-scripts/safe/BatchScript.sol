@@ -140,6 +140,18 @@ abstract contract BatchScript is Script, DelegatePrank {
                 rpcUrl: "https://fantom.blockpi.network/v1/rpc/public"
             });
             setChain("fantom", ftmChain);
+        } else if (chainId_ == 59_144) {
+            Chain memory lineaChain = Chain({
+                name: "LINEA",
+                chainId: 59_144,
+                chainAlias: "linea",
+                rpcUrl: "https://linea.blockpi.network/v1/rpc/public"
+            });
+            setChain("linea", lineaChain);
+        } else if (chainId_ == 81_457) {
+            Chain memory blastChain =
+                Chain({ name: "BLAST", chainId: 81_457, chainAlias: "blast", rpcUrl: "https://rpc.blast.io" });
+            setChain("blast", blastChain);
         }
 
         // Set the chain ID
@@ -173,6 +185,12 @@ abstract contract BatchScript is Script, DelegatePrank {
             SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
         } else if (chainId == 250) {
             SAFE_API_BASE_URL = "https://safe-txservice.fantom.network/api/v1/safes/";
+            SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
+        } else if (chainId == 59_144) {
+            SAFE_API_BASE_URL = "https://safe-transaction-linea.safe.global/api/v1/safes/";
+            SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
+        } else if (chainId == 81_457) {
+            SAFE_API_BASE_URL = "https://safe-transaction-blast.safe.global/api/v1/safes/";
             SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
         } else {
             revert("Unsupported chain");
