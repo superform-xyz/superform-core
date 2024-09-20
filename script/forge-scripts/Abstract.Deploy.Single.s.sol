@@ -176,8 +176,11 @@ abstract contract AbstractDeploySingle is BatchScript {
     //////////////////////////////////////////////////////////////*/
     string public SUPER_POSITIONS_NAME;
 
-    /// @dev 1 = ERC4626Form, 2 = 5115Form
-    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(5)];
+    /// @dev 1 = ERC4626Form, 5 = 5115Form (2 will tentatively be used for ERC7540)
+    uint32[] public STAGING_FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(5)];
+
+    /// @dev 1 = ERC4626Form, 3 = 5115Form (2 will tentatively be used for ERC7540)
+    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(3)];
     string[] public VAULT_KINDS = ["Vault"];
 
     /// @dev liquidity bridge ids 101 is lifi v2,
@@ -306,6 +309,7 @@ abstract contract AbstractDeploySingle is BatchScript {
     uint64 public constant LINEA = 59_144;
     uint64 public constant BLAST = 81_457;
 
+    uint256[] public manualNonces = [20, 20, 20, 20, 19, 19, 18, 7, 1, 0];
     uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 59_144, 81_457];
     string[] public chainNames =
         ["Ethereum", "Binance", "Avalanche", "Polygon", "Arbitrum", "Optimism", "Base", "Fantom", "Linea", "Blast"];
@@ -327,14 +331,14 @@ abstract contract AbstractDeploySingle is BatchScript {
     /// @dev !WARNING: update these for Fantom
     /// @dev check https://api-utils.superform.xyz/docs#/Utils/get_gas_prices_gwei_gas_get
     uint256[] public gasPrices = [
-        50_000_000_000, // ETH
-        3_000_000_000, // BSC
+        8_889_044_613, // ETH
+        1_000_000_000, // BSC
         25_000_000_000, // AVAX
-        50_000_000_000, // POLY
-        100_000_000, // ARBI
-        4_000_000, // OP
-        1_000_000, // BASE
-        4 * 10e9, // FANTOM
+        30_000_000_024, // POLY
+        10_000_000, // ARBI
+        1_321_409, // OP
+        6_020_565, // BASE
+        10_000_000_000, // FANTOM
         60_000_000, // LINEA (0.06 gwei)
         730_000_000 // BLAST (0.73 gwei)
     ];
@@ -342,16 +346,16 @@ abstract contract AbstractDeploySingle is BatchScript {
     /// @dev !WARNING: update these for Fantom
     /// @dev check https://api-utils.superform.xyz/docs#/Utils/get_native_prices_chainlink_native_get
     uint256[] public nativePrices = [
-        253_400_000_000, // ETH
-        31_439_000_000, // BSC
-        3_529_999_999, // AVAX
-        81_216_600, // POLY
-        253_400_000_000, // ARBI
-        253_400_000_000, // OP
-        253_400_000_000, // BASE
-        4 * 10e9, // FANTOM
-        253_400_000_000, // LINEA
-        253_400_000_000 // BLAST
+        229_221_000_000, // ETH
+        54_521_000_000, // BSC
+        2_392_000_000, // AVAX
+        38_017_300, // POLY
+        229_280_000_000, // ARBI
+        229_221_000_000, // OP
+        229_280_000_000, // BASE
+        50_892_796, // FANTOM
+        229_280_000_000, // LINEA
+        229_280_000_000 // BLAST
     ];
 
     /*//////////////////////////////////////////////////////////////
@@ -397,10 +401,10 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// @dev BASE https://app.onchainden.com/safes/base:0x2f973806f8863e860a553d4f2e7c2ab4a9f3b87c
         0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1,
         /// @dev FANTOM https://safe.fantom.network/home?safe=ftm:0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1
-        address(0),
-        /// FIXME: add protocol admin for LINEA HERE
-        address(0)
-        /// FIXME: add protocol admin for BLAST HERE
+        0x62Bbfe3ef3faAb7045d29bC388E5A0c5033D8b77,
+        /// @dev LINEA https://safe.linea.build/home?safe=linea:0x62Bbfe3ef3faAb7045d29bC388E5A0c5033D8b77
+        0x95B5837CF46E6ab340fFf3844ca5e7d8ead5B8AF
+        /// @dev BLAST https://blast-safe.io/home?safe=blastmainnet:0x95B5837CF46E6ab340fFf3844ca5e7d8ead5B8AF
     ];
 
     address[] public PROTOCOL_ADMINS_STAGING = [
@@ -680,9 +684,18 @@ abstract contract AbstractDeploySingle is BatchScript {
 
         /// @dev 9 - Add newly deployed form implementations to Factory,
         /// @notice formImplementationId for ERC4626 form is 1
-        /// @notice formImplementationId for ERC5115 form is 2 on prod and 5 on staging
-        ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0], 1);
-        ISuperformFactory(vars.factory).addFormImplementation(vars.erc5115Form, FORM_IMPLEMENTATION_IDS[1], 1);
+        /// @notice formImplementationId for ERC5115 form is 3 on prod and 5 on staging
+        if (env == 0) {
+            ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0], 1);
+            ISuperformFactory(vars.factory).addFormImplementation(vars.erc5115Form, FORM_IMPLEMENTATION_IDS[1], 1);
+        } else {
+            ISuperformFactory(vars.factory).addFormImplementation(
+                vars.erc4626Form, STAGING_FORM_IMPLEMENTATION_IDS[0], 1
+            );
+            ISuperformFactory(vars.factory).addFormImplementation(
+                vars.erc5115Form, STAGING_FORM_IMPLEMENTATION_IDS[1], 1
+            );
+        }
 
         /// @dev 10 - Deploy SuperformRouter
         vars.superformRouter = address(new SuperformRouter{ salt: salt }(vars.superRegistry));
@@ -725,6 +738,7 @@ abstract contract AbstractDeploySingle is BatchScript {
 
         vars.superRegistryC.setAddress(vars.superRegistryC.DST_SWAPPER(), vars.dstSwapper, vars.chainId);
 
+        console.log("entered here");
         /// @dev 15 - Super Registry extra setters
         /// @dev BASE does not have SocketV1 available
         if (vars.chainId == BASE) {
@@ -771,14 +785,14 @@ abstract contract AbstractDeploySingle is BatchScript {
             bridgeAddressesLinea[0] = BRIDGE_ADDRESSES[vars.chainId][0];
 
             /// and 4 is debridge and 5 is debridge forwarder
-            bridgeAddressesLinea[1] = BRIDGE_ADDRESSES[vars.chainId][4];
-            bridgeAddressesLinea[2] = BRIDGE_ADDRESSES[vars.chainId][5];
+            bridgeAddressesLinea[1] = BRIDGE_ADDRESSES[vars.chainId][3];
+            bridgeAddressesLinea[2] = BRIDGE_ADDRESSES[vars.chainId][4];
 
             address[] memory bridgeValidatorsLinea = new address[](3);
             bridgeValidatorsLinea[0] = bridgeValidators[0];
 
-            bridgeValidatorsLinea[1] = bridgeValidators[4];
-            bridgeValidatorsLinea[2] = bridgeValidators[5];
+            bridgeValidatorsLinea[1] = bridgeValidators[3];
+            bridgeValidatorsLinea[2] = bridgeValidators[4];
 
             vars.superRegistryC.setBridgeAddresses(bridgeIdsLinea, bridgeAddressesLinea, bridgeValidatorsLinea);
         } else if (vars.chainId == BLAST) {
@@ -1116,7 +1130,9 @@ abstract contract AbstractDeploySingle is BatchScript {
 
         /// @dev pause forms
         SuperformFactory(vars.factory).changeFormImplementationPauseStatus(
-            FORM_IMPLEMENTATION_IDS[0], ISuperformFactory.PauseStatus(1), ""
+            env == 0 ? FORM_IMPLEMENTATION_IDS[0] : STAGING_FORM_IMPLEMENTATION_IDS[0],
+            ISuperformFactory.PauseStatus(1),
+            ""
         );
 
         vm.stopBroadcast();
@@ -1239,7 +1255,12 @@ abstract contract AbstractDeploySingle is BatchScript {
             addToBatch(vars.paymentHelper, 0, txn);
 
             /// Send to Safe to sign
-            executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], 0, execute);
+            executeBatch(
+                vars.chainId,
+                env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i],
+                manualNonces[trueIndex],
+                execute
+            );
         }
     }
 
@@ -1480,8 +1501,6 @@ abstract contract AbstractDeploySingle is BatchScript {
 
             SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
 
-            vars.superRegistryC.setVaultLimitPerDestination(vars.dstChainId, 5);
-
             vars.superRegistryC.batchSetAddress(ids, newAddresses, chainIdsSetAddresses);
         } else {
             bytes memory txn = abi.encodeWithSelector(
@@ -1561,9 +1580,6 @@ abstract contract AbstractDeploySingle is BatchScript {
             }
 
             txn = abi.encodeWithSelector(SuperRegistry.setRequiredMessagingQuorum.selector, vars.dstChainId, 1);
-            addToBatch(vars.superRegistry, 0, txn);
-
-            txn = abi.encodeWithSelector(vars.superRegistryC.setVaultLimitPerDestination.selector, vars.dstChainId, 5);
             addToBatch(vars.superRegistry, 0, txn);
 
             txn = abi.encodeWithSelector(

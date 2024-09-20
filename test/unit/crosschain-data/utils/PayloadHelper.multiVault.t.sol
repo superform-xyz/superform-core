@@ -33,7 +33,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
         TARGET_FORM_KINDS[ETH][0] = [0, 0];
         TARGET_FORM_KINDS[ETH][1] = [0, 0];
 
-        AMOUNTS[ETH][0] = [222e18, 323e18];
+        AMOUNTS[ETH][0] = [20_001, 214];
 
         MAX_SLIPPAGE = 1000;
 
