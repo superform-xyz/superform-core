@@ -546,55 +546,54 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         }
 
         for (uint256 i; i < sfDataLen; ++i) {
-            /// @dev if txData is empty, no update is made
-            if (liqRequests[i].txData.length == 0) continue;
-            if (
-                (sfData.liqRequests[i].token == address(0) && liqRequests[i].txData.length != 0)
-                    || (sfData.liqRequests[i].token != address(0) && liqRequests[i].txData.length == 0)
-            ) {
-                revert COMPLETE_REBALANCE_INVALID_TX_DATA_UPDATE();
-            } else if (sfData.liqRequests[i].token != address(0) && liqRequests[i].txData.length != 0) {
-                if (sfData.liqRequests[i].token != liqRequests[i].token) {
-                    revert COMPLETE_REBALANCE_DIFFERENT_TOKEN();
-                }
-                if (sfData.liqRequests[i].interimToken != liqRequests[i].interimToken) {
-                    revert COMPLETE_REBALANCE_DIFFERENT_TOKEN();
-                }
-                if (sfData.liqRequests[i].bridgeId != liqRequests[i].bridgeId) {
-                    revert COMPLETE_REBALANCE_DIFFERENT_BRIDGE_ID();
-                }
-                if (sfData.liqRequests[i].liqDstChainId != liqRequests[i].liqDstChainId) {
-                    revert COMPLETE_REBALANCE_DIFFERENT_CHAIN();
-                }
-                if (sfData.receiverAddressSP != receiverAddressSP) {
-                    revert COMPLETE_REBALANCE_DIFFERENT_RECEIVER();
-                }
-
-                // todo do we want to re-use userSlippage here ?
-                if (ENTIRE_SLIPPAGE * amounts[i] < ((sfData.amounts[i] * (ENTIRE_SLIPPAGE - userSlippage)))) {
-                    revert COMPLETE_REBALANCE_AMOUNT_OUT_OF_SLIPPAGE(amounts[i], sfData.amounts[i], userSlippage);
-                }
-
-                if (ENTIRE_SLIPPAGE * outputAmounts[i] < ((sfData.outputAmounts[i] * (ENTIRE_SLIPPAGE - userSlippage))))
-                {
-                    revert COMPLETE_REBALANCE_OUTPUTAMOUNT_OUT_OF_SLIPPAGE(
-                        outputAmounts[i], sfData.outputAmounts[i], userSlippage
-                    );
-                }
-
-                // update the amount, ouputAmount, txData and native amount
-                sfData.amounts[i] = amounts[i];
-                sfData.outputAmounts[i] = outputAmounts[i];
-                sfData.liqRequests[i].txData = liqRequests[i].txData;
-                sfData.liqRequests[i].nativeAmount = liqRequests[i].nativeAmount;
+            // Update amounts regardless of txData
+            if (ENTIRE_SLIPPAGE * amounts[i] < ((sfData.amounts[i] * (ENTIRE_SLIPPAGE - userSlippage)))) {
+                revert COMPLETE_REBALANCE_AMOUNT_OUT_OF_SLIPPAGE(amounts[i], sfData.amounts[i], userSlippage);
             }
+
+            if (ENTIRE_SLIPPAGE * outputAmounts[i] < ((sfData.outputAmounts[i] * (ENTIRE_SLIPPAGE - userSlippage)))) {
+                revert COMPLETE_REBALANCE_OUTPUTAMOUNT_OUT_OF_SLIPPAGE(
+                    outputAmounts[i], sfData.outputAmounts[i], userSlippage
+                );
+            }
+
+            sfData.amounts[i] = amounts[i];
+            sfData.outputAmounts[i] = outputAmounts[i];
+
+            /// @notice if txData is empty, no update is made
+            if (liqRequests[i].txData.length == 0) continue;
+
+            /// @dev handle txData updates and checks
+            if (sfData.liqRequests[i].token == address(0)) {
+                revert COMPLETE_REBALANCE_INVALID_TX_DATA_UPDATE();
+            }
+
+            if (sfData.liqRequests[i].token != liqRequests[i].token) {
+                revert COMPLETE_REBALANCE_DIFFERENT_TOKEN();
+            }
+            if (sfData.liqRequests[i].interimToken != liqRequests[i].interimToken) {
+                revert COMPLETE_REBALANCE_DIFFERENT_TOKEN();
+            }
+            if (sfData.liqRequests[i].bridgeId != liqRequests[i].bridgeId) {
+                revert COMPLETE_REBALANCE_DIFFERENT_BRIDGE_ID();
+            }
+            if (sfData.liqRequests[i].liqDstChainId != liqRequests[i].liqDstChainId) {
+                revert COMPLETE_REBALANCE_DIFFERENT_CHAIN();
+            }
+            if (sfData.receiverAddressSP != receiverAddressSP) {
+                revert COMPLETE_REBALANCE_DIFFERENT_RECEIVER();
+            }
+
+            // Update txData and nativeAmount
+            sfData.liqRequests[i].txData = liqRequests[i].txData;
+            sfData.liqRequests[i].nativeAmount = liqRequests[i].nativeAmount;
         }
-        /// if token and txData are 0 no update is made (same chain actions without swaps)
 
         return sfData;
     }
 
     /// @dev returns if an address has a specific role
+
     function _hasRole(bytes32 id_, address addressToCheck_) internal view returns (bool) {
         return ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(id_, addressToCheck_);
     }
