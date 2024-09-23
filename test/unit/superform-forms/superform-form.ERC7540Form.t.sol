@@ -4,13 +4,45 @@ pragma solidity ^0.8.23;
 import "test/utils/ProtocolActions.sol";
 import "src/libraries/DataLib.sol";
 
-contract SuperformERC7540AccumulationTest is ProtocolActions {
+contract SuperformERC7540FormTest is ProtocolActions {
+    using DataLib for uint256;
+
     function setUp() public override {
         chainIds = [BSC_TESTNET, SEPOLIA];
         LAUNCH_TESTNETS = true;
 
         AMBs = [2, 5];
         super.setUp();
+    }
+
+    function test_7540OtherFunctionCalls() external {
+        uint64 srcChainId = BSC_TESTNET;
+        uint64 dstChainId = SEPOLIA;
+
+        address user = users[0];
+        uint256 depositAmount = 1e18;
+        uint256 superformId = _getSuperformId(dstChainId);
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+
+        form.getPendingDepositRequest(1, user);
+        form.getPendingRedeemRequest(1, user);
+        form.getVaultName();
+        form.getVaultSymbol();
+        form.getPricePerVaultShare();
+        form.getVaultShareBalance();
+        form.getTotalAssets();
+        form.getTotalSupply();
+        vm.expectRevert(Error.NOT_IMPLEMENTED.selector);
+        form.getPreviewPricePerVaultShare();
+        vm.expectRevert(Error.NOT_IMPLEMENTED.selector);
+        form.previewWithdrawFrom(0);
+        vm.expectRevert(Error.NOT_IMPLEMENTED.selector);
+        form.previewRedeemFrom(depositAmount);
+        form.superformYieldTokenName();
+        form.superformYieldTokenSymbol();
     }
 
     function test_7540AccumulateXChain() external {
