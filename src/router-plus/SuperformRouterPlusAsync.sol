@@ -546,13 +546,14 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         }
 
         for (uint256 i; i < sfDataLen; ++i) {
-            // if (
-            //     (sfData.liqRequests[i].token == address(0) && liqRequests[i].txData.length != 0)
-            //         || (sfData.liqRequests[i].token != address(0) && liqRequests[i].txData.length == 0)
-            // ) {
-            //     revert COMPLETE_REBALANCE_INVALID_TX_DATA_UPDATE();
-            // } else
-            if (sfData.liqRequests[i].token != address(0) && liqRequests[i].txData.length != 0) {
+            /// @dev if txData is empty, no update is made
+            if (liqRequests[i].txData.length == 0) continue;
+            if (
+                (sfData.liqRequests[i].token == address(0) && liqRequests[i].txData.length != 0)
+                    || (sfData.liqRequests[i].token != address(0) && liqRequests[i].txData.length == 0)
+            ) {
+                revert COMPLETE_REBALANCE_INVALID_TX_DATA_UPDATE();
+            } else if (sfData.liqRequests[i].token != address(0) && liqRequests[i].txData.length != 0) {
                 if (sfData.liqRequests[i].token != liqRequests[i].token) {
                     revert COMPLETE_REBALANCE_DIFFERENT_TOKEN();
                 }
