@@ -46,6 +46,7 @@ import { PayMaster } from "src/payments/PayMaster.sol";
 import { EmergencyQueue } from "src/EmergencyQueue.sol";
 import { VaultClaimer } from "src/VaultClaimer.sol";
 import { AcrossFacetPacked } from "./misc/blacklistedFacets/AcrossFacetPacked.sol";
+import { AcrossFacetPackedV3 } from "./misc/blacklistedFacets/AcrossFacetPackedV3.sol";
 import { AmarokFacetPacked } from "./misc/blacklistedFacets/AmarokFacetPacked.sol";
 import { RewardsDistributor } from "src/RewardsDistributor.sol";
 import "forge-std/console.sol";
@@ -607,7 +608,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
         vars.lv = LiFiValidator(vars.lifiValidator);
 
-        vars.selectorsToBlacklist = new bytes4[](8);
+        vars.selectorsToBlacklist = new bytes4[](12);
 
         /// @dev add selectors that need to be blacklisted post LiFiValidator deployment here
         vars.selectorsToBlacklist[0] = AcrossFacetPacked.startBridgeTokensViaAcrossNativePacked.selector;
@@ -618,6 +619,10 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.selectorsToBlacklist[5] = AmarokFacetPacked.startBridgeTokensViaAmarokERC20PackedPayFeeWithNative.selector;
         vars.selectorsToBlacklist[6] = AmarokFacetPacked.startBridgeTokensViaAmarokERC20MinPayFeeWithAsset.selector;
         vars.selectorsToBlacklist[7] = AmarokFacetPacked.startBridgeTokensViaAmarokERC20MinPayFeeWithNative.selector;
+        vars.selectorsToBlacklist[8] = AcrossFacetPackedV3.startBridgeTokensViaAcrossV3NativePacked.selector;
+        vars.selectorsToBlacklist[9] = AcrossFacetPackedV3.startBridgeTokensViaAcrossV3NativeMin.selector;
+        vars.selectorsToBlacklist[10] = AcrossFacetPackedV3.startBridgeTokensViaAcrossV3ERC20Packed.selector;
+        vars.selectorsToBlacklist[11] = AcrossFacetPackedV3.startBridgeTokensViaAcrossV3ERC20Min.selector;
 
         for (uint256 j = 0; j < vars.selectorsToBlacklist.length; ++j) {
             vars.lv.addToBlacklist(vars.selectorsToBlacklist[j]);
