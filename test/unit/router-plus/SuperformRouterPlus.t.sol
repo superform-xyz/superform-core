@@ -1096,6 +1096,72 @@ contract SuperformRouterPlusTest is ProtocolActions {
         vm.stopPrank();
     }
 
+    function test_crossChainRebalance_singleDirectSingleVaultDeposit() public {
+        vm.selectFork(FORKS[SOURCE_CHAIN]);
+        SingleVaultSFData memory sfData = SingleVaultSFData({
+            superformId: superformId1,
+            amount: 1e18,
+            outputAmount: 1e18,
+            maxSlippage: 100,
+            liqRequest: LiqRequest({
+                txData: "",
+                token: getContract(SOURCE_CHAIN, "DAI"),
+                interimToken: address(0),
+                bridgeId: 0,
+                liqDstChainId: SOURCE_CHAIN,
+                nativeAmount: 0
+            }),
+            permit2data: "",
+            hasDstSwap: false,
+            retain4626: false,
+            receiverAddress: address(deployer),
+            receiverAddressSP: address(deployer),
+            extraFormData: ""
+        });
+
+        IBaseSuperformRouterPlus.XChainRebalanceData memory data = IBaseSuperformRouterPlus.XChainRebalanceData({
+            rebalanceSelector: IBaseRouter.singleDirectSingleVaultDeposit.selector,
+            interimAsset: getContract(SOURCE_CHAIN, "DAI"),
+            slippage: 100,
+            expectedAmountInterimAsset: 1e18,
+            rebalanceToAmbIds: abi.encode(new uint8[](0)),
+            rebalanceToDstChainIds: abi.encode(new uint64[](0)),
+            rebalanceToSfData: abi.encode(sfData)
+        });
+
+        vm.startPrank(ROUTER_PLUS_SOURCE);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).setXChainRebalanceCallData(deployer, 1, data);
+        vm.stopPrank();
+
+        uint256[][] memory newAmounts = new uint256[][](1);
+        newAmounts[0] = new uint256[](1);
+        newAmounts[0][0] = 1e18;
+
+        uint256[][] memory newOutputAmounts = new uint256[][](1);
+        newOutputAmounts[0] = new uint256[](1);
+        newOutputAmounts[0][0] = 1e18;
+
+        LiqRequest[][] memory liqRequests = new LiqRequest[][](1);
+        liqRequests[0] = new LiqRequest[](1);
+        liqRequests[0][0] = sfData.liqRequest;
+
+        ISuperformRouterPlusAsync.CompleteCrossChainRebalanceArgs memory completeArgs = ISuperformRouterPlusAsync
+            .CompleteCrossChainRebalanceArgs({
+            receiverAddressSP: address(deployer),
+            routerPlusPayloadId: 1,
+            amountReceivedInterimAsset: 1e18,
+            newAmounts: newAmounts,
+            newOutputAmounts: newOutputAmounts,
+            liqRequests: liqRequests
+        });
+
+        deal(sfData.liqRequest.token, address(ROUTER_PLUS_ASYNC_SOURCE), 1e18);
+
+        vm.startPrank(deployer);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
+        vm.stopPrank();
+    }
+
     function test_crossChainRebalance_allErrors() public {
         vm.startPrank(deployer);
 
