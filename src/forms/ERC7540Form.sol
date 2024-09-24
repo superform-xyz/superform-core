@@ -449,6 +449,9 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
 
         assetsToDeposit = IERC20(assetCache).balanceOf(address(this)) - balanceBefore;
 
+        console.log("assetsToDeposit", assetsToDeposit);
+        console.log("singleVaultData_.amount", singleVaultData_.amount);
+
         /// @dev validates slippage
         if (
             assetsToDeposit * ENTIRE_SLIPPAGE
