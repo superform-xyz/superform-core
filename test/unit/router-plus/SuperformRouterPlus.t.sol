@@ -1833,25 +1833,60 @@ contract SuperformRouterPlusTest is ProtocolActions {
         vm.expectRevert(ISuperformRouterPlusAsync.COMPLETE_REBALANCE_DIFFERENT_TOKEN.selector);
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
 
+        // Test COMPLETE_REBALANCE_DIFFERENT_TOKEN error
+        completeArgs.liqRequests[0][0].txData = "invalid-tx-data";
+        completeArgs.liqRequests[0][0].token = getContract(SOURCE_CHAIN, "DAI");
+        completeArgs.liqRequests[0][0].interimToken = address(0x123);
+
+        vm.expectRevert(ISuperformRouterPlusAsync.COMPLETE_REBALANCE_DIFFERENT_TOKEN.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
+
         // Reset token
-        // completeArgs.liqRequests[0][0].token = getContract(SOURCE_CHAIN, "DAI");
+        completeArgs.liqRequests[0][0].interimToken = address(0);
 
-        // // Test COMPLETE_REBALANCE_DIFFERENT_BRIDGE_ID error
-        // completeArgs.liqRequests[0][0].bridgeId = 2;
-        // vm.expectRevert(ISuperformRouterPlusAsync.COMPLETE_REBALANCE_DIFFERENT_BRIDGE_ID.selector);
+        // Test COMPLETE_REBALANCE_DIFFERENT_BRIDGE_ID error
+        completeArgs.liqRequests[0][0].bridgeId = 2;
+        vm.expectRevert(ISuperformRouterPlusAsync.COMPLETE_REBALANCE_DIFFERENT_BRIDGE_ID.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
+
+        // Reset bridgeId
+        completeArgs.liqRequests[0][0].bridgeId = 1;
+
+        // Test COMPLETE_REBALANCE_DIFFERENT_CHAIN error
+        completeArgs.liqRequests[0][0].liqDstChainId = OP;
+        vm.expectRevert(ISuperformRouterPlusAsync.COMPLETE_REBALANCE_DIFFERENT_CHAIN.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
+
+        // Reset liqDstChainId
+        completeArgs.liqRequests[0][0].liqDstChainId = SOURCE_CHAIN;
+
+        /// @FIXME: This line is not reacheable
+        // vm.expectRevert(ISuperformRouterPlusAsync.COMPLETE_REBALANCE_DIFFERENT_RECEIVER.selector);
+        // completeArgs.receiverAddressSP = address(0x123);
         // SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether
         // }(completeArgs);
-
-        // // Reset bridgeId
-        // completeArgs.liqRequests[0][0].bridgeId = 1;
-
-        // // Test COMPLETE_REBALANCE_DIFFERENT_CHAIN error
-        // completeArgs.liqRequests[0][0].liqDstChainId = OP;
-        // vm.expectRevert(ISuperformRouterPlusAsync.COMPLETE_REBALANCE_DIFFERENT_CHAIN.selector);
-        // SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether
-        // }(completeArgs);
-
         vm.stopPrank();
+
+        sfData.liqRequest.token = address(0);
+
+        data = IBaseSuperformRouterPlus.XChainRebalanceData({
+            rebalanceSelector: IBaseRouter.singleDirectSingleVaultDeposit.selector,
+            interimAsset: getContract(SOURCE_CHAIN, "DAI"),
+            slippage: 100,
+            expectedAmountInterimAsset: 1e18,
+            rebalanceToAmbIds: abi.encode(new uint8[](0)),
+            rebalanceToDstChainIds: abi.encode(new uint64[](0)),
+            rebalanceToSfData: abi.encode(sfData)
+        });
+
+        vm.startPrank(ROUTER_PLUS_SOURCE);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).setXChainRebalanceCallData(deployer, 2, data);
+        vm.stopPrank();
+
+        vm.startPrank(deployer);
+        completeArgs.routerPlusPayloadId = 2;
+        vm.expectRevert(ISuperformRouterPlusAsync.COMPLETE_REBALANCE_INVALID_TX_DATA_UPDATE.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
     }
 
     //////////////////////////////////////////////////////////////
