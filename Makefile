@@ -121,6 +121,7 @@ build-sizes: ## Builds the project and shows sizes
 test-vvv: ## Runs tests with verbose output
 	forge test --match-test test_7540FunctionCalls --evm-version cancun -vvv
 
+
 .PHONY: ftest
 ftest: ## Runs tests with cancun evm version
 	forge test --evm-version cancun
