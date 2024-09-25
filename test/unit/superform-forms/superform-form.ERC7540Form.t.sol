@@ -4,8 +4,11 @@ pragma solidity ^0.8.23;
 import "test/utils/ProtocolActions.sol";
 import "src/libraries/DataLib.sol";
 
+import { Math } from "openzeppelin-contracts/contracts/utils/math/Math.sol";
+
 contract SuperformERC7540FormTest is ProtocolActions {
     using DataLib for uint256;
+    using Math for uint256;
 
     function setUp() public override {
         chainIds = [BSC_TESTNET, SEPOLIA];
@@ -104,6 +107,36 @@ contract SuperformERC7540FormTest is ProtocolActions {
 
         _performSameChainDepositWithdDifferentAsset(
             SameChainDepositArgs(dstChainId, user, depositAmount, superformId, true, 1000, bytes4(0))
+        );
+    }
+
+    function test_7540_sameChainDeposit_RedeemAsync_withDifferentAsset_DIFFERENT_TOKENS() external {
+        uint64 srcChainId = BSC_TESTNET;
+        uint64 dstChainId = SEPOLIA;
+
+        address user = users[0];
+        uint256 depositAmount = 1e18;
+        uint256 superformId = _getSuperformId(dstChainId, "ERC7540AsyncRedeemMock");
+
+        _performSameChainDepositWithdDifferentAsset(
+            SameChainDepositArgs(
+                dstChainId, user, depositAmount, superformId, true, 1000, Error.DIFFERENT_TOKENS.selector
+            )
+        );
+    }
+
+    function test_7540_sameChainDeposit_RedeemAsync_withDifferentAsset_DIRECT_DEPOSIT_SWAP_FAILED() external {
+        uint64 srcChainId = BSC_TESTNET;
+        uint64 dstChainId = SEPOLIA;
+
+        address user = users[0];
+        uint256 depositAmount = 1e18;
+        uint256 superformId = _getSuperformId(dstChainId, "ERC7540AsyncRedeemMock");
+
+        _performSameChainDepositWithdDifferentAsset(
+            SameChainDepositArgs(
+                dstChainId, user, depositAmount, superformId, true, 1000, Error.DIRECT_DEPOSIT_SWAP_FAILED.selector
+            )
         );
     }
 
@@ -301,6 +334,7 @@ contract SuperformERC7540FormTest is ProtocolActions {
         address dstSuperformRouter;
         address superform1;
         address depositToken;
+        address outputSwapToken;
         uint256 depositAmountAdjusted;
         bytes txData;
     }
@@ -314,11 +348,14 @@ contract SuperformERC7540FormTest is ProtocolActions {
         MockERC20(getContract(args.dstChainId, "USDC")).approve(v.dstSuperformRouter, args.depositAmount);
 
         (v.superform1,,) = args.superformId.getSuperform();
+        v.outputSwapToken = args.error == Error.DIFFERENT_TOKENS.selector
+            ? getContract(args.dstChainId, "USDC")
+            : getContract(args.dstChainId, "tUSD");
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             1,
             getContract(args.dstChainId, "USDC"),
-            getContract(args.dstChainId, "tUSD"),
-            getContract(args.dstChainId, "tUSD"),
+            v.outputSwapToken,
+            v.outputSwapToken,
             v.superform1,
             args.dstChainId,
             args.dstChainId,
@@ -351,7 +388,9 @@ contract SuperformERC7540FormTest is ProtocolActions {
             SingleDirectSingleVaultStateReq(
                 SingleVaultSFData(
                     args.superformId,
-                    v.depositAmountAdjusted,
+                    args.error == Error.DIRECT_DEPOSIT_SWAP_FAILED.selector
+                        ? v.depositAmountAdjusted.mulDiv(20_000, 10_000)
+                        : v.depositAmountAdjusted,
                     v.depositAmountAdjusted,
                     args.slippage,
                     LiqRequest(v.txData, v.depositToken, address(0), 1, args.dstChainId, 0),
