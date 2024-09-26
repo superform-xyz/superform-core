@@ -24,15 +24,15 @@ echo Deploying Router Plus and Router Plus Async: ...
 # FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlus(uint256,uint256,uint256)" 1 2 0 --rpc-url $OPTIMISM_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 # wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlus(uint256,uint256,uint256)" 1 3 0 --rpc-url $BASE_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-wait
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlus(uint256,uint256,uint256)" 1 3 0 --rpc-url $BASE_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# wait
 
 # FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlus(uint256,uint256,uint256)" 1 4 0 --rpc-url $FANTOM_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 # wait
 
-# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlus(uint256,uint256,uint256)" 1 5 0 --rpc-url $LINEA_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-# wait
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlus(uint256,uint256,uint256)" 1 5 0 --rpc-url $LINEA_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+wait
 
-# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlus(uint256,uint256,uint256)" 1 6 0 --rpc-url $BLAST_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
-# wait
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlus(uint256,uint256,uint256)" 1 6 0 --rpc-url $BLAST_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+wait
 
