@@ -263,16 +263,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         /// This means that at most, expectedAmountInterimAsset can be sent as external token and the rebalanceToSfData
         /// information in amounts/outputAmounts should have that reflected from the get go in the first step
         vars.interimAsset = IERC20(data.interimAsset);
-
-        if (vars.balanceOfInterim > data.expectedAmountInterimAsset) {
-            vars.amountToDeposit = data.expectedAmountInterimAsset;
-            /// @dev transfer the remaining balance to the paymaster
-            vars.interimAsset.safeTransfer(
-                _getAddress(keccak256("PAYMASTER")), vars.balanceOfInterim - vars.amountToDeposit
-            );
-        } else {
-            vars.amountToDeposit = vars.balanceOfInterim;
-        }
+        vars.amountToDeposit = data.expectedAmountInterimAsset;
 
         /// @dev validate the update of txData by the keeper and re-construct calldata
         /// @notice if there is any failure here because of rebalanceToData misconfiguration a refund should be

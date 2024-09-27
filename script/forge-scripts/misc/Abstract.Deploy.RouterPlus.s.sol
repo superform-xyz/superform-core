@@ -46,8 +46,14 @@ abstract contract AbstractDeployRouterPlus is EnvironmentUtils {
         address superformRouterPlus = address(new SuperformRouterPlus{ salt: salt }(superRegistry));
         contracts[vars.chainId][bytes32(bytes("SuperformRouterPlus"))] = superformRouterPlus;
 
+        SuperRegistry(superRegistry).setAddress(keccak256("SUPERFORM_ROUTER_PLUS"), superformRouterPlus, vars.chainId);
+
         address superformRouterPlusAsync = address(new SuperformRouterPlusAsync{ salt: salt }(superRegistry));
         contracts[vars.chainId][bytes32(bytes("SuperformRouterPlusAsync"))] = superformRouterPlusAsync;
+
+        SuperRegistry(superRegistry).setAddress(
+            keccak256("SUPERFORM_ROUTER_PLUS_ASYNC"), superformRouterPlusAsync, vars.chainId
+        );
 
         vm.stopBroadcast();
 
