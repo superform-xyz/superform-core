@@ -8,21 +8,21 @@ For DeFi protocols, it acts as an instant out-of-the-box distribution platform f
 
 **Core capabilities for protocols include:**
 - Permissionlessly list your vaults on Superform by adding your ERC4626 vault to the proper 'Form' (a vault adapter within Superform). 
-- Create a profile page with embeddable data sources for users to find more information about your protocol
-- Manage metadata for yield opportunities
-- Users can deposit into your vaults from any chain without the need to deploy your vaults on that chain
+- Create a profile page with embeddable data sources for users to find more information about your protocol.
+- Manage metadata for yield opportunities.
+- Users can deposit into your vaults from any chain without the need to deploy your vaults on that chain.
 
 **Core capabilities for users include:** 
-- Deposit or withdraw into any vault using any asset from any chain
-- Batch desired actions across multiple vaults and multiple chains in a single transaction
-- Automate and manage your yield portfolio from any chain
-- Automatically compound your yield position
-- Make cross-chain transactions using multiple AMBs 
+- Deposit or withdraw into any vault using any asset from any chain.
+- Batch desired actions across multiple vaults and multiple chains in a single transaction.
+- Automate and manage your yield portfolio from any chain.
+- Automatically compound your yield position.
+- Make cross-chain transactions using multiple AMBs.
 
 This repository includes all Superform contracts and can be split into two categories: Core and Periphery.
 
-- `Core` contracts contain logic to move liquidity and data across chains along with maintaining roles in the protocol
-- `Periphery` contracts contain the main touch-points for protocols and users to interface with and include helper contracts to ease 3rd party integrations
+- `Core` contracts contain logic to move liquidity and data across chains along with maintaining roles in the protocol.
+- `Periphery` contracts contain the main touch-points for protocols and users to interface with and include helper contracts to ease 3rd party integrations.
   
 <img width="1920" alt="Superform__SuperformProtocol--DARK (2)" src="https://github.com/superform-xyz/superform-core/assets/33469661/c3ad93a0-226b-4e14-b7ca-c3a6ac3b156a">
 
@@ -54,7 +54,7 @@ This repository includes all Superform contracts and can be split into two categ
 
 - `script` contains deployment and utility scripts and outputs [`/script`](./script)
 - `security-review` contains information relevant to prior security reviews and the scope of bug bounties[`/security-review`](./security-review)
-- `src` is the source folder for all smart contract code[`/src`](./src)
+- `src` is the source folder for all smart contract code[`/src`](./src):
   - `crosschain-data` implements the sending of messages from chain to chain via various AMBs [`/src/crosschain-data`](./src/crosschain-data)
   - `crosschain-liquidity` implements the movement of tokens from chain to chain via bridge aggregators [`/src/crosschain-liquidity`](./src/crosschain-liquidity)
   - `forms` implements types of yield that can be supported on Superform and introduces a queue when they are paused [`/src/forms`](./src/forms)
@@ -64,7 +64,7 @@ This repository includes all Superform contracts and can be split into two categ
   - `settings` define, set, and manage roles in the Superform ecosystem [`/src/settings`](./src/settings)
   - `types` define core data structures used in the protocol [`/src/types`](./src/types)
   - `vendor` is where all externally written interfaces reside [`/src/vendor`](./src/vendor)
-- `test` contains tests for contracts in src [`/test`](./test)
+- `test` contains tests for contracts in src [`/test`](./test).
 
 ## Documentation
 
@@ -72,9 +72,9 @@ We recommend visiting technical documentation at https://docs.superform.xyz.
 
 ## Contract Architecture
 
-1. All external actions, except Superform creation, start in `SuperformRouter.sol`. For each deposit or withdraw function the user has to provide the appropriate "StateRequest" found in `DataTypes.sol` 
+1. All external actions, except Superform creation, start in `SuperformRouter.sol`. For each deposit or withdraw function the user has to provide the appropriate "StateRequest" found in `DataTypes.sol` .
 2. All deposit and withdrawal actions can be to single or multiple destinations, single or multi vaults, and same-chain or cross-chain. Any token can be deposited from any chain into a vault with swapping and bridging handled in a single call. Sometimes it is also needed to perform another action on the destination chain for tokens with low bridge liquidity, through the usage of `DstSwapper.sol`. Similarly for withdraw actions, users can choose to receive a different token than the one redeemed for from the vault, but funds must go back directly to the user (i.e. no use of `DstSwapper.sol`).
-3. Any individual tx must be of a specific kind, either all deposits or all withdraws, for all vaults and destinations
+3. Any individual tx must be of a specific kind, either all deposits or all withdraws, for all vaults and destinations.
 4. Vaults themselves can be added permissionlessly to Forms in `SuperformFactory.sol` by calling `createSuperform()`. Forms are code implementations that adapt to the needs of a given vault, currently all around the [ERC-4626 Standard](https://erc4626.info/). Any user can wrap a vault into a Superform using the SuperformFactory but only the protocol may add new Form implementations.
 5. This wrapping action leads to the creation of Superforms which are assigned a unique id, made up of the superForm address, formId, and chainId.
 6. Users are minted SuperPositions on successful deposits, a type of ERC1155 modified called [ERC1155A](https://github.com/superform-xyz/ERC1155A). On withdrawals these are burned. Users may also within each "StateRequest" deposit choose whether to retain4626 which sends the vault share directly to the user instead of holding in the appropriate Superform, but only SuperPositions can be withdrawn through SuperformRouter.   
@@ -125,14 +125,14 @@ In this section we will run through examples where users deposit and withdraw in
 
 ## Tests
 
-Step by step instructions on setting up the project and running it
+Step by step instructions on setting up the project and running it:
 
-1. Make sure Foundry is installed with the following temporary workarounds (see: https://github.com/foundry-rs/foundry/issues/8014)
+1. Make sure Foundry is installed with the following temporary workarounds (see: https://github.com/foundry-rs/foundry/issues/8014):
 
 - For minimal ram usage, do `foundryup -v  nightly-f625d0fa7c51e65b4bf1e8f7931cd1c6e2e285e9`
 - For compatibility with safe signing operations do `foundryup -v  nightly-ea2eff95b5c17edd3ffbdfc6daab5ce5cc80afc0`
 
-2. Set the rpc variables in the makefile using your own nodes and disable any instances that run off 1password
+2. Set the rpc variables in the makefile using your own nodes and disable any instances that run off 1password:
 
 ```
 POLYGON_RPC_URL=
@@ -152,7 +152,7 @@ FANTOM_RPC_URL=
 forge install
 ```
 
-4. Run `make ftest` to run tests against the contracts
+4. Run `make ftest` to run tests against the contracts:
 
 ```sh
 $ make ftest
