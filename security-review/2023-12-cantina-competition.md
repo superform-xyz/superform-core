@@ -1,9 +1,9 @@
 ## High risk
 ### deposits above the balance of SuperformRouter will always fail due to underflow.
 
-**Severity:** High risk
+**Severity:** High risk.
 
-**Context:** _(No context files were provided by the reviewer)_
+**Context:** _(No context files were provided by the reviewer)_.
 
 **Description**:
 This issue exists in the `SuperformRouter`'s deposit functions.
@@ -16,7 +16,7 @@ Deposits above the balance of `SuperformRouter` will always fail due to underflo
 
 Here's a more vivid scenario: 
 
-lets say some ETH was forcefully sent to `SuperformRouter`, (_this is because there's no way for an initial deposit without forcefully sending ETH to the `SuperformRouter` due to the calculation for prev balance in the deposit functions_)
+lets say some ETH was forcefully sent to `SuperformRouter`, (_this is because there's no way for an initial deposit without forcefully sending ETH to the `SuperformRouter` due to the calculation for prev balance in the deposit functions_).
 
 Like for 1st deposit via any of the deposit functions, `address(this).balance` will be 0 so doing this `0 - msg.value` where msg.value would normally be a value > 0 will result in underflows causing reverts. So the only way an initial deposit is even possible in the `SuperformRouter` is by forcefully sending ETH so that there could be a balance.
 
@@ -137,7 +137,7 @@ note that the asset address is Obtained from the `superFormId` , and the contrac
 - `NOTICE` The only factor that could prevent this exploit is if the contract does not have the specific valuable asset chosen by the user at the time of the attack.but given that the contract frequently contains a mix of assets due to unprocessed deposits, pending withdrawals, failed deposit ..ect, it is highly probable that the contract has the necessary amount of a more valuable underlying asset at any given time.
 - also even in failed deposits the token to be rescued will be the token of the vault which derived from the `supreFormId` given by the user.
 
-- POC
+- POC.
 
 - Scenario :
 
@@ -271,11 +271,11 @@ contract setup_poc is Test{
 }
 ```
 
-- Impact
+- Impact.
 
 - This vulnerability can be exploited to deposit assets into a vault that do not match the user's provided token, leading to the issuance of shares based on an incorrect asset and value. This can result in significant financial losses to other users.
 
-- Recommendation
+- Recommendation.
 
 - I would recommend that the keeper update the token received from the user also not only the amount , so it can be compared To the targeted vault  asset.
 
@@ -283,9 +283,9 @@ contract setup_poc is Test{
 
 ### SuperPositions.onlyMinter() has wrong implemerantion, leading to wrong access control.
 
-**Severity:** High risk
+**Severity:** High risk.
 
-**Context:** _(No context files were provided by the reviewer)_
+**Context:** _(No context files were provided by the reviewer)_.
 
 **Description**:
 SuperPositions.onlyMinter() has wrong implemerantion, leading to wrong access control.
@@ -333,14 +333,14 @@ Compare the correct state registry id as follows:
 
 ### SuperformRouter::singleDirectSingleVaultDeposit reentrancy due to swap path enables to inflate balances in other vault shares
 
-**Severity:** High risk
+**Severity:** High risk.
 
-**Context:** _(No context files were provided by the reviewer)_
+**Context:** _(No context files were provided by the reviewer)_.
 
 - Summary
 A malicious user Alice can create a vault having the shares of another vault as an asset. Then Alice can use a reentrancy in SuperformRouter to inflate the assets she provides to the vault, in order to extract the said shares from the router.
 
-- Vulnerability Detail
+- Vulnerability Detail.
 
 We can see in `BaseForm::_processDirectDeposit`, that the asset tokens provided by the user are checked by doing a difference between an initial balance, and a final balance:
 
@@ -372,22 +372,22 @@ As a result of this double accounting, Alice can withdraw the shares of vault fr
 - Impact
 The vault shares contained in the SuperformRouter can be drained by a malicious user.
 
-- Code Snippet
+- Code Snippet.
 
-- Tool used
+- Tool used.
 
 Manual Review
 
 - Recommendation
-Add a nonReentrant check on `SuperformRouter::singleDirectSingleVaultDeposit`
+Add a nonReentrant check on `SuperformRouter::singleDirectSingleVaultDeposit`.
 
 
 
 ### Blockchain Identifier Manipulation in estimateFees Function
 
-**Severity:** High risk
+**Severity:** High risk.
 
-**Context:** [LayerzeroImplementation.sol#L173-L173](superform-core/src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol#L173-L173)
+**Context:** [LayerzeroImplementation.sol#L173-L173](superform-core/src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol#L173-L173).
 
 **Description**:
 
@@ -396,15 +396,15 @@ An attacker can exploit this vulnerability by compromising the layerzero endpoin
 
 **Recommendation**:
 
-it's better to not rely on the ambChainId mapping or the layerzero endpoint to get the correct chain ID, instead of that it's should use  a hash of the chain's genesis block or a public key of the chain's authority and also check the return value of the lzEndpoint.send function to ensure the message was sent successfully
+it's better to not rely on the ambChainId mapping or the layerzero endpoint to get the correct chain ID, instead of that it's should use  a hash of the chain's genesis block or a public key of the chain's authority and also check the return value of the lzEndpoint.send function to ensure the message was sent successfully.
 
 
 
-### Incorrect allowance decrement in safeBatchTransferFrom function
+### Incorrect allowance decrement in safeBatchTransferFrom function.
 
-**Severity:** High risk
+**Severity:** High risk.
 
-**Context:** _(No context files were provided by the reviewer)_
+**Context:** _(No context files were provided by the reviewer)_.
 
 - Summary
 In `safeBatchTransferFrom` function of `ERC1155A` contract instead of decrementing msg.sender's allowance receiver's allowance is being decremented.
