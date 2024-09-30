@@ -232,14 +232,14 @@ contract SuperformERC7540FormTest is ProtocolActions {
         uint64 dstChainId = SEPOLIA;
 
         address user = users[0];
-        uint256 depositAmount = 1e18;
+        uint256 amount = 1e18;
         uint256 superformId = _getSuperformId(dstChainId, "ERC7540AsyncDepositMock");
         (address superform,,) = superformId.getSuperform();
 
         // Simulate deposit
-        _simulateDeposit(dstChainId, user, superformId, depositAmount);
+        _simulateDeposit(dstChainId, user, superformId, amount);
 
-        _performSameChainWithdraw(SameChainArgs(dstChainId, user, depositAmount, superformId, false, 100, bytes4(0)));
+        _performSameChainWithdraw(SameChainArgs(dstChainId, user, amount, superformId, false, 100, bytes4(0)));
     }
 
     function test_7540_sameChainWithdraw_retain4626() external {
@@ -248,14 +248,34 @@ contract SuperformERC7540FormTest is ProtocolActions {
         uint64 dstChainId = SEPOLIA;
 
         address user = users[0];
-        uint256 depositAmount = 1e18;
+        uint256 amount = 1e18;
         uint256 superformId = _getSuperformId(dstChainId, "ERC7540AsyncDepositMock");
         (address superform,,) = superformId.getSuperform();
 
         // Simulate deposit
-        _simulateDeposit(dstChainId, user, superformId, depositAmount);
+        _simulateDeposit(dstChainId, user, superformId, amount);
 
-        _performSameChainWithdraw(SameChainArgs(dstChainId, user, depositAmount, superformId, true, 100, bytes4(0)));
+        _performSameChainWithdraw(SameChainArgs(dstChainId, user, amount, superformId, true, 100, bytes4(0)));
+    }
+
+    function test_7540_sameChainWithdraw_swapAsset_DIRECT_WITHDRAW_INVALID_LIQ_REQUEST() external {
+        /// src chain id == dst chain id (same chain)
+        uint64 srcChainId = SEPOLIA;
+        uint64 dstChainId = SEPOLIA;
+
+        address user = users[0];
+        uint256 amount = 1e18;
+        uint256 superformId = _getSuperformId(dstChainId, "ERC7540AsyncDepositMock");
+        (address superform,,) = superformId.getSuperform();
+
+        // Simulate deposit
+        _simulateDeposit(dstChainId, user, superformId, amount);
+
+        _performSameChainWithdrawWithDifferentAsset(
+            SameChainArgs(
+                dstChainId, user, amount, superformId, false, 100, Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST.selector
+            )
+        );
     }
 
     function _getSuperformId(uint64 dstChainId, string memory vaultKind) internal view returns (uint256) {
@@ -275,6 +295,28 @@ contract SuperformERC7540FormTest is ProtocolActions {
         bool hasRetain4626;
         uint256 slippage;
         bytes4 error;
+    }
+
+    struct SameChainLocalVars {
+        address dstSuperformRouter;
+        address superform1;
+        address token;
+        address outputSwapToken;
+        uint256 amountAdjusted;
+        bytes txData;
+    }
+
+    function _simulateDeposit(uint64 dstChainId, address user, uint256 superformId, uint256 depositAmount) internal {
+        (address superform,,) = superformId.getSuperform();
+
+        vm.prank(getContract(dstChainId, "SuperformRouter"));
+        SuperPositions(getContract(dstChainId, "SuperPositions")).mintSingle(user, superformId, depositAmount);
+        address vault = IBaseForm(superform).getVaultAddress();
+        ERC7575Mock(IERC7540(vault).share()).mint(superform, depositAmount);
+
+        address vaultAsset = IBaseForm(superform).getVaultAsset();
+        vm.prank(0x423420Ae467df6e90291fd0252c0A8a637C1e03f);
+        MockERC20(vaultAsset).mint(vault, depositAmount * 2);
     }
 
     function _performSameChainDeposit(SameChainArgs memory args) internal {
@@ -308,17 +350,72 @@ contract SuperformERC7540FormTest is ProtocolActions {
         vm.stopPrank();
     }
 
-    function _simulateDeposit(uint64 dstChainId, address user, uint256 superformId, uint256 depositAmount) internal {
-        (address superform,,) = superformId.getSuperform();
+    function _performSameChainDepositWithdDifferentAsset(SameChainArgs memory args) internal {
+        SameChainLocalVars memory v;
+        vm.selectFork(FORKS[args.dstChainId]);
+        vm.startPrank(args.user);
 
-        vm.prank(getContract(dstChainId, "SuperformRouter"));
-        SuperPositions(getContract(dstChainId, "SuperPositions")).mintSingle(user, superformId, depositAmount);
-        address vault = IBaseForm(superform).getVaultAddress();
-        ERC7575Mock(IERC7540(vault).share()).mint(superform, depositAmount);
+        v.dstSuperformRouter = getContract(args.dstChainId, "SuperformRouter");
+        MockERC20(getContract(args.dstChainId, "USDC")).approve(v.dstSuperformRouter, args.amount);
 
-        address vaultAsset = IBaseForm(superform).getVaultAsset();
-        vm.prank(0x423420Ae467df6e90291fd0252c0A8a637C1e03f);
-        MockERC20(vaultAsset).mint(vault, depositAmount * 2);
+        (v.superform1,,) = args.superformId.getSuperform();
+        v.outputSwapToken = args.error == Error.DIFFERENT_TOKENS.selector
+            ? getContract(args.dstChainId, "USDC")
+            : getContract(args.dstChainId, "tUSD");
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            getContract(args.dstChainId, "USDC"),
+            v.outputSwapToken,
+            v.outputSwapToken,
+            v.superform1,
+            args.dstChainId,
+            args.dstChainId,
+            args.dstChainId,
+            false,
+            v.superform1,
+            uint256(args.dstChainId),
+            args.amount,
+            //1e18,
+            false,
+            /// @dev placeholder value, not used
+            0,
+            1,
+            1,
+            1,
+            address(0)
+        );
+        v.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, true);
+
+        v.token = args.error == Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT.selector
+            ? getContract(args.dstChainId, "tUSD")
+            : getContract(args.dstChainId, "USDC");
+        v.amountAdjusted = _convertDecimals(
+            args.amount, v.token, getContract(args.dstChainId, "tUSD"), args.dstChainId, args.dstChainId
+        );
+        if (args.error != bytes4(0)) {
+            vm.expectRevert(args.error);
+        }
+        SuperformRouter(payable(v.dstSuperformRouter)).singleDirectSingleVaultDeposit(
+            SingleDirectSingleVaultStateReq(
+                SingleVaultSFData(
+                    args.superformId,
+                    args.error == Error.DIRECT_DEPOSIT_SWAP_FAILED.selector
+                        ? v.amountAdjusted.mulDiv(20_000, 10_000)
+                        : v.amountAdjusted,
+                    v.amountAdjusted,
+                    args.slippage,
+                    LiqRequest(v.txData, v.token, address(0), 1, args.dstChainId, 0),
+                    bytes(""),
+                    args.hasRetain4626,
+                    false,
+                    args.user,
+                    args.user,
+                    abi.encode(args.superformId, new uint8[](0))
+                )
+            )
+        );
+
+        vm.stopPrank();
     }
 
     function _performSameChainWithdraw(SameChainArgs memory args) internal {
@@ -355,56 +452,24 @@ contract SuperformERC7540FormTest is ProtocolActions {
         vm.stopPrank();
     }
 
-    function _convertDecimals(
-        uint256 amount,
-        address token1,
-        address token2,
-        uint64 chainId1,
-        uint64 chainId2
-    )
-        internal
-        returns (uint256 convertedAmount)
-    {
-        uint256 initialFork = vm.activeFork();
-        vm.selectFork(FORKS[chainId1]);
-        uint256 decimals1 = MockERC20(token1).decimals();
-        vm.selectFork(FORKS[chainId2]);
-        uint256 decimals2 = MockERC20(token2).decimals();
-
-        if (decimals1 > decimals2) {
-            convertedAmount = amount / (10 ** (decimals1 - decimals2));
-        } else {
-            convertedAmount = amount * 10 ** (decimals2 - decimals1);
-        }
-        vm.selectFork(initialFork);
-    }
-
-    struct SameChainDepositLocalVars {
-        address dstSuperformRouter;
-        address superform1;
-        address depositToken;
-        address outputSwapToken;
-        uint256 depositAmountAdjusted;
-        bytes txData;
-    }
-
-    function _performSameChainDepositWithdDifferentAsset(SameChainArgs memory args) internal {
-        SameChainDepositLocalVars memory v;
+    function _performSameChainWithdrawWithDifferentAsset(SameChainArgs memory args) internal {
+        SameChainLocalVars memory v;
         vm.selectFork(FORKS[args.dstChainId]);
         vm.startPrank(args.user);
 
         v.dstSuperformRouter = getContract(args.dstChainId, "SuperformRouter");
-        MockERC20(getContract(args.dstChainId, "USDC")).approve(v.dstSuperformRouter, args.amount);
+
+        SuperPositions(getContract(args.dstChainId, "SuperPositions")).setApprovalForOne(
+            v.dstSuperformRouter, args.superformId, args.amount
+        );
 
         (v.superform1,,) = args.superformId.getSuperform();
-        v.outputSwapToken = args.error == Error.DIFFERENT_TOKENS.selector
-            ? getContract(args.dstChainId, "USDC")
-            : getContract(args.dstChainId, "tUSD");
+
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             1,
+            getContract(args.dstChainId, "tUSD"),
             getContract(args.dstChainId, "USDC"),
-            v.outputSwapToken,
-            v.outputSwapToken,
+            getContract(args.dstChainId, "USDC"),
             v.superform1,
             args.dstChainId,
             args.dstChainId,
@@ -414,7 +479,7 @@ contract SuperformERC7540FormTest is ProtocolActions {
             uint256(args.dstChainId),
             args.amount,
             //1e18,
-            false,
+            true,
             /// @dev placeholder value, not used
             0,
             1,
@@ -424,25 +489,17 @@ contract SuperformERC7540FormTest is ProtocolActions {
         );
         v.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, true);
 
-        v.depositToken = args.error == Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT.selector
-            ? getContract(args.dstChainId, "tUSD")
-            : getContract(args.dstChainId, "USDC");
-        v.depositAmountAdjusted = _convertDecimals(
-            args.amount, v.depositToken, getContract(args.dstChainId, "tUSD"), args.dstChainId, args.dstChainId
-        );
         if (args.error != bytes4(0)) {
             vm.expectRevert(args.error);
         }
-        SuperformRouter(payable(v.dstSuperformRouter)).singleDirectSingleVaultDeposit(
+        SuperformRouter(payable(v.dstSuperformRouter)).singleDirectSingleVaultWithdraw(
             SingleDirectSingleVaultStateReq(
                 SingleVaultSFData(
                     args.superformId,
-                    args.error == Error.DIRECT_DEPOSIT_SWAP_FAILED.selector
-                        ? v.depositAmountAdjusted.mulDiv(20_000, 10_000)
-                        : v.depositAmountAdjusted,
-                    v.depositAmountAdjusted,
+                    args.amount,
+                    args.amount,
                     args.slippage,
-                    LiqRequest(v.txData, v.depositToken, address(0), 1, args.dstChainId, 0),
+                    LiqRequest(v.txData, getContract(args.dstChainId, "tUSD"), address(0), 1, args.dstChainId, 0),
                     bytes(""),
                     args.hasRetain4626,
                     false,
@@ -716,5 +773,29 @@ contract SuperformERC7540FormTest is ProtocolActions {
         assertLt(
             superPositionsAfter, superPositionsBefore, "User's SuperPositions balance should decrease after redeeming"
         );
+    }
+
+    function _convertDecimals(
+        uint256 amount,
+        address token1,
+        address token2,
+        uint64 chainId1,
+        uint64 chainId2
+    )
+        internal
+        returns (uint256 convertedAmount)
+    {
+        uint256 initialFork = vm.activeFork();
+        vm.selectFork(FORKS[chainId1]);
+        uint256 decimals1 = MockERC20(token1).decimals();
+        vm.selectFork(FORKS[chainId2]);
+        uint256 decimals2 = MockERC20(token2).decimals();
+
+        if (decimals1 > decimals2) {
+            convertedAmount = amount / (10 ** (decimals1 - decimals2));
+        } else {
+            convertedAmount = amount * 10 ** (decimals2 - decimals1);
+        }
+        vm.selectFork(initialFork);
     }
 }
