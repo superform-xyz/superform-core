@@ -459,7 +459,7 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
     }
 
     //////////////////////////////////////////////////////////////
-    //              DIRECT WITHDRAW HELPER FUNCTIONS            //
+    //                  WITHDRAW HELPER FUNCTIONS            //
     //////////////////////////////////////////////////////////////
 
     /// @inheritdoc BaseForm
