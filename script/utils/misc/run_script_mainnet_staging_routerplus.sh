@@ -37,10 +37,10 @@ FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy
 wait
 
 
-
+c
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "configureRouterPlusProcessor(uint256,uint256,uint256)" 1 0 0 --rpc-url $BSC_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 wait
-c
+
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "configureRouterPlusProcessor(uint256,uint256,uint256)" 1 1 0 --rpc-url $ARBITRUM_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 wait
 
