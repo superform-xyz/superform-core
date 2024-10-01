@@ -109,11 +109,9 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             D.receiverAddress = new address[](1);
             D.receiverAddress[0] = superformData.receiverAddress;
 
-            D.ambIds = new uint8[][](1);
-            D.ambIds[0] = abi.decode(data.rebalanceToAmbIds, (uint8[]));
+            D.ambIds = data.rebalanceToAmbIds;
 
-            D.dstChainIds = new uint64[](1);
-            D.dstChainIds[0] = abi.decode(data.rebalanceToDstChainIds, (uint64));
+            D.dstChainIds = data.rebalanceToDstChainIds;
         } else if (data.rebalanceSelector == IBaseRouter.singleDirectMultiVaultDeposit.selector) {
             D.superformIds = new uint256[][](1);
             D.amounts = new uint256[][](1);
@@ -141,11 +139,9 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             D.receiverAddress = new address[](1);
             D.receiverAddress[0] = multiSuperformData.receiverAddress;
 
-            D.ambIds = new uint8[][](1);
-            D.ambIds[0] = abi.decode(data.rebalanceToAmbIds, (uint8[]));
+            D.ambIds = data.rebalanceToAmbIds;
 
-            D.dstChainIds = new uint64[](1);
-            D.dstChainIds[0] = abi.decode(data.rebalanceToDstChainIds, (uint64));
+            D.dstChainIds = data.rebalanceToDstChainIds;
         } else if (data.rebalanceSelector == IBaseRouter.multiDstSingleVaultDeposit.selector) {
             SingleVaultSFData[] memory superformsData = abi.decode(data.rebalanceToSfData, (SingleVaultSFData[]));
             uint256 lenDsts = superformsData.length;
@@ -157,8 +153,8 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             D.ambIds = new uint8[][](lenDsts);
             D.dstChainIds = new uint64[](lenDsts);
 
-            D.ambIds = abi.decode(data.rebalanceToAmbIds, (uint8[][]));
-            D.dstChainIds = abi.decode(data.rebalanceToDstChainIds, (uint64[]));
+            D.ambIds = data.rebalanceToAmbIds;
+            D.dstChainIds = data.rebalanceToDstChainIds;
 
             for (uint256 i; i < lenDsts; ++i) {
                 uint256[] memory tSuperformIds = new uint256[](1);
@@ -186,8 +182,8 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             D.ambIds = new uint8[][](lenDsts);
             D.dstChainIds = new uint64[](lenDsts);
 
-            D.ambIds = abi.decode(data.rebalanceToAmbIds, (uint8[][]));
-            D.dstChainIds = abi.decode(data.rebalanceToDstChainIds, (uint64[]));
+            D.ambIds = data.rebalanceToAmbIds;
+            D.dstChainIds = data.rebalanceToDstChainIds;
 
             for (uint256 i; i < lenDsts; ++i) {
                 D.superformIds[i] = multiSuperformData[i].superformIds;
@@ -310,9 +306,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
                 IBaseRouter.singleXChainSingleVaultDeposit,
                 (
                     SingleXChainSingleVaultStateReq(
-                        abi.decode(data.rebalanceToAmbIds, (uint8[])),
-                        abi.decode(data.rebalanceToDstChainIds, (uint64)),
-                        superformData
+                        data.rebalanceToAmbIds[0], data.rebalanceToDstChainIds[0], superformData
                     )
                 )
             );
@@ -347,9 +341,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
                 IBaseRouter.singleXChainMultiVaultDeposit,
                 (
                     SingleXChainMultiVaultStateReq(
-                        abi.decode(data.rebalanceToAmbIds, (uint8[])),
-                        abi.decode(data.rebalanceToDstChainIds, (uint64)),
-                        multiSuperformData
+                        data.rebalanceToAmbIds[0], data.rebalanceToDstChainIds[0], multiSuperformData
                     )
                 )
             );
@@ -380,13 +372,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
 
             vars.rebalanceToCallData = abi.encodeCall(
                 IBaseRouter.multiDstSingleVaultDeposit,
-                (
-                    MultiDstSingleVaultStateReq(
-                        abi.decode(data.rebalanceToAmbIds, (uint8[][])),
-                        abi.decode(data.rebalanceToDstChainIds, (uint64[])),
-                        superformsData
-                    )
-                )
+                (MultiDstSingleVaultStateReq(data.rebalanceToAmbIds, data.rebalanceToDstChainIds, superformsData))
             );
         } else if (data.rebalanceSelector == IBaseRouter.multiDstMultiVaultDeposit.selector) {
             MultiVaultSFData[] memory multiSuperformData = abi.decode(data.rebalanceToSfData, (MultiVaultSFData[]));
@@ -408,13 +394,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
 
             vars.rebalanceToCallData = abi.encodeCall(
                 IBaseRouter.multiDstMultiVaultDeposit,
-                (
-                    MultiDstMultiVaultStateReq(
-                        abi.decode(data.rebalanceToAmbIds, (uint8[][])),
-                        abi.decode(data.rebalanceToDstChainIds, (uint64[])),
-                        multiSuperformData
-                    )
-                )
+                (MultiDstMultiVaultStateReq(data.rebalanceToAmbIds, data.rebalanceToDstChainIds, multiSuperformData))
             );
         }
 

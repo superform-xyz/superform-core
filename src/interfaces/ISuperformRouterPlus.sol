@@ -166,8 +166,8 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
         uint256 expectedAmountInterimAsset;
         bytes4 rebalanceToSelector;
         bytes callData;
-        bytes rebalanceToAmbIds;
-        bytes rebalanceToDstChainIds;
+        uint8[][] rebalanceToAmbIds;
+        uint64[] rebalanceToDstChainIds;
         bytes rebalanceToSfData;
     }
 
@@ -180,8 +180,8 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
         uint256 expectedAmountInterimAsset;
         bytes4 rebalanceToSelector;
         bytes callData;
-        bytes rebalanceToAmbIds;
-        bytes rebalanceToDstChainIds;
+        uint8[][] rebalanceToAmbIds;
+        uint64[] rebalanceToDstChainIds;
         bytes rebalanceToSfData;
     }
 
