@@ -542,9 +542,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             if (sfData.liqRequests[i].token != liqRequests[i].token) {
                 revert COMPLETE_REBALANCE_DIFFERENT_TOKEN();
             }
-            if (sfData.liqRequests[i].interimToken != liqRequests[i].interimToken) {
-                revert COMPLETE_REBALANCE_DIFFERENT_TOKEN();
-            }
+
             if (sfData.liqRequests[i].bridgeId != liqRequests[i].bridgeId) {
                 revert COMPLETE_REBALANCE_DIFFERENT_BRIDGE_ID();
             }
@@ -558,6 +556,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             // Update txData and nativeAmount
             sfData.liqRequests[i].txData = liqRequests[i].txData;
             sfData.liqRequests[i].nativeAmount = liqRequests[i].nativeAmount;
+            sfData.liqRequests[i].interimToken = liqRequests[i].interimToken;
         }
 
         return sfData;

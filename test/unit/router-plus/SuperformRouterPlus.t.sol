@@ -1841,14 +1841,6 @@ contract SuperformRouterPlusTest is ProtocolActions {
         vm.expectRevert(ISuperformRouterPlusAsync.COMPLETE_REBALANCE_DIFFERENT_TOKEN.selector);
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
 
-        // Test COMPLETE_REBALANCE_DIFFERENT_TOKEN error
-        completeArgs.liqRequests[0][0].txData = "invalid-tx-data";
-        completeArgs.liqRequests[0][0].token = getContract(SOURCE_CHAIN, "DAI");
-        completeArgs.liqRequests[0][0].interimToken = address(0x123);
-
-        vm.expectRevert(ISuperformRouterPlusAsync.COMPLETE_REBALANCE_DIFFERENT_TOKEN.selector);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
-
         // Reset token
         completeArgs.liqRequests[0][0].interimToken = address(0);
 
