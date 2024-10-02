@@ -1795,7 +1795,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         deal(args.interimAsset, address(ROUTER_PLUS_ASYNC_SOURCE), completeArgs.amountReceivedInterimAsset * 3);
 
-        /// @dev simulating positive slippage
+        /// @dev simulating negative slippage
         completeArgs.amountReceivedInterimAsset = completeArgs.amountReceivedInterimAsset * 3;
         vm.expectRevert(Error.NEGATIVE_SLIPPAGE.selector);
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
