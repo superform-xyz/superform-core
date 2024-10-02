@@ -676,8 +676,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
             interimAsset: getContract(SOURCE_CHAIN, "USDC"),
             slippage: 100,
             expectedAmountInterimAsset: 1e18,
-            rebalanceToAmbIds: abi.encode(new uint8[](0)),
-            rebalanceToDstChainIds: abi.encode(new uint64[](0)),
+            rebalanceToAmbIds: new uint8[][](0),
+            rebalanceToDstChainIds: new uint64[](0),
             rebalanceToSfData: abi.encode(new bytes[](0))
         });
 
@@ -701,8 +701,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
                 interimAsset: address(0x123),
                 slippage: 100,
                 expectedAmountInterimAsset: 1e18,
-                rebalanceToAmbIds: "",
-                rebalanceToDstChainIds: "",
+                rebalanceToAmbIds: new uint8[][](0),
+                rebalanceToDstChainIds: new uint64[](0),
                 rebalanceToSfData: abi.encode(
                     SingleVaultSFData({
                         superformId: 1,
@@ -743,13 +743,18 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         // Test case 2: singleXChainSingleVaultDeposit
         {
+            uint8[][] memory multiDstAmbIds = new uint8[][](1);
+            multiDstAmbIds[0] = AMBs;
+            uint64[] memory multiDsts = new uint64[](1);
+            multiDsts[0] = OP;
+
             IBaseSuperformRouterPlus.XChainRebalanceData memory data = IBaseSuperformRouterPlus.XChainRebalanceData({
                 rebalanceSelector: IBaseRouter.singleXChainSingleVaultDeposit.selector,
                 interimAsset: address(0x234),
                 slippage: 200,
                 expectedAmountInterimAsset: 2e18,
-                rebalanceToAmbIds: abi.encode(AMBs),
-                rebalanceToDstChainIds: abi.encode(uint64(OP)),
+                rebalanceToAmbIds: multiDstAmbIds,
+                rebalanceToDstChainIds: multiDsts,
                 rebalanceToSfData: abi.encode(
                     SingleVaultSFData({
                         superformId: 2,
@@ -798,8 +803,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
                 interimAsset: address(0x345),
                 slippage: 300,
                 expectedAmountInterimAsset: 3e18,
-                rebalanceToAmbIds: "",
-                rebalanceToDstChainIds: "",
+                rebalanceToAmbIds: new uint8[][](0),
+                rebalanceToDstChainIds: new uint64[](0),
                 rebalanceToSfData: abi.encode(
                     MultiVaultSFData({
                         superformIds: new uint256[](2),
@@ -869,14 +874,17 @@ contract SuperformRouterPlusTest is ProtocolActions {
             multiVaultData.outputAmounts[1] = 2e18;
             multiVaultData.maxSlippages[0] = 400;
             multiVaultData.maxSlippages[1] = 400;
-
+            uint8[][] memory multiDstAmbIds = new uint8[][](1);
+            multiDstAmbIds[0] = AMBs;
+            uint64[] memory multiDsts = new uint64[](1);
+            multiDsts[0] = ETH;
             IBaseSuperformRouterPlus.XChainRebalanceData memory data = IBaseSuperformRouterPlus.XChainRebalanceData({
                 rebalanceSelector: IBaseRouter.singleXChainMultiVaultDeposit.selector,
                 interimAsset: address(0x456),
                 slippage: 400,
                 expectedAmountInterimAsset: 4e18,
-                rebalanceToAmbIds: abi.encode(AMBs),
-                rebalanceToDstChainIds: abi.encode(uint64(ETH)),
+                rebalanceToAmbIds: multiDstAmbIds,
+                rebalanceToDstChainIds: multiDsts,
                 rebalanceToSfData: abi.encode(multiVaultData)
             });
 
@@ -961,8 +969,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
                 interimAsset: address(0x567),
                 slippage: 500,
                 expectedAmountInterimAsset: 5e18,
-                rebalanceToAmbIds: abi.encode(ambIds),
-                rebalanceToDstChainIds: abi.encode(dstChainIds),
+                rebalanceToAmbIds: ambIds,
+                rebalanceToDstChainIds: dstChainIds,
                 rebalanceToSfData: abi.encode(singleVaultData)
             });
 
@@ -1034,8 +1042,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
                 interimAsset: address(0x678),
                 slippage: 600,
                 expectedAmountInterimAsset: 6e18,
-                rebalanceToAmbIds: abi.encode(ambIds),
-                rebalanceToDstChainIds: abi.encode(dstChainIds),
+                rebalanceToAmbIds: ambIds,
+                rebalanceToDstChainIds: dstChainIds,
                 rebalanceToSfData: abi.encode(multiVaultData)
             });
 
@@ -1082,8 +1090,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
                 interimAsset: address(0x789),
                 slippage: 700,
                 expectedAmountInterimAsset: 7e18,
-                rebalanceToAmbIds: "",
-                rebalanceToDstChainIds: "",
+                rebalanceToAmbIds: new uint8[][](0),
+                rebalanceToDstChainIds: new uint64[](0),
                 rebalanceToSfData: ""
             });
 
@@ -1124,8 +1132,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
             interimAsset: getContract(SOURCE_CHAIN, "DAI"),
             slippage: 100,
             expectedAmountInterimAsset: 1e18,
-            rebalanceToAmbIds: abi.encode(new uint8[](0)),
-            rebalanceToDstChainIds: abi.encode(new uint64[](0)),
+            rebalanceToAmbIds: new uint8[][](0),
+            rebalanceToDstChainIds: new uint64[](0),
             rebalanceToSfData: abi.encode(sfData)
         });
 
@@ -1210,8 +1218,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
             interimAsset: interimAsset,
             slippage: 100,
             expectedAmountInterimAsset: 1e18,
-            rebalanceToAmbIds: abi.encode(new uint8[](0)),
-            rebalanceToDstChainIds: abi.encode(new uint64[](0)),
+            rebalanceToAmbIds: new uint8[][](0),
+            rebalanceToDstChainIds: new uint64[](0),
             rebalanceToSfData: abi.encode(sfData)
         });
 
@@ -1380,8 +1388,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
             interimAsset: getContract(SOURCE_CHAIN, "DAI"),
             slippage: 100,
             expectedAmountInterimAsset: 1e18,
-            rebalanceToAmbIds: abi.encode(new uint8[](0)),
-            rebalanceToDstChainIds: abi.encode(new uint64[](0)),
+            rebalanceToAmbIds: new uint8[][](0),
+            rebalanceToDstChainIds: new uint64[](0),
             rebalanceToSfData: abi.encode(superformsData)
         });
 
@@ -1475,8 +1483,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
             interimAsset: interimAsset,
             slippage: 100,
             expectedAmountInterimAsset: 1e18,
-            rebalanceToAmbIds: abi.encode(new uint8[](0)),
-            rebalanceToDstChainIds: abi.encode(new uint64[](0)),
+            rebalanceToAmbIds: new uint8[][](0),
+            rebalanceToDstChainIds: new uint64[](0),
             rebalanceToSfData: abi.encode(multiVaultSFData)
         });
 
@@ -1550,8 +1558,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
             interimAsset: getContract(SOURCE_CHAIN, "DAI"),
             slippage: 100,
             expectedAmountInterimAsset: 1e18,
-            rebalanceToAmbIds: abi.encode(new uint8[](0)),
-            rebalanceToDstChainIds: abi.encode(new uint64[](0)),
+            rebalanceToAmbIds: new uint8[][](0),
+            rebalanceToDstChainIds: new uint64[](0),
             rebalanceToSfData: abi.encode(sfData)
         });
 
@@ -1742,6 +1750,58 @@ contract SuperformRouterPlusTest is ProtocolActions {
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).finalizeRefund(1);
     }
 
+    function test_crossChainRebalance_negativeSlippage() public {
+        vm.startPrank(deployer);
+
+        uint64 REBALANCE_FROM = ETH;
+        uint64 REBALANCE_TO = OP;
+
+        // Step 1: Initial XCHAIN Deposit
+        _xChainDeposit(superformId5ETH, REBALANCE_FROM, 1);
+
+        // Step 2: Start cross-chain rebalance
+        vm.selectFork(FORKS[SOURCE_CHAIN]);
+        ISuperformRouterPlus.InitiateXChainRebalanceArgs memory args =
+            _buildInitiateXChainRebalanceArgs(REBALANCE_FROM, REBALANCE_TO, deployer);
+
+        vm.startPrank(deployer);
+
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(
+            ROUTER_PLUS_SOURCE, superformId5ETH, args.sharesToRedeem
+        );
+        vm.recordLogs();
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalance{ value: 2 ether }(args);
+
+        // Step 3: Process XChain Withdraw (rebalance from)
+        uint256 balanceOfInterimAssetBefore =
+            MockERC20(args.interimAsset).balanceOf(getContract(SOURCE_CHAIN, "SuperformRouterPlusAsync"));
+
+        _processXChainWithdrawOneVault(SOURCE_CHAIN, REBALANCE_FROM, vm.getRecordedLogs(), 2);
+
+        vm.selectFork(FORKS[SOURCE_CHAIN]);
+        uint256 balanceOfInterimAssetAfter =
+            MockERC20(args.interimAsset).balanceOf(getContract(SOURCE_CHAIN, "SuperformRouterPlusAsync"));
+
+        uint256 interimAmountOnRouterPlusAsync = balanceOfInterimAssetAfter - balanceOfInterimAssetBefore;
+
+        ISuperformRouterPlusAsync.CompleteCrossChainRebalanceArgs memory completeArgs =
+            _buildCompleteCrossChainRebalanceArgs(interimAmountOnRouterPlusAsync, superformId4OP, REBALANCE_TO);
+
+        // Step 4: Complete cross-chain rebalance
+        vm.startPrank(deployer);
+
+        completeArgs =
+            _buildCompleteCrossChainRebalanceArgs(interimAmountOnRouterPlusAsync, superformId4OP, REBALANCE_TO);
+
+        deal(args.interimAsset, address(ROUTER_PLUS_ASYNC_SOURCE), completeArgs.amountReceivedInterimAsset * 3);
+
+        /// @dev simulating negative slippage
+        completeArgs.amountReceivedInterimAsset = completeArgs.amountReceivedInterimAsset * 3;
+        vm.expectRevert(Error.NEGATIVE_SLIPPAGE.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
+        vm.stopPrank();
+    }
+
     function test_crossChainRebalance_updateSuperformData_allErrors() public {
         vm.selectFork(FORKS[SOURCE_CHAIN]);
         SingleVaultSFData memory sfData = SingleVaultSFData({
@@ -1770,8 +1830,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
             interimAsset: getContract(SOURCE_CHAIN, "DAI"),
             slippage: 100,
             expectedAmountInterimAsset: 1e18,
-            rebalanceToAmbIds: abi.encode(new uint8[](0)),
-            rebalanceToDstChainIds: abi.encode(new uint64[](0)),
+            rebalanceToAmbIds: new uint8[][](0),
+            rebalanceToDstChainIds: new uint64[](0),
             rebalanceToSfData: abi.encode(sfData)
         });
 
@@ -1833,16 +1893,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
         vm.expectRevert(ISuperformRouterPlusAsync.COMPLETE_REBALANCE_DIFFERENT_TOKEN.selector);
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
 
-        // Test COMPLETE_REBALANCE_DIFFERENT_TOKEN error
-        completeArgs.liqRequests[0][0].txData = "invalid-tx-data";
-        completeArgs.liqRequests[0][0].token = getContract(SOURCE_CHAIN, "DAI");
-        completeArgs.liqRequests[0][0].interimToken = address(0x123);
-
-        vm.expectRevert(ISuperformRouterPlusAsync.COMPLETE_REBALANCE_DIFFERENT_TOKEN.selector);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
-
         // Reset token
-        completeArgs.liqRequests[0][0].interimToken = address(0);
+        completeArgs.liqRequests[0][0].token = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
 
         // Test COMPLETE_REBALANCE_DIFFERENT_BRIDGE_ID error
         completeArgs.liqRequests[0][0].bridgeId = 2;
@@ -1874,8 +1926,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
             interimAsset: getContract(SOURCE_CHAIN, "DAI"),
             slippage: 100,
             expectedAmountInterimAsset: 1e18,
-            rebalanceToAmbIds: abi.encode(new uint8[](0)),
-            rebalanceToDstChainIds: abi.encode(new uint64[](0)),
+            rebalanceToAmbIds: new uint8[][](0),
+            rebalanceToDstChainIds: new uint64[](0),
             rebalanceToSfData: abi.encode(sfData)
         });
 
@@ -2519,8 +2571,11 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         /// @dev rebalance to call data formulation for a xchain deposit
         args.rebalanceToSelector = IBaseRouter.singleXChainSingleVaultDeposit.selector;
-        args.rebalanceToAmbIds = abi.encode(AMBs);
-        args.rebalanceToDstChainIds = abi.encode(uint64(REBALANCE_TO));
+
+        args.rebalanceToAmbIds = new uint8[][](1);
+        args.rebalanceToAmbIds[0] = AMBs;
+        args.rebalanceToDstChainIds = new uint64[](1);
+        args.rebalanceToDstChainIds[0] = REBALANCE_TO;
 
         vm.selectFork(FORKS[REBALANCE_TO]);
 
@@ -2781,8 +2836,11 @@ contract SuperformRouterPlusTest is ProtocolActions {
         args.callData = _callDataRebalanceFromMultiXChain(args.interimAsset, args.ids, REBALANCE_FROM);
 
         args.rebalanceToSelector = IBaseRouter.singleXChainSingleVaultDeposit.selector;
-        args.rebalanceToAmbIds = abi.encode(AMBs);
-        args.rebalanceToDstChainIds = abi.encode(uint64(REBALANCE_TO));
+
+        args.rebalanceToAmbIds = new uint8[][](1);
+        args.rebalanceToAmbIds[0] = AMBs;
+        args.rebalanceToDstChainIds = new uint64[](1);
+        args.rebalanceToDstChainIds[0] = REBALANCE_TO;
 
         vm.selectFork(FORKS[REBALANCE_TO]);
 
@@ -2897,8 +2955,14 @@ contract SuperformRouterPlusTest is ProtocolActions {
         args.callData = _callDataRebalanceFromMultiDst(args.interimAsset, args.ids, REBALANCE_FROM_1, REBALANCE_FROM_2);
 
         args.rebalanceToSelector = IBaseRouter.singleXChainSingleVaultDeposit.selector;
-        args.rebalanceToAmbIds = abi.encode(AMBs);
-        args.rebalanceToDstChainIds = abi.encode(uint64(REBALANCE_TO));
+
+        uint8[][] memory multiDstAmbIds = new uint8[][](1);
+        multiDstAmbIds[0] = AMBs;
+        uint64[] memory multiDsts = new uint64[](1);
+        multiDsts[0] = REBALANCE_TO;
+
+        args.rebalanceToAmbIds = multiDstAmbIds;
+        args.rebalanceToDstChainIds = multiDsts;
 
         vm.selectFork(FORKS[REBALANCE_TO]);
         // Prepare rebalanceToSfData for single vault deposit
@@ -2934,12 +2998,10 @@ contract SuperformRouterPlusTest is ProtocolActions {
             REBALANCE_TO
         );
 
-        uint256 expectedOutputAmount = IBaseForm(superform4OP).previewDepositTo(expectedAmountToReceiveAfterBridge);
-
         SingleVaultSFData memory sfData = SingleVaultSFData({
             superformId: superformId4OP,
             amount: expectedAmountToReceiveAfterBridge,
-            outputAmount: expectedOutputAmount,
+            outputAmount: IBaseForm(superform4OP).previewDepositTo(expectedAmountToReceiveAfterBridge),
             maxSlippage: 100,
             liqRequest: LiqRequest({
                 txData: _buildLiqBridgeTxData(liqBridgeTxDataArgs, false),
@@ -3023,8 +3085,11 @@ contract SuperformRouterPlusTest is ProtocolActions {
             _callDataRebalanceFromMultiDstMultiVault(args.interimAsset, args.ids, REBALANCE_FROM_1, REBALANCE_FROM_2);
 
         args.rebalanceToSelector = IBaseRouter.singleXChainSingleVaultDeposit.selector;
-        args.rebalanceToAmbIds = abi.encode(AMBs);
-        args.rebalanceToDstChainIds = abi.encode(uint64(REBALANCE_TO));
+
+        args.rebalanceToAmbIds = new uint8[][](1);
+        args.rebalanceToAmbIds[0] = AMBs;
+        args.rebalanceToDstChainIds = new uint64[](1);
+        args.rebalanceToDstChainIds[0] = REBALANCE_TO;
 
         vm.selectFork(FORKS[REBALANCE_TO]);
         // Prepare rebalanceToSfData for single vault deposit
@@ -3967,6 +4032,11 @@ contract SuperformRouterPlusTest is ProtocolActions {
             })
         });
 
+        uint8[][] memory multiDstAmbIds = new uint8[][](1);
+        multiDstAmbIds[0] = AMBs;
+        uint64[] memory multiDsts = new uint64[](1);
+        multiDsts[0] = OP;
+
         return ISuperformRouterPlus.InitiateXChainRebalanceArgs({
             id: superformId5ETH,
             sharesToRedeem: sharesToRedeem,
@@ -3976,8 +4046,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
             finalizeSlippage: 100,
             callData: abi.encodeWithSelector(IBaseRouter.singleXChainSingleVaultWithdraw.selector, req),
             rebalanceToSelector: IBaseRouter.singleXChainSingleVaultDeposit.selector,
-            rebalanceToAmbIds: abi.encode(AMBs),
-            rebalanceToDstChainIds: abi.encode(uint64(OP)),
+            rebalanceToAmbIds: multiDstAmbIds,
+            rebalanceToDstChainIds: multiDsts,
             rebalanceToSfData: ""
         });
     }
@@ -4008,6 +4078,11 @@ contract SuperformRouterPlusTest is ProtocolActions {
         uint64 REBALANCE_FROM = ETH;
         uint64 REBALANCE_TO = OP;
 
+        uint8[][] memory multiDstAmbIds = new uint8[][](1);
+        multiDstAmbIds[0] = AMBs;
+        uint64[] memory multiDsts = new uint64[](1);
+        multiDsts[0] = REBALANCE_TO;
+
         return ISuperformRouterPlus.InitiateXChainRebalanceMultiArgs({
             ids: superformIds,
             sharesToRedeem: sharesToRedeem,
@@ -4017,8 +4092,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
             finalizeSlippage: 100,
             callData: _buildSingleXChainMultiVaultWithdrawCallData(interimAsset, superformIds, REBALANCE_FROM),
             rebalanceToSelector: IBaseRouter.singleXChainSingleVaultDeposit.selector,
-            rebalanceToAmbIds: abi.encode(AMBs),
-            rebalanceToDstChainIds: abi.encode(REBALANCE_TO),
+            rebalanceToAmbIds: multiDstAmbIds,
+            rebalanceToDstChainIds: multiDsts,
             rebalanceToSfData: "" // This would typically contain encoded data for the destination superform
          });
     }

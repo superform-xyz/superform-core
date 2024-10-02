@@ -109,11 +109,9 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             D.receiverAddress = new address[](1);
             D.receiverAddress[0] = superformData.receiverAddress;
 
-            D.ambIds = new uint8[][](1);
-            D.ambIds[0] = abi.decode(data.rebalanceToAmbIds, (uint8[]));
+            D.ambIds = data.rebalanceToAmbIds;
 
-            D.dstChainIds = new uint64[](1);
-            D.dstChainIds[0] = abi.decode(data.rebalanceToDstChainIds, (uint64));
+            D.dstChainIds = data.rebalanceToDstChainIds;
         } else if (data.rebalanceSelector == IBaseRouter.singleDirectMultiVaultDeposit.selector) {
             D.superformIds = new uint256[][](1);
             D.amounts = new uint256[][](1);
@@ -141,11 +139,9 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             D.receiverAddress = new address[](1);
             D.receiverAddress[0] = multiSuperformData.receiverAddress;
 
-            D.ambIds = new uint8[][](1);
-            D.ambIds[0] = abi.decode(data.rebalanceToAmbIds, (uint8[]));
+            D.ambIds = data.rebalanceToAmbIds;
 
-            D.dstChainIds = new uint64[](1);
-            D.dstChainIds[0] = abi.decode(data.rebalanceToDstChainIds, (uint64));
+            D.dstChainIds = data.rebalanceToDstChainIds;
         } else if (data.rebalanceSelector == IBaseRouter.multiDstSingleVaultDeposit.selector) {
             SingleVaultSFData[] memory superformsData = abi.decode(data.rebalanceToSfData, (SingleVaultSFData[]));
             uint256 lenDsts = superformsData.length;
@@ -157,8 +153,8 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             D.ambIds = new uint8[][](lenDsts);
             D.dstChainIds = new uint64[](lenDsts);
 
-            D.ambIds = abi.decode(data.rebalanceToAmbIds, (uint8[][]));
-            D.dstChainIds = abi.decode(data.rebalanceToDstChainIds, (uint64[]));
+            D.ambIds = data.rebalanceToAmbIds;
+            D.dstChainIds = data.rebalanceToDstChainIds;
 
             for (uint256 i; i < lenDsts; ++i) {
                 uint256[] memory tSuperformIds = new uint256[](1);
@@ -186,8 +182,8 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             D.ambIds = new uint8[][](lenDsts);
             D.dstChainIds = new uint64[](lenDsts);
 
-            D.ambIds = abi.decode(data.rebalanceToAmbIds, (uint8[][]));
-            D.dstChainIds = abi.decode(data.rebalanceToDstChainIds, (uint64[]));
+            D.ambIds = data.rebalanceToAmbIds;
+            D.dstChainIds = data.rebalanceToDstChainIds;
 
             for (uint256 i; i < lenDsts; ++i) {
                 D.superformIds[i] = multiSuperformData[i].superformIds;
@@ -243,6 +239,16 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             revert Error.INSUFFICIENT_BALANCE();
         }
 
+        /// @dev We don't allow negative slippage (and funds are not rescued)
+        /// @notice This means that a keeper has to re-submit a completeCrossChainRebalance call
+        /// @notice With an amount received lower than expected
+        if (args_.amountReceivedInterimAsset > data.expectedAmountInterimAsset) {
+            revert Error.NEGATIVE_SLIPPAGE();
+        }
+
+        /// @dev any funds left between received and expected remain in this contract
+        /// @notice this dust collected cannot be moved outside of this contract but in theory could be used
+        /// @notice in future cross chain rebalances (of other users), up to  expectedAmountInterimAsset
         if (
             ENTIRE_SLIPPAGE * args_.amountReceivedInterimAsset
                 < ((data.expectedAmountInterimAsset * (ENTIRE_SLIPPAGE - data.slippage)))
@@ -256,14 +262,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             return false;
         }
 
-        /// TODO verify if this is desired or we just deposit amountReceivedInterimAsset_
-        /// The idea is that balance here can be greater or equal to amountReceivedInterimAsset_
-        /// If the balance is greater or equal than expected amount then the difference is sent to paymaster
-        /// If it is lower then the full balance is deposited (which can be equal to amountReceivedInterimAsset_ or not)
-        /// This means that at most, expectedAmountInterimAsset can be sent as external token and the rebalanceToSfData
-        /// information in amounts/outputAmounts should have that reflected from the get go in the first step
         vars.interimAsset = IERC20(data.interimAsset);
-        vars.amountToDeposit = data.expectedAmountInterimAsset;
 
         /// @dev validate the update of txData by the keeper and re-construct calldata
         /// @notice if there is any failure here because of rebalanceToData misconfiguration a refund should be
@@ -310,9 +309,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
                 IBaseRouter.singleXChainSingleVaultDeposit,
                 (
                     SingleXChainSingleVaultStateReq(
-                        abi.decode(data.rebalanceToAmbIds, (uint8[])),
-                        abi.decode(data.rebalanceToDstChainIds, (uint64)),
-                        superformData
+                        data.rebalanceToAmbIds[0], data.rebalanceToDstChainIds[0], superformData
                     )
                 )
             );
@@ -347,9 +344,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
                 IBaseRouter.singleXChainMultiVaultDeposit,
                 (
                     SingleXChainMultiVaultStateReq(
-                        abi.decode(data.rebalanceToAmbIds, (uint8[])),
-                        abi.decode(data.rebalanceToDstChainIds, (uint64)),
-                        multiSuperformData
+                        data.rebalanceToAmbIds[0], data.rebalanceToDstChainIds[0], multiSuperformData
                     )
                 )
             );
@@ -380,13 +375,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
 
             vars.rebalanceToCallData = abi.encodeCall(
                 IBaseRouter.multiDstSingleVaultDeposit,
-                (
-                    MultiDstSingleVaultStateReq(
-                        abi.decode(data.rebalanceToAmbIds, (uint8[][])),
-                        abi.decode(data.rebalanceToDstChainIds, (uint64[])),
-                        superformsData
-                    )
-                )
+                (MultiDstSingleVaultStateReq(data.rebalanceToAmbIds, data.rebalanceToDstChainIds, superformsData))
             );
         } else if (data.rebalanceSelector == IBaseRouter.multiDstMultiVaultDeposit.selector) {
             MultiVaultSFData[] memory multiSuperformData = abi.decode(data.rebalanceToSfData, (MultiVaultSFData[]));
@@ -408,20 +397,14 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
 
             vars.rebalanceToCallData = abi.encodeCall(
                 IBaseRouter.multiDstMultiVaultDeposit,
-                (
-                    MultiDstMultiVaultStateReq(
-                        abi.decode(data.rebalanceToAmbIds, (uint8[][])),
-                        abi.decode(data.rebalanceToDstChainIds, (uint64[])),
-                        multiSuperformData
-                    )
-                )
+                (MultiDstMultiVaultStateReq(data.rebalanceToAmbIds, data.rebalanceToDstChainIds, multiSuperformData))
             );
         }
 
         _deposit(
             _getAddress(keccak256("SUPERFORM_ROUTER")),
             vars.interimAsset,
-            vars.amountToDeposit,
+            args_.amountReceivedInterimAsset,
             msg.value,
             vars.rebalanceToCallData
         );
@@ -476,34 +459,6 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
 
         emit RefundCompleted(routerPlusPayloadId_, msg.sender);
     }
-    /*
-    /// @inheritdoc ISuperformRouterPlusAsync
-    function forwardDustToPaymaster(address token_) external override {
-        if (token_ == address(0)) revert Error.ZERO_ADDRESS();
-
-        address paymaster = _getAddress(keccak256("PAYMASTER"));
-        IERC20 token = IERC20(token_);
-
-        SuperformFactory factory = SuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY")));
-
-        address[] memory formImplementations = factory.formImplementations();
-        uint256 len = formImplementations.length;
-
-        bool allPaused = true;
-        for (uint256 i; i < len; ++i) {
-            allPaused =
-    allPaused && factory.isFormImplementationPaused(factory.formImplementationIds(formImplementations[i]));
-        }
-
-        if (allPaused) {
-            uint256 dust = token.balanceOf(address(this));
-            if (dust != 0) {
-                token.safeTransfer(paymaster, dust);
-                emit RouterPlusDustForwardedToPaymaster(token_, dust);
-            }
-        }
-    }
-    */
 
     //////////////////////////////////////////////////////////////
     //                   INTERNAL FUNCTIONS                     //
@@ -562,9 +517,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             if (sfData.liqRequests[i].token != liqRequests[i].token) {
                 revert COMPLETE_REBALANCE_DIFFERENT_TOKEN();
             }
-            if (sfData.liqRequests[i].interimToken != liqRequests[i].interimToken) {
-                revert COMPLETE_REBALANCE_DIFFERENT_TOKEN();
-            }
+
             if (sfData.liqRequests[i].bridgeId != liqRequests[i].bridgeId) {
                 revert COMPLETE_REBALANCE_DIFFERENT_BRIDGE_ID();
             }
@@ -578,6 +531,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             // Update txData and nativeAmount
             sfData.liqRequests[i].txData = liqRequests[i].txData;
             sfData.liqRequests[i].nativeAmount = liqRequests[i].nativeAmount;
+            sfData.liqRequests[i].interimToken = liqRequests[i].interimToken;
         }
 
         return sfData;

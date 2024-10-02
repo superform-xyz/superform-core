@@ -18,8 +18,8 @@ interface IBaseSuperformRouterPlus {
         address interimAsset;
         uint256 slippage;
         uint256 expectedAmountInterimAsset;
-        bytes rebalanceToAmbIds;
-        bytes rebalanceToDstChainIds;
+        uint8[][] rebalanceToAmbIds;
+        uint64[] rebalanceToDstChainIds;
         bytes rebalanceToSfData;
     }
 
