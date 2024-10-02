@@ -1842,7 +1842,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
 
         // Reset token
-        completeArgs.liqRequests[0][0].interimToken = address(0);
+        completeArgs.liqRequests[0][0].token = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
 
         // Test COMPLETE_REBALANCE_DIFFERENT_BRIDGE_ID error
         completeArgs.liqRequests[0][0].bridgeId = 2;
