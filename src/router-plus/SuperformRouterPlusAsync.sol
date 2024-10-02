@@ -239,6 +239,16 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             revert Error.INSUFFICIENT_BALANCE();
         }
 
+        /// @dev We don't allow negative slippage (and funds are not rescued)
+        /// @notice This means that a keeper has to re-submit a completeCrossChainRebalance call
+        /// @notice With an amount received lower than expected
+        if (args_.amountReceivedInterimAsset > data.expectedAmountInterimAsset) {
+            revert Error.NEGATIVE_SLIPPAGE();
+        }
+
+        /// @dev any funds left between received and expected remain in this contract
+        /// @notice this dust collected cannot be moved outside of this contract but in theory could be used
+        /// @notice in future cross chain rebalances (of other users), up to  expectedAmountInterimAsset
         if (
             ENTIRE_SLIPPAGE * args_.amountReceivedInterimAsset
                 < ((data.expectedAmountInterimAsset * (ENTIRE_SLIPPAGE - data.slippage)))
@@ -252,14 +262,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             return false;
         }
 
-        /// TODO verify if this is desired or we just deposit amountReceivedInterimAsset_
-        /// The idea is that balance here can be greater or equal to amountReceivedInterimAsset_
-        /// If the balance is greater or equal than expected amount then the difference is sent to paymaster
-        /// If it is lower then the full balance is deposited (which can be equal to amountReceivedInterimAsset_ or not)
-        /// This means that at most, expectedAmountInterimAsset can be sent as external token and the rebalanceToSfData
-        /// information in amounts/outputAmounts should have that reflected from the get go in the first step
         vars.interimAsset = IERC20(data.interimAsset);
-        vars.amountToDeposit = data.expectedAmountInterimAsset;
 
         /// @dev validate the update of txData by the keeper and re-construct calldata
         /// @notice if there is any failure here because of rebalanceToData misconfiguration a refund should be
@@ -401,7 +404,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         _deposit(
             _getAddress(keccak256("SUPERFORM_ROUTER")),
             vars.interimAsset,
-            vars.amountToDeposit,
+            args_.amountReceivedInterimAsset,
             msg.value,
             vars.rebalanceToCallData
         );
@@ -456,34 +459,6 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
 
         emit RefundCompleted(routerPlusPayloadId_, msg.sender);
     }
-    /*
-    /// @inheritdoc ISuperformRouterPlusAsync
-    function forwardDustToPaymaster(address token_) external override {
-        if (token_ == address(0)) revert Error.ZERO_ADDRESS();
-
-        address paymaster = _getAddress(keccak256("PAYMASTER"));
-        IERC20 token = IERC20(token_);
-
-        SuperformFactory factory = SuperformFactory(_getAddress(keccak256("SUPERFORM_FACTORY")));
-
-        address[] memory formImplementations = factory.formImplementations();
-        uint256 len = formImplementations.length;
-
-        bool allPaused = true;
-        for (uint256 i; i < len; ++i) {
-            allPaused =
-    allPaused && factory.isFormImplementationPaused(factory.formImplementationIds(formImplementations[i]));
-        }
-
-        if (allPaused) {
-            uint256 dust = token.balanceOf(address(this));
-            if (dust != 0) {
-                token.safeTransfer(paymaster, dust);
-                emit RouterPlusDustForwardedToPaymaster(token_, dust);
-            }
-        }
-    }
-    */
 
     //////////////////////////////////////////////////////////////
     //                   INTERNAL FUNCTIONS                     //

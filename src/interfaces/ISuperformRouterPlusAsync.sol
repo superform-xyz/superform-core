@@ -124,7 +124,6 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
     struct CompleteCrossChainRebalanceLocalVars {
         uint256 balanceOfInterim;
         IERC20 interimAsset;
-        uint256 amountToDeposit;
         bytes rebalanceToCallData;
         uint8[][] rebalanceToDstAmbIds;
         uint64[] rebalanceToDstChainIds;
