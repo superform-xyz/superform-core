@@ -1750,6 +1750,58 @@ contract SuperformRouterPlusTest is ProtocolActions {
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).finalizeRefund(1);
     }
 
+    function test_crossChainRebalance_negativeSlippage() public {
+        vm.startPrank(deployer);
+
+        uint64 REBALANCE_FROM = ETH;
+        uint64 REBALANCE_TO = OP;
+
+        // Step 1: Initial XCHAIN Deposit
+        _xChainDeposit(superformId5ETH, REBALANCE_FROM, 1);
+
+        // Step 2: Start cross-chain rebalance
+        vm.selectFork(FORKS[SOURCE_CHAIN]);
+        ISuperformRouterPlus.InitiateXChainRebalanceArgs memory args =
+            _buildInitiateXChainRebalanceArgs(REBALANCE_FROM, REBALANCE_TO, deployer);
+
+        vm.startPrank(deployer);
+
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(
+            ROUTER_PLUS_SOURCE, superformId5ETH, args.sharesToRedeem
+        );
+        vm.recordLogs();
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalance{ value: 2 ether }(args);
+
+        // Step 3: Process XChain Withdraw (rebalance from)
+        uint256 balanceOfInterimAssetBefore =
+            MockERC20(args.interimAsset).balanceOf(getContract(SOURCE_CHAIN, "SuperformRouterPlusAsync"));
+
+        _processXChainWithdrawOneVault(SOURCE_CHAIN, REBALANCE_FROM, vm.getRecordedLogs(), 2);
+
+        vm.selectFork(FORKS[SOURCE_CHAIN]);
+        uint256 balanceOfInterimAssetAfter =
+            MockERC20(args.interimAsset).balanceOf(getContract(SOURCE_CHAIN, "SuperformRouterPlusAsync"));
+
+        uint256 interimAmountOnRouterPlusAsync = balanceOfInterimAssetAfter - balanceOfInterimAssetBefore;
+
+        ISuperformRouterPlusAsync.CompleteCrossChainRebalanceArgs memory completeArgs =
+            _buildCompleteCrossChainRebalanceArgs(interimAmountOnRouterPlusAsync, superformId4OP, REBALANCE_TO);
+
+        // Step 4: Complete cross-chain rebalance
+        vm.startPrank(deployer);
+
+        completeArgs =
+            _buildCompleteCrossChainRebalanceArgs(interimAmountOnRouterPlusAsync, superformId4OP, REBALANCE_TO);
+
+        deal(args.interimAsset, address(ROUTER_PLUS_ASYNC_SOURCE), completeArgs.amountReceivedInterimAsset * 3);
+
+        /// @dev simulating positive slippage
+        completeArgs.amountReceivedInterimAsset = completeArgs.amountReceivedInterimAsset * 3;
+        vm.expectRevert(Error.NEGATIVE_SLIPPAGE.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
+        vm.stopPrank();
+    }
+
     function test_crossChainRebalance_updateSuperformData_allErrors() public {
         vm.selectFork(FORKS[SOURCE_CHAIN]);
         SingleVaultSFData memory sfData = SingleVaultSFData({

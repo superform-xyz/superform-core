@@ -119,7 +119,7 @@ build-sizes: ## Builds the project and shows sizes
 
 .PHONY: test-vvv
 test-vvv: ## Runs tests with verbose output
-	forge test --match-contract SuperformRouterPlusTest --evm-version cancun
+	forge test --match-test test_crossChainRebalance_negativeSlippage --evm-version cancun
 
 .PHONY: ftest
 ftest: ## Runs tests with cancun evm version
