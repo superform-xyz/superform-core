@@ -10,6 +10,10 @@ import { ERC7575Mock } from "test/mocks/ERC7575Mock.sol";
 
 import { MockERC20 } from "test/mocks/MockERC20.sol";
 
+import { IERC7540FormBase } from "src/forms/interfaces/IERC7540Form.sol";
+
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+
 contract SuperformERC7540FormTest is ProtocolActions {
     using DataLib for uint256;
     using Math for uint256;
@@ -20,6 +24,115 @@ contract SuperformERC7540FormTest is ProtocolActions {
 
         AMBs = [2, 5];
         super.setUp();
+    }
+
+    function test_7540_claimDeposit_allErrors() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+
+        vm.expectRevert(IERC7540FormBase.NOT_ASYNC_STATE_REGISTRY.selector);
+        form.claimDeposit(users[0], superformId, 0, false);
+
+        vm.startPrank(getContract(srcChainId, "AsyncStateRegistry"));
+        vm.expectRevert(Error.RECEIVER_ADDRESS_NOT_SET.selector);
+        form.claimDeposit(address(0), superformId, 0, false);
+
+        vm.store(address(form), bytes32(uint256(1)), bytes32(uint256(0)));
+        vm.expectRevert(IERC7540FormBase.VAULT_KIND_NOT_SET.selector);
+        form.claimDeposit(users[0], superformId, 0, false);
+
+        uint256 depositId = _getSuperformId(srcChainId, "ERC7540AsyncRedeemMock");
+        (address depositForm,,) = depositId.getSuperform();
+
+        bytes32 slotValueForRedeemAsync = vm.load(address(depositForm), bytes32(uint256(1)));
+
+        vm.store(address(form), bytes32(uint256(1)), slotValueForRedeemAsync);
+        vm.expectRevert(IERC7540FormBase.INVALID_VAULT_KIND.selector);
+        form.claimDeposit(users[0], superformId, 0, false);
+
+        vm.stopPrank();
+    }
+
+    function test_7540_claimDeposit_pausedForm() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+
+        vm.startPrank(deployer);
+        SuperformFactory(getContract(srcChainId, "SuperformFactory")).changeFormImplementationPauseStatus(
+            5, ISuperformFactory.PauseStatus.PAUSED, ""
+        );
+        vm.stopPrank();
+
+        /// Tests paused form claimDeposit
+        vm.startPrank(getContract(srcChainId, "AsyncStateRegistry"));
+        uint256 returnVal = form.claimDeposit(users[0], superformId, 0, false);
+        assertEq(returnVal, 0);
+        vm.stopPrank();
+    }
+
+    function test_7540_claimRedeem_allErrors() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+        LiqRequest memory liqRequest;
+
+        vm.expectRevert(IERC7540FormBase.NOT_ASYNC_STATE_REGISTRY.selector);
+        form.claimRedeem(users[0], superformId, 0, 0, 1, BSC_TESTNET, liqRequest);
+
+        vm.startPrank(getContract(srcChainId, "AsyncStateRegistry"));
+        vm.expectRevert(Error.RECEIVER_ADDRESS_NOT_SET.selector);
+        form.claimRedeem(address(0), superformId, 0, 0, 1, BSC_TESTNET, liqRequest);
+
+        vm.store(address(form), bytes32(uint256(1)), bytes32(uint256(0)));
+        vm.expectRevert(IERC7540FormBase.VAULT_KIND_NOT_SET.selector);
+        form.claimRedeem(users[0], superformId, 0, 0, 1, BSC_TESTNET, liqRequest);
+
+        vm.store(address(form), bytes32(uint256(1)), 0x000000000000000000000001013cce8d377b70d17fdb24fb17de9d4fe8fa58f3);
+        vm.expectRevert(IERC7540FormBase.INVALID_VAULT_KIND.selector);
+        form.claimRedeem(users[0], superformId, 0, 0, 1, BSC_TESTNET, liqRequest);
+
+        vm.stopPrank();
+    }
+
+    function test_7540_claimRedeem_pausedForm() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+        LiqRequest memory liqRequest;
+
+        vm.startPrank(deployer);
+        SuperformFactory(getContract(srcChainId, "SuperformFactory")).changeFormImplementationPauseStatus(
+            5, ISuperformFactory.PauseStatus.PAUSED, ""
+        );
+        vm.stopPrank();
+
+        /// Tests paused form claimDeposit
+        vm.startPrank(getContract(srcChainId, "AsyncStateRegistry"));
+        uint256 returnVal = form.claimRedeem(users[0], superformId, 0, 0, 1, BSC_TESTNET, liqRequest);
+        assertEq(returnVal, 0);
+        vm.stopPrank();
     }
 
     function test_7540OtherFunctionCalls() external {
