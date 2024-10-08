@@ -119,7 +119,7 @@ build-sizes: ## Builds the project and shows sizes
 
 .PHONY: test-vvv
 test-vvv: ## Runs tests with verbose output
-	forge test --match-test test_7540_claimDeposit_allErrors --evm-version cancun -vvvvv
+	forge test --match-test test_7540_forwardDustToPaymaster --evm-version cancun -vvvvv
 
 .PHONY: ftest
 ftest: ## Runs tests with cancun evm version
