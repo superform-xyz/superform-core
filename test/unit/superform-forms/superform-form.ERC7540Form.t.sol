@@ -14,6 +14,10 @@ import { IERC7540FormBase } from "src/forms/interfaces/IERC7540Form.sol";
 
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 
+import { IERC7540Operator } from "src/vendor/centrifuge/IERC7540.sol";
+
+import { IERC7575 } from "src/vendor/centrifuge/IERC7575.sol";
+
 /// @dev mock vault for testing interface
 contract SupportsInterfaceMock {
     bool revertOnSupportsInterface;
@@ -32,6 +36,13 @@ contract SupportsInterfaceMock {
         if (depositFalse && interfaceId_ == 0xce3bbe50) revert();
         if (redeemFalse && interfaceId_ == 0x620ee8e4) revert();
         return false;
+    }
+}
+
+/// @dev mock vault that returns `0` on redeem
+contract MalWithdrawMock {
+    function redeem(uint256 amount, address receiver, address owner) external returns (uint256) {
+        return 0;
     }
 }
 
@@ -62,6 +73,14 @@ contract ERC7540FormHarness is ERC7540Form {
     function assetTransferIn(address token, uint256 amount) external {
         _assetTransferIn(token, amount);
     }
+
+    // function withdrawAndValidate(InitSingleVaultData memory singleVaultData_) external {
+    //     _withdrawAndValidate(singleVaultData_);
+    // }
+
+    // function depositAndValidate(InitSingleVaultData memory singleVaultData_) external {
+    //     _depositAndValidate(singleVaultData_);
+    // }
 }
 
 contract SuperformERC7540FormTest is ProtocolActions {
@@ -82,6 +101,31 @@ contract SuperformERC7540FormTest is ProtocolActions {
         harnessForm = new ERC7540FormHarness(getContract(BSC_TESTNET, "SuperRegistry"), 2);
         vm.stopPrank();
     }
+
+    // function test_7540_withdrawAndValidate() external {
+    //     vm.selectFork(FORKS[BSC_TESTNET]);
+
+    //     uint64 srcChainId = BSC_TESTNET;
+    //     uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+    //     InitSingleVaultData memory singleVaultData = new InitSingleVaultData(
+    //         1,
+    //         superformId,
+    //         1e18,
+    //         1e18,
+    //         1e18,
+    //         LiqRequest(address(0), address(0), address(0), address(0), address(0), address(0), address(0),
+    // address(0)),
+    //         false,
+    //         false,
+    //         address(0),
+    //         bytes("")
+    //     );
+
+    //     ERC7540Form form = ERC7540Form(superform);
+
+    //     form.withdrawAndValidate(singleVaultData);
+    // }
 
     function test_7540_checkTxData() external {
         vm.expectRevert(Error.WITHDRAW_TOKEN_NOT_UPDATED.selector);
@@ -272,6 +316,28 @@ contract SuperformERC7540FormTest is ProtocolActions {
         vm.startPrank(getContract(srcChainId, "AsyncStateRegistry"));
         uint256 returnVal = form.claimRedeem(users[0], superformId, 0, 0, 1, BSC_TESTNET, liqRequest);
         assertEq(returnVal, 0);
+        vm.stopPrank();
+    }
+
+    function test_7540_claimRedeem_withdrawZeroCollateral() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+        LiqRequest memory liqRequest;
+
+        vm.startPrank(users[0]);
+        IERC7540Operator(form.vault()).setOperator(address(form), true);
+        vm.stopPrank();
+
+        vm.startPrank(getContract(srcChainId, "AsyncStateRegistry"));
+        vm.mockCall(address(form.vault()), abi.encodeWithSelector(IERC7575.redeem.selector), bytes(abi.encode(0)));
+        vm.expectRevert(Error.WITHDRAW_ZERO_COLLATERAL.selector);
+        form.claimRedeem(users[0], superformId, 0, 0, 1, BSC_TESTNET, liqRequest);
         vm.stopPrank();
     }
 
