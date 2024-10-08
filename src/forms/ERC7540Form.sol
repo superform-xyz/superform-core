@@ -862,7 +862,6 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
         emit EmergencyWithdrawalProcessed(receiverAddress_, amount_);
     }
 
-
     /// @inheritdoc BaseForm
     function _forwardDustToPaymaster(address token_) internal override {
         /// @dev call made here to avoid polluting other functions with this setter
