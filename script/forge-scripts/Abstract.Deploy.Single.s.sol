@@ -1060,7 +1060,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         bytes32 protocolAdminRole = srbac.PROTOCOL_ADMIN_ROLE();
         bytes32 emergencyAdminRole = srbac.EMERGENCY_ADMIN_ROLE();
 
-        address protocolAdmin = env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[trueIndex];
+        address protocolAdmin = env == 0 || env == 2 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[trueIndex];
 
         if (grantProtocolAdmin) {
             if (protocolAdmin != address(0)) {

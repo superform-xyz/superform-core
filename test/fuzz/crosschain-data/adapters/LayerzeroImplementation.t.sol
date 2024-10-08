@@ -77,6 +77,8 @@ contract LayerzeroImplementationTest is BaseSetup {
         /// @dev lz_chainIds = [101, 102, 106, 109, 110, 111];
         uint64 superChainId = chainIds[superChainIdSeed_ % chainIds.length];
         uint16 ambChainId = lz_chainIds[ambChainIdSeed_ % lz_chainIds.length];
+        vm.assume(superChainId != BARTIO);
+        vm.assume(ambChainId != 0);
 
         vm.prank(deployer);
         layerzeroImplementation.setChainId(superChainId, ambChainId);
@@ -101,6 +103,8 @@ contract LayerzeroImplementationTest is BaseSetup {
         vm.assume(chainId != 1);
         vm.assume(chainId != 97);
         vm.assume(chainId != 11_155_111);
+        vm.assume(chainId != 80_084);
+
         uint256 fees = layerzeroImplementation.estimateFees(chainId, abi.encode(420), bytes(""));
         assertGt(fees, 0);
     }
@@ -192,8 +196,9 @@ contract LayerzeroImplementationTest is BaseSetup {
         public
     {
         uint16 chainId = uint16(chainIds[chainIdSeed_ % chainIds.length]);
-        vm.assume(chainId != ETH);
         uint16 lzChainId = uint16(lz_chainIds[chainIdSeed_ % lz_chainIds.length]);
+        vm.assume(chainId != ETH && chainId != BARTIO);
+        vm.assume(lzChainId != 0);
         bytes memory srcAddress = abi.encodePacked(
             getContract(ETH, "LayerzeroImplementation"), getContract(chainId, "LayerzeroImplementation")
         );
