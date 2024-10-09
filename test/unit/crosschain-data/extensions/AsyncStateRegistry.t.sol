@@ -9,7 +9,8 @@ import {
     INVALID_AMOUNT_IN_TXDATA,
     REQUEST_CONFIG_NON_EXISTENT,
     NOT_READY_TO_CLAIM,
-    INVALID_UPDATED_TX_DATA
+    INVALID_UPDATED_TX_DATA,
+    IAsyncStateRegistry
 } from "src/interfaces/IAsyncStateRegistry.sol";
 import { IERC7540FormBase } from "src/forms/interfaces/IERC7540Form.sol";
 
@@ -267,6 +268,51 @@ contract AsyncStateRegistry7540Test is ProtocolActions {
         );
         vm.expectRevert(INVALID_UPDATED_TX_DATA.selector);
         asyncStateRegistry.claimAvailableRedeem(users[0], superformId, abi.encode("0xDEADBEEF"));
+        vm.stopPrank();
+    }
+
+    function test_claimAvailableDeposit_allErrors() external {
+        address superform = getContract(
+            BSC_TESTNET,
+            string.concat("tUSD", "ERC7540FullyAsyncMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[2]))
+        );
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[2], BSC_TESTNET);
+
+        vm.startPrank(deployer);
+        vm.expectRevert(REQUEST_CONFIG_NON_EXISTENT.selector);
+        asyncStateRegistry.claimAvailableDeposits(users[0], superformId);
+        vm.stopPrank();
+
+        vm.startPrank(superform);
+        InitSingleVaultData memory data;
+        data.superformId = superformId;
+        data.receiverAddress = users[0];
+        asyncStateRegistry.updateRequestConfig(0, SEPOLIA, true, 0, data);
+        vm.stopPrank();
+
+        vm.startPrank(deployer);
+        vm.mockCall(
+            superform,
+            abi.encodeWithSelector(IERC7540FormBase.getClaimableDepositRequest.selector, 0, users[0]),
+            abi.encode(0)
+        );
+        vm.expectRevert(NOT_READY_TO_CLAIM.selector);
+        asyncStateRegistry.claimAvailableDeposits(users[0], superformId);
+
+        vm.mockCall(
+            superform,
+            abi.encodeWithSelector(IERC7540FormBase.getClaimableDepositRequest.selector, 0, users[0]),
+            abi.encode(1)
+        );
+        vm.mockCall(
+            superform,
+            abi.encodeWithSelector(IERC7540FormBase.claimDeposit.selector, users[0], superformId, 1, false),
+            abi.encode(0)
+        );
+
+        vm.expectEmit(true, true, true, true);
+        emit IAsyncStateRegistry.FailedDepositClaim(users[0], superformId, 0);
+        asyncStateRegistry.claimAvailableDeposits(users[0], superformId);
         vm.stopPrank();
     }
 }
