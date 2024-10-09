@@ -424,7 +424,9 @@ contract SuperPositionsTest is BaseSetup {
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
 
         for (uint256 i; i < chainIds.length; ++i) {
-            if (chainIds[i] == LINEA || chainIds[i] == SEPOLIA || chainIds[i] == BSC_TESTNET) continue;
+            if (chainIds[i] == LINEA || chainIds[i] == SEPOLIA || chainIds[i] == BSC_TESTNET || chainIds[i] == BARTIO) {
+                continue;
+            }
 
             if (chainIds[i] != ETH) {
                 vm.selectFork(FORKS[chainIds[i]]);
