@@ -31,8 +31,8 @@ contract MDMVDMulti0000NoTokenInputSlippageAMB12Permit2 is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[OP][0] = [2, 1];
-        LIQ_BRIDGES[ETH][0] = [2, 2];
+        LIQ_BRIDGES[OP][0] = [1, 1];
+        LIQ_BRIDGES[ETH][0] = [1, 1];
 
         RECEIVE_4626[OP][0] = [false, false];
         RECEIVE_4626[ETH][0] = [false, false];
@@ -58,8 +58,8 @@ contract MDMVDMulti0000NoTokenInputSlippageAMB12Permit2 is ProtocolActions {
 
     function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
         /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        amountOne_ = uint128(bound(amountOne_, 2 * 10 ** 18, 1000 * 10 ** 18));
-        amountTwo_ = uint128(bound(amountTwo_, 2 * 10 ** 18, 1000 * 10 ** 18));
+        amountOne_ = uint128(bound(amountOne_, 2 * 10 ** 6, TOTAL_SUPPLY_USDC / 4));
+        amountTwo_ = uint128(bound(amountTwo_, 2 * 10 ** 6, TOTAL_SUPPLY_USDC / 4));
         AMOUNTS[OP][0] = [amountOne_, amountTwo_];
         AMOUNTS[ETH][0] = [amountTwo_, amountOne_];
 

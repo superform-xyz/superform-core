@@ -3316,7 +3316,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             /// @notice ID: 2 Hyperlane
             if (AMBs[i] == 2) {
                 HyperlaneHelper(getContract(TO_CHAIN, "HyperlaneHelper")).help(
-                    address(HYPERLANE_MAILBOXES[TO_CHAIN]),  // BARTIO
+                    address(HYPERLANE_MAILBOXES[TO_CHAIN]), // BARTIO
                     address(HYPERLANE_MAILBOXES[FROM_CHAIN]), // SEPOLIA
                     FORKS[FROM_CHAIN], // SEPOLIA
                     logs
