@@ -533,6 +533,65 @@ contract SuperformERC7540FormTest is ProtocolActions {
         vm.stopPrank();
     }
 
+    function test_7540_directWithdraw_swapAndSettle() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540AsyncDepositMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+
+        address asset = address(form.asset());
+        LiqRequest memory liqRequest = LiqRequest(
+            _buildLiqBridgeTxData(
+                LiqBridgeTxDataArgs(
+                    1,
+                    asset,
+                    asset,
+                    asset,
+                    address(form),
+                    BSC_TESTNET,
+                    BSC_TESTNET,
+                    BSC_TESTNET,
+                    false,
+                    users[0],
+                    uint256(BSC_TESTNET),
+                    1e18,
+                    false,
+                    /// @dev placeholder value, not used
+                    0,
+                    1,
+                    1,
+                    1,
+                    address(0)
+                ),
+                false
+            ),
+            asset,
+            address(0),
+            1,
+            BSC_TESTNET,
+            0
+        );
+
+        InitSingleVaultData memory singleVaultData;
+        singleVaultData.superformId = superformId;
+        singleVaultData.receiverAddress = users[0];
+        singleVaultData.amount = 1e18;
+        singleVaultData.liqData = liqRequest;
+        singleVaultData.maxSlippage = 10_000;
+
+        deal(address(IERC7540(form.vault()).share()), address(form), 1e18);
+        deal(address(asset), address(form.vault()), 100e18);
+
+        vm.startPrank(getContract(srcChainId, "SuperformRouter"));
+        /// @dev transfer shares for a non-async redeem vault
+        form.directWithdrawFromVault(singleVaultData, users[0]);
+        vm.stopPrank();
+    }
+
     function test_7540_xChainWithdraw_vaultKindUnset() external {
         vm.selectFork(FORKS[BSC_TESTNET]);
 
