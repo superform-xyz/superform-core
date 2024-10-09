@@ -1430,7 +1430,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
     {
         address vault = IBaseForm(superform).getVaultAddress();
         address asset = IBaseForm(superform).getVaultAsset();
-        if (vault == REAL_VAULT_ADDRESS[SEPOLIA][5]["tUSD"][0] || vault == REAL_VAULT_ADDRESS[ETH][5]["USDC"][0]) {
+        if (vault == REAL_VAULT_ADDRESS[SEPOLIA][3]["tUSD"][0] || vault == REAL_VAULT_ADDRESS[ETH][3]["USDC"][0]) {
             address manager = ERC7540VaultLike(vault).manager();
 
             /// @dev for centrifuge
@@ -3316,7 +3316,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             /// @notice ID: 2 Hyperlane
             if (AMBs[i] == 2) {
                 HyperlaneHelper(getContract(TO_CHAIN, "HyperlaneHelper")).help(
-                    address(HYPERLANE_MAILBOXES[TO_CHAIN]),  // BARTIO
+                    address(HYPERLANE_MAILBOXES[TO_CHAIN]), // BARTIO
                     address(HYPERLANE_MAILBOXES[FROM_CHAIN]), // SEPOLIA
                     FORKS[FROM_CHAIN], // SEPOLIA
                     logs

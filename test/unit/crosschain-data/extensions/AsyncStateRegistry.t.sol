@@ -44,7 +44,7 @@ contract AsyncStateRegistryHarness is AsyncStateRegistry {
     }
 }
 
-contract AsyncStateRegistry7540Test is ProtocolActions {
+contract AsyncStateRegistryTest is ProtocolActions {
     using DataLib for uint256;
 
     uint64 internal chainId = ETH;

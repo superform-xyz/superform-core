@@ -248,7 +248,7 @@ contract SuperformERC7540FormTest is ProtocolActions {
 
         vm.startPrank(deployer);
         SuperformFactory(getContract(srcChainId, "SuperformFactory")).changeFormImplementationPauseStatus(
-            5, ISuperformFactory.PauseStatus.PAUSED, ""
+            3, ISuperformFactory.PauseStatus.PAUSED, ""
         );
         vm.stopPrank();
 
@@ -301,7 +301,7 @@ contract SuperformERC7540FormTest is ProtocolActions {
 
         vm.startPrank(deployer);
         SuperformFactory(getContract(srcChainId, "SuperformFactory")).changeFormImplementationPauseStatus(
-            5, ISuperformFactory.PauseStatus.PAUSED, ""
+            3, ISuperformFactory.PauseStatus.PAUSED, ""
         );
         vm.stopPrank();
 

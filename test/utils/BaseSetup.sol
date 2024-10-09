@@ -195,8 +195,8 @@ abstract contract BaseSetup is StdInvariant, Test {
     /// @notice tUSD is a test token on sepolia
     string[] public UNDERLYING_TOKENS = ["DAI", "USDC", "WETH", "ezETH", "wstETH", "sUSDe", "USDe", "tUSD"];
 
-    /// @dev 1 = ERC4626Form, 4 = ERC5115, 5 is ERC7540
-    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(4), uint32(5)];
+    /// @dev 1 = ERC4626Form, 4 = ERC5115,  3 is ERC7540,
+    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(4), uint32(3)];
 
     /// @dev WARNING!! THESE VAULT NAMES MUST BE THE EXACT NAMES AS FILLED IN vaultKinds
     string[] public VAULT_KINDS = [
@@ -787,8 +787,7 @@ abstract contract BaseSetup is StdInvariant, Test {
             uint8[] memory registryIds = new uint8[](3);
             registryIds[0] = 1;
             registryIds[1] = 2;
-            /// @dev  TODO temporarily as id 5 to match 7540 form implementation id. later this will change to 2
-            registryIds[2] = 5;
+            registryIds[2] = 3;
 
             vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
 
@@ -1058,17 +1057,13 @@ abstract contract BaseSetup is StdInvariant, Test {
             contracts[vars.chainId][bytes32(bytes("ERC5115Form"))] = vars.erc5115form;
 
             //  ERC7540 Form
-            /// @dev TODO: change id of form to 2
-            vars.erc7540form = address(new ERC7540Form{ salt: salt }(vars.superRegistry, 5));
-
+            vars.erc7540form = address(new ERC7540Form{ salt: salt }(vars.superRegistry, 3));
             contracts[vars.chainId][bytes32(bytes("ERC7540Form"))] = vars.erc7540form;
 
             /// @dev 11 - Add newly deployed form implementations to Factory
             ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0], 1);
             ISuperformFactory(vars.factory).addFormImplementation(vars.erc5115form, FORM_IMPLEMENTATION_IDS[1], 1);
-
-            /// @dev TODO temporarily as id 5, to become id 2
-            ISuperformFactory(vars.factory).addFormImplementation(vars.erc7540form, FORM_IMPLEMENTATION_IDS[2], 5);
+            ISuperformFactory(vars.factory).addFormImplementation(vars.erc7540form, FORM_IMPLEMENTATION_IDS[2], 3);
 
             /// @dev 12 - Deploy SuperformRouter
             vars.superformRouter = address(new SuperformRouter{ salt: salt }(vars.superRegistry));
@@ -1517,7 +1512,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                                 contracts[chainIds[i]][bytes32(bytes("SuperformFactory"))]
                             ).createSuperform(FORM_IMPLEMENTATION_IDS[j], vault);
 
-                            if (FORM_IMPLEMENTATION_IDS[j] == 5) {
+                            if (FORM_IMPLEMENTATION_IDS[j] == 3) {
                                 // triggers _vaultKindCheck to set async type
                                 ERC7540Form(vars.superform).forwardDustToPaymaster(
                                     ERC7540Form(vars.superform).getVaultAsset()
@@ -1531,6 +1526,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                                     vars.token = IERC7540(vault).share();
                                     vars.mgr = TrancheTokenLike(vars.token).hook();
                                     vm.startPrank(RestrictionManagerLike(vars.mgr).root());
+
                                     /// @dev TODO remove updateMemeber can be removed for superform
                                     RestrictionManagerLike(vars.mgr).updateMember(
                                         vars.token, vars.superform, type(uint64).max
@@ -2168,19 +2164,19 @@ abstract contract BaseSetup is StdInvariant, Test {
         vaultBytecodes2[4].vaultBytecode.push(type(ERC5115To4626Wrapper).creationCode);
         vaultBytecodes2[4].vaultKinds.push("ERC5115");
 
-        /// @dev form 5 (7540)
-        vaultBytecodes2[5].vaultBytecode.push(type(ERC7540FullyAsyncMock).creationCode);
-        vaultBytecodes2[5].vaultKinds.push("ERC7540FullyAsyncMock");
-        vaultBytecodes2[5].vaultBytecode.push(type(ERC7540AsyncDepositMock).creationCode);
-        vaultBytecodes2[5].vaultKinds.push("ERC7540AsyncDepositMock");
-        vaultBytecodes2[5].vaultBytecode.push(type(ERC7540AsyncRedeemMock).creationCode);
-        vaultBytecodes2[5].vaultKinds.push("ERC7540AsyncRedeemMock");
-        vaultBytecodes2[5].vaultBytecode.push(type(ERC7540AsyncDepositMockRevert).creationCode);
-        vaultBytecodes2[5].vaultKinds.push("ERC7540AsyncDepositMockRevert");
-        vaultBytecodes2[5].vaultBytecode.push(type(ERC7540AsyncRedeemMockRevert).creationCode);
-        vaultBytecodes2[5].vaultKinds.push("ERC7540AsyncRedeemMockRevert");
-        vaultBytecodes2[5].vaultBytecode.push(type(ERC7540AsyncDepositMockRedeemRevert).creationCode);
-        vaultBytecodes2[5].vaultKinds.push("ERC7540AsyncDepositMockRedeemRevert");
+        /// @dev form 3 (7540)
+        vaultBytecodes2[3].vaultBytecode.push(type(ERC7540FullyAsyncMock).creationCode);
+        vaultBytecodes2[3].vaultKinds.push("ERC7540FullyAsyncMock");
+        vaultBytecodes2[3].vaultBytecode.push(type(ERC7540AsyncDepositMock).creationCode);
+        vaultBytecodes2[3].vaultKinds.push("ERC7540AsyncDepositMock");
+        vaultBytecodes2[3].vaultBytecode.push(type(ERC7540AsyncRedeemMock).creationCode);
+        vaultBytecodes2[3].vaultKinds.push("ERC7540AsyncRedeemMock");
+        vaultBytecodes2[3].vaultBytecode.push(type(ERC7540AsyncDepositMockRevert).creationCode);
+        vaultBytecodes2[3].vaultKinds.push("ERC7540AsyncDepositMockRevert");
+        vaultBytecodes2[3].vaultBytecode.push(type(ERC7540AsyncRedeemMockRevert).creationCode);
+        vaultBytecodes2[3].vaultKinds.push("ERC7540AsyncRedeemMockRevert");
+        vaultBytecodes2[3].vaultBytecode.push(type(ERC7540AsyncDepositMockRedeemRevert).creationCode);
+        vaultBytecodes2[3].vaultKinds.push("ERC7540AsyncDepositMockRedeemRevert");
 
         /// @dev populate VAULT_NAMES state arg with tokenNames + vaultKinds names
         string[] memory underlyingTokens = UNDERLYING_TOKENS;
@@ -2282,8 +2278,8 @@ abstract contract BaseSetup is StdInvariant, Test {
         existingVaults[250][1]["WETH"][0] = address(0);
 
         /// @dev 7540 real centrifuge vaults on mainnet & testnet
-        existingVaults[1][5]["USDC"][0] = 0x1d01Ef1997d44206d839b78bA6813f60F1B3A970;
-        existingVaults[11_155_111][5]["tUSD"][0] = 0x3b33D257E77E018326CCddeCA71cf9350C585A66;
+        existingVaults[1][3]["USDC"][0] = 0x1d01Ef1997d44206d839b78bA6813f60F1B3A970;
+        existingVaults[11_155_111][3]["tUSD"][0] = 0x3b33D257E77E018326CCddeCA71cf9350C585A66;
 
         mapping(uint64 chainId => mapping(uint256 market => address realVault)) storage erc5115Vaults = ERC5115_VAULTS;
         mapping(uint64 chainId => mapping(uint256 market => string name)) storage erc5115VaultsNames =
