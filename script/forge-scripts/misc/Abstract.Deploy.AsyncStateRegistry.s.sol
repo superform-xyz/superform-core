@@ -13,8 +13,8 @@ struct UpdateVars {
     SuperformFactory superformFactory;
 }
 
-abstract contract AbstractDeploy7540Form is EnvironmentUtils {
-    function _deploy7540Form(
+abstract contract AbstractDeployAsyncStateRegistry is EnvironmentUtils {
+    function _deployAsyncStateRegistry(
         uint256 env,
         uint256 i,
         uint256 trueIndex,
@@ -47,9 +47,6 @@ abstract contract AbstractDeploy7540Form is EnvironmentUtils {
 
         address newStateRegistry = address(new AsyncStateRegistry{ salt: salt }(ISuperRegistry(superRegistry)));
         contracts[vars.chainId][bytes32(bytes("AsyncStateRegistry"))] = newStateRegistry;
-
-        address newForm = address(new ERC7540Form{ salt: salt }(superRegistry, 4));
-        contracts[vars.chainId][bytes32(bytes("ERC7540Form"))] = newForm;
 
         vm.stopBroadcast();
 
@@ -87,18 +84,16 @@ abstract contract AbstractDeploy7540Form is EnvironmentUtils {
             : 0xB2C097ac459aFAc892ae5b35f6bd6a9Dd3071F47;
         assert(address(vars.superRegistryC) == expectedSr);
 
-        address erc7540Form = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "ERC7540Form");
+        address asyncStateRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "AsyncStateRegistry");
+        assert(asyncStateRegistry != address(0));
 
-        vars.superformFactory =
-            SuperformFactory(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperformFactory")));
+        address[] memory registryAddresses = new address[](1);
+        registryAddresses[0] = asyncStateRegistry;
 
-        address expectedFactory = vars.chainId == 250
-            ? 0x730A06A3195060D15d5fF04685514c9da16C89db
-            : 0x9CA4480B65E5F3d57cFb942ac44A0A6Ab0B2C843;
+        uint8[] memory registryIds = new uint8[](1);
+        registryIds[0] = 4;
 
-        assert(address(vars.superformFactory) == expectedFactory);
-
-        vars.superformFactory.addFormImplementation(erc7540Form, STAGING_FORM_IMPLEMENTATION_IDS[2], 4);
+        vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
 
         vm.stopBroadcast();
     }
@@ -129,19 +124,16 @@ abstract contract AbstractDeploy7540Form is EnvironmentUtils {
             : 0x17A332dC7B40aE701485023b219E9D6f493a2514;
         assert(address(vars.superRegistryC) == expectedSr);
 
-        address erc7540Form = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "ERC7540Form");
         address asyncStateRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "AsyncStateRegistry");
+        assert(asyncStateRegistry != address(0));
 
-        vars.superformFactory =
-            SuperformFactory(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperformFactory")));
+        address[] memory registryAddresses = new address[](1);
+        registryAddresses[0] = asyncStateRegistry;
 
-        address expectedFactory = vars.chainId == 250
-            ? 0xbc85043544CC2b3Fd095d54b6431822979BBB62A
-            : 0xD85ec15A9F814D6173bF1a89273bFB3964aAdaEC;
+        uint8[] memory registryIds = new uint8[](1);
+        registryIds[0] = 4;
 
-        assert(address(vars.superformFactory) == expectedFactory);
-
-        vars.superformFactory.addFormImplementation(erc7540Form, FORM_IMPLEMENTATION_IDS[1], 4);
+        vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
 
         vm.stopBroadcast();
     }
