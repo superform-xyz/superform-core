@@ -50,6 +50,7 @@ import { EmergencyQueue } from "src/EmergencyQueue.sol";
 import { VaultClaimer } from "src/VaultClaimer.sol";
 import { AcrossFacetPacked } from "./misc/blacklistedFacets/AcrossFacetPacked.sol";
 import { AmarokFacetPacked } from "./misc/blacklistedFacets/AmarokFacetPacked.sol";
+import { AcrossFacetPackedV3 } from "./misc/blacklistedFacets/AcrossFacetPackedV3.sol";
 import { RewardsDistributor } from "src/RewardsDistributor.sol";
 import "forge-std/console.sol";
 import { BatchScript } from "./safe/BatchScript.sol";
@@ -390,7 +391,8 @@ abstract contract AbstractDeploySingle is BatchScript {
     address public BROADCAST_REGISTRY_PROCESSOR;
     address public WORMHOLE_VAA_RELAYER;
     address public REWARDS_ADMIN;
-
+    address public ROUTER_PLUS_PROCESSOR;
+    address public ASYNC_STATE_REGISTRY_PROCESSOR;
     address[] public PROTOCOL_ADMINS = [
         0xd26b38a64C812403fD3F87717624C80852cD6D61,
         /// @dev ETH https://app.onchainden.com/safes/eth:0xd26b38a64c812403fd3f87717624c80852cd6d61
@@ -624,7 +626,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
         vars.lv = LiFiValidator(vars.lifiValidator);
 
-        vars.selectorsToBlacklist = new bytes4[](8);
+        vars.selectorsToBlacklist = new bytes4[](12);
 
         /// @dev add selectors that need to be blacklisted post LiFiValidator deployment here
         vars.selectorsToBlacklist[0] = AcrossFacetPacked.startBridgeTokensViaAcrossNativePacked.selector;
@@ -635,6 +637,10 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.selectorsToBlacklist[5] = AmarokFacetPacked.startBridgeTokensViaAmarokERC20PackedPayFeeWithNative.selector;
         vars.selectorsToBlacklist[6] = AmarokFacetPacked.startBridgeTokensViaAmarokERC20MinPayFeeWithAsset.selector;
         vars.selectorsToBlacklist[7] = AmarokFacetPacked.startBridgeTokensViaAmarokERC20MinPayFeeWithNative.selector;
+        vars.selectorsToBlacklist[8] = AcrossFacetPackedV3.startBridgeTokensViaAcrossV3NativePacked.selector;
+        vars.selectorsToBlacklist[9] = AcrossFacetPackedV3.startBridgeTokensViaAcrossV3NativeMin.selector;
+        vars.selectorsToBlacklist[10] = AcrossFacetPackedV3.startBridgeTokensViaAcrossV3ERC20Packed.selector;
+        vars.selectorsToBlacklist[11] = AcrossFacetPackedV3.startBridgeTokensViaAcrossV3ERC20Min.selector;
 
         for (uint256 j = 0; j < vars.selectorsToBlacklist.length; ++j) {
             vars.lv.addToBlacklist(vars.selectorsToBlacklist[j]);

@@ -21,10 +21,10 @@ wait
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.7540Form.s.sol:MainnetDeploy7540Form --sig "deploy7540Form(uint256,uint256,uint256)" 0 1 0 --rpc-url $BSC_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.7540Form.s.sol:MainnetDeploy7540Form --sig "deploy7540Form(uint256,uint256,uint256)" 0 2 0 --rpc-url $AVALANCHE_RPC_URL --slow  --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.7540Form.s.sol:MainnetDeploy7540Form --sig "deploy7540Form(uint256,uint256,uint256)" 0 2 0 --rpc-url $AVALANCHE_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.7540Form.s.sol:MainnetDeploy7540Form --sig "deploy7540Form(uint256,uint256,uint256)" 0 3 0 --rpc-url $POLYGON_RPC_URL --slow  --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.7540Form.s.sol:MainnetDeploy7540Form --sig "deploy7540Form(uint256,uint256,uint256)" 0 3 0 --rpc-url $POLYGON_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 wait
 
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.7540Form.s.sol:MainnetDeploy7540Form --sig "deploy7540Form(uint256,uint256,uint256)" 0 4 0 --rpc-url $ARBITRUM_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92

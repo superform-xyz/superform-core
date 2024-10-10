@@ -11,6 +11,7 @@ struct UpdateVars {
     uint256 dstTrueIndex;
     SuperRegistry superRegistryC;
     SuperformFactory superformFactory;
+    SuperRBAC superRBACC;
 }
 
 abstract contract AbstractDeployAsyncStateRegistry is EnvironmentUtils {
@@ -24,6 +25,8 @@ abstract contract AbstractDeployAsyncStateRegistry is EnvironmentUtils {
         internal
         setEnvDeploy(cycle)
     {
+        _preDeploymentSetup();
+
         assert(salt.length > 0);
         UpdateVars memory vars;
 
@@ -87,13 +90,24 @@ abstract contract AbstractDeployAsyncStateRegistry is EnvironmentUtils {
         address asyncStateRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "AsyncStateRegistry");
         assert(asyncStateRegistry != address(0));
 
-        address[] memory registryAddresses = new address[](1);
+        address[] memory registryAddresses = new address[](2);
         registryAddresses[0] = asyncStateRegistry;
 
-        uint8[] memory registryIds = new uint8[](1);
+        uint8[] memory registryIds = new uint8[](2);
         registryIds[0] = 4;
 
         vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
+
+        vars.superRegistryC.setAddress(
+            keccak256("ASYNC_STATE_REGISTRY_PROCESSOR"), ASYNC_STATE_REGISTRY_PROCESSOR, vars.chainId
+        );
+
+        vars.superRBACC = SuperRBAC(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRBAC")));
+
+        vars.superRBACC.setRoleAdmin(
+            keccak256("ASYNC_STATE_REGISTRY_PROCESSOR_ROLE"), vars.superRBACC.PROTOCOL_ADMIN_ROLE()
+        );
+        vars.superRBACC.grantRole(keccak256("ASYNC_STATE_REGISTRY_PROCESSOR_ROLE"), ASYNC_STATE_REGISTRY_PROCESSOR);
 
         vm.stopBroadcast();
     }
@@ -115,8 +129,6 @@ abstract contract AbstractDeployAsyncStateRegistry is EnvironmentUtils {
 
         vars.chainId = finalDeployedChains[i];
 
-        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
-
         vars.superRegistryC =
             SuperRegistry(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry")));
         address expectedSr = vars.chainId == 250
@@ -133,8 +145,33 @@ abstract contract AbstractDeployAsyncStateRegistry is EnvironmentUtils {
         uint8[] memory registryIds = new uint8[](1);
         registryIds[0] = 4;
 
-        vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
+        bytes memory txn =
+            abi.encodeWithSelector(vars.superRegistryC.setStateRegistryAddress.selector, registryIds, registryAddresses);
+        addToBatch(address(vars.superRegistryC), 0, txn);
 
-        vm.stopBroadcast();
+        txn = abi.encodeWithSelector(
+            SuperRegistry.setAddress.selector,
+            keccak256("ASYNC_STATE_REGISTRY_PROCESSOR"),
+            ASYNC_STATE_REGISTRY_PROCESSOR,
+            vars.chainId
+        );
+        addToBatch(address(vars.superRegistryC), 0, txn);
+        vars.superRBACC = SuperRBAC(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRBAC")));
+
+        txn = abi.encodeWithSelector(
+            vars.superRBACC.setRoleAdmin.selector,
+            keccak256("ASYNC_STATE_REGISTRY_PROCESSOR_ROLE"),
+            vars.superRBACC.PROTOCOL_ADMIN_ROLE()
+        );
+        addToBatch(address(vars.superRBACC), 0, txn);
+
+        txn = abi.encodeWithSelector(
+            vars.superRBACC.grantRole.selector,
+            keccak256("ASYNC_STATE_REGISTRY_PROCESSOR_ROLE"),
+            ASYNC_STATE_REGISTRY_PROCESSOR
+        );
+        addToBatch(address(vars.superRBACC), 0, txn);
+
+        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], 0, false);
     }
 }

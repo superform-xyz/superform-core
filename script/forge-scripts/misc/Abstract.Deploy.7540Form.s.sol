@@ -24,6 +24,8 @@ abstract contract AbstractDeploy7540Form is EnvironmentUtils {
         internal
         setEnvDeploy(cycle)
     {
+        _preDeploymentSetup();
+
         assert(salt.length > 0);
         UpdateVars memory vars;
 
@@ -120,13 +122,13 @@ abstract contract AbstractDeploy7540Form is EnvironmentUtils {
 
         vars.chainId = finalDeployedChains[i];
 
-        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
-
         vars.superRegistryC =
             SuperRegistry(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry")));
+
         address expectedSr = vars.chainId == 250
             ? 0x7feB31d18E43E2faeC718EEd2D7f34402c3e27b4
             : 0x17A332dC7B40aE701485023b219E9D6f493a2514;
+
         assert(address(vars.superRegistryC) == expectedSr);
 
         address erc7540Form = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "ERC7540Form");
@@ -141,8 +143,11 @@ abstract contract AbstractDeploy7540Form is EnvironmentUtils {
 
         assert(address(vars.superformFactory) == expectedFactory);
 
-        vars.superformFactory.addFormImplementation(erc7540Form, FORM_IMPLEMENTATION_IDS[1], 4);
+        bytes memory txn = abi.encodeWithSelector(
+            vars.superformFactory.addFormImplementation.selector, erc7540Form, FORM_IMPLEMENTATION_IDS[1], 4
+        );
+        addToBatch(address(vars.superformFactory), 0, txn);
 
-        vm.stopBroadcast();
+        executeBatch(vars.chainId, env == 0 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[i], 0, false);
     }
 }
