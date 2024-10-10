@@ -121,7 +121,7 @@ build-sizes: ## Builds the project and shows sizes
 
 .PHONY: test-vvv
 test-vvv: ## Runs tests with verbose output
-	forge test --match-contract SXSVDNormal4626MultiTokenInputFromBeraNoSlippageAMB23 --evm-version cancun -vvv
+	forge test --match-contract MDMVDMulti0000NoTokenInputSlippageAMB12Permit2 --evm-version cancun -vvv
 
 .PHONY: ftest
 ftest: ## Runs tests with cancun evm version
