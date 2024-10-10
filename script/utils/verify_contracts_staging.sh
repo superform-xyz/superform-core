@@ -11,6 +11,15 @@ export FTMSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/FTMSCAN_API_KEY
 export LINEASCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/LINEASCAN_API_KEY/credential)
 export BLASTSCAN_API_KEY=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BLASTSCAN_API_KEY/credential)
 
+export ETHEREUM_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/ETHEREUM_RPC_URL/credential)
+export BSC_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BSC_RPC_URL/credential)
+export OPTIMISM_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/OPTIMISM_RPC_URL/credential)
+export ARBITRUM_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/ARBITRUM_RPC_URL/credential)
+export BASE_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BASE_RPC_URL/credential)
+export FANTOM_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/FANTOM_RPC_URL/credential)
+export LINEA_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/LINEA_RPC_URL/credential)
+export BLAST_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BLAST_RPC_URL/credential)
+
 networks=(
     56
     42161
@@ -20,6 +29,16 @@ networks=(
     59144
     81457
     # add more networks here if needed
+)
+
+rpc_urls=(
+    $BSC_RPC_URL
+    $ARBITRUM_RPC_URL
+    $ETHEREUM_RPC_URL
+    $BASE_RPC_URL
+    $FANTOM_RPC_URL
+    $LINEA_RPC_URL
+    $BLAST_RPC_URL
 )
 
 api_keys=(
@@ -79,7 +98,8 @@ file_names=(
     # "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol"
     # "src/router-plus/SuperformRouterPlus.sol"
     # "src/router-plus/SuperformRouterPlusAsync.sol"
-    "src/crosschain-data/extensions/AsyncStateRegistry.sol"
+    # "src/crosschain-data/extensions/AsyncStateRegistry.sol"
+    "src/forms/ERC7540Form.sol"
     # Add more file names here if needed
 )
 
@@ -115,7 +135,8 @@ contract_names=(
     # LayerzeroImplementation
     # SuperformRouterPlus
     # SuperformRouterPlusAsync
-    AsyncStateRegistry
+    # AsyncStateRegistry
+    ERC7540Form
     # Add more contract names here if needed
 )
 
@@ -151,7 +172,8 @@ contract_addresses=(
     # 0xF442FC47c5e8b6CA772a9b7345d9E6A663375258
     # 0x12DCd933886D2Dd2436DDF3E52506872f90f2793
     # 0xE3b345E14d063ec58f2A196fa2554a325464F65E
-    0xcB11480022E5B6D76661441C8eD025d756B5D1Ed
+    # 0xcB11480022E5B6D76661441C8eD025d756B5D1Ed
+    0xE2005E8A9b8A21d6dF752db866fA78a574057052
     # Add more addresses here if needed
 )
 
@@ -187,7 +209,8 @@ contract_addresses_fantom=(
     # 0x4c605a697c22254547289092337911078b56d5dc
     # 0x08a3D4F3113D449Bdea59C95cb5F7093175EaFfe
     # 0x43C3540828510C0f9A9BEf96F3ac810d7640FEC7
-    0x89dDD49AEa0B3278f51Ec96a6b70bAA19fC73854
+    # 0x89dDD49AEa0B3278f51Ec96a6b70bAA19fC73854
+    0x918cEF6ae14316Be0669270BFE3DD7Fbb4fd2aCa
     # Add more addresses here if needed
 )
 
@@ -215,6 +238,7 @@ constructor_args=(
     # $empty_constructor_arg
     # $super_constructor_arg
     # $wormhole_sr_arg
+    # $super_constructor_arg
     # $super_constructor_arg
     # $super_constructor_arg
     # $super_constructor_arg
@@ -258,6 +282,7 @@ constructor_args_fantom=(
     # $super_constructor_arg_ftm
     # $super_constructor_arg_ftm
     # $super_constructor_arg_ftm
+    # $super_constructor_arg_ftm
     $super_constructor_arg_ftm
 )
 
@@ -274,6 +299,7 @@ for i in "${!networks[@]}"; do
         contract_address_fantom="${contract_addresses_fantom[$j]}"
         constructor_arg="${constructor_args[$j]}"
         constructor_arg_fantom="${constructor_args_fantom[$j]}"
+        rpc_url="${rpc_urls[$i]}"
 
         # verify the contract
         if [[ $network == 43114 ]]; then
@@ -281,7 +307,8 @@ for i in "${!networks[@]}"; do
                 --chain-id $network \
                 --num-of-optimizations 200 \
                 --watch --compiler-version v0.8.23+commit.f704f362 \
-                --constructor-args "$constructor_arg" \
+                --guess-constructor-args \
+                --rpc-url $rpc_url \
                 "$file_name:$contract_name" \
                 --etherscan-api-key "$api_key" \
                 --verifier-url 'https://api.routescan.io/v2/network/mainnet/evm/43114/etherscan'
@@ -290,7 +317,8 @@ for i in "${!networks[@]}"; do
                 --chain-id $network \
                 --num-of-optimizations 200 \
                 --watch --compiler-version v0.8.23+commit.f704f362 \
-                --constructor-args "$constructor_arg_fantom" \
+                --guess-constructor-args \
+                --rpc-url $rpc_url \
                 "$file_name:$contract_name" \
                 --etherscan-api-key "$api_key"
         else
@@ -298,7 +326,8 @@ for i in "${!networks[@]}"; do
                 --chain-id $network \
                 --num-of-optimizations 200 \
                 --watch --compiler-version v0.8.23+commit.f704f362 \
-                --constructor-args "$constructor_arg" \
+                --guess-constructor-args \
+                --rpc-url $rpc_url \
                 "$file_name:$contract_name" \
                 --etherscan-api-key "$api_key"
         fi

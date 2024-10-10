@@ -47,9 +47,6 @@ abstract contract AbstractDeploy7540Form is EnvironmentUtils {
 
         assert(superRegistry == expectedSr);
 
-        address newStateRegistry = address(new AsyncStateRegistry{ salt: salt }(ISuperRegistry(superRegistry)));
-        contracts[vars.chainId][bytes32(bytes("AsyncStateRegistry"))] = newStateRegistry;
-
         address newForm = address(new ERC7540Form{ salt: salt }(superRegistry, 4));
         contracts[vars.chainId][bytes32(bytes("ERC7540Form"))] = newForm;
 
