@@ -412,7 +412,7 @@ contract LayerzeroImplementationTest is BaseSetup {
 
     function _depositFromETHtoOPNewStateRegistry(uint256 gasLimit_) internal returns (Vm.Log[] memory) {
         bytes memory crossChainMsg =
-            abi.encode(AMBMessage(DataLib.packTxInfo(0, 1, 1, 4, deployer, ETH), abi.encode(new uint8[](0), bytes(""))));
+            abi.encode(AMBMessage(DataLib.packTxInfo(0, 1, 1, 5, deployer, ETH), abi.encode(new uint8[](0), bytes(""))));
 
         address coreStateRegistryETH = getContract(ETH, "CoreStateRegistry");
         vm.deal(coreStateRegistryETH, 1 ether);
@@ -489,7 +489,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         vm.prank(deployer);
 
         uint8[] memory registryId_ = new uint8[](1);
-        registryId_[0] = 4;
+        registryId_[0] = 5;
 
         address[] memory registryAddress_ = new address[](1);
         registryAddress_[0] = isReset ? getContract(OP, "CoreStateRegistry") : address(1);

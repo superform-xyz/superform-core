@@ -220,6 +220,13 @@ abstract contract MainnetBaseSetup is BaseSetup {
         /// @dev 19  OneInchValidator
         contracts[chainId][bytes32(bytes("OneInchValidator"))] =
             _readContract(chainNames[trueIndex], chainId, "OneInchValidator");
+
+        /// @dev 20  AsyncStateRegistry
+        contracts[chainId][bytes32(bytes("AsyncStateRegistry"))] =
+            _readContract(chainNames[trueIndex], chainId, "AsyncStateRegistry");
+
+        /// @dev 21 ERC7540Form
+        contracts[chainId][bytes32(bytes("ERC7540Form"))] = _readContract(chainNames[trueIndex], chainId, "ERC7540Form");
     }
 
     function _readContract(
