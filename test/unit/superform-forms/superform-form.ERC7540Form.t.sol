@@ -701,7 +701,7 @@ contract SuperformERC7540FormTest is ProtocolActions {
         singleVaultData.amount = 1e18;
 
         deal(address(IERC7540(form.vault()).share()), address(form), 1e18);
-        deal(address(form.asset()), 0x7cb5fde934266937D17408D56b565785d065b508, 100e18);
+        deal(address(form.asset()), form.vault(), 100e18);
 
         vm.startPrank(getContract(srcChainId, "CoreStateRegistry"));
         vm.expectRevert(IERC7540FormBase.REDEEM_INVALID_LIQ_REQUEST.selector);
