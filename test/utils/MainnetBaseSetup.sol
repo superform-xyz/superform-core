@@ -220,6 +220,10 @@ abstract contract MainnetBaseSetup is BaseSetup {
         /// @dev 19  OneInchValidator
         contracts[chainId][bytes32(bytes("OneInchValidator"))] =
             _readContract(chainNames[trueIndex], chainId, "OneInchValidator");
+
+        /// @dev 20  AsyncStateRegistry
+        contracts[chainId][bytes32(bytes("AsyncStateRegistry"))] =
+            _readContract(chainNames[trueIndex], chainId, "AsyncStateRegistry");
     }
 
     function _readContract(

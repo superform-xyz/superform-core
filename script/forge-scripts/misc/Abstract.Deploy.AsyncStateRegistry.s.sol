@@ -90,10 +90,10 @@ abstract contract AbstractDeployAsyncStateRegistry is EnvironmentUtils {
         address asyncStateRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "AsyncStateRegistry");
         assert(asyncStateRegistry != address(0));
 
-        address[] memory registryAddresses = new address[](2);
+        address[] memory registryAddresses = new address[](1);
         registryAddresses[0] = asyncStateRegistry;
 
-        uint8[] memory registryIds = new uint8[](2);
+        uint8[] memory registryIds = new uint8[](1);
         registryIds[0] = 4;
 
         vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);

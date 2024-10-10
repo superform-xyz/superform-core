@@ -77,8 +77,9 @@ file_names=(
     # "src/crosschain-liquidity/1inch/OneInchValidator.sol"
     # "src/forms/wrappers/ERC5115To4626WrapperFactory.sol"
     # "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol"
-    "src/router-plus/SuperformRouterPlus.sol"
-    "src/router-plus/SuperformRouterPlusAsync.sol"
+    # "src/router-plus/SuperformRouterPlus.sol"
+    # "src/router-plus/SuperformRouterPlusAsync.sol"
+    "src/crosschain-data/extensions/AsyncStateRegistry.sol"
     # Add more file names here if needed
 )
 
@@ -112,8 +113,9 @@ contract_names=(
     # "OneInchValidator"
     # ERC5115To4626WrapperFactory
     # LayerzeroImplementation
-    SuperformRouterPlus
-    SuperformRouterPlusAsync
+    # SuperformRouterPlus
+    # SuperformRouterPlusAsync
+    AsyncStateRegistry
     # Add more contract names here if needed
 )
 
@@ -147,8 +149,9 @@ contract_addresses=(
     # 0x0000000000000000000000000000000000000000
     # 0x14Bc2728DaE89FE7c828833a186DdC5E9AE439C3
     # 0xF442FC47c5e8b6CA772a9b7345d9E6A663375258
-    0x12DCd933886D2Dd2436DDF3E52506872f90f2793
-    0xE3b345E14d063ec58f2A196fa2554a325464F65E
+    # 0x12DCd933886D2Dd2436DDF3E52506872f90f2793
+    # 0xE3b345E14d063ec58f2A196fa2554a325464F65E
+    0xcB11480022E5B6D76661441C8eD025d756B5D1Ed
     # Add more addresses here if needed
 )
 
@@ -182,8 +185,9 @@ contract_addresses_fantom=(
     # 0x16e9f8549c2b6a026dc2706d746beA76CeFF4098
     # 0x0df3d7D6daE058667e49C6b85F7b92458Ab06836
     # 0x4c605a697c22254547289092337911078b56d5dc
-    0x08a3D4F3113D449Bdea59C95cb5F7093175EaFfe
-    0x43C3540828510C0f9A9BEf96F3ac810d7640FEC7
+    # 0x08a3D4F3113D449Bdea59C95cb5F7093175EaFfe
+    # 0x43C3540828510C0f9A9BEf96F3ac810d7640FEC7
+    0x89dDD49AEa0B3278f51Ec96a6b70bAA19fC73854
     # Add more addresses here if needed
 )
 
@@ -217,7 +221,8 @@ constructor_args=(
     # $super_constructor_arg
     # $super_constructor_arg
     # $super_constructor_arg
-    $super_constructor_arg
+    # $super_constructor_arg
+    # $super_constructor_arg
     $super_constructor_arg
 )
 
@@ -251,7 +256,8 @@ constructor_args_fantom=(
     # $super_constructor_arg_ftm
     # $super_constructor_arg_ftm
     # $super_constructor_arg_ftm
-    $super_constructor_arg_ftm
+    # $super_constructor_arg_ftm
+    # $super_constructor_arg_ftm
     $super_constructor_arg_ftm
 )
 
