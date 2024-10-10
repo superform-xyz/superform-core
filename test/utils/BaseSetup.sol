@@ -1757,28 +1757,28 @@ abstract contract BaseSetup is StdInvariant, Test {
         }
         if (!invariant) {
             forks[ETH] = selectedChainIds[ETH]
-                ? pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 20_935_325) : vm.createFork(ETHEREUM_RPC_URL_QN)
+                ? pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 20_935_740) : vm.createFork(ETHEREUM_RPC_URL_QN)
                 : 999;
             forks[BSC] = selectedChainIds[BSC]
-                ? pinnedBlock ? vm.createFork(BSC_RPC_URL, 42_995_273) : vm.createFork(BSC_RPC_URL_QN)
+                ? pinnedBlock ? vm.createFork(BSC_RPC_URL, 42_996_977) : vm.createFork(BSC_RPC_URL_QN)
                 : 999;
             forks[AVAX] = selectedChainIds[AVAX]
-                ? pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 51_602_796) : vm.createFork(AVALANCHE_RPC_URL_QN)
+                ? pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 51_605_115) : vm.createFork(AVALANCHE_RPC_URL_QN)
                 : 999;
             forks[POLY] = selectedChainIds[POLY]
-                ? pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 62_866_511) : vm.createFork(POLYGON_RPC_URL_QN)
+                ? pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 62_868_859) : vm.createFork(POLYGON_RPC_URL_QN)
                 : 999;
             forks[ARBI] = selectedChainIds[ARBI]
-                ? pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 262_358_982) : vm.createFork(ARBITRUM_RPC_URL_QN)
+                ? pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 262_379_111) : vm.createFork(ARBITRUM_RPC_URL_QN)
                 : 999;
             forks[OP] = selectedChainIds[OP]
-                ? pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 126_483_702) : vm.createFork(OPTIMISM_RPC_URL_QN)
+                ? pinnedBlock ? vm.createFork(OPTIMISM_RPC_URL, 126_486_035) : vm.createFork(OPTIMISM_RPC_URL_QN)
                 : 999;
             forks[BASE] = selectedChainIds[BASE]
                 ? pinnedBlock ? vm.createFork(BASE_RPC_URL) : vm.createFork(BASE_RPC_URL_QN)
                 : 999;
             forks[FANTOM] = selectedChainIds[FANTOM]
-                ? pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 94_213_816) : vm.createFork(FANTOM_RPC_URL_QN)
+                ? pinnedBlock ? vm.createFork(FANTOM_RPC_URL, 94_220_643) : vm.createFork(FANTOM_RPC_URL_QN)
                 : 999;
             forks[SEPOLIA] = selectedChainIds[SEPOLIA]
                 ? pinnedBlock ? vm.createFork(SEPOLIA_RPC_URL_QN, 6_624_692) : vm.createFork(SEPOLIA_RPC_URL_QN)
@@ -1787,10 +1787,10 @@ abstract contract BaseSetup is StdInvariant, Test {
                 ? pinnedBlock ? vm.createFork(BSC_TESTNET_RPC_URL_QN, 41_624_319) : vm.createFork(BSC_TESTNET_RPC_URL_QN)
                 : 999;
             forks[LINEA] = selectedChainIds[LINEA]
-                ? pinnedBlock ? vm.createFork(LINEA_RPC_URL, 10_566_568) : vm.createFork(LINEA_RPC_URL_QN)
+                ? pinnedBlock ? vm.createFork(LINEA_RPC_URL, 10_568_898) : vm.createFork(LINEA_RPC_URL_QN)
                 : 999;
             forks[BLAST] = selectedChainIds[BLAST]
-                ? pinnedBlock ? vm.createFork(BLAST_RPC_URL, 9_878_207) : vm.createFork(BLAST_RPC_URL_QN)
+                ? pinnedBlock ? vm.createFork(BLAST_RPC_URL, 9_880_537) : vm.createFork(BLAST_RPC_URL_QN)
                 : 999;
             forks[BARTIO] = selectedChainIds[BARTIO]
                 ? pinnedBlock ? vm.createFork(BARTIO_RPC_URL, 5_274_270) : vm.createFork(BARTIO_RPC_URL_QN)
