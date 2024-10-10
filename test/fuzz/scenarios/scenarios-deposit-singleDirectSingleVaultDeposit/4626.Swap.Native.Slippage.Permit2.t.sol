@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract SDSVD4626SwapNativeSlippagePermit2 is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, ARBI];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE

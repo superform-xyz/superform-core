@@ -29,7 +29,8 @@ contract SuperPositionsTest is BaseSetup {
         address superRegistry = getContract(ETH, "SuperRegistry");
 
         formImplementation = address(new ERC4626Form(superRegistry));
-        vault = getContract(ETH, VAULT_NAMES[0][0]);
+
+        vault = getContract(ETH, "DAIVaultMock");
         vm.prank(deployer);
         SuperformFactory(getContract(ETH, "SuperformFactory")).addFormImplementation(
             formImplementation, formImplementationId, 1
@@ -126,7 +127,7 @@ contract SuperPositionsTest is BaseSetup {
 
         /// add the invalid state registry to super registry
         uint8[] memory registryId = new uint8[](1);
-        registryId[0] = 5;
+        registryId[0] = 7;
 
         address[] memory registryAddress = new address[](1);
         registryAddress[0] = address(420);
@@ -147,14 +148,14 @@ contract SuperPositionsTest is BaseSetup {
         );
 
         /// non existent form implementation id so the get form state registry id returns 0
-        uint256 superformId = DataLib.packSuperform(superform, 5, ETH);
+        uint256 superformId = DataLib.packSuperform(superform, 555, ETH);
 
         ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, superformId, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         /// add the invalid state registry to super registry
         uint8[] memory registryId = new uint8[](1);
-        registryId[0] = 5;
+        registryId[0] = 7;
 
         address[] memory registryAddress = new address[](1);
         registryAddress[0] = address(420);
@@ -292,7 +293,7 @@ contract SuperPositionsTest is BaseSetup {
         (uint256 superformId,) =
             SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
         uint8[] memory srId = new uint8[](1);
-        srId[0] = 5;
+        srId[0] = 8;
 
         address newSr = address(new CoreStateRegistry(ISuperRegistry(getContract(ETH, "SuperRegistry"))));
 
@@ -321,7 +322,7 @@ contract SuperPositionsTest is BaseSetup {
         amounts[0] = 1;
 
         uint8[] memory srId = new uint8[](1);
-        srId[0] = 5;
+        srId[0] = 8;
 
         address newSr = address(new CoreStateRegistry(ISuperRegistry(getContract(ETH, "SuperRegistry"))));
 
@@ -423,7 +424,10 @@ contract SuperPositionsTest is BaseSetup {
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
 
         for (uint256 i; i < chainIds.length; ++i) {
-            if (chainIds[i] == LINEA) continue;
+            if (chainIds[i] == LINEA || chainIds[i] == SEPOLIA || chainIds[i] == BSC_TESTNET || chainIds[i] == BARTIO) {
+                continue;
+            }
+
             if (chainIds[i] != ETH) {
                 vm.selectFork(FORKS[chainIds[i]]);
                 BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(1);

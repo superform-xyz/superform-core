@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract MDMVDMulti01NoDstSwapTokenInputNoSlippageL2AMB13 is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, AVAX, ARBI];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE

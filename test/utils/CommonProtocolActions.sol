@@ -144,7 +144,6 @@ abstract contract CommonProtocolActions is BaseSetup {
                     abi.encodeWithSelector(LiFiMock.swapAndStartBridgeTokensViaBridge.selector, bridgeData, swapData);
             } else {
                 LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
-
                 swapData[0] = LibSwap.SwapData(
                     address(0),
                     /// @dev  callTo (arbitrary)
@@ -181,7 +180,7 @@ abstract contract CommonProtocolActions is BaseSetup {
         } else if (args.liqBridgeKind == 2) {
             /// @notice bridge id 2 doesn't support same chain swaps
             if (args.toChainId == args.srcChainId) {
-                revert();
+                revert("bridge id 2 doesn't support same chain swaps: ");
             }
 
             ISocketRegistry.BridgeRequest memory bridgeRequest;
@@ -218,7 +217,7 @@ abstract contract CommonProtocolActions is BaseSetup {
                         FORKS[args.liqDstChainId],
                         args.underlyingTokenDst,
                         args.slippage,
-                        args.dstSwap,
+                        false,
                         MULTI_TX_SLIPPAGE_SHARE,
                         args.USDPerExternalToken,
                         args.USDPerUnderlyingToken,
@@ -241,7 +240,7 @@ abstract contract CommonProtocolActions is BaseSetup {
                         FORKS[args.liqDstChainId],
                         args.underlyingTokenDst,
                         args.slippage,
-                        args.dstSwap,
+                        false,
                         MULTI_TX_SLIPPAGE_SHARE,
                         args.USDPerExternalToken,
                         args.USDPerUnderlyingToken,

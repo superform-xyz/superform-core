@@ -97,6 +97,10 @@ contract PayloadHelperMultiTest is ProtocolActions {
                     );
 
                     AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0] / 2, superPositions[0] / 2];
+
+                    if (superPositions[0] != AMOUNTS[DST_CHAINS[i]][1][0] + AMOUNTS[DST_CHAINS[i]][1][1]) {
+                        AMOUNTS[DST_CHAINS[i]][1][0] += 1;
+                    }
                 }
             }
 
@@ -140,6 +144,10 @@ contract PayloadHelperMultiTest is ProtocolActions {
                     );
 
                     AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0] / 2, superPositions[0] / 2];
+
+                    if (superPositions[0] != AMOUNTS[DST_CHAINS[i]][1][0] + AMOUNTS[DST_CHAINS[i]][1][1]) {
+                        AMOUNTS[DST_CHAINS[i]][1][0] += 1;
+                    }
                 }
             }
 

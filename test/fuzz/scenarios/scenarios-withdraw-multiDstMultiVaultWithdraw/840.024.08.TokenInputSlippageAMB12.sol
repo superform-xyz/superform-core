@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract MDMVW84002408NativeInputSlipageAMB12ABA is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, POLY, AVAX];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
