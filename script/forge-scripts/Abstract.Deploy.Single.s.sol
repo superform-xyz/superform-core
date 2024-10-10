@@ -184,8 +184,8 @@ abstract contract AbstractDeploySingle is BatchScript {
     //////////////////////////////////////////////////////////////*/
     string public SUPER_POSITIONS_NAME;
 
-    /// @dev 1 = ERC4626Form, 5 = 5115Form, 6 = 7540Form
-    uint32[] public STAGING_FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(5), uint32(6)];
+    /// @dev 1 = ERC4626Form, 5 = 5115Form, 7 = 7540Form
+    uint32[] public STAGING_FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(5), uint32(7)];
 
     /// @dev 1 = ERC4626Form, 3 = 5115Form, 4 = 7540Form
     uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(3), uint32(4)];

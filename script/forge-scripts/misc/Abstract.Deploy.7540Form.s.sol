@@ -96,8 +96,10 @@ abstract contract AbstractDeploy7540Form is EnvironmentUtils {
             : 0x9CA4480B65E5F3d57cFb942ac44A0A6Ab0B2C843;
 
         assert(address(vars.superformFactory) == expectedFactory);
-
-        vars.superformFactory.addFormImplementation(erc7540Form, STAGING_FORM_IMPLEMENTATION_IDS[2], 4);
+        assert(uint8(STAGING_FORM_IMPLEMENTATION_IDS[2]) == 7);
+        vars.superformFactory.addFormImplementation(
+            erc7540Form, STAGING_FORM_IMPLEMENTATION_IDS[2], uint8(STAGING_FORM_IMPLEMENTATION_IDS[2])
+        );
 
         vm.stopBroadcast();
     }
@@ -129,7 +131,6 @@ abstract contract AbstractDeploy7540Form is EnvironmentUtils {
         assert(address(vars.superRegistryC) == expectedSr);
 
         address erc7540Form = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "ERC7540Form");
-        address asyncStateRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "AsyncStateRegistry");
 
         vars.superformFactory =
             SuperformFactory(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperformFactory")));
@@ -139,9 +140,12 @@ abstract contract AbstractDeploy7540Form is EnvironmentUtils {
             : 0xD85ec15A9F814D6173bF1a89273bFB3964aAdaEC;
 
         assert(address(vars.superformFactory) == expectedFactory);
-
+        assert(uint8(FORM_IMPLEMENTATION_IDS[2]) == 4);
         bytes memory txn = abi.encodeWithSelector(
-            vars.superformFactory.addFormImplementation.selector, erc7540Form, FORM_IMPLEMENTATION_IDS[1], 4
+            vars.superformFactory.addFormImplementation.selector,
+            erc7540Form,
+            FORM_IMPLEMENTATION_IDS[2],
+            uint8(FORM_IMPLEMENTATION_IDS[2])
         );
         addToBatch(address(vars.superformFactory), 0, txn);
 

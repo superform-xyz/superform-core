@@ -92,9 +92,9 @@ abstract contract AbstractDeployAsyncStateRegistry is EnvironmentUtils {
 
         address[] memory registryAddresses = new address[](1);
         registryAddresses[0] = asyncStateRegistry;
-
+        assert(uint8(STAGING_FORM_IMPLEMENTATION_IDS[2]) == 7);
         uint8[] memory registryIds = new uint8[](1);
-        registryIds[0] = 4;
+        registryIds[0] = uint8(STAGING_FORM_IMPLEMENTATION_IDS[2]);
 
         vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
 
@@ -142,8 +142,9 @@ abstract contract AbstractDeployAsyncStateRegistry is EnvironmentUtils {
         address[] memory registryAddresses = new address[](1);
         registryAddresses[0] = asyncStateRegistry;
 
+        assert(uint8(FORM_IMPLEMENTATION_IDS[2]) == 4);
         uint8[] memory registryIds = new uint8[](1);
-        registryIds[0] = 4;
+        registryIds[0] = uint8(FORM_IMPLEMENTATION_IDS[2]);
 
         bytes memory txn =
             abi.encodeWithSelector(vars.superRegistryC.setStateRegistryAddress.selector, registryIds, registryAddresses);

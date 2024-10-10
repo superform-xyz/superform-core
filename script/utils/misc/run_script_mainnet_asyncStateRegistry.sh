@@ -39,8 +39,8 @@ wait
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.AsyncStateRegistry.s.sol:MainnetDeployAsyncStateRegistry --sig "deployAsyncStateRegistry(uint256,uint256,uint256)" 0 7 1 --rpc-url $FANTOM_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.AsyncStateRegistry.s.sol:MainnetDeployAsyncStateRegistry --sig "deployAsyncStateRegistry(uint256,uint256,uint256)" 0 8 1 --rpc-url $LINEA_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.AsyncStateRegistry.s.sol:MainnetDeployAsyncStateRegistry --sig "deployAsyncStateRegistry(uint256,uint256,uint256)" 0 8 0 --rpc-url $LINEA_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 wait
 
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.AsyncStateRegistry.s.sol:MainnetDeployAsyncStateRegistry --sig "deployAsyncStateRegistry(uint256,uint256,uint256)" 0 9 1 --rpc-url $BLAST_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.AsyncStateRegistry.s.sol:MainnetDeployAsyncStateRegistry --sig "deployAsyncStateRegistry(uint256,uint256,uint256)" 0 9 0 --rpc-url $BLAST_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 wait
