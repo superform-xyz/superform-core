@@ -179,7 +179,7 @@ contract Mock5115VaultWithRewardsAsVaultToken is Test {
 
 contract SuperformERC5115FormTest is ProtocolActions {
     uint64 internal chainId = ARBI;
-    uint32 FORM_ID = 4;
+    uint32 FORM_ID = 3;
 
     ERC5115Form targetSuperform;
     ERC5115To4626Wrapper targetWrapper;
@@ -211,7 +211,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
         super.setUp();
 
         vm.selectFork(FORKS[chainId]);
-        targetSuperform = ERC5115Form(getContract(chainId, "wstETHERC5115Superform4"));
+        targetSuperform = ERC5115Form(getContract(chainId, "wstETHERC5115Superform3"));
         targetWrapper = ERC5115To4626Wrapper(targetSuperform.vault());
         targetVault = IStandardizedYield(targetSuperform.vault());
 
@@ -547,7 +547,7 @@ contract SuperformERC5115FormTest is ProtocolActions {
         );
 
         SuperformFactory(getContract(ARBI, "SuperformFactory")).changeFormImplementationPauseStatus(
-            4, ISuperformFactory.PauseStatus.PAUSED, ""
+            3, ISuperformFactory.PauseStatus.PAUSED, ""
         );
 
         SuperPositions(getContract(ARBI, "SuperPositions")).setApprovalForAll(

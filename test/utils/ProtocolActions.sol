@@ -1430,7 +1430,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
     {
         address vault = IBaseForm(superform).getVaultAddress();
         address asset = IBaseForm(superform).getVaultAsset();
-        if (vault == REAL_VAULT_ADDRESS[SEPOLIA][3]["tUSD"][0] || vault == REAL_VAULT_ADDRESS[ETH][3]["USDC"][0]) {
+        if (vault == REAL_VAULT_ADDRESS[SEPOLIA][4]["tUSD"][0] || vault == REAL_VAULT_ADDRESS[ETH][4]["USDC"][0]) {
             address manager = ERC7540VaultLike(vault).manager();
 
             /// @dev for centrifuge
