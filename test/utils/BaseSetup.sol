@@ -1757,13 +1757,13 @@ abstract contract BaseSetup is StdInvariant, Test {
         }
         if (!invariant) {
             forks[ETH] = selectedChainIds[ETH]
-                ? pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 20_935_740) : vm.createFork(ETHEREUM_RPC_URL_QN)
+                ? pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 20_574_913) : vm.createFork(ETHEREUM_RPC_URL_QN)
                 : 999;
             forks[BSC] = selectedChainIds[BSC]
                 ? pinnedBlock ? vm.createFork(BSC_RPC_URL, 42_996_977) : vm.createFork(BSC_RPC_URL_QN)
                 : 999;
             forks[AVAX] = selectedChainIds[AVAX]
-                ? pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 51_605_115) : vm.createFork(AVALANCHE_RPC_URL_QN)
+                ? pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 46_289_230) : vm.createFork(AVALANCHE_RPC_URL_QN)
                 : 999;
             forks[POLY] = selectedChainIds[POLY]
                 ? pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 62_868_859) : vm.createFork(POLYGON_RPC_URL_QN)

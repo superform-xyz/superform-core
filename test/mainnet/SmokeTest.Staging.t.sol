@@ -563,7 +563,7 @@ contract SmokeTestStaging is MainnetBaseSetup {
                 ? assertEq(superFactory.getFormImplementation(5), getContract(chainId, "ERC5115Form"))
                 : assertEq(superFactory.getFormImplementation(205), getContract(chainId, "ERC5115Form"));
             /// @dev in blast there are 6 forms (2 without operator, 2 with wrong state registry and 2 right superforms)
-            assertEq(superFactory.getFormCount(), chainId == LINEA ? 3 : chainId == BLAST ? 6 : 5);
+            assertEq(superFactory.getFormCount(), chainId == LINEA ? 5 : chainId == BLAST ? 8 : 7);
             assertEq(superFactory.getFormStateRegistryId(5), 1);
         }
     }
@@ -577,7 +577,7 @@ contract SmokeTestStaging is MainnetBaseSetup {
             address asyncStateRegistry = getContract(chainId, "AsyncStateRegistry");
 
             SuperRegistry superRegistry = SuperRegistry(getContract(chainId, "SuperRegistry"));
-            assertEq(superRegistry.stateRegistryIds(asyncStateRegistry), 4);
+            assertEq(superRegistry.stateRegistryIds(asyncStateRegistry), 7);
         }
     }
 
@@ -591,10 +591,10 @@ contract SmokeTestStaging is MainnetBaseSetup {
             superFactory = SuperformFactory(getContract(chainId, "SuperformFactory"));
 
             chainId != BLAST
-                ? assertEq(superFactory.getFormImplementation(6), getContract(chainId, "ERC7540Form"))
-                : assertEq(superFactory.getFormImplementation(6), getContract(chainId, "ERC7540Form"));
-            assertEq(superFactory.getFormCount(), chainId == LINEA ? 4 : chainId == BLAST ? 7 : 6);
-            assertEq(superFactory.getFormStateRegistryId(6), 4);
+                ? assertEq(superFactory.getFormImplementation(7), getContract(chainId, "ERC7540Form"))
+                : assertEq(superFactory.getFormImplementation(7), getContract(chainId, "ERC7540Form"));
+            assertEq(superFactory.getFormCount(), chainId == LINEA ? 5 : chainId == BLAST ? 8 : 7);
+            assertEq(superFactory.getFormStateRegistryId(7), 7);
         }
     }
 }
