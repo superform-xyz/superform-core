@@ -40,7 +40,7 @@ contract Mock5115Vault2 {
 
 contract ERC5115To4626WrapperTest is ProtocolActions {
     uint64 internal chainId = ARBI;
-    uint32 FORM_ID = 4;
+    uint32 FORM_ID = 3;
 
     ERC5115To4626WrapperFactory wrapperFactory;
     SuperRegistry superRegistry;

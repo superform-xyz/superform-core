@@ -5,6 +5,7 @@ import { Script } from "forge-std/Script.sol";
 /// @dev Protocol imports
 import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
 import { BroadcastRegistry } from "src/crosschain-data/BroadcastRegistry.sol";
+import { AsyncStateRegistry } from "src/crosschain-data/extensions/AsyncStateRegistry.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
 import { SuperRegistry } from "src/settings/SuperRegistry.sol";
@@ -13,8 +14,10 @@ import { SuperPositions } from "src/SuperPositions.sol";
 import { SuperformFactory } from "src/SuperformFactory.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
 import { ERC5115Form } from "src/forms/ERC5115Form.sol";
+import { ERC7540Form } from "src/forms/ERC7540Form.sol";
 import { ERC4626Form as BlastERC4626Form } from "script/forge-scripts/misc/blast/forms/BlastERC4626Form.sol";
 import { ERC5115Form as BlastERC5115Form } from "script/forge-scripts/misc/blast/forms/BlastERC5115Form.sol";
+import { ERC7540Form as BlastERC7540Form } from "script/forge-scripts/misc/blast/forms/BlastERC7540Form.sol";
 import { ERC5115To4626WrapperFactory } from "src/forms/wrappers/ERC5115To4626WrapperFactory.sol";
 import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
@@ -47,6 +50,7 @@ import { EmergencyQueue } from "src/EmergencyQueue.sol";
 import { VaultClaimer } from "src/VaultClaimer.sol";
 import { AcrossFacetPacked } from "./misc/blacklistedFacets/AcrossFacetPacked.sol";
 import { AmarokFacetPacked } from "./misc/blacklistedFacets/AmarokFacetPacked.sol";
+import { AcrossFacetPackedV3 } from "./misc/blacklistedFacets/AcrossFacetPackedV3.sol";
 import { RewardsDistributor } from "src/RewardsDistributor.sol";
 import "forge-std/console.sol";
 import { BatchScript } from "./safe/BatchScript.sol";
@@ -73,9 +77,11 @@ struct SetupVars {
     address axelarImplementation;
     address erc4626Form;
     address erc5115Form;
+    address erc7540Form;
     address erc5115To4626WrapperFactory;
     address broadcastRegistry;
     address coreStateRegistry;
+    address asyncStateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
     address superformRouter;
@@ -116,7 +122,7 @@ abstract contract AbstractDeploySingle is BatchScript {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[31] public contractNames = [
+    string[33] public contractNames = [
         "CoreStateRegistry",
         "BroadcastRegistry",
         "LayerzeroImplementation",
@@ -147,7 +153,9 @@ abstract contract AbstractDeploySingle is BatchScript {
         "ERC5115Form",
         "ERC5115To4626WrapperFactory",
         "SuperformRouterPlus",
-        "SuperformRouterPlusAsync"
+        "SuperformRouterPlusAsync",
+        "AsyncStateRegistry",
+        "ERC7540Form"
     ];
 
     enum Chains {
@@ -176,11 +184,11 @@ abstract contract AbstractDeploySingle is BatchScript {
     //////////////////////////////////////////////////////////////*/
     string public SUPER_POSITIONS_NAME;
 
-    /// @dev 1 = ERC4626Form, 5 = 5115Form (2 will tentatively be used for ERC7540)
-    uint32[] public STAGING_FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(5)];
+    /// @dev 1 = ERC4626Form, 5 = 5115Form, 7 = 7540Form
+    uint32[] public STAGING_FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(5), uint32(7)];
 
-    /// @dev 1 = ERC4626Form, 3 = 5115Form (2 will tentatively be used for ERC7540)
-    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(3)];
+    /// @dev 1 = ERC4626Form, 3 = 5115Form, 4 = 7540Form
+    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(3), uint32(4)];
     string[] public VAULT_KINDS = ["Vault"];
 
     /// @dev liquidity bridge ids 101 is lifi v2,
@@ -383,7 +391,8 @@ abstract contract AbstractDeploySingle is BatchScript {
     address public BROADCAST_REGISTRY_PROCESSOR;
     address public WORMHOLE_VAA_RELAYER;
     address public REWARDS_ADMIN;
-
+    address public ROUTER_PLUS_PROCESSOR;
+    address public ASYNC_STATE_REGISTRY_PROCESSOR;
     address[] public PROTOCOL_ADMINS = [
         0xd26b38a64C812403fD3F87717624C80852cD6D61,
         /// @dev ETH https://app.onchainden.com/safes/eth:0xd26b38a64c812403fd3f87717624c80852cd6d61
@@ -534,14 +543,20 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.broadcastRegistry = address(new BroadcastRegistry{ salt: salt }(vars.superRegistryC));
         contracts[vars.chainId][bytes32(bytes("BroadcastRegistry"))] = vars.broadcastRegistry;
 
-        address[] memory registryAddresses = new address[](2);
+        /// @dev 3.3 - deploy Async State Registry
+        vars.asyncStateRegistry = address(new AsyncStateRegistry{ salt: salt }(vars.superRegistryC));
+        contracts[vars.chainId][bytes32(bytes("AsyncStateRegistry"))] = vars.asyncStateRegistry;
+
+        address[] memory registryAddresses = new address[](3);
         registryAddresses[0] = vars.coreStateRegistry;
         registryAddresses[1] = vars.broadcastRegistry;
+        registryAddresses[2] = vars.asyncStateRegistry;
 
         uint8 brRegistryId = 2;
-        uint8[] memory registryIds = new uint8[](2);
+        uint8[] memory registryIds = new uint8[](3);
         registryIds[0] = 1;
         registryIds[1] = brRegistryId;
+        registryIds[2] = 4;
 
         vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
 
@@ -611,7 +626,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.lifiValidator = address(new LiFiValidator{ salt: salt }(vars.superRegistry));
         vars.lv = LiFiValidator(vars.lifiValidator);
 
-        vars.selectorsToBlacklist = new bytes4[](8);
+        vars.selectorsToBlacklist = new bytes4[](12);
 
         /// @dev add selectors that need to be blacklisted post LiFiValidator deployment here
         vars.selectorsToBlacklist[0] = AcrossFacetPacked.startBridgeTokensViaAcrossNativePacked.selector;
@@ -622,6 +637,10 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.selectorsToBlacklist[5] = AmarokFacetPacked.startBridgeTokensViaAmarokERC20PackedPayFeeWithNative.selector;
         vars.selectorsToBlacklist[6] = AmarokFacetPacked.startBridgeTokensViaAmarokERC20MinPayFeeWithAsset.selector;
         vars.selectorsToBlacklist[7] = AmarokFacetPacked.startBridgeTokensViaAmarokERC20MinPayFeeWithNative.selector;
+        vars.selectorsToBlacklist[8] = AcrossFacetPackedV3.startBridgeTokensViaAcrossV3NativePacked.selector;
+        vars.selectorsToBlacklist[9] = AcrossFacetPackedV3.startBridgeTokensViaAcrossV3NativeMin.selector;
+        vars.selectorsToBlacklist[10] = AcrossFacetPackedV3.startBridgeTokensViaAcrossV3ERC20Packed.selector;
+        vars.selectorsToBlacklist[11] = AcrossFacetPackedV3.startBridgeTokensViaAcrossV3ERC20Min.selector;
 
         for (uint256 j = 0; j < vars.selectorsToBlacklist.length; ++j) {
             vars.lv.addToBlacklist(vars.selectorsToBlacklist[j]);
@@ -660,13 +679,16 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// @dev 8 - Deploy 4626Form implementations
         if (vars.chainId != BLAST) {
             // Standard ERC4626 Form
-
             vars.erc4626Form = address(new ERC4626Form{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars.erc4626Form;
 
             /// @dev 8.1 - Deploy 5115Form implementation
             vars.erc5115Form = address(new ERC5115Form{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("ERC5115Form"))] = vars.erc5115Form;
+
+            /// @dev 8.2 - Deploy 7540Form implementation
+            vars.erc7540Form = address(new ERC7540Form{ salt: salt }(vars.superRegistry, 4));
+            contracts[vars.chainId][bytes32(bytes("ERC7540Form"))] = vars.erc7540Form;
         } else {
             // Standard ERC4626 Form
             vars.erc4626Form = address(new BlastERC4626Form{ salt: salt }(vars.superRegistry));
@@ -676,6 +698,10 @@ abstract contract AbstractDeploySingle is BatchScript {
             vars.erc5115Form = address(new BlastERC5115Form{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("ERC5115Form"))] = vars.erc5115Form;
             vars.superRegistryC.setAddress(keccak256("BLAST_REWARD_DISTRIBUTOR_ADMIN"), REWARDS_ADMIN, vars.chainId);
+
+            /// @dev 8.2 - Deploy 7540Form implementation
+            vars.erc7540Form = address(new BlastERC7540Form{ salt: salt }(vars.superRegistry, 4));
+            contracts[vars.chainId][bytes32(bytes("ERC7540Form"))] = vars.erc7540Form;
         }
 
         /// @dev 8.1.1 Deploy 5115 wrapper factory
@@ -688,12 +714,16 @@ abstract contract AbstractDeploySingle is BatchScript {
         if (env == 0) {
             ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0], 1);
             ISuperformFactory(vars.factory).addFormImplementation(vars.erc5115Form, FORM_IMPLEMENTATION_IDS[1], 1);
+            ISuperformFactory(vars.factory).addFormImplementation(vars.erc7540Form, FORM_IMPLEMENTATION_IDS[2], 4);
         } else {
             ISuperformFactory(vars.factory).addFormImplementation(
                 vars.erc4626Form, STAGING_FORM_IMPLEMENTATION_IDS[0], 1
             );
             ISuperformFactory(vars.factory).addFormImplementation(
                 vars.erc5115Form, STAGING_FORM_IMPLEMENTATION_IDS[1], 1
+            );
+            ISuperformFactory(vars.factory).addFormImplementation(
+                vars.erc7540Form, STAGING_FORM_IMPLEMENTATION_IDS[2], 4
             );
         }
 
