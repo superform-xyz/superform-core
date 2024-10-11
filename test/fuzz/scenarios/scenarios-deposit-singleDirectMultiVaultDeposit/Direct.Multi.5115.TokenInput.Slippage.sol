@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract SDiMVDMulti5115NoTokenInput is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, OP];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE

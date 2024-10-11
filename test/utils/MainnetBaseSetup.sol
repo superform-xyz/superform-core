@@ -11,8 +11,20 @@ abstract contract MainnetBaseSetup is BaseSetup {
 
     string public folderToRead;
     uint64[] TARGET_DEPLOYMENT_CHAINS;
-    string[] public chainNames =
-        ["Ethereum", "Binance", "Avalanche", "Polygon", "Arbitrum", "Optimism", "Base", "Fantom", "Linea", "Blast"];
+    string[] public chainNames = [
+        "Ethereum",
+        "Binance",
+        "Avalanche",
+        "Polygon",
+        "Arbitrum",
+        "Optimism",
+        "Base",
+        "Fantom",
+        "Sepolia",
+        "Binance_testnet",
+        "Linea",
+        "Blast"
+    ];
 
     enum Cycle {
         Dev,
@@ -91,7 +103,7 @@ abstract contract MainnetBaseSetup is BaseSetup {
                     break;
                 }
             }
-
+            console.log(trueIndex);
             _grabAddresses(j, trueIndex, Cycle.Prod, TARGET_DEPLOYMENT_CHAINS);
         }
     }
@@ -208,6 +220,13 @@ abstract contract MainnetBaseSetup is BaseSetup {
         /// @dev 19  OneInchValidator
         contracts[chainId][bytes32(bytes("OneInchValidator"))] =
             _readContract(chainNames[trueIndex], chainId, "OneInchValidator");
+
+        /// @dev 20  AsyncStateRegistry
+        contracts[chainId][bytes32(bytes("AsyncStateRegistry"))] =
+            _readContract(chainNames[trueIndex], chainId, "AsyncStateRegistry");
+
+        /// @dev 21 ERC7540Form
+        contracts[chainId][bytes32(bytes("ERC7540Form"))] = _readContract(chainNames[trueIndex], chainId, "ERC7540Form");
     }
 
     function _readContract(

@@ -7,6 +7,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract MDMVW00001200TokenInputSlippageAMB12 is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, ARBI, POLY];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE

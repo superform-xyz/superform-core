@@ -6,6 +6,8 @@ import "../../../utils/ProtocolActions.sol";
 
 contract SDMVDMulti0NoTokenInputNoSlippageAMB13 is ProtocolActions {
     function setUp() public override {
+        chainIds = [ETH, ARBI];
+
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
