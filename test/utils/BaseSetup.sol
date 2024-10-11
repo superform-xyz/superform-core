@@ -1766,7 +1766,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                 ? pinnedBlock ? vm.createFork(AVALANCHE_RPC_URL, 46_289_230) : vm.createFork(AVALANCHE_RPC_URL_QN)
                 : 999;
             forks[POLY] = selectedChainIds[POLY]
-                ? pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 62_868_859) : vm.createFork(POLYGON_RPC_URL_QN)
+                ? pinnedBlock ? vm.createFork(POLYGON_RPC_URL, 60_619_414) : vm.createFork(POLYGON_RPC_URL_QN)
                 : 999;
             forks[ARBI] = selectedChainIds[ARBI]
                 ? pinnedBlock ? vm.createFork(ARBITRUM_RPC_URL, 262_379_111) : vm.createFork(ARBITRUM_RPC_URL_QN)
