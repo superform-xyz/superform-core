@@ -963,8 +963,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         }
 
         /// @dev 16 setup setup srcChain keepers
-        vars.ids = new bytes32[](10);
-
+        vars.ids = new bytes32[](11);
         vars.ids[0] = vars.superRegistryC.PAYMENT_ADMIN();
         vars.ids[1] = vars.superRegistryC.CORE_REGISTRY_PROCESSOR();
         vars.ids[2] = vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR();
@@ -975,8 +974,9 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.ids[7] = vars.superRegistryC.DST_SWAPPER_PROCESSOR();
         vars.ids[8] = vars.superRegistryC.SUPERFORM_RECEIVER();
         vars.ids[9] = vars.superRegistryC.BROADCAST_REGISTRY();
+        vars.ids[10] = keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"); // due to debridge validator check
 
-        vars.newAddresses = new address[](10);
+        vars.newAddresses = new address[](11);
         vars.newAddresses[0] = PAYMENT_ADMIN;
         vars.newAddresses[1] = CSR_PROCESSOR;
         vars.newAddresses[2] = BROADCAST_REGISTRY_PROCESSOR;
@@ -987,8 +987,9 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.newAddresses[7] = DST_SWAPPER;
         vars.newAddresses[8] = SUPERFORM_RECEIVER;
         vars.newAddresses[9] = vars.broadcastRegistry;
+        vars.newAddresses[10] = CSR_RESCUER; // due to debridge validator check
 
-        vars.chainIdsSetAddresses = new uint64[](10);
+        vars.chainIdsSetAddresses = new uint64[](11);
         vars.chainIdsSetAddresses[0] = vars.chainId;
         vars.chainIdsSetAddresses[1] = vars.chainId;
         vars.chainIdsSetAddresses[2] = vars.chainId;
@@ -999,6 +1000,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         vars.chainIdsSetAddresses[7] = vars.chainId;
         vars.chainIdsSetAddresses[8] = vars.chainId;
         vars.chainIdsSetAddresses[9] = vars.chainId;
+        vars.chainIdsSetAddresses[10] = vars.chainId; // due to debridge validator check
 
         vars.superRegistryC.batchSetAddress(vars.ids, vars.newAddresses, vars.chainIdsSetAddresses);
 
@@ -1479,7 +1481,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         );
 
         /// @dev FIXME not setting BROADCAST_REGISTRY yet, which will result in all broadcast tentatives to fail
-        bytes32[] memory ids = new bytes32[](18);
+        bytes32[] memory ids = new bytes32[](19);
         ids[0] = vars.superRegistryC.SUPERFORM_ROUTER();
         ids[1] = vars.superRegistryC.SUPERFORM_FACTORY();
         ids[2] = vars.superRegistryC.PAYMASTER();
@@ -1498,9 +1500,10 @@ abstract contract AbstractDeploySingle is BatchScript {
         ids[15] = vars.superRegistryC.CORE_REGISTRY_DISPUTER();
         ids[16] = vars.superRegistryC.DST_SWAPPER_PROCESSOR();
         ids[17] = vars.superRegistryC.SUPERFORM_RECEIVER();
-        //ids[18] = rewardsDistributorId;
+        ids[18] = keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE");
+        /// we need this address to be chain aware due to debridge validator
 
-        address[] memory newAddresses = new address[](18);
+        address[] memory newAddresses = new address[](19);
         newAddresses[0] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperformRouter");
         newAddresses[1] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "SuperformFactory");
         newAddresses[2] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId, "PayMaster");
@@ -1519,10 +1522,9 @@ abstract contract AbstractDeploySingle is BatchScript {
         newAddresses[15] = CSR_DISPUTER;
         newAddresses[16] = DST_SWAPPER;
         newAddresses[17] = SUPERFORM_RECEIVER;
-        //newAddresses[18] = _readContractsV1(env, chainNames[vars.dstTrueIndex], vars.dstChainId,
-        // "RewardsDistributor");
+        newAddresses[18] = CSR_RESCUER;
 
-        uint64[] memory chainIdsSetAddresses = new uint64[](18);
+        uint64[] memory chainIdsSetAddresses = new uint64[](19);
         chainIdsSetAddresses[0] = vars.dstChainId;
         chainIdsSetAddresses[1] = vars.dstChainId;
         chainIdsSetAddresses[2] = vars.dstChainId;
@@ -1541,7 +1543,7 @@ abstract contract AbstractDeploySingle is BatchScript {
         chainIdsSetAddresses[15] = vars.dstChainId;
         chainIdsSetAddresses[16] = vars.dstChainId;
         chainIdsSetAddresses[17] = vars.dstChainId;
-        //chainIdsSetAddresses[18] = vars.dstChainId;
+        chainIdsSetAddresses[18] = vars.dstChainId;
 
         if (!safeExecution) {
             LayerzeroV2Implementation(payable(vars.lzImplementation)).setPeer(
