@@ -1826,10 +1826,10 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[FANTOM][3] = abi.encode(643_315);
         gasUsed[SEPOLIA][3] = abi.encode(400_000);
         gasUsed[BSC_TESTNET][3] = abi.encode(650_000);
-
         gasUsed[LINEA][3] = abi.encode(600_000);
         gasUsed[BLAST][3] = abi.encode(600_000);
         gasUsed[BARTIO][3] = abi.encode(600_000);
+
         // updateDepositGasUsed == 4 (only used on deposits for now)
         gasUsed[ETH][4] = abi.encode(225_000);
         gasUsed[BSC][4] = abi.encode(225_000);
@@ -1841,10 +1841,10 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[FANTOM][4] = abi.encode(734_757);
         gasUsed[SEPOLIA][4] = abi.encode(225_000);
         gasUsed[BSC_TESTNET][4] = abi.encode(225_000);
-
         gasUsed[LINEA][4] = abi.encode(200_000);
         gasUsed[BLAST][4] = abi.encode(200_000);
         gasUsed[BARTIO][4] = abi.encode(200_000);
+
         // withdrawGasUsed == 6
         gasUsed[ETH][6] = abi.encode(1_272_330);
         gasUsed[BSC][6] = abi.encode(837_167);
@@ -1856,10 +1856,10 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[FANTOM][6] = abi.encode(567_881);
         gasUsed[SEPOLIA][6] = abi.encode(1_272_330);
         gasUsed[BSC_TESTNET][6] = abi.encode(837_167);
-
         gasUsed[LINEA][6] = abi.encode(1_178_778);
         gasUsed[BLAST][6] = abi.encode(1_178_778);
         gasUsed[BARTIO][6] = abi.encode(1_178_778);
+
         // updateWithdrawGasUsed == 13
         gasUsed[ETH][13] = abi.encode(356_828);
         gasUsed[BSC][13] = abi.encode(900_085);
@@ -1871,7 +1871,6 @@ abstract contract BaseSetup is StdInvariant, Test {
         gasUsed[FANTOM][13] = abi.encode(2_003_157);
         gasUsed[SEPOLIA][13] = abi.encode(356_828);
         gasUsed[BSC_TESTNET][13] = abi.encode(900_085);
-
         gasUsed[LINEA][13] = abi.encode(919_466);
         gasUsed[BLAST][13] = abi.encode(919_466);
         gasUsed[BARTIO][13] = abi.encode(919_466);
@@ -1935,7 +1934,6 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[ETH][FANTOM] = address(0);
         priceFeeds[ETH][SEPOLIA] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][BSC_TESTNET] = 0x14e613AC84a31f709eadbdF89C6CC390fDc9540A;
-
         priceFeeds[ETH][LINEA] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][BLAST] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][BARTIO] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
@@ -1951,10 +1949,10 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[BSC][FANTOM] = 0xe2A47e87C0f4134c8D06A41975F6860468b2F925;
         priceFeeds[BSC][SEPOLIA] = address(0);
         priceFeeds[BSC][BSC_TESTNET] = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
-
         priceFeeds[BSC][LINEA] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
         priceFeeds[BSC][BLAST] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
         priceFeeds[BSC][BARTIO] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+
         /// AVAX
         priceFeeds[AVAX][AVAX] = 0x0A77230d17318075983913bC2145DB16C7366156;
         priceFeeds[AVAX][BSC] = address(0);
@@ -1966,10 +1964,10 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[AVAX][FANTOM] = 0x2dD517B2f9ba49CedB0573131FD97a5AC19ff648;
         priceFeeds[AVAX][SEPOLIA] = address(0);
         priceFeeds[AVAX][BSC_TESTNET] = address(0);
-
         priceFeeds[AVAX][LINEA] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
         priceFeeds[AVAX][BLAST] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
         priceFeeds[AVAX][BARTIO] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+
         /// POLYGON
         priceFeeds[POLY][POLY] = 0xAB594600376Ec9fD91F8e885dADF0CE036862dE0;
         priceFeeds[POLY][AVAX] = 0xe01eA2fbd8D76ee323FbEd03eB9a8625EC981A10;
@@ -1981,10 +1979,10 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[POLY][FANTOM] = 0x58326c0F831b2Dbf7234A4204F28Bba79AA06d5f;
         priceFeeds[POLY][SEPOLIA] = address(0);
         priceFeeds[POLY][BSC_TESTNET] = 0x82a6c4AF830caa6c97bb504425f6A66165C2c26e;
-
         priceFeeds[POLY][LINEA] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][BLAST] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][BARTIO] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+
         /// OPTIMISM
         priceFeeds[OP][OP] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         priceFeeds[OP][POLY] = 0x0ded608AFc23724f614B76955bbd9dFe7dDdc828;
