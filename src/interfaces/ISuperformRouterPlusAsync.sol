@@ -182,17 +182,4 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
     /// @notice approves a refund for the rebalance and sends funds to the receiver
     /// @param routerplusPayloadId_ the router plus payload id
     function approveRefund(uint256 routerplusPayloadId_) external;
-
-    /// @notice allows the receiver / disputer to protect against malicious processors
-    /// @param finalPayloadId_ is the unique identifier of the refund
-    function disputeRefund(uint256 finalPayloadId_) external;
-
-    /// @notice allows the rescuer to propose a new refund amount after a successful dispute
-    /// @param finalPayloadId_ is the unique identifier of the refund
-    /// @param refundAmount_ is the new refund amount proposed
-    function proposeRefund(uint256 finalPayloadId_, uint256 refundAmount_) external;
-
-    /// @notice allows the user to claim their refund post the dispute period
-    /// @param finalPayloadId_ is the unique identifier of the refund
-    function finalizeRefund(uint256 finalPayloadId_) external;
 }
