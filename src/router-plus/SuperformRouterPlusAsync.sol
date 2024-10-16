@@ -54,6 +54,13 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         _;
     }
 
+    modifier onlyCoreStateRegistryRescuer() {
+        if (!_hasRole(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), msg.sender)) {
+            revert NOT_CORE_STATE_REGISTRY_RESCUER();
+        }
+        _;
+    }
+
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
