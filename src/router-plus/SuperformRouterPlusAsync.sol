@@ -439,6 +439,22 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         );
     }
 
+    /// @inheritdoc ISuperformRouterPlusAsync
+    function approveRefund(uint256 routerPlusPayloadId_) external onlyCoreStateRegistryRescuer {
+        Refund memory r = refunds[routerPlusPayloadId_];
+
+        XChainRebalanceData memory data = xChainRebalanceCallData[r.receiver][routerPlusPayloadId_];
+
+        if (data.expectedAmountInterimAsset < r.amount) revert REFUND_AMOUNT_EXCEEDS_EXPECTED_AMOUNT();
+
+        /// @dev deleting to prevent re-entrancy
+        delete refunds[routerPlusPayloadId_];
+
+        IERC20(r.interimToken).safeTransfer(r.receiver, r.amount);
+
+        emit RefundCompleted(routerPlusPayloadId_, msg.sender);
+    }
+
 
     /// @inheritdoc ISuperformRouterPlusAsync
     function disputeRefund(uint256 routerPlusPayloadId_) external override {
