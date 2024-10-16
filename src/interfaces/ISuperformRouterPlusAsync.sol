@@ -15,9 +15,6 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
     /// @notice thrown when a non-processor attempts to call a processor-only function
     error NOT_ROUTER_PLUS_PROCESSOR();
 
-    /// @notice thrown when a processor attempts to call finalizeRefund function
-    error IS_ROUTER_PLUS_PROCESSOR();
-
     /// @notice thrown if the caller is not router plus
     error NOT_ROUTER_PLUS();
 
