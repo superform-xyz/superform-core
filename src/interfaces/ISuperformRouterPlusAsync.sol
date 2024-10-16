@@ -54,7 +54,7 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
     error INVALID_REFUND_DATA();
 
     /// @notice thrown when requestedrefund amount exceeds received amount
-    error REFUND_AMOUNT_EXCEEDS_RECEIVED_AMOUNT();
+    error REFUND_AMOUNT_EXCEEDS_EXPECTED_AMOUNT();
 
     /// @notice thrown when refund is already proposed
     error REFUND_ALREADY_PROPOSED();
