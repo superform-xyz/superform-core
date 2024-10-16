@@ -430,8 +430,6 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         if (requestedAmount_ == 0) revert Error.ZERO_INPUT_VALUE();
         if (r.interimToken == address(0)) revert INVALID_REFUND_DATA();
 
-        if (r.proposedTime != 0) revert REFUND_ALREADY_PROPOSED();
-        r.proposedTime = block.timestamp;
         r.amount = requestedAmount_;
 
         emit RefundInitiated(
