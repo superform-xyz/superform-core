@@ -15,8 +15,8 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
     /// @notice thrown when a non-processor attempts to call a processor-only function
     error NOT_ROUTER_PLUS_PROCESSOR();
 
-    /// @notice thrown if refund receiver address is equal to processor address
-    error RECEIVER_ADDRESS_EQUAL_TO_PROCESSOR_ADDRESS();
+    /// @notice thrown when a processor attempts to call finalizeRefund function
+    error IS_ROUTER_PLUS_PROCESSOR();
 
     /// @notice thrown if the caller is not router plus
     error NOT_ROUTER_PLUS();
