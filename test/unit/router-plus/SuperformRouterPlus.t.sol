@@ -1698,7 +1698,52 @@ contract SuperformRouterPlusTest is ProtocolActions {
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
         vm.stopPrank();
 
-        // ToDo: test refund flow
+        // Step 5: Request refund
+
+        /// @dev testing invalid requester
+        vm.startPrank(address(222));
+        vm.expectRevert(ISuperformRouterPlusAsync.INVALID_REQUESTER.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(completeArgs.amountReceivedInterimAsset, 1);
+        vm.stopPrank();
+
+        /// @dev testing zero input value
+        vm.startPrank(deployer);
+        vm.expectRevert(Error.ZERO_INPUT_VALUE.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(0, 1);
+
+        /// @dev testing valid refund request
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(completeArgs.amountReceivedInterimAsset, 1);
+        vm.stopPrank();
+
+        // Step 6: Approve refund
+
+        /// @dev testing invalid approver
+        vm.startPrank(address(1234));
+        vm.expectRevert();
+        SuperformRouterPlusAsync(address(1234)).approveRefund(1);
+        vm.stopPrank();
+
+        /// @dev testing refund amount exceeds expected amount
+        vm.startPrank(deployer);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(100, 1);
+        vm.expectRevert(ISuperformRouterPlusAsync.REFUND_AMOUNT_EXCEEDS_EXPECTED_AMOUNT.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).approveRefund(1);
+        vm.stopPrank();
+
+        (, address refundToken,,) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
+        uint256 balanceBefore = MockERC20(refundToken).balanceOf(deployer);
+
+        /// @dev testing valid refund approval
+        vm.startPrank(deployer);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).approveRefund(1);
+        vm.stopPrank();
+
+        uint256 balanceAfter = MockERC20(refundToken).balanceOf(deployer);
+        assertGt(balanceAfter, balanceBefore);
+
+        /// @dev testing refund already approved
+        vm.expectRevert(ISuperformRouterPlusAsync.REFUND_ALREADY_APPROVED.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).approveRefund(1);
     }
 
     function test_crossChainRebalance_negativeSlippage() public {
