@@ -455,53 +455,6 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         emit RefundCompleted(routerPlusPayloadId_, msg.sender);
     }
 
-
-    /// @inheritdoc ISuperformRouterPlusAsync
-    function disputeRefund(uint256 routerPlusPayloadId_) external override {
-        Refund storage r = refunds[routerPlusPayloadId_];
-
-        if (!(msg.sender == r.receiver || _hasRole(keccak256("CORE_STATE_REGISTRY_DISPUTER_ROLE"), msg.sender))) {
-            revert Error.NOT_VALID_DISPUTER();
-        }
-
-        if (r.proposedTime == 0 || block.timestamp > r.proposedTime + _getDelay()) revert Error.DISPUTE_TIME_ELAPSED();
-
-        /// @dev just can reset the last proposed time, since amounts should be updated again to
-        /// pass the proposedTime zero check in finalize
-        r.proposedTime = 0;
-
-        emit RefundDisputed(routerPlusPayloadId_, msg.sender);
-    }
-
-    /// @inheritdoc ISuperformRouterPlusAsync
-    function proposeRefund(uint256 routerPlusPayloadId_, uint256 refundAmount_) external {
-        if (!_hasRole(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), msg.sender)) revert INVALID_PROPOSER();
-
-        Refund storage r = refunds[routerPlusPayloadId_];
-
-        if (r.interimToken == address(0) || r.receiver == address(0)) revert INVALID_REFUND_DATA();
-        if (r.proposedTime != 0) revert REFUND_ALREADY_PROPOSED();
-
-        r.proposedTime = block.timestamp;
-        r.amount = refundAmount_;
-
-        emit NewRefundAmountProposed(routerPlusPayloadId_, refundAmount_);
-    }
-
-    /// @inheritdoc ISuperformRouterPlusAsync
-    function finalizeRefund(uint256 routerPlusPayloadId_) external {
-        Refund memory r = refunds[routerPlusPayloadId_];
-
-        if (r.proposedTime == 0 || block.timestamp <= r.proposedTime + _getDelay()) revert IN_DISPUTE_PHASE();
-
-        /// @dev deleting to prevent re-entrancy
-        delete refunds[routerPlusPayloadId_];
-
-        IERC20(r.interimToken).safeTransfer(r.receiver, r.amount);
-
-        emit RefundCompleted(routerPlusPayloadId_, msg.sender);
-    }
-
     //////////////////////////////////////////////////////////////
     //                   INTERNAL FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
