@@ -164,6 +164,9 @@ library Error {
     /// @dev thrown if receiver address is not set
     error RECEIVER_ADDRESS_NOT_SET();
 
+    /// @dev thrown if receiver address is equal to procssor address
+    error RECEIVER_ADDRESS_EQUAL_TO_PROCESSOR_ADDRESS();
+
     /// SUPERFORM FACTORY INPUT VALIDATION ERRORS
     /// ---------------------------------------------------------
 
