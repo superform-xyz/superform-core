@@ -47,14 +47,17 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
     /// @notice thrown to avoid processing the same rebalance payload twice
     error REBALANCE_ALREADY_PROCESSED();
 
-    /// @notice thrown when the refund proposer is invalid
-    error INVALID_PROPOSER();
+    /// @notice thrown when the refund requester is not the payload receiver
+    error INVALID_REQUESTER();
 
     /// @notice thrown when the refund payload is invalid
     error INVALID_REFUND_DATA();
 
     /// @notice thrown when requestedrefund amount exceeds received amount
     error REFUND_AMOUNT_EXCEEDS_EXPECTED_AMOUNT();
+
+    /// @notice thrown when the refund payload is already approved
+    error REFUND_ALREADY_APPROVED();
 
     //////////////////////////////////////////////////////////////
     //                       EVENTS                             //
