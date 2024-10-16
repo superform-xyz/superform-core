@@ -35,6 +35,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
 
     mapping(uint256 routerPlusPayloadId => Refund) public refunds;
     mapping(uint256 routerPlusPayloadId => bool processed) public processedRebalancePayload;
+
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
     //////////////////////////////////////////////////////////////
@@ -413,6 +414,24 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
 
         return true;
     }
+
+    /// @inheritdoc ISuperformRouterPlusAsync
+    function requestRefund(uint256 requestedAmount_, uint256 routerPlusPayloadId_) external {
+        Refund memory r = refunds[routerPlusPayloadId_];
+
+        if (msg.sender != r.receiver) revert INVALID_PROPOSER();
+        if (requestedAmount_ == 0) revert Error.ZERO_INPUT_VALUE();
+        if (r.interimToken == address(0)) revert INVALID_REFUND_DATA();
+
+        if (r.proposedTime != 0) revert REFUND_ALREADY_PROPOSED();
+        r.proposedTime = block.timestamp;
+        r.amount = requestedAmount_;
+
+        emit RefundInitiated(
+            routerPlusPayloadId_, msg.sender, r.interimToken, requestedAmount_
+        );
+    }
+
 
     /// @inheritdoc ISuperformRouterPlusAsync
     function disputeRefund(uint256 routerPlusPayloadId_) external override {
