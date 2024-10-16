@@ -1189,9 +1189,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         uint256 decimal3;
     }
 
-    function _buildSingleVaultWithdrawCallData(
-        SingleVaultCallDataArgs memory args
-    )
+    function _buildSingleVaultWithdrawCallData(SingleVaultCallDataArgs memory args)
         internal
         returns (SingleVaultSFData memory superformData)
     {
