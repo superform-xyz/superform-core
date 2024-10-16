@@ -18,6 +18,9 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
     /// @notice thrown if the caller is not router plus
     error NOT_ROUTER_PLUS();
 
+    /// @notice thrown if the caller is not core state registry rescuer
+    error NOT_CORE_STATE_REGISTRY_RESCUER();
+
     /// @notice thrown if the rebalance to update is invalid
     error COMPLETE_REBALANCE_INVALID_TX_DATA_UPDATE();
 
@@ -167,6 +170,15 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
         external
         payable
         returns (bool rebalanceSuccessful);
+
+    /// @notice allows the user to request a refund for the rebalance
+    /// @param requestedAmount_ the amount to be refunded
+    function requestRefund(uint256 requestedAmount_) external;
+
+    /// @dev only callable by core state registry rescuer
+    /// @notice approves a refund for the rebalance and sends funds to the receiver
+    /// @param routerplusPayloadId_ the router plus payload id
+    function approveRefund(uint256 routerplusPayloadId_) external;
 
     /// @notice allows the receiver / disputer to protect against malicious processors
     /// @param finalPayloadId_ is the unique identifier of the refund
