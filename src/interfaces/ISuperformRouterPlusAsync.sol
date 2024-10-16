@@ -176,7 +176,7 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
 
     /// @notice allows the user to request a refund for the rebalance
     /// @param requestedAmount_ the amount to be refunded
-    function requestRefund(uint256 requestedAmount_) external;
+    function requestRefund(uint256 requestedAmount_, uint256 routerplusPayloadId_) external;
 
     /// @dev only callable by core state registry rescuer
     /// @notice approves a refund for the rebalance and sends funds to the receiver
