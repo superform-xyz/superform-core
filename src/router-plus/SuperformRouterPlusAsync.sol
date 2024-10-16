@@ -36,6 +36,8 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
     mapping(uint256 routerPlusPayloadId => Refund) public refunds;
     mapping(uint256 routerPlusPayloadId => bool processed) public processedRebalancePayload;
 
+    mapping(uint256 routerPlusPayloadId => bool approvedRefund) public approvedRefund;
+
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
     //////////////////////////////////////////////////////////////
@@ -426,7 +428,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
     function requestRefund(uint256 requestedAmount_, uint256 routerPlusPayloadId_) external {
         Refund memory r = refunds[routerPlusPayloadId_];
 
-        if (msg.sender != r.receiver) revert INVALID_PROPOSER();
+        if (msg.sender != r.receiver) revert INVALID_REQUESTER();
         if (requestedAmount_ == 0) revert Error.ZERO_INPUT_VALUE();
         if (r.interimToken == address(0)) revert INVALID_REFUND_DATA();
 
@@ -439,11 +441,15 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
 
     /// @inheritdoc ISuperformRouterPlusAsync
     function approveRefund(uint256 routerPlusPayloadId_) external onlyCoreStateRegistryRescuer {
+        if (approvedRefund[routerPlusPayloadId_]) revert REFUND_ALREADY_APPROVED();
+        
         Refund memory r = refunds[routerPlusPayloadId_];
 
         XChainRebalanceData memory data = xChainRebalanceCallData[r.receiver][routerPlusPayloadId_];
 
         if (data.expectedAmountInterimAsset < r.amount) revert REFUND_AMOUNT_EXCEEDS_EXPECTED_AMOUNT();
+
+        approvedRefund[routerPlusPayloadId_] = true;
 
         /// @dev deleting to prevent re-entrancy
         delete refunds[routerPlusPayloadId_];
