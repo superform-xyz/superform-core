@@ -459,15 +459,6 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
     //                   INTERNAL FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
 
-    /// @dev returns the current dispute delay
-    function _getDelay() internal view returns (uint256) {
-        uint256 delay = superRegistry.delay();
-        if (delay == 0) {
-            revert Error.DELAY_NOT_SET();
-        }
-        return delay;
-    }
-
     function _updateSuperformData(
         MultiVaultSFData memory sfData,
         LiqRequest[] memory liqRequests,
