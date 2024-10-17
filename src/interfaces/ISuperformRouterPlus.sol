@@ -227,4 +227,9 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
     /// @dev Forwards dust to Paymaster
     /// @param token_ the token to forward
     function forwardDustToPaymaster(address token_) external;
+
+    /// @dev only callable by Emergency Admin
+    /// @notice sets the global slippage for all rebalances
+    /// @param slippage_ The slippage tolerance for same chain rebalances
+    function setGlobalSlippage(uint256 slippage_) external;
 }
