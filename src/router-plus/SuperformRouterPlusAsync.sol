@@ -35,6 +35,9 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
 
     mapping(uint256 routerPlusPayloadId => Refund) public refunds;
     mapping(uint256 routerPlusPayloadId => bool processed) public processedRebalancePayload;
+
+    mapping(uint256 routerPlusPayloadId => bool approvedRefund) public approvedRefund;
+
     //////////////////////////////////////////////////////////////
     //                       MODIFIERS                          //
     //////////////////////////////////////////////////////////////
@@ -49,6 +52,13 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
     modifier onlyRouterPlusProcessor() {
         if (!_hasRole(keccak256("ROUTER_PLUS_PROCESSOR_ROLE"), msg.sender)) {
             revert NOT_ROUTER_PLUS_PROCESSOR();
+        }
+        _;
+    }
+
+    modifier onlyCoreStateRegistryRescuer() {
+        if (!_hasRole(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), msg.sender)) {
+            revert NOT_CORE_STATE_REGISTRY_RESCUER();
         }
         _;
     }
@@ -254,7 +264,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
                 < ((data.expectedAmountInterimAsset * (ENTIRE_SLIPPAGE - data.slippage)))
         ) {
             refunds[args_.routerPlusPayloadId] =
-                Refund(args_.receiverAddressSP, data.interimAsset, args_.amountReceivedInterimAsset, block.timestamp);
+                Refund(args_.receiverAddressSP, data.interimAsset, args_.amountReceivedInterimAsset);
 
             emit RefundInitiated(
                 args_.routerPlusPayloadId, args_.receiverAddressSP, data.interimAsset, args_.amountReceivedInterimAsset
@@ -415,42 +425,31 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
     }
 
     /// @inheritdoc ISuperformRouterPlusAsync
-    function disputeRefund(uint256 routerPlusPayloadId_) external override {
-        Refund storage r = refunds[routerPlusPayloadId_];
-
-        if (!(msg.sender == r.receiver || _hasRole(keccak256("CORE_STATE_REGISTRY_DISPUTER_ROLE"), msg.sender))) {
-            revert Error.NOT_VALID_DISPUTER();
-        }
-
-        if (r.proposedTime == 0 || block.timestamp > r.proposedTime + _getDelay()) revert Error.DISPUTE_TIME_ELAPSED();
-
-        /// @dev just can reset the last proposed time, since amounts should be updated again to
-        /// pass the proposedTime zero check in finalize
-        r.proposedTime = 0;
-
-        emit RefundDisputed(routerPlusPayloadId_, msg.sender);
-    }
-
-    /// @inheritdoc ISuperformRouterPlusAsync
-    function proposeRefund(uint256 routerPlusPayloadId_, uint256 refundAmount_) external {
-        if (!_hasRole(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), msg.sender)) revert INVALID_PROPOSER();
-
-        Refund storage r = refunds[routerPlusPayloadId_];
-
-        if (r.interimToken == address(0) || r.receiver == address(0)) revert INVALID_REFUND_DATA();
-        if (r.proposedTime != 0) revert REFUND_ALREADY_PROPOSED();
-
-        r.proposedTime = block.timestamp;
-        r.amount = refundAmount_;
-
-        emit NewRefundAmountProposed(routerPlusPayloadId_, refundAmount_);
-    }
-
-    /// @inheritdoc ISuperformRouterPlusAsync
-    function finalizeRefund(uint256 routerPlusPayloadId_) external {
+    function requestRefund(uint256 requestedAmount_, uint256 routerPlusPayloadId_) external {
         Refund memory r = refunds[routerPlusPayloadId_];
 
-        if (r.proposedTime == 0 || block.timestamp <= r.proposedTime + _getDelay()) revert IN_DISPUTE_PHASE();
+        if (msg.sender != r.receiver) revert INVALID_REQUESTER();
+        if (requestedAmount_ == 0) revert Error.ZERO_INPUT_VALUE();
+        if (r.interimToken == address(0)) revert INVALID_REFUND_DATA();
+
+        r.amount = requestedAmount_;
+
+        emit RefundInitiated(
+            routerPlusPayloadId_, msg.sender, r.interimToken, requestedAmount_
+        );
+    }
+
+    /// @inheritdoc ISuperformRouterPlusAsync
+    function approveRefund(uint256 routerPlusPayloadId_) external onlyCoreStateRegistryRescuer {
+        if (approvedRefund[routerPlusPayloadId_]) revert REFUND_ALREADY_APPROVED();
+        
+        Refund memory r = refunds[routerPlusPayloadId_];
+
+        XChainRebalanceData memory data = xChainRebalanceCallData[r.receiver][routerPlusPayloadId_];
+
+        if (data.expectedAmountInterimAsset < r.amount) revert REFUND_AMOUNT_EXCEEDS_EXPECTED_AMOUNT();
+
+        approvedRefund[routerPlusPayloadId_] = true;
 
         /// @dev deleting to prevent re-entrancy
         delete refunds[routerPlusPayloadId_];
@@ -463,15 +462,6 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
     //////////////////////////////////////////////////////////////
     //                   INTERNAL FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
-
-    /// @dev returns the current dispute delay
-    function _getDelay() internal view returns (uint256) {
-        uint256 delay = superRegistry.delay();
-        if (delay == 0) {
-            revert Error.DELAY_NOT_SET();
-        }
-        return delay;
-    }
 
     function _updateSuperformData(
         MultiVaultSFData memory sfData,
