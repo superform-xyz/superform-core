@@ -1730,7 +1730,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).approveRefund(1);
         vm.stopPrank();
 
-        (, address refundToken,,) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
+        (, address refundToken,) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
         uint256 balanceBefore = MockERC20(refundToken).balanceOf(deployer);
 
         /// @dev testing valid refund approval

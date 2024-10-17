@@ -100,7 +100,6 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
         address receiver;
         address interimToken;
         uint256 amount;
-        uint256 proposedTime;
     }
 
     struct DecodedRouterPlusRebalanceCallData {

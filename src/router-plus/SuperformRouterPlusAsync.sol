@@ -264,7 +264,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
                 < ((data.expectedAmountInterimAsset * (ENTIRE_SLIPPAGE - data.slippage)))
         ) {
             refunds[args_.routerPlusPayloadId] =
-                Refund(args_.receiverAddressSP, data.interimAsset, args_.amountReceivedInterimAsset, block.timestamp);
+                Refund(args_.receiverAddressSP, data.interimAsset, args_.amountReceivedInterimAsset);
 
             emit RefundInitiated(
                 args_.routerPlusPayloadId, args_.receiverAddressSP, data.interimAsset, args_.amountReceivedInterimAsset
