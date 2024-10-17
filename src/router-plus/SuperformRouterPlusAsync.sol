@@ -434,13 +434,15 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
 
         r.amount = requestedAmount_;
 
-        emit RefundInitiated(routerPlusPayloadId_, msg.sender, r.interimToken, requestedAmount_);
+        emit RefundInitiated(
+            routerPlusPayloadId_, msg.sender, r.interimToken, requestedAmount_
+        );
     }
 
     /// @inheritdoc ISuperformRouterPlusAsync
     function approveRefund(uint256 routerPlusPayloadId_) external onlyCoreStateRegistryRescuer {
         if (approvedRefund[routerPlusPayloadId_]) revert REFUND_ALREADY_APPROVED();
-
+        
         Refund memory r = refunds[routerPlusPayloadId_];
 
         XChainRebalanceData memory data = xChainRebalanceCallData[r.receiver][routerPlusPayloadId_];
