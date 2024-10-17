@@ -5,6 +5,7 @@ pragma solidity ^0.8.23;
 /// @dev Interface for CoreStateRegistry
 /// @author ZeroPoint Labs
 interface ICoreStateRegistry {
+    
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                        //
     //////////////////////////////////////////////////////////////
@@ -33,7 +34,10 @@ interface ICoreStateRegistry {
 
     /// @dev is emitted when a rescue is proposed for failed deposits in a payload
     event RescueProposed(
-        uint256 indexed payloadId, uint256[] superformIds, uint256[] proposedAmount, uint256 proposedTime
+        uint256 indexed payloadId,
+        uint256[] superformIds,
+        uint256[] proposedAmount,
+        uint256 proposedTime
     );
 
     /// @dev is emitted when an user disputed his refund amounts
@@ -60,11 +64,7 @@ interface ICoreStateRegistry {
     /// @param finalAmount_ is the final amount of tokens received
     /// @param amount_ is the indicated amount of tokens to be received
     /// @param maxSlippage_ is the amount of acceptable slippage for the transaction
-    function validateSlippage(
-        uint256 finalAmount_,
-        uint256 amount_,
-        uint256 maxSlippage_
-    )
+    function validateSlippage(uint256 finalAmount_, uint256 amount_, uint256 maxSlippage_)
         external
         view
         returns (bool);

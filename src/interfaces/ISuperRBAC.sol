@@ -7,6 +7,7 @@ import { IAccessControl } from "openzeppelin-contracts/contracts/access/IAccessC
 /// @dev Interface for SuperRBAC
 /// @author Zeropoint Labs
 interface ISuperRBAC is IAccessControl {
+
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                         //
     //////////////////////////////////////////////////////////////
