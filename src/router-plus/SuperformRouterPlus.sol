@@ -391,6 +391,15 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         }
     }
 
+    /// @inheritdoc ISuperformRouterPlus
+    function setGlobalSlippage(uint256 slippage_) external override {
+        if (!_hasRole(keccak256("EMERGENCY_ADMIN_ROLE"), msg.sender)) {
+            revert Error.NOT_PRIVILEGED_CALLER(keccak256("EMERGENCY_ADMIN_ROLE"));
+        }
+
+        GLOBAL_SLIPPAGE = slippage_;
+    }
+
     //////////////////////////////////////////////////////////////
     //                   INTERNAL FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
