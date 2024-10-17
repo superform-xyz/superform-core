@@ -569,7 +569,6 @@ contract PaymentHelperTest is ProtocolActions {
 
         assertEq(fees3, 0);
     }
-    
 
     function test_estimateSingleDirectMultiVault() public view {
         /// @dev scenario: single vault withdrawal

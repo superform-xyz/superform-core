@@ -5,7 +5,6 @@ pragma solidity ^0.8.23;
 /// @dev Interface for DstSwapper
 /// @author Zeropoint Labs
 interface IDstSwapper {
-    
     //////////////////////////////////////////////////////////////
     //                           STRUCTS                         //
     //////////////////////////////////////////////////////////////

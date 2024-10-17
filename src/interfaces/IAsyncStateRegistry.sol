@@ -101,9 +101,7 @@ interface IAsyncStateRegistry {
     /// @notice retrieves the sync withdraw txData payload for a given payload ID
     /// @param payloadId_ The ID of the payload
     /// @return syncWithdrawTxDataPayload_ for the specified payload ID
-    function getSyncWithdrawTxDataPayload(
-        uint256 payloadId_
-    )
+    function getSyncWithdrawTxDataPayload(uint256 payloadId_)
         external
         view
         returns (SyncWithdrawTxDataPayload memory syncWithdrawTxDataPayload_);

@@ -361,9 +361,7 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
     }
 
     /// @inheritdoc IAsyncStateRegistry
-    function getSyncWithdrawTxDataPayload(
-        uint256 payloadId_
-    )
+    function getSyncWithdrawTxDataPayload(uint256 payloadId_)
         external
         view
         returns (SyncWithdrawTxDataPayload memory syncWithdrawTxDataPayload_)

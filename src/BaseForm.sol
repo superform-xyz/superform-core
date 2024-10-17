@@ -16,7 +16,6 @@ import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IE
 /// @dev Abstract contract to be inherited by different Form implementations
 /// @author Zeropoint Labs
 abstract contract BaseForm is IBaseForm, Initializable, ERC165 {
-
     using DataLib for uint256;
 
     //////////////////////////////////////////////////////////////
@@ -254,7 +253,7 @@ abstract contract BaseForm is IBaseForm, Initializable, ERC165 {
     }
 
     /// @dev Checks if the Form implementation has the appropriate interface support
-    /// @param interfaceId_ is the interfaceId to check  
+    /// @param interfaceId_ is the interfaceId to check
     function supportsInterface(bytes4 interfaceId_) public view virtual override(ERC165, IERC165) returns (bool) {
         return interfaceId_ == type(IBaseForm).interfaceId || super.supportsInterface(interfaceId_);
     }
