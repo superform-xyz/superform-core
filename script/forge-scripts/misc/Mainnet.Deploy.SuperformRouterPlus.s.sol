@@ -15,22 +15,8 @@ contract MainnetDeployRouterPlus is AbstractDeployRouterPlus {
                 break;
             }
         }
-
-        _deployRouterPlus(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
-    }
-
-    function configureRouterPlusProcessor(uint256 env, uint256 selectedChainIndex, uint256 useNewSalt) external {
-        _setEnvironment(env, useNewSalt == 1 ? true : false);
-        _preDeploymentSetup();
-
-        uint256 trueIndex;
-        for (uint256 i = 0; i < chainIds.length; i++) {
-            if (TARGET_CHAINS[selectedChainIndex] == chainIds[i]) {
-                trueIndex = i;
-                break;
-            }
+        if (env == 1) {
+            _deployRouterPlusStaging(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
         }
-
-        _configureRouterPlusProcessorStaging(env, selectedChainIndex, trueIndex, Cycle.Prod, TARGET_CHAINS);
     }
 }

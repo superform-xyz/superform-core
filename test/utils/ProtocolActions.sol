@@ -927,7 +927,18 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     internalVars.expDstDomains[internalVars.k] = hyperlane_chainIds[trueChainIdIndex];
 
                     internalVars.endpoints[internalVars.k] = lzEndpoints[trueChainIdIndex];
-                    internalVars.endpointsV2[internalVars.k] = lzV2Endpoint;
+
+                    if (
+                        !(
+                            hyperlane_chainIds[trueChainIdIndex] == 11_155_111
+                                || hyperlane_chainIds[trueChainIdIndex] == 97
+                                || hyperlane_chainIds[trueChainIdIndex] == 80_084
+                        )
+                    ) {
+                        internalVars.endpointsV2[internalVars.k] = lzV2Endpoint;
+                    } else {
+                        internalVars.endpointsV2[internalVars.k] = lzV2Endpoint_TESTNET;
+                    }
 
                     internalVars.lzChainIds[internalVars.k] = lz_chainIds[trueChainIdIndex];
                     internalVars.lzChainIdsV2[internalVars.k] = lz_v2_chainIds[trueChainIdIndex];
@@ -1419,7 +1430,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
     {
         address vault = IBaseForm(superform).getVaultAddress();
         address asset = IBaseForm(superform).getVaultAsset();
-        if (vault == REAL_VAULT_ADDRESS[SEPOLIA][5]["tUSD"][0] || vault == REAL_VAULT_ADDRESS[ETH][5]["USDC"][0]) {
+        if (vault == REAL_VAULT_ADDRESS[SEPOLIA][4]["tUSD"][0] || vault == REAL_VAULT_ADDRESS[ETH][4]["USDC"][0]) {
             address manager = ERC7540VaultLike(vault).manager();
 
             /// @dev for centrifuge
@@ -3291,17 +3302,23 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
             /// @notice ID: 6 Layerzero v2
             if (AMBs[i] == 6) {
-                LayerZeroV2Helper(getContract(TO_CHAIN, "LayerZeroV2Helper")).help(
-                    lzV2Endpoint, FORKS[FROM_CHAIN], logs
-                );
+                if (!(FROM_CHAIN == 11_155_111 || FROM_CHAIN == 97 || FROM_CHAIN == 80_084)) {
+                    LayerZeroV2Helper(getContract(TO_CHAIN, "LayerZeroV2Helper")).help(
+                        lzV2Endpoint, FORKS[FROM_CHAIN], logs
+                    );
+                } else {
+                    LayerZeroV2Helper(getContract(TO_CHAIN, "LayerZeroV2Helper")).help(
+                        lzV2Endpoint_TESTNET, FORKS[FROM_CHAIN], logs
+                    );
+                }
             }
 
             /// @notice ID: 2 Hyperlane
             if (AMBs[i] == 2) {
                 HyperlaneHelper(getContract(TO_CHAIN, "HyperlaneHelper")).help(
-                    address(HYPERLANE_MAILBOXES[TO_CHAIN]),
-                    address(HYPERLANE_MAILBOXES[FROM_CHAIN]),
-                    FORKS[FROM_CHAIN],
+                    address(HYPERLANE_MAILBOXES[TO_CHAIN]), // BARTIO
+                    address(HYPERLANE_MAILBOXES[FROM_CHAIN]), // SEPOLIA
+                    FORKS[FROM_CHAIN], // SEPOLIA
                     logs
                 );
             }

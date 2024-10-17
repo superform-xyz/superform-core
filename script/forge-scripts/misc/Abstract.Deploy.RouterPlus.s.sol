@@ -12,7 +12,7 @@ struct UpdateVars {
 }
 
 abstract contract AbstractDeployRouterPlus is EnvironmentUtils {
-    function _deployRouterPlus(
+    function _deployRouterPlusStaging(
         uint256 env,
         uint256 i,
         uint256 trueIndex,
@@ -55,9 +55,10 @@ abstract contract AbstractDeployRouterPlus is EnvironmentUtils {
         SuperRegistry(superRegistry).setAddress(
             keccak256("SUPERFORM_ROUTER_PLUS_ASYNC"), superformRouterPlusAsync, vars.chainId
         );
+        SuperRegistry(superRegistry).setAddress(
+            keccak256("ROUTER_PLUS_PROCESSOR_ROLE"), ROUTER_PLUS_PROCESSOR, vars.chainId
+        );
 
-        address ROUTER_PLUS_PROCESSOR =
-            env == 0 ? 0x01d9944787045A431DA61F3be137Ba07b5dd8d6C : 0x1F05a8Ff6d895Ba04C84c5031c5d63FA1afCDA6F;
         vars.superRBACC = SuperRBAC(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRBAC")));
 
         vars.superRBACC.setRoleAdmin(keccak256("ROUTER_PLUS_PROCESSOR_ROLE"), vars.superRBACC.PROTOCOL_ADMIN_ROLE());
@@ -71,32 +72,5 @@ abstract contract AbstractDeployRouterPlus is EnvironmentUtils {
                 chainNames[trueIndex], contractNames[j], getContract(vars.chainId, contractNames[j]), vars.chainId
             );
         }
-    }
-
-    function _configureRouterPlusProcessorStaging(
-        uint256 env,
-        uint256 i,
-        uint256 trueIndex,
-        Cycle cycle,
-        uint64[] memory finalDeployedChains
-    )
-        internal
-        setEnvDeploy(cycle)
-    {
-        assert(salt.length > 0);
-        UpdateVars memory vars;
-
-        vars.chainId = finalDeployedChains[i];
-
-        cycle == Cycle.Dev ? vm.startBroadcast(deployerPrivateKey) : vm.startBroadcast();
-
-        address ROUTER_PLUS_PROCESSOR =
-            env == 0 ? 0x01d9944787045A431DA61F3be137Ba07b5dd8d6C : 0x1F05a8Ff6d895Ba04C84c5031c5d63FA1afCDA6F;
-        vars.superRBACC = SuperRBAC(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRBAC")));
-
-        vars.superRBACC.setRoleAdmin(keccak256("ROUTER_PLUS_PROCESSOR_ROLE"), vars.superRBACC.PROTOCOL_ADMIN_ROLE());
-        vars.superRBACC.grantRole(keccak256("ROUTER_PLUS_PROCESSOR_ROLE"), ROUTER_PLUS_PROCESSOR);
-
-        vm.stopBroadcast();
     }
 }

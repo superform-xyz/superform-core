@@ -10,16 +10,748 @@ import { ERC7575Mock } from "test/mocks/ERC7575Mock.sol";
 
 import { MockERC20 } from "test/mocks/MockERC20.sol";
 
+import { IERC7540FormBase } from "src/forms/interfaces/IERC7540Form.sol";
+
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+
+import { IERC7540Operator } from "src/vendor/centrifuge/IERC7540.sol";
+
+import { IERC7575 } from "src/vendor/centrifuge/IERC7575.sol";
+
+/// @dev mock vault for testing interface
+contract SupportsInterfaceMock {
+    bool revertOnSupportsInterface;
+    bool depositFalse;
+    bool redeemFalse;
+
+    constructor(bool revertOnSupportsInterface_, bool depositFalse_, bool redeemFalse_) {
+        revertOnSupportsInterface = revertOnSupportsInterface_;
+        depositFalse = depositFalse_;
+        redeemFalse = redeemFalse_;
+    }
+
+    function supportsInterface(bytes4 interfaceId_) public view returns (bool) {
+        if (revertOnSupportsInterface) revert();
+
+        if (depositFalse && interfaceId_ == 0xce3bbe50) revert();
+        if (redeemFalse && interfaceId_ == 0x620ee8e4) revert();
+        return false;
+    }
+}
+
+/// @dev harness contract for testing internal functions of ERC7540Form
+contract ERC7540FormHarness is ERC7540Form {
+    constructor(address registry_, uint8 registryId_) ERC7540Form(registry_, registryId_) { }
+
+    function checkTxData(address token_, uint256 len_) external {
+        _checkTxData(token_, len_);
+    }
+
+    function validateVaultKind() external {
+        _validateVaultKind();
+    }
+
+    function slippageValidation(
+        uint256 amountBefore_,
+        uint256 amountAfter_,
+        uint256 actualOutputAmount_,
+        uint256 expectedOutputAmount_,
+        uint256 maxSlippage_
+    )
+        external
+    {
+        _slippageValidation(amountBefore_, amountAfter_, actualOutputAmount_, expectedOutputAmount_, maxSlippage_);
+    }
+
+    function assetTransferIn(address token, uint256 amount) external {
+        _assetTransferIn(token, amount);
+    }
+
+    // function withdrawAndValidate(InitSingleVaultData memory singleVaultData_) external {
+    //     _withdrawAndValidate(singleVaultData_);
+    // }
+
+    // function depositAndValidate(InitSingleVaultData memory singleVaultData_) external {
+    //     _depositAndValidate(singleVaultData_);
+    // }
+}
+
 contract SuperformERC7540FormTest is ProtocolActions {
     using DataLib for uint256;
     using Math for uint256;
+
+    ERC7540FormHarness harnessForm;
 
     function setUp() public override {
         chainIds = [BSC_TESTNET, SEPOLIA];
         LAUNCH_TESTNETS = true;
 
         AMBs = [2, 5];
+
         super.setUp();
+
+        vm.startPrank(deployer);
+        harnessForm = new ERC7540FormHarness(getContract(BSC_TESTNET, "SuperRegistry"), 2);
+        vm.stopPrank();
+    }
+
+    // function test_7540_withdrawAndValidate() external {
+    //     vm.selectFork(FORKS[BSC_TESTNET]);
+
+    //     uint64 srcChainId = BSC_TESTNET;
+    //     uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+    //     InitSingleVaultData memory singleVaultData = new InitSingleVaultData(
+    //         1,
+    //         superformId,
+    //         1e18,
+    //         1e18,
+    //         1e18,
+    //         LiqRequest(address(0), address(0), address(0), address(0), address(0), address(0), address(0),
+    // address(0)),
+    //         false,
+    //         false,
+    //         address(0),
+    //         bytes("")
+    //     );
+
+    //     ERC7540Form form = ERC7540Form(superform);
+
+    //     form.withdrawAndValidate(singleVaultData);
+    // }
+
+    function test_7540_checkTxData() external {
+        vm.expectRevert(Error.WITHDRAW_TOKEN_NOT_UPDATED.selector);
+        harnessForm.checkTxData(address(0), 1);
+
+        vm.expectRevert(Error.WITHDRAW_TX_DATA_NOT_UPDATED.selector);
+        harnessForm.checkTxData(address(0xBEEF), 0);
+    }
+
+    function test_7540_validateVaultKind() external {
+        SupportsInterfaceMock depositInterfaceMock = new SupportsInterfaceMock(false, true, false);
+        vm.store(address(harnessForm), bytes32(uint256(0)), bytes32(uint256(uint160(address(depositInterfaceMock)))));
+
+        vm.expectRevert(IERC7540FormBase.ERC_165_INTERFACE_DEPOSIT_CALL_FAILED.selector);
+        harnessForm.validateVaultKind();
+
+        SupportsInterfaceMock redeemInterfaceMock = new SupportsInterfaceMock(false, false, true);
+        vm.store(address(harnessForm), bytes32(uint256(0)), bytes32(uint256(uint160(address(redeemInterfaceMock)))));
+
+        vm.expectRevert(IERC7540FormBase.ERC_165_INTERFACE_REDEEM_CALL_FAILED.selector);
+        harnessForm.validateVaultKind();
+
+        SupportsInterfaceMock revertInterfaceMock = new SupportsInterfaceMock(false, false, false);
+        vm.store(address(harnessForm), bytes32(uint256(0)), bytes32(uint256(uint160(address(revertInterfaceMock)))));
+
+        vm.expectRevert(IERC7540FormBase.VAULT_NOT_SUPPORTED.selector);
+        harnessForm.validateVaultKind();
+    }
+
+    function test_7540_slippageValidation() external {
+        vm.expectRevert(Error.VAULT_IMPLEMENTATION_FAILED.selector);
+        harnessForm.slippageValidation(1e18, 1e18, 1e18, 1e18, 1e18);
+    }
+
+    function test_7540_assetTransferIn() external {
+        vm.expectRevert(Error.INSUFFICIENT_ALLOWANCE_FOR_DEPOSIT.selector);
+        harnessForm.assetTransferIn(getContract(BSC_TESTNET, "USDC"), 1e18);
+    }
+
+    function test_7540_emergencyWithdraw() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+
+        vm.startPrank(getContract(srcChainId, "EmergencyQueue"));
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        form.emergencyWithdraw(address(0), 1e18);
+
+        vm.expectRevert(Error.INSUFFICIENT_BALANCE.selector);
+        form.emergencyWithdraw(users[0], 1e18);
+
+        deal(address(IERC7540(form.vault()).share()), address(form), 1e18);
+        form.emergencyWithdraw(users[0], 1e18);
+
+        vm.stopPrank();
+    }
+
+    function test_7540_forwardDustToPaymaster() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+        address token = getContract(srcChainId, "USDC");
+
+        deal(token, address(form), 1e18);
+        form.forwardDustToPaymaster(token);
+
+        address share = address(IERC7540(form.vault()).share());
+        vm.expectRevert(IERC7540FormBase.CANNOT_FORWARD_SHARES.selector);
+        form.forwardDustToPaymaster(share);
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        form.forwardDustToPaymaster(address(0));
+    }
+
+    function test_7540_claimDeposit_allErrors() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+
+        vm.expectRevert(IERC7540FormBase.NOT_ASYNC_STATE_REGISTRY.selector);
+        form.claimDeposit(users[0], superformId, 0, false);
+
+        vm.startPrank(getContract(srcChainId, "AsyncStateRegistry"));
+        vm.expectRevert(Error.RECEIVER_ADDRESS_NOT_SET.selector);
+        form.claimDeposit(address(0), superformId, 0, false);
+
+        vm.store(address(form), bytes32(uint256(1)), bytes32(uint256(0)));
+        vm.expectRevert(IERC7540FormBase.VAULT_KIND_NOT_SET.selector);
+        form.claimDeposit(users[0], superformId, 0, false);
+
+        uint256 redeemId = _getSuperformId(srcChainId, "ERC7540AsyncRedeemMock");
+        (address redeemForm,,) = redeemId.getSuperform();
+
+        bytes32 slotValueForRedeemAsync = vm.load(address(redeemForm), bytes32(uint256(1)));
+
+        vm.store(address(form), bytes32(uint256(1)), slotValueForRedeemAsync);
+        vm.expectRevert(IERC7540FormBase.INVALID_VAULT_KIND.selector);
+        form.claimDeposit(users[0], superformId, 0, false);
+
+        vm.stopPrank();
+    }
+
+    function test_7540_claimDeposit_pausedForm() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+
+        vm.startPrank(deployer);
+        SuperformFactory(getContract(srcChainId, "SuperformFactory")).changeFormImplementationPauseStatus(
+            4, ISuperformFactory.PauseStatus.PAUSED, ""
+        );
+        vm.stopPrank();
+
+        /// Tests paused form claimDeposit
+        vm.startPrank(getContract(srcChainId, "AsyncStateRegistry"));
+        uint256 returnVal = form.claimDeposit(users[0], superformId, 0, false);
+        assertEq(returnVal, 0);
+        vm.stopPrank();
+    }
+
+    function test_7540_claimRedeem_allErrors() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+        LiqRequest memory liqRequest;
+
+        vm.expectRevert(IERC7540FormBase.NOT_ASYNC_STATE_REGISTRY.selector);
+        form.claimRedeem(users[0], superformId, 0, 0, 1, BSC_TESTNET, liqRequest);
+
+        vm.startPrank(getContract(srcChainId, "AsyncStateRegistry"));
+        vm.expectRevert(Error.RECEIVER_ADDRESS_NOT_SET.selector);
+        form.claimRedeem(address(0), superformId, 0, 0, 1, BSC_TESTNET, liqRequest);
+
+        vm.store(address(form), bytes32(uint256(1)), bytes32(uint256(0)));
+        vm.expectRevert(IERC7540FormBase.VAULT_KIND_NOT_SET.selector);
+        form.claimRedeem(users[0], superformId, 0, 0, 1, BSC_TESTNET, liqRequest);
+
+        vm.store(address(form), bytes32(uint256(1)), 0x000000000000000000000001013cce8d377b70d17fdb24fb17de9d4fe8fa58f3);
+        vm.expectRevert(IERC7540FormBase.INVALID_VAULT_KIND.selector);
+        form.claimRedeem(users[0], superformId, 0, 0, 1, BSC_TESTNET, liqRequest);
+
+        vm.stopPrank();
+    }
+
+    function test_7540_claimRedeem_pausedForm() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+        LiqRequest memory liqRequest;
+
+        vm.startPrank(deployer);
+        SuperformFactory(getContract(srcChainId, "SuperformFactory")).changeFormImplementationPauseStatus(
+            4, ISuperformFactory.PauseStatus.PAUSED, ""
+        );
+        vm.stopPrank();
+
+        /// Tests paused form claimDeposit
+        vm.startPrank(getContract(srcChainId, "AsyncStateRegistry"));
+        uint256 returnVal = form.claimRedeem(users[0], superformId, 0, 0, 1, BSC_TESTNET, liqRequest);
+        assertEq(returnVal, 0);
+        vm.stopPrank();
+    }
+
+    function test_7540_claimRedeem_withdrawZeroCollateral() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+        LiqRequest memory liqRequest;
+
+        vm.startPrank(users[0]);
+        IERC7540Operator(form.vault()).setOperator(address(form), true);
+        vm.stopPrank();
+
+        vm.startPrank(getContract(srcChainId, "AsyncStateRegistry"));
+        vm.mockCall(address(form.vault()), abi.encodeWithSelector(IERC7575.redeem.selector), bytes(abi.encode(0)));
+        vm.expectRevert(Error.WITHDRAW_ZERO_COLLATERAL.selector);
+        form.claimRedeem(users[0], superformId, 0, 0, 1, BSC_TESTNET, liqRequest);
+        vm.stopPrank();
+    }
+
+    function test_7540_claimRedeem_redeemInvalidLiqRequest() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+        LiqRequest memory liqRequest = LiqRequest(
+            _buildLiqBridgeTxData(
+                LiqBridgeTxDataArgs(
+                    1,
+                    getContract(BSC_TESTNET, "DAI"),
+                    getContract(BSC_TESTNET, "DAI"),
+                    getContract(BSC_TESTNET, "DAI"),
+                    address(form),
+                    BSC_TESTNET,
+                    SEPOLIA,
+                    SEPOLIA,
+                    false,
+                    users[0],
+                    uint256(SEPOLIA),
+                    2e18,
+                    false,
+                    /// @dev placeholder value, not used
+                    0,
+                    1,
+                    1,
+                    1,
+                    address(0)
+                ),
+                false
+            ),
+            getContract(BSC_TESTNET, "DAI"),
+            address(0),
+            1,
+            SEPOLIA,
+            0
+        );
+
+        vm.startPrank(users[0]);
+        IERC7540Operator(form.vault()).setOperator(address(form), true);
+        vm.stopPrank();
+
+        vm.startPrank(getContract(srcChainId, "AsyncStateRegistry"));
+        vm.mockCall(address(form.vault()), abi.encodeWithSelector(IERC7575.redeem.selector), bytes(abi.encode(1e18)));
+        vm.expectRevert(IERC7540FormBase.REDEEM_INVALID_LIQ_REQUEST.selector);
+        form.claimRedeem(users[0], superformId, 0, 0, 1, BSC_TESTNET, liqRequest);
+        vm.stopPrank();
+    }
+
+    function test_7540_directDeposit_vaultKindUnset() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+        InitSingleVaultData memory singleVaultData;
+        singleVaultData.superformId = superformId;
+
+        vm.store(address(form), bytes32(uint256(1)), bytes32(uint256(0)));
+        vm.startPrank(getContract(srcChainId, "SuperformRouter"));
+        vm.expectRevert(IERC7540FormBase.VAULT_KIND_NOT_SET.selector);
+        form.directDepositIntoVault(singleVaultData, users[0]);
+        vm.stopPrank();
+    }
+
+    function test_7540_xChainDeposit_vaultKindUnset() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+        InitSingleVaultData memory singleVaultData;
+        singleVaultData.superformId = superformId;
+
+        vm.store(address(form), bytes32(uint256(1)), bytes32(uint256(0)));
+        vm.startPrank(getContract(srcChainId, "CoreStateRegistry"));
+        vm.expectRevert(IERC7540FormBase.VAULT_KIND_NOT_SET.selector);
+        form.xChainDepositIntoVault(singleVaultData, users[0], SEPOLIA);
+        vm.stopPrank();
+    }
+
+    function test_7540_requestDeposit_resetApprovals() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+
+        vm.startPrank(address(form));
+        MockERC20(form.asset()).approve(address(form.vault()), type(uint256).max);
+        vm.stopPrank();
+
+        InitSingleVaultData memory singleVaultData;
+        singleVaultData.superformId = superformId;
+
+        vm.startPrank(getContract(srcChainId, "SuperformRouter"));
+        vm.expectRevert(Error.DIFFERENT_TOKENS.selector);
+        form.directDepositIntoVault(singleVaultData, users[0]);
+
+        singleVaultData.liqData.token = form.asset();
+        singleVaultData.receiverAddress = users[0];
+        form.directDepositIntoVault(singleVaultData, users[0]);
+        vm.stopPrank();
+    }
+
+    function test_7540_depositRedeemAsyncForm_resetApprovals() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540AsyncRedeemMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+
+        vm.startPrank(address(form));
+        MockERC20(form.asset()).approve(address(form.vault()), type(uint256).max);
+        vm.stopPrank();
+
+        InitSingleVaultData memory singleVaultData;
+        singleVaultData.superformId = superformId;
+
+        vm.startPrank(getContract(srcChainId, "SuperformRouter"));
+        vm.expectRevert(Error.DIFFERENT_TOKENS.selector);
+        form.directDepositIntoVault(singleVaultData, users[0]);
+
+        deal(form.asset(), getContract(srcChainId, "SuperformRouter"), 1e18);
+        singleVaultData.liqData.token = form.asset();
+        singleVaultData.receiverAddress = users[0];
+
+        form.directDepositIntoVault(singleVaultData, users[0]);
+        vm.stopPrank();
+    }
+
+    function test_7540_directWithdraw_vaultKindUnset() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+
+        InitSingleVaultData memory singleVaultData;
+        singleVaultData.superformId = superformId;
+
+        vm.store(address(form), bytes32(uint256(1)), bytes32(uint256(0)));
+        vm.startPrank(getContract(srcChainId, "SuperformRouter"));
+        vm.expectRevert(IERC7540FormBase.VAULT_KIND_NOT_SET.selector);
+        form.directWithdrawFromVault(singleVaultData, users[0]);
+        vm.stopPrank();
+    }
+
+    function test_7540_directWithdraw_updateAccount() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+
+        InitSingleVaultData memory singleVaultData;
+        singleVaultData.superformId = superformId;
+        singleVaultData.receiverAddress = users[0];
+
+        vm.startPrank(getContract(srcChainId, "SuperformRouter"));
+        /// @dev update config
+        form.directWithdrawFromVault(singleVaultData, users[0]);
+
+        singleVaultData.retain4626 = true;
+        /// @dev transfers vault shares to user
+        form.directWithdrawFromVault(singleVaultData, users[0]);
+
+        superformId = _getSuperformId(srcChainId, "ERC7540AsyncDepositMock");
+        (superform,,) = superformId.getSuperform();
+        form = ERC7540Form(superform);
+
+        singleVaultData.superformId = superformId;
+
+        /// @dev transfer shares for a non-async redeem vault
+        form.directWithdrawFromVault(singleVaultData, users[0]);
+        vm.stopPrank();
+    }
+
+    function test_7540_directWithdraw_swapAndSettle() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540AsyncDepositMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+
+        address asset = address(form.asset());
+        LiqRequest memory liqRequest = LiqRequest(
+            _buildLiqBridgeTxData(
+                LiqBridgeTxDataArgs(
+                    1,
+                    asset,
+                    asset,
+                    asset,
+                    address(form),
+                    BSC_TESTNET,
+                    BSC_TESTNET,
+                    BSC_TESTNET,
+                    false,
+                    users[0],
+                    uint256(BSC_TESTNET),
+                    1e18,
+                    false,
+                    /// @dev placeholder value, not used
+                    0,
+                    1,
+                    1,
+                    1,
+                    address(0)
+                ),
+                false
+            ),
+            asset,
+            address(0),
+            1,
+            BSC_TESTNET,
+            0
+        );
+
+        InitSingleVaultData memory singleVaultData;
+        singleVaultData.superformId = superformId;
+        singleVaultData.receiverAddress = users[0];
+        singleVaultData.amount = 1e18;
+        singleVaultData.liqData = liqRequest;
+        singleVaultData.maxSlippage = 10_000;
+
+        deal(address(IERC7540(form.vault()).share()), address(form), 1e18);
+        deal(address(asset), address(form.vault()), 100e18);
+
+        vm.startPrank(getContract(srcChainId, "SuperformRouter"));
+        /// @dev transfer shares for a non-async redeem vault
+        form.directWithdrawFromVault(singleVaultData, users[0]);
+        vm.stopPrank();
+    }
+
+    function test_7540_xChainWithdraw_vaultKindUnset() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+        InitSingleVaultData memory singleVaultData;
+        singleVaultData.superformId = superformId;
+
+        vm.store(address(form), bytes32(uint256(1)), bytes32(uint256(0)));
+        vm.startPrank(getContract(srcChainId, "CoreStateRegistry"));
+        vm.expectRevert(IERC7540FormBase.VAULT_KIND_NOT_SET.selector);
+        form.xChainWithdrawFromVault(singleVaultData, users[0], SEPOLIA);
+        vm.stopPrank();
+    }
+
+    function test_7540_xChainWithdraw_transferSharesOut() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540FullyAsyncMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+        InitSingleVaultData memory singleVaultData;
+        singleVaultData.superformId = superformId;
+
+        singleVaultData.retain4626 = true;
+        singleVaultData.receiverAddress = users[0];
+
+        vm.startPrank(getContract(srcChainId, "CoreStateRegistry"));
+        form.xChainWithdrawFromVault(singleVaultData, users[0], SEPOLIA);
+        vm.stopPrank();
+    }
+
+    function test_7540_xChainWithdraw_asyncDeposit() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540AsyncDepositMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+        InitSingleVaultData memory singleVaultData;
+        singleVaultData.superformId = superformId;
+
+        singleVaultData.retain4626 = true;
+        singleVaultData.receiverAddress = users[0];
+
+        vm.startPrank(getContract(srcChainId, "CoreStateRegistry"));
+        form.xChainWithdrawFromVault(singleVaultData, users[0], SEPOLIA);
+        vm.stopPrank();
+    }
+
+    function test_7540_xChainWithdraw_redeemInvalidLiqRequest() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540AsyncDepositMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+
+        LiqRequest memory liqRequest = LiqRequest(
+            _buildLiqBridgeTxData(
+                LiqBridgeTxDataArgs(
+                    1,
+                    getContract(BSC_TESTNET, "DAI"),
+                    getContract(BSC_TESTNET, "DAI"),
+                    getContract(BSC_TESTNET, "DAI"),
+                    address(form),
+                    BSC_TESTNET,
+                    SEPOLIA,
+                    SEPOLIA,
+                    false,
+                    users[0],
+                    uint256(SEPOLIA),
+                    2e18,
+                    false,
+                    /// @dev placeholder value, not used
+                    0,
+                    1,
+                    1,
+                    1,
+                    address(0)
+                ),
+                false
+            ),
+            getContract(BSC_TESTNET, "DAI"),
+            address(0),
+            1,
+            SEPOLIA,
+            0
+        );
+
+        InitSingleVaultData memory singleVaultData;
+        singleVaultData.superformId = superformId;
+        singleVaultData.receiverAddress = users[0];
+
+        singleVaultData.liqData = liqRequest;
+        singleVaultData.amount = 1e18;
+
+        deal(address(IERC7540(form.vault()).share()), address(form), 1e18);
+        deal(address(form.asset()), form.vault(), 100e18);
+
+        vm.startPrank(getContract(srcChainId, "CoreStateRegistry"));
+        vm.expectRevert(IERC7540FormBase.REDEEM_INVALID_LIQ_REQUEST.selector);
+        form.xChainWithdrawFromVault(singleVaultData, users[0], SEPOLIA);
+        vm.stopPrank();
+    }
+
+    function test_7540_xChainWithdraw_zeroCollateral() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540AsyncDepositMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+
+        InitSingleVaultData memory singleVaultData;
+        singleVaultData.superformId = superformId;
+        singleVaultData.receiverAddress = users[0];
+
+        vm.startPrank(address(form));
+        MockERC20(form.asset()).approve(address(form.vault()), type(uint256).max);
+        vm.stopPrank();
+
+        vm.startPrank(getContract(srcChainId, "CoreStateRegistry"));
+        vm.expectRevert(Error.WITHDRAW_ZERO_COLLATERAL.selector);
+        form.xChainWithdrawFromVault(singleVaultData, users[0], SEPOLIA);
+        vm.stopPrank();
+    }
+
+    function test_7540_xChainWithdraw_vaultImplementationFailed() external {
+        vm.selectFork(FORKS[BSC_TESTNET]);
+
+        uint64 srcChainId = BSC_TESTNET;
+        uint256 superformId = _getSuperformId(srcChainId, "ERC7540AsyncDepositMock");
+
+        (address superform,,) = superformId.getSuperform();
+
+        ERC7540Form form = ERC7540Form(superform);
+
+        InitSingleVaultData memory singleVaultData;
+        singleVaultData.superformId = superformId;
+        singleVaultData.receiverAddress = users[0];
+
+        vm.startPrank(getContract(srcChainId, "CoreStateRegistry"));
+        vm.mockCall(address(form.vault()), abi.encodeWithSelector(IERC7575.redeem.selector), bytes(abi.encode(1e18)));
+        vm.expectRevert(Error.VAULT_IMPLEMENTATION_FAILED.selector);
+        form.xChainWithdrawFromVault(singleVaultData, users[0], SEPOLIA);
+        vm.stopPrank();
     }
 
     function test_7540OtherFunctionCalls() external {
