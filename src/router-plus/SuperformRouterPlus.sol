@@ -18,6 +18,7 @@ import {
 import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
 import { ISuperformRouterPlus, IERC20 } from "src/interfaces/ISuperformRouterPlus.sol";
 import { ISuperformRouterPlusAsync } from "src/interfaces/ISuperformRouterPlusAsync.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 
 /// @title SuperformRouterPlus
 /// @dev Performs rebalances and deposits on the Superform platform
@@ -25,6 +26,7 @@ import { ISuperformRouterPlusAsync } from "src/interfaces/ISuperformRouterPlusAs
 contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     using SafeERC20 for IERC20;
 
+    uint256 public GLOBAL_SLIPPAGE;
     uint256 public ROUTER_PLUS_PAYLOAD_ID;
 
     //////////////////////////////////////////////////////////////
@@ -595,5 +597,13 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 revert Error.FAILED_TO_SEND_NATIVE();
             }
         }
+    }
+
+    /// @dev returns if an address has a specific role
+    /// @param id_ the role id
+    /// @param addressToCheck_ the address to check
+    /// @return true if the address has the role, false otherwise
+    function _hasRole(bytes32 id_, address addressToCheck_) internal view returns (bool) {
+        return ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(id_, addressToCheck_);
     }
 }
