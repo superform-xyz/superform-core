@@ -18,6 +18,9 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
     /// @notice thrown if the caller is not router plus
     error NOT_ROUTER_PLUS();
 
+    /// @notice thrown if the caller is not core state registry rescuer
+    error NOT_CORE_STATE_REGISTRY_RESCUER();
+
     /// @notice thrown if the rebalance to update is invalid
     error COMPLETE_REBALANCE_INVALID_TX_DATA_UPDATE();
 
@@ -44,17 +47,17 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
     /// @notice thrown to avoid processing the same rebalance payload twice
     error REBALANCE_ALREADY_PROCESSED();
 
-    /// @notice thrown when the refund proposer is invalid
-    error INVALID_PROPOSER();
+    /// @notice thrown when the refund requester is not the payload receiver
+    error INVALID_REQUESTER();
 
     /// @notice thrown when the refund payload is invalid
     error INVALID_REFUND_DATA();
 
-    /// @notice thrown when refund is already proposed
-    error REFUND_ALREADY_PROPOSED();
+    /// @notice thrown when requestedrefund amount exceeds received amount
+    error REFUND_AMOUNT_EXCEEDS_EXPECTED_AMOUNT();
 
-    /// @notice thrown if the refund is still in dispute phase
-    error IN_DISPUTE_PHASE();
+    /// @notice thrown when the refund payload is already approved
+    error REFUND_ALREADY_APPROVED();
 
     //////////////////////////////////////////////////////////////
     //                       EVENTS                             //
@@ -168,16 +171,12 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
         payable
         returns (bool rebalanceSuccessful);
 
-    /// @notice allows the receiver / disputer to protect against malicious processors
-    /// @param finalPayloadId_ is the unique identifier of the refund
-    function disputeRefund(uint256 finalPayloadId_) external;
+    /// @notice allows the user to request a refund for the rebalance
+    /// @param requestedAmount_ the amount to be refunded
+    function requestRefund(uint256 requestedAmount_, uint256 routerplusPayloadId_) external;
 
-    /// @notice allows the rescuer to propose a new refund amount after a successful dispute
-    /// @param finalPayloadId_ is the unique identifier of the refund
-    /// @param refundAmount_ is the new refund amount proposed
-    function proposeRefund(uint256 finalPayloadId_, uint256 refundAmount_) external;
-
-    /// @notice allows the user to claim their refund post the dispute period
-    /// @param finalPayloadId_ is the unique identifier of the refund
-    function finalizeRefund(uint256 finalPayloadId_) external;
+    /// @dev only callable by core state registry rescuer
+    /// @notice approves a refund for the rebalance and sends funds to the receiver
+    /// @param routerplusPayloadId_ the router plus payload id
+    function approveRefund(uint256 routerplusPayloadId_) external;
 }
