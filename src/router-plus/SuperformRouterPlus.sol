@@ -18,7 +18,9 @@ import {
 import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
 import { ISuperformRouterPlus, IERC20 } from "src/interfaces/ISuperformRouterPlus.sol";
 import { ISuperformRouterPlusAsync } from "src/interfaces/ISuperformRouterPlusAsync.sol";
+import { LiqRequest } from "src/types/DataTypes.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 
 /// @title SuperformRouterPlus
 /// @dev Performs rebalances and deposits on the Superform platform
@@ -47,9 +49,26 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         address superPositions = _getAddress(keccak256("SUPER_POSITIONS"));
         address router = _getAddress(keccak256("SUPERFORM_ROUTER"));
 
+        LiqRequest memory liqReq = abi.decode(_parseCallData(args.rebalanceToCallData), (SingleVaultSFData)).liqRequest;
+
+        uint8 bridgeId_ = liqReq.bridgeId;
+
+        uint256 amountIn = IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_)).decodeAmountIn(
+            liqReq.txData, false
+        );
+
+        address interimAsset = liqReq.token;
+
         (uint256 balanceBefore, uint256 totalFee) = _beforeRebalanceChecks(
             args.interimAsset, args.receiverAddressSP, args.rebalanceFromMsgValue, args.rebalanceToMsgValue
         );
+
+        uint256 amountToDeposit = IERC20(args.interimAsset).balanceOf(address(this)) - balanceBefore;
+
+        if (
+            GLOBAL_SLIPPAGE * amountIn
+                < ((amountToDeposit * (GLOBAL_SLIPPAGE - args.slippage)))
+        ) revert ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
 
         /// @dev transfers a single superPosition to this contract and approves router
         _transferSuperPositions(superPositions, router, args.receiverAddressSP, args.id, args.sharesToRedeem);
