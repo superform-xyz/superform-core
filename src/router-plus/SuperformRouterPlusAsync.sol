@@ -434,7 +434,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
 
         r.amount = requestedAmount_;
 
-        emit RefundRequested(
+        emit refundRequested(
             routerPlusPayloadId_, msg.sender, r.interimToken, requestedAmount_
         );
     }
