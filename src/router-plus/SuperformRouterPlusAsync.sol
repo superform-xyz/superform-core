@@ -399,6 +399,8 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
                 IBaseRouter.multiDstMultiVaultDeposit,
                 (MultiDstMultiVaultStateReq(data.rebalanceToAmbIds, data.rebalanceToDstChainIds, multiSuperformData))
             );
+        } else {
+            revert INVALID_REBALANCE_SELECTOR();
         }
 
         _deposit(
