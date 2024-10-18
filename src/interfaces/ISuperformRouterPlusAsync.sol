@@ -68,12 +68,12 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
     /// @param routerPlusPayloadId The router plus payload id of the rebalance
     event XChainRebalanceComplete(address indexed receiver, uint256 indexed routerPlusPayloadId);
 
-    /// @notice emitted when a new refund is created
+    /// @notice emitted when a new refund is proposed
     /// @param routerPlusPayloadId is the unique identifier for the payload
     /// @param refundReceiver is the address of the user who'll receiver the refund
     /// @param refundToken is the token to be refunded
     /// @param refundAmount is the new refund amount
-    event RefundInitiated(
+    event RefundRequested(
         uint256 indexed routerPlusPayloadId, address indexed refundReceiver, address refundToken, uint256 refundAmount
     );
 
