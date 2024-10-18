@@ -64,12 +64,12 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         uint256 amountToDeposit = IERC20(args.interimAsset).balanceOf(address(this)) - balanceBefore;
 
         if (
-            GLOBAL_SLIPPAGE * amountIn
-                < ((amountToDeposit * (GLOBAL_SLIPPAGE - args.slippage)))
+            GLOBAL_SLIPPAGE * amountToDeposit
+                < ((amountIn * (GLOBAL_SLIPPAGE - args.slippage)))
         ) revert ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
 
         /// @dev transfers a single superPosition to this contract and approves router
-        _transferSuperPositions(superPositions, router, args.receiverAddressSP, args.id, args.sharesToRedeem);
+        _transferSuperPositions(superPositions, router, args.receiverAddressSP, args.id, amountIn);
 
         uint256[] memory sharesToRedeem = new uint256[](1);
 
