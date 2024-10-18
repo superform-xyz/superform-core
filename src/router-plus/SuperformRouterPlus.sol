@@ -57,8 +57,6 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             liqReq.txData, false
         );
 
-        address interimAsset = liqReq.token;
-
         (uint256 balanceBefore, uint256 totalFee) = _beforeRebalanceChecks(
             args.interimAsset, args.receiverAddressSP, args.rebalanceFromMsgValue, args.rebalanceToMsgValue
         );
