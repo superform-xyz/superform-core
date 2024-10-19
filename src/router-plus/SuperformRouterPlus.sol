@@ -49,27 +49,12 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         address superPositions = _getAddress(keccak256("SUPER_POSITIONS"));
         address router = _getAddress(keccak256("SUPERFORM_ROUTER"));
 
-        LiqRequest memory liqReq = abi.decode(_parseCallData(args.rebalanceToCallData), (SingleVaultSFData)).liqRequest;
-
-        uint8 bridgeId_ = liqReq.bridgeId;
-
-        uint256 amountIn = IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_)).decodeAmountIn(
-            liqReq.txData, false
-        );
-
         (uint256 balanceBefore, uint256 totalFee) = _beforeRebalanceChecks(
             args.interimAsset, args.receiverAddressSP, args.rebalanceFromMsgValue, args.rebalanceToMsgValue
         );
 
-        uint256 amountToDeposit = IERC20(args.interimAsset).balanceOf(address(this)) - balanceBefore;
-
-        if (
-            GLOBAL_SLIPPAGE * amountToDeposit
-                < ((amountIn * (GLOBAL_SLIPPAGE - args.slippage)))
-        ) revert ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
-
         /// @dev transfers a single superPosition to this contract and approves router
-        _transferSuperPositions(superPositions, router, args.receiverAddressSP, args.id, amountIn);
+        _transferSuperPositions(superPositions, router, args.receiverAddressSP, args.id, args.sharesToRedeem);
 
         uint256[] memory sharesToRedeem = new uint256[](1);
 
@@ -436,6 +421,8 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             revert INVALID_REBALANCE_FROM_SELECTOR();
         }
 
+        LiqRequest memory liqReq;
+
         if (args.action == Actions.REBALANCE_FROM_SINGLE) {
             SingleDirectSingleVaultStateReq memory req =
                 abi.decode(_parseCallData(callData), (SingleDirectSingleVaultStateReq));
@@ -452,6 +439,9 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             if (req.superformData.receiverAddress != address(this)) {
                 revert REBALANCE_SINGLE_POSITIONS_UNEXPECTED_RECEIVER_ADDRESS();
             }
+
+            liqReq = abi.decode(_parseCallData(rebalanceToCallData), (SingleVaultSFData)).liqRequest;
+
         } else {
             /// then must be Actions.REBALANCE_FROM_MULTI
             SingleDirectMultiVaultStateReq memory req =
@@ -481,6 +471,17 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
         if (amountToDeposit == 0) revert Error.ZERO_AMOUNT();
 
+        uint8 bridgeId_ = liqReq.bridgeId;
+
+        uint256 amountIn = IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_)).decodeAmountIn(
+            liqReq.txData, false
+        );
+
+        if (
+            GLOBAL_SLIPPAGE * amountToDeposit
+                < ((amountIn * (GLOBAL_SLIPPAGE - args.slippage)))
+        ) revert ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
+
         if (
             ENTIRE_SLIPPAGE * amountToDeposit
                 < ((args.expectedAmountToReceivePostRebalanceFrom * (ENTIRE_SLIPPAGE - args.slippage)))
@@ -493,7 +494,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             revert INVALID_DEPOSIT_SELECTOR();
         }
 
-        _deposit(router_, interimAsset, amountToDeposit, args.rebalanceToMsgValue, rebalanceToCallData);
+        _deposit(router_, interimAsset, amountIn, args.rebalanceToMsgValue, rebalanceToCallData);
     }
 
     function _transferSuperPositions(
