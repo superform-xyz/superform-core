@@ -18,7 +18,6 @@ import {
 import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
 import { ISuperformRouterPlusAsync } from "src/interfaces/ISuperformRouterPlusAsync.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
-import { SuperformFactory } from "src/SuperformFactory.sol";
 
 /// @title SuperformRouterPlusAsync
 /// @dev Completes the async step of cross chain rebalances and separates the balance from SuperformRouterPlus
