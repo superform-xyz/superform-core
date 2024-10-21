@@ -35,7 +35,9 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address superRegistry_) BaseSuperformRouterPlus(superRegistry_) { }
+    constructor(address superRegistry_) BaseSuperformRouterPlus(superRegistry_) { 
+        GLOBAL_SLIPPAGE = 10;
+    }
 
     //////////////////////////////////////////////////////////////
     //                  EXTERNAL WRITE FUNCTIONS                //
@@ -399,6 +401,8 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             revert Error.NOT_PRIVILEGED_CALLER(keccak256("EMERGENCY_ADMIN_ROLE"));
         }
 
+        require(slippage_ <= ENTIRE_SLIPPAGE && slippage_ > 0, "Invalid slippage");
+
         GLOBAL_SLIPPAGE = slippage_;
     }
 
@@ -421,7 +425,8 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             revert INVALID_REBALANCE_FROM_SELECTOR();
         }
 
-        LiqRequest memory liqReq;
+        uint256 amountIn;
+        bool containsSwapData;
 
         if (args.action == Actions.REBALANCE_FROM_SINGLE) {
             SingleDirectSingleVaultStateReq memory req =
@@ -440,13 +445,26 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 revert REBALANCE_SINGLE_POSITIONS_UNEXPECTED_RECEIVER_ADDRESS();
             }
 
-            liqReq = abi.decode(_parseCallData(rebalanceToCallData), (SingleVaultSFData)).liqRequest;
+            LiqRequest memory liqReq = abi.decode(_parseCallData(rebalanceToCallData), (SingleDirectSingleVaultStateReq)).superformData.liqRequest;
 
+            bytes memory txData = liqReq.txData;
+            if (txData.length == 0) {
+                amountIn = req.superformData.amount;
+            } else {
+                uint8 bridgeId_ = liqReq.bridgeId;
+
+                amountIn = IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_)).decodeAmountIn(
+                    liqReq.txData, false
+                );
+                containsSwapData = true;
+            }
         } else {
             /// then must be Actions.REBALANCE_FROM_MULTI
             SingleDirectMultiVaultStateReq memory req =
                 abi.decode(_parseCallData(callData), (SingleDirectMultiVaultStateReq));
             uint256 len = req.superformData.liqRequests.length;
+
+            LiqRequest[] memory liqReqs = abi.decode(_parseCallData(rebalanceToCallData), (SingleDirectMultiVaultStateReq)).superformData.liqRequests;
 
             for (uint256 i; i < len; ++i) {
                 // Validate that the token and chainId is equal in all indexes
@@ -462,6 +480,23 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 if (req.superformData.receiverAddress != address(this)) {
                     revert REBALANCE_MULTI_POSITIONS_UNEXPECTED_RECEIVER_ADDRESS();
                 }
+
+                bytes memory txData = liqReqs[i].txData; // if length = 1; amount = sum(amounts) | else  amounts must match the amounts being sent
+                if (txData.length == 0) {
+                    amountIn += req.superformData.amounts[i];
+                } else if (txData.length == 1 && req.superformData.amounts.length > 1) { // ToDo: check if this is correct
+                    for (uint256 j; j < req.superformData.amounts.length; ++j) {
+                        amountIn += req.superformData.amounts[j];
+                    }
+                    containsSwapData = true;
+                } else {
+                    uint8 bridgeId_ = liqReqs[i].bridgeId;
+
+                    amountIn += IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_)).decodeAmountIn(
+                        liqReqs[i].txData, false
+                    );
+                    containsSwapData = true;
+                }
             }
         }
         /// @dev send SPs to router
@@ -471,22 +506,18 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
         if (amountToDeposit == 0) revert Error.ZERO_AMOUNT();
 
-        uint8 bridgeId_ = liqReq.bridgeId;
-
-        uint256 amountIn = IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_)).decodeAmountIn(
-            liqReq.txData, false
-        );
-
-        if (
-            GLOBAL_SLIPPAGE * amountToDeposit
-                < ((amountIn * (GLOBAL_SLIPPAGE - args.slippage)))
-        ) revert ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
-
         if (
             ENTIRE_SLIPPAGE * amountToDeposit
                 < ((args.expectedAmountToReceivePostRebalanceFrom * (ENTIRE_SLIPPAGE - args.slippage)))
         ) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
+        }
+
+        if (containsSwapData) {
+            if (
+                ENTIRE_SLIPPAGE * amountToDeposit
+                    < ((amountIn * (ENTIRE_SLIPPAGE - GLOBAL_SLIPPAGE)))
+            ) revert ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
         }
 
         /// @dev step 3: rebalance into a new superform with rebalanceCallData
