@@ -35,7 +35,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address superRegistry_) BaseSuperformRouterPlus(superRegistry_) { 
+    constructor(address superRegistry_) BaseSuperformRouterPlus(superRegistry_) {
         GLOBAL_SLIPPAGE = 10;
     }
 
@@ -425,9 +425,6 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             revert INVALID_REBALANCE_FROM_SELECTOR();
         }
 
-        uint256 amountIn;
-        bool containsSwapData;
-
         if (args.action == Actions.REBALANCE_FROM_SINGLE) {
             SingleDirectSingleVaultStateReq memory req =
                 abi.decode(_parseCallData(callData), (SingleDirectSingleVaultStateReq));
@@ -444,27 +441,11 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             if (req.superformData.receiverAddress != address(this)) {
                 revert REBALANCE_SINGLE_POSITIONS_UNEXPECTED_RECEIVER_ADDRESS();
             }
-
-            LiqRequest memory liqReq = abi.decode(_parseCallData(rebalanceToCallData), (SingleDirectSingleVaultStateReq)).superformData.liqRequest;
-
-            bytes memory txData = liqReq.txData;
-            if (txData.length == 0) {
-                amountIn = req.superformData.amount;
-            } else {
-                uint8 bridgeId_ = liqReq.bridgeId;
-
-                amountIn = IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_)).decodeAmountIn(
-                    liqReq.txData, false
-                );
-                containsSwapData = true;
-            }
         } else {
             /// then must be Actions.REBALANCE_FROM_MULTI
             SingleDirectMultiVaultStateReq memory req =
                 abi.decode(_parseCallData(callData), (SingleDirectMultiVaultStateReq));
             uint256 len = req.superformData.liqRequests.length;
-
-            LiqRequest[] memory liqReqs = abi.decode(_parseCallData(rebalanceToCallData), (SingleDirectMultiVaultStateReq)).superformData.liqRequests;
 
             for (uint256 i; i < len; ++i) {
                 // Validate that the token and chainId is equal in all indexes
@@ -479,23 +460,6 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 }
                 if (req.superformData.receiverAddress != address(this)) {
                     revert REBALANCE_MULTI_POSITIONS_UNEXPECTED_RECEIVER_ADDRESS();
-                }
-
-                bytes memory txData = liqReqs[i].txData; // if length = 1; amount = sum(amounts) | else  amounts must match the amounts being sent
-                if (txData.length == 0) {
-                    amountIn += req.superformData.amounts[i];
-                } else if (txData.length == 1 && req.superformData.amounts.length > 1) { // ToDo: check if this is correct
-                    for (uint256 j; j < req.superformData.amounts.length; ++j) {
-                        amountIn += req.superformData.amounts[j];
-                    }
-                    containsSwapData = true;
-                } else {
-                    uint8 bridgeId_ = liqReqs[i].bridgeId;
-
-                    amountIn += IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_)).decodeAmountIn(
-                        liqReqs[i].txData, false
-                    );
-                    containsSwapData = true;
                 }
             }
         }
@@ -513,19 +477,88 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
 
-        if (containsSwapData) {
-            if (
-                ENTIRE_SLIPPAGE * amountToDeposit
-                    < ((amountIn * (ENTIRE_SLIPPAGE - GLOBAL_SLIPPAGE)))
-            ) revert ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
-        }
-
+        bytes4 rebalanceToSelector = _parseSelectorMem(rebalanceToCallData);
         /// @dev step 3: rebalance into a new superform with rebalanceCallData
-        if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(rebalanceToCallData)]) {
+        if (!whitelistedSelectors[Actions.DEPOSIT][rebalanceToSelector]) {
             revert INVALID_DEPOSIT_SELECTOR();
         }
 
+        uint256 amountIn;
+        bool containsSwapData;
+
+        if (rebalanceToSelector == IBaseRouter.singleDirectSingleVaultDeposit.selector) {
+            SingleVaultSFData memory sfData =
+                abi.decode(_parseCallData(rebalanceToCallData), (SingleDirectSingleVaultStateReq)).superformData;
+            (amountIn, containsSwapData) = _takeAmountIn(sfData.liqRequest, sfData.amount);
+        } else if (rebalanceToSelector == IBaseRouter.singleXChainSingleVaultDeposit.selector) {
+            SingleVaultSFData memory sfData =
+                abi.decode(_parseCallData(rebalanceToCallData), (SingleXChainSingleVaultStateReq)).superformData;
+            (amountIn, containsSwapData) = _takeAmountIn(sfData.liqRequest, sfData.amount);
+        } else if (rebalanceToSelector == IBaseRouter.singleDirectMultiVaultDeposit.selector) {
+            MultiVaultSFData memory sfData =
+                abi.decode(_parseCallData(rebalanceToCallData), (SingleDirectMultiVaultStateReq)).superformData;
+            uint256 len = sfData.liqRequests.length;
+            uint256 amountInTemp;
+            for (uint256 i; i < len; ++i) {
+                (amountInTemp, containsSwapData) = _takeAmountIn(sfData.liqRequests[i], sfData.amounts[i]);
+                amountIn += amountInTemp;
+            }
+        } else if (rebalanceToSelector == IBaseRouter.singleXChainMultiVaultDeposit.selector) {
+            MultiVaultSFData memory sfData =
+                abi.decode(_parseCallData(rebalanceToCallData), (SingleXChainMultiVaultStateReq)).superformsData;
+            uint256 len = sfData.liqRequests.length;
+            uint256 amountInTemp;
+            for (uint256 i; i < len; ++i) {
+                (amountInTemp, containsSwapData) = _takeAmountIn(sfData.liqRequests[i], sfData.amounts[i]);
+                amountIn += amountInTemp;
+            }
+        } else if (rebalanceToSelector == IBaseRouter.multiDstSingleVaultDeposit.selector) {
+            SingleVaultSFData[] memory sfData =
+                abi.decode(_parseCallData(rebalanceToCallData), (MultiDstSingleVaultStateReq)).superformsData;
+            uint256 lenDst = sfData.length;
+            uint256 amountInTemp;
+            for (uint256 i; i < lenDst; ++i) {
+                (amountInTemp, containsSwapData) = _takeAmountIn(sfData[i].liqRequest, sfData[i].amount);
+                amountIn += amountInTemp;
+            }
+        } else if (rebalanceToSelector == IBaseRouter.multiDstMultiVaultDeposit.selector) {
+            MultiVaultSFData[] memory sfData =
+                abi.decode(_parseCallData(rebalanceToCallData), (MultiDstMultiVaultStateReq)).superformsData;
+            uint256 lenDst = sfData.length;
+            uint256 amountInTemp;
+            for (uint256 i; i < lenDst; ++i) {
+                uint256 len = sfData[i].liqRequests.length;
+                for (uint256 j; j < len; ++j) {
+                    (amountInTemp, containsSwapData) = _takeAmountIn(sfData[i].liqRequests[j], sfData[i].amounts[j]);
+                    amountIn += amountInTemp;
+                }
+            }
+        }
+
+        if (containsSwapData) {
+            if (ENTIRE_SLIPPAGE * amountToDeposit < ((amountIn * (ENTIRE_SLIPPAGE - GLOBAL_SLIPPAGE)))) {
+                revert ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
+            }
+        }
+
         _deposit(router_, interimAsset, amountIn, args.rebalanceToMsgValue, rebalanceToCallData);
+    }
+
+    function _takeAmountIn(
+        LiqRequest memory liqReq,
+        uint256 sfDataAmount
+    )
+        internal
+        view
+        returns (uint256 amountIn, bool containsSwapData)
+    {
+        bytes memory txData = liqReq.txData;
+        if (txData.length == 0) {
+            amountIn = sfDataAmount;
+        } else {
+            amountIn = IBridgeValidator(superRegistry.getBridgeValidator(liqReq.bridgeId)).decodeAmountIn(txData, false);
+            containsSwapData = true;
+        }
     }
 
     function _transferSuperPositions(
