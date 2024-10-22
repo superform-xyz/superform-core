@@ -35,9 +35,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address superRegistry_) BaseSuperformRouterPlus(superRegistry_) {
-        GLOBAL_SLIPPAGE = 10;
-    }
+    constructor(address superRegistry_) BaseSuperformRouterPlus(superRegistry_) {}
 
     //////////////////////////////////////////////////////////////
     //                  EXTERNAL WRITE FUNCTIONS                //
