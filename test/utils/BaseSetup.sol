@@ -1209,6 +1209,10 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.superformRouterPlus = address(new SuperformRouterPlus{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("SuperformRouterPlus"))] = vars.superformRouterPlus;
 
+            /// Set the global slippage
+            SuperformRouterPlus(vars.superformRouterPlus).setGlobalSlippage(100);
+
+            /// @dev deploy Superform Router Plus Async
             vars.superformRouterPlusAsync = address(new SuperformRouterPlusAsync{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("SuperformRouterPlusAsync"))] = vars.superformRouterPlusAsync;
 
