@@ -121,7 +121,7 @@ build-sizes: ## Builds the project and shows sizes
 
 .PHONY: test-vvv
 test-vvv: ## Runs tests with verbose output
-	forge test --match-contract SDMVW0TokenInputNoSlippageAMB1323 --evm-version cancun -vvv
+	forge test --match-test test_deBridgeValidators --evm-version cancun -vvv
 
 .PHONY: ftest
 ftest: ## Runs tests with cancun evm version
@@ -141,7 +141,7 @@ coverage-t:	## Runs coverage for a specific contract
 
 .PHONY: smoke-test
 smoke-test: ## Runs smoke tests
-	forge test --match-contract SmokeTest -vvv
+	forge test --match-test test_deBridgeValidators -vvv
 
 .PHONY: invariant
 invariant: ## Runs invariant tests
@@ -177,3 +177,4 @@ help: ## Prints this help
 		@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 		| sort \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
