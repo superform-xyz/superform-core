@@ -26,7 +26,6 @@ library MsgDataTypes {
         PegWithdraw, // withdraw from original token vault
         PegV2Mint, // mint through pegged token bridge v2
         PegV2Withdraw // withdraw from original token vault v2
-
     }
 
     enum MsgType {
@@ -40,7 +39,6 @@ library MsgDataTypes {
         Fail,
         Fallback,
         Pending // transient state within a transaction
-
     }
 
     struct TransferInfo {

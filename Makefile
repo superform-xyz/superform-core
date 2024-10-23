@@ -14,6 +14,7 @@ ifeq ($(ENVIRONMENT), local)
 	export FANTOM_RPC_URL := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/FANTOM_RPC_URL/credential)
 	export LINEA_RPC_URL := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/LINEA_RPC_URL/credential)
 	export BLAST_RPC_URL := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/BLAST_RPC_URL/credential)
+	export BARTIO_RPC_URL := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/BARTIO_RPC_URL/credential)
 	export ETHEREUM_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/ETHEREUM_RPC_URL/credential)
 	export BSC_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/BSC_RPC_URL/credential)
 	export AVALANCHE_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/AVALANCHE_RPC_URL/credential)
@@ -26,6 +27,7 @@ ifeq ($(ENVIRONMENT), local)
 	export BSC_TESTNET_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/BSC_TESTNET_RPC_URL/credential)
 	export LINEA_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/LINEA_RPC_URL/credential)
 	export BLAST_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/BLAST_RPC_URL/credential)
+	export BARTIO_RPC_URL_QN := $(shell op read op://5ylebqljbh3x6zomdxi3qd7tsa/BARTIO_RPC_URL/credential)
 endif
 
 # Check for required dependencies
@@ -119,7 +121,7 @@ build-sizes: ## Builds the project and shows sizes
 
 .PHONY: test-vvv
 test-vvv: ## Runs tests with verbose output
-	forge test --match-test test_crossChainRebalance_negativeSlippage --evm-version cancun
+	forge test --match-contract SDMVW0TokenInputNoSlippageAMB1323 --evm-version cancun -vvv
 
 .PHONY: ftest
 ftest: ## Runs tests with cancun evm version
@@ -135,7 +137,7 @@ coverage: ## Runs coverage
 
 .PHONY: coverage-t
 coverage-t:	## Runs coverage for a specific contract
-	FOUNDRY_PROFILE=coverage forge coverage --match-contract SuperformRouterPlusTest --evm-version cancun --report lcov
+	FOUNDRY_PROFILE=coverage forge coverage --match-contract 7540  --evm-version cancun --report lcov
 
 .PHONY: smoke-test
 smoke-test: ## Runs smoke tests

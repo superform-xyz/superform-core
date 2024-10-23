@@ -115,10 +115,11 @@ contract HyperlaneImplementationTest is CommonProtocolActions {
             setupBroadcastPayloadAMBData(users[userIndex], address(hyperlaneImplementation));
 
         vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
-        vm.assume(
-            malice_ != getContract(ETH, "CoreStateRegistry") && malice_ != getContract(ETH, "TimelockStateRegistry")
-                && malice_ != getContract(ETH, "BroadcastRegistry") && malice_ != getContract(ETH, "AsyncStateRegistry")
-        );
+        vm.assume(malice_ != getContract(ETH, "CoreStateRegistry"));
+        vm.assume(malice_ != getContract(ETH, "TimelockStateRegistry"));
+        vm.assume(malice_ != getContract(ETH, "BroadcastRegistry"));
+        vm.assume(malice_ != getContract(ETH, "AsyncStateRegistry"));
+
         vm.deal(malice_, 100 ether);
         vm.prank(malice_);
         hyperlaneImplementation.dispatchPayload{ value: 0.1 ether }(

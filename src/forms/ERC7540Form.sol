@@ -31,7 +31,6 @@ contract ERC7540Form is IERC7540FormBase, BaseForm, LiquidityHandler {
     //////////////////////////////////////////////////////////////
 
     /// @dev The id of the state registry
-    /// TODO TEMPORARY AS THIS SHOULD BECOME ID 2
     uint8 internal immutable STATE_REGISTRY_ID;
     uint256 internal constant ENTIRE_SLIPPAGE = 10_000;
     address internal constant ZERO_ADDRESS = address(0);
