@@ -18,6 +18,9 @@ import {
 import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
 import { ISuperformRouterPlus, IERC20 } from "src/interfaces/ISuperformRouterPlus.sol";
 import { ISuperformRouterPlusAsync } from "src/interfaces/ISuperformRouterPlusAsync.sol";
+import { LiqRequest } from "src/types/DataTypes.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 
 /// @title SuperformRouterPlus
 /// @dev Performs rebalances and deposits on the Superform platform
@@ -25,13 +28,16 @@ import { ISuperformRouterPlusAsync } from "src/interfaces/ISuperformRouterPlusAs
 contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     using SafeERC20 for IERC20;
 
+    uint256 public GLOBAL_SLIPPAGE;
     uint256 public ROUTER_PLUS_PAYLOAD_ID;
 
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address superRegistry_) BaseSuperformRouterPlus(superRegistry_) { }
+    constructor(address superRegistry_) BaseSuperformRouterPlus(superRegistry_) {
+        GLOBAL_SLIPPAGE = 10;
+    }
 
     //////////////////////////////////////////////////////////////
     //                  EXTERNAL WRITE FUNCTIONS                //
@@ -389,6 +395,17 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         }
     }
 
+    /// @inheritdoc ISuperformRouterPlus
+    function setGlobalSlippage(uint256 slippage_) external override {
+        if (!_hasRole(keccak256("EMERGENCY_ADMIN_ROLE"), msg.sender)) {
+            revert Error.NOT_PRIVILEGED_CALLER(keccak256("EMERGENCY_ADMIN_ROLE"));
+        }
+
+        require(slippage_ <= ENTIRE_SLIPPAGE && slippage_ > 0, "Invalid slippage");
+
+        GLOBAL_SLIPPAGE = slippage_;
+    }
+
     //////////////////////////////////////////////////////////////
     //                   INTERNAL FUNCTIONS                     //
     //////////////////////////////////////////////////////////////
@@ -460,12 +477,88 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
 
+        bytes4 rebalanceToSelector = _parseSelectorMem(rebalanceToCallData);
         /// @dev step 3: rebalance into a new superform with rebalanceCallData
-        if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(rebalanceToCallData)]) {
+        if (!whitelistedSelectors[Actions.DEPOSIT][rebalanceToSelector]) {
             revert INVALID_DEPOSIT_SELECTOR();
         }
 
-        _deposit(router_, interimAsset, amountToDeposit, args.rebalanceToMsgValue, rebalanceToCallData);
+        uint256 amountIn;
+        bool containsSwapData;
+
+        if (rebalanceToSelector == IBaseRouter.singleDirectSingleVaultDeposit.selector) {
+            SingleVaultSFData memory sfData =
+                abi.decode(_parseCallData(rebalanceToCallData), (SingleDirectSingleVaultStateReq)).superformData;
+            (amountIn, containsSwapData) = _takeAmountIn(sfData.liqRequest, sfData.amount);
+        } else if (rebalanceToSelector == IBaseRouter.singleXChainSingleVaultDeposit.selector) {
+            SingleVaultSFData memory sfData =
+                abi.decode(_parseCallData(rebalanceToCallData), (SingleXChainSingleVaultStateReq)).superformData;
+            (amountIn, containsSwapData) = _takeAmountIn(sfData.liqRequest, sfData.amount);
+        } else if (rebalanceToSelector == IBaseRouter.singleDirectMultiVaultDeposit.selector) {
+            MultiVaultSFData memory sfData =
+                abi.decode(_parseCallData(rebalanceToCallData), (SingleDirectMultiVaultStateReq)).superformData;
+            uint256 len = sfData.liqRequests.length;
+            uint256 amountInTemp;
+            for (uint256 i; i < len; ++i) {
+                (amountInTemp, containsSwapData) = _takeAmountIn(sfData.liqRequests[i], sfData.amounts[i]);
+                amountIn += amountInTemp;
+            }
+        } else if (rebalanceToSelector == IBaseRouter.singleXChainMultiVaultDeposit.selector) {
+            MultiVaultSFData memory sfData =
+                abi.decode(_parseCallData(rebalanceToCallData), (SingleXChainMultiVaultStateReq)).superformsData;
+            uint256 len = sfData.liqRequests.length;
+            uint256 amountInTemp;
+            for (uint256 i; i < len; ++i) {
+                (amountInTemp, containsSwapData) = _takeAmountIn(sfData.liqRequests[i], sfData.amounts[i]);
+                amountIn += amountInTemp;
+            }
+        } else if (rebalanceToSelector == IBaseRouter.multiDstSingleVaultDeposit.selector) {
+            SingleVaultSFData[] memory sfData =
+                abi.decode(_parseCallData(rebalanceToCallData), (MultiDstSingleVaultStateReq)).superformsData;
+            uint256 lenDst = sfData.length;
+            uint256 amountInTemp;
+            for (uint256 i; i < lenDst; ++i) {
+                (amountInTemp, containsSwapData) = _takeAmountIn(sfData[i].liqRequest, sfData[i].amount);
+                amountIn += amountInTemp;
+            }
+        } else if (rebalanceToSelector == IBaseRouter.multiDstMultiVaultDeposit.selector) {
+            MultiVaultSFData[] memory sfData =
+                abi.decode(_parseCallData(rebalanceToCallData), (MultiDstMultiVaultStateReq)).superformsData;
+            uint256 lenDst = sfData.length;
+            uint256 amountInTemp;
+            for (uint256 i; i < lenDst; ++i) {
+                uint256 len = sfData[i].liqRequests.length;
+                for (uint256 j; j < len; ++j) {
+                    (amountInTemp, containsSwapData) = _takeAmountIn(sfData[i].liqRequests[j], sfData[i].amounts[j]);
+                    amountIn += amountInTemp;
+                }
+            }
+        }
+
+        if (containsSwapData) {
+            if (ENTIRE_SLIPPAGE * amountToDeposit < ((amountIn * (ENTIRE_SLIPPAGE - GLOBAL_SLIPPAGE)))) {
+                revert ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
+            }
+        }
+
+        _deposit(router_, interimAsset, amountIn, args.rebalanceToMsgValue, rebalanceToCallData);
+    }
+
+    function _takeAmountIn(
+        LiqRequest memory liqReq,
+        uint256 sfDataAmount
+    )
+        internal
+        view
+        returns (uint256 amountIn, bool containsSwapData)
+    {
+        bytes memory txData = liqReq.txData;
+        if (txData.length == 0) {
+            amountIn = sfDataAmount;
+        } else {
+            amountIn = IBridgeValidator(superRegistry.getBridgeValidator(liqReq.bridgeId)).decodeAmountIn(txData, false);
+            containsSwapData = true;
+        }
     }
 
     function _transferSuperPositions(
@@ -595,5 +688,13 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 revert Error.FAILED_TO_SEND_NATIVE();
             }
         }
+    }
+
+    /// @dev returns if an address has a specific role
+    /// @param id_ the role id
+    /// @param addressToCheck_ the address to check
+    /// @return true if the address has the role, false otherwise
+    function _hasRole(bytes32 id_, address addressToCheck_) internal view returns (bool) {
+        return ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(id_, addressToCheck_);
     }
 }

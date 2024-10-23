@@ -4167,4 +4167,29 @@ contract SuperformRouterPlusTest is ProtocolActions {
             calldata_ := add(data, 0x04)
         }
     }
+
+    function test_setGlobalSlippage() public {
+        // Test invalid caller
+        vm.startPrank(address(12345));
+        vm.expectRevert();
+        SuperformRouterPlus(getContract(SOURCE_CHAIN, "SuperformRouterPlus")).setGlobalSlippage(100);
+        vm.stopPrank();
+
+        // Test slippage greater than ENTIRE_SLIPPAGE
+        vm.startPrank(deployer);
+        vm.expectRevert();
+        SuperformRouterPlus(getContract(SOURCE_CHAIN, "SuperformRouterPlus")).setGlobalSlippage(1000000);
+        vm.stopPrank();
+
+        // Test slippage 0
+        vm.startPrank(deployer);
+        vm.expectRevert();
+        SuperformRouterPlus(getContract(SOURCE_CHAIN, "SuperformRouterPlus")).setGlobalSlippage(0);
+        vm.stopPrank();
+
+        // Test slippage valid
+        vm.startPrank(deployer);
+        SuperformRouterPlus(getContract(SOURCE_CHAIN, "SuperformRouterPlus")).setGlobalSlippage(100);
+        vm.stopPrank();
+    }
 }
