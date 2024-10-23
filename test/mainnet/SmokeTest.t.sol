@@ -56,12 +56,15 @@ contract SmokeTest is MainnetBaseSetup {
         newAddresses[6] = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
         newAddresses[7] = 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C;
         newAddresses[8] = 0x1a6805487322565202848f239C1B5bC32303C2FE;
-        newAddresses[9] = 0xce23bD7205bF2B543F6B4eeC00Add0C111FEFc3B;
 
         for (uint256 i = 0; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             vm.selectFork(FORKS[TARGET_DEPLOYMENT_CHAINS[i]]);
 
-            if (TARGET_DEPLOYMENT_CHAINS[i] == FANTOM) newAddresses[9] = 0xD6ceA5c8853c3fB4bbD77eF5E924c4e647c03a94;
+            if (TARGET_DEPLOYMENT_CHAINS[i] == FANTOM) {
+                newAddresses[9] = 0xD6ceA5c8853c3fB4bbD77eF5E924c4e647c03a94;
+            } else {
+                newAddresses[9] = 0xce23bD7205bF2B543F6B4eeC00Add0C111FEFc3B;
+            }
             sr = SuperRegistry(getContract(TARGET_DEPLOYMENT_CHAINS[i], "SuperRegistry"));
 
             for (uint256 j = 0; j < len; ++j) {
@@ -188,6 +191,8 @@ contract SmokeTest is MainnetBaseSetup {
                 if (TARGET_DEPLOYMENT_CHAINS[j] == chainId) {
                     continue;
                 }
+                console.log("chainId", chainId);
+                console.log("TARGET_DEPLOYMENT_CHAINS[j]", TARGET_DEPLOYMENT_CHAINS[j]);
 
                 assertEq(sr.getVaultLimitPerDestination(TARGET_DEPLOYMENT_CHAINS[j]), 5);
             }
@@ -406,7 +411,7 @@ contract SmokeTest is MainnetBaseSetup {
                 assertEq(wormhole.refundChainId(), _ambIds[i]);
 
                 for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
-                    if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
+                    if (chainId != TARGET_DEPLOYMENT_CHAINS[j] && TARGET_DEPLOYMENT_CHAINS[j] != LINEA) {
                         assertEq(
                             wormhole.authorizedImpl(_ambIds[j]),
                             getContract(TARGET_DEPLOYMENT_CHAINS[j], "WormholeARImplementation")
@@ -463,7 +468,7 @@ contract SmokeTest is MainnetBaseSetup {
                 assertEq(wormhole.broadcastFinality(), 0);
 
                 for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
-                    if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
+                    if (chainId != TARGET_DEPLOYMENT_CHAINS[j] && TARGET_DEPLOYMENT_CHAINS[j] != LINEA) {
                         assertEq(
                             wormhole.authorizedImpl(_ambIds[j]),
                             getContract(TARGET_DEPLOYMENT_CHAINS[j], "WormholeSRImplementation")
@@ -520,7 +525,6 @@ contract SmokeTest is MainnetBaseSetup {
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
-            console.log("chainId", chainId);
             vm.selectFork(FORKS[chainId]);
             axelar = AxelarImplementation(getContract(chainId, "AxelarImplementation"));
 
@@ -530,9 +534,15 @@ contract SmokeTest is MainnetBaseSetup {
 
             for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
                 if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
-                    assertEq(axelar.authorizedImpl(ambIds_[j]), address(0xDEAD));
-                    assertEq(axelar.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds_[j]);
-                    assertEq(axelar.superChainId(ambIds_[j]), TARGET_DEPLOYMENT_CHAINS[j]);
+                    if (TARGET_DEPLOYMENT_CHAINS[j] == LINEA || TARGET_DEPLOYMENT_CHAINS[j] == BLAST) {
+                        assertEq(axelar.authorizedImpl(ambIds_[j]), address(0));
+                        assertEq(axelar.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), "");
+                        assertEq(axelar.superChainId(ambIds_[j]), 0);
+                    } else {
+                        assertEq(axelar.authorizedImpl(ambIds_[j]), address(0xDEAD));
+                        assertEq(axelar.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds_[j]);
+                        assertEq(axelar.superChainId(ambIds_[j]), TARGET_DEPLOYMENT_CHAINS[j]);
+                    }
                 }
             }
         }
@@ -559,7 +569,7 @@ contract SmokeTest is MainnetBaseSetup {
 
             for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
                 /// RESCUER role not set on other chains based on linea or blast as we're not using broadcaster
-                sertEq(
+                assertEq(
                     superRegistry.getAddressByChainId(
                         keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), TARGET_DEPLOYMENT_CHAINS[j]
                     ),

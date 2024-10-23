@@ -612,6 +612,9 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// @dev 5.1- deploy Layerzero Implementation
         vars.lzImplementation = address(new LayerzeroV2Implementation{ salt: salt }(vars.superRegistryC));
         contracts[vars.chainId][bytes32(bytes("LayerzeroImplementation"))] = vars.lzImplementation;
+        LayerzeroV2Implementation(vars.lzImplementation).setDelegate(
+            env == 0 || env == 2 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[trueIndex]
+        );
         if (vars.chainId != BARTIO) {
             LayerzeroV2Implementation(payable(vars.lzImplementation)).setLzEndpoint(lzV2Endpoint);
         } else {
@@ -1612,12 +1615,13 @@ abstract contract AbstractDeploySingle is BatchScript {
                 );
 
                 AxelarImplementation(payable(vars.axelarImplementation)).setReceiver(
-                    vars.dstAxelarChainId, vars.dstAxelarImplementation
+                    vars.dstAxelarChainId, address(0xDEAD)
                 );
             }
             SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
 
             vars.superRegistryC.batchSetAddress(ids, newAddresses, chainIdsSetAddresses);
+            vars.superRegistryC.setVaultLimitPerDestination(vars.dstChainId, 5);
         } else {
             bytes memory txn = abi.encodeWithSelector(
                 LayerzeroV2Implementation.setPeer.selector,
@@ -1701,9 +1705,7 @@ abstract contract AbstractDeploySingle is BatchScript {
             }
 
             if (DEPLOY_AXELAR) {
-                txn = abi.encodeWithSelector(
-                    AxelarImplementation.setReceiver.selector, vars.dstAxelarChainId, vars.dstAxelarImplementation
-                );
+                txn = abi.encodeWithSelector(AxelarImplementation.setReceiver.selector, vars.dstAxelarChainId, 0xDEAD);
                 addToBatch(vars.axelarImplementation, 0, txn);
 
                 txn = abi.encodeWithSelector(
