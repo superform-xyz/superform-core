@@ -27,6 +27,9 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
     uint256 public ROUTER_PLUS_PAYLOAD_ID;
 
+    /// @dev Tolerance constant to account for tokens with rounding issues on transfer
+    uint256 constant TOLERANCE_CONSTANT = 2 wei;
+
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
@@ -521,6 +524,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         if (
             (balanceDifference != assets)
                 || (ENTIRE_SLIPPAGE * assets < ((expectedOutputAmount_ * (ENTIRE_SLIPPAGE - maxSlippage_))))
+                || (assets - TOLERANCE_CONSTANT > balanceDifference)
         ) {
             revert ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
         }
