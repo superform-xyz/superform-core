@@ -521,15 +521,14 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         uint256 assetsBalanceAfter = asset.balanceOf(address(this));
         balanceDifference = assetsBalanceAfter - assetsBalanceBefore;
 
+        if (assets < TOLERANCE_CONSTANT) revert Error.ZERO_AMOUNT();
+
+        /// @dev validate the slippage
         if (
-            (balanceDifference != assets)
+            (balanceDifference < assets - TOLERANCE_CONSTANT)
                 || (ENTIRE_SLIPPAGE * assets < ((expectedOutputAmount_ * (ENTIRE_SLIPPAGE - maxSlippage_))))
         ) {
             revert ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
-        }
-
-        if ((assets - TOLERANCE_CONSTANT > balanceDifference)) {
-            revert TOLERANCE_EXCEEDED();
         }
     }
 
