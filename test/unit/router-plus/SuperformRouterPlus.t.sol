@@ -1710,6 +1710,12 @@ contract SuperformRouterPlusTest is ProtocolActions {
         vm.prank(deployer);
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1, 100);
 
+        // @dev testing refund amount exceeds expected amount
+        vm.startPrank(deployer);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1, 10_000e18);
+        vm.expectRevert(ISuperformRouterPlusAsync.REQUESTED_AMOUNT_TOO_HIGH.selector);
+        vm.stopPrank();
+
         // Step 6: Approve refund
 
         /// @dev testing invalid approver
@@ -1717,13 +1723,6 @@ contract SuperformRouterPlusTest is ProtocolActions {
         vm.expectRevert();
         SuperformRouterPlusAsync(address(1234)).approveRefund(1);
         vm.stopPrank();
-
-        /// @dev testing refund amount exceeds expected amount
-        // vm.startPrank(deployer);
-        // SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1);
-        // vm.expectRevert(ISuperformRouterPlusAsync.REFUND_AMOUNT_EXCEEDS_EXPECTED_AMOUNT.selector);
-        // SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).approveRefund(1);
-        // vm.stopPrank();
 
         (, address refundToken,) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
         uint256 balanceBefore = MockERC20(refundToken).balanceOf(deployer);
