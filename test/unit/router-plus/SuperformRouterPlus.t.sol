@@ -568,11 +568,11 @@ contract SuperformRouterPlusTest is ProtocolActions {
         MockERC20(getContract(SOURCE_CHAIN, "DAI")).approve(address(mockVault), daiAmount);
         uint256 vaultTokenAmount = mockVault.deposit(daiAmount, deployer);
 
-        // Mock the balanceOf function to return a value less than expected
+        // Mock the redeem function to return a value less than expected
         vm.mockCall(
-            address(deployer),
-            abi.encodeWithSelector(IERC4626.maxDeposit.selector, address(mockVault)),
-            abi.encode(daiAmount - 15 wei) // Return half of the expected amount
+            address(mockVault),
+            abi.encodeWithSelector(IERC4626.redeem.selector, vaultTokenAmount, ROUTER_PLUS_SOURCE, ROUTER_PLUS_SOURCE),
+            abi.encode(1) // Return 1 wei
         );
 
         // Prepare deposit4626 args
