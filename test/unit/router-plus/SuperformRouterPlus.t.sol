@@ -1706,16 +1706,21 @@ contract SuperformRouterPlusTest is ProtocolActions {
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1, 100);
         vm.stopPrank();
 
-        /// @dev testing valid refund request
-        vm.prank(deployer);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1, 100);
-        assertEq(SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1).requestedAmount, 100);
-
         // @dev testing refund amount exceeds expected amount
         vm.startPrank(deployer);
         vm.expectRevert(ISuperformRouterPlusAsync.REQUESTED_AMOUNT_TOO_HIGH.selector);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1, 10_000e18);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1, 1000e18);
         vm.stopPrank();
+
+        /// @dev testing valid refund request
+        vm.prank(deployer);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1, 100);
+
+        (,, uint256 requestedAmount) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
+        assertEq(requestedAmount, 100);
+
+        (, address refundToken,) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
+        assertEq(refundToken, address(args.interimAsset));
 
         // Step 6: Approve refund
 
@@ -1725,22 +1730,26 @@ contract SuperformRouterPlusTest is ProtocolActions {
         SuperformRouterPlusAsync(address(1234)).approveRefund(1);
         vm.stopPrank();
 
-        (, address refundToken,) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
+        /// @dev testing valid refund approval
         uint256 balanceBefore = MockERC20(refundToken).balanceOf(deployer);
 
-        /// @dev testing valid refund approval
         vm.startPrank(deployer);
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).approveRefund(1);
         vm.stopPrank();
 
         uint256 balanceAfter = MockERC20(refundToken).balanceOf(deployer);
         assertGt(balanceAfter, balanceBefore);
+        assertEq(MockERC20(refundToken).balanceOf(address(ROUTER_PLUS_ASYNC_SOURCE)), 0);
+        assertEq(MockERC20(refundToken).balanceOf(address(deployer)), balanceBefore + 100);
 
-        assertEq(SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1).interimToken, address(0));
+        (, address interimToken, ) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
+        assertEq(interimToken, address(0));
 
-        assertEq(SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1).receiver, address(0));
+        (, address receiver, ) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
+        assertEq(receiver, address(0));
 
-        assertEq(SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1).requestedAmount, 0);
+        (,, uint256 updatedRequestedAmount) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
+        assertEq(updatedRequestedAmount, 0);
 
         /// @dev testing refund already approved
         vm.expectRevert(ISuperformRouterPlusAsync.REFUND_ALREADY_APPROVED.selector);
@@ -1937,6 +1946,45 @@ contract SuperformRouterPlusTest is ProtocolActions {
         completeArgs.routerPlusPayloadId = 2;
         vm.expectRevert(ISuperformRouterPlusAsync.COMPLETE_REBALANCE_INVALID_TX_DATA_UPDATE.selector);
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
+        vm.stopPrank();
+
+        // Test COMPLETE_REBALANCE_DIFFERENT_RECEIVER error
+        // SingleVaultSFData memory sfDataInvalidReceiver = SingleVaultSFData({
+        //     superformId: superformId1,
+        //     amount: 1e18,
+        //     outputAmount: 1e18,
+        //     maxSlippage: 100,
+        //     liqRequest: LiqRequest({
+        //         txData: "",
+        //         token: getContract(SOURCE_CHAIN, "DAI"),
+        //         interimToken: address(0),
+        //         bridgeId: 1,
+        //         liqDstChainId: SOURCE_CHAIN,
+        //         nativeAmount: 0
+        //     }),
+        //     permit2data: "",
+        //     hasDstSwap: false,
+        //     retain4626: false,
+        //     receiverAddress: address(deployer),
+        //     receiverAddressSP: address(12345),
+        //     extraFormData: ""
+        // });
+
+        // data = IBaseSuperformRouterPlus.XChainRebalanceData({
+        //     rebalanceSelector: IBaseRouter.singleDirectSingleVaultDeposit.selector,
+        //     interimAsset: getContract(SOURCE_CHAIN, "DAI"),
+        //     slippage: 100,
+        //     expectedAmountInterimAsset: 1e18,
+        //     rebalanceToAmbIds: new uint8[][](0),
+        //     rebalanceToDstChainIds: new uint64[](0),
+        //     rebalanceToSfData: abi.encode(sfDataInvalidReceiver)
+        // });
+
+        // vm.startPrank(deployer);
+        // completeArgs.routerPlusPayloadId = 2;
+        // vm.expectRevert(ISuperformRouterPlusAsync.COMPLETE_REBALANCE_DIFFERENT_RECEIVER.selector);
+        // SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
+        // vm.stopPrank();
     }
 
     //////////////////////////////////////////////////////////////
