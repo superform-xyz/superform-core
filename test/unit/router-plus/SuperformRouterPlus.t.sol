@@ -1726,20 +1726,20 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         /// @dev testing invalid approver (not core state registry)
         vm.startPrank(address(1234));
-        vm.expectRevert();
-        SuperformRouterPlusAsync(address(1234)).approveRefund(1);
+        vm.expectRevert(ISuperformRouterPlusAsync.NOT_CORE_STATE_REGISTRY_RESCUER.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).approveRefund(1);
         vm.stopPrank();
 
         /// @dev testing valid refund approval
         uint256 balanceBefore = MockERC20(refundToken).balanceOf(deployer);
-
+        uint256 routerBalanceBefore = MockERC20(refundToken).balanceOf(address(ROUTER_PLUS_ASYNC_SOURCE));
         vm.startPrank(deployer);
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).approveRefund(1);
         vm.stopPrank();
 
         uint256 balanceAfter = MockERC20(refundToken).balanceOf(deployer);
         assertGt(balanceAfter, balanceBefore);
-        assertEq(MockERC20(refundToken).balanceOf(address(ROUTER_PLUS_ASYNC_SOURCE)), 0);
+        assertEq(MockERC20(refundToken).balanceOf(address(ROUTER_PLUS_ASYNC_SOURCE)), routerBalanceBefore - 100);
         assertEq(MockERC20(refundToken).balanceOf(address(deployer)), balanceBefore + 100);
 
         (, address interimToken, ) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
@@ -1750,8 +1750,10 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         (,, uint256 updatedRequestedAmount) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
         assertEq(updatedRequestedAmount, 0);
+        vm.stopPrank();
 
         /// @dev testing refund already approved
+        vm.startPrank(deployer);
         vm.expectRevert(ISuperformRouterPlusAsync.REFUND_ALREADY_APPROVED.selector);
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).approveRefund(1);
         vm.stopPrank();
@@ -1811,6 +1813,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
     function test_crossChainRebalance_updateSuperformData_allErrors() public {
         vm.selectFork(FORKS[SOURCE_CHAIN]);
+        uint64 REBALANCE_TO = OP;
+
         SingleVaultSFData memory sfData = SingleVaultSFData({
             superformId: superformId1,
             amount: 1e18,
@@ -1947,44 +1951,6 @@ contract SuperformRouterPlusTest is ProtocolActions {
         vm.expectRevert(ISuperformRouterPlusAsync.COMPLETE_REBALANCE_INVALID_TX_DATA_UPDATE.selector);
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
         vm.stopPrank();
-
-        // Test COMPLETE_REBALANCE_DIFFERENT_RECEIVER error
-        // SingleVaultSFData memory sfDataInvalidReceiver = SingleVaultSFData({
-        //     superformId: superformId1,
-        //     amount: 1e18,
-        //     outputAmount: 1e18,
-        //     maxSlippage: 100,
-        //     liqRequest: LiqRequest({
-        //         txData: "",
-        //         token: getContract(SOURCE_CHAIN, "DAI"),
-        //         interimToken: address(0),
-        //         bridgeId: 1,
-        //         liqDstChainId: SOURCE_CHAIN,
-        //         nativeAmount: 0
-        //     }),
-        //     permit2data: "",
-        //     hasDstSwap: false,
-        //     retain4626: false,
-        //     receiverAddress: address(deployer),
-        //     receiverAddressSP: address(12345),
-        //     extraFormData: ""
-        // });
-
-        // data = IBaseSuperformRouterPlus.XChainRebalanceData({
-        //     rebalanceSelector: IBaseRouter.singleDirectSingleVaultDeposit.selector,
-        //     interimAsset: getContract(SOURCE_CHAIN, "DAI"),
-        //     slippage: 100,
-        //     expectedAmountInterimAsset: 1e18,
-        //     rebalanceToAmbIds: new uint8[][](0),
-        //     rebalanceToDstChainIds: new uint64[](0),
-        //     rebalanceToSfData: abi.encode(sfDataInvalidReceiver)
-        // });
-
-        // vm.startPrank(deployer);
-        // completeArgs.routerPlusPayloadId = 2;
-        // vm.expectRevert(ISuperformRouterPlusAsync.COMPLETE_REBALANCE_DIFFERENT_RECEIVER.selector);
-        // SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
-        // vm.stopPrank();
     }
 
     //////////////////////////////////////////////////////////////
