@@ -1700,7 +1700,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         // Step 5: Request refund
 
-        /// @dev testing invalid requester
+        /// @dev testing invalid requester (not receiver)
         vm.startPrank(address(222));
         vm.expectRevert(ISuperformRouterPlusAsync.INVALID_REQUESTER.selector);
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1, 100);
@@ -1709,6 +1709,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
         /// @dev testing valid refund request
         vm.prank(deployer);
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1, 100);
+        assertEq(SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1).requestedAmount, 100);
 
         // @dev testing refund amount exceeds expected amount
         vm.startPrank(deployer);
@@ -1718,7 +1719,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         // Step 6: Approve refund
 
-        /// @dev testing invalid approver
+        /// @dev testing invalid approver (not core state registry)
         vm.startPrank(address(1234));
         vm.expectRevert();
         SuperformRouterPlusAsync(address(1234)).approveRefund(1);
@@ -1735,9 +1736,16 @@ contract SuperformRouterPlusTest is ProtocolActions {
         uint256 balanceAfter = MockERC20(refundToken).balanceOf(deployer);
         assertGt(balanceAfter, balanceBefore);
 
+        assertEq(SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1).interimToken, address(0));
+
+        assertEq(SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1).receiver, address(0));
+
+        assertEq(SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1).requestedAmount, 0);
+
         /// @dev testing refund already approved
         vm.expectRevert(ISuperformRouterPlusAsync.REFUND_ALREADY_APPROVED.selector);
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).approveRefund(1);
+        vm.stopPrank();
     }
 
     function test_crossChainRebalance_negativeSlippage() public {
