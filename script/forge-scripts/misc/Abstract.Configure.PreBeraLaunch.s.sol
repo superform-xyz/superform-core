@@ -61,6 +61,18 @@ abstract contract AbstractPreBeraLaunch is EnvironmentUtils {
         0x129Ee430Cb2Ff2708CCADDBDb408a88Fe4FFd480,
         0xc097ab8CD7b053326DFe9fB3E3a31a0CCe3B526f
     ];
+    /*
+    TARGET_CHAINS.push(ETH);
+    TARGET_CHAINS.push(BSC);
+    TARGET_CHAINS.push(AVAX);
+    TARGET_CHAINS.push(POLY);
+    TARGET_CHAINS.push(ARBI);
+    TARGET_CHAINS.push(OP);
+    TARGET_CHAINS.push(BASE);
+    TARGET_CHAINS.push(FANTOM);
+    TARGET_CHAINS.push(LINEA);
+    TARGET_CHAINS.push(BLAST);
+    */
 
     function _configure(
         uint256 env,

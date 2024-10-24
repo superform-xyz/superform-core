@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import "test/utils/MainnetBaseSetup.sol";
 import "forge-std/console.sol";
+import "src/vendor/layerzero/v2/ILayerZeroEndpointV2.sol";
 
 contract SmokeTest is MainnetBaseSetup {
     function setUp() public override {
@@ -29,6 +30,42 @@ contract SmokeTest is MainnetBaseSetup {
     /*///////////////////////////////////////////////////////////////
                      TESTS
     //////////////////////////////////////////////////////////////*/
+    struct UlnConfig {
+        uint64 confirmations;
+        // we store the length of required DVNs and optional DVNs instead of using DVN.length directly to save gas
+        uint8 requiredDVNCount; // 0 indicate DEFAULT, NIL_DVN_COUNT indicate NONE (to override the value of default)
+        uint8 optionalDVNCount; // 0 indicate DEFAULT, NIL_DVN_COUNT indicate NONE (to override the value of default)
+        uint8 optionalDVNThreshold; // (0, optionalDVNCount]
+        address[] requiredDVNs; // no duplicates. sorted an an ascending order. allowed overlap with optionalDVNs
+        address[] optionalDVNs; // no duplicates. sorted an an ascending order. allowed overlap with requiredDVNs
+    }
+
+    function test_lzConfig() public {
+        bytes memory config;
+        address oapp;
+
+        ILayerZeroEndpointV2 endpoint = ILayerZeroEndpointV2(lzV2Endpoint);
+
+        for (uint256 i = 0; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
+            uint64 chain = TARGET_DEPLOYMENT_CHAINS[i];
+            if (chain == BLAST) continue;
+            vm.selectFork(FORKS[chain]);
+            oapp = getContract(chain, "LayerzeroImplementation");
+            for (uint256 j = 0; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
+                uint64 dstChain = TARGET_DEPLOYMENT_CHAINS[j];
+                if (chain != dstChain && !(dstChain == LINEA || dstChain == BLAST)) {
+                    console.log("send chain", chain);
+                    console.log("dst chain", dstChain);
+
+                    config = endpoint.getConfig(oapp, lzV2SendLib[i], lz_v2_chainIds[j], 2);
+                    UlnConfig memory ulnConfig = abi.decode(config, (UlnConfig));
+
+                    console.log("confirmations", ulnConfig.confirmations);
+                    console.log("--");
+                }
+            }
+        }
+    }
 
     function test_superRegistryAddresses() public {
         SuperRegistry sr;
