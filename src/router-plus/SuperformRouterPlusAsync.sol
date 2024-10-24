@@ -249,6 +249,10 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             revert Error.INSUFFICIENT_BALANCE();
         }
 
+        if (data.expectedAmountInterimAsset == 0) {
+            revert Error.ZERO_AMOUNT();
+        }
+
         /// @dev We don't allow negative slippage (and funds are not rescued)
         /// @notice This means that a keeper has to re-submit a completeCrossChainRebalance call
         /// @notice With an amount received lower than expected
