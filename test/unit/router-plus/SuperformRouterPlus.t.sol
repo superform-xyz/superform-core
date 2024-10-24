@@ -1813,7 +1813,6 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
     function test_crossChainRebalance_updateSuperformData_allErrors() public {
         vm.selectFork(FORKS[SOURCE_CHAIN]);
-        uint64 REBALANCE_TO = OP;
 
         SingleVaultSFData memory sfData = SingleVaultSFData({
             superformId: superformId1,
