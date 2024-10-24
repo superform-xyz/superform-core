@@ -268,7 +268,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
                 < ((data.expectedAmountInterimAsset * (ENTIRE_SLIPPAGE - data.slippage)))
         ) {
 
-            refunds[args_.routerPlusPayloadId] = Refund(args_.receiverAddressSP, data.interimAsset);
+            refunds[args_.routerPlusPayloadId] = Refund(args_.receiverAddressSP, data.interimAsset, 0);
 
             emit RefundInitiated(
                 args_.routerPlusPayloadId, args_.receiverAddressSP, data.interimAsset, args_.amountReceivedInterimAsset
@@ -441,11 +441,9 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             revert REQUESTED_AMOUNT_TOO_HIGH();
         }
 
-        uint256 amountToRefund = requestedAmount;
+        r.amount = requestedAmount;
 
-        r.amount = amountToRefund;
-
-        emit refundRequested(routerPlusPayloadId_, msg.sender, r.interimToken, r.amount);
+        emit refundRequested(routerPlusPayloadId_, msg.sender, r.interimToken, requestedAmount);
     }
 
     /// @inheritdoc ISuperformRouterPlusAsync
@@ -453,8 +451,6 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         if (approvedRefund[routerPlusPayloadId_]) revert REFUND_ALREADY_APPROVED();
 
         Refund memory r = refunds[routerPlusPayloadId_];
-
-        if (r.amount == 0) revert INVALID_REFUND_DATA();
 
         approvedRefund[routerPlusPayloadId_] = true;
 

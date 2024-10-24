@@ -1703,12 +1703,12 @@ contract SuperformRouterPlusTest is ProtocolActions {
         /// @dev testing invalid requester
         vm.startPrank(address(222));
         vm.expectRevert(ISuperformRouterPlusAsync.INVALID_REQUESTER.selector);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1, 100);
         vm.stopPrank();
 
         /// @dev testing valid refund request
-        //SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1000);
-        //vm.stopPrank();
+        vm.prank(deployer);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1, 100);
 
         // Step 6: Approve refund
 

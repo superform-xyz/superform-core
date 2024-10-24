@@ -53,8 +53,8 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
     /// @notice thrown when the refund payload is invalid
     error INVALID_REFUND_DATA();
 
-    /// @notice thrown when requestedrefund amount exceeds received amount
-    error REFUND_AMOUNT_EXCEEDS_EXPECTED_AMOUNT();
+    /// @notice thrown when requested refund amount is too high
+    error REQUESTED_AMOUNT_TOO_HIGH();
 
     /// @notice thrown when the refund payload is already approved
     error REFUND_ALREADY_APPROVED();
@@ -181,7 +181,7 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
 
     /// @notice allows the user to request a refund for the rebalance
     /// @param routerplusPayloadId_ the router plus payload id
-    function requestRefund(uint256 routerplusPayloadId_) external;
+    function requestRefund(uint256 routerplusPayloadId_, uint256 requestedAmount) external;
 
     /// @dev only callable by core state registry rescuer
     /// @notice approves a refund for the rebalance and sends funds to the receiver
