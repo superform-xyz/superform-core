@@ -267,8 +267,8 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
             ENTIRE_SLIPPAGE * args_.amountReceivedInterimAsset
                 < ((data.expectedAmountInterimAsset * (ENTIRE_SLIPPAGE - data.slippage)))
         ) {
-            refunds[args_.routerPlusPayloadId] =
-                Refund(args_.receiverAddressSP, data.interimAsset, args_.amountReceivedInterimAsset);
+
+            refunds[args_.routerPlusPayloadId] = Refund(args_.receiverAddressSP, data.interimAsset);
 
             emit RefundInitiated(
                 args_.routerPlusPayloadId, args_.receiverAddressSP, data.interimAsset, args_.amountReceivedInterimAsset
@@ -429,7 +429,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
     }
 
     /// @inheritdoc ISuperformRouterPlusAsync
-    function requestRefund(uint256 routerPlusPayloadId_) external {
+    function requestRefund(uint256 routerPlusPayloadId_, uint256 requestedAmount) external {
         Refund memory r = refunds[routerPlusPayloadId_];
 
         if (msg.sender != r.receiver) revert INVALID_REQUESTER();
@@ -437,19 +437,21 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
 
         XChainRebalanceData memory data = xChainRebalanceCallData[r.receiver][routerPlusPayloadId_];
 
-        uint256 amountToRefund = data.expectedAmountInterimAsset;
+        if (requestedAmount > data.expectedAmountInterimAsset) {
+            revert REQUESTED_AMOUNT_TOO_HIGH();
+        }
+
+        uint256 amountToRefund = requestedAmount;
 
         r.amount = amountToRefund;
 
-        emit refundRequested(
-            routerPlusPayloadId_, msg.sender, r.interimToken, r.amount
-        );
+        emit refundRequested(routerPlusPayloadId_, msg.sender, r.interimToken, r.amount);
     }
 
     /// @inheritdoc ISuperformRouterPlusAsync
     function approveRefund(uint256 routerPlusPayloadId_) external onlyCoreStateRegistryRescuer {
         if (approvedRefund[routerPlusPayloadId_]) revert REFUND_ALREADY_APPROVED();
-        
+
         Refund memory r = refunds[routerPlusPayloadId_];
 
         if (r.amount == 0) revert INVALID_REFUND_DATA();
