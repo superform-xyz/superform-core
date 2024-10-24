@@ -8,6 +8,7 @@ import { ISuperformRouterPlusAsync } from "src/interfaces/ISuperformRouterPlusAs
 import { IBaseSuperformRouterPlus } from "src/interfaces/IBaseSuperformRouterPlus.sol";
 import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
 import { ERC20 } from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 
 contract RejectEther {
     // This function will revert when called, simulating a contract that can't receive native tokens
@@ -561,15 +562,23 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         // Mint some DAI to the deployer
         uint256 daiAmount = 1e18;
+        deal(getContract(SOURCE_CHAIN, "DAI"), deployer, daiAmount);
 
         // Approve and deposit DAI into the mock vault
         MockERC20(getContract(SOURCE_CHAIN, "DAI")).approve(address(mockVault), daiAmount);
         uint256 vaultTokenAmount = mockVault.deposit(daiAmount, deployer);
 
+        // Mock the balanceOf function to return a value less than expected
+        vm.mockCall(
+            address(deployer),
+            abi.encodeWithSelector(IERC4626.maxDeposit.selector, address(mockVault)),
+            abi.encode(daiAmount - 15 wei) // Return half of the expected amount
+        );
+
         // Prepare deposit4626 args
         ISuperformRouterPlus.Deposit4626Args memory args = ISuperformRouterPlus.Deposit4626Args({
             amount: vaultTokenAmount,
-            expectedOutputAmount: daiAmount - 15 wei,
+            expectedOutputAmount: daiAmount,
             maxSlippage: 100, // 1%
             receiverAddressSP: deployer,
             depositCallData: _buildDepositCallData(superformId1, daiAmount)
