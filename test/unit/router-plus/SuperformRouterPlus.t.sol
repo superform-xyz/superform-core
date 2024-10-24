@@ -1712,8 +1712,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         // @dev testing refund amount exceeds expected amount
         vm.startPrank(deployer);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1, 10_000e18);
         vm.expectRevert(ISuperformRouterPlusAsync.REQUESTED_AMOUNT_TOO_HIGH.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1, 10_000e18);
         vm.stopPrank();
 
         // Step 6: Approve refund
