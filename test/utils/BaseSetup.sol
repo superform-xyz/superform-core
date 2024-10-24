@@ -453,6 +453,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         ""
     ];
 
+
     /// @dev minting enough tokens to be able to fuzz with bigger amounts (DAI's 3.6B supply etc)
     uint256 public constant hundredBilly = 100 * 1e9 * 1e18;
 
