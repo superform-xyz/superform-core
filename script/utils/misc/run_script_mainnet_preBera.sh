@@ -14,6 +14,10 @@ export BLAST_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BLAST_RPC_URL/cre
 
 echo Configuring
 
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Configure.PreBera.s.sol --sig "setBlastDelegate(uint256, uint256, uint256)" 0 9 0 --rpc-url $BLAST_RPC_URL --slow --sender 0x1985df46791BEBb1e3ed9Ec60417F38CECc1D349
+wait
+
+<<c
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Configure.PreBera.s.sol --sig "configure(uint256, uint256, uint256)" 0 0 0 --rpc-url $ETHEREUM_RPC_URL --slow --sender 0x1985df46791BEBb1e3ed9Ec60417F38CECc1D349
 wait
 
@@ -40,3 +44,7 @@ wait
 
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Configure.PreBera.s.sol --sig "configure(uint256, uint256, uint256)" 0 8 0 --rpc-url $LINEA_RPC_URL --slow --sender 0x1985df46791BEBb1e3ed9Ec60417F38CECc1D349
 wait
+
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Configure.PreBera.s.sol --sig "configure(uint256, uint256, uint256)" 0 9 0 --rpc-url $BLAST_RPC_URL --slow --sender 0x1985df46791BEBb1e3ed9Ec60417F38CECc1D349
+wait
+c

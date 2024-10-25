@@ -17,6 +17,8 @@ struct UpdateVars {
     uint256 dstTrueIndex;
     address receiveLib;
     address dstLzImpl;
+    address axl;
+    address srcLzImpl;
     bytes config;
     SuperRegistry superRegistryC;
     AxelarImplementation axelarImpl;
@@ -62,9 +64,8 @@ abstract contract AbstractPreBeraLaunch is EnvironmentUtils {
         0xc097ab8CD7b053326DFe9fB3E3a31a0CCe3B526f
     ];
 
-    function _configure(
+    function _setBlastDelegate(
         uint256 env,
-        uint256 i,
         uint256 srcChainIndex,
         Cycle cycle,
         uint64[] memory finalDeployedChains
@@ -77,11 +78,35 @@ abstract contract AbstractPreBeraLaunch is EnvironmentUtils {
 
         vars.chainId = finalDeployedChains[srcChainIndex];
 
-        address axl = _readContractsV1(env, chainNames[srcChainIndex], vars.chainId, "AxelarImplementation");
-        assert(axl != address(0));
+        vars.srcLzImpl = _readContractsV1(env, chainNames[srcChainIndex], vars.chainId, "LayerzeroImplementation");
+        assert(vars.srcLzImpl != address(0));
+        assert(PROTOCOL_ADMINS[srcChainIndex] == 0x95B5837CF46E6ab340fFf3844ca5e7d8ead5B8AF);
+        bytes memory txn =
+            abi.encodeWithSelector(LayerzeroV2Implementation.setDelegate.selector, PROTOCOL_ADMINS[srcChainIndex]);
+        addToBatch(vars.srcLzImpl, 0, txn);
+
+        executeBatch(vars.chainId, PROTOCOL_ADMINS[srcChainIndex], manualNonces[srcChainIndex], false);
+    }
+
+    function _configure(
+        uint256 env,
+        uint256 srcChainIndex,
+        Cycle cycle,
+        uint64[] memory finalDeployedChains
+    )
+        internal
+        setEnvDeploy(cycle)
+    {
+        assert(salt.length > 0);
+        UpdateVars memory vars;
+
+        vars.chainId = finalDeployedChains[srcChainIndex];
+
+        vars.axl = _readContractsV1(env, chainNames[srcChainIndex], vars.chainId, "AxelarImplementation");
+        assert(vars.axl != address(0));
         // Configure for the source chain
-        address srcLzImpl = _readContractsV1(env, chainNames[srcChainIndex], vars.chainId, "LayerzeroImplementation");
-        assert(srcLzImpl != address(0));
+        vars.srcLzImpl = _readContractsV1(env, chainNames[srcChainIndex], vars.chainId, "LayerzeroImplementation");
+        assert(vars.srcLzImpl != address(0));
 
         bytes memory txn;
 
@@ -131,30 +156,42 @@ abstract contract AbstractPreBeraLaunch is EnvironmentUtils {
             // Set send config on source chain
             vars.sendLib = ILayerZeroEndpointV2(lzV2Endpoint).defaultSendLibrary(lz_chainIds[vars.dstTrueIndex]);
             txn = abi.encodeWithSelector(
-                IMessageLibManager.setConfig.selector, srcLzImpl, vars.sendLib, vars.setConfigParams
+                IMessageLibManager.setConfig.selector, vars.srcLzImpl, vars.sendLib, vars.setConfigParams
             );
             addToBatch(lzV2Endpoint, 0, txn);
 
             // Set receive config on source chain
             vars.receiveLib = ILayerZeroEndpointV2(lzV2Endpoint).defaultReceiveLibrary(lz_chainIds[vars.dstTrueIndex]);
             txn = abi.encodeWithSelector(
-                IMessageLibManager.setConfig.selector, srcLzImpl, vars.receiveLib, vars.setConfigParams
+                IMessageLibManager.setConfig.selector, vars.srcLzImpl, vars.receiveLib, vars.setConfigParams
             );
             addToBatch(lzV2Endpoint, 0, txn);
 
             // disable Axelar's other chain info on LINEA and BLAST
             if (vars.chainId == LINEA || vars.chainId == BLAST) {
+                if (finalDeployedChains[j] == LINEA || finalDeployedChains[j] == BLAST) {
+                    txn = abi.encodeWithSelector(
+                        AxelarImplementation.setChainId.selector,
+                        finalDeployedChains[j],
+                        axelar_chainIds[vars.dstTrueIndex]
+                    );
+
+                    addToBatch(vars.axl, 0, txn);
+                }
                 txn = abi.encodeWithSelector(
                     AxelarImplementation.setReceiver.selector, axelar_chainIds[vars.dstTrueIndex], address(0xDEAD)
                 );
 
-                addToBatch(axl, 0, txn);
+                addToBatch(vars.axl, 0, txn);
             } else {
                 for (uint256 i; i < rescuerAddress.length; i++) {
                     ids[i] = keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE");
                     rescuerAddress[i] = CSR_RESCUER;
                 }
-                vars.superRegistryC.batchSetAddress(ids, rescuerAddress, targetChains);
+                txn = abi.encodeWithSelector(
+                    vars.superRegistryC.batchSetAddress.selector, ids, rescuerAddress, targetChains
+                );
+                addToBatch(address(vars.superRegistryC), 0, txn);
             }
         }
 
