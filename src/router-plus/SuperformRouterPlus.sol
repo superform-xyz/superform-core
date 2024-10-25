@@ -370,7 +370,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(args[i].depositCallData)]) {
                 revert INVALID_DEPOSIT_SELECTOR();
             }
-            _deposit4626(vaults_[i], args[i]);
+            _deposit4626(vaults_[i], args[i], vaults_.length);
         }
     }
 
@@ -603,7 +603,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     /// @notice deposits ERC4626 vault shares into superform
     /// @param vault_ The ERC4626 vault to redeem from
     /// @param args Rest of the arguments to deposit 4626
-    function _deposit4626(address vault_, Deposit4626Args calldata args) internal  {
+    function _deposit4626(address vault_, Deposit4626Args calldata args, uint256 arrayLength) internal  {
         _transferERC20In(IERC20(vault_), args.receiverAddressSP, args.amount);
         IERC4626 vault = IERC4626(vault_);
         address assetAdr = vault.asset();
@@ -617,8 +617,9 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             revert INVALID_DEPOSIT_SELECTOR();
         }
 
+        uint256 msgValue = msg.value / arrayLength;
         address router = _getAddress(keccak256("SUPERFORM_ROUTER"));
-        _deposit(router, asset, amountRedeemed, msg.value, args.depositCallData);
+        _deposit(router, asset, amountRedeemed, msgValue, args.depositCallData);
 
         _tokenRefunds(router, assetAdr, args.receiverAddressSP, balanceBefore);
 
