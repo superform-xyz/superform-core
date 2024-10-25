@@ -227,6 +227,7 @@ abstract contract AbstractDeploySingle is BatchScript {
     address public lzV2Endpoint = 0x1a44076050125825900e736c501f859c50fE728c;
     address public lzV2Endpoint_TESTNET = 0x6EDCE65403992e310A62460808c4b910D972f10f;
     address public constant CHAINLINK_lzOracle = 0x150A58e9E6BF69ccEb1DBA5ae97C166DC8792539;
+    mapping(uint64 => mapping(uint64 => uint64)) public CONFIRMATIONS;
 
     address[] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
@@ -1998,6 +1999,118 @@ abstract contract AbstractDeploySingle is BatchScript {
         priceFeeds[BARTIO][FANTOM] = address(0);
         priceFeeds[BARTIO][LINEA] = 0x42324DA2cB327D9DDE198d10A7A68870d761C390;
         priceFeeds[BARTIO][BLAST] = 0x42324DA2cB327D9DDE198d10A7A68870d761C390;
+
+        mapping(uint64 => mapping(uint64 => uint64)) storage confirmations = CONFIRMATIONS;
+
+        /// ETH
+        confirmations[ETH][BSC] = 20;
+        confirmations[ETH][AVAX] = 12;
+        confirmations[ETH][POLY] = 512;
+        confirmations[ETH][OP] = 20;
+        confirmations[ETH][ARBI] = 20;
+        confirmations[ETH][BASE] = 10;
+        confirmations[ETH][FANTOM] = 5;
+        confirmations[ETH][LINEA] = 20;
+        confirmations[ETH][BLAST] = 20;
+
+        /// BSC
+        confirmations[BSC][ETH] = 20;
+        confirmations[BSC][AVAX] = 20;
+        confirmations[BSC][POLY] = 20;
+        confirmations[BSC][OP] = 20;
+        confirmations[BSC][ARBI] = 20;
+        confirmations[BSC][BASE] = 20;
+        confirmations[BSC][FANTOM] = 20;
+        confirmations[BSC][LINEA] = 20;
+        confirmations[BSC][BLAST] = 20;
+
+        /// AVAX
+        confirmations[AVAX][ETH] = 12;
+        confirmations[AVAX][BSC] = 12;
+        confirmations[AVAX][POLY] = 12;
+        confirmations[AVAX][OP] = 12;
+        confirmations[AVAX][ARBI] = 12;
+        confirmations[AVAX][BASE] = 12;
+        confirmations[AVAX][FANTOM] = 12;
+        confirmations[AVAX][LINEA] = 12;
+        confirmations[AVAX][BLAST] = 12;
+
+        /// POLYGON
+        confirmations[POLY][AVAX] = 512;
+        confirmations[POLY][BSC] = 512;
+        confirmations[POLY][ETH] = 512;
+        confirmations[POLY][OP] = 512;
+        confirmations[POLY][ARBI] = 512;
+        confirmations[POLY][BASE] = 512;
+        confirmations[POLY][FANTOM] = 512;
+        confirmations[POLY][LINEA] = 512;
+        confirmations[POLY][BLAST] = 512;
+
+        /// OPTIMISM
+        confirmations[OP][POLY] = 20;
+        confirmations[OP][AVAX] = 20;
+        confirmations[OP][BSC] = 20;
+        confirmations[OP][ETH] = 20;
+        confirmations[OP][ARBI] = 20;
+        confirmations[OP][BASE] = 20;
+        confirmations[OP][FANTOM] = 20;
+        confirmations[OP][LINEA] = 20;
+        confirmations[OP][BLAST] = 20;
+
+        /// ARBITRUM
+        confirmations[ARBI][OP] = 20;
+        confirmations[ARBI][POLY] = 20;
+        confirmations[ARBI][AVAX] = 20;
+        confirmations[ARBI][BSC] = 20;
+        confirmations[ARBI][ETH] = 20;
+        confirmations[ARBI][BASE] = 20;
+        confirmations[ARBI][FANTOM] = 20;
+        confirmations[ARBI][LINEA] = 20;
+        confirmations[ARBI][BLAST] = 20;
+
+        /// BASE
+        confirmations[BASE][OP] = 10;
+        confirmations[BASE][POLY] = 10;
+        confirmations[BASE][AVAX] = 10;
+        confirmations[BASE][BSC] = 10;
+        confirmations[BASE][ETH] = 10;
+        confirmations[BASE][ARBI] = 10;
+        confirmations[BASE][FANTOM] = 10;
+        confirmations[BASE][LINEA] = 10;
+        confirmations[BASE][BLAST] = 10;
+
+        /// FANTOM
+        confirmations[FANTOM][OP] = 5;
+        confirmations[FANTOM][POLY] = 5;
+        confirmations[FANTOM][AVAX] = 5;
+        confirmations[FANTOM][BSC] = 5;
+        confirmations[FANTOM][ETH] = 5;
+        confirmations[FANTOM][BASE] = 5;
+        confirmations[FANTOM][ARBI] = 5;
+        confirmations[FANTOM][LINEA] = 5;
+        confirmations[FANTOM][BLAST] = 5;
+
+        /// LINEA
+        confirmations[LINEA][OP] = 10;
+        confirmations[LINEA][POLY] = 10;
+        confirmations[LINEA][AVAX] = 10;
+        confirmations[LINEA][BSC] = 10;
+        confirmations[LINEA][ETH] = 10;
+        confirmations[LINEA][BASE] = 10;
+        confirmations[LINEA][ARBI] = 10;
+        confirmations[LINEA][FANTOM] = 10;
+        confirmations[LINEA][BLAST] = 10;
+
+        /// BLAST
+        confirmations[BLAST][LINEA] = 15;
+        confirmations[BLAST][OP] = 15;
+        confirmations[BLAST][POLY] = 15;
+        confirmations[BLAST][AVAX] = 15;
+        confirmations[BLAST][BSC] = 15;
+        confirmations[BLAST][ETH] = 15;
+        confirmations[BLAST][BASE] = 15;
+        confirmations[BLAST][ARBI] = 15;
+        confirmations[BLAST][FANTOM] = 15;
     }
 
     /// @dev use this function for full deployments

@@ -555,14 +555,13 @@ contract SmokeTestStaging is MainnetBaseSetup {
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
-
             vm.selectFork(FORKS[chainId]);
             superFactory = SuperformFactory(getContract(chainId, "SuperformFactory"));
 
             chainId != BLAST
                 ? assertEq(superFactory.getFormImplementation(5), getContract(chainId, "ERC5115Form"))
                 : assertEq(superFactory.getFormImplementation(205), getContract(chainId, "ERC5115Form"));
-            /// @dev in blast there are 6 forms (2 without operator, 2 with wrong state registry and 2 right superforms)
+
             assertEq(superFactory.getFormCount(), chainId == LINEA ? 5 : chainId == BLAST ? 8 : 7);
             assertEq(superFactory.getFormStateRegistryId(5), 1);
         }

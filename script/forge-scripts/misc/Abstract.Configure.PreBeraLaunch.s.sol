@@ -61,18 +61,6 @@ abstract contract AbstractPreBeraLaunch is EnvironmentUtils {
         0x129Ee430Cb2Ff2708CCADDBDb408a88Fe4FFd480,
         0xc097ab8CD7b053326DFe9fB3E3a31a0CCe3B526f
     ];
-    /*
-    TARGET_CHAINS.push(ETH);
-    TARGET_CHAINS.push(BSC);
-    TARGET_CHAINS.push(AVAX);
-    TARGET_CHAINS.push(POLY);
-    TARGET_CHAINS.push(ARBI);
-    TARGET_CHAINS.push(OP);
-    TARGET_CHAINS.push(BASE);
-    TARGET_CHAINS.push(FANTOM);
-    TARGET_CHAINS.push(LINEA);
-    TARGET_CHAINS.push(BLAST);
-    */
 
     function _configure(
         uint256 env,
@@ -100,7 +88,6 @@ abstract contract AbstractPreBeraLaunch is EnvironmentUtils {
         console.log("Setting config");
         UlnConfig memory ulnConfig;
 
-        ulnConfig.confirmations = 15;
         ulnConfig.requiredDVNCount = 2;
         ulnConfig.optionalDVNCount = 0;
 
@@ -117,7 +104,6 @@ abstract contract AbstractPreBeraLaunch is EnvironmentUtils {
         }
 
         ulnConfig.requiredDVNs = requiredDVNs;
-        vars.config = abi.encode(ulnConfig);
 
         address[] memory rescuerAddress = new address[](2);
         bytes32[] memory ids = new bytes32[](2);
@@ -132,6 +118,14 @@ abstract contract AbstractPreBeraLaunch is EnvironmentUtils {
             vars.dstTrueIndex = _getTrueIndex(finalDeployedChains[j]);
 
             vars.setConfigParams = new SetConfigParam[](1);
+            ulnConfig.confirmations = CONFIRMATIONS[vars.chainId][finalDeployedChains[j]];
+            console.log("chainId", vars.chainId);
+            console.log("finalDeployedChains[j]", finalDeployedChains[j]);
+            console.log("confirmations", ulnConfig.confirmations);
+            assert(ulnConfig.confirmations != 0);
+            console.log("----");
+            vars.config = abi.encode(ulnConfig);
+
             vars.setConfigParams[0] = SetConfigParam(uint32(lz_chainIds[vars.dstTrueIndex]), uint32(2), vars.config);
 
             // Set send config on source chain
@@ -165,7 +159,7 @@ abstract contract AbstractPreBeraLaunch is EnvironmentUtils {
         }
 
         // Send the batch
-        executeBatch(vars.chainId, PROTOCOL_ADMINS[srcChainIndex], manualNonces[srcChainIndex], true);
+        executeBatch(vars.chainId, PROTOCOL_ADMINS[srcChainIndex], manualNonces[srcChainIndex], false);
     }
 
     function _getTrueIndex(uint256 chainId) public view returns (uint256 index) {
