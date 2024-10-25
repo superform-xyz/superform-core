@@ -2004,7 +2004,181 @@ contract SuperformRouterPlusTest is ProtocolActions {
             liqRequests: liqRequests
         });
 
+        // vm.startPrank(deployer);
+
+        // uint64 REBALANCE_FROM = ETH;
+        // uint64 REBALANCE_TO = OP;
+
+        // // Step 1: Initial XCHAIN Deposit
+        // _xChainDeposit(superformId5ETH, REBALANCE_FROM, 1);
+
+        // // Step 2: Start cross-chain rebalance
+        // vm.makePersistent(getContract(SOURCE_CHAIN, "SuperformRouterPlusAsync"));
+        // vm.makePersistent(getContract(SOURCE_CHAIN, "DAI"));
+        // vm.selectFork(FORKS[SOURCE_CHAIN]);
+        // // ISuperformRouterPlus.InitiateXChainRebalanceArgs memory args =
+        // //     _buildInitiateXChainRebalanceArgs(REBALANCE_FROM, REBALANCE_TO, deployer);
+
+        // ISuperformRouterPlus.InitiateXChainRebalanceArgs memory args;
+        // args.id = superformId5ETH;
+        // args.sharesToRedeem = SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId5ETH);
+        // args.interimAsset = getContract(SOURCE_CHAIN, "DAI");
+        // args.receiverAddressSP = address(deployer);
+        // vm.selectFork(FORKS[REBALANCE_FROM]);
+        // uint256 expectedAmountOfRebalanceFrom = IBaseForm(superform5ETH).previewRedeemFrom(args.sharesToRedeem);
+        // // conversion from DAI on DSTCHAIN to DAI on SOURCE CHAIN
+        // args.expectedAmountInterimAsset = _convertDecimals(
+        //     expectedAmountOfRebalanceFrom,
+        //     getContract(REBALANCE_FROM, "DAI"),
+        //     args.interimAsset,
+        //     REBALANCE_FROM,
+        //     SOURCE_CHAIN
+        // );
+        // //vm.selectFork(initialFork);
+        // args.finalizeSlippage = 100; // 1%
+        // //args.callData = _callDataRebalanceFromXChain(args.interimAsset, superformId5ETH, REBALANCE_FROM);
+
+        // LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+        //     1,
+        //     getContract(REBALANCE_TO, "DAI"),
+        //     getContract(REBALANCE_TO, "DAI"),
+        //     getContract(REBALANCE_TO, "DAI"),
+        //     getContract(SOURCE_CHAIN, "SuperformRouterPlusAsync"),
+        //     REBALANCE_TO,
+        //     REBALANCE_TO,
+        //     REBALANCE_TO,
+        //     false,
+        //     getContract(SOURCE_CHAIN, "SuperformRouterPlusAsync"),
+        //     uint256(REBALANCE_TO),
+        //     1e18,
+        //     //1e18,
+        //     true,
+        //     /// @dev placeholder value, not used
+        //     0,
+        //     1,
+        //     1,
+        //     1,
+        //     address(0)
+        // );
+
+        // SingleVaultSFData memory data = SingleVaultSFData(
+        //     superformId5ETH,
+        //     1e18,
+        //     1e18,
+        //     100,
+        //     LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(REBALANCE_FROM, "DAI"), address(0), 1, SOURCE_CHAIN, 0),
+        //     "",
+        //     false,
+        //     false,
+        //     ROUTER_PLUS_ASYNC_SOURCE,
+        //     deployer,
+        //     ""
+        // );
+
+        // args.callData =  abi.encodeCall(
+        //     IBaseRouter.singleXChainSingleVaultWithdraw, SingleXChainSingleVaultStateReq(AMBs, REBALANCE_FROM, data)
+        // );
+
+        // /// @dev rebalance to call data formulation for a xchain deposit
+        // args.rebalanceToSelector = IBaseRouter.singleXChainSingleVaultDeposit.selector;
+
+        // args.rebalanceToAmbIds = new uint8[][](1);
+        // args.rebalanceToAmbIds[0] = AMBs;
+        // args.rebalanceToDstChainIds = new uint64[](1);
+        // args.rebalanceToDstChainIds[0] = REBALANCE_TO;
+
+        // vm.selectFork(FORKS[REBALANCE_TO]);
+
+        // (address superformRebalanceTo,,) = superformId4OP.getSuperform();
+        // address underlyingTokenRebalanceTo = IBaseForm(superformRebalanceTo).getVaultAsset();
+        // /// data for a bridge from Router to Core State Registry
+        // // LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+        // //     1,
+        // //     args.interimAsset,
+        // //     getContract(SOURCE_CHAIN, ERC20(underlyingTokenRebalanceTo).symbol()),
+        // //     underlyingTokenRebalanceTo,
+        // //     getContract(SOURCE_CHAIN, "SuperformRouter"),
+        // //     SOURCE_CHAIN,
+        // //     REBALANCE_TO,
+        // //     REBALANCE_TO,
+        // //     false,
+        // //     getContract(REBALANCE_TO, "CoreStateRegistry"),
+        // //     uint256(REBALANCE_TO),
+        // //     1e18,
+        // //     //1e18,
+        // //     false,
+        // //     /// @dev placeholder value, not used
+        // //     0,
+        // //     1,
+        // //     1,
+        // //     1,
+        // //     address(0)
+        // // );
+
+        // // conversion from USDC on SOURCE CHAIN to DAI on DSTCHAIN
+        // uint256 expectedAmountToReceiveAfterBridge = _convertDecimals(
+        //     args.expectedAmountInterimAsset,
+        //     args.interimAsset,
+        //     getContract(REBALANCE_TO, "DAI"),
+        //     SOURCE_CHAIN,
+        //     REBALANCE_TO
+        // );
+
+        // uint256 expectedOutputAmount = IBaseForm(superform4OP).previewDepositTo(expectedAmountToReceiveAfterBridge);
+
+        // SingleVaultSFData memory sfData = SingleVaultSFData({
+        //     superformId: superformId4OP,
+        //     amount: expectedAmountToReceiveAfterBridge,
+        //     outputAmount: expectedOutputAmount,
+        //     maxSlippage: 100,
+        //     liqRequest: LiqRequest({
+        //         txData: _buildLiqBridgeTxData(liqBridgeTxDataArgs, false),
+        //         token: args.interimAsset,
+        //         interimToken: address(0),
+        //         bridgeId: 1,
+        //         liqDstChainId: REBALANCE_TO,
+        //         nativeAmount: 0
+        //     }),
+        //     permit2data: "",
+        //     hasDstSwap: false,
+        //     retain4626: false,
+        //     receiverAddress: address(deployer),
+        //     receiverAddressSP: address(deployer),
+        //     extraFormData: ""
+        // });
+        // args.rebalanceToSfData = abi.encode(sfData);
+
+        // vm.selectFork(REBALANCE_FROM);
+
+        // vm.startPrank(deployer);
+
+        // SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(
+        //     ROUTER_PLUS_SOURCE, superformId5ETH, args.sharesToRedeem
+        // );
+        // vm.recordLogs();
+        // SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalance{ value: 2 ether }(args);
+
+        // // Step 3: Process XChain Withdraw (rebalance from)
+        // uint256 balanceOfInterimAssetBefore =
+        //     MockERC20(args.interimAsset).balanceOf(getContract(SOURCE_CHAIN, "SuperformRouterPlusAsync"));
+
+        // _processXChainWithdrawOneVault(SOURCE_CHAIN, REBALANCE_FROM, vm.getRecordedLogs(), 2);
+
+        // vm.selectFork(FORKS[SOURCE_CHAIN]);
+        // uint256 balanceOfInterimAssetAfter =
+        //     MockERC20(args.interimAsset).balanceOf(getContract(SOURCE_CHAIN, "SuperformRouterPlusAsync"));
+
+        // uint256 interimAmountOnRouterPlusAsync = balanceOfInterimAssetAfter - balanceOfInterimAssetBefore;
+
+        // ISuperformRouterPlusAsync.CompleteCrossChainRebalanceArgs memory completeArgs =
+        //     _buildCompleteCrossChainRebalanceArgs(interimAmountOnRouterPlusAsync, superformId4OP, REBALANCE_TO);
+
+        // Step 4: Complete cross-chain rebalance
         vm.startPrank(deployer);
+        //completeArgs.amountReceivedInterimAsset = completeArgs.amountReceivedInterimAsset / 3;
+        //completeArgs.liqRequests[0][0].token = getContract(SOURCE_CHAIN, "DAI");
+        //completeArgs.liqRequests[0][0].interimToken = getContract(SOURCE_CHAIN, "DAI");      
+        completeArgs.receiverAddressSP = address(12345);
         vm.expectRevert(ISuperformRouterPlusAsync.COMPLETE_REBALANCE_DIFFERENT_RECEIVER.selector);
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
         vm.stopPrank();
