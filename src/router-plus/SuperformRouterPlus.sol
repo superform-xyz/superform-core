@@ -363,7 +363,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         }
 
         if (vaults_.length == 0) {
-            revert Error.ZERO_LENGTH();
+            revert Error.ARRAY_LENGTH_MISMATCH();
         }
 
         for (uint256 i; i < vaults_.length; ++i) {
