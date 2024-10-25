@@ -664,8 +664,6 @@ contract SuperformRouterPlusTest is ProtocolActions {
             callData: abi.encode(req),
             rebalanceToCallData: data.rebalanceToSfData
         });
-
-
         
         SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceMultiPositions{ value: 5 ether }(positionArgs);
         vm.stopPrank();
