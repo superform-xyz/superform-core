@@ -155,6 +155,9 @@ library Error {
     /// @dev thrown if value input is 0
     error ZERO_INPUT_VALUE();
 
+    /// @dev thrown if array length is 0
+    error ZERO_LENGTH();
+
     /// SUPERFORM ROUTER INPUT VALIDATION ERRORS
     /// ---------------------------------------------------------
 
