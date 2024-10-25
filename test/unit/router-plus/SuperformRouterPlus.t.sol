@@ -8,6 +8,7 @@ import { ISuperformRouterPlusAsync } from "src/interfaces/ISuperformRouterPlusAs
 import { IBaseSuperformRouterPlus } from "src/interfaces/IBaseSuperformRouterPlus.sol";
 import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
 import { ERC20 } from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import { MultiVaultSFData } from "src/types/DataTypes.sol";
 
 contract RejectEther {
     // This function will revert when called, simulating a contract that can't receive native tokens
@@ -501,6 +502,177 @@ contract SuperformRouterPlusTest is ProtocolActions {
         SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceSinglePosition{ value: 1.5 ether }(args);
 
         vm.stopPrank();
+    }
+
+    function test_rebalanceSinglePosition_invalidDepositSelector() public {
+        vm.startPrank(deployer);
+
+        _directDeposit(superformId1);
+
+        ISuperformRouterPlus.RebalanceSinglePositionSyncArgs memory args =
+            _buildRebalanceSinglePositionToOneVaultArgs(deployer);
+
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId1, args.sharesToRedeem);
+
+        args.rebalanceToCallData = abi.encodeWithSelector(bytes4(keccak256("invalidSelector()")));
+
+        vm.expectRevert(ISuperformRouterPlus.INVALID_DEPOSIT_SELECTOR.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceSinglePosition{ value: 2 ether }(args);
+
+        vm.stopPrank();
+    }
+
+    function test_rebalanceSinglePosition_noSwapData() public {
+        vm.startPrank(deployer);
+
+        _directDeposit(superformId1);
+
+        ISuperformRouterPlus.RebalanceSinglePositionSyncArgs memory args =
+            _buildRebalanceSinglePositionToOneVaultArgs(deployer);
+        SingleVaultSFData memory sfData =
+                abi.decode(_parseCallData(args.rebalanceToCallData), (SingleDirectSingleVaultStateReq)).superformData;
+        bytes memory emptyData;
+        sfData.liqRequest.txData = emptyData;
+
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId1, args.sharesToRedeem);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceSinglePosition{ value: 2 ether }(args);
+
+        assertEq(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId1), 0);
+
+        assertGt(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId2), 0);
+    }
+
+    function test_rebalanceSinglePosition_singleDirectSingleVaultDepositSelector() public {
+        vm.startPrank(deployer);
+
+        _directDeposit(superformId1);
+
+        ISuperformRouterPlus.RebalanceSinglePositionSyncArgs memory args =
+            _buildRebalanceSinglePositionToOneVaultArgs(deployer);
+
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId1, args.sharesToRedeem);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceSinglePosition{ value: 2 ether }(args);
+
+        vm.stopPrank();
+
+        assertEq(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId1), 0);
+
+        assertGt(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId2), 0);
+    }
+
+    function test_rebalanceSinglePosition_singleXChainSingleVaultDepositSelector() public {
+        vm.startPrank(deployer);
+
+        _directDeposit(superformId1);
+
+        ISuperformRouterPlus.RebalanceSinglePositionSyncArgs memory args =
+            _buildRebalanceSinglePositionToOneVaultArgs(deployer);
+
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId1, args.sharesToRedeem);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceSinglePosition{ value: 2 ether }(args);
+
+        assertEq(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId1), 0);
+
+        assertGt(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId2), 0);
+    }
+
+    function test_rebalanceSinglePosition_singleXChainMultiVaultDeposit() public {
+
+    }
+
+    function test_rebalanceSinglePosition_multiDstSingleVaultDepositSelector() public {
+        
+    }
+
+    function test_rebalanceSinglePosition_multiDstMultiVaultDepositSelector() public {
+        vm.startPrank(deployer);
+
+        _directDeposit(superformId1);
+        _directDeposit(superformId2);
+
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId1, 1e18);
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId2, 1e18);
+
+        IBaseSuperformRouterPlus.XChainRebalanceData memory data = IBaseSuperformRouterPlus.XChainRebalanceData({
+            rebalanceSelector: IBaseRouter.multiDstMultiVaultDeposit.selector,
+            interimAsset: getContract(SOURCE_CHAIN, "DAI"),
+            slippage: 300,
+            expectedAmountInterimAsset: 3e18,
+            rebalanceToAmbIds: new uint8[][](0),
+            rebalanceToDstChainIds: new uint64[](0),
+            rebalanceToSfData: abi.encode(
+                MultiVaultSFData({
+                    superformIds: new uint256[](2),
+                    amounts: new uint256[](2),
+                    outputAmounts: new uint256[](2),
+                    maxSlippages: new uint256[](2),
+                    liqRequests: new LiqRequest[](2),
+                    permit2data: "",
+                    hasDstSwaps: new bool[](2),
+                    retain4626s: new bool[](2),
+                    receiverAddress: address(deployer),
+                    receiverAddressSP: address(deployer),
+                    extraFormData: ""
+                })
+            )
+        });
+
+        MultiVaultSFData memory sfData = abi.decode(data.rebalanceToSfData, (MultiVaultSFData));
+        sfData.superformIds[0] = 3;
+        sfData.superformIds[1] = 4;
+        sfData.amounts[0] = 1.5e18;
+        sfData.amounts[1] = 1.5e18;
+        sfData.outputAmounts[0] = 1.5e18;
+        sfData.outputAmounts[1] = 1.5e18;
+        sfData.maxSlippages[0] = 300;
+        sfData.maxSlippages[1] = 300;
+        data.rebalanceToSfData = abi.encode(sfData);
+
+        MultiDstMultiVaultStateReq memory req = MultiDstMultiVaultStateReq({
+            ambIds: new uint8[][](2),
+            dstChainIds: new uint64[](2),
+            superformsData: new MultiVaultSFData[](1)
+        });
+        req.ambIds[0] = new uint8[](2);
+        req.ambIds[0][0] = 1;
+        req.ambIds[0][1] = 2;
+        req.dstChainIds[0] = ETH;
+        req.dstChainIds[1] = OP;
+        req.superformsData[0] = sfData;
+
+        //uint256 previewRedeemAmount1 = IBaseForm(superform1).previewRedeemFrom(req.superformsData[0].sharesToRedeem);
+
+        //uint256 previewRedeemAmount2 = IBaseForm(superform2).previewRedeemFrom(req.superformsData[0].sharesToRedeem);
+
+        uint256[] memory sharesToRedeem = new uint256[](2);
+        sharesToRedeem[0] = 10_000;
+        sharesToRedeem[1] = 10_000;
+
+        uint256[] memory ids = new uint256[](2);
+        ids[0] = superformId1;
+        ids[1] = superformId2;
+
+        ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs memory positionArgs = ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs({
+            ids: ids,
+            sharesToRedeem: sharesToRedeem,
+            expectedAmountToReceivePostRebalanceFrom: 10_000,
+            rebalanceFromMsgValue: 1 ether,
+            rebalanceToMsgValue: 1 ether,
+            interimAsset: getContract(SOURCE_CHAIN, "DAI"),
+            slippage: 300,
+            receiverAddressSP: address(deployer),
+            callData: abi.encode(req),
+            rebalanceToCallData: data.rebalanceToSfData
+        });
+
+
+        
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceMultiPositions{ value: 5 ether }(positionArgs);
+        vm.stopPrank();
+
+        assertEq(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId1), 0);
+
+        assertGt(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId2), 0);
     }
 
     function test_refundUnusedAndResetApprovals_failedToSendNative() public {
