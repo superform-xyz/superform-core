@@ -356,29 +356,6 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     }
 
     /// @inheritdoc ISuperformRouterPlus
-    function deposit4626(address vault_, Deposit4626Args calldata args) external payable override {
-        _transferERC20In(IERC20(vault_), args.receiverAddressSP, args.amount);
-        IERC4626 vault = IERC4626(vault_);
-        address assetAdr = vault.asset();
-        IERC20 asset = IERC20(assetAdr);
-
-        uint256 balanceBefore = asset.balanceOf(address(this));
-
-        uint256 amountRedeemed = _redeemShare(vault, assetAdr, args.amount, args.expectedOutputAmount, args.maxSlippage);
-
-        if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(args.depositCallData)]) {
-            revert INVALID_DEPOSIT_SELECTOR();
-        }
-
-        address router = _getAddress(keccak256("SUPERFORM_ROUTER"));
-        _deposit(router, asset, amountRedeemed, msg.value, args.depositCallData);
-
-        _tokenRefunds(router, assetAdr, args.receiverAddressSP, balanceBefore);
-
-        emit Deposit4626Completed(args.receiverAddressSP, vault_);
-    }
-
-    /// @inheritdoc ISuperformRouterPlus
     function forwardDustToPaymaster(address token_) external override {
         if (token_ == address(0)) revert Error.ZERO_ADDRESS();
 
@@ -602,5 +579,30 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 revert Error.FAILED_TO_SEND_NATIVE();
             }
         }
+    }
+
+    /// @notice deposits ERC4626 vault shares into superform
+    /// @param vault_ The ERC4626 vault to redeem from
+    /// @param args Rest of the arguments to deposit 4626
+    function _deposit4626(address vault_, Deposit4626Args calldata args) internal  {
+        _transferERC20In(IERC20(vault_), args.receiverAddressSP, args.amount);
+        IERC4626 vault = IERC4626(vault_);
+        address assetAdr = vault.asset();
+        IERC20 asset = IERC20(assetAdr);
+
+        uint256 balanceBefore = asset.balanceOf(address(this));
+
+        uint256 amountRedeemed = _redeemShare(vault, assetAdr, args.amount, args.expectedOutputAmount, args.maxSlippage);
+
+        if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(args.depositCallData)]) {
+            revert INVALID_DEPOSIT_SELECTOR();
+        }
+
+        address router = _getAddress(keccak256("SUPERFORM_ROUTER"));
+        _deposit(router, asset, amountRedeemed, msg.value, args.depositCallData);
+
+        _tokenRefunds(router, assetAdr, args.receiverAddressSP, balanceBefore);
+
+        emit Deposit4626Completed(args.receiverAddressSP, vault_);
     }
 }
