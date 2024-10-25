@@ -357,20 +357,22 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
     /// @inheritdoc ISuperformRouterPlus
     function deposit4626(address[] calldata vaults_, Deposit4626Args[] calldata args) external payable {
+
+        uint256 length = vaults_.length;
         
-        if (vaults_.length != args.length) {
+        if (length != args.length) {
             revert Error.ARRAY_LENGTH_MISMATCH();
         }
 
-        if (vaults_.length == 0) {
+        if (length == 0) {
             revert Error.ARRAY_LENGTH_MISMATCH();
         }
 
-        for (uint256 i; i < vaults_.length; ++i) {
+        for (uint256 i; i < length; ++i) {
             if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(args[i].depositCallData)]) {
                 revert INVALID_DEPOSIT_SELECTOR();
             }
-            _deposit4626(vaults_[i], args[i], vaults_.length);
+            _deposit4626(vaults_[i], args[i], length);
         }
     }
 
