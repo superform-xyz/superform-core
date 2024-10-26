@@ -1854,56 +1854,65 @@ contract SuperformRouterPlusTest is ProtocolActions {
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
         vm.stopPrank();
 
-        vm.expectRevert(Error.NOT_VALID_DISPUTER.selector);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).disputeRefund(1);
+        // Step 5: Request refund
 
-        vm.startPrank(deployer);
-        vm.mockCall(
-            address(getContract(SOURCE_CHAIN, "SuperRegistry")),
-            abi.encodeWithSelector(ISuperRegistry.delay.selector),
-            abi.encode(0)
-        );
-        vm.expectRevert(Error.DELAY_NOT_SET.selector);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).disputeRefund(1);
-        vm.clearMockedCalls();
-
-        vm.warp(block.timestamp + 100 days);
-        vm.expectRevert(Error.DISPUTE_TIME_ELAPSED.selector);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).disputeRefund(1);
-
-        vm.warp(block.timestamp - 100 days);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).disputeRefund(1);
-
-        vm.expectRevert(Error.DISPUTE_TIME_ELAPSED.selector);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).disputeRefund(1);
+        /// @dev testing invalid requester (not receiver)
+        vm.startPrank(address(222));
+        vm.expectRevert(ISuperformRouterPlusAsync.INVALID_REQUESTER.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1, 100);
         vm.stopPrank();
 
-        vm.expectRevert(ISuperformRouterPlusAsync.INVALID_PROPOSER.selector);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).proposeRefund(1, completeArgs.amountReceivedInterimAsset);
-
+                // @dev testing refund amount exceeds expected amount
         vm.startPrank(deployer);
-        vm.expectRevert(ISuperformRouterPlusAsync.INVALID_REFUND_DATA.selector);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).proposeRefund(2, completeArgs.amountReceivedInterimAsset);
+        vm.expectRevert(ISuperformRouterPlusAsync.REQUESTED_AMOUNT_TOO_HIGH.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1, 1000e18);
+        vm.stopPrank();
 
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).proposeRefund(1, completeArgs.amountReceivedInterimAsset);
+        /// @dev testing valid refund request
+        vm.prank(deployer);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1, 100);
 
-        vm.expectRevert(ISuperformRouterPlusAsync.REFUND_ALREADY_PROPOSED.selector);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).proposeRefund(1, completeArgs.amountReceivedInterimAsset);
+        (,, uint256 requestedAmount) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
+        assertEq(requestedAmount, 100);
 
-        vm.expectRevert(ISuperformRouterPlusAsync.IN_DISPUTE_PHASE.selector);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).finalizeRefund(1);
+        (, address refundToken,) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
+        assertEq(refundToken, address(args.interimAsset));
 
-        (, address refundToken,,) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
+        // Step 6: Approve refund
+
+        /// @dev testing invalid approver (not core state registry)
+        vm.startPrank(address(1234));
+        vm.expectRevert(ISuperformRouterPlusAsync.NOT_CORE_STATE_REGISTRY_RESCUER.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).approveRefund(1);
+        vm.stopPrank();
+
+        /// @dev testing valid refund approval
         uint256 balanceBefore = MockERC20(refundToken).balanceOf(deployer);
+        uint256 routerBalanceBefore = MockERC20(refundToken).balanceOf(address(ROUTER_PLUS_ASYNC_SOURCE));
+        vm.startPrank(deployer);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).approveRefund(1);
+        vm.stopPrank();
 
-        vm.warp(block.timestamp + 100 days);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).finalizeRefund(1);
         uint256 balanceAfter = MockERC20(refundToken).balanceOf(deployer);
-
         assertGt(balanceAfter, balanceBefore);
+        assertEq(MockERC20(refundToken).balanceOf(address(ROUTER_PLUS_ASYNC_SOURCE)), routerBalanceBefore - 100);
+        assertEq(MockERC20(refundToken).balanceOf(address(deployer)), balanceBefore + 100);
 
-        vm.expectRevert(ISuperformRouterPlusAsync.IN_DISPUTE_PHASE.selector);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).finalizeRefund(1);
+        (, address interimToken,) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
+        assertEq(interimToken, address(0));
+
+        (, address receiver,) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
+        assertEq(receiver, address(0));
+
+        (,, uint256 updatedRequestedAmount) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
+        assertEq(updatedRequestedAmount, 0);
+        vm.stopPrank();
+
+        /// @dev testing refund already approved
+        vm.startPrank(deployer);
+        vm.expectRevert(ISuperformRouterPlusAsync.REFUND_ALREADY_APPROVED.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).approveRefund(1);
+        vm.stopPrank();
     }
 
     function test_crossChainRebalance_negativeSlippage() public {
