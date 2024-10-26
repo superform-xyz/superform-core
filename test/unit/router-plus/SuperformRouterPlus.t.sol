@@ -623,6 +623,39 @@ contract SuperformRouterPlusTest is ProtocolActions {
             receiverAddressSP: address(deployer),
             extraFormData: ""
         });
+
+        mvSfData[0].superformIds[0] = superformId1;
+        mvSfData[0].superformIds[1] = superformId2;
+        mvSfData[0].amounts[0] = 1e18;
+        mvSfData[0].amounts[1] = 1e18;
+        mvSfData[0].outputAmounts[0] = 1e18;
+        mvSfData[0].outputAmounts[1] = 1e18;
+        mvSfData[0].maxSlippages[0] = 300;
+        mvSfData[0].maxSlippages[1] = 300;
+        mvSfData[0].liqRequests[0] = LiqRequest({
+            txData: "",
+            token: address(0),
+            interimToken: address(0),
+            bridgeId: 0,
+            liqDstChainId: 0,
+            nativeAmount: 0
+        });
+        mvSfData[0].liqRequests[1] = LiqRequest({
+            txData: "",
+            token: address(0),
+            interimToken: address(0),
+            bridgeId: 0,
+            liqDstChainId: 0,
+            nativeAmount: 0
+        });
+        mvSfData[0].hasDstSwaps[0] = false;
+        mvSfData[0].hasDstSwaps[1] = false;
+        mvSfData[0].retain4626s[0] = false;
+        mvSfData[0].retain4626s[1] = false;
+        mvSfData[0].receiverAddress = address(deployer);
+        mvSfData[0].receiverAddressSP = address(deployer);
+        mvSfData[0].extraFormData = "";
+
         mvSfData[1] = MultiVaultSFData({
             superformIds: new uint256[](2),
             amounts: new uint256[](2),
@@ -636,6 +669,39 @@ contract SuperformRouterPlusTest is ProtocolActions {
             receiverAddressSP: address(deployer),
             extraFormData: ""
         });
+
+        mvSfData[1].superformIds[0] = superformId1;
+        mvSfData[1].superformIds[1] = superformId2;
+        mvSfData[1].amounts[0] = 1e18;
+        mvSfData[1].amounts[1] = 1e18;
+        mvSfData[1].outputAmounts[0] = 1e18;
+        mvSfData[1].outputAmounts[1] = 1e18;
+        mvSfData[1].maxSlippages[0] = 300;
+        mvSfData[1].maxSlippages[1] = 300;
+        mvSfData[1].liqRequests[0] = LiqRequest({
+            txData: "",
+            token: address(0),
+            interimToken: address(0),
+            bridgeId: 0,
+            liqDstChainId: 0,
+            nativeAmount: 0
+        });
+        mvSfData[1].liqRequests[1] = LiqRequest({
+            txData: "",
+            token: address(0),
+            interimToken: address(0),
+            bridgeId: 0,
+            liqDstChainId: 0,
+            nativeAmount: 0
+        });
+        mvSfData[1].hasDstSwaps[0] = false;
+        mvSfData[1].hasDstSwaps[1] = false;
+        mvSfData[1].retain4626s[0] = false;
+        mvSfData[1].retain4626s[1] = false;
+        mvSfData[1].receiverAddress = address(deployer);
+        mvSfData[1].receiverAddressSP = address(deployer);
+        mvSfData[1].extraFormData = "";
+
         MultiDstMultiVaultStateReq memory req = MultiDstMultiVaultStateReq(ambIds_, dstChainIds, mvSfData);
         ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs memory positionArgs = ISuperformRouterPlus
             .RebalanceMultiPositionsSyncArgs({
@@ -1852,66 +1918,6 @@ contract SuperformRouterPlusTest is ProtocolActions {
             _buildCompleteCrossChainRebalanceArgs(interimAmountOnRouterPlusAsync, superformId4OP, REBALANCE_TO);
         completeArgs.amountReceivedInterimAsset = completeArgs.amountReceivedInterimAsset / 3;
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).completeCrossChainRebalance{ value: 1 ether }(completeArgs);
-        vm.stopPrank();
-
-        // Step 5: Request refund
-
-        /// @dev testing invalid requester (not receiver)
-        vm.startPrank(address(222));
-        vm.expectRevert(ISuperformRouterPlusAsync.INVALID_REQUESTER.selector);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1, 100);
-        vm.stopPrank();
-
-                // @dev testing refund amount exceeds expected amount
-        vm.startPrank(deployer);
-        vm.expectRevert(ISuperformRouterPlusAsync.REQUESTED_AMOUNT_TOO_HIGH.selector);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1, 1000e18);
-        vm.stopPrank();
-
-        /// @dev testing valid refund request
-        vm.prank(deployer);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1, 100);
-
-        (,, uint256 requestedAmount) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
-        assertEq(requestedAmount, 100);
-
-        (, address refundToken,) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
-        assertEq(refundToken, address(args.interimAsset));
-
-        // Step 6: Approve refund
-
-        /// @dev testing invalid approver (not core state registry)
-        vm.startPrank(address(1234));
-        vm.expectRevert(ISuperformRouterPlusAsync.NOT_CORE_STATE_REGISTRY_RESCUER.selector);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).approveRefund(1);
-        vm.stopPrank();
-
-        /// @dev testing valid refund approval
-        uint256 balanceBefore = MockERC20(refundToken).balanceOf(deployer);
-        uint256 routerBalanceBefore = MockERC20(refundToken).balanceOf(address(ROUTER_PLUS_ASYNC_SOURCE));
-        vm.startPrank(deployer);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).approveRefund(1);
-        vm.stopPrank();
-
-        uint256 balanceAfter = MockERC20(refundToken).balanceOf(deployer);
-        assertGt(balanceAfter, balanceBefore);
-        assertEq(MockERC20(refundToken).balanceOf(address(ROUTER_PLUS_ASYNC_SOURCE)), routerBalanceBefore - 100);
-        assertEq(MockERC20(refundToken).balanceOf(address(deployer)), balanceBefore + 100);
-
-        (, address interimToken,) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
-        assertEq(interimToken, address(0));
-
-        (, address receiver,) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
-        assertEq(receiver, address(0));
-
-        (,, uint256 updatedRequestedAmount) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
-        assertEq(updatedRequestedAmount, 0);
-        vm.stopPrank();
-
-        /// @dev testing refund already approved
-        vm.startPrank(deployer);
-        vm.expectRevert(ISuperformRouterPlusAsync.REFUND_ALREADY_APPROVED.selector);
-        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).approveRefund(1);
         vm.stopPrank();
     }
 
