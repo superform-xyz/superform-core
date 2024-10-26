@@ -357,7 +357,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     }
 
     /// @inheritdoc ISuperformRouterPlus
-    function deposit4626(address vault_, Deposit4626Args calldata args) external payable override {
+    function deposit4626(address vault_, Deposit4626Args calldata args) external payable {
         _transferERC20In(IERC20(vault_), args.receiverAddressSP, args.amount);
         IERC4626 vault = IERC4626(vault_);
         address assetAdr = vault.asset();
@@ -394,7 +394,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     }
 
     /// @inheritdoc ISuperformRouterPlus
-    function setGlobalSlippage(uint256 slippage_) external override {
+    function setGlobalSlippage(uint256 slippage_) external {
         if (!_hasRole(keccak256("EMERGENCY_ADMIN_ROLE"), msg.sender)) {
             revert Error.NOT_PRIVILEGED_CALLER(keccak256("EMERGENCY_ADMIN_ROLE"));
         }
