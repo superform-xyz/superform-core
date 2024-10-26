@@ -365,7 +365,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         }
 
         if (length == 0) {
-            revert Error.ARRAY_LENGTH_MISMATCH();
+            revert Error.ZERO_INPUT_VALUE();
         }
 
         for (uint256 i; i < length; ++i) {
