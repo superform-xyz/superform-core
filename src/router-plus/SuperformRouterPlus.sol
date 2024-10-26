@@ -615,10 +615,6 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
         uint256 amountRedeemed = _redeemShare(vault, assetAdr, args.amount, args.expectedOutputAmount, args.maxSlippage);
 
-        if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(args.depositCallData)]) {
-            revert INVALID_DEPOSIT_SELECTOR();
-        }
-
         uint256 msgValue = msg.value / arrayLength;
         address router = _getAddress(keccak256("SUPERFORM_ROUTER"));
         _deposit(router, asset, amountRedeemed, msgValue, args.depositCallData);
