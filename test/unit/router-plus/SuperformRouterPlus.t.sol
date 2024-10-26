@@ -509,6 +509,16 @@ contract SuperformRouterPlusTest is ProtocolActions {
         vm.stopPrank();
     }
 
+    function test_deposit4626_multipleVaults_zeroInputValue() public {
+        vm.startPrank(deployer);
+
+        address[] memory vaults = new address[](0);
+        ISuperformRouterPlus.Deposit4626Args[] memory argsArray = new ISuperformRouterPlus.Deposit4626Args[](0);
+
+        vm.expectRevert(Error.ZERO_INPUT_VALUE.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).deposit4626{ value: 1 ether }(vaults, argsArray);
+    }
+
     function test_deposit4626_multipleVaults() public {
         vm.startPrank(deployer);
 
