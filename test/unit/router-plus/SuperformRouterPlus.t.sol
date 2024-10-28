@@ -636,8 +636,15 @@ contract SuperformRouterPlusTest is ProtocolActions {
             superformIds,
             sharesToRedeem,
             1e18,
-            maxSlippages,
-            multiDstSingleVaultStateReq
+            1 ether,
+            1 ether,
+            getContract(SOURCE_CHAIN, "DAI"),
+            100,
+            deployer,
+            "",
+            abi.encodeCall(
+                IBaseRouter.multiDstSingleVaultWithdraw, multiDstSingleVaultStateReq
+            )
            );
 
         SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId1, 1e18);
@@ -3678,37 +3685,6 @@ contract SuperformRouterPlusTest is ProtocolActions {
             IBaseRouter.multiDstMultiVaultWithdraw, MultiDstMultiVaultStateReq(ambIds, chainIds, multiVaultData)
         );
     }
-
-    function _buildRebalanceMultiMultiDstSingleVaultArgs(uint64 rebalanceFromChainId1, uint64 rebalanceFromChainId2, MultiDstSingleVaultStateReq memory multiDstSingleVaultStateReq) internal returns (ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs memory) {
-        uint256[] memory superformIds = new uint256[](2);
-        superformIds[0] = superformId1;
-        superformIds[1] = superformId2;
-
-        uint256[] memory sharesToRedeem = new uint256[](2);
-        sharesToRedeem[0] = 1e18;
-        sharesToRedeem[1] = 1e18;
-
-        return ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs(
-                superformIds,
-                sharesToRedeem,
-                1e18,
-                2 ether, // 1 ether from each superform ?
-                1 ether,
-                getContract(SOURCE_CHAIN, "DAI"),
-                100,
-                deployer,
-                _callDataRebalanceFromMultiDst(
-                    getContract(SOURCE_CHAIN, "DAI"),
-                    superformIds,
-                    rebalanceFromChainId1,
-                    rebalanceFromChainId2
-                ),
-                abi.encodeCall(
-                    IBaseRouter.multiDstSingleVaultWithdraw, multiDstSingleVaultStateReq
-                )
-        );
-    }
-
 
     function _callDataRebalanceFrom(address interimToken) internal view returns (bytes memory) {
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
