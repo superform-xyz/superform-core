@@ -3673,8 +3673,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
     {
         uint256 initialFork = vm.activeFork();
 
-        SingleVaultSFData memory singleVaultData1 = new SingleVaultSFData;
-        SingleVaultSFData memory singleVaultData2 = new SingleVaultSFData;
+        SingleVaultSFData memory singleVaultData1;
+        SingleVaultSFData memory singleVaultData2;
 
         vm.selectFork(FORKS[rebalanceFromChainId1]);
 
@@ -3703,16 +3703,16 @@ contract SuperformRouterPlusTest is ProtocolActions {
         );
 
         singleVaultData1 = SingleVaultSFData({
-            superformIds: superformIds[0],
-            amounts: 1e18,
-            outputAmounts: 1e18,
-            maxSlippages: 100,
-            liqRequests: LiqRequest(
+            superformId: superformIds[0],
+            amount: 1e18,
+            outputAmount: 1e18,
+            maxSlippage: 100,
+            liqRequest: LiqRequest(
                 _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), interimToken, address(0), 1, rebalanceToChainId, 0
             ),
             permit2data: "",
-            hasDstSwaps: false,
-            retain4626s: false,
+            hasDstSwap: false,
+            retain4626: false,
             receiverAddress: ROUTER_PLUS_ASYNC_SOURCE, // deployer?
             receiverAddressSP: deployer,
             extraFormData: ""
@@ -3723,7 +3723,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
         (address superform2,,) = superformIds[0].getSuperform();
         address underlyingToken2 = IBaseForm(superform2).getVaultAsset();
 
-        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs2 = LiqBridgeTxDataArgs(
             1,
             underlyingToken2,
             underlyingToken2,
@@ -3745,16 +3745,16 @@ contract SuperformRouterPlusTest is ProtocolActions {
         );
 
         singleVaultData1 = SingleVaultSFData({
-            superformIds: superformIds[1],
-            amounts: 1e18,
-            outputAmounts: 1e18,
-            maxSlippages: 100,
-            liqRequests: LiqRequest(
-                _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), interimToken, address(0), 1, rebalanceToChainId, 0
+            superformId: superformIds[1],
+            amount: 1e18,
+            outputAmount: 1e18,
+            maxSlippage: 100,
+            liqRequest: LiqRequest(
+                _buildLiqBridgeTxData(liqBridgeTxDataArgs2, false), interimToken, address(0), 1, rebalanceToChainId, 0
             ),
             permit2data: "",
-            hasDstSwaps: false,
-            retain4626s: false,
+            hasDstSwap: false,
+            retain4626: false,
             receiverAddress: ROUTER_PLUS_ASYNC_SOURCE, // deployer?
             receiverAddressSP: deployer,
             extraFormData: ""
@@ -3795,7 +3795,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
         );
 
         args =
-            ISuperformRouterPlus.RebalanceMultiPositionSyncArgs(
+            ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs(
                 superformIds,
                 sharesToRedeem,
                 1e18,
