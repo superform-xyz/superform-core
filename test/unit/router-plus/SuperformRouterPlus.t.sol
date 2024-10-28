@@ -601,6 +601,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
         uint64 REBALANCE_FROM_2 = OP;
         //uint64 REBALANCE_TO = ARBI;
 
+        vm.selectFork(FORKS[SOURCE_CHAIN]);
+
         _xChainDeposit(superformId5ETH, REBALANCE_FROM_1, 1);
         _xChainDeposit(superformId5ETH, REBALANCE_FROM_2, 1);
 
