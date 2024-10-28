@@ -524,8 +524,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
         /// @dev validate the slippage
         if (
-            (balanceDifference != assets)
-                || (ENTIRE_SLIPPAGE * assets < ((expectedOutputAmount_ * (ENTIRE_SLIPPAGE - maxSlippage_))))
+            (ENTIRE_SLIPPAGE * assets < ((expectedOutputAmount_ * (ENTIRE_SLIPPAGE - maxSlippage_))))
         ) {
             revert ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
         }
