@@ -558,7 +558,21 @@ contract SuperformRouterPlusTest is ProtocolActions {
         assertEq(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId1), 0);
     }
 
-    
+    function test_rebalanceSinglePosition_singleXChainSingleVaultDepositSelector() public {
+        vm.startPrank(deployer);
+
+        _directDeposit(superformId1);
+
+        ISuperformRouterPlus.RebalanceSinglePositionSyncArgs memory args =
+            _buildRebalanceSinglePositionToOneVaultArgs(deployer);
+
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId1, args.sharesToRedeem);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceSinglePosition{ value: 2 ether }(args);
+
+        assertEq(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId1), 0);
+
+        assertGt(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId2), 0);
+    }
 
     // Deposit into multiple vaults on one chain with tokens from another chain.
     function test_rebalanceSinglePosition_singleXChainMultiVaultDeposit() public { 
