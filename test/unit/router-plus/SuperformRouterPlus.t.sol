@@ -601,10 +601,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
         uint64 REBALANCE_FROM_2 = OP;
         //uint64 REBALANCE_TO = ARBI;
 
-        address interimToken = getContract(SOURCE_CHAIN, "DAI");
-
-        _xChainDeposit(superformId1, REBALANCE_FROM_1, 1);
-        _xChainDeposit(superformId2, REBALANCE_FROM_2, 1);
+        _xChainDeposit(SOURCE_CHAIN, REBALANCE_FROM_1, 1);
+        _xChainDeposit(SOURCE_CHAIN, REBALANCE_FROM_2, 1);
 
         // _directDeposit(superformId1);
         // _directDeposit(superformId2);
