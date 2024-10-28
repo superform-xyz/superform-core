@@ -437,6 +437,9 @@ contract SuperformRouterPlusTest is ProtocolActions {
         // Deploy a mock ERC4626 vault
         VaultMock mockVault = new VaultMock(IERC20(getContract(SOURCE_CHAIN, "DAI")), "Mock Vault", "mVLT");
 
+        address[] memory vaults = new address[](1);
+        vaults[0] = address(mockVault);
+
         // Mint some DAI to the deployer
         uint256 daiAmount = 1e18;
 
@@ -445,6 +448,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
         uint256 vaultTokenAmount = mockVault.deposit(daiAmount, deployer);
 
         // Prepare deposit4626 args with an invalid deposit selector
+        ISuperformRouterPlus.Deposit4626Args[] memory argsArray = new ISuperformRouterPlus.Deposit4626Args[](1);
+
         ISuperformRouterPlus.Deposit4626Args memory args = ISuperformRouterPlus.Deposit4626Args({
             amount: vaultTokenAmount,
             expectedOutputAmount: daiAmount,
@@ -452,15 +457,141 @@ contract SuperformRouterPlusTest is ProtocolActions {
             receiverAddressSP: deployer,
             depositCallData: abi.encodeWithSelector(bytes4(keccak256("invalidDepositSelector()")), superformId1, daiAmount)
         });
+        argsArray[0] = args;
 
         // Approve RouterPlus to spend vault tokens
         mockVault.approve(ROUTER_PLUS_SOURCE, vaultTokenAmount);
 
         // Expect the function to revert with INVALID_DEPOSIT_SELECTOR error
         vm.expectRevert(ISuperformRouterPlus.INVALID_DEPOSIT_SELECTOR.selector);
-        SuperformRouterPlus(ROUTER_PLUS_SOURCE).deposit4626{ value: 1 ether }(address(mockVault), args);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).deposit4626{ value: 1 ether }(vaults, argsArray);
 
         vm.stopPrank();
+    }
+
+    function test_deposit4626_multipleVaults_arrayMismatch() public {
+        vm.startPrank(deployer);
+
+        // Deploy two mock ERC4626 vaults
+        VaultMock mockVault1 = new VaultMock(IERC20(getContract(SOURCE_CHAIN, "DAI")), "Mock Vault 1", "mVLT1");
+        VaultMock mockVault2 = new VaultMock(IERC20(getContract(SOURCE_CHAIN, "USDC")), "Mock Vault 2", "mVLT2");
+
+        address[] memory vaults = new address[](2);
+        vaults[0] = address(mockVault1);
+        vaults[1] = address(mockVault2);
+
+        // Mint some DAI to the deployer
+        uint256 daiAmount = 1e18;
+
+        // Approve and deposit DAI into the mock vault
+        MockERC20(getContract(SOURCE_CHAIN, "DAI")).approve(address(mockVault1), daiAmount);
+        uint256 vaultTokenAmount = mockVault1.deposit(daiAmount, deployer);
+
+        // Prepare deposit4626 args
+        ISuperformRouterPlus.Deposit4626Args[] memory argsArray = new ISuperformRouterPlus.Deposit4626Args[](1);
+        
+        argsArray[0] = ISuperformRouterPlus.Deposit4626Args({
+            amount: vaultTokenAmount,
+            expectedOutputAmount: daiAmount,
+            maxSlippage: 100, // 1%
+            receiverAddressSP: deployer,
+            depositCallData: _buildDepositCallData(superformId1, daiAmount)
+        });
+
+        // Approve RouterPlus to spend vault tokens
+        mockVault1.approve(ROUTER_PLUS_SOURCE, vaultTokenAmount);
+        mockVault2.approve(ROUTER_PLUS_SOURCE, vaultTokenAmount);
+
+        // Expect the function to revert with ARRAY_LENGTH_MISMATCH error
+        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).deposit4626{ value: 1 ether }(vaults, argsArray);
+
+        vm.stopPrank();
+    }
+
+    function test_deposit4626_multipleVaults_zeroInputValue() public {
+        vm.startPrank(deployer);
+
+        address[] memory vaults = new address[](0);
+        ISuperformRouterPlus.Deposit4626Args[] memory argsArray = new ISuperformRouterPlus.Deposit4626Args[](0);
+
+        vm.expectRevert(Error.ZERO_INPUT_VALUE.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).deposit4626{ value: 1 ether }(vaults, argsArray);
+    }
+
+    function test_deposit4626_multipleVaults() public {
+        vm.startPrank(deployer);
+
+        // Deploy two mock ERC4626 vaults
+        VaultMock mockVault1 = new VaultMock(IERC20(getContract(SOURCE_CHAIN, "DAI")), "Mock Vault 1", "mVLT1");
+        VaultMock mockVault2 = new VaultMock(IERC20(getContract(SOURCE_CHAIN, "DAI")), "Mock Vault 2", "mVLT2");
+
+        address[] memory vaults = new address[](2);
+        vaults[0] = address(mockVault1);
+        vaults[1] = address(mockVault2);
+
+        // Mint some DAI to the deployer
+        uint256 daiAmount = 1e18;
+        deal(getContract(SOURCE_CHAIN, "DAI"), deployer, 10e18);
+
+        // Approve and deposit DAI into the first mock vault
+        MockERC20(getContract(SOURCE_CHAIN, "DAI")).approve(address(mockVault1), daiAmount);
+
+        uint256 vaultTokenAmount1 = mockVault1.deposit(daiAmount/2, deployer);
+
+        // Approve and deposit DAI into the secondmock vault
+        MockERC20(getContract(SOURCE_CHAIN, "DAI")).approve(address(mockVault2), daiAmount);
+        uint256 vaultTokenAmount2 = mockVault2.deposit(daiAmount/2, deployer);
+
+        // Prepare deposit4626 args for both deposits
+        ISuperformRouterPlus.Deposit4626Args[] memory argsArray = new ISuperformRouterPlus.Deposit4626Args[](2);
+
+        argsArray[0] = ISuperformRouterPlus.Deposit4626Args({
+            amount: vaultTokenAmount1,
+            expectedOutputAmount: daiAmount/2,
+            maxSlippage: 100, // 1%
+            receiverAddressSP: deployer,
+            depositCallData: _buildDepositCallData(superformId1, daiAmount/2)
+        });
+
+        argsArray[1] = ISuperformRouterPlus.Deposit4626Args({
+            amount: vaultTokenAmount2,
+                expectedOutputAmount: daiAmount/2,
+                maxSlippage: 100, // 1%
+                receiverAddressSP: deployer,
+                depositCallData: _buildDepositCallData(superformId1, daiAmount/2)
+        });
+
+        // Approve RouterPlus to spend vault tokens
+        mockVault1.approve(ROUTER_PLUS_SOURCE, daiAmount);
+        mockVault2.approve(ROUTER_PLUS_SOURCE, daiAmount);
+
+        // Execute deposit4626
+        vm.recordLogs();
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).deposit4626{ value: 2 ether }(vaults, argsArray);
+
+        vm.stopPrank();
+
+        // Verify the results
+        assertGt(
+            SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId1),
+            0,
+            "Superform balance should be greater than 0"
+        );
+
+        // Check that the vault tokens were transferred from the deployer
+        assertEq(mockVault1.balanceOf(deployer), 0, "Deployer's vault token balance should be 0");
+        assertEq(mockVault2.balanceOf(deployer), 0, "Deployer's vault token balance should be 0");
+
+        // Check that the RouterPlus contract doesn't hold any tokens
+        assertEq(mockVault1.balanceOf(ROUTER_PLUS_SOURCE), 0, "RouterPlus should not hold any vault tokens");
+        assertEq(mockVault2.balanceOf(ROUTER_PLUS_SOURCE), 0, "RouterPlus should not hold any vault tokens");
+
+        assertEq(
+            MockERC20(getContract(SOURCE_CHAIN, "DAI")).balanceOf(ROUTER_PLUS_SOURCE),
+            0,
+            "RouterPlus should not hold any DAI"
+        );
     }
 
     function test_rebalanceSinglePosition_zeroAddressInterimAsset() public {
@@ -530,6 +661,9 @@ contract SuperformRouterPlusTest is ProtocolActions {
         // Deploy a mock ERC4626 vault
         VaultMock mockVault = new VaultMock(IERC20(getContract(SOURCE_CHAIN, "DAI")), "Mock Vault", "mVLT");
 
+        address[] memory vaults = new address[](1);
+        vaults[0] = address(mockVault);
+
         // Mint some DAI to the deployer
         uint256 daiAmount = 1e18;
 
@@ -538,6 +672,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
         uint256 vaultTokenAmount = mockVault.deposit(daiAmount, deployer);
 
         // Prepare deposit4626 args
+        ISuperformRouterPlus.Deposit4626Args[] memory argsArray = new ISuperformRouterPlus.Deposit4626Args[](1);
+
         ISuperformRouterPlus.Deposit4626Args memory args = ISuperformRouterPlus.Deposit4626Args({
             amount: vaultTokenAmount,
             expectedOutputAmount: daiAmount * 10, // Assuming a large value for revert
@@ -545,13 +681,14 @@ contract SuperformRouterPlusTest is ProtocolActions {
             receiverAddressSP: deployer,
             depositCallData: _buildDepositCallData(superformId1, daiAmount)
         });
+        argsArray[0] = args;
 
         // Approve RouterPlus to spend vault tokens
         mockVault.approve(ROUTER_PLUS_SOURCE, vaultTokenAmount);
 
         // Execute deposit4626
         vm.expectRevert(ISuperformRouterPlus.ASSETS_RECEIVED_OUT_OF_SLIPPAGE.selector);
-        SuperformRouterPlus(ROUTER_PLUS_SOURCE).deposit4626{ value: 1 ether }(address(mockVault), args);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).deposit4626{ value: 1 ether }(vaults, argsArray);
     }
 
     function test_deposit4626_toleranceExceeded() public {
@@ -559,6 +696,9 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         // Deploy a mock ERC4626 vault
         VaultMock mockVault = new VaultMock(IERC20(getContract(SOURCE_CHAIN, "DAI")), "Mock Vault", "mVLT");
+
+        address[] memory vaults = new address[](1);
+        vaults[0] = address(mockVault);
 
         // Mint some DAI to the deployer
         uint256 daiAmount = 1e18;
@@ -576,6 +716,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
         );
 
         // Prepare deposit4626 args
+        ISuperformRouterPlus.Deposit4626Args[] memory argsArray = new ISuperformRouterPlus.Deposit4626Args[](1);
+
         ISuperformRouterPlus.Deposit4626Args memory args = ISuperformRouterPlus.Deposit4626Args({
             amount: vaultTokenAmount,
             expectedOutputAmount: daiAmount,
@@ -583,6 +725,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
             receiverAddressSP: deployer,
             depositCallData: _buildDepositCallData(superformId1, daiAmount)
         });
+        argsArray[0] = args;
 
         // Approve RouterPlus to spend vault tokens
         mockVault.approve(ROUTER_PLUS_SOURCE, vaultTokenAmount);
@@ -590,7 +733,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
         // Execute deposit4626
         vm.recordLogs();
         vm.expectRevert(ISuperformRouterPlus.TOLERANCE_EXCEEDED.selector);
-        SuperformRouterPlus(ROUTER_PLUS_SOURCE).deposit4626{ value: 1 ether }(address(mockVault), args);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).deposit4626{ value: 1 ether }(vaults, argsArray);
 
         vm.stopPrank();
     }
@@ -600,6 +743,9 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         // Deploy a mock ERC4626 vault
         VaultMock mockVault = new VaultMock(IERC20(getContract(SOURCE_CHAIN, "DAI")), "Mock Vault", "mVLT");
+
+        address[] memory vaults = new address[](1);
+        vaults[0] = address(mockVault);
 
         // Mint some DAI to the deployer
         uint256 daiAmount = 1e18;
@@ -617,6 +763,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
         );
 
         // Prepare deposit4626 args
+        ISuperformRouterPlus.Deposit4626Args[] memory argsArray = new ISuperformRouterPlus.Deposit4626Args[](1);
+
         ISuperformRouterPlus.Deposit4626Args memory args = ISuperformRouterPlus.Deposit4626Args({
             amount: vaultTokenAmount,
             expectedOutputAmount: daiAmount,
@@ -624,6 +772,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
             receiverAddressSP: deployer,
             depositCallData: _buildDepositCallData(superformId1, daiAmount)
         });
+        argsArray[0] = args;
 
         // Approve RouterPlus to spend vault tokens
         mockVault.approve(ROUTER_PLUS_SOURCE, vaultTokenAmount);
@@ -631,7 +780,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
         // Execute deposit4626
         vm.recordLogs();
         vm.expectRevert(ISuperformRouterPlus.TOLERANCE_EXCEEDED.selector);
-        SuperformRouterPlus(ROUTER_PLUS_SOURCE).deposit4626{ value: 1 ether }(address(mockVault), args);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).deposit4626{ value: 1 ether }(vaults, argsArray);
 
         vm.stopPrank();
     }
@@ -642,6 +791,9 @@ contract SuperformRouterPlusTest is ProtocolActions {
         // Deploy a mock ERC4626 vault
         VaultMock mockVault = new VaultMock(IERC20(getContract(SOURCE_CHAIN, "DAI")), "Mock Vault", "mVLT");
 
+        address[] memory vaults = new address[](1);
+        vaults[0] = address(mockVault);
+
         // Mint some DAI to the deployer
         uint256 daiAmount = 1e18 - 2 wei;
 
@@ -650,6 +802,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
         uint256 vaultTokenAmount = mockVault.deposit(daiAmount, deployer);
 
         // Prepare deposit4626 args
+        ISuperformRouterPlus.Deposit4626Args[] memory argsArray = new ISuperformRouterPlus.Deposit4626Args[](1);
+
         ISuperformRouterPlus.Deposit4626Args memory args = ISuperformRouterPlus.Deposit4626Args({
             amount: vaultTokenAmount,
             expectedOutputAmount: daiAmount, // Assuming 1:1 ratio for simplicity
@@ -657,13 +811,14 @@ contract SuperformRouterPlusTest is ProtocolActions {
             receiverAddressSP: deployer,
             depositCallData: _buildDepositCallData(superformId1, daiAmount)
         });
+        argsArray[0] = args;
 
         // Approve RouterPlus to spend vault tokens
         mockVault.approve(ROUTER_PLUS_SOURCE, vaultTokenAmount);
 
         // Execute deposit4626
         vm.recordLogs();
-        SuperformRouterPlus(ROUTER_PLUS_SOURCE).deposit4626{ value: 1 ether }(address(mockVault), args);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).deposit4626{ value: 1 ether }(vaults, argsArray);
 
         // Verify the results
         assertGt(
@@ -2521,6 +2676,9 @@ contract SuperformRouterPlusTest is ProtocolActions {
         // Deploy a mock ERC4626 vault
         VaultMock mockVault = new VaultMock(IERC20(getContract(SOURCE_CHAIN, "DAI")), "Mock Vault", "mVLT");
 
+        address[] memory vaults = new address[](1);
+        vaults[0] = address(mockVault);
+
         // Mint some DAI to the deployer
         uint256 daiAmount = 1e18;
 
@@ -2529,6 +2687,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
         uint256 vaultTokenAmount = mockVault.deposit(daiAmount, deployer);
 
         // Prepare deposit4626 args
+        ISuperformRouterPlus.Deposit4626Args[] memory argsArray = new ISuperformRouterPlus.Deposit4626Args[](1);
+
         ISuperformRouterPlus.Deposit4626Args memory args = ISuperformRouterPlus.Deposit4626Args({
             amount: vaultTokenAmount,
             expectedOutputAmount: daiAmount, // Assuming 1:1 ratio for simplicity
@@ -2536,13 +2696,14 @@ contract SuperformRouterPlusTest is ProtocolActions {
             receiverAddressSP: deployer,
             depositCallData: _buildDepositCallData(superformId1, daiAmount)
         });
+        argsArray[0] = args;
 
         // Approve RouterPlus to spend vault tokens
         mockVault.approve(ROUTER_PLUS_SOURCE, vaultTokenAmount);
 
         // Execute deposit4626
         vm.recordLogs();
-        SuperformRouterPlus(ROUTER_PLUS_SOURCE).deposit4626{ value: 1 ether }(address(mockVault), args);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).deposit4626{ value: 1 ether }(vaults, argsArray);
 
         // Verify the results
         assertGt(
