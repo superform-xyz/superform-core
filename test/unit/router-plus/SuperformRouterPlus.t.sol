@@ -616,7 +616,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
             superformIds,
             REBALANCE_FROM_1,
             REBALANCE_FROM_2,
-            ARBI
+            ETH
         );
         // args.callData = _callDataRebalanceFromMultiDst(args.interimAsset, args.ids, REBALANCE_FROM_1, REBALANCE_FROM_2);
 
