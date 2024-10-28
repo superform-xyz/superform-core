@@ -599,7 +599,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         uint64 REBALANCE_FROM_1 = ETH;
         uint64 REBALANCE_FROM_2 = OP;
-        uint64 REBALANCE_TO = ARBI;
+        //uint64 REBALANCE_TO = ARBI;
 
         address interimToken = getContract(SOURCE_CHAIN, "DAI");
 
@@ -615,17 +615,17 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs memory args =
            _buildRebalanceMultiMultiDstSingleVaultArgs(
-            interimToken,
             superformIds,
             REBALANCE_FROM_1,
             REBALANCE_FROM_2,
-            REBALANCE_TO
+            ARBI
         );
         // args.callData = _callDataRebalanceFromMultiDst(args.interimAsset, args.ids, REBALANCE_FROM_1, REBALANCE_FROM_2);
 
-        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId1, args.sharesToRedeem);
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId1, 1e18);
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId2, 1e18);
         
-        SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceSinglePosition{ value: 2 ether }(args);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceMultiPositions{ value: 2 ether }(args);
         vm.stopPrank();
 
         assertEq(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId1), 0);
@@ -3662,8 +3662,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
     }
 
     function _buildRebalanceMultiMultiDstSingleVaultArgs(
-        address interimToken,
-        uint256[] calldata superformIds,
+        uint256[] memory superformIds,
         uint64 rebalanceFromChainId1,
         uint64 rebalanceFromChainId2,
         uint64 rebalanceToChainId
@@ -3671,94 +3670,28 @@ contract SuperformRouterPlusTest is ProtocolActions {
         internal
         returns (ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs memory args)
     {
-        uint256 initialFork = vm.activeFork();
+        //uint256 initialFork = vm.activeFork();
+
+        address interimToken = getContract(SOURCE_CHAIN, "DAI");
 
         SingleVaultSFData memory singleVaultData1;
         SingleVaultSFData memory singleVaultData2;
 
-        vm.selectFork(FORKS[rebalanceFromChainId1]);
+        //vm.selectFork(FORKS[rebalanceFromChainId1]);
 
         (address superform1,,) = superformIds[0].getSuperform();
-        address underlyingToken1 = IBaseForm(superform1).getVaultAsset();
 
-        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
-            1,
-            underlyingToken1,
-            underlyingToken1,
-            interimToken,
-            superform1, // from, which address should this be?
-            rebalanceFromChainId1,
-            rebalanceToChainId,
-            rebalanceToChainId,
-            false,
-            getContract(SOURCE_CHAIN, "SuperformRouterPlusAsync"),
-            uint256(rebalanceToChainId), // liqBridgeToChainId
-            1e18, // This should be updated with the actual amount if available
-            false,
-            100, // slippage
-            1,
-            1,
-            1,
-            address(0)
-        );
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = _buildLiqBridgeTxDataArgs(interimToken, superform1, rebalanceFromChainId1);
 
-        singleVaultData1 = SingleVaultSFData({
-            superformId: superformIds[0],
-            amount: 1e18,
-            outputAmount: 1e18,
-            maxSlippage: 100,
-            liqRequest: LiqRequest(
-                _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), interimToken, address(0), 1, rebalanceToChainId, 0
-            ),
-            permit2data: "",
-            hasDstSwap: false,
-            retain4626: false,
-            receiverAddress: ROUTER_PLUS_ASYNC_SOURCE, // deployer?
-            receiverAddressSP: deployer,
-            extraFormData: ""
-        });
+        singleVaultData1 = _buildSingleVaultSFData(liqBridgeTxDataArgs, superformIds[0], rebalanceFromChainId1);
 
-        vm.selectFork(FORKS[rebalanceFromChainId1]);
+        //vm.selectFork(FORKS[rebalanceFromChainId1]);
 
         (address superform2,,) = superformIds[0].getSuperform();
-        address underlyingToken2 = IBaseForm(superform2).getVaultAsset();
 
-        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs2 = LiqBridgeTxDataArgs(
-            1,
-            underlyingToken2,
-            underlyingToken2,
-            interimToken,
-            superform2, // from, which address should this be?
-            rebalanceFromChainId2,
-            rebalanceToChainId,
-            rebalanceToChainId,
-            false,
-            getContract(SOURCE_CHAIN, "SuperformRouterPlusAsync"),
-            uint256(rebalanceToChainId), // liqBridgeToChainId
-            1e18, // This should be updated with the actual amount if available
-            false,
-            100, // slippage
-            1,
-            1,
-            1,
-            address(0)
-        );
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs2 = _buildLiqBridgeTxDataArgs(interimToken, superform2, rebalanceFromChainId2);
 
-        singleVaultData1 = SingleVaultSFData({
-            superformId: superformIds[1],
-            amount: 1e18,
-            outputAmount: 1e18,
-            maxSlippage: 100,
-            liqRequest: LiqRequest(
-                _buildLiqBridgeTxData(liqBridgeTxDataArgs2, false), interimToken, address(0), 1, rebalanceToChainId, 0
-            ),
-            permit2data: "",
-            hasDstSwap: false,
-            retain4626: false,
-            receiverAddress: ROUTER_PLUS_ASYNC_SOURCE, // deployer?
-            receiverAddressSP: deployer,
-            extraFormData: ""
-        });
+        singleVaultData2 = _buildSingleVaultSFData(liqBridgeTxDataArgs2, superformIds[1], rebalanceFromChainId2);
 
         // Set ambIds to AMBs for both origins
         uint8[][] memory ambIds = new uint8[][](2);
@@ -3783,17 +3716,6 @@ contract SuperformRouterPlusTest is ProtocolActions {
         //     IBaseRouter.multiDstSingleVaultDeposit, MultiDstSingleVaultStateReq (ambIds, rebalanceFromChainId1, singleVaultData1)
         // );
 
-        bytes memory callData = _callDataRebalanceFromMultiDst(
-            interimToken,
-            superformIds,
-            rebalanceFromChainId1,
-            rebalanceFromChainId2
-        );
-
-        bytes memory rebalanceToCallData = abi.encodeCall(
-            IBaseRouter.multiDstSingleVaultWithdraw, multiDstSingleVaultStateReq
-        );
-
         args =
             ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs(
                 superformIds,
@@ -3804,10 +3726,64 @@ contract SuperformRouterPlusTest is ProtocolActions {
                 interimToken,
                 100,
                 deployer,
-                callData,
-                rebalanceToCallData 
+                _callDataRebalanceFromMultiDst(
+                    interimToken,
+                superformIds,
+                rebalanceFromChainId1,
+                rebalanceFromChainId2
+                ),
+                abi.encodeCall(
+                    IBaseRouter.multiDstSingleVaultWithdraw, multiDstSingleVaultStateReq
+                 )
             );
     }
+
+    function _buildLiqBridgeTxDataArgs(address interimToken, address superform, uint64 rebalanceFromChainId) internal view returns (LiqBridgeTxDataArgs memory) {
+        address underlyingToken = IBaseForm(superform2).getVaultAsset();
+
+        return LiqBridgeTxDataArgs(
+            1,
+            underlyingToken,
+            underlyingToken,
+            getContract(SOURCE_CHAIN, "DAI"),
+            superform2, // from, which address should this be?
+            rebalanceFromChainId,
+            ARBI,
+            ARBI,
+            false,
+            getContract(SOURCE_CHAIN, "SuperformRouterPlusAsync"),
+            uint256(ARBI), // liqBridgeToChainId
+            1e18, // This should be updated with the actual amount if available
+            false,
+            100, // slippage
+            1,
+            1,
+            1,
+            address(0)
+        );
+    }
+
+    function _buildSingleVaultSFData(
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs,
+        uint256 superformId,
+        uint64 rebalanceFromChainId) internal view returns (SingleVaultSFData memory) {
+        return SingleVaultSFData(
+            superformId,
+            1e18,
+            1e18,
+            100,
+            LiqRequest(
+                _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(SOURCE_CHAIN, "DAI"), address(0), 1, ARBI, 0
+            ),
+            "",
+            false,
+            false,
+            ROUTER_PLUS_ASYNC_SOURCE, // deployer?
+            deployer,
+            ""
+        );
+    }
+
 
     function _callDataRebalanceFrom(address interimToken) internal view returns (bytes memory) {
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
