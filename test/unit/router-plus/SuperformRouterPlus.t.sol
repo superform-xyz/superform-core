@@ -609,6 +609,10 @@ contract SuperformRouterPlusTest is ProtocolActions {
         // _directDeposit(superformId1);
         // _directDeposit(superformId2);
 
+        uint256[] memory superformIds = new uint256[](2);
+        superformIds[0] = superformId1;
+        superformIds[1] = superformId2;
+
         ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs memory args =
            _buildRebalanceMultiMultiDstSingleVaultArgs(
             interimToken,
