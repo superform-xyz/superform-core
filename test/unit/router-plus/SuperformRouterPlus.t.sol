@@ -601,8 +601,8 @@ contract SuperformRouterPlusTest is ProtocolActions {
         uint64 REBALANCE_FROM_2 = OP;
         //uint64 REBALANCE_TO = ARBI;
 
-        _xChainDeposit(SOURCE_CHAIN, REBALANCE_FROM_1, 1);
-        _xChainDeposit(SOURCE_CHAIN, REBALANCE_FROM_2, 1);
+        _xChainDeposit(superformId5ETH, REBALANCE_FROM_1, 1);
+        _xChainDeposit(superformId5ETH, REBALANCE_FROM_2, 1);
 
         // _directDeposit(superformId1);
         // _directDeposit(superformId2);
@@ -3723,11 +3723,11 @@ contract SuperformRouterPlusTest is ProtocolActions {
             getContract(SOURCE_CHAIN, "DAI"),
             superform2, // from, which address should this be?
             rebalanceFromChainId,
-            ARBI,
-            ARBI,
+            ETH,
+            ETH,
             false,
             getContract(SOURCE_CHAIN, "SuperformRouterPlusAsync"),
-            uint256(ARBI), // liqBridgeToChainId
+            uint256(ETH), // liqBridgeToChainId
             1e18, // This should be updated with the actual amount if available
             false,
             100, // slippage
@@ -3747,7 +3747,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
             1e18,
             100,
             LiqRequest(
-                _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(SOURCE_CHAIN, "DAI"), address(0), 1, ARBI, 0
+                _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(SOURCE_CHAIN, "DAI"), address(0), 1, ETH, 0
             ),
             "",
             false,
