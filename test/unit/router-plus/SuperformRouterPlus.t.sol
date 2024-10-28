@@ -3669,7 +3669,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
         uint64 rebalanceToChainId
     )
         internal
-        returns (ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs args)
+        returns (ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs memory args)
     {
         uint256 initialFork = vm.activeFork();
 
