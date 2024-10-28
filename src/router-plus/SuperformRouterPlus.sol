@@ -520,7 +520,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         balanceDifference = assetsBalanceAfter - assetsBalanceBefore;
 
         /// @dev validate the tolerance
-        if (assets < TOLERANCE_CONSTANT || balanceDifference < TOLERANCE_CONSTANT) revert TOLERANCE_EXCEEDED();
+        if (assets < TOLERANCE_CONSTANT || balanceDifference < assets - TOLERANCE_CONSTANT) revert TOLERANCE_EXCEEDED();
 
         /// @dev validate the slippage
         if (
