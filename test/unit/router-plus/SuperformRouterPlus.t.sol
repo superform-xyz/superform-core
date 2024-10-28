@@ -3805,7 +3805,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
                 100,
                 deployer,
                 callData,
-                singleVaultData
+                rebalanceToCallData 
             );
     }
 
