@@ -85,7 +85,7 @@ abstract contract AbstractPreBeraLaunch is EnvironmentUtils {
             abi.encodeWithSelector(LayerzeroV2Implementation.setDelegate.selector, PROTOCOL_ADMINS[srcChainIndex]);
         addToBatch(vars.srcLzImpl, 0, txn);
 
-        executeBatch(vars.chainId, PROTOCOL_ADMINS[srcChainIndex], manualNonces[srcChainIndex], false);
+        executeBatch(vars.chainId, PROTOCOL_ADMINS[srcChainIndex], manualNonces[srcChainIndex], true);
     }
 
     function _configure(
@@ -196,7 +196,7 @@ abstract contract AbstractPreBeraLaunch is EnvironmentUtils {
         }
 
         // Send the batch
-        executeBatch(vars.chainId, PROTOCOL_ADMINS[srcChainIndex], manualNonces[srcChainIndex], false);
+        executeBatch(vars.chainId, PROTOCOL_ADMINS[srcChainIndex], manualNonces[srcChainIndex], true);
     }
 
     function _getTrueIndex(uint256 chainId) public view returns (uint256 index) {
