@@ -3717,25 +3717,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
         // );
 
         args =
-            ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs(
-                superformIds,
-                sharesToRedeem,
-                1e18,
-                2 ether, // 1 ether from each superform ?
-                1 ether,
-                interimToken,
-                100,
-                deployer,
-                _callDataRebalanceFromMultiDst(
-                    interimToken,
-                superformIds,
-                rebalanceFromChainId1,
-                rebalanceFromChainId2
-                ),
-                abi.encodeCall(
-                    IBaseRouter.multiDstSingleVaultWithdraw, multiDstSingleVaultStateReq
-                 )
-            );
+            ;
     }
 
     function _buildLiqBridgeTxDataArgs(address interimToken, address superform, uint64 rebalanceFromChainId) internal view returns (LiqBridgeTxDataArgs memory) {
@@ -3781,6 +3763,36 @@ contract SuperformRouterPlusTest is ProtocolActions {
             ROUTER_PLUS_ASYNC_SOURCE, // deployer?
             deployer,
             ""
+        );
+    }
+
+    function _buildRebalanceMultiMultiDstSingleVaultArgs(uint64 rebalanceFromChainId1, uint64 rebalanceFromChainId2) internal view returns (ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs memory) {
+        uint256[] memory superformIds = new uint256[](2);
+        superformIds[0] = superformId1;
+        superformIds[1] = superformId2;
+
+        uint256[] memory sharesToRedeem = new uint256[](2);
+        sharesToRedeem[0] = 1e18;
+        sharesToRedeem[1] = 1e18;
+
+        return ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs(
+                superformIds,
+                sharesToRedeem,
+                1e18,
+                2 ether, // 1 ether from each superform ?
+                1 ether,
+                interimToken,
+                100,
+                deployer,
+                _callDataRebalanceFromMultiDst(
+                    getContract(SOURCE_CHAIN, "DAI"),
+                    superformIds,
+                    rebalanceFromChainId1,
+                    rebalanceFromChainId2
+                ),
+                abi.encodeCall(
+                    IBaseRouter.multiDstSingleVaultWithdraw, multiDstSingleVaultStateReq
+                 )
         );
     }
 
