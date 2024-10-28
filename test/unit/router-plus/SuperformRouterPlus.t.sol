@@ -3681,7 +3681,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = _buildLiqBridgeTxDataArgs(interimToken, superform1, rebalanceFromChainId1);
 
-        singleVaultData1 = _buildSingleVaultSFData(liqBridgeTxDataArgs, superformIds[0], rebalanceFromChainId1);
+        singleVaultData1 = _buildSingleVaultSFData(liqBridgeTxDataArgs, superformIds[0]);
 
         //vm.selectFork(FORKS[rebalanceFromChainId1]);
 
@@ -3689,7 +3689,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs2 = _buildLiqBridgeTxDataArgs(interimToken, superform2, rebalanceFromChainId2);
 
-        singleVaultData2 = _buildSingleVaultSFData(liqBridgeTxDataArgs2, superformIds[1], rebalanceFromChainId2);
+        singleVaultData2 = _buildSingleVaultSFData(liqBridgeTxDataArgs2, superformIds[1]);
 
         // Set ambIds to AMBs for both origins
         uint8[][] memory ambIds = new uint8[][](2);
@@ -3740,8 +3740,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
     function _buildSingleVaultSFData(
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs,
-        uint256 superformId,
-        uint64 rebalanceFromChainId) internal returns (SingleVaultSFData memory) {
+        uint256 superformId) internal returns (SingleVaultSFData memory) {
         return SingleVaultSFData(
             superformId,
             1e18,
