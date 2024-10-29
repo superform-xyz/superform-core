@@ -8,7 +8,7 @@ import { ISuperformRouterPlusAsync } from "src/interfaces/ISuperformRouterPlusAs
 import { IBaseSuperformRouterPlus } from "src/interfaces/IBaseSuperformRouterPlus.sol";
 import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
 import { ERC20 } from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import { MultiVaultSFData, MultiDstMultiVaultStateReq, SingleXChainMultiVaultStateReq } from "src/types/DataTypes.sol";
+import { MultiVaultSFData, MultiDstMultiVaultStateReq, MultiDstSingleVaultStateReq, SingleXChainMultiVaultStateReq } from "src/types/DataTypes.sol";
 import "forge-std/console2.sol";
 
 contract RejectEther {
