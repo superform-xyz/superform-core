@@ -454,8 +454,6 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                     revert REBALANCE_MULTI_POSITIONS_DIFFERENT_CHAIN();
                 }
 
-                console.log("req.superformData.amounts[i]", req.superformData.amounts[i]);
-                console.log("args.sharesToRedeem[i]", args.sharesToRedeem[i]);
                 if (req.superformData.amounts[i] != args.sharesToRedeem[i]) {
                     revert REBALANCE_MULTI_POSITIONS_DIFFERENT_AMOUNTS();
                 }
