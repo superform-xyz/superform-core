@@ -4510,13 +4510,13 @@ contract SuperformRouterPlusTest is ProtocolActions {
 
         // Test slippage greater than ENTIRE_SLIPPAGE
         vm.startPrank(deployer);
-        vm.expectRevert();
+        vm.expectRevert(ISuperformRouterPlus.INVALID_GLOBAL_SLIPPAGE.selector);
         SuperformRouterPlus(getContract(SOURCE_CHAIN, "SuperformRouterPlus")).setGlobalSlippage(1_000_000);
         vm.stopPrank();
 
         // Test slippage 0
         vm.startPrank(deployer);
-        vm.expectRevert();
+        vm.expectRevert(ISuperformRouterPlus.INVALID_GLOBAL_SLIPPAGE.selector);
         SuperformRouterPlus(getContract(SOURCE_CHAIN, "SuperformRouterPlus")).setGlobalSlippage(0);
         vm.stopPrank();
 

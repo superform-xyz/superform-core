@@ -19,7 +19,6 @@ import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
 import { ISuperformRouterPlus, IERC20 } from "src/interfaces/ISuperformRouterPlus.sol";
 import { ISuperformRouterPlusAsync } from "src/interfaces/ISuperformRouterPlusAsync.sol";
 import { LiqRequest } from "src/types/DataTypes.sol";
-import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 
 /// @title SuperformRouterPlus
@@ -35,7 +34,10 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address superRegistry_) BaseSuperformRouterPlus(superRegistry_) { }
+    constructor(address superRegistry_) BaseSuperformRouterPlus(superRegistry_) {
+        /// @dev default to 1% slippage as a start
+        GLOBAL_SLIPPAGE = 100;
+    }
 
     //////////////////////////////////////////////////////////////
     //                  EXTERNAL WRITE FUNCTIONS                //
@@ -399,7 +401,9 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             revert Error.NOT_PRIVILEGED_CALLER(keccak256("EMERGENCY_ADMIN_ROLE"));
         }
 
-        require(slippage_ <= ENTIRE_SLIPPAGE && slippage_ > 0, "Invalid slippage");
+        if (slippage_ > ENTIRE_SLIPPAGE || slippage_ == 0) {
+            revert INVALID_GLOBAL_SLIPPAGE();
+        }
 
         GLOBAL_SLIPPAGE = slippage_;
     }
@@ -690,13 +694,5 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 revert Error.FAILED_TO_SEND_NATIVE();
             }
         }
-    }
-
-    /// @dev returns if an address has a specific role
-    /// @param id_ the role id
-    /// @param addressToCheck_ the address to check
-    /// @return true if the address has the role, false otherwise
-    function _hasRole(bytes32 id_, address addressToCheck_) internal view returns (bool) {
-        return ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(id_, addressToCheck_);
     }
 }
