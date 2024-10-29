@@ -8,7 +8,7 @@ import { ISuperformRouterPlusAsync } from "src/interfaces/ISuperformRouterPlusAs
 import { IBaseSuperformRouterPlus } from "src/interfaces/IBaseSuperformRouterPlus.sol";
 import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
 import { ERC20 } from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import { MultiVaultSFData } from "src/types/DataTypes.sol";
+import { MultiVaultSFData, MultiDstMultiVaultStateReq, SingleXChainMultiVaultStateReq } from "src/types/DataTypes.sol";
 import "forge-std/console2.sol";
 
 contract RejectEther {
@@ -575,7 +575,6 @@ contract SuperformRouterPlusTest is ProtocolActions {
         assertGt(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId2), 0);
     }
 
-    // Deposit into multiple vaults on one chain with tokens from another chain.
     function test_rebalanceSinglePosition_singleXChainMultiVaultDeposit() public { 
         vm.startPrank(deployer);
 
@@ -594,9 +593,9 @@ contract SuperformRouterPlusTest is ProtocolActions {
         assertGt(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId2), 0);
     }
 
-    // Deposit into a single vault on multiple different chains with tokens from any chain.
     function test_rebalanceMultiPositions_multiDstSingleVaultDepositSelector() public { 
-
+        vm.activeFork();
+        vm.selectFork(FORKS[SOURCE_CHAIN]);
         deal(getContract(SOURCE_CHAIN, "DAI"), deployer, 100e18);
 
         vm.startPrank(deployer);
@@ -608,23 +607,97 @@ contract SuperformRouterPlusTest is ProtocolActions {
         superformIds[0] = superformId1;
         superformIds[1] = superformId2;
 
-        uint256[] memory amounts = new uint256[](2);
-        amounts[0] = 1e18;
-        amounts[1] = 1e18;
+        (address superform1,,) = superformId1.getSuperform();
+        (address superform2,,) = superformId2.getSuperform();
 
-        uint256[] memory outputAmounts = new uint256[](2);
-        outputAmounts[0] = 1e18;
-        outputAmounts[1] = 1e18;
+        SingleVaultSFData[] memory superformsData = new SingleVaultSFData[](3);
 
-        uint256[] memory maxSlippages = new uint256[](2);
-        maxSlippages[0] = 100;
-        maxSlippages[1] = 100;
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs1 = LiqBridgeTxDataArgs(
+            1,
+            getContract(SOURCE_CHAIN, "DAI"),
+            getContract(SOURCE_CHAIN, "DAI"),
+            getContract(SOURCE_CHAIN, "DAI"),
+            superform1,
+            SOURCE_CHAIN,
+            SOURCE_CHAIN,
+            SOURCE_CHAIN,
+            false,
+            getContract(SOURCE_CHAIN, "SuperformRouterPlusAsync"),
+            uint256(SOURCE_CHAIN),
+            1e18, // This should be updated with the actual amount if available
+            true,
+            0,
+            1,
+            1,
+            1,
+            address(0)
+        );
+        
+        superformsData[0] = SingleVaultSFData({
+            superformId: superformId1,
+            amount: 1e18,
+            outputAmount: 1e18,
+            maxSlippage: 100,
+            liqRequest: LiqRequest(
+                _buildLiqBridgeTxData(liqBridgeTxDataArgs1, false), getContract(SOURCE_CHAIN, "DAI"), address(0), 1, SOURCE_CHAIN, 0
+            ),
+            permit2data: "",
+            hasDstSwap: false,
+            retain4626: false,
+            receiverAddress: ROUTER_PLUS_ASYNC_SOURCE,
+            receiverAddressSP: deployer,
+            extraFormData: ""
+        });
+
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs2 = LiqBridgeTxDataArgs(
+            1,
+            getContract(SOURCE_CHAIN, "DAI"),
+            getContract(SOURCE_CHAIN, "DAI"),
+            getContract(SOURCE_CHAIN, "DAI"),
+            superform2,
+            SOURCE_CHAIN,
+            SOURCE_CHAIN,
+            SOURCE_CHAIN,
+            false,
+            getContract(SOURCE_CHAIN, "SuperformRouterPlusAsync"),
+            uint256(SOURCE_CHAIN),
+            1e18, // This should be updated with the actual amount if available
+            true,
+            0,
+            1,
+            1,
+            1,
+            address(0)
+        );
+
+        superformsData[1] = SingleVaultSFData({
+            superformId: superformId2,
+            amount: 1e18,
+            outputAmount: 1e18,
+            maxSlippage: 100,
+            liqRequest: LiqRequest(
+                _buildLiqBridgeTxData(liqBridgeTxDataArgs2, false), getContract(SOURCE_CHAIN, "DAI"), address(0), 1, SOURCE_CHAIN, 0
+            ),
+            permit2data: "",
+            hasDstSwap: false,
+            retain4626: false,
+            receiverAddress: ROUTER_PLUS_ASYNC_SOURCE,
+            receiverAddressSP: deployer,
+            extraFormData: ""
+        });
+
+        uint8[][] memory ambIds = new uint8[][](2);
+        ambIds[0] = AMBs;
+        ambIds[1] = AMBs;
+
+        uint64[] memory dstChainIds = new uint64[](2);
+        dstChainIds[0] = SOURCE_CHAIN;
+        dstChainIds[1] = SOURCE_CHAIN;
 
         MultiDstSingleVaultStateReq memory multiDstSingleVaultStateReq = MultiDstSingleVaultStateReq({
-            superformIds: superformIds,
-            amounts: amounts,
-            outputAmounts: outputAmounts,
-            maxSlippages: maxSlippages,
+            ambIds: ambIds,
+            dstChainIds: dstChainIds,
+            superformsData: superformsData
         });
 
         uint256[] memory sharesToRedeem = new uint256[](2);
@@ -641,12 +714,23 @@ contract SuperformRouterPlusTest is ProtocolActions {
             getContract(SOURCE_CHAIN, "DAI"),
             100,
             deployer,
-            "",
+            // abi.encodeCall(
+            //     IBaseRouter.multiDstSingleVaultDeposit, multiDstSingleVaultStateReq
+            // ),
+            _callDataRebalanceFromMultiDst(
+                getContract(SOURCE_CHAIN, "DAI"),
+                superformIds,
+                SOURCE_CHAIN,
+                SOURCE_CHAIN
+            ),
             abi.encodeCall(
-                IBaseRouter.multiDstSingleVaultWithdraw, multiDstSingleVaultStateReq
+                IBaseRouter.multiDstSingleVaultDeposit, MultiDstSingleVaultStateReq
             )
-           );
+            //_buildCallDataRebalanceToSingleVaultFromMultiDst(1e18)
+            //_callDataRebalanceToSingleVaultFromMultiDst(1e18)
+        );
 
+        vm.startPrank(deployer);
         SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId1, 1e18);
         SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId2, 1e18);
         
@@ -654,271 +738,213 @@ contract SuperformRouterPlusTest is ProtocolActions {
         vm.stopPrank();
 
         assertEq(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId1), 0);
-
-        assertGt(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId2), 0);
+        assertEq(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId2), 0);
     }
 
-    function test_rebalanceSinglePosition_multiDstMultiVaultDepositSelector() public {
-        // //vm.startPrank(deployer);
+    function test_rebalanceMultiPositions_multiDstMultiVaultDepositSelector() public {
+        // vm.activeFork();
         // vm.selectFork(FORKS[SOURCE_CHAIN]);
+        // deal(getContract(SOURCE_CHAIN, "DAI"), deployer, 100e18);
 
-        // uint64 REBALANCE_FROM_1 = ETH;
-        // uint64 REBALANCE_FROM_2 = OP;
-        // uint64 REBALANCE_TO = OP;
+        // vm.startPrank(deployer);
+        // _directDeposit(superformId1);
+        // _directDeposit(superformId2);
+        // vm.stopPrank();
 
-        // deal(getContract(SOURCE_CHAIN, "DAI"), deployer, 10e18);
+        // uint256[] memory superformIds = new uint256[](2);
+        // superformIds[0] = superformId1;
+        // superformIds[1] = superformId2;
 
-        // vm.prank(deployer);
-        // _xChainDeposit(superformId5ETH, REBALANCE_FROM_1, 1);
+        // (address superform1,,) = superformId1.getSuperform();
+        // (address superform2,,) = superformId2.getSuperform();
 
-        // vm.prank(deployer);
-        // _xChainDeposit(superformId6ETH, REBALANCE_FROM_1, 2);
+        // MultiVaultSFData[] memory superformsData = new MultiVaultSFData[](2);
 
-        // vm.prank(deployer);
-        // _xChainDeposit(superformId4OP, REBALANCE_FROM_2, 1);
+        // uint256[] memory superformIds = new uint256[](1);
+        // superformIds[0] = superformId1;
+        // superformIds[1] = superformId2;
 
-        // vm.selectFork(FORKS[SOURCE_CHAIN]);
-        // ISuperformRouterPlus.InitiateXChainRebalanceMultiArgs memory rebalanceArgs =
-        //     _buildInitiateXChainRebalanceMultiDstToMultiArgs(REBALANCE_FROM_1, REBALANCE_FROM_2, REBALANCE_TO);
+        // uint256[] memory amounts = new uint256[](1);
+        // amounts[0] = 1e18;
+        // amounts[1] = 1e18;
 
-        // vm.prank(deployer);
-        // SuperPositions(SUPER_POSITIONS_SOURCE).setApprovalForAll(ROUTER_PLUS_SOURCE, true);
+        // uint256[] memory outputAmounts = new uint256[](1);
+        // outputAmounts[0] = 1e18;
+        // outputAmounts[1] = 1e18;
 
-        // // vm.startPrank(deployer);
-        // // _directDeposit(superformId1);
-        // // _directDeposit(superformId2);
-        // // vm.stopPrank();
+        // uint256[] memory maxSlippages = new uint256[](1);
+        // maxSlippages[0] = 100;
+        // maxSlippages[1] = 100;
 
-        // // Setup: Create two destination superforms on the same chain
+        // LiqRequest memory liqReq1 = LiqRequest(
+        //     _buildLiqBridgeTxData(
+        //         LiqBridgeTxDataArgs(
+        //             1,
+        //             getContract(SOURCE_CHAIN, "DAI"),
+        //             getContract(SOURCE_CHAIN, "DAI"),
+        //             getContract(SOURCE_CHAIN, "DAI"),
+        //             superform1,
+        //             SOURCE_CHAIN,
+        //             SOURCE_CHAIN,
+        //             SOURCE_CHAIN,
+        //             false,
+        //             getContract(SOURCE_CHAIN, "CoreStateRegistry"),
+        //             uint256(SOURCE_CHAIN),
+        //             1e18,
+        //             //1e18,
+        //             false,
+        //             /// @dev placeholder value, not used
+        //             0,
+        //             1,
+        //             1,
+        //             1,
+        //             address(0)
+        //         ),
+        //         false
+        //     ),
+        //     getContract(SOURCE_CHAIN, "DAI"),
+        //     address(0),
+        //     1,
+        //     SOURCE_CHAIN,
+        //     0
+        // );
 
-        // MultiVaultSFData memory sfData = MultiVaultSFData({
-        //     superformIds: new uint256[](2),
-        //     amounts: new uint256[](2),
-        //     outputAmounts: new uint256[](2),
-        //     maxSlippages: new uint256[](2),
-        //     liqRequests: new LiqRequest[](2),
+        // LiqRequest memory liqReq2 = LiqRequest(
+        //     _buildLiqBridgeTxData(
+        //         LiqBridgeTxDataArgs(
+        //             1,
+        //             getContract(SOURCE_CHAIN, "DAI"),
+        //             getContract(SOURCE_CHAIN, "DAI"),
+        //             getContract(SOURCE_CHAIN, "DAI"),
+        //             superform1,
+        //             SOURCE_CHAIN,
+        //             SOURCE_CHAIN,
+        //             SOURCE_CHAIN,
+        //             false,
+        //             getContract(SOURCE_CHAIN, "CoreStateRegistry"),
+        //             uint256(SOURCE_CHAIN),
+        //             1e18,
+        //             //1e18,
+        //             false,
+        //             /// @dev placeholder value, not used
+        //             0,
+        //             1,
+        //             1,
+        //             1,
+        //             address(0)
+        //         ),
+        //         false
+        //     ),
+        //     getContract(SOURCE_CHAIN, "DAI"),
+        //     address(0),
+        //     1,
+        //     SOURCE_CHAIN,
+        //     0
+        // );
+
+        // LiqRequest[] memory liqRequests = new LiqRequest[](2);
+        // liqRequests[0] = liqReq1;
+        // liqRequests[1] = liqReq2;
+
+        // superformsData[0] = MultiVaultSFData({
+        //     superformId: superformId1,
+        //     amounts: amounts,
+        //     outputAmounts: outputAmounts,
+        //     maxSlippages: maxSlippages,
+        //     liqRequests: liqRequests,
         //     permit2data: "",
-        //     hasDstSwaps: new bool[](2),
-        //     retain4626s: new bool[](2),
-        //     receiverAddress: address(deployer),
-        //     receiverAddressSP: address(deployer),
+        //     hasDstSwap: false,
+        //     retain4626: false,
+        //     receiverAddress: deployer,
+        //     receiverAddressSP: deployer,
         //     extraFormData: ""
         // });
 
-        // sfData.superformIds[0] = superformId1;
-        // sfData.superformIds[1] = superformId2;
-        // sfData.amounts[0] = 5e17; // 0.5 ether
-        // sfData.amounts[1] = 5e17; // 0.5 ether
-        // sfData.outputAmounts[0] = 5e17;
-        // sfData.outputAmounts[1] = 5e17;
-        // sfData.maxSlippages[0] = 100;
-        // sfData.maxSlippages[1] = 100;
+        // uint256[] memory ids2 = new uint256[](2);
+        // ids2[0] = superformId3;
+        // ids2[1] = superformId4;
 
-        // MultiVaultSFData[] memory multiVaultSFData = new MultiVaultSFData[](1);
-        // multiVaultSFData[0] = sfData;
+        // uint256[] memory amounts2 = new uint256[](2);
+        // amounts2[0] = 1e18;
+        // amounts2[1] = 1e18;
 
-        // address interimAsset = getContract(SOURCE_CHAIN, "DAI");
+        // uint256[] memory outputAmounts2 = new uint256[](2);
+        // outputAmounts2[0] = 1e18;
+        // outputAmounts2[1] = 1e18;
 
-        // for (uint256 i = 0; i < 2; i++) {
-        //     sfData.liqRequests[i] = LiqRequest({
-        //         txData: "",
-        //         token: interimAsset,
-        //         interimToken: address(0),
-        //         bridgeId: 0,
-        //         liqDstChainId: SOURCE_CHAIN,
-        //         nativeAmount: 0
-        //     });
-        // }
+        // uint256[] memory maxSlippages2 = new uint256[](2);
+        // maxSlippages2[0] = 100;
+        // maxSlippages2[1] = 100;
 
-        // // IBaseSuperformRouterPlus.XChainRebalanceData memory data = IBaseSuperformRouterPlus.XChainRebalanceData({
-        // //     rebalanceSelector: IBaseRouter.multiDstMultiVaultDeposit.selector,
-        // //     interimAsset: interimAsset,
-        // //     slippage: 100,
-        // //     expectedAmountInterimAsset: 1e18,
-        // //     rebalanceToAmbIds: new uint8[][](0),
-        // //     rebalanceToDstChainIds: new uint64[](0),
-        // //     rebalanceToSfData: abi.encode(multiVaultSFData)
-        // // });
+        // LiqRequest[] memory liqRequests2 = new LiqRequest[](2);
+        // liqRequests2[0] = liqReq1; // ToDo: check
+        // liqRequests2[1] = liqReq2;
 
-        // // vm.startPrank(ROUTER_PLUS_SOURCE);
-        // // SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).setXChainRebalanceCallData(deployer, 1, data);
-        // // vm.stopPrank();
+        // superformsData[1] = MultiVaultSFData({
+        //     superformId: superformId3,
+        //     amounts: amounts2,
+        //     outputAmounts: outputAmounts2,
+        //     maxSlippages: maxSlippages2,
+        //     liqRequests: liqRequests2,
+        //     permit2data: "",
+        //     hasDstSwap: false,
+        //     retain4626: false,
+        //     receiverAddress: deployer,
+        //     receiverAddressSP: deployer,
+        //     extraFormData: ""
+        // });
 
-        // uint256[][] memory newAmounts = new uint256[][](1);
-        // newAmounts[0] = new uint256[](2);
-        // newAmounts[0][0] = 5e17;
-        // newAmounts[0][1] = 5e17;
+        // uint8[][] memory ambIds = new uint8[][](2);
+        // ambIds[0] = AMBs;
+        // ambIds[1] = AMBs;
 
-        // uint256[][] memory newOutputAmounts = new uint256[][](1);
-        // newOutputAmounts[0] = new uint256[](2);
-        // newOutputAmounts[0][0] = 5e17;
-        // newOutputAmounts[0][1] = 5e17;
+        // uint64[] memory dstChainIds = new uint64[](2);
+        // dstChainIds[0] = SOURCE_CHAIN;
+        // dstChainIds[1] = SOURCE_CHAIN;
 
-        // // LiqRequest[][] memory liqRequests = new LiqRequest[][](0);
-
-        // // ISuperformRouterPlusAsync.CompleteCrossChainRebalanceArgs memory completeArgs = ISuperformRouterPlusAsync
-        // //     .CompleteCrossChainRebalanceArgs({
-        // //     receiverAddressSP: address(deployer),
-        // //     routerPlusPayloadId: 1,
-        // //     amountReceivedInterimAsset: 1e18,
-        // //     newAmounts: newAmounts,
-        // //     newOutputAmounts: newOutputAmounts,
-        // //     liqRequests: liqRequests
-        // // });
-
-        // deal(interimAsset, address(ROUTER_PLUS_ASYNC_SOURCE), 1e18);
-
-        // vm.startPrank(deployer);
-        // SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId1, 1e18);
-        // SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId2, 1e18);
+        // MultiDstMultiVaultStateReq memory multiDstSingleVaultStateReq = MultiDstMultiVaultStateReq({
+        //     ambIds: ambIds,
+        //     dstChainIds: dstChainIds,
+        //     superformsData: superformsData
+        // });
 
         // uint256[] memory sharesToRedeem = new uint256[](2);
         // sharesToRedeem[0] = 1e18;
         // sharesToRedeem[1] = 1e18;
 
-        // // uint256[] memory ids = new uint256[](2);
-        // // ids[0] = superformId1;
-        // // ids[1] = superformId2;
-
-        // uint8[][] memory ambIds_ = new uint8[][](2);
-        // ambIds_[0] = new uint8[](2);
-        // ambIds_[0][0] = AMBs[0];
-        // ambIds_[0][1] = AMBs[1];
-        // ambIds_[1] = new uint8[](2);
-        // ambIds_[1][0] = AMBs[0];
-        // ambIds_[1][1] = AMBs[1];
-            
-        // uint64[] memory dstChainIds = new uint64[](2);
-        // dstChainIds[0] = OP;
-        // dstChainIds[1] = ETH;
-
-        // // MultiVaultSFData[] memory mvSfData = new MultiVaultSFData[](2);
-        // // mvSfData[0] = MultiVaultSFData({
-        // //     superformIds: new uint256[](2),
-        // //     amounts: new uint256[](2),
-        // //     outputAmounts: new uint256[](2),
-        // //     maxSlippages: new uint256[](2),
-        // //     liqRequests: new LiqRequest[](2),
-        // //     permit2data: "",
-        // //     hasDstSwaps: new bool[](2),
-        // //     retain4626s: new bool[](2),
-        // //     receiverAddress: address(deployer),
-        // //     receiverAddressSP: address(deployer),
-        // //     extraFormData: ""
-        // // });
-
-        // // mvSfData[0].superformIds[0] = superformId1;
-        // // mvSfData[0].superformIds[1] = superformId2;
-        // // mvSfData[0].amounts[0] = 1e18;
-        // // mvSfData[0].amounts[1] = 1e18;
-        // // mvSfData[0].outputAmounts[0] = 1e18;
-        // // mvSfData[0].outputAmounts[1] = 1e18;
-        // // mvSfData[0].maxSlippages[0] = 300;
-        // // mvSfData[0].maxSlippages[1] = 300;
-        // // mvSfData[0].liqRequests[0] = LiqRequest({
-        // //     txData: "",
-        // //     token: address(0),
-        // //     interimToken: address(0),
-        // //     bridgeId: 0,
-        // //     liqDstChainId: 0,
-        // //     nativeAmount: 0
-        // // });
-        // // mvSfData[0].liqRequests[1] = LiqRequest({
-        // //     txData: "",
-        // //     token: address(0),
-        // //     interimToken: address(0),
-        // //     bridgeId: 0,
-        // //     liqDstChainId: 0,
-        // //     nativeAmount: 0
-        // // });
-        // // mvSfData[0].hasDstSwaps[0] = false;
-        // // mvSfData[0].hasDstSwaps[1] = false;
-        // // mvSfData[0].retain4626s[0] = false;
-        // // mvSfData[0].retain4626s[1] = false;
-        // // mvSfData[0].receiverAddress = address(deployer);
-        // // mvSfData[0].receiverAddressSP = address(deployer);
-        // // mvSfData[0].extraFormData = "";
-
-        // // mvSfData[1] = MultiVaultSFData({
-        // //     superformIds: new uint256[](2),
-        // //     amounts: new uint256[](2),
-        // //     outputAmounts: new uint256[](2),
-        // //     maxSlippages: new uint256[](2),
-        // //     liqRequests: new LiqRequest[](2),
-        // //     permit2data: "",
-        // //     hasDstSwaps: new bool[](2),
-        // //     retain4626s: new bool[](2),
-        // //     receiverAddress: address(deployer),
-        // //     receiverAddressSP: address(deployer),
-        // //     extraFormData: ""
-        // // });
-
-        // // mvSfData[1].superformIds[0] = superformId1;
-        // // mvSfData[1].superformIds[1] = superformId2;
-        // // mvSfData[1].amounts[0] = 1e18;
-        // // mvSfData[1].amounts[1] = 1e18;
-        // // mvSfData[1].outputAmounts[0] = 1e18;
-        // // mvSfData[1].outputAmounts[1] = 1e18;
-        // // mvSfData[1].maxSlippages[0] = 300;
-        // // mvSfData[1].maxSlippages[1] = 300;
-        // // mvSfData[1].liqRequests[0] = LiqRequest({
-        // //     txData: "",
-        // //     token: address(0),
-        // //     interimToken: address(0),
-        // //     bridgeId: 0,
-        // //     liqDstChainId: 0,
-        // //     nativeAmount: 0
-        // // });
-        // // mvSfData[1].liqRequests[1] = LiqRequest({
-        // //     txData: "",
-        // //     token: address(0),
-        // //     interimToken: address(0),
-        // //     bridgeId: 0,
-        // //     liqDstChainId: 0,
-        // //     nativeAmount: 0
-        // // });
-        // // mvSfData[1].hasDstSwaps[0] = false;
-        // // mvSfData[1].hasDstSwaps[1] = false;
-        // // mvSfData[1].retain4626s[0] = false;
-        // // mvSfData[1].retain4626s[1] = false;
-        // // mvSfData[1].receiverAddress = address(deployer);
-        // // mvSfData[1].receiverAddressSP = address(deployer);
-        // // mvSfData[1].extraFormData = "";
-        // // vm.stopPrank();
-
-        // // vm.startPrank(ROUTER_PLUS_SOURCE);
-        // // IBaseSuperformRouterPlus.XChainRebalanceData memory data = IBaseSuperformRouterPlus.XChainRebalanceData({
-        // //     rebalanceSelector: IBaseRouter.multiDstMultiVaultDeposit.selector,
-        // //     interimAsset: address(0x678),
-        // //     slippage: 600,
-        // //     expectedAmountInterimAsset: 6e18,
-        // //     rebalanceToAmbIds: ambIds_,
-        // //     rebalanceToDstChainIds: dstChainIds,
-        // //     rebalanceToSfData: abi.encode(mvSfData)
-        // // });
+        // ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs memory args =
+        //    ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs(
+        //     superformIds,
+        //     sharesToRedeem,
+        //     1e18,
+        //     1 ether,
+        //     1 ether,
+        //     getContract(SOURCE_CHAIN, "DAI"),
+        //     100,
+        //     deployer,
+        //     // abi.encodeCall(
+        //     //     IBaseRouter.multiDstMultiVaultWithdraw, multiDstMultiVaultStateReq
+        //     // ),
+        //     _callDataRebalanceFromMultiDst(
+        //         getContract(SOURCE_CHAIN, "DAI"),
+        //         superformIds,
+        //         SOURCE_CHAIN,
+        //         SOURCE_CHAIN
+        //     ),
+        //     abi.encodeCall(
+        //         IBaseRouter.multiDstMultiVaultDeposit, MultiDstMultiVaultStateReq
+        //     )
+        // );
 
         // vm.startPrank(deployer);
-        // MultiDstMultiVaultStateReq memory req = MultiDstMultiVaultStateReq(ambIds_, dstChainIds, multiVaultSFData);
-        // ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs memory positionArgs = ISuperformRouterPlus
-        //     .RebalanceMultiPositionsSyncArgs({
-        //     ids: sfData.superformIds,
-        //     sharesToRedeem: sharesToRedeem,
-        //     expectedAmountToReceivePostRebalanceFrom: 10_000,
-        //     rebalanceFromMsgValue: 1 ether,
-        //     rebalanceToMsgValue: 1 ether,
-        //     interimAsset: getContract(SOURCE_CHAIN, "DAI"),
-        //     slippage: 300,
-        //     receiverAddressSP: address(deployer),
-        //     callData: _callDataRebalanceFromTwoVaults(getContract(SOURCE_CHAIN, "DAI")),
-        //     rebalanceToCallData: abi.encodeCall(IBaseRouter.multiDstMultiVaultDeposit, req)
-        // });
-
-        // SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceMultiPositions{ value: 2 ether }(positionArgs);
+        // SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId1, 1e18);
+        // SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId2, 1e18);
+        
+        // SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceMultiPositions{ value: 2 ether }(args);
         // vm.stopPrank();
 
         // assertEq(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId1), 0);
-
-        // assertGt(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId2), 0);
+        // assertEq(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId2), 0);
     }
 
     function test_refundUnusedAndResetApprovals_failedToSendNative() public {
