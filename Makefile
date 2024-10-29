@@ -123,6 +123,7 @@ build-sizes: ## Builds the project and shows sizes
 test-vvv: ## Runs tests with verbose output
 	forge test --match-test test_setGlobalSlippage --evm-version cancun -vvv
 
+
 .PHONY: ftest
 ftest: ## Runs tests with cancun evm version
 	forge test --evm-version cancun

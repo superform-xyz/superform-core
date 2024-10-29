@@ -48,9 +48,11 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
 
     /// @notice thrown if the amount of assets received is lower than the slippage
     error ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
-
     /// @notice thrown if the slippage is invalid
     error INVALID_GLOBAL_SLIPPAGE();
+    /// @notice thrown if the tolerance is exceeded during shares redemption
+    error TOLERANCE_EXCEEDED();
+
 
     //////////////////////////////////////////////////////////////
     //                       EVENTS                             //
@@ -223,9 +225,9 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
     function startCrossChainRebalanceMulti(InitiateXChainRebalanceMultiArgs memory args) external payable;
 
     /// @notice deposits ERC4626 vault shares into superform
-    /// @param vault_ The ERC4626 vault to redeem from
+    /// @param vaults_ The ERC4626 vaults to redeem from
     /// @param args Rest of the arguments to deposit 4626
-    function deposit4626(address vault_, Deposit4626Args calldata args) external payable;
+    function deposit4626(address[] calldata vaults_, Deposit4626Args[] calldata args) external payable;
 
     /// @dev Forwards dust to Paymaster
     /// @param token_ the token to forward

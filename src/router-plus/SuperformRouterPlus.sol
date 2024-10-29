@@ -30,6 +30,9 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     uint256 public GLOBAL_SLIPPAGE;
     uint256 public ROUTER_PLUS_PAYLOAD_ID;
 
+    /// @dev Tolerance constant to account for tokens with rounding issues on transfer
+    uint256 constant TOLERANCE_CONSTANT = 10 wei;
+
     //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
@@ -359,26 +362,24 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     }
 
     /// @inheritdoc ISuperformRouterPlus
-    function deposit4626(address vault_, Deposit4626Args calldata args) external payable {
-        _transferERC20In(IERC20(vault_), args.receiverAddressSP, args.amount);
-        IERC4626 vault = IERC4626(vault_);
-        address assetAdr = vault.asset();
-        IERC20 asset = IERC20(assetAdr);
+    function deposit4626(address[] calldata vaults_, Deposit4626Args[] calldata args) external payable {
 
-        uint256 balanceBefore = asset.balanceOf(address(this));
-
-        uint256 amountRedeemed = _redeemShare(vault, assetAdr, args.amount, args.expectedOutputAmount, args.maxSlippage);
-
-        if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(args.depositCallData)]) {
-            revert INVALID_DEPOSIT_SELECTOR();
+        uint256 length = vaults_.length;
+        
+        if (length != args.length) {
+            revert Error.ARRAY_LENGTH_MISMATCH();
         }
 
-        address router = _getAddress(keccak256("SUPERFORM_ROUTER"));
-        _deposit(router, asset, amountRedeemed, msg.value, args.depositCallData);
+        if (length == 0) {
+            revert Error.ZERO_INPUT_VALUE();
+        }
 
-        _tokenRefunds(router, assetAdr, args.receiverAddressSP, balanceBefore);
-
-        emit Deposit4626Completed(args.receiverAddressSP, vault_);
+        for (uint256 i; i < length; ++i) {
+            if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(args[i].depositCallData)]) {
+                revert INVALID_DEPOSIT_SELECTOR();
+            }
+            _deposit4626(vaults_[i], args[i], length);
+        }
     }
 
     /// @inheritdoc ISuperformRouterPlus
@@ -617,9 +618,12 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         uint256 assetsBalanceAfter = asset.balanceOf(address(this));
         balanceDifference = assetsBalanceAfter - assetsBalanceBefore;
 
+        /// @dev validate the tolerance
+        if (assets < TOLERANCE_CONSTANT || balanceDifference < assets - TOLERANCE_CONSTANT) revert TOLERANCE_EXCEEDED();
+
+        /// @dev validate the slippage
         if (
-            (balanceDifference != assets)
-                || (ENTIRE_SLIPPAGE * assets < ((expectedOutputAmount_ * (ENTIRE_SLIPPAGE - maxSlippage_))))
+            (ENTIRE_SLIPPAGE * assets < ((expectedOutputAmount_ * (ENTIRE_SLIPPAGE - maxSlippage_))))
         ) {
             revert ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
         }
@@ -694,5 +698,27 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 revert Error.FAILED_TO_SEND_NATIVE();
             }
         }
+    }
+
+    /// @notice deposits ERC4626 vault shares into superform
+    /// @param vault_ The ERC4626 vault to redeem from
+    /// @param args Rest of the arguments to deposit 4626
+    function _deposit4626(address vault_, Deposit4626Args calldata args, uint256 arrayLength) internal  {
+        _transferERC20In(IERC20(vault_), args.receiverAddressSP, args.amount);
+        IERC4626 vault = IERC4626(vault_);
+        address assetAdr = vault.asset();
+        IERC20 asset = IERC20(assetAdr);
+
+        uint256 balanceBefore = asset.balanceOf(address(this));
+
+        uint256 amountRedeemed = _redeemShare(vault, assetAdr, args.amount, args.expectedOutputAmount, args.maxSlippage);
+
+        uint256 msgValue = msg.value / arrayLength;
+        address router = _getAddress(keccak256("SUPERFORM_ROUTER"));
+        _deposit(router, asset, amountRedeemed, msgValue, args.depositCallData);
+
+        _tokenRefunds(router, assetAdr, args.receiverAddressSP, balanceBefore);
+
+        emit Deposit4626Completed(args.receiverAddressSP, vault_);
     }
 }
