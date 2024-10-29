@@ -35,7 +35,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address superRegistry_) BaseSuperformRouterPlus(superRegistry_) {}
+    constructor(address superRegistry_) BaseSuperformRouterPlus(superRegistry_) { }
 
     //////////////////////////////////////////////////////////////
     //                  EXTERNAL WRITE FUNCTIONS                //
@@ -453,6 +453,9 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 if (req.superformData.liqRequests[i].liqDstChainId != CHAIN_ID) {
                     revert REBALANCE_MULTI_POSITIONS_DIFFERENT_CHAIN();
                 }
+
+                console.log("req.superformData.amounts[i]", req.superformData.amounts[i]);
+                console.log("args.sharesToRedeem[i]", args.sharesToRedeem[i]);
                 if (req.superformData.amounts[i] != args.sharesToRedeem[i]) {
                     revert REBALANCE_MULTI_POSITIONS_DIFFERENT_AMOUNTS();
                 }
@@ -483,6 +486,8 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
         uint256 amountIn;
         bool containsSwapData;
+        uint256 amountInTemp;
+        bool containsSwapDataTemp;
 
         if (rebalanceToSelector == IBaseRouter.singleDirectSingleVaultDeposit.selector) {
             SingleVaultSFData memory sfData =
@@ -496,38 +501,39 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             MultiVaultSFData memory sfData =
                 abi.decode(_parseCallData(rebalanceToCallData), (SingleDirectMultiVaultStateReq)).superformData;
             uint256 len = sfData.liqRequests.length;
-            uint256 amountInTemp;
+
             for (uint256 i; i < len; ++i) {
-                (amountInTemp, containsSwapData) = _takeAmountIn(sfData.liqRequests[i], sfData.amounts[i]);
+                (amountInTemp, containsSwapDataTemp) = _takeAmountIn(sfData.liqRequests[i], sfData.amounts[i]);
+                if (containsSwapDataTemp) containsSwapData = true;
                 amountIn += amountInTemp;
             }
         } else if (rebalanceToSelector == IBaseRouter.singleXChainMultiVaultDeposit.selector) {
             MultiVaultSFData memory sfData =
                 abi.decode(_parseCallData(rebalanceToCallData), (SingleXChainMultiVaultStateReq)).superformsData;
             uint256 len = sfData.liqRequests.length;
-            uint256 amountInTemp;
             for (uint256 i; i < len; ++i) {
-                (amountInTemp, containsSwapData) = _takeAmountIn(sfData.liqRequests[i], sfData.amounts[i]);
+                (amountInTemp, containsSwapDataTemp) = _takeAmountIn(sfData.liqRequests[i], sfData.amounts[i]);
+                if (containsSwapDataTemp) containsSwapData = true;
                 amountIn += amountInTemp;
             }
         } else if (rebalanceToSelector == IBaseRouter.multiDstSingleVaultDeposit.selector) {
             SingleVaultSFData[] memory sfData =
                 abi.decode(_parseCallData(rebalanceToCallData), (MultiDstSingleVaultStateReq)).superformsData;
             uint256 lenDst = sfData.length;
-            uint256 amountInTemp;
             for (uint256 i; i < lenDst; ++i) {
-                (amountInTemp, containsSwapData) = _takeAmountIn(sfData[i].liqRequest, sfData[i].amount);
+                (amountInTemp, containsSwapDataTemp) = _takeAmountIn(sfData[i].liqRequest, sfData[i].amount);
+                if (containsSwapDataTemp) containsSwapData = true;
                 amountIn += amountInTemp;
             }
         } else if (rebalanceToSelector == IBaseRouter.multiDstMultiVaultDeposit.selector) {
             MultiVaultSFData[] memory sfData =
                 abi.decode(_parseCallData(rebalanceToCallData), (MultiDstMultiVaultStateReq)).superformsData;
             uint256 lenDst = sfData.length;
-            uint256 amountInTemp;
             for (uint256 i; i < lenDst; ++i) {
                 uint256 len = sfData[i].liqRequests.length;
                 for (uint256 j; j < len; ++j) {
-                    (amountInTemp, containsSwapData) = _takeAmountIn(sfData[i].liqRequests[j], sfData[i].amounts[j]);
+                    (amountInTemp, containsSwapDataTemp) = _takeAmountIn(sfData[i].liqRequests[j], sfData[i].amounts[j]);
+                    if (containsSwapDataTemp) containsSwapData = true;
                     amountIn += amountInTemp;
                 }
             }
