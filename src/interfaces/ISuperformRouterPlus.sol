@@ -48,11 +48,15 @@ interface ISuperformRouterPlus is IBaseSuperformRouterPlus {
 
     /// @notice thrown if the amount of assets received is lower than the slippage
     error ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
+
     /// @notice thrown if the slippage is invalid
     error INVALID_GLOBAL_SLIPPAGE();
+
     /// @notice thrown if the tolerance is exceeded during shares redemption
     error TOLERANCE_EXCEEDED();
 
+    /// @notice thrown if the amountIn is not equal or lower than the balance available
+    error AMOUNT_IN_NOT_EQUAL_OR_LOWER_THAN_BALANCE();
 
     //////////////////////////////////////////////////////////////
     //                       EVENTS                             //

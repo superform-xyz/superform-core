@@ -681,6 +681,43 @@ contract SuperformRouterPlusTest is ProtocolActions {
         assertGt(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId2), 0);
     }
 
+    function test_rebalanceSinglePosition_0Amount() public {
+        vm.startPrank(deployer);
+
+        _directDeposit(superformId1, 1e18);
+
+        ISuperformRouterPlus.RebalanceSinglePositionSyncArgs memory args =
+            _buildRebalanceSinglePositionToOneVaultArgs(deployer);
+
+        bytes memory emptyData;
+
+        SingleVaultSFData memory sfDataRebalanceFrom =
+            abi.decode(_parseCallData(args.callData), (SingleDirectSingleVaultStateReq)).superformData;
+        sfDataRebalanceFrom.liqRequest.txData = emptyData;
+
+        args.callData = abi.encodeCall(
+            IBaseRouter.singleDirectSingleVaultWithdraw, SingleDirectSingleVaultStateReq(sfDataRebalanceFrom)
+        );
+
+        SingleVaultSFData memory sfDataRebalanceTo =
+            abi.decode(_parseCallData(args.rebalanceToCallData), (SingleDirectSingleVaultStateReq)).superformData;
+        sfDataRebalanceTo.liqRequest.txData = emptyData;
+
+        args.rebalanceToCallData = abi.encodeCall(
+            IBaseRouter.singleDirectSingleVaultDeposit, SingleDirectSingleVaultStateReq(sfDataRebalanceTo)
+        );
+
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId1, args.sharesToRedeem);
+        // mock interim asset to have a balance of 0 on router plus source
+        vm.mockCall(
+            args.interimAsset,
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(ROUTER_PLUS_SOURCE)),
+            abi.encode(0)
+        );
+        vm.expectRevert(Error.ZERO_AMOUNT.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceSinglePosition{ value: 2 ether }(args);
+    }
+
     function test_rebalanceSinglePosition_singleDirectSingleVaultDepositSelector() public {
         vm.startPrank(deployer);
 
@@ -720,7 +757,7 @@ contract SuperformRouterPlusTest is ProtocolActions {
         _directDeposit(superformId2, 1e18);
 
         ISuperformRouterPlus.RebalanceSinglePositionSyncArgs memory args =
-            _buildRebalanceSinglePositionToTwoVaultsArgs();
+            _buildRebalanceSinglePositionToTwoVaultsXChainArgs();
 
         SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId1, args.sharesToRedeem);
 
@@ -3176,50 +3213,32 @@ contract SuperformRouterPlusTest is ProtocolActions {
         args.rebalanceToCallData = _callDataRebalanceToOneVaultxChain(totalAmountToDeposit, args.interimAsset);
     }
 
-    // function _buildRebalanceTwoPositionsToTwoVaultsXChainArgs()
-    //     internal
-    //     returns (ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs memory args, uint256[] calldata
-    // totalAmountToDeposit)
-    // {
-    //     args.ids = new uint256[](2);
-    //     args.ids[0] = superformId1;
-    //     args.ids[1] = superformId2;
+    function _buildRebalanceSinglePositionToTwoVaultsXChainArgs()
+        internal
+        returns (ISuperformRouterPlus.RebalanceSinglePositionSyncArgs memory args)
+    {
+        args.id = superformId1;
+        args.sharesToRedeem = SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId1);
+        args.rebalanceFromMsgValue = 1 ether;
+        args.rebalanceToMsgValue = 1 ether;
+        args.interimAsset = getContract(SOURCE_CHAIN, "USDC");
+        args.slippage = 100;
+        args.receiverAddressSP = deployer;
+        args.callData = _callDataRebalanceFrom(args.interimAsset);
 
-    //     args.sharesToRedeem = new uint256[](2);
-    //     args.sharesToRedeem[0] = SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId1);
-    //     args.sharesToRedeem[1] = SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId2);
+        uint256 decimal1 = MockERC20(getContract(SOURCE_CHAIN, "DAI")).decimals();
+        uint256 decimal2 = MockERC20(args.interimAsset).decimals();
+        uint256 previewRedeemAmount = IBaseForm(superform1).previewRedeemFrom(args.sharesToRedeem);
 
-    //     args.rebalanceFromMsgValue = 1 ether;
-    //     args.rebalanceToMsgValue = 1 ether;
-    //     args.interimAsset = getContract(SOURCE_CHAIN, "USDC");
-    //     args.slippage = 100;
-    //     args.receiverAddressSP = deployer;
-    //     args.callData = _callDataRebalanceFromTwoVaults(args.interimAsset);
+        if (decimal1 > decimal2) {
+            args.expectedAmountToReceivePostRebalanceFrom = previewRedeemAmount / (10 ** (decimal1 - decimal2));
+        } else {
+            args.expectedAmountToReceivePostRebalanceFrom = previewRedeemAmount * 10 ** (decimal2 - decimal1);
+        }
 
-    //     uint256 decimal1 = MockERC20(getContract(SOURCE_CHAIN, "DAI")).decimals();
-    //     uint256 decimal2 = MockERC20(args.interimAsset).decimals();
-    //     uint256 previewRedeemAmount1 = IBaseForm(superform1).previewRedeemFrom(args.sharesToRedeem[0]);
-
-    //     uint256 expectedAmountToReceivePostRebalanceFrom1;
-    //     if (decimal1 > decimal2) {
-    //         expectedAmountToReceivePostRebalanceFrom1 = previewRedeemAmount1 / (10 ** (decimal1 - decimal2));
-    //     } else {
-    //         expectedAmountToReceivePostRebalanceFrom1 = previewRedeemAmount1 * 10 ** (decimal2 - decimal1);
-    //     }
-
-    //     uint256 previewRedeemAmount2 = IBaseForm(superform2).previewRedeemFrom(args.sharesToRedeem[1]);
-
-    //     uint256 expectedAmountToReceivePostRebalanceFrom2;
-    //     if (decimal1 > decimal2) {
-    //         expectedAmountToReceivePostRebalanceFrom2 = previewRedeemAmount2 / (10 ** (decimal1 - decimal2));
-    //     } else {
-    //         expectedAmountToReceivePostRebalanceFrom2 = previewRedeemAmount2 * 10 ** (decimal2 - decimal1);
-    //     }
-
-    //     totalAmountToDeposit = expectedAmountToReceivePostRebalanceFrom1 + expectedAmountToReceivePostRebalanceFrom2;
-
-    //     args.rebalanceToCallData = _callDataRebalanceToOneVaultxChain(totalAmountToDeposit, args.interimAsset);
-    // }
+        args.rebalanceToCallData =
+            _callDataRebalanceToTwoVaultxChain(args.expectedAmountToReceivePostRebalanceFrom, args.interimAsset);
+    }
 
     function _buildInitiateXChainRebalanceArgs(
         uint64 REBALANCE_FROM,
@@ -4221,6 +4240,87 @@ contract SuperformRouterPlusTest is ProtocolActions {
             ""
         );
         return abi.encodeCall(IBaseRouter.singleDirectMultiVaultDeposit, SingleDirectMultiVaultStateReq(data));
+    }
+
+    function _callDataRebalanceToTwoVaultxChain(
+        uint256 amountToDeposit,
+        address interimToken
+    )
+        internal
+        returns (bytes memory)
+    {
+        uint256 initialFork = vm.activeFork();
+        vm.selectFork(FORKS[OP]);
+
+        uint256[] memory superformIds = new uint256[](2);
+        superformIds[0] = superformId4OP;
+        superformIds[1] = superformId4OP;
+
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = amountToDeposit / 2;
+        amounts[1] = amountToDeposit / 2;
+
+        uint256[] memory outputAmounts = new uint256[](2);
+        outputAmounts[0] = IBaseForm(superform4OP).previewDepositTo(amounts[0]);
+        outputAmounts[1] = IBaseForm(superform4OP).previewDepositTo(amounts[1]);
+
+        uint256[] memory maxSlippages = new uint256[](2);
+        maxSlippages[0] = 100;
+        maxSlippages[1] = 100;
+
+        address underlyingToken = IBaseForm(superform4OP).getVaultAsset();
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            interimToken,
+            interimToken,
+            underlyingToken,
+            getContract(SOURCE_CHAIN, "SuperformRouter"),
+            SOURCE_CHAIN,
+            OP,
+            OP,
+            false,
+            getContract(OP, "CoreStateRegistry"),
+            uint256(OP),
+            amounts[1],
+            //1e18,
+            false,
+            /// @dev placeholder value, not used
+            0,
+            1,
+            1,
+            1,
+            address(0)
+        );
+        LiqRequest[] memory liqReqs = new LiqRequest[](2);
+
+        liqReqs[0] = LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, false), interimToken, address(0), 1, OP, 0);
+        liqReqs[1] = LiqRequest(_buildLiqBridgeTxData(liqBridgeTxDataArgs, false), interimToken, address(0), 1, OP, 0);
+
+        bool[] memory falseBoolean = new bool[](2);
+
+        MultiVaultSFData memory data = MultiVaultSFData(
+            superformIds,
+            amounts,
+            outputAmounts,
+            maxSlippages,
+            liqReqs,
+            "",
+            falseBoolean,
+            falseBoolean,
+            deployer,
+            deployer,
+            ""
+        );
+
+        uint8[] memory ambIds = new uint8[](2);
+        ambIds[0] = 5;
+        ambIds[1] = 6;
+
+        uint64 dstChainId = OP;
+        vm.selectFork(initialFork);
+        return abi.encodeCall(
+            IBaseRouter.singleXChainMultiVaultDeposit, SingleXChainMultiVaultStateReq(ambIds, dstChainId, data)
+        );
     }
 
     function _callDataRebalanceToOneVaultxChain(
