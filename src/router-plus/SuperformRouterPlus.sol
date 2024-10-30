@@ -18,6 +18,8 @@ import {
 import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
 import { ISuperformRouterPlus, IERC20 } from "src/interfaces/ISuperformRouterPlus.sol";
 import { ISuperformRouterPlusAsync } from "src/interfaces/ISuperformRouterPlusAsync.sol";
+import { LiqRequest } from "src/types/DataTypes.sol";
+import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 
 /// @title SuperformRouterPlus
 /// @dev Performs rebalances and deposits on the Superform platform
@@ -25,6 +27,7 @@ import { ISuperformRouterPlusAsync } from "src/interfaces/ISuperformRouterPlusAs
 contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     using SafeERC20 for IERC20;
 
+    uint256 public GLOBAL_SLIPPAGE;
     uint256 public ROUTER_PLUS_PAYLOAD_ID;
 
     /// @dev Tolerance constant to account for tokens with rounding issues on transfer
@@ -34,7 +37,10 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
-    constructor(address superRegistry_) BaseSuperformRouterPlus(superRegistry_) { }
+    constructor(address superRegistry_) BaseSuperformRouterPlus(superRegistry_) {
+        /// @dev default to 0.1% slippage as a start
+        GLOBAL_SLIPPAGE = 10;
+    }
 
     //////////////////////////////////////////////////////////////
     //                  EXTERNAL WRITE FUNCTIONS                //
@@ -357,9 +363,8 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
     /// @inheritdoc ISuperformRouterPlus
     function deposit4626(address[] calldata vaults_, Deposit4626Args[] calldata args) external payable {
-
         uint256 length = vaults_.length;
-        
+
         if (length != args.length) {
             revert Error.ARRAY_LENGTH_MISMATCH();
         }
@@ -388,6 +393,19 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             token.safeTransfer(paymaster, dust);
             emit RouterPlusDustForwardedToPaymaster(token_, dust);
         }
+    }
+
+    /// @inheritdoc ISuperformRouterPlus
+    function setGlobalSlippage(uint256 slippage_) external {
+        if (!_hasRole(keccak256("EMERGENCY_ADMIN_ROLE"), msg.sender)) {
+            revert Error.NOT_PRIVILEGED_CALLER(keccak256("EMERGENCY_ADMIN_ROLE"));
+        }
+
+        if (slippage_ > ENTIRE_SLIPPAGE || slippage_ == 0) {
+            revert INVALID_GLOBAL_SLIPPAGE();
+        }
+
+        GLOBAL_SLIPPAGE = slippage_;
     }
 
     //////////////////////////////////////////////////////////////
@@ -439,6 +457,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 if (req.superformData.liqRequests[i].liqDstChainId != CHAIN_ID) {
                     revert REBALANCE_MULTI_POSITIONS_DIFFERENT_CHAIN();
                 }
+
                 if (req.superformData.amounts[i] != args.sharesToRedeem[i]) {
                     revert REBALANCE_MULTI_POSITIONS_DIFFERENT_AMOUNTS();
                 }
@@ -450,23 +469,29 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         /// @dev send SPs to router
         _callSuperformRouter(router_, callData, args.rebalanceFromMsgValue);
 
-        uint256 amountToDeposit = interimAsset.balanceOf(address(this)) - args.balanceBefore;
+        uint256 availableBalanceToDeposit = interimAsset.balanceOf(address(this)) - args.balanceBefore;
 
-        if (amountToDeposit == 0) revert Error.ZERO_AMOUNT();
+        if (availableBalanceToDeposit == 0) revert Error.ZERO_AMOUNT();
 
         if (
-            ENTIRE_SLIPPAGE * amountToDeposit
+            ENTIRE_SLIPPAGE * availableBalanceToDeposit
                 < ((args.expectedAmountToReceivePostRebalanceFrom * (ENTIRE_SLIPPAGE - args.slippage)))
         ) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
 
-        /// @dev step 3: rebalance into a new superform with rebalanceCallData
-        if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(rebalanceToCallData)]) {
-            revert INVALID_DEPOSIT_SELECTOR();
-        }
+        uint256 amountIn = _validateAndGetAmountIn(rebalanceToCallData, availableBalanceToDeposit);
 
-        _deposit(router_, interimAsset, amountToDeposit, args.rebalanceToMsgValue, rebalanceToCallData);
+        _deposit(router_, interimAsset, amountIn, args.rebalanceToMsgValue, rebalanceToCallData);
+    }
+
+    function _takeAmountIn(LiqRequest memory liqReq, uint256 sfDataAmount) internal view returns (uint256 amountIn) {
+        bytes memory txData = liqReq.txData;
+        if (txData.length == 0) {
+            amountIn = sfDataAmount;
+        } else {
+            amountIn = IBridgeValidator(superRegistry.getBridgeValidator(liqReq.bridgeId)).decodeAmountIn(txData, false);
+        }
     }
 
     function _transferSuperPositions(
@@ -523,9 +548,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         if (assets < TOLERANCE_CONSTANT || balanceDifference < assets - TOLERANCE_CONSTANT) revert TOLERANCE_EXCEEDED();
 
         /// @dev validate the slippage
-        if (
-            (ENTIRE_SLIPPAGE * assets < ((expectedOutputAmount_ * (ENTIRE_SLIPPAGE - maxSlippage_))))
-        ) {
+        if ((ENTIRE_SLIPPAGE * assets < ((expectedOutputAmount_ * (ENTIRE_SLIPPAGE - maxSlippage_))))) {
             revert ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
         }
     }
@@ -604,7 +627,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     /// @notice deposits ERC4626 vault shares into superform
     /// @param vault_ The ERC4626 vault to redeem from
     /// @param args Rest of the arguments to deposit 4626
-    function _deposit4626(address vault_, Deposit4626Args calldata args, uint256 arrayLength) internal  {
+    function _deposit4626(address vault_, Deposit4626Args calldata args, uint256 arrayLength) internal {
         _transferERC20In(IERC20(vault_), args.receiverAddressSP, args.amount);
         IERC4626 vault = IERC4626(vault_);
         address assetAdr = vault.asset();
@@ -614,12 +637,88 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
         uint256 amountRedeemed = _redeemShare(vault, assetAdr, args.amount, args.expectedOutputAmount, args.maxSlippage);
 
+        uint256 amountIn = _validateAndGetAmountIn(args.depositCallData, amountRedeemed);
+
         uint256 msgValue = msg.value / arrayLength;
         address router = _getAddress(keccak256("SUPERFORM_ROUTER"));
-        _deposit(router, asset, amountRedeemed, msgValue, args.depositCallData);
+
+        _deposit(router, asset, amountIn, msgValue, args.depositCallData);
 
         _tokenRefunds(router, assetAdr, args.receiverAddressSP, balanceBefore);
 
         emit Deposit4626Completed(args.receiverAddressSP, vault_);
+    }
+
+    function _validateAndGetAmountIn(
+        bytes calldata rebalanceToCallData,
+        uint256 availableBalanceToDeposit
+    )
+        internal
+        view
+        returns (uint256 amountIn)
+    {
+        bytes4 rebalanceToSelector = _parseSelectorMem(rebalanceToCallData);
+
+        if (!whitelistedSelectors[Actions.DEPOSIT][rebalanceToSelector]) {
+            revert INVALID_DEPOSIT_SELECTOR();
+        }
+
+        uint256 amountInTemp;
+
+        if (rebalanceToSelector == IBaseRouter.singleDirectSingleVaultDeposit.selector) {
+            SingleVaultSFData memory sfData =
+                abi.decode(_parseCallData(rebalanceToCallData), (SingleDirectSingleVaultStateReq)).superformData;
+            amountIn = _takeAmountIn(sfData.liqRequest, sfData.amount);
+        } else if (rebalanceToSelector == IBaseRouter.singleXChainSingleVaultDeposit.selector) {
+            SingleVaultSFData memory sfData =
+                abi.decode(_parseCallData(rebalanceToCallData), (SingleXChainSingleVaultStateReq)).superformData;
+            amountIn = _takeAmountIn(sfData.liqRequest, sfData.amount);
+        } else if (rebalanceToSelector == IBaseRouter.singleDirectMultiVaultDeposit.selector) {
+            MultiVaultSFData memory sfData =
+                abi.decode(_parseCallData(rebalanceToCallData), (SingleDirectMultiVaultStateReq)).superformData;
+            uint256 len = sfData.liqRequests.length;
+
+            for (uint256 i; i < len; ++i) {
+                amountInTemp = _takeAmountIn(sfData.liqRequests[i], sfData.amounts[i]);
+                amountIn += amountInTemp;
+            }
+        } else if (rebalanceToSelector == IBaseRouter.singleXChainMultiVaultDeposit.selector) {
+            MultiVaultSFData memory sfData =
+                abi.decode(_parseCallData(rebalanceToCallData), (SingleXChainMultiVaultStateReq)).superformsData;
+            uint256 len = sfData.liqRequests.length;
+            for (uint256 i; i < len; ++i) {
+                amountInTemp = _takeAmountIn(sfData.liqRequests[i], sfData.amounts[i]);
+                amountIn += amountInTemp;
+            }
+        } else if (rebalanceToSelector == IBaseRouter.multiDstSingleVaultDeposit.selector) {
+            SingleVaultSFData[] memory sfData =
+                abi.decode(_parseCallData(rebalanceToCallData), (MultiDstSingleVaultStateReq)).superformsData;
+            uint256 lenDst = sfData.length;
+            for (uint256 i; i < lenDst; ++i) {
+                amountInTemp = _takeAmountIn(sfData[i].liqRequest, sfData[i].amount);
+                amountIn += amountInTemp;
+            }
+        } else if (rebalanceToSelector == IBaseRouter.multiDstMultiVaultDeposit.selector) {
+            MultiVaultSFData[] memory sfData =
+                abi.decode(_parseCallData(rebalanceToCallData), (MultiDstMultiVaultStateReq)).superformsData;
+            uint256 lenDst = sfData.length;
+            for (uint256 i; i < lenDst; ++i) {
+                uint256 len = sfData[i].liqRequests.length;
+                for (uint256 j; j < len; ++j) {
+                    amountInTemp = _takeAmountIn(sfData[i].liqRequests[j], sfData[i].amounts[j]);
+                    amountIn += amountInTemp;
+                }
+            }
+        }
+
+        /// @dev amountIn must be artificially off-chain reduced to be less than availableBalanceToDeposit otherwise the
+        /// @dev approval to transfer tokens to SuperformRouter won't work
+        if (amountIn > availableBalanceToDeposit) revert AMOUNT_IN_NOT_EQUAL_OR_LOWER_THAN_BALANCE();
+
+        /// @dev check amountIn against availableBalanceToDeposit (available balance) via a GLOBAL_SLIPPAGE to prevent a
+        /// @dev malicious keeper from sending a low amountIn
+        if (ENTIRE_SLIPPAGE * amountIn < ((availableBalanceToDeposit * (ENTIRE_SLIPPAGE - GLOBAL_SLIPPAGE)))) {
+            revert ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
+        }
     }
 }
