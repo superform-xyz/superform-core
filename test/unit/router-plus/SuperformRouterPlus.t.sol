@@ -734,6 +734,78 @@ contract SuperformRouterPlusTest is ProtocolActions {
         assertEq(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId1), 0);
     }
 
+    function test_revert_AMOUNT_IN_NOT_EQUAL_OR_LOWER_THAN_BALANCE() public {
+        vm.startPrank(deployer);
+
+        _directDeposit(superformId1, 1e18);
+
+        ISuperformRouterPlus.RebalanceSinglePositionSyncArgs memory args =
+            _buildRebalanceSinglePositionToOneVaultArgs(deployer);
+
+        SingleVaultSFData memory sfDataRebalanceTo =
+            abi.decode(_parseCallData(args.rebalanceToCallData), (SingleDirectSingleVaultStateReq)).superformData;
+        sfDataRebalanceTo.amount = 1e30;
+
+        args.rebalanceToCallData = abi.encodeCall(
+            IBaseRouter.singleDirectSingleVaultDeposit, SingleDirectSingleVaultStateReq(sfDataRebalanceTo)
+        );
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId1, args.sharesToRedeem);
+
+        vm.expectRevert(ISuperformRouterPlus.AMOUNT_IN_NOT_EQUAL_OR_LOWER_THAN_BALANCE.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceSinglePosition{ value: 2 ether }(args);
+    }
+
+    function test_revert_ASSETS_RECEIVED_OUT_OF_SLIPPAGE() public {
+        vm.startPrank(deployer);
+
+        _directDeposit(superformId1, 1e18);
+        _directDeposit(superformId2, 1e6);
+
+        (ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs memory args, uint256 totalAmountToDeposit) =
+            _buildRebalanceTwoPositionsToOneVaultXChainArgs();
+
+        SingleVaultSFData memory sfDataRebalanceTo =
+            abi.decode(_parseCallData(args.rebalanceToCallData), (SingleXChainSingleVaultStateReq)).superformData;
+
+        /// @dev keeper attempting to rug the user by reducing amount in
+        sfDataRebalanceTo.liqRequest.txData = _buildLiqBridgeTxData(
+            LiqBridgeTxDataArgs(
+                1,
+                args.interimAsset,
+                getContract(OP, "DAI"),
+                getContract(OP, "DAI"),
+                getContract(SOURCE_CHAIN, "SuperformRouter"),
+                SOURCE_CHAIN,
+                OP,
+                OP,
+                false,
+                getContract(OP, "CoreStateRegistry"),
+                uint256(OP),
+                totalAmountToDeposit - 5e5,
+                false,
+                0,
+                1,
+                1,
+                1,
+                address(0)
+            ),
+            false
+        );
+
+        args.rebalanceToCallData = abi.encodeCall(
+            IBaseRouter.singleXChainSingleVaultDeposit, SingleXChainSingleVaultStateReq(AMBs, OP, sfDataRebalanceTo)
+        );
+
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(
+            ROUTER_PLUS_SOURCE, superformId1, args.sharesToRedeem[0]
+        );
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(
+            ROUTER_PLUS_SOURCE, superformId2, args.sharesToRedeem[1]
+        );
+        vm.expectRevert(ISuperformRouterPlus.ASSETS_RECEIVED_OUT_OF_SLIPPAGE.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceMultiPositions{ value: 2 ether }(args);
+    }
+
     function test_rebalanceSinglePosition_singleXChainSingleVaultDepositSelector() public {
         vm.startPrank(deployer);
 
@@ -3189,23 +3261,24 @@ contract SuperformRouterPlusTest is ProtocolActions {
         args.callData = _callDataRebalanceFromTwoVaults(args.interimAsset);
 
         uint256 decimal1 = MockERC20(getContract(SOURCE_CHAIN, "DAI")).decimals();
-        uint256 decimal2 = MockERC20(args.interimAsset).decimals();
+        uint256 decimal2 = MockERC20(getContract(SOURCE_CHAIN, "USDC")).decimals();
+        uint256 decimalInterim = MockERC20(args.interimAsset).decimals();
         uint256 previewRedeemAmount1 = IBaseForm(superform1).previewRedeemFrom(args.sharesToRedeem[0]);
 
         uint256 expectedAmountToReceivePostRebalanceFrom1;
-        if (decimal1 > decimal2) {
-            expectedAmountToReceivePostRebalanceFrom1 = previewRedeemAmount1 / (10 ** (decimal1 - decimal2));
+        if (decimal1 > decimalInterim) {
+            expectedAmountToReceivePostRebalanceFrom1 = previewRedeemAmount1 / (10 ** (decimal1 - decimalInterim));
         } else {
-            expectedAmountToReceivePostRebalanceFrom1 = previewRedeemAmount1 * 10 ** (decimal2 - decimal1);
+            expectedAmountToReceivePostRebalanceFrom1 = previewRedeemAmount1 * 10 ** (decimalInterim - decimal1);
         }
 
         uint256 previewRedeemAmount2 = IBaseForm(superform2).previewRedeemFrom(args.sharesToRedeem[1]);
 
         uint256 expectedAmountToReceivePostRebalanceFrom2;
-        if (decimal1 > decimal2) {
-            expectedAmountToReceivePostRebalanceFrom2 = previewRedeemAmount2 / (10 ** (decimal1 - decimal2));
+        if (decimal2 > decimalInterim) {
+            expectedAmountToReceivePostRebalanceFrom2 = previewRedeemAmount2 / (10 ** (decimal2 - decimalInterim));
         } else {
-            expectedAmountToReceivePostRebalanceFrom2 = previewRedeemAmount2 * 10 ** (decimal2 - decimal1);
+            expectedAmountToReceivePostRebalanceFrom2 = previewRedeemAmount2 * 10 ** (decimalInterim - decimal2);
         }
 
         totalAmountToDeposit = expectedAmountToReceivePostRebalanceFrom1 + expectedAmountToReceivePostRebalanceFrom2;

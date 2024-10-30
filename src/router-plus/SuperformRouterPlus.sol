@@ -469,18 +469,18 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         /// @dev send SPs to router
         _callSuperformRouter(router_, callData, args.rebalanceFromMsgValue);
 
-        uint256 amountToDeposit = interimAsset.balanceOf(address(this)) - args.balanceBefore;
+        uint256 availableBalanceToDeposit = interimAsset.balanceOf(address(this)) - args.balanceBefore;
 
-        if (amountToDeposit == 0) revert Error.ZERO_AMOUNT();
+        if (availableBalanceToDeposit == 0) revert Error.ZERO_AMOUNT();
 
         if (
-            ENTIRE_SLIPPAGE * amountToDeposit
+            ENTIRE_SLIPPAGE * availableBalanceToDeposit
                 < ((args.expectedAmountToReceivePostRebalanceFrom * (ENTIRE_SLIPPAGE - args.slippage)))
         ) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
 
-        uint256 amountIn = _validateAndGetAmountIn(rebalanceToCallData, amountToDeposit);
+        uint256 amountIn = _validateAndGetAmountIn(rebalanceToCallData, availableBalanceToDeposit);
 
         _deposit(router_, interimAsset, amountIn, args.rebalanceToMsgValue, rebalanceToCallData);
     }
@@ -651,7 +651,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
     function _validateAndGetAmountIn(
         bytes calldata rebalanceToCallData,
-        uint256 amountToDeposit
+        uint256 availableBalanceToDeposit
     )
         internal
         view
@@ -711,12 +711,13 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             }
         }
 
-        /// @dev amountIn must be artificially off-chain reduced to be less than amountToDeposit otherwise the approval
-        /// @dev to transfer tokens to SuperformRouter won't work
-        if (amountIn > amountToDeposit) revert AMOUNT_IN_NOT_EQUAL_OR_LOWER_THAN_BALANCE();
+        /// @dev amountIn must be artificially off-chain reduced to be less than availableBalanceToDeposit otherwise the
+        /// @dev approval to transfer tokens to SuperformRouter won't work
+        if (amountIn > availableBalanceToDeposit) revert AMOUNT_IN_NOT_EQUAL_OR_LOWER_THAN_BALANCE();
 
-        /// @dev check against a GLOBAL_SLIPPAGE to prevent a malicious keeper from sending a low amountIn
-        if (ENTIRE_SLIPPAGE * amountToDeposit < ((amountIn * (ENTIRE_SLIPPAGE - GLOBAL_SLIPPAGE)))) {
+        /// @dev check amountIn against availableBalanceToDeposit (available balance) via a GLOBAL_SLIPPAGE to prevent a
+        /// @dev malicious keeper from sending a low amountIn
+        if (ENTIRE_SLIPPAGE * amountIn < ((availableBalanceToDeposit * (ENTIRE_SLIPPAGE - GLOBAL_SLIPPAGE)))) {
             revert ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
         }
     }
