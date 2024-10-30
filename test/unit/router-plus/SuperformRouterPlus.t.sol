@@ -806,6 +806,56 @@ contract SuperformRouterPlusTest is ProtocolActions {
         SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceMultiPositions{ value: 2 ether }(args);
     }
 
+    function test_rebalanceMultiPositions_tokenRefunds_interimDust() public {
+        vm.startPrank(deployer);
+
+        _directDeposit(superformId1, 1e18);
+        _directDeposit(superformId2, 1e6);
+
+        (ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs memory args, uint256 totalAmountToDeposit) =
+            _buildRebalanceTwoPositionsToOneVaultXChainArgs();
+
+        SingleVaultSFData memory sfDataRebalanceTo =
+            abi.decode(_parseCallData(args.rebalanceToCallData), (SingleXChainSingleVaultStateReq)).superformData;
+
+        /// @dev keeper attempting to rug the user by reducing amount in
+        sfDataRebalanceTo.liqRequest.txData = _buildLiqBridgeTxData(
+            LiqBridgeTxDataArgs(
+                1,
+                args.interimAsset,
+                getContract(OP, "DAI"),
+                getContract(OP, "DAI"),
+                getContract(SOURCE_CHAIN, "SuperformRouter"),
+                SOURCE_CHAIN,
+                OP,
+                OP,
+                false,
+                getContract(OP, "CoreStateRegistry"),
+                uint256(OP),
+                totalAmountToDeposit - 1e4,
+                false,
+                0,
+                1,
+                1,
+                1,
+                address(0)
+            ),
+            false
+        );
+
+        args.rebalanceToCallData = abi.encodeCall(
+            IBaseRouter.singleXChainSingleVaultDeposit, SingleXChainSingleVaultStateReq(AMBs, OP, sfDataRebalanceTo)
+        );
+
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(
+            ROUTER_PLUS_SOURCE, superformId1, args.sharesToRedeem[0]
+        );
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(
+            ROUTER_PLUS_SOURCE, superformId2, args.sharesToRedeem[1]
+        );
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceMultiPositions{ value: 2 ether }(args);
+    }
+
     function test_rebalanceSinglePosition_singleXChainSingleVaultDepositSelector() public {
         vm.startPrank(deployer);
 
