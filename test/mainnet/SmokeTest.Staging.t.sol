@@ -568,8 +568,6 @@ contract SmokeTestStaging is MainnetBaseSetup {
     }
 
     function test_asyncStateRegistry() public {
-        AsyncStateRegistry asyncStateRegistry;
-
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
             vm.selectFork(FORKS[chainId]);

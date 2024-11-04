@@ -6,6 +6,7 @@ import { IERC1155Receiver } from "openzeppelin-contracts/contracts/token/ERC1155
 import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { IBaseSuperformRouterPlus } from "src/interfaces/IBaseSuperformRouterPlus.sol";
@@ -142,5 +143,13 @@ abstract contract BaseSuperformRouterPlus is IBaseSuperformRouterPlus, IERC1155R
     /// @dev returns the address from super registry
     function _getAddress(bytes32 id_) internal view returns (address) {
         return superRegistry.getAddress(id_);
+    }
+
+    /// @dev returns if an address has a specific role
+    /// @param id_ the role id
+    /// @param addressToCheck_ the address to check
+    /// @return true if the address has the role, false otherwise
+    function _hasRole(bytes32 id_, address addressToCheck_) internal view returns (bool) {
+        return ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(id_, addressToCheck_);
     }
 }

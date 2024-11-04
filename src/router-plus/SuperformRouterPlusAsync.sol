@@ -17,7 +17,8 @@ import {
 } from "src/router-plus/BaseSuperformRouterPlus.sol";
 import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
 import { ISuperformRouterPlusAsync } from "src/interfaces/ISuperformRouterPlusAsync.sol";
-import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { SuperformFactory } from "src/SuperformFactory.sol";
+
 
 /// @title SuperformRouterPlusAsync
 /// @dev Completes the async step of cross chain rebalances and separates the balance from SuperformRouterPlus
@@ -525,12 +526,6 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         }
 
         return sfData;
-    }
-
-    /// @dev returns if an address has a specific role
-
-    function _hasRole(bytes32 id_, address addressToCheck_) internal view returns (bool) {
-        return ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(id_, addressToCheck_);
     }
 
     function _castToMultiVaultData(SingleVaultSFData memory data_)

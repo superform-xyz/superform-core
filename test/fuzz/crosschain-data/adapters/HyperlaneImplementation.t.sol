@@ -107,19 +107,17 @@ contract HyperlaneImplementationTest is CommonProtocolActions {
         vm.startPrank(deployer);
         uint256 userIndex = userSeed_ % users.length;
 
-
-        vm.assume(malice_ != getContract(ETH, "CoreStateRegistry"));
-        vm.assume(malice_ != getContract(ETH, "TimelockStateRegistry"));
-        vm.assume(malice_ != getContract(ETH, "BroadcastRegistry"));
-        vm.assume(malice_ != getContract(ETH, "AsyncStateRegistry"));
-
         AMBMessage memory ambMessage;
         BroadCastAMBExtraData memory ambExtraData;
         address coreStateRegistry;
 
         (ambMessage, ambExtraData, coreStateRegistry) =
             setupBroadcastPayloadAMBData(users[userIndex], address(hyperlaneImplementation));
-        vm.stopPrank();
+
+        vm.assume(malice_ != getContract(ETH, "CoreStateRegistry"));
+        vm.assume(malice_ != getContract(ETH, "TimelockStateRegistry"));
+        vm.assume(malice_ != getContract(ETH, "BroadcastRegistry"));
+        vm.assume(malice_ != getContract(ETH, "AsyncStateRegistry"));
 
         vm.deal(malice_, 100 ether);
         vm.prank(malice_);

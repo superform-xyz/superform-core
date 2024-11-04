@@ -1210,6 +1210,10 @@ abstract contract BaseSetup is StdInvariant, Test {
             vars.superformRouterPlus = address(new SuperformRouterPlus{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("SuperformRouterPlus"))] = vars.superformRouterPlus;
 
+            /// Set the global slippage
+            SuperformRouterPlus(vars.superformRouterPlus).setGlobalSlippage(100);
+
+            /// @dev deploy Superform Router Plus Async
             vars.superformRouterPlusAsync = address(new SuperformRouterPlusAsync{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("SuperformRouterPlusAsync"))] = vars.superformRouterPlusAsync;
 
@@ -2252,7 +2256,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         existingVaults[42_161][1]["WETH"][0] = 0xe4c2A17f38FEA3Dcb3bb59CEB0aC0267416806e2;
 
         existingVaults[1][1]["DAI"][0] = address(0);
-        existingVaults[1][1]["USDC"][0] = 0x797DD80692c3b2dAdabCe8e30C07fDE5307D48a9; // euler usdc
+        existingVaults[1][1]["USDC"][0] = address(0);
         existingVaults[1][1]["WETH"][0] = address(0);
         existingVaults[1][1]["USDe"][0] = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
 
