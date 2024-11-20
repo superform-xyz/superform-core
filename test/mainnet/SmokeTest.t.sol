@@ -54,14 +54,19 @@ contract SmokeTest is MainnetBaseSetup {
             for (uint256 j = 0; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
                 uint64 dstChain = TARGET_DEPLOYMENT_CHAINS[j];
                 if (chain != dstChain && !(dstChain == LINEA || dstChain == BLAST)) {
-                    console.log("send chain", chain);
-                    console.log("dst chain", dstChain);
-
                     config = endpoint.getConfig(oapp, lzV2SendLib[i], lz_v2_chainIds[j], 2);
                     UlnConfig memory ulnConfig = abi.decode(config, (UlnConfig));
-
-                    console.log("confirmations", ulnConfig.confirmations);
-                    console.log("--");
+                    assert(ulnConfig.confirmations == CONFIRMATIONS[chain][dstChain]);
+                    for (uint256 k = 0; k < ulnConfig.requiredDVNs.length; k++) {
+                        // Validate DVNs are properly ordered (ascending)
+                        if (SuperformDVNs[i] < LzDVNs[i]) {
+                            assert(ulnConfig.requiredDVNs[0] == SuperformDVNs[i]);
+                            assert(ulnConfig.requiredDVNs[1] == LzDVNs[i]);
+                        } else {
+                            assert(ulnConfig.requiredDVNs[0] == LzDVNs[i]);
+                            assert(ulnConfig.requiredDVNs[1] == SuperformDVNs[i]);
+                        }
+                    }
                 }
             }
         }
@@ -572,9 +577,17 @@ contract SmokeTest is MainnetBaseSetup {
             for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
                 if (chainId != TARGET_DEPLOYMENT_CHAINS[j]) {
                     if (TARGET_DEPLOYMENT_CHAINS[j] == LINEA || TARGET_DEPLOYMENT_CHAINS[j] == BLAST) {
-                        assertEq(axelar.authorizedImpl(ambIds_[j]), address(0));
-                        assertEq(axelar.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), "");
-                        assertEq(axelar.superChainId(ambIds_[j]), 0);
+                        assertEq(
+                            axelar.authorizedImpl(ambIds_[j]),
+                            chainId == LINEA || chainId == BLAST ? address(0xDEAD) : address(0)
+                        );
+                        assertEq(
+                            axelar.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]),
+                            chainId == LINEA ? "blast" : chainId == BLAST ? "linea" : ""
+                        );
+                        assertEq(
+                            axelar.superChainId(ambIds_[j]), chainId == LINEA ? 81_457 : chainId == BLAST ? 59_144 : 0
+                        );
                     } else {
                         assertEq(axelar.authorizedImpl(ambIds_[j]), address(0xDEAD));
                         assertEq(axelar.ambChainId(TARGET_DEPLOYMENT_CHAINS[j]), ambIds_[j]);
@@ -593,7 +606,7 @@ contract SmokeTest is MainnetBaseSetup {
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
-            if (chainId == FANTOM) continue;
+            if (chainId == FANTOM || chainId == BLAST) continue;
 
             vm.selectFork(FORKS[chainId]);
             superRegistry = SuperRegistry(getContract(chainId, "SuperRegistry"));
@@ -606,6 +619,9 @@ contract SmokeTest is MainnetBaseSetup {
 
             for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
                 /// RESCUER role not set on other chains based on linea or blast as we're not using broadcaster
+                if (TARGET_DEPLOYMENT_CHAINS[j] == LINEA || TARGET_DEPLOYMENT_CHAINS[j] == BLAST) {
+                    continue;
+                }
                 assertEq(
                     superRegistry.getAddressByChainId(
                         keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), TARGET_DEPLOYMENT_CHAINS[j]

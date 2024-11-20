@@ -121,7 +121,7 @@ build-sizes: ## Builds the project and shows sizes
 
 .PHONY: test-vvv
 test-vvv: ## Runs tests with verbose output
-	forge test --match-test test_rewardsDistributor --evm-version cancun -vvv
+	forge test --match-test test_lzConfig --evm-version cancun -vvv
 
 .PHONY: ftest
 ftest: ## Runs tests with cancun evm version
@@ -141,7 +141,7 @@ coverage-t:	## Runs coverage for a specific contract
 
 .PHONY: smoke-test
 smoke-test: ## Runs smoke tests
-	forge test --match-test test_deBridgeValidators -vvv
+	forge test --match-contract SmokeTest -vvv
 
 .PHONY: invariant
 invariant: ## Runs invariant tests

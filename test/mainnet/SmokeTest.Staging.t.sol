@@ -498,13 +498,7 @@ contract SmokeTestStaging is MainnetBaseSetup {
 
             for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
                 /// @dev eoracle is not added in blast & linea
-                if (
-                    chainId != BLAST
-                        && (
-                            chainId == LINEA
-                                && (TARGET_DEPLOYMENT_CHAINS[j] != FANTOM && TARGET_DEPLOYMENT_CHAINS[j] != BSC)
-                        )
-                ) {
+                if (!(chainId == BLAST || chainId == LINEA) && (chainId != TARGET_DEPLOYMENT_CHAINS[j])) {
                     assertEq(
                         address(paymentHelper.nativeFeedOracle(TARGET_DEPLOYMENT_CHAINS[j])),
                         PRICE_FEEDS[chainId][TARGET_DEPLOYMENT_CHAINS[j]]

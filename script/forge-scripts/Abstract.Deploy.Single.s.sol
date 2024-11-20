@@ -438,9 +438,9 @@ abstract contract AbstractDeploySingle is BatchScript {
         0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1,
         /// @dev FANTOM https://safe.fantom.network/home?safe=ftm:0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1
         0x62Bbfe3ef3faAb7045d29bC388E5A0c5033D8b77,
-        /// @dev LINEA https://safe.linea.build/home?safe=linea:0x62Bbfe3ef3faAb7045d29bC388E5A0c5033D8b77
+        /// @dev LINEA https://app.safe.global/home?safe=linea:0x62Bbfe3ef3faAb7045d29bC388E5A0c5033D8b77
         0x95B5837CF46E6ab340fFf3844ca5e7d8ead5B8AF,
-        /// @dev BLAST https://blast-safe.io/home?safe=blastmainnet:0x95B5837CF46E6ab340fFf3844ca5e7d8ead5B8AF
+        /// @dev BLAST https://app.safe.global/home?safe=blast:0x95B5837CF46E6ab340fFf3844ca5e7d8ead5B8AF
         address(0)
         /// @dev BERA
     ];

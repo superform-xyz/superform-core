@@ -108,6 +108,10 @@ abstract contract AbstractPreBeraLaunch is EnvironmentUtils {
         vars.srcLzImpl = _readContractsV1(env, chainNames[srcChainIndex], vars.chainId, "LayerzeroImplementation");
         assert(vars.srcLzImpl != address(0));
 
+        vars.superRegistryC =
+            SuperRegistry(_readContractsV1(env, chainNames[srcChainIndex], vars.chainId, "SuperRegistry"));
+        assert(address(vars.superRegistryC) != address(0));
+
         bytes memory txn;
 
         console.log("Setting config");

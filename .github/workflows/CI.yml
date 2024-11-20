@@ -56,6 +56,11 @@ jobs:
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
 
+
+      - name: "Show the Foundry version"
+        run: "forge --version"
+
+
       - name: "Show the Foundry config"
         run: "forge config"
 
@@ -171,7 +176,7 @@ jobs:
         run: "make coverage"
 
       - name: "Upload coverage report to Codecov"
-        uses: "codecov/codecov-action@v4"
+        uses: "codecov/codecov-action@v5"
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
