@@ -40,6 +40,48 @@ contract SmokeTest is MainnetBaseSetup {
         address[] optionalDVNs; // no duplicates. sorted an an ascending order. allowed overlap with requiredDVNs
     }
 
+    /*
+    function test_printConfirmations() public {
+        bytes memory config;
+        address oapp;
+
+        ILayerZeroEndpointV2 endpoint = ILayerZeroEndpointV2(lzV2Endpoint);
+
+        uint64 chain = BASE;
+        vm.selectFork(FORKS[BASE]);
+        oapp = 0x12dC9256Acc9895B076f6638D628382881e62CeE;
+
+        uint64 dstChain = ARBI;
+        config = endpoint.getConfig(oapp, 0xB5320B0B3a13cC860893E2Bd79FCd7e13484Dda2, 30_110, 2);
+        UlnConfig memory ulnConfig = abi.decode(config, (UlnConfig));
+        console.log("confirmations", ulnConfig.confirmations);
+        console.log("our confirmations", CONFIRMATIONS[chain][dstChain]);
+        assert(ulnConfig.confirmations == CONFIRMATIONS[chain][dstChain]);
+
+        chain = ARBI;
+        vm.selectFork(FORKS[ARBI]);
+        oapp = 0x12dC9256Acc9895B076f6638D628382881e62CeE;
+
+        dstChain = BASE;
+        config = endpoint.getConfig(oapp, 0x7B9E184e07a6EE1aC23eAe0fe8D6Be2f663f05e6, 30_184, 2);
+        ulnConfig = abi.decode(config, (UlnConfig));
+        console.log("confirmations", ulnConfig.confirmations);
+        console.log("our confirmations", CONFIRMATIONS[chain][dstChain]);
+        //assert(ulnConfig.confirmations == CONFIRMATIONS[chain][dstChain]);
+
+        chain = ARBI;
+        vm.selectFork(FORKS[ARBI]);
+        oapp = address(0);
+
+        dstChain = POLY;
+        config = endpoint.getConfig(oapp, 0x7B9E184e07a6EE1aC23eAe0fe8D6Be2f663f05e6, 30_109, 2);
+        ulnConfig = abi.decode(config, (UlnConfig));
+        console.log("confirmations", ulnConfig.confirmations);
+        console.log("our confirmations", CONFIRMATIONS[chain][dstChain]);
+        assert(ulnConfig.confirmations == CONFIRMATIONS[chain][dstChain]);
+    }
+    */
+
     function test_lzConfig() public {
         bytes memory config;
         address oapp;

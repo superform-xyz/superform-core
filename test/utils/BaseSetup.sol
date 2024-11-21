@@ -1819,7 +1819,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                 ? pinnedBlock ? vm.createFork(BSC_TESTNET_RPC_URL_QN, 41_624_319) : vm.createFork(BSC_TESTNET_RPC_URL_QN)
                 : 999;
             forks[LINEA] = selectedChainIds[LINEA]
-                ? pinnedBlock ? vm.createFork(LINEA_RPC_URL, 10_568_898) : vm.createFork(LINEA_RPC_URL_QN)
+                ? pinnedBlock ? vm.createFork(LINEA_RPC_URL, 12_323_016) : vm.createFork(LINEA_RPC_URL_QN)
                 : 999;
             forks[BLAST] = selectedChainIds[BLAST]
                 ? pinnedBlock ? vm.createFork(BLAST_RPC_URL, 9_880_537) : vm.createFork(BLAST_RPC_URL_QN)
