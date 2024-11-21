@@ -1132,8 +1132,7 @@ abstract contract AbstractDeploySingle is BatchScript {
             _readContractsV1(env, chainNames[trueIndex], vars.chainId, "WormholeARImplementation");
         vars.wormholeSRImplementation =
             _readContractsV1(env, chainNames[trueIndex], vars.chainId, "WormholeSRImplementation");
-        //vars.axelarImplementation = _readContractsV1(env, chainNames[trueIndex], vars.chainId,
-        // "AxelarImplementation");
+        vars.axelarImplementation = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "AxelarImplementation");
         vars.superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
         vars.paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
         vars.superRegistryC = SuperRegistry(vars.superRegistry);
@@ -1631,7 +1630,8 @@ abstract contract AbstractDeploySingle is BatchScript {
         chainIdsSetAddresses[17] = vars.dstChainId;
         chainIdsSetAddresses[18] = vars.dstChainId;
 
-        /// @dev DVN configuration prep
+        /// @dev DVN configuration prep in case we need this in the future - Note this has to be performed after chain
+        /// is deployed
         DVNVars memory dvnVars;
 
         dvnVars.ulnConfig.requiredDVNCount = 2;
@@ -1648,14 +1648,6 @@ abstract contract AbstractDeploySingle is BatchScript {
         }
         /// @dev default to 0
         dvnVars.ulnConfig.confirmations = 0;
-        console.log("chainId", vars.chainId);
-        console.log("dstChainId", vars.dstChainId);
-        console.log("srcTrueIndex", vars.srcTrueIndex);
-        console.log("dstTrueIndex", vars.dstTrueIndex);
-        console.log("confirmations", dvnVars.ulnConfig.confirmations);
-        console.log("requiredDVNs", dvnVars.ulnConfig.requiredDVNs[0]);
-        console.log("requiredDVNs", dvnVars.ulnConfig.requiredDVNs[1]);
-        console.log("lzChainIds", lz_chainIds[vars.dstTrueIndex]);
 
         dvnVars.setConfigParams = new SetConfigParam[](1);
         dvnVars.setConfigParams[0] =
@@ -1671,16 +1663,20 @@ abstract contract AbstractDeploySingle is BatchScript {
 
             LayerzeroV2Implementation(payable(vars.lzImplementation)).setChainId(vars.dstChainId, vars.dstLzChainId);
 
-            /// @dev DVN configuration
-            console.log("msg.sender", msg.sender);
-            address currentDelegate = EndpointV2(lzV2Endpoint).delegates(vars.lzImplementation);
-            assert(currentDelegate = msg.sender);
+            /// @dev DVN configuration - note removed for now as only the delegate can set this and that will be the
+            /// multisig
+            /*
 
-            IMessageLibManager(lzV2Endpoint).setConfig(vars.lzImplementation, dvnVars.sendLib, dvnVars.setConfigParams);
+            // there is an error that prevents seting config because it thinks it's not the delegate calling this
+                IMessageLibManager(lzV2Endpoint).setConfig(
+                    vars.lzImplementation, dvnVars.sendLib, dvnVars.setConfigParams
+                );
 
-            IMessageLibManager(lzV2Endpoint).setConfig(
-                vars.lzImplementation, dvnVars.receiveLib, dvnVars.setConfigParams
-            );
+                IMessageLibManager(lzV2Endpoint).setConfig(
+                    vars.lzImplementation, dvnVars.receiveLib, dvnVars.setConfigParams
+                );
+            
+            */
 
             if (!(vars.chainId == BARTIO || vars.dstChainId == BARTIO)) {
                 LayerzeroImplementation(payable(vars.lzV1Implementation)).setTrustedRemote(
@@ -1734,7 +1730,6 @@ abstract contract AbstractDeploySingle is BatchScript {
                 );
             }
             SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
-
             vars.superRegistryC.batchSetAddress(ids, newAddresses, chainIdsSetAddresses);
             vars.superRegistryC.setVaultLimitPerDestination(vars.dstChainId, 5);
         } else {
@@ -1749,9 +1744,9 @@ abstract contract AbstractDeploySingle is BatchScript {
                 LayerzeroV2Implementation.setChainId.selector, vars.dstChainId, vars.dstLzChainId
             );
             addToBatch(vars.lzImplementation, 0, txn);
-
+            /*
             txn = abi.encodeWithSelector(
-                IMessageLibManager.setConfig.selector, vars.lzImplementation, dvnVars.sendLib, dvnVars.setConfigParams
+            IMessageLibManager.setConfig.selector, vars.lzImplementation, dvnVars.sendLib, dvnVars.setConfigParams
             );
             addToBatch(lzV2Endpoint, 0, txn);
 
@@ -1761,6 +1756,7 @@ abstract contract AbstractDeploySingle is BatchScript {
                 dvnVars.receiveLib,
                 dvnVars.setConfigParams
             );
+            */
             addToBatch(lzV2Endpoint, 0, txn);
             if (!(vars.chainId == BARTIO || vars.dstChainId == BARTIO)) {
                 txn = abi.encodeWithSelector(

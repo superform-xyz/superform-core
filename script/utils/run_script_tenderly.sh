@@ -24,13 +24,13 @@ FOUNDRY_PROFILE=production forge script script/forge-scripts/Tenderly.Deploy.s.s
 
 wait
 
-# FOUNDRY_PROFILE=production forge script script/forge-scripts/Tenderly.Deploy.s.sol:TenderlyDeploy --sig "deployStage1(uint256,uint256)" 2 2 --rpc-url $ARBITRUM_DEVNET --broadcast --unlocked --sender 0x7Fc07cAFb65d1552849BcF151F7035C5210B76f4 --slow
+FOUNDRY_PROFILE=production forge script script/forge-scripts/Tenderly.Deploy.s.sol:TenderlyDeploy --sig "deployStage1(uint256,uint256)" 2 2 --rpc-url $ARBITRUM_DEVNET --broadcast --unlocked --sender 0x7Fc07cAFb65d1552849BcF151F7035C5210B76f4 --slow
 
-# wait
+wait
 
-# FOUNDRY_PROFILE=production forge script script/forge-scripts/Tenderly.Deploy.s.sol:TenderlyDeploy --sig "deployStage1(uint256,uint256)" 2 3 --rpc-url $LINEA_DEVNET --broadcast --unlocked --sender 0x62Bbfe3ef3faAb7045d29bC388E5A0c5033D8b77 --slow
+FOUNDRY_PROFILE=production forge script script/forge-scripts/Tenderly.Deploy.s.sol:TenderlyDeploy --sig "deployStage1(uint256,uint256)" 2 3 --rpc-url $LINEA_DEVNET --broadcast --unlocked --sender 0x62Bbfe3ef3faAb7045d29bC388E5A0c5033D8b77 --slow
 
-# wait
+wait
 
 echo Running Stage 2: ...
 
@@ -42,13 +42,13 @@ FOUNDRY_PROFILE=production forge script script/forge-scripts/Tenderly.Deploy.s.s
 
 wait
 
-# FOUNDRY_PROFILE=production forge script script/forge-scripts/Tenderly.Deploy.s.sol:TenderlyDeploy --sig "deployStage2(uint256,uint256)" 2 2 --rpc-url $ARBITRUM_DEVNET --broadcast --unlocked --sender 0x7Fc07cAFb65d1552849BcF151F7035C5210B76f4 --slow
+FOUNDRY_PROFILE=production forge script script/forge-scripts/Tenderly.Deploy.s.sol:TenderlyDeploy --sig "deployStage2(uint256,uint256)" 2 2 --rpc-url $ARBITRUM_DEVNET --broadcast --unlocked --sender 0x7Fc07cAFb65d1552849BcF151F7035C5210B76f4 --slow
 
-# wait
+wait
 
-# FOUNDRY_PROFILE=production forge script script/forge-scripts/Tenderly.Deploy.s.sol:TenderlyDeploy --sig "deployStage2(uint256,uint256)" 2 3 --rpc-url $LINEA_DEVNET --broadcast --unlocked --sender 0x62Bbfe3ef3faAb7045d29bC388E5A0c5033D8b77 --slow
+FOUNDRY_PROFILE=production forge script script/forge-scripts/Tenderly.Deploy.s.sol:TenderlyDeploy --sig "deployStage2(uint256,uint256)" 2 3 --rpc-url $LINEA_DEVNET --broadcast --unlocked --sender 0x62Bbfe3ef3faAb7045d29bC388E5A0c5033D8b77 --slow
 
-# wait
+wait
 
 echo Running Stage 3: ...
 
@@ -60,8 +60,8 @@ FOUNDRY_PROFILE=production forge script script/forge-scripts/Tenderly.Deploy.s.s
 
 wait
 
-# FOUNDRY_PROFILE=production forge script script/forge-scripts/Tenderly.Deploy.s.sol:TenderlyDeploy --sig "deployStage3(uint256,uint256)" 2 2 --rpc-url $ARBITRUM_DEVNET --broadcast --unlocked --sender 0x7Fc07cAFb65d1552849BcF151F7035C5210B76f4 --slow
+FOUNDRY_PROFILE=production forge script script/forge-scripts/Tenderly.Deploy.s.sol:TenderlyDeploy --sig "deployStage3(uint256,uint256)" 2 2 --rpc-url $ARBITRUM_DEVNET --broadcast --unlocked --sender 0x7Fc07cAFb65d1552849BcF151F7035C5210B76f4 --slow
 
-# wait
+wait
 
-# FOUNDRY_PROFILE=production forge script script/forge-scripts/Tenderly.Deploy.s.sol:TenderlyDeploy --sig "deployStage3(uint256,uint256)" 2 3 --rpc-url $LINEA_DEVNET --broadcast --unlocked --sender 0x62Bbfe3ef3faAb7045d29bC388E5A0c5033D8b77 --slow
+FOUNDRY_PROFILE=production forge script script/forge-scripts/Tenderly.Deploy.s.sol:TenderlyDeploy --sig "deployStage3(uint256,uint256)" 2 3 --rpc-url $LINEA_DEVNET --broadcast --unlocked --sender 0x62Bbfe3ef3faAb7045d29bC388E5A0c5033D8b77 --slow
