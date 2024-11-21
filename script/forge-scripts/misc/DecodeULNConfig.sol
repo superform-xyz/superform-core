@@ -18,7 +18,7 @@ contract DecodeULNConfig is EnvironmentUtils {
         if (requiredDVNsToAssert[0] > requiredDVNsToAssert[1]) {
             (requiredDVNsToAssert[0], requiredDVNsToAssert[1]) = (requiredDVNsToAssert[1], requiredDVNsToAssert[0]);
         }
-
+        assert(ulnConfig.confirmations == 0);
         assert(requiredDVNsToAssert[0] == ulnConfig.requiredDVNs[0]);
         assert(requiredDVNsToAssert[1] == ulnConfig.requiredDVNs[1]);
         console.log("asserted, SRC, DST: ", chainid, dstChainId);

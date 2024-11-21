@@ -282,60 +282,7 @@ print_decoded_data() {
             echo -e "${GREEN}✓ setConfig parameter validated successfully${RESET}"
         done
 
-        # Process setReceiver methods
-        echo "$parameters" | jq -c '.[] | .valueDecoded[]? | select(.dataDecoded != null and .dataDecoded.method == "setReceiver")' | while read -r nested_param; do
-            amb_chain_id=$(echo "$nested_param" | jq -r '.dataDecoded.parameters[0].value')
-            authorized_impl=$(echo "$nested_param" | jq -r '.dataDecoded.parameters[1].value')
 
-            # Validate amb_chain_id is one of the allowed values (case sensitive)
-            valid_chain_ids=("Ethereum" "binance" "Avalanche" "Polygon" "arbitrum" "optimism" "base" "Fantom" "linea" "blast")
-            is_valid=0
-            for valid_id in "${valid_chain_ids[@]}"; do
-                if [[ "$amb_chain_id" == "$valid_id" ]]; then
-                    is_valid=1
-                    break
-                fi
-            done
-
-            if [[ $is_valid -eq 0 ]]; then
-                echo -e "${BOLD}${RED}ERROR: Invalid amb_chain_id: $amb_chain_id${RESET}"
-                echo -e "${BOLD}${RED}Valid values are: ${valid_chain_ids[*]}${RESET}"
-                exit 1
-            fi
-
-            # Validate authorizedImpl_ is the dead address
-            expected_dead_address="0x000000000000000000000000000000000000dEaD"
-            if [[ "$authorized_impl" != "$expected_dead_address" ]]; then
-                echo -e "${BOLD}${RED}ERROR: authorizedImpl_ must be $expected_dead_address${RESET}"
-                exit 1
-            fi
-
-            echo -e "${GREEN}✓ setReceiver parameter validated successfully${RESET}"
-        done
-
-        # Process setChainId methods
-        echo "$parameters" | jq -c '.[] | .valueDecoded[]? | select(.dataDecoded != null and .dataDecoded.method == "setChainId")' | while read -r nested_param; do
-            super_chain_id=$(echo "$nested_param" | jq -r '.dataDecoded.parameters[0].value')
-            amb_chain_id=$(echo "$nested_param" | jq -r '.dataDecoded.parameters[1].value')
-
-            # Validate based on the chain_id variable
-            case "$chain_id" in
-            "59144") # If we're on Linea
-                if [[ "$super_chain_id" != "81457" || "$amb_chain_id" != "blast" ]]; then
-                    echo -e "${BOLD}${RED}ERROR: For chain_id 59144 (Linea), superChainId must be 81457 and ambChainId must be 'blast'${RESET}"
-                    exit 1
-                fi
-                ;;
-            "81457") # If we're on Blast
-                if [[ "$super_chain_id" != "59144" || "$amb_chain_id" != "linea" ]]; then
-                    echo -e "${BOLD}${RED}ERROR: For chain_id 81457 (Blast), superChainId must be 59144 and ambChainId must be 'linea'${RESET}"
-                    exit 1
-                fi
-                ;;
-            esac
-
-            echo -e "${GREEN}✓ setChainId parameter validated successfully${RESET}"
-        done
 
     fi
 }

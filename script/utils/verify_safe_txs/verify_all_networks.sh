@@ -29,16 +29,16 @@ declare -A NETWORK_ADDRESSES=(
 )
 
 declare -A NETWORK_NONCES=(
-    ["ethereum"]="21"
-    ["bsc"]="21"
-    ["avalanche"]="21"
-    ["polygon"]="21"
-    ["arbitrum"]="20"
-    ["optimism"]="20"
-    ["base"]="19"
-    ["fantom"]="8"
-    ["linea"]="2"
-    ["blast"]="1"
+    ["ethereum"]="22"
+    ["bsc"]="22"
+    ["avalanche"]="22"
+    ["polygon"]="22"
+    ["arbitrum"]="21"
+    ["optimism"]="21"
+    ["base"]="20"
+    ["fantom"]="9"
+    ["linea"]="3"
+    ["blast"]="2"
 )
 
 # Path to the verification script
