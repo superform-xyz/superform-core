@@ -28,30 +28,6 @@ struct UpdateVars {
 }
 
 abstract contract AbstractPreBeraLaunch is EnvironmentUtils {
-    function _setBlastDelegate(
-        uint256 env,
-        uint256 srcChainIndex,
-        Cycle cycle,
-        uint64[] memory finalDeployedChains
-    )
-        internal
-        setEnvDeploy(cycle)
-    {
-        assert(salt.length > 0);
-        UpdateVars memory vars;
-
-        vars.chainId = finalDeployedChains[srcChainIndex];
-
-        vars.srcLzImpl = _readContractsV1(env, chainNames[srcChainIndex], vars.chainId, "LayerzeroImplementation");
-        assert(vars.srcLzImpl != address(0));
-        assert(PROTOCOL_ADMINS[srcChainIndex] == 0x95B5837CF46E6ab340fFf3844ca5e7d8ead5B8AF);
-        bytes memory txn =
-            abi.encodeWithSelector(LayerzeroV2Implementation.setDelegate.selector, PROTOCOL_ADMINS[srcChainIndex]);
-        addToBatch(vars.srcLzImpl, 0, txn);
-
-        executeBatch(vars.chainId, PROTOCOL_ADMINS[srcChainIndex], manualNonces[srcChainIndex], true);
-    }
-
     function _configure(
         uint256 env,
         uint256 srcChainIndex,
@@ -75,13 +51,12 @@ abstract contract AbstractPreBeraLaunch is EnvironmentUtils {
         vars.superRegistryC =
             SuperRegistry(_readContractsV1(env, chainNames[srcChainIndex], vars.chainId, "SuperRegistry"));
         assert(address(vars.superRegistryC) != address(0));
+        bytes memory txn;
 
         txn = abi.encodeWithSelector(
             vars.superRegistryC.setAddress.selector, rewardsAdminRole, REWARDS_ADMIN, vars.chainId
         );
         addToBatch(address(vars.superRegistryC), 0, txn);
-
-        bytes memory txn;
 
         console.log("Setting config");
         UlnConfig memory ulnConfig;
