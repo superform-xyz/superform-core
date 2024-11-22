@@ -49,6 +49,7 @@ import { PayMaster } from "src/payments/PayMaster.sol";
 import { EmergencyQueue } from "src/EmergencyQueue.sol";
 import { VaultClaimer } from "src/VaultClaimer.sol";
 import { AcrossFacetPacked } from "./misc/blacklistedFacets/AcrossFacetPacked.sol";
+import { AcrossFacetPackedV3 } from "./misc/blacklistedFacets/AcrossFacetPackedV3.sol";
 import { AmarokFacetPacked } from "./misc/blacklistedFacets/AmarokFacetPacked.sol";
 import { AcrossFacetPackedV3 } from "./misc/blacklistedFacets/AcrossFacetPackedV3.sol";
 import { RewardsDistributor } from "src/RewardsDistributor.sol";
