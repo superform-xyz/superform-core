@@ -128,7 +128,6 @@ abstract contract MainnetBaseSetup is BaseSetup {
                     break;
                 }
             }
-            console.log(trueIndex);
             _grabAddresses(j, trueIndex, Cycle.Prod, TARGET_DEPLOYMENT_CHAINS);
         }
     }
