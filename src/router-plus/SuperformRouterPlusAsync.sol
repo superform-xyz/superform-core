@@ -430,6 +430,8 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
     function requestRefund(uint256 routerPlusPayloadId_, uint256 requestedAmount) external {
         Refund memory r = refunds[routerPlusPayloadId_];
 
+        if (r.amount != 0) revert REFUND_ALREADY_REQUESTED();
+
         if (msg.sender != r.receiver) revert INVALID_REQUESTER();
         if (r.interimToken == address(0)) revert INVALID_REFUND_DATA();
 
