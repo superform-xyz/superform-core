@@ -452,6 +452,8 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
 
         Refund memory r = refunds[routerPlusPayloadId_];
 
+        if (r.interimToken == address(0)) revert INVALID_REFUND_DATA();
+
         approvedRefund[routerPlusPayloadId_] = true;
 
         /// @dev deleting to prevent re-entrancy
