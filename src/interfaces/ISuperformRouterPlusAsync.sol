@@ -59,9 +59,6 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
     /// @notice thrown when requested refund amount is too high
     error REQUESTED_AMOUNT_TOO_HIGH();
 
-    /// @notice thrown when the refund payload is already approved
-    error REFUND_ALREADY_APPROVED();
-
     //////////////////////////////////////////////////////////////
     //                       EVENTS                             //
     //////////////////////////////////////////////////////////////
