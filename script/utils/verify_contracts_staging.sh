@@ -34,7 +34,7 @@ networks=(
 rpc_urls=(
     $BSC_RPC_URL
     $ARBITRUM_RPC_URL
-    $ETHEREUM_RPC_URL
+    $OPTIMISM_RPC_URL
     $BASE_RPC_URL
     $FANTOM_RPC_URL
     $LINEA_RPC_URL
@@ -96,10 +96,10 @@ file_names=(
     # "src/crosschain-liquidity/1inch/OneInchValidator.sol"
     # "src/forms/wrappers/ERC5115To4626WrapperFactory.sol"
     # "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol"
-    # "src/router-plus/SuperformRouterPlus.sol"
-    # "src/router-plus/SuperformRouterPlusAsync.sol"
+    "src/router-plus/SuperformRouterPlus.sol"
+    "src/router-plus/SuperformRouterPlusAsync.sol"
     # "src/crosschain-data/extensions/AsyncStateRegistry.sol"
-    "src/forms/ERC7540Form.sol"
+    # "src/forms/ERC7540Form.sol"
     # Add more file names here if needed
 )
 
@@ -133,10 +133,10 @@ contract_names=(
     # "OneInchValidator"
     # ERC5115To4626WrapperFactory
     # LayerzeroImplementation
-    # SuperformRouterPlus
-    # SuperformRouterPlusAsync
+    SuperformRouterPlus
+    SuperformRouterPlusAsync
     # AsyncStateRegistry
-    ERC7540Form
+    # ERC7540Form
     # Add more contract names here if needed
 )
 
@@ -170,10 +170,10 @@ contract_addresses=(
     # 0x0000000000000000000000000000000000000000
     # 0x14Bc2728DaE89FE7c828833a186DdC5E9AE439C3
     # 0xF442FC47c5e8b6CA772a9b7345d9E6A663375258
-    # 0x12DCd933886D2Dd2436DDF3E52506872f90f2793
-    # 0xE3b345E14d063ec58f2A196fa2554a325464F65E
+    0x82D3EF5e1005559fc6D577a730Bb201De1F7Cc6d
+    0x47aa92F7bb7c018046079BDaA94E5618cbCe151f
     # 0xcB11480022E5B6D76661441C8eD025d756B5D1Ed
-    0xE2005E8A9b8A21d6dF752db866fA78a574057052
+    # 0xE2005E8A9b8A21d6dF752db866fA78a574057052
     # Add more addresses here if needed
 )
 
@@ -207,10 +207,10 @@ contract_addresses_fantom=(
     # 0x16e9f8549c2b6a026dc2706d746beA76CeFF4098
     # 0x0df3d7D6daE058667e49C6b85F7b92458Ab06836
     # 0x4c605a697c22254547289092337911078b56d5dc
-    # 0x08a3D4F3113D449Bdea59C95cb5F7093175EaFfe
-    # 0x43C3540828510C0f9A9BEf96F3ac810d7640FEC7
+    0x5223a22BB4EecE74ac4f258cf0a4977eaEB0166A
+    0x4A4a0042e485CBE61ac4BC495Fab5Ca516040e18
     # 0x89dDD49AEa0B3278f51Ec96a6b70bAA19fC73854
-    0x918cEF6ae14316Be0669270BFE3DD7Fbb4fd2aCa
+    # 0x918cEF6ae14316Be0669270BFE3DD7Fbb4fd2aCa
     # Add more addresses here if needed
 )
 
@@ -244,10 +244,10 @@ constructor_args=(
     # $super_constructor_arg
     # $super_constructor_arg
     # $super_constructor_arg
-    # $super_constructor_arg
-    # $super_constructor_arg
-    # $super_constructor_arg
     $super_constructor_arg
+    $super_constructor_arg
+    # $super_constructor_arg
+    # $super_constructor_arg
 )
 
 constructor_args_fantom=(
@@ -280,10 +280,10 @@ constructor_args_fantom=(
     # $super_constructor_arg_ftm
     # $super_constructor_arg_ftm
     # $super_constructor_arg_ftm
-    # $super_constructor_arg_ftm
-    # $super_constructor_arg_ftm
-    # $super_constructor_arg_ftm
     $super_constructor_arg_ftm
+    $super_constructor_arg_ftm
+    # $super_constructor_arg_ftm
+    # $super_constructor_arg_ftm
 )
 
 # loop through networks

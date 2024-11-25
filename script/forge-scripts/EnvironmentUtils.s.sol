@@ -28,6 +28,8 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
     function _setEnvironment(uint256 env, bool useNewSalt) internal {
         /// Production
         if (env == 0) {
+            DEPLOY_AXELAR = true;
+            DEPLOY_7540 = false;
             TARGET_CHAINS.push(ETH);
             TARGET_CHAINS.push(BSC);
             TARGET_CHAINS.push(AVAX);
@@ -65,6 +67,9 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
             WORMHOLE_VAA_RELAYER = 0x1A86b5c1467331A3A52572663FDBf037A9e29719;
             // Staging
         } else if (env == 1) {
+            DEPLOY_AXELAR = true;
+            DEPLOY_7540 = true;
+
             TARGET_CHAINS.push(BSC);
             TARGET_CHAINS.push(ARBI);
             TARGET_CHAINS.push(OP);
@@ -97,6 +102,9 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
 
             // Tenderly
         } else if (env == 2) {
+            DEPLOY_AXELAR = true;
+            DEPLOY_7540 = true;
+
             TARGET_CHAINS.push(ETH);
             TARGET_CHAINS.push(OP);
             TARGET_CHAINS.push(ARBI);
@@ -123,6 +131,9 @@ abstract contract EnvironmentUtils is AbstractDeploySingle {
 
             salt = "Tenderly";
         } else if (env == 3) {
+            DEPLOY_AXELAR = false;
+            DEPLOY_7540 = false;
+
             salt = "Testnet";
 
             PAYMENT_ADMIN = 0xD911673eAF0D3e15fe662D58De15511c5509bAbB;

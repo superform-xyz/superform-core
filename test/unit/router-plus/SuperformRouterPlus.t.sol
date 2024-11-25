@@ -2504,12 +2504,22 @@ contract SuperformRouterPlusTest is ProtocolActions {
         (, address refundToken,) = SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).refunds(1);
         assertEq(refundToken, address(args.interimAsset));
 
+        // @dev testing refund already requested
+        vm.expectRevert(ISuperformRouterPlusAsync.REFUND_ALREADY_REQUESTED.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).requestRefund(1, 100);
+
         // Step 6: Approve refund
 
         /// @dev testing invalid approver (not core state registry)
         vm.startPrank(address(1234));
         vm.expectRevert(ISuperformRouterPlusAsync.NOT_CORE_STATE_REGISTRY_RESCUER.selector);
         SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).approveRefund(1);
+        vm.stopPrank();
+
+        /// @dev testing invalid refund data
+        vm.startPrank(deployer);
+        vm.expectRevert(ISuperformRouterPlusAsync.INVALID_REFUND_DATA.selector);
+        SuperformRouterPlusAsync(ROUTER_PLUS_ASYNC_SOURCE).approveRefund(3);
         vm.stopPrank();
 
         /// @dev testing valid refund approval

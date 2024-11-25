@@ -395,6 +395,32 @@ abstract contract BaseSetup is StdInvariant, Test {
     uint32 public constant LZ_V2_BLAST = 30_243;
     uint32 public constant LZ_V2_BARTIO = 40_291;
 
+    address[] public SuperformDVNs = [
+        0x7518f30bd5867b5fA86702556245Dead173afE46,
+        0xF4c489AfD83625F510947e63ff8F90dfEE0aE46C,
+        0x8fb0B7D74B557e4b45EF89648BAc197EAb2E4325,
+        0x1E4CE74ccf5498B19900649D9196e64BAb592451,
+        0x5496d03d9065B08e5677E1c5D1107110Bb05d445,
+        0xb0B2EF168F52F6d1e42f461e11117295eF992daf,
+        0xEb62f578497Bdc351dD650853a751135212fAF49,
+        0x2EdfE0220A74d9609c79711a65E3A2F2A85Dc83b,
+        0x7A205ED4e3d7f9d0777594501705D8CD405c3B05,
+        0x0E95cf21aD9376A26997c97f326C5A0a267bB8FF
+    ];
+
+    address[] public LzDVNs = [
+        0x589dEDbD617e0CBcB916A9223F4d1300c294236b,
+        0xfD6865c841c2d64565562fCc7e05e619A30615f0,
+        0x962F502A63F5FBeB44DC9ab932122648E8352959,
+        0x23DE2FE932d9043291f870324B74F820e11dc81A,
+        0x2f55C492897526677C5B68fb199ea31E2c126416,
+        0x6A02D83e8d433304bba74EF1c427913958187142,
+        0x9e059a54699a285714207b43B055483E78FAac25,
+        0xE60A3959Ca23a92BF5aAf992EF837cA7F828628a,
+        0x129Ee430Cb2Ff2708CCADDBDb408a88Fe4FFd480,
+        0xc097ab8CD7b053326DFe9fB3E3a31a0CCe3B526f
+    ];
+
     /*//////////////////////////////////////////////////////////////
                         HYPERLANE VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -1791,7 +1817,7 @@ abstract contract BaseSetup is StdInvariant, Test {
                 ? pinnedBlock ? vm.createFork(BSC_TESTNET_RPC_URL_QN, 41_624_319) : vm.createFork(BSC_TESTNET_RPC_URL_QN)
                 : 999;
             forks[LINEA] = selectedChainIds[LINEA]
-                ? pinnedBlock ? vm.createFork(LINEA_RPC_URL, 10_568_898) : vm.createFork(LINEA_RPC_URL_QN)
+                ? pinnedBlock ? vm.createFork(LINEA_RPC_URL, 12_323_016) : vm.createFork(LINEA_RPC_URL_QN)
                 : 999;
             forks[BLAST] = selectedChainIds[BLAST]
                 ? pinnedBlock ? vm.createFork(BLAST_RPC_URL, 9_880_537) : vm.createFork(BLAST_RPC_URL_QN)
@@ -2076,19 +2102,19 @@ abstract contract BaseSetup is StdInvariant, Test {
         priceFeeds[BSC_TESTNET][BLAST] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
         priceFeeds[BSC_TESTNET][BARTIO] = 0x143db3CEEfbdfe5631aDD3E50f7614B6ba708BA7;
         /// LINEA
-        priceFeeds[LINEA][LINEA] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
-        priceFeeds[LINEA][OP] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
-        priceFeeds[LINEA][POLY] = 0x9ce4473B42a639d010eD741df3CA829E6e480803;
-        priceFeeds[LINEA][AVAX] = 0xD86d65fb17B5E0ee7152da12b4A4D31Bf5f4fDe9;
-        priceFeeds[LINEA][BSC] = 0x09E929D57969D8B996a62ee176Df214D87565bDE;
-        priceFeeds[LINEA][ETH] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
-        priceFeeds[LINEA][BASE] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
-        priceFeeds[LINEA][ARBI] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
-        priceFeeds[LINEA][FANTOM] = 0xA40819f13aece3D0C8375522bF44DCC30290f655;
-        priceFeeds[LINEA][BLAST] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        priceFeeds[LINEA][LINEA] = 0x22C942d2DE7673435Cc0D10278c8D5e0d8284c65;
+        priceFeeds[LINEA][OP] = 0x22C942d2DE7673435Cc0D10278c8D5e0d8284c65;
+        priceFeeds[LINEA][POLY] = 0x2AFFD07522147fba37Da08f938cA22Eaa02CEF25;
+        priceFeeds[LINEA][AVAX] = 0xEcD363e4ffe9D0004451648DA2b45E1158c00bF8;
+        priceFeeds[LINEA][BSC] = 0x7464Cc4f3100Cd2e2169d7918030025C8d3E114C;
+        priceFeeds[LINEA][ETH] = 0x22C942d2DE7673435Cc0D10278c8D5e0d8284c65;
+        priceFeeds[LINEA][BASE] = 0x22C942d2DE7673435Cc0D10278c8D5e0d8284c65;
+        priceFeeds[LINEA][ARBI] = 0x22C942d2DE7673435Cc0D10278c8D5e0d8284c65;
+        priceFeeds[LINEA][FANTOM] = 0x5CC126760258e319548fc8740d7656B08550BF54;
+        priceFeeds[LINEA][BLAST] = 0x22C942d2DE7673435Cc0D10278c8D5e0d8284c65;
         priceFeeds[LINEA][BSC_TESTNET] = address(0);
-        priceFeeds[LINEA][SEPOLIA] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
-        priceFeeds[LINEA][BARTIO] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        priceFeeds[LINEA][SEPOLIA] = 0x22C942d2DE7673435Cc0D10278c8D5e0d8284c65;
+        priceFeeds[LINEA][BARTIO] = 0x22C942d2DE7673435Cc0D10278c8D5e0d8284c65;
 
         /// BLAST
 

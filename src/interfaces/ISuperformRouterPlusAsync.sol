@@ -44,6 +44,9 @@ interface ISuperformRouterPlusAsync is IBaseSuperformRouterPlus {
         uint256 newOutputAmount, uint256 expectedOutputAmount, uint256 userSlippage
     );
 
+    /// @notice thrown if the refund is already requested
+    error REFUND_ALREADY_REQUESTED();
+
     /// @notice thrown to avoid processing the same rebalance payload twice
     error REBALANCE_ALREADY_PROCESSED();
 

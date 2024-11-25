@@ -49,6 +49,7 @@ import { PayMaster } from "src/payments/PayMaster.sol";
 import { EmergencyQueue } from "src/EmergencyQueue.sol";
 import { VaultClaimer } from "src/VaultClaimer.sol";
 import { AcrossFacetPacked } from "./misc/blacklistedFacets/AcrossFacetPacked.sol";
+import { AcrossFacetPackedV3 } from "./misc/blacklistedFacets/AcrossFacetPackedV3.sol";
 import { AmarokFacetPacked } from "./misc/blacklistedFacets/AmarokFacetPacked.sol";
 import { AcrossFacetPackedV3 } from "./misc/blacklistedFacets/AcrossFacetPackedV3.sol";
 import { RewardsDistributor } from "src/RewardsDistributor.sol";
@@ -56,6 +57,9 @@ import "forge-std/console.sol";
 import { BatchScript } from "./safe/BatchScript.sol";
 import { SuperformRouterPlus } from "src/router-plus/SuperformRouterPlus.sol";
 import { SuperformRouterPlusAsync } from "src/router-plus/SuperformRouterPlusAsync.sol";
+
+import { ILayerZeroEndpointV2, IMessageLibManager } from "src/vendor/layerzero/v2/ILayerZeroEndpointV2.sol";
+import { SetConfigParam } from "src/vendor/layerzero/v2/IMessageLibManager.sol";
 
 struct SetupVars {
     uint64 chainId;
@@ -242,6 +246,34 @@ abstract contract AbstractDeploySingle is BatchScript {
         address(0)
     ];
 
+    address[] public SuperformDVNs = [
+        0x7518f30bd5867b5fA86702556245Dead173afE46,
+        0xF4c489AfD83625F510947e63ff8F90dfEE0aE46C,
+        0x8fb0B7D74B557e4b45EF89648BAc197EAb2E4325,
+        0x1E4CE74ccf5498B19900649D9196e64BAb592451,
+        0x5496d03d9065B08e5677E1c5D1107110Bb05d445,
+        0xb0B2EF168F52F6d1e42f461e11117295eF992daf,
+        0xEb62f578497Bdc351dD650853a751135212fAF49,
+        0x2EdfE0220A74d9609c79711a65E3A2F2A85Dc83b,
+        0x7A205ED4e3d7f9d0777594501705D8CD405c3B05,
+        0x0E95cf21aD9376A26997c97f326C5A0a267bB8FF,
+        address(0)
+    ];
+
+    address[] public LzDVNs = [
+        0x589dEDbD617e0CBcB916A9223F4d1300c294236b,
+        0xfD6865c841c2d64565562fCc7e05e619A30615f0,
+        0x962F502A63F5FBeB44DC9ab932122648E8352959,
+        0x23DE2FE932d9043291f870324B74F820e11dc81A,
+        0x2f55C492897526677C5B68fb199ea31E2c126416,
+        0x6A02D83e8d433304bba74EF1c427913958187142,
+        0x9e059a54699a285714207b43B055483E78FAac25,
+        0xE60A3959Ca23a92BF5aAf992EF837cA7F828628a,
+        0x129Ee430Cb2Ff2708CCADDBDb408a88Fe4FFd480,
+        0xc097ab8CD7b053326DFe9fB3E3a31a0CCe3B526f,
+        address(0)
+    ];
+
     address[] public hyperlaneMailboxes = [
         0xc005dc82818d67AF737725bD4bf75435d065D239,
         0x2971b9Aec44bE4eb673DF1B88cDB57b96eefe8a4,
@@ -329,7 +361,7 @@ abstract contract AbstractDeploySingle is BatchScript {
     uint64 public constant BLAST = 81_457;
     uint64 public constant BARTIO = 80_084;
 
-    uint256[] public manualNonces = [20, 20, 20, 20, 19, 19, 18, 7, 1, 0, 0];
+    uint256[] public manualNonces = [22, 22, 22, 22, 21, 21, 20, 9, 3, 2, 0];
     uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 59_144, 81_457, 80_084];
     string[] public chainNames = [
         "Ethereum",
@@ -437,9 +469,9 @@ abstract contract AbstractDeploySingle is BatchScript {
         0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1,
         /// @dev FANTOM https://safe.fantom.network/home?safe=ftm:0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1
         0x62Bbfe3ef3faAb7045d29bC388E5A0c5033D8b77,
-        /// @dev LINEA https://safe.linea.build/home?safe=linea:0x62Bbfe3ef3faAb7045d29bC388E5A0c5033D8b77
+        /// @dev LINEA https://app.safe.global/home?safe=linea:0x62Bbfe3ef3faAb7045d29bC388E5A0c5033D8b77
         0x95B5837CF46E6ab340fFf3844ca5e7d8ead5B8AF,
-        /// @dev BLAST https://blast-safe.io/home?safe=blastmainnet:0x95B5837CF46E6ab340fFf3844ca5e7d8ead5B8AF
+        /// @dev BLAST https://app.safe.global/home?safe=blast:0x95B5837CF46E6ab340fFf3844ca5e7d8ead5B8AF
         address(0)
         /// @dev BERA
     ];
@@ -612,11 +644,24 @@ abstract contract AbstractDeploySingle is BatchScript {
         /// @dev 5.1- deploy Layerzero Implementation
         vars.lzImplementation = address(new LayerzeroV2Implementation{ salt: salt }(vars.superRegistryC));
         contracts[vars.chainId][bytes32(bytes("LayerzeroImplementation"))] = vars.lzImplementation;
+
         if (vars.chainId != BARTIO) {
             LayerzeroV2Implementation(payable(vars.lzImplementation)).setLzEndpoint(lzV2Endpoint);
         } else {
             LayerzeroV2Implementation(payable(vars.lzImplementation)).setLzEndpoint(lzV2Endpoint_TESTNET);
         }
+        address protocolAdmin;
+
+        if (env == 0 || env == 2) {
+            protocolAdmin = PROTOCOL_ADMINS[trueIndex];
+        } else if (env == 1) {
+            protocolAdmin = PROTOCOL_ADMINS_STAGING[trueIndex];
+        } else {
+            revert("INVALID_ENVIRONMENT");
+        }
+
+        LayerzeroV2Implementation(vars.lzImplementation).setDelegate(protocolAdmin);
+
         if (vars.chainId != BARTIO) {
             /// @dev 5.1.1- deploy Layerzero V1 Implementation
             vars.lzV1Implementation = address(new LayerzeroImplementation{ salt: salt }(vars.superRegistryC));
@@ -624,6 +669,7 @@ abstract contract AbstractDeploySingle is BatchScript {
 
             LayerzeroImplementation(payable(vars.lzV1Implementation)).setLzEndpoint(lzEndpoints[trueIndex]);
         }
+
         /// @dev 5.2- deploy Hyperlane Implementation
         if (vars.chainId != FANTOM) {
             vars.hyperlaneImplementation = address(new HyperlaneImplementation{ salt: salt }(vars.superRegistryC));
@@ -1087,8 +1133,7 @@ abstract contract AbstractDeploySingle is BatchScript {
             _readContractsV1(env, chainNames[trueIndex], vars.chainId, "WormholeARImplementation");
         vars.wormholeSRImplementation =
             _readContractsV1(env, chainNames[trueIndex], vars.chainId, "WormholeSRImplementation");
-        //vars.axelarImplementation = _readContractsV1(env, chainNames[trueIndex], vars.chainId,
-        // "AxelarImplementation");
+        vars.axelarImplementation = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "AxelarImplementation");
         vars.superRegistry = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRegistry");
         vars.paymentHelper = _readContractsV1(env, chainNames[trueIndex], vars.chainId, "PaymentHelper");
         vars.superRegistryC = SuperRegistry(vars.superRegistry);
@@ -1113,6 +1158,7 @@ abstract contract AbstractDeploySingle is BatchScript {
                 CurrentChainBasedOnDstvars(
                     vars.chainId,
                     remoteChainIds[j],
+                    0,
                     0,
                     0,
                     0,
@@ -1165,8 +1211,15 @@ abstract contract AbstractDeploySingle is BatchScript {
         SuperRBAC srbac = SuperRBAC(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRBAC")));
         bytes32 protocolAdminRole = srbac.PROTOCOL_ADMIN_ROLE();
         bytes32 emergencyAdminRole = srbac.EMERGENCY_ADMIN_ROLE();
+        address protocolAdmin;
 
-        address protocolAdmin = env == 0 || env == 2 ? PROTOCOL_ADMINS[trueIndex] : PROTOCOL_ADMINS_STAGING[trueIndex];
+        if (env == 0 || env == 2) {
+            protocolAdmin = PROTOCOL_ADMINS[trueIndex];
+        } else if (env == 1) {
+            protocolAdmin = PROTOCOL_ADMINS_STAGING[trueIndex];
+        } else {
+            revert("INVALID_ENVIRONMENT");
+        }
 
         if (grantProtocolAdmin) {
             if (protocolAdmin != address(0)) {
@@ -1334,6 +1387,7 @@ abstract contract AbstractDeploySingle is BatchScript {
                 0,
                 0,
                 0,
+                0,
                 "",
                 vars.lzImplementation,
                 vars.lzV1Implementation,
@@ -1400,6 +1454,7 @@ abstract contract AbstractDeploySingle is BatchScript {
     struct CurrentChainBasedOnDstvars {
         uint64 chainId;
         uint64 dstChainId;
+        uint256 srcTrueIndex;
         uint256 dstTrueIndex;
         uint32 dstLzChainId;
         uint16 dstLzV1ChainId;
@@ -1423,6 +1478,29 @@ abstract contract AbstractDeploySingle is BatchScript {
         SuperRegistry superRegistryC;
     }
 
+    struct UlnConfig {
+        uint64 confirmations;
+        // we store the length of required DVNs and optional DVNs instead of using DVN.length directly to save gas
+        uint8 requiredDVNCount; // 0 indicate DEFAULT, NIL_DVN_COUNT indicate NONE (to override the value of default)
+        uint8 optionalDVNCount; // 0 indicate DEFAULT, NIL_DVN_COUNT indicate NONE (to override the value of default)
+        uint8 optionalDVNThreshold; // (0, optionalDVNCount]
+        address[] requiredDVNs; // no duplicates. sorted an an ascending order. allowed overlap with optionalDVNs
+        address[] optionalDVNs; // no duplicates. sorted an an ascending order. allowed overlap with requiredDVNs
+    }
+
+    struct DVNVars {
+        uint64 requiredDVNCount;
+        uint64 optionalDVNCount;
+        address[] requiredDVNs;
+        address[] optionalDVNs;
+        uint64 confirmations;
+        bytes config;
+        SetConfigParam[] setConfigParams;
+        UlnConfig ulnConfig;
+        address sendLib;
+        address receiveLib;
+    }
+
     function _configureCurrentChainBasedOnTargetDestinations(
         uint256 env,
         CurrentChainBasedOnDstvars memory vars,
@@ -1431,6 +1509,14 @@ abstract contract AbstractDeploySingle is BatchScript {
         internal
         returns (IPaymentHelper.PaymentHelperConfig memory addRemoteConfig)
     {
+        for (uint256 k = 0; k < chainIds.length; k++) {
+            if (vars.chainId == chainIds[k]) {
+                vars.srcTrueIndex = k;
+
+                break;
+            }
+        }
+
         for (uint256 k = 0; k < chainIds.length; k++) {
             if (vars.dstChainId == chainIds[k]) {
                 vars.dstTrueIndex = k;
@@ -1545,12 +1631,54 @@ abstract contract AbstractDeploySingle is BatchScript {
         chainIdsSetAddresses[17] = vars.dstChainId;
         chainIdsSetAddresses[18] = vars.dstChainId;
 
+        /// @dev DVN configuration prep in case we need this in the future - Note this has to be performed after chain
+        /// is deployed
+        DVNVars memory dvnVars;
+
+        dvnVars.ulnConfig.requiredDVNCount = 2;
+        dvnVars.ulnConfig.optionalDVNCount = 0;
+
+        dvnVars.ulnConfig.requiredDVNs = new address[](2);
+        dvnVars.ulnConfig.requiredDVNs[0] = SuperformDVNs[vars.srcTrueIndex];
+        dvnVars.ulnConfig.requiredDVNs[1] = LzDVNs[vars.srcTrueIndex];
+
+        // Sort DVNs
+        if (dvnVars.ulnConfig.requiredDVNs[0] > dvnVars.ulnConfig.requiredDVNs[1]) {
+            (dvnVars.ulnConfig.requiredDVNs[0], dvnVars.ulnConfig.requiredDVNs[1]) =
+                (dvnVars.ulnConfig.requiredDVNs[1], dvnVars.ulnConfig.requiredDVNs[0]);
+        }
+        /// @dev default to 0
+        dvnVars.ulnConfig.confirmations = 0;
+
+        dvnVars.setConfigParams = new SetConfigParam[](1);
+        dvnVars.setConfigParams[0] =
+            SetConfigParam(uint32(lz_chainIds[vars.dstTrueIndex]), uint32(2), abi.encode(dvnVars.ulnConfig));
+
+        dvnVars.sendLib = ILayerZeroEndpointV2(lzV2Endpoint).defaultSendLibrary(lz_chainIds[vars.dstTrueIndex]);
+
+        dvnVars.receiveLib = ILayerZeroEndpointV2(lzV2Endpoint).defaultReceiveLibrary(lz_chainIds[vars.dstTrueIndex]);
         if (!safeExecution) {
             LayerzeroV2Implementation(payable(vars.lzImplementation)).setPeer(
                 vars.dstLzChainId, bytes32(uint256(uint160(vars.dstLzImplementation)))
             );
 
             LayerzeroV2Implementation(payable(vars.lzImplementation)).setChainId(vars.dstChainId, vars.dstLzChainId);
+
+            /// @dev DVN configuration - note removed for now as only the delegate can set this and that will be the
+            /// multisig
+            /*
+
+            // there is an error that prevents seting config because it thinks it's not the delegate calling this
+                IMessageLibManager(lzV2Endpoint).setConfig(
+                    vars.lzImplementation, dvnVars.sendLib, dvnVars.setConfigParams
+                );
+
+                IMessageLibManager(lzV2Endpoint).setConfig(
+                    vars.lzImplementation, dvnVars.receiveLib, dvnVars.setConfigParams
+                );
+            
+            */
+
             if (!(vars.chainId == BARTIO || vars.dstChainId == BARTIO)) {
                 LayerzeroImplementation(payable(vars.lzV1Implementation)).setTrustedRemote(
                     vars.dstLzV1ChainId, abi.encodePacked(vars.dstLzV1Implementation, vars.lzV1Implementation)
@@ -1560,20 +1688,7 @@ abstract contract AbstractDeploySingle is BatchScript {
                     vars.dstChainId, vars.dstLzV1ChainId
                 );
             }
-            /// @dev for mainnet
-            /// @dev do not override default oracle with chainlink for BASE
 
-            /// NOTE: since chainlink oracle is not on BASE, we use the default oracle
-            // if (vars.chainId != BASE) {
-            //     LayerzeroImplementation(payable(vars.lzImplementation)).setConfig(
-            //         0,
-            //         /// Defaults To Zero
-            //         vars.dstLzChainId,
-            //         6,
-            //         /// For Oracle Config
-            //         abi.encode(CHAINLINK_lzOracle)
-            //     );
-            // }
             if (!(vars.chainId == FANTOM || vars.dstChainId == FANTOM)) {
                 HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setReceiver(
                     vars.dstHypChainId, vars.dstHyperlaneImplementation
@@ -1612,12 +1727,12 @@ abstract contract AbstractDeploySingle is BatchScript {
                 );
 
                 AxelarImplementation(payable(vars.axelarImplementation)).setReceiver(
-                    vars.dstAxelarChainId, vars.dstAxelarImplementation
+                    vars.dstAxelarChainId, address(0xDEAD)
                 );
             }
             SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
-
             vars.superRegistryC.batchSetAddress(ids, newAddresses, chainIdsSetAddresses);
+            vars.superRegistryC.setVaultLimitPerDestination(vars.dstChainId, 5);
         } else {
             bytes memory txn = abi.encodeWithSelector(
                 LayerzeroV2Implementation.setPeer.selector,
@@ -1630,6 +1745,20 @@ abstract contract AbstractDeploySingle is BatchScript {
                 LayerzeroV2Implementation.setChainId.selector, vars.dstChainId, vars.dstLzChainId
             );
             addToBatch(vars.lzImplementation, 0, txn);
+            /*
+            txn = abi.encodeWithSelector(
+            IMessageLibManager.setConfig.selector, vars.lzImplementation, dvnVars.sendLib, dvnVars.setConfigParams
+            );
+            addToBatch(lzV2Endpoint, 0, txn);
+
+            txn = abi.encodeWithSelector(
+                IMessageLibManager.setConfig.selector,
+                vars.lzImplementation,
+                dvnVars.receiveLib,
+                dvnVars.setConfigParams
+            );
+            */
+            addToBatch(lzV2Endpoint, 0, txn);
             if (!(vars.chainId == BARTIO || vars.dstChainId == BARTIO)) {
                 txn = abi.encodeWithSelector(
                     LayerzeroImplementation.setTrustedRemote.selector,
@@ -1643,20 +1772,7 @@ abstract contract AbstractDeploySingle is BatchScript {
                 );
                 addToBatch(vars.lzV1Implementation, 0, txn);
             }
-            /// @dev for mainnet
-            /// @dev do not override default oracle with chainlink for BASE
 
-            /// NOTE: since chainlink oracle is not on BASE, we use the default oracle
-            // if (vars.chainId != BASE) {
-            //     LayerzeroImplementation(payable(vars.lzImplementation)).setConfig(
-            //         0,
-            //         /// Defaults To Zero
-            //         vars.dstLzChainId,
-            //         6,
-            //         /// For Oracle Config
-            //         abi.encode(CHAINLINK_lzOracle)
-            //     );
-            // }
             if (!(vars.chainId == FANTOM || vars.dstChainId == FANTOM)) {
                 txn = abi.encodeWithSelector(
                     HyperlaneImplementation.setReceiver.selector, vars.dstHypChainId, vars.dstHyperlaneImplementation
@@ -1701,9 +1817,7 @@ abstract contract AbstractDeploySingle is BatchScript {
             }
 
             if (DEPLOY_AXELAR) {
-                txn = abi.encodeWithSelector(
-                    AxelarImplementation.setReceiver.selector, vars.dstAxelarChainId, vars.dstAxelarImplementation
-                );
+                txn = abi.encodeWithSelector(AxelarImplementation.setReceiver.selector, vars.dstAxelarChainId, 0xDEAD);
                 addToBatch(vars.axelarImplementation, 0, txn);
 
                 txn = abi.encodeWithSelector(
@@ -1959,17 +2073,17 @@ abstract contract AbstractDeploySingle is BatchScript {
         priceFeeds[FANTOM][BARTIO] = 0x11DdD3d147E5b83D01cee7070027092397d63658;
 
         /// LINEA
-        priceFeeds[LINEA][LINEA] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
-        priceFeeds[LINEA][OP] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
-        priceFeeds[LINEA][POLY] = 0x9ce4473B42a639d010eD741df3CA829E6e480803;
-        priceFeeds[LINEA][AVAX] = 0xD86d65fb17B5E0ee7152da12b4A4D31Bf5f4fDe9;
-        priceFeeds[LINEA][BSC] = 0x09E929D57969D8B996a62ee176Df214D87565bDE;
-        priceFeeds[LINEA][ETH] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
-        priceFeeds[LINEA][BASE] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
-        priceFeeds[LINEA][ARBI] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
-        priceFeeds[LINEA][FANTOM] = 0xA40819f13aece3D0C8375522bF44DCC30290f655;
-        priceFeeds[LINEA][BLAST] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
-        priceFeeds[LINEA][BARTIO] = 0x3c6Cd9Cc7c7a4c2Cf5a82734CD249D7D593354dA;
+        priceFeeds[LINEA][LINEA] = 0x22C942d2DE7673435Cc0D10278c8D5e0d8284c65;
+        priceFeeds[LINEA][OP] = 0x22C942d2DE7673435Cc0D10278c8D5e0d8284c65;
+        priceFeeds[LINEA][POLY] = 0x2AFFD07522147fba37Da08f938cA22Eaa02CEF25;
+        priceFeeds[LINEA][AVAX] = 0xEcD363e4ffe9D0004451648DA2b45E1158c00bF8;
+        priceFeeds[LINEA][BSC] = 0x7464Cc4f3100Cd2e2169d7918030025C8d3E114C;
+        priceFeeds[LINEA][ETH] = 0x22C942d2DE7673435Cc0D10278c8D5e0d8284c65;
+        priceFeeds[LINEA][BASE] = 0x22C942d2DE7673435Cc0D10278c8D5e0d8284c65;
+        priceFeeds[LINEA][ARBI] = 0x22C942d2DE7673435Cc0D10278c8D5e0d8284c65;
+        priceFeeds[LINEA][FANTOM] = 0x5CC126760258e319548fc8740d7656B08550BF54;
+        priceFeeds[LINEA][BLAST] = 0x22C942d2DE7673435Cc0D10278c8D5e0d8284c65;
+        priceFeeds[LINEA][BARTIO] = 0x22C942d2DE7673435Cc0D10278c8D5e0d8284c65;
 
         /// BLAST
         priceFeeds[BLAST][LINEA] = 0x4AB67C7e24d94bd70502c44051274195215d8071;
