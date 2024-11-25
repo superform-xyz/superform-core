@@ -8,7 +8,7 @@ on:
   push:
     branches: [main, develop, v1.5]
   pull_request:
-    branches: [main, develop, v1.5]
+    branches: [main, develop]
 
 env:
   BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
