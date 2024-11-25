@@ -431,7 +431,6 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
         if (r.amount != 0) revert REFUND_ALREADY_REQUESTED();
 
         if (msg.sender != r.receiver) revert INVALID_REQUESTER();
-        if (r.receiver == address(0)) revert REFUND_ALREADY_APPROVED();
         if (r.interimToken == address(0)) revert INVALID_REFUND_DATA();
 
         XChainRebalanceData memory data = xChainRebalanceCallData[r.receiver][routerPlusPayloadId_];
@@ -449,7 +448,7 @@ contract SuperformRouterPlusAsync is ISuperformRouterPlusAsync, BaseSuperformRou
     function approveRefund(uint256 routerPlusPayloadId_) external onlyCoreStateRegistryRescuer {
         Refund memory r = refunds[routerPlusPayloadId_];
 
-        if (r.receiver == address(0) && r.interimToken == address(0)) revert REFUND_ALREADY_APPROVED();
+        if (r.receiver == address(0) && r.interimToken == address(0)) revert INVALID_REFUND_DATA();
 
         /// @dev deleting to prevent re-entrancy
         delete refunds[routerPlusPayloadId_];
