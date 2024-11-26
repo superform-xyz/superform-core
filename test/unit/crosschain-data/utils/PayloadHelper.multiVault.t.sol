@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 /// Interfaces
-import { IPayloadHelper } from "src/interfaces/IPayloadHelper.sol";
+import { IPayloadHelper } from "src/interfaces/IPayloadHelperV2.sol";
 import { IPaymentHelperV2 as IPaymentHelper } from "src/interfaces/IPaymentHelperV2.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 

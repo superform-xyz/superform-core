@@ -92,7 +92,7 @@ import { IERC7540Vault as IERC7540 } from "src/vendor/centrifuge/IERC7540.sol";
 import { AsyncStateRegistry } from "src/crosschain-data/extensions/AsyncStateRegistry.sol";
 import { RequestConfig } from "src/interfaces/IAsyncStateRegistry.sol";
 
-import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
+import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelperV2.sol";
 import { PaymentHelper } from "src/payments/PaymentHelper.sol";
 import { IPaymentHelperV2 as IPaymentHelper } from "src/interfaces/IPaymentHelperV2.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
