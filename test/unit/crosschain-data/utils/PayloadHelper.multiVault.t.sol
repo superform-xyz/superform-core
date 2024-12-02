@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 /// Interfaces
-import { IPayloadHelper } from "src/interfaces/IPayloadHelperV2.sol";
+import { IPayloadHelper } from "src/interfaces/IPayloadHelper.sol";
 import { IPaymentHelperV2 as IPaymentHelper } from "src/interfaces/IPaymentHelperV2.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
@@ -209,7 +209,6 @@ contract PayloadHelperMultiTest is ProtocolActions {
         vm.selectFork(FORKS[DST_CHAINS[0]]);
         IPayloadHelper.DecodedDstPayload memory v =
             IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
-
         bytes[] memory extraDataGenerated = new bytes[](2);
         extraDataGenerated[0] = abi.encode("500000");
         extraDataGenerated[1] = abi.encode("0");
