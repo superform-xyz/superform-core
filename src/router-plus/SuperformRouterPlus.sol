@@ -373,11 +373,16 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             revert Error.ZERO_INPUT_VALUE();
         }
 
+        uint256 valueToPass = msg.value / length;
+
         for (uint256 i; i < length; ++i) {
             if (!whitelistedSelectors[Actions.DEPOSIT][_parseSelectorMem(args[i].depositCallData)]) {
                 revert INVALID_DEPOSIT_SELECTOR();
             }
-            _deposit4626(vaults_[i], args[i], length);
+            if (i == length - 1) {
+                valueToPass += msg.value % length;
+            }
+            _deposit4626(vaults_[i], args[i], length, valueToPass);
         }
     }
 
@@ -628,7 +633,15 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     /// @param vault_ The ERC4626 vault to redeem from
     /// @param args Rest of the arguments to deposit 4626
     /// @param arrayLength The length of the array of deposit4626 calls
-    function _deposit4626(address vault_, Deposit4626Args calldata args, uint256 arrayLength) internal {
+    /// @param valueToPass The value to pass to the deposit function
+    function _deposit4626(
+        address vault_,
+        Deposit4626Args calldata args,
+        uint256 arrayLength,
+        uint256 valueToPass
+    )
+        internal
+    {
         _transferERC20In(IERC20(vault_), args.receiverAddressSP, args.amount);
         IERC4626 vault = IERC4626(vault_);
         address assetAdr = vault.asset();
@@ -641,14 +654,8 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         uint256 amountIn = _validateAndGetAmountIn(args.depositCallData, amountRedeemed);
 
         address router = _getAddress(keccak256("SUPERFORM_ROUTER"));
-        uint256 valueToDeposit;
-        {
-            uint256 valuePerItem = (msg.value - (msg.value % arrayLength)) / arrayLength;
-            uint256 remainingValue = msg.value % arrayLength;
-            valueToDeposit = valuePerItem + remainingValue;
-        }
 
-        _deposit(router, asset, amountIn, valueToDeposit, args.depositCallData);
+        _deposit(router, asset, amountIn, valueToPass, args.depositCallData);
 
         _tokenRefunds(router, assetAdr, args.receiverAddressSP, balanceBefore);
 
