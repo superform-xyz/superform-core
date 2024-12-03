@@ -382,7 +382,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             if (i == length - 1) {
                 valueToPass += msg.value % length;
             }
-            _deposit4626(vaults_[i], args[i], length, valueToPass);
+            _deposit4626(vaults_[i], args[i], valueToPass);
         }
     }
 
@@ -632,16 +632,8 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     /// @notice deposits ERC4626 vault shares into superform
     /// @param vault_ The ERC4626 vault to redeem from
     /// @param args Rest of the arguments to deposit 4626
-    /// @param arrayLength The length of the array of deposit4626 calls
     /// @param valueToPass The value to pass to the deposit function
-    function _deposit4626(
-        address vault_,
-        Deposit4626Args calldata args,
-        uint256 arrayLength,
-        uint256 valueToPass
-    )
-        internal
-    {
+    function _deposit4626(address vault_, Deposit4626Args calldata args, uint256 valueToPass) internal {
         _transferERC20In(IERC20(vault_), args.receiverAddressSP, args.amount);
         IERC4626 vault = IERC4626(vault_);
         address assetAdr = vault.asset();
