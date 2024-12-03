@@ -161,7 +161,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
     function _checkSrcPayload() internal {
         vm.selectFork(FORKS[CHAIN_0]);
 
-        address _PayloadHelper = contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))];
+        address _PayloadHelper = contracts[CHAIN_0][bytes32(bytes("PayloadHelperV1"))];
         IPayloadHelper helper = IPayloadHelper(_PayloadHelper);
 
         (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, address receiverAddress, uint64 srcChainId) =
@@ -207,8 +207,9 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
     function _checkDstPayloadInit(CheckDstPayloadInitArgs memory args) internal {
         vm.selectFork(FORKS[DST_CHAINS[0]]);
-        IPayloadHelper.DecodedDstPayload memory v =
-            IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
+        IPayloadHelper.DecodedDstPayload memory v = IPayloadHelper(
+            contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelperV1"))]
+        ).decodeCoreStateRegistryPayload(1);
         bytes[] memory extraDataGenerated = new bytes[](2);
         extraDataGenerated[0] = abi.encode("500000");
         extraDataGenerated[1] = abi.encode("0");
@@ -263,7 +264,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
         CheckDstPayloadLiqDataInternalVars memory v;
 
         (v.txData, v.tokens,, v.bridgeIds, v.liqDstChainIds, v.amounts, v.nativeAmounts) = IPayloadHelper(
-            contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]
+            contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelperV1"))]
         ).decodeCoreStateRegistryPayloadLiqData(2);
 
         assertEq(v.bridgeIds[0], 1);
@@ -283,7 +284,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
         vm.selectFork(FORKS[CHAIN_0]);
 
         IPayloadHelper.DecodedDstPayload memory v =
-            IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
+            IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelperV1"))]).decodeCoreStateRegistryPayload(1);
 
         assertEq(v.txType, 0);
 

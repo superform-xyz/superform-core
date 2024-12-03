@@ -91,7 +91,7 @@ import { IAuthorizeOperator } from "src/vendor/centrifuge/IERC7540.sol";
 import { IERC7540Vault as IERC7540 } from "src/vendor/centrifuge/IERC7540.sol";
 import { AsyncStateRegistry } from "src/crosschain-data/extensions/AsyncStateRegistry.sol";
 import { RequestConfig } from "src/interfaces/IAsyncStateRegistry.sol";
-
+import { PayloadHelper as PayloadHelperV1 } from "src/crosschain-data/utils/PayloadHelper.sol";
 import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelperV2.sol";
 import { PaymentHelper } from "src/payments/PaymentHelper.sol";
 import { IPaymentHelperV2 as IPaymentHelper } from "src/interfaces/IPaymentHelperV2.sol";
@@ -163,6 +163,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         "SuperRegistry",
         "SuperRBAC",
         "PayloadHelper",
+        "PayloadHelperV1",
         "PaymentHelper",
         "PayMaster",
         "LayerZeroHelper",
@@ -1114,10 +1115,13 @@ abstract contract BaseSetup is StdInvariant, Test {
                 vars.superRBACC.BROADCASTER_ROLE(), contracts[vars.chainId][bytes32(bytes("SuperPositions"))]
             );
 
-            /// @dev 14- deploy Payload Helper
+            /// @dev 14- deploy Payload Helper V2 and v1
             vars.PayloadHelper = address(new PayloadHelper{ salt: salt }(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
             vars.superRegistryC.setAddress(vars.superRegistryC.PAYLOAD_HELPER(), vars.PayloadHelper, vars.chainId);
+
+            contracts[vars.chainId][bytes32(bytes("PayloadHelperV1"))] =
+                address(new PayloadHelperV1{ salt: salt }(vars.superRegistry));
 
             /// @dev 15 - Deploy PayMaster
             vars.payMaster = address(new PayMaster{ salt: salt }(vars.superRegistry));
