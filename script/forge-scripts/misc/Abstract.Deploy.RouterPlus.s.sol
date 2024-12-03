@@ -56,18 +56,6 @@ abstract contract AbstractDeployRouterPlus is EnvironmentUtils {
             keccak256("SUPERFORM_ROUTER_PLUS_ASYNC"), superformRouterPlusAsync, vars.chainId
         );
 
-        /// @dev below part is already done
-        /*
-        SuperRegistry(superRegistry).setAddress(
-            keccak256("ROUTER_PLUS_PROCESSOR_ROLE"), ROUTER_PLUS_PROCESSOR, vars.chainId
-        );
-
-        vars.superRBACC = SuperRBAC(payable(_readContractsV1(env, chainNames[trueIndex], vars.chainId, "SuperRBAC")));
-
-        vars.superRBACC.setRoleAdmin(keccak256("ROUTER_PLUS_PROCESSOR_ROLE"), vars.superRBACC.PROTOCOL_ADMIN_ROLE());
-        vars.superRBACC.grantRole(keccak256("ROUTER_PLUS_PROCESSOR_ROLE"), ROUTER_PLUS_PROCESSOR);
-        */
-
         vm.stopBroadcast();
 
         /// @dev we use normal export contract to not override v1 contracts
