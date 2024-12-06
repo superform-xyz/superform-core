@@ -74,7 +74,7 @@ contract SmokeTest is MainnetBaseSetup {
     function test_superRegistryAddresses() public {
         SuperRegistry sr;
 
-        uint256 len = 10;
+        uint256 len = 11;
         bytes32[] memory ids = new bytes32[](len);
         ids[0] = keccak256("PAYMENT_ADMIN");
         ids[1] = keccak256("CORE_REGISTRY_PROCESSOR");
@@ -86,6 +86,7 @@ contract SmokeTest is MainnetBaseSetup {
         ids[7] = keccak256("DST_SWAPPER_PROCESSOR");
         ids[8] = keccak256("SUPERFORM_RECEIVER");
         ids[9] = keccak256("REWARDS_DISTRIBUTOR");
+        ids[10] = keccak256("SUPERFORM_ROUTER_PLUS");
 
         address[] memory newAddresses = new address[](len);
         newAddresses[0] = 0xD911673eAF0D3e15fe662D58De15511c5509bAbB;
@@ -97,7 +98,7 @@ contract SmokeTest is MainnetBaseSetup {
         newAddresses[6] = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
         newAddresses[7] = 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C;
         newAddresses[8] = 0x1a6805487322565202848f239C1B5bC32303C2FE;
-
+        newAddresses[9] = 0x4393C2a521ef115cd32C1d45897E7ce33aDa7aa9;
         for (uint256 i = 0; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             vm.selectFork(FORKS[TARGET_DEPLOYMENT_CHAINS[i]]);
 
