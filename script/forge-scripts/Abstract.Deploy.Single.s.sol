@@ -110,6 +110,7 @@ struct SetupVars {
     address payMaster;
     address emergencyQueue;
     address rewardsDistributor;
+    address routerPlus;
     SuperRegistry superRegistryC;
     SuperRBAC superRBACC;
     LiFiValidator lv;
@@ -128,7 +129,7 @@ abstract contract AbstractDeploySingle is BatchScript {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[33] public contractNames = [
+    string[34] public contractNames = [
         "CoreStateRegistry",
         "BroadcastRegistry",
         "LayerzeroImplementation",
@@ -161,7 +162,8 @@ abstract contract AbstractDeploySingle is BatchScript {
         "SuperformRouterPlus",
         "SuperformRouterPlusAsync",
         "AsyncStateRegistry",
-        "ERC7540Form"
+        "ERC7540Form",
+        "SuperformRouterPlus"
     ];
 
     enum Chains {
@@ -361,7 +363,7 @@ abstract contract AbstractDeploySingle is BatchScript {
     uint64 public constant BLAST = 81_457;
     uint64 public constant BARTIO = 80_084;
 
-    uint256[] public manualNonces = [22, 22, 22, 22, 21, 21, 20, 9, 3, 2, 0];
+    uint256[] public manualNonces = [23, 22, 22, 22, 21, 21, 20, 9, 3, 2, 0];
     uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 8453, 250, 59_144, 81_457, 80_084];
     string[] public chainNames = [
         "Ethereum",
@@ -1095,6 +1097,10 @@ abstract contract AbstractDeploySingle is BatchScript {
 
         vars.superRBACC.setRoleAdmin(rewardsAdminRole, vars.superRBACC.PROTOCOL_ADMIN_ROLE());
         vars.superRBACC.grantRole(rewardsAdminRole, REWARDS_ADMIN);
+        /// @dev 21 deploy router plus: NOTE - router plus async not deployed yet, because probably it won't be used
+        vars.routerPlus = address(new SuperformRouterPlus{ salt: salt }(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("SuperformRouterPlus"))] = vars.routerPlus;
+        SuperRegistry(vars.superRegistry).setAddress(keccak256("SUPERFORM_ROUTER_PLUS"), vars.routerPlus, vars.chainId);
 
         vm.stopBroadcast();
 
