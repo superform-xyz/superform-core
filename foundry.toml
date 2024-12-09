@@ -35,9 +35,9 @@ script = "script"
 src = "src"
 test = "test"
 auto_detect_remappings = false
-assertions_revert = true # see https://t.me/foundry_rs/36706
-legacy_assertions = false # see https://t.me/foundry_rs/36706
-gas_limit = "18446744073709551615" # see https://t.me/foundry_rs/36706
+assertions_revert = true
+legacy_assertions = true
+gas_limit = "18446744073709551615"
 
 [profile.localdev]
 optimizer = false

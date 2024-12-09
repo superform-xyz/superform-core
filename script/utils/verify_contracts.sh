@@ -83,6 +83,7 @@ file_names=(
     "src/forms/ERC5115Form.sol"
     "src/forms/wrappers/ERC5115To4626WrapperFactory.sol"
     "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol"
+    "src/router-plus/SuperformRouterPlus.sol"
     # Add more file names here if needed
 )
 
@@ -149,6 +150,7 @@ contract_names=(
     "ERC5115Form"
     "ERC5115To4626WrapperFactory"
     "LayerzeroImplementation"
+    "SuperformRouterPlus"
     # Add more contract names here if needed
 )
 
@@ -182,6 +184,7 @@ contract_addresses=(
     0x35E3057FF29ebC5b8dEF18EC66FEde16f1B237F5
     0x664E1e7b8393DF4aC4EFAbEf9d56B2100098FCE2
     0xc100592b40eeb4CBC7524092A00400917421ab64
+    0x4393C2a521ef115cd32C1d45897E7ce33aDa7aa9
     # Add more addresses here if needed
 )
 
@@ -313,6 +316,7 @@ constructor_args=(
     $super_constructor_arg
     $super_constructor_arg
     $super_constructor_arg
+    $super_constructor_arg
 )
 
 constructor_args_ftm=(
@@ -367,7 +371,7 @@ for i in "${!networks[@]}"; do
             forge verify-contract $contract_address \
                 --chain-id $network \
                 --num-of-optimizations 200 \
-                --watch --compiler-version v0.8.23+commit.f704f362 \
+                --watch --compiler-version v0.8.23 \
                 --constructor-args "$constructor_arg" \
                 "$file_name:$contract_name" \
                 --etherscan-api-key "$api_key" \
@@ -376,7 +380,7 @@ for i in "${!networks[@]}"; do
             forge verify-contract $contract_address_fantom \
                 --chain-id $network \
                 --num-of-optimizations 200 \
-                --watch --compiler-version v0.8.23+commit.f704f362 \
+                --watch --compiler-version v0.8.23 \
                 --constructor-args "$constructor_arg_ftm" \
                 "$file_name:$contract_name" \
                 --etherscan-api-key "$api_key"
@@ -384,7 +388,7 @@ for i in "${!networks[@]}"; do
             forge verify-contract $contract_address_linea \
                 --chain-id $network \
                 --num-of-optimizations 200 \
-                --watch --compiler-version v0.8.23+commit.f704f362 \
+                --watch --compiler-version v0.8.23 \
                 --constructor-args "$constructor_arg" \
                 "$file_name:$contract_name" \
                 --etherscan-api-key "$api_key"
@@ -392,7 +396,7 @@ for i in "${!networks[@]}"; do
             forge verify-contract $contract_address_blast \
                 --chain-id $network \
                 --num-of-optimizations 200 \
-                --watch --compiler-version v0.8.23+commit.f704f362 \
+                --watch --compiler-version v0.8.23 \
                 --constructor-args "$constructor_arg" \
                 "$file_name_blast:$contract_name" \
                 --etherscan-api-key "$api_key"
@@ -400,7 +404,7 @@ for i in "${!networks[@]}"; do
             forge verify-contract $contract_address \
                 --chain-id $network \
                 --num-of-optimizations 200 \
-                --watch --compiler-version v0.8.23+commit.f704f362 \
+                --watch --compiler-version v0.8.23 \
                 --constructor-args "$constructor_arg" \
                 "$file_name:$contract_name" \
                 --etherscan-api-key "$api_key"

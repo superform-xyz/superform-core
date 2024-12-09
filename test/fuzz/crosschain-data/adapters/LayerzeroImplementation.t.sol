@@ -77,6 +77,8 @@ contract LayerzeroImplementationTest is BaseSetup {
         /// @dev lz_chainIds = [101, 102, 106, 109, 110, 111];
         uint64 superChainId = chainIds[superChainIdSeed_ % chainIds.length];
         uint16 ambChainId = lz_chainIds[ambChainIdSeed_ % lz_chainIds.length];
+        vm.assume(superChainId != BARTIO);
+        vm.assume(ambChainId != 0);
 
         vm.prank(deployer);
         layerzeroImplementation.setChainId(superChainId, ambChainId);
@@ -86,11 +88,10 @@ contract LayerzeroImplementationTest is BaseSetup {
     }
 
     function test_estimateFeesWithInvalidChainId(uint64 chainId) public {
-        /// @dev chainIds = [1, 56, 43114, 137, 42161, 10];
-        /// @dev notice chainId = 1 is invalid
-        vm.assume(
-            chainId != 137 && chainId != 42_161 && chainId != 10 && chainId != 56 && chainId != 43_114 && chainId != 250
-        );
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            vm.assume(chainId != chainIds[i]);
+        }
+
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         layerzeroImplementation.estimateFees(chainId, abi.encode(420), bytes(""));
     }
@@ -100,6 +101,10 @@ contract LayerzeroImplementationTest is BaseSetup {
         uint64 chainId = chainIds[chainIdSeed_ % chainIds.length];
         /// @dev estimating fees for same chain is invalid
         vm.assume(chainId != 1);
+        vm.assume(chainId != 97);
+        vm.assume(chainId != 11_155_111);
+        vm.assume(chainId != 80_084);
+
         uint256 fees = layerzeroImplementation.estimateFees(chainId, abi.encode(420), bytes(""));
         assertGt(fees, 0);
     }
@@ -191,8 +196,9 @@ contract LayerzeroImplementationTest is BaseSetup {
         public
     {
         uint16 chainId = uint16(chainIds[chainIdSeed_ % chainIds.length]);
-        vm.assume(chainId != ETH);
         uint16 lzChainId = uint16(lz_chainIds[chainIdSeed_ % lz_chainIds.length]);
+        vm.assume(chainId != ETH && chainId != BARTIO);
+        vm.assume(lzChainId != 0);
         bytes memory srcAddress = abi.encodePacked(
             getContract(ETH, "LayerzeroImplementation"), getContract(chainId, "LayerzeroImplementation")
         );
@@ -327,7 +333,10 @@ contract LayerzeroImplementationTest is BaseSetup {
         (ambMessage, ambExtraData, coreStateRegistry) = _setupBroadcastPayloadAMBData(users[userIndex]);
 
         vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
-        vm.assume(malice_ != getContract(ETH, "CoreStateRegistry") && malice_ != getContract(ETH, "BroadcastRegistry"));
+        vm.assume(
+            malice_ != getContract(ETH, "CoreStateRegistry") && malice_ != getContract(ETH, "BroadcastRegistry")
+                && malice_ != getContract(ETH, "AsyncStateRegistry")
+        );
         vm.deal(malice_, 100 ether);
         vm.prank(malice_);
         layerzeroImplementation.dispatchPayload{ value: 0.1 ether }(
@@ -403,7 +412,7 @@ contract LayerzeroImplementationTest is BaseSetup {
 
     function _depositFromETHtoOPNewStateRegistry(uint256 gasLimit_) internal returns (Vm.Log[] memory) {
         bytes memory crossChainMsg =
-            abi.encode(AMBMessage(DataLib.packTxInfo(0, 1, 1, 4, deployer, ETH), abi.encode(new uint8[](0), bytes(""))));
+            abi.encode(AMBMessage(DataLib.packTxInfo(0, 1, 1, 5, deployer, ETH), abi.encode(new uint8[](0), bytes(""))));
 
         address coreStateRegistryETH = getContract(ETH, "CoreStateRegistry");
         vm.deal(coreStateRegistryETH, 1 ether);
@@ -480,7 +489,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         vm.prank(deployer);
 
         uint8[] memory registryId_ = new uint8[](1);
-        registryId_[0] = 4;
+        registryId_[0] = 5;
 
         address[] memory registryAddress_ = new address[](1);
         registryAddress_[0] = isReset ? getContract(OP, "CoreStateRegistry") : address(1);
