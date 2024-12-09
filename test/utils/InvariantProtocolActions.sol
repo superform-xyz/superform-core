@@ -595,7 +595,16 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     internalVars.expDstDomains[internalVars.k] = hyperlane_chainIds[i];
 
                     internalVars.endpoints[internalVars.k] = lzEndpoints[i];
-                    internalVars.endpointsV2[internalVars.k] = lzV2Endpoint;
+                    if (
+                        !(
+                            hyperlane_chainIds[i] == 11_155_111 || hyperlane_chainIds[i] == 97
+                                || hyperlane_chainIds[i] == 40_291
+                        )
+                    ) {
+                        internalVars.endpointsV2[internalVars.k] = lzV2Endpoint;
+                    } else {
+                        internalVars.endpointsV2[internalVars.k] = lzV2Endpoint_TESTNET;
+                    }
 
                     internalVars.lzChainIds[internalVars.k] = lz_chainIds[i];
                     internalVars.lzChainIdsV2[internalVars.k] = lz_v2_chainIds[i];
@@ -1189,9 +1198,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         uint256 decimal3;
     }
 
-    function _buildSingleVaultWithdrawCallData(
-        SingleVaultCallDataArgs memory args
-    )
+    function _buildSingleVaultWithdrawCallData(SingleVaultCallDataArgs memory args)
         internal
         returns (SingleVaultSFData memory superformData)
     {
@@ -1666,9 +1673,15 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
             /// @notice ID: 6 Layerzero v2
             if (AMBs[i] == 6) {
-                LayerZeroV2Helper(getContract(TO_CHAIN, "LayerZeroV2Helper")).help(
-                    lzV2Endpoint, FORKS[FROM_CHAIN], logs
-                );
+                if (!(FROM_CHAIN == 11_155_111 || FROM_CHAIN == 97 || FROM_CHAIN == 80_084)) {
+                    LayerZeroV2Helper(getContract(TO_CHAIN, "LayerZeroV2Helper")).help(
+                        lzV2Endpoint, FORKS[FROM_CHAIN], logs
+                    );
+                } else {
+                    LayerZeroV2Helper(getContract(TO_CHAIN, "LayerZeroV2Helper")).help(
+                        lzV2Endpoint_TESTNET, FORKS[FROM_CHAIN], logs
+                    );
+                }
             }
 
             /// @notice ID: 2 Hyperlane

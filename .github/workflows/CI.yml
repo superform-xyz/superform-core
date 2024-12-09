@@ -6,9 +6,9 @@ concurrency:
 
 on:
   push:
-    branches: [main, develop, v1]
+    branches: [main, develop, v1.5]
   pull_request:
-    branches: [main, develop, v1]
+    branches: [main, develop]
 
 env:
   BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
@@ -19,8 +19,11 @@ env:
   AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
   BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
   FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
+  SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
+  BSC_TESTNET_RPC_URL: ${{ secrets.BSC_TESTNET_RPC_URL }}
   LINEA_RPC_URL: ${{ secrets.LINEA_RPC_URL }}
   BLAST_RPC_URL: ${{ secrets.BLAST_RPC_URL }}
+  BARTIO_RPC_URL: ${{ secrets.BARTIO_RPC_URL }}
   BSC_RPC_URL_QN: ${{ secrets.BSC_RPC_URL }}
   ARBITRUM_RPC_URL_QN: ${{ secrets.ARBITRUM_RPC_URL }}
   OPTIMISM_RPC_URL_QN: ${{ secrets.OPTIMISM_RPC_URL }}
@@ -29,8 +32,11 @@ env:
   AVALANCHE_RPC_URL_QN: ${{ secrets.AVALANCHE_RPC_URL }}
   BASE_RPC_URL_QN: ${{ secrets.BASE_RPC_URL }}
   FANTOM_RPC_URL_QN: ${{ secrets.FANTOM_RPC_URL }}
+  SEPOLIA_RPC_URL_QN: ${{ secrets.SEPOLIA_RPC_URL }}
+  BSC_TESTNET_RPC_URL_QN: ${{ secrets.BSC_TESTNET_RPC_URL }}
   LINEA_RPC_URL_QN: ${{ secrets.LINEA_RPC_URL }}
   BLAST_RPC_URL_QN: ${{ secrets.BLAST_RPC_URL }}
+  BARTIO_RPC_URL_QN: ${{ secrets.BARTIO_RPC_URL }}
   TENDERLY_ACCESS_KEY: ${{ secrets.TENDERLY_ACCESS_KEY }}
   TENDERLY_PROJECT_SLUG: "v1" # your project slug
   TENDERLY_ACCOUNT_ID: "superform" # your username or organization name
@@ -49,6 +55,11 @@ jobs:
 
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
+
+
+      - name: "Show the Foundry version"
+        run: "forge --version"
+
 
       - name: "Show the Foundry config"
         run: "forge config"
@@ -165,7 +176,7 @@ jobs:
         run: "make coverage"
 
       - name: "Upload coverage report to Codecov"
-        uses: "codecov/codecov-action@v4"
+        uses: "codecov/codecov-action@v5"
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:

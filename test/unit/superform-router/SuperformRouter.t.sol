@@ -3511,7 +3511,10 @@ contract SuperformRouterTest is ProtocolActions {
         _broadcastPayloadHelper(ARBI, vm.getRecordedLogs());
 
         for (uint256 i = 0; i < chainIds.length; ++i) {
-            if (chainIds[i] == LINEA) continue;
+            if (chainIds[i] == LINEA || chainIds[i] == SEPOLIA || chainIds[i] == BSC_TESTNET || chainIds[i] == BARTIO) {
+                continue;
+            }
+
             if (chainIds[i] != ARBI) {
                 vm.selectFork(FORKS[chainIds[i]]);
 

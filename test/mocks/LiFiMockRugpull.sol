@@ -95,7 +95,6 @@ contract LiFiMockRugpull is Test {
 
         v.amountOut = (amount_ * uint256(10_000 - v.slippage)) / 10_000;
 
-
         _sendOutputTokenToReceiver(data_, inputToken_, receiver_, v.amountOut, v.prevForkId, v.toForkId);
 
         vm.selectFork(v.prevForkId);
@@ -133,7 +132,6 @@ contract LiFiMockRugpull is Test {
             finalAmount =
                 ((amountOut_ * USDPerUnderlyingToken) * 10 ** (decimal2 - decimal1)) / USDPerUnderlyingTokenDst;
         }
-
 
         if (outputToken != NATIVE) {
             deal(outputToken, receiver_, MockERC20(outputToken).balanceOf(receiver_) + finalAmount);

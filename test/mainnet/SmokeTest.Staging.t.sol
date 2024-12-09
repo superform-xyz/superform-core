@@ -498,13 +498,7 @@ contract SmokeTestStaging is MainnetBaseSetup {
 
             for (uint256 j; j < TARGET_DEPLOYMENT_CHAINS.length; ++j) {
                 /// @dev eoracle is not added in blast & linea
-                if (
-                    chainId != BLAST
-                        && (
-                            chainId == LINEA
-                                && (TARGET_DEPLOYMENT_CHAINS[j] != FANTOM && TARGET_DEPLOYMENT_CHAINS[j] != BSC)
-                        )
-                ) {
+                if (!(chainId == BLAST || chainId == LINEA) && (chainId != TARGET_DEPLOYMENT_CHAINS[j])) {
                     assertEq(
                         address(paymentHelper.nativeFeedOracle(TARGET_DEPLOYMENT_CHAINS[j])),
                         PRICE_FEEDS[chainId][TARGET_DEPLOYMENT_CHAINS[j]]
@@ -555,16 +549,43 @@ contract SmokeTestStaging is MainnetBaseSetup {
 
         for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
-
             vm.selectFork(FORKS[chainId]);
             superFactory = SuperformFactory(getContract(chainId, "SuperformFactory"));
 
             chainId != BLAST
                 ? assertEq(superFactory.getFormImplementation(5), getContract(chainId, "ERC5115Form"))
                 : assertEq(superFactory.getFormImplementation(205), getContract(chainId, "ERC5115Form"));
-            /// @dev in blast there are 6 forms (2 without operator, 2 with wrong state registry and 2 right superforms)
-            assertEq(superFactory.getFormCount(), chainId == LINEA ? 3 : chainId == BLAST ? 6 : 5);
+
+            assertEq(superFactory.getFormCount(), chainId == LINEA ? 5 : chainId == BLAST ? 8 : 7);
             assertEq(superFactory.getFormStateRegistryId(5), 1);
+        }
+    }
+
+    function test_asyncStateRegistry() public {
+        for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
+            uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+            vm.selectFork(FORKS[chainId]);
+            address asyncStateRegistry = getContract(chainId, "AsyncStateRegistry");
+
+            SuperRegistry superRegistry = SuperRegistry(getContract(chainId, "SuperRegistry"));
+            assertEq(superRegistry.stateRegistryIds(asyncStateRegistry), 7);
+        }
+    }
+
+    function test_7540FormStaging() public {
+        SuperformFactory superFactory;
+
+        for (uint256 i; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
+            uint64 chainId = TARGET_DEPLOYMENT_CHAINS[i];
+
+            vm.selectFork(FORKS[chainId]);
+            superFactory = SuperformFactory(getContract(chainId, "SuperformFactory"));
+
+            chainId != BLAST
+                ? assertEq(superFactory.getFormImplementation(7), getContract(chainId, "ERC7540Form"))
+                : assertEq(superFactory.getFormImplementation(7), getContract(chainId, "ERC7540Form"));
+            assertEq(superFactory.getFormCount(), chainId == LINEA ? 5 : chainId == BLAST ? 8 : 7);
+            assertEq(superFactory.getFormStateRegistryId(7), 7);
         }
     }
 }

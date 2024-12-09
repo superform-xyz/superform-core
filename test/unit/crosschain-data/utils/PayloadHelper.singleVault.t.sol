@@ -143,7 +143,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
 
         vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);
-        IPayloadHelper(contracts[ETH][bytes32(bytes("PayloadHelper"))]).decodePayloadHistory(2);
+        IPayloadHelper(contracts[ETH][bytes32(bytes("PayloadHelperV1"))]).decodePayloadHistory(2);
     }
 
     function test_decodeCoreStateRegistryPayload_invalidPayload() public {
@@ -158,7 +158,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
         );
 
         vm.expectRevert(Error.INVALID_PAYLOAD.selector);
-        PayloadHelper(getContract(ETH, "PayloadHelper")).decodeCoreStateRegistryPayload(1);
+        PayloadHelper(getContract(ETH, "PayloadHelperV1")).decodeCoreStateRegistryPayload(1);
     }
 
     function test_constructorZeroAddress() public {
@@ -170,7 +170,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
         vm.selectFork(FORKS[CHAIN_0]);
 
         (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, address receiverAddress, uint64 srcChainId) =
-            IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodePayloadHistory(1);
+            IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelperV1"))]).decodePayloadHistory(1);
 
         /// @dev 0 for deposit
         assertEq(txType, 0);
@@ -192,11 +192,12 @@ contract PayloadHelperSingleTest is ProtocolActions {
         vm.selectFork(FORKS[DST_CHAINS[0]]);
 
         vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);
-        IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(3);
+        IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelperV1"))]).decodeCoreStateRegistryPayload(3);
 
-        IPayloadHelper.DecodedDstPayload memory v =
-            IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
-        IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).getDstPayloadProof(1);
+        IPayloadHelper.DecodedDstPayload memory v = IPayloadHelper(
+            contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelperV1"))]
+        ).decodeCoreStateRegistryPayload(1);
+        IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelperV1"))]).getDstPayloadProof(1);
 
         bytes[] memory extraDataGenerated = new bytes[](2);
         extraDataGenerated[0] = abi.encode("500000");
@@ -233,7 +234,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
         vm.selectFork(FORKS[CHAIN_0]);
 
         IPayloadHelper.DecodedDstPayload memory v =
-            IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
+            IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelperV1"))]).decodeCoreStateRegistryPayload(1);
 
         /// @dev 0 for deposit
         assertEq(v.txType, 0);
@@ -265,7 +266,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
         CheckDstPayloadLiqDataInternalVars memory v;
 
         (v.txDatas, v.tokens,, v.bridgeIds, v.liqDstChainIds, v.amounts, v.nativeAmounts) = IPayloadHelper(
-            contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]
+            contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelperV1"))]
         ).decodeCoreStateRegistryPayloadLiqData(2);
 
         assertEq(v.bridgeIds[0], 1);

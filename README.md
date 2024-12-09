@@ -144,6 +144,7 @@ OPTIMISM_RPC_URL=
 ETHEREUM_RPC_URL=
 BASE_RPC_URL=
 FANTOM_RPC_URL=
+SEPOLIA_RPC_URL=
 ```
 
 3. Install submodule dependencies:

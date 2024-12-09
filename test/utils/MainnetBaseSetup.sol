@@ -11,13 +11,50 @@ abstract contract MainnetBaseSetup is BaseSetup {
 
     string public folderToRead;
     uint64[] TARGET_DEPLOYMENT_CHAINS;
-    string[] public chainNames =
-        ["Ethereum", "Binance", "Avalanche", "Polygon", "Arbitrum", "Optimism", "Base", "Fantom", "Linea", "Blast"];
+    string[] public chainNames = [
+        "Ethereum",
+        "Binance",
+        "Avalanche",
+        "Polygon",
+        "Arbitrum",
+        "Optimism",
+        "Base",
+        "Fantom",
+        "Sepolia",
+        "Binance_testnet",
+        "Linea",
+        "Blast"
+    ];
 
     enum Cycle {
         Dev,
         Prod
     }
+
+    address[] public lzV2SendLib = [
+        0xc02Ab410f0734EFa3F14628780e6e695156024C2, // ETH
+        0x9F8C645f2D0b2159767Bd6E0839DE4BE49e823DE, // BSC
+        0x197D1333DEA5Fe0D6600E9b396c7f1B1cFCc558a, // AVAX
+        0x6c26c61a97006888ea9E4FA36584c7df57Cd9dA3, // POLY
+        0x975bcD720be66659e3EB3C0e4F1866a3020E493A, // ARBI
+        0x1322871e4ab09Bc7f5717189434f97bBD9546e95, // OP
+        0xB5320B0B3a13cC860893E2Bd79FCd7e13484Dda2, // BASE
+        0xC17BaBeF02a937093363220b0FB57De04A535D5E, // FANTOM
+        0x32042142DD551b4EbE17B6FEd53131dd4b4eEa06, // LINEA
+        0xc1B621b18187F74c8F6D52a6F709Dd2780C09821 // BLAST
+    ];
+    address[] public lzV2ReceiveLib = [
+        0xbB2Ea70C9E858123480642Cf96acbcCE1372dCe1, // ETH
+        0xB217266c3A98C8B2709Ee26836C98cf12f6cCEC1, // BSC
+        0xbf3521d309642FA9B1c91A08609505BA09752c61, // AVAX
+        0x1322871e4ab09Bc7f5717189434f97bBD9546e95, // POLY
+        0x7B9E184e07a6EE1aC23eAe0fe8D6Be2f663f05e6, // ARBI
+        0x3c4962Ff6258dcfCafD23a814237B7d6Eb712063, // OP
+        0xc70AB6f32772f59fBfc23889Caf4Ba3376C84bAf, // BASE
+        0xe1Dd69A2D08dF4eA6a30a91cC061ac70F98aAbe3, // FANTOM
+        0xE22ED54177CE1148C557de74E4873619e6c6b205, // LINEA
+        0x377530cdA84DFb2673bF4d145DCF0C4D7fdcB5b6 // BLAST
+    ];
 
     uint256 public deployerPrivateKey;
 
@@ -43,10 +80,10 @@ abstract contract MainnetBaseSetup is BaseSetup {
         /// @dev BASE https://app.onchainden.com/safes/base:0x2f973806f8863e860a553d4f2e7c2ab4a9f3b87c
         0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1,
         /// @dev FANTOM https://safe.fantom.network/home?safe=ftm:0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1
-        address(0),
-        /// @dev LINEA
-        address(0)
-        /// @dev BLAST
+        0x62Bbfe3ef3faAb7045d29bC388E5A0c5033D8b77,
+        /// @dev LINEA https://safe.linea.build/home?safe=linea:0x62Bbfe3ef3faAb7045d29bC388E5A0c5033D8b77
+        0x95B5837CF46E6ab340fFf3844ca5e7d8ead5B8AF
+        /// @dev BLAST https://blast-safe.io/home?safe=blastmainnet:0x95B5837CF46E6ab340fFf3844ca5e7d8ead5B8AF
     ];
 
     address[] public PROTOCOL_ADMINS_STAGING = [
@@ -91,7 +128,6 @@ abstract contract MainnetBaseSetup is BaseSetup {
                     break;
                 }
             }
-
             _grabAddresses(j, trueIndex, Cycle.Prod, TARGET_DEPLOYMENT_CHAINS);
         }
     }
@@ -208,6 +244,13 @@ abstract contract MainnetBaseSetup is BaseSetup {
         /// @dev 19  OneInchValidator
         contracts[chainId][bytes32(bytes("OneInchValidator"))] =
             _readContract(chainNames[trueIndex], chainId, "OneInchValidator");
+
+        /// @dev 20  AsyncStateRegistry
+        contracts[chainId][bytes32(bytes("AsyncStateRegistry"))] =
+            _readContract(chainNames[trueIndex], chainId, "AsyncStateRegistry");
+
+        /// @dev 21 ERC7540Form
+        contracts[chainId][bytes32(bytes("ERC7540Form"))] = _readContract(chainNames[trueIndex], chainId, "ERC7540Form");
     }
 
     function _readContract(

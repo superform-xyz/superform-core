@@ -982,7 +982,6 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         /// @notice, this is similar to the issue with
         /// https://dashboard.tenderly.co/superform/v1/simulator/eaa8d796-81df-45d2-9cc9-d7bfc958d947
-
         _successfulMultiDepositWithDstSwapShowcase(ambIds_, false, false);
     }
 
@@ -1392,7 +1391,7 @@ contract CoreStateRegistryTest is ProtocolActions {
                 getContract(AVAX, "DAI"),
                 getContract(AVAX, "DstSwapper"),
                 AVAX,
-                159_055_440_488_689_510,
+                111_668_460_260_806_160,
                 0
             );
 

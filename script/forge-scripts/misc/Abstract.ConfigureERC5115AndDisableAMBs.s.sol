@@ -430,11 +430,7 @@ abstract contract AbstractConfigure5115FormAndDisableAMB is EnvironmentUtils {
                 );
                 addToBatch(address(vars.lzV1Impl), 0, txn);
                 /// @dev set receivers to 0xDEAD
-                txn = abi.encodeWithSelector(
-                    AxelarImplementation.setReceiver.selector, axelar_chainIds[vars.dstTrueIndex], address(0xDEAD)
-                );
-
-                addToBatch(address(vars.axelarImpl), 0, txn);
+ 
 
                 /// @dev old layerzero, hyperlane and wormhole are only deployed on the previous networks
                 if (

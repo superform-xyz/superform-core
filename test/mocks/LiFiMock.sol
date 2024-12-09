@@ -165,10 +165,8 @@ contract LiFiMock is Test {
             MockERC20(inputToken_).transferFrom(from, address(this), amount_);
         }
 
-        /// @dev TODO: simulate dstSwap slippage here (currently in ProtocolActions._buildLiqBridgeTxDataDstSwap()), and
-        /// remove from _bridge() above
-        // if (isDstSwap) slippage = (slippage * int256(dstSwapSlippageShare)) / 100;
-        // amount_ = (amount_ * uint256(10_000 - slippage)) / 10_000;
+        /// @dev amount provided here already contains the  dstSwap slippage here (currently in
+        /// ProtocolActions._buildLiqBridgeTxDataDstSwap())
 
         uint256 decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
         uint256 decimal2 = outputToken_ == NATIVE ? 18 : MockERC20(outputToken_).decimals();
