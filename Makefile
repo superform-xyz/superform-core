@@ -121,7 +121,7 @@ build-sizes: ## Builds the project and shows sizes
 
 .PHONY: test-vvv
 test-vvv: ## Runs tests with verbose output
-	forge test --match-contract PayloadHelperSingleTest --evm-version cancun 
+	forge test --match-test test_superRegistryAddresses --evm-version cancun -vv
 
 .PHONY: ftest
 ftest: ## Runs tests with cancun evm version

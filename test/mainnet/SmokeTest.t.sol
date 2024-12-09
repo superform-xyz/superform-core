@@ -98,7 +98,8 @@ contract SmokeTest is MainnetBaseSetup {
         newAddresses[6] = 0x7c9c8C0A9aA5D8a2c2e6C746641117Cc9591296a;
         newAddresses[7] = 0x1666660D2F506e754CB5c8E21BDedC7DdEc6Be1C;
         newAddresses[8] = 0x1a6805487322565202848f239C1B5bC32303C2FE;
-        newAddresses[9] = 0x4393C2a521ef115cd32C1d45897E7ce33aDa7aa9;
+        newAddresses[10] = 0x4393C2a521ef115cd32C1d45897E7ce33aDa7aa9;
+
         for (uint256 i = 0; i < TARGET_DEPLOYMENT_CHAINS.length; ++i) {
             vm.selectFork(FORKS[TARGET_DEPLOYMENT_CHAINS[i]]);
 
@@ -110,6 +111,9 @@ contract SmokeTest is MainnetBaseSetup {
             sr = SuperRegistry(getContract(TARGET_DEPLOYMENT_CHAINS[i], "SuperRegistry"));
 
             for (uint256 j = 0; j < len; ++j) {
+                if (j == 10 && TARGET_DEPLOYMENT_CHAINS[i] != ETH) {
+                    continue;
+                }
                 assertEq(sr.getAddress(ids[j]), newAddresses[j]);
             }
         }

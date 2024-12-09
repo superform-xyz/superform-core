@@ -1791,7 +1791,7 @@ abstract contract BaseSetup is StdInvariant, Test {
         }
         if (!invariant) {
             forks[ETH] = selectedChainIds[ETH]
-                ? pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 20_574_913) : vm.createFork(ETHEREUM_RPC_URL_QN)
+                ? pinnedBlock ? vm.createFork(ETHEREUM_RPC_URL, 21_363_913) : vm.createFork(ETHEREUM_RPC_URL_QN)
                 : 999;
             forks[BSC] = selectedChainIds[BSC]
                 ? pinnedBlock ? vm.createFork(BSC_RPC_URL, 42_996_977) : vm.createFork(BSC_RPC_URL_QN)
