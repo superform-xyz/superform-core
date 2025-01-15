@@ -51,13 +51,13 @@ The cross-chain deposit flow lacks a crucial validation step to verify that the 
 
 The vulnerability unfolds as follows:
 
-1. On the source chain, a user initiates an [singleXChainSingleVaultDeposit()](https://github.com/superform-xyz/superform-core/blob/main/src/BaseRouterImplementation.sol#L128) with any token and provides a `superFormId` of a superForm whose underlying asset is different then the token the user suppliying and more valuable.
+1. On the source chain, a user initiates an [singleXChainSingleVaultDeposit()](https://github.com/superform-xyz/superform-core/blob/main/src/BaseRouterImplementation.sol#L128) with any token and provides a `superFormId` of a superForm whose underlying asset is different then the token the user supplying and more valuable.
 
 2. The [`superRouter`](https://github.com/superform-xyz/superform-core/blob/main/src/BaseRouterImplementation.sol#L128) conducts checks and, assuming no swap is set by the user supplied data (should be no swap in dstChain for this attack to work). The user's token is then farwarded through the bridge given to the `CoreStateRegistry` contract along with the message and its proofs.
 
 3. Upon token arrival, the `CORE_STATE_REGISTRY_UPDATER_ROLE` keeper observes the amount received and updates the user's `payloadId` by calling [updateDepositPayload](https://github.com/superform-xyz/superform-core/blob/main/src/crosschain-data/extensions/CoreStateRegistry.sol#L83C14-L83C34) after checking against the user given slippage .
 
-   > as the sponsore said the keeper track the received amount of tokens to the dstChain and update it once it received in the coreStateRegistry .
+   > as the sponsor said the keeper track the received amount of tokens to the dstChain and update it once it received in the coreStateRegistry .
 
 4. The `CORE_STATE_REGISTRY_PROCESSOR_ROLE` keeper then came to process the payload by calling [`processPayload`](https://github.com/superform-xyz/superform-core/blob/main/src/crosschain-data/extensions/CoreStateRegistry.sol#L147). Given that the action is a deposit and the callback type is `INIT`, the [\_singleDeposit](https://github.com/superform-xyz/superform-core/blob/main/src/crosschain-data/extensions/CoreStateRegistry.sol#L878) function is executed within the `CoreStateRegistry` contract.
 
@@ -107,9 +107,9 @@ The vulnerability unfolds as follows:
   }
 ```
 
-note that the asset address is Obtained from the `superFormId` , and the contract check it's balance against this asset.also it's increasing the allowance for this asset , and then call [xChainDepositIntoVault](https://github.com/superform-xyz/superform-core/blob/main/src/forms/ERC4626FormImplementation.sol#L246) with the user `singleVaultData`. And till this point there is no check soever if the user supplied token is the same as the underlying asset of the supplied `superFormId`.
+note that the asset address is Obtained from the `superFormId` , and the contract check it's balance against this asset.also it's increasing the allowance for this asset , and then call [xChainDepositIntoVault](https://github.com/superform-xyz/superform-core/blob/main/src/forms/ERC4626FormImplementation.sol#L246) with the user `singleVaultData`. And till this point there is no check whatsoever if the user supplied token is the same as the underlying asset of the supplied `superFormId`.
 
-- notice that in case of direct deposit the [\_directDepositIntoVault](https://github.com/superform-xyz/superform-core/blob/main/src/forms/ERC4626FormImplementation.sol#L156) function in the superForm contract,Handle this situation properly and check the token that in `singleVaultData` which is the token that the user supplied, against his asset , but this is not the case in crosschain deposit, the `xChainDepositIntoVault` function don't check the user-supplied token against the vault's underlying asset. it trust [coreStateRegistry]() and transfer from the amount that the user set.
+- notice that in case of direct deposit the [\_directDepositIntoVault](https://github.com/superform-xyz/superform-core/blob/main/src/forms/ERC4626FormImplementation.sol#L156) function in the superForm contract, Handle this situation properly and check the token that in `singleVaultData` which is the token that the user supplied, against his asset, but this is not the case in crosschain deposit, the `xChainDepositIntoVault` function don't check the user-supplied token against the vault's underlying asset. it trust [coreStateRegistry]() and transfer from the amount that the user set.
 
 ```js
  function _processXChainDeposit(
@@ -144,11 +144,11 @@ note that the asset address is Obtained from the `superFormId` , and the contrac
 Assuming an attacker notices that the `CoreStateRegistry` contract on Arbitrum holds a balance of WETH (10), they could execute the following exploit:
 
 1. The attacker initiates an `xChainDeposit` from Polygon to Arbitrum with 10 dai, while falsely specifying a `superFormId` for a superForm whose underlying asset is WETH.
-2. the keeper track the transaction and assuming that 9 dai arrived, he update the amount to 9 (which is valid agains user slippage).
+2. the keeper track the transaction and assuming that 9 dai arrived, he update the amount to 9 (which is valid against user slippage).
 3. The deposit is processed without validation, and due to the existing WETH balance on Arbitrum's `CoreStateRegistry`, the contract erroneously uses 9 WETH for the deposit into the vault associated with the provided `superFormId`.
 4. As a result, the attacker is credited with shares or value corresponding to 9 WETH (Of course he will set `retainERC4626 = true`), despite having only deposited 10 dai , thus exploiting the system's lack of asset validation.
 
-- i had some problems Compiling the testing setup in the reposo I made a Minimalistic setup Also i ignored the first part when the user sending the token from the srcChain I believe it's pretty clear that there is no validation there, i started from when the `coreStateRegistry` receives the payload. also i mock the `superRegistry` to avoid all Access control errors, and shows in the test that the `coreStateRegistry` are Completely depends on the given superFormId given by the user to derive the token to be deposited is this token and doesn't matter the user supplied token :
+- i had some problems Compiling the testing setup in the repo so I made a Minimalistic setup Also i ignored the first part when the user sending the token from the srcChain I believe it's pretty clear that there is no validation there, i started from when the `coreStateRegistry` receives the payload. also I mock the `superRegistry` to avoid all Access control errors, and shows in the test that the `coreStateRegistry` are Completely depends on the given superFormId given by the user to derive the token to be deposited is this token and doesn't matter the user supplied token :
 
 ```js
  //SPDX-License-Identi MIT
@@ -281,7 +281,7 @@ contract setup_poc is Test{
 
 
 
-### SuperPositions.onlyMinter() has wrong implemerantion, leading to wrong access control.
+### SuperPositions.onlyMinter() has wrong implementation, leading to wrong access control.
 
 **Severity:** High risk
 
@@ -290,7 +290,7 @@ contract setup_poc is Test{
 **Description**:
 SuperPositions.onlyMinter() has wrong implemerantion, leading to wrong access control.
 
-The problem is that the following implemtantation is comparing, the ``formImplementationId``, instead of the state registry ID for that superform to the state registry ID of msg.sender. 
+The problem is that the following implementation is comparing, the ``formImplementationId``, instead of the state registry ID for that superform to the state registry ID of msg.sender. 
 
 [https://github.com/superform-xyz/superform-core/blob/29aa0519f4e65aa2f8477b76fc9cc924a6bdec8b/src/SuperPositions.sol#L69-L83](https://github.com/superform-xyz/superform-core/blob/29aa0519f4e65aa2f8477b76fc9cc924a6bdec8b/src/SuperPositions.sol#L69-L83)
 
@@ -911,7 +911,7 @@ The impact of not holding the NFT is that the ERC4626KYCDaoForm contract can't s
     }
 ```
 
-- in this case the `_updateMultiDeposit` function is responsible for updating the deposit payload by resolves the final amounts given by the keeper and in this process the failed deposits will be removed from the payload body and set to `failedDeposit` to be Rescued later by the user.
+- in this case the `_updateMultiDeposit` function is responsible for updating the deposit payload by resolving the final amounts given by the keeper and in this process the failed deposits will be removed from the payload body and set to `failedDeposit` to be Rescued later by the user.
 
 ```solidity
   function _updateMultiDeposit(
@@ -1138,7 +1138,7 @@ And in the end there is a check, [that CSR indeed have increased balance](https:
 
 Keepers currently belong to the protocol, however they have plans to change that and allow other entities to execute that role.
 
-Malicious keeper can create small deposit from one chain to another with dst swap and set interim token to the one that he wants to steal. In this deposit he will provide really high slippage(like > 90). The reason he does that is that he will provide txData that will swap whole balance of interim token in the DstSwapper and he would like to sandwhich this swap call(`DstSwapper.processTx` call) in order to get profit from such a high slippage and big amount of tokens. So he will sandwhich this swap on the dex that the bridge will use.
+Malicious keeper can create small deposit from one chain to another with dst swap and set interim token to the one that he wants to steal. In this deposit he will provide really high slippage(like > 90). The reason he does that is that he will provide txData that will swap whole balance of interim token in the DstSwapper and he would like to sandwhich this swap call(`DstSwapper.processTx` call) in order to get profit from such a high slippage and big amount of tokens. So he will sandwich this swap on the dex that the bridge will use.
 
 As result, after the swap, some amount of tokens will still come to the CSR and that's why balance and slippage check will pass and tx will not revert. But using this approach keeper is able to steal user's funds from the DstSwapper.
 
