@@ -29,7 +29,7 @@ var (
 	_ = abi.ConvertType
 )
 
-// InitSingleVaultData is an auto generated low-level Go binding around an user-defined struct.
+// InitSingleVaultData is an auto generated low-level Go binding around a user-defined struct.
 type InitSingleVaultData struct {
 	PayloadId       *big.Int
 	SuperformId     *big.Int
