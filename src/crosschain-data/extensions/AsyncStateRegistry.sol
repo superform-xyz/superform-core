@@ -190,8 +190,14 @@ contract AsyncStateRegistry is BaseStateRegistry, IAsyncStateRegistry {
         }
 
         if (callbackType == uint256(CallbackType.FAIL) || callbackType == uint256(CallbackType.RETURN)) {
-            /// TODO _message -> return payload id -> determine if its multi then recast and call stateMultiSync
-            ISuperPositions(_getSuperRegistryAddress(keccak256("SUPER_POSITIONS"))).stateSync(_message);
+            // Determine if it's a multi-payload by checking the payload type from the header
+            (uint256 payloadType,,,,,) = _payloadHeader.decodeTxInfo();
+            
+            if (payloadType == uint256(PayloadType.MULTI)) {
+                ISuperPositions(_getSuperRegistryAddress(keccak256("SUPER_POSITIONS"))).stateMultiSync(_message);
+            } else {
+                ISuperPositions(_getSuperRegistryAddress(keccak256("SUPER_POSITIONS"))).stateSync(_message);
+            }
         }
     }
 
