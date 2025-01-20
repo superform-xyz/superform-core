@@ -111,7 +111,7 @@ contract SmokeTest is MainnetBaseSetup {
             sr = SuperRegistry(getContract(TARGET_DEPLOYMENT_CHAINS[i], "SuperRegistry"));
 
             for (uint256 j = 0; j < len; ++j) {
-                if (j == 10 && TARGET_DEPLOYMENT_CHAINS[i] != ETH) {
+                if ((j == 1 || j == 10) && TARGET_DEPLOYMENT_CHAINS[i] == FANTOM) {
                     continue;
                 }
                 assertEq(sr.getAddress(ids[j]), newAddresses[j]);
