@@ -117,6 +117,7 @@ file_name_blast=(
     "script/forge-scripts/misc/blast/forms/BlastERC5115Form.sol"
     "src/forms/wrappers/ERC5115To4626WrapperFactory.sol"
     "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol"
+    "src/router-plus/SuperformRouterPlus.sol"
     # Add more file names here if needed
 )
 
@@ -251,6 +252,7 @@ contract_addresses_linea=(
     0x35E3057FF29ebC5b8dEF18EC66FEde16f1B237F5
     0x664E1e7b8393DF4aC4EFAbEf9d56B2100098FCE2
     0xc100592b40eeb4CBC7524092A00400917421ab64
+    0x4393C2a521ef115cd32C1d45897E7ce33aDa7aa9
     # Add more addresses here if needed
 )
 
@@ -284,6 +286,7 @@ contract_addresses_blast=(
     0x5266958cb4b8E6A1534c6Ac19f4220909cf3F7FA
     0x664E1e7b8393DF4aC4EFAbEf9d56B2100098FCE2
     0xc100592b40eeb4CBC7524092A00400917421ab64
+    0x4393C2a521ef115cd32C1d45897E7ce33aDa7aa9
     # Add more addresses here if needed
 )
 
@@ -308,6 +311,7 @@ constructor_args=(
     $empty_constructor_arg
     $super_constructor_arg
     $wormhole_sr_arg
+    $super_constructor_arg
     $super_constructor_arg
     $super_constructor_arg
     $super_constructor_arg
