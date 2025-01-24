@@ -34,13 +34,6 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     uint256 constant TOLERANCE_CONSTANT = 10 wei;
 
     //////////////////////////////////////////////////////////////
-    //                      ERRORS                               //
-    //////////////////////////////////////////////////////////////
-
-    /// @notice thrown if the receiver address is invalid
-    /// @dev notice this error was added to prevent malicious deposits
-    error RECEIVER_ADDRESS_MISMATCH();
-    //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
@@ -66,7 +59,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         );
 
         /// @dev transfers a single superPosition to this contract and approves router
-        _transferSuperPositions(superPositions, router, args.receiverAddressSP, args.id, args.sharesToRedeem);
+        _transferSuperPositions(superPositions, router, msg.sender, args.id, args.sharesToRedeem);
 
         uint256[] memory sharesToRedeem = new uint256[](1);
 
@@ -89,9 +82,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             args.rebalanceToCallData
         );
 
-        _refundUnusedAndResetApprovals(
-            superPositions, router, args.interimAsset, args.receiverAddressSP, balanceBefore, totalFee
-        );
+        _refundUnusedAndResetApprovals(superPositions, router, args.interimAsset, msg.sender, balanceBefore, totalFee);
 
         emit RebalanceSyncCompleted(args.receiverAddressSP, args.id, args.sharesToRedeem);
     }
@@ -114,7 +105,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         }
 
         /// @dev transfers multiple superPositions to this contract and approves router
-        _transferBatchSuperPositions(superPositions, router, args.receiverAddressSP, args.ids, args.sharesToRedeem);
+        _transferBatchSuperPositions(superPositions, router, msg.sender, args.ids, args.sharesToRedeem);
 
         _rebalancePositionsSync(
             router,
@@ -133,9 +124,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             args.rebalanceToCallData
         );
 
-        _refundUnusedAndResetApprovals(
-            superPositions, router, args.interimAsset, args.receiverAddressSP, balanceBefore, totalFee
-        );
+        _refundUnusedAndResetApprovals(superPositions, router, args.interimAsset, msg.sender, balanceBefore, totalFee);
 
         emit RebalanceMultiSyncCompleted(args.receiverAddressSP, args.ids, args.sharesToRedeem);
     }
@@ -154,7 +143,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         }
 
         /// @dev transfers a single superPosition to this contract and approves router
-        _transferSuperPositions(superPositions, router, args.receiverAddressSP, args.id, args.sharesToRedeem);
+        _transferSuperPositions(superPositions, router, msg.sender, args.id, args.sharesToRedeem);
 
         /// @dev this can only be IBaseRouter.singleXChainSingleVaultWithdraw.selector due to the whitelist in
         /// BaseSuperformRouterPlus
@@ -197,6 +186,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
         ISuperformRouterPlusAsync(ROUTER_PLUS_ASYNC).setXChainRebalanceCallData(
             args.receiverAddressSP,
+            /// @dev user must send an address that controls on the destination chain
             routerPlusPayloadId,
             XChainRebalanceData({
                 rebalanceSelector: args.rebalanceToSelector,
@@ -239,7 +229,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         }
 
         /// @dev transfers multiple superPositions to this contract and approves router
-        _transferBatchSuperPositions(superPositions, router, args.receiverAddressSP, args.ids, args.sharesToRedeem);
+        _transferBatchSuperPositions(superPositions, router, msg.sender, args.ids, args.sharesToRedeem);
 
         /// @dev validate the call data
         bytes4 selector = _parseSelectorMem(args.callData);
@@ -344,6 +334,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         /// @dev in multiDst multiple payloads ids will be generated on source chain
         ISuperformRouterPlusAsync(ROUTER_PLUS_ASYNC).setXChainRebalanceCallData(
             args.receiverAddressSP,
+            /// @dev user must send an address that controls on the destination chain
             routerPlusPayloadId,
             XChainRebalanceData({
                 rebalanceSelector: args.rebalanceToSelector,
@@ -370,6 +361,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
     /// @inheritdoc ISuperformRouterPlus
     function deposit4626(address[] calldata vaults_, Deposit4626Args[] calldata args) external payable {
+        /// @notice: args.receiverAddress SP is purely ignored now (not added in natspec to preserve the interface)
         uint256 length = vaults_.length;
 
         if (length != args.length) {
@@ -432,6 +424,8 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     )
         internal
     {
+        /// @notice: args.receiverAddress SP is purely ignored now (not added in natspec to preserve the interface)
+
         IERC20 interimAsset = IERC20(args.interimAsset);
 
         /// @dev validate the call dataREBALANCE_SINGLE_POSITIONS_DIFFERENT_AMOUNT
@@ -492,8 +486,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
 
-        uint256 amountIn =
-            _validateAndGetAmountIn(rebalanceToCallData, args.receiverAddressSP, availableBalanceToDeposit);
+        uint256 amountIn = _validateAndGetAmountIn(rebalanceToCallData, availableBalanceToDeposit);
 
         _deposit(router_, interimAsset, amountIn, args.rebalanceToMsgValue, rebalanceToCallData);
     }
@@ -642,7 +635,9 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     /// @param args Rest of the arguments to deposit 4626
     /// @param valueToPass The value to pass to the deposit function
     function _deposit4626(address vault_, Deposit4626Args calldata args, uint256 valueToPass) internal {
-        _transferERC20In(IERC20(vault_), args.receiverAddressSP, args.amount);
+        address user = msg.sender;
+        _transferERC20In(IERC20(vault_), user, args.amount);
+
         IERC4626 vault = IERC4626(vault_);
         address assetAdr = vault.asset();
         IERC20 asset = IERC20(assetAdr);
@@ -651,20 +646,19 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
         uint256 amountRedeemed = _redeemShare(vault, assetAdr, args.amount, args.expectedOutputAmount, args.maxSlippage);
 
-        uint256 amountIn = _validateAndGetAmountIn(args.depositCallData, args.receiverAddressSP, amountRedeemed);
+        uint256 amountIn = _validateAndGetAmountIn(args.depositCallData, amountRedeemed);
 
         address router = _getAddress(keccak256("SUPERFORM_ROUTER"));
 
         _deposit(router, asset, amountIn, valueToPass, args.depositCallData);
 
-        _tokenRefunds(router, assetAdr, args.receiverAddressSP, balanceBefore);
+        _tokenRefunds(router, assetAdr, user, balanceBefore);
 
-        emit Deposit4626Completed(args.receiverAddressSP, vault_);
+        emit Deposit4626Completed(user, vault_);
     }
 
     function _validateAndGetAmountIn(
         bytes calldata rebalanceToCallData,
-        address receiverAddressSP,
         uint256 availableBalanceToDeposit
     )
         internal
@@ -683,12 +677,10 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             SingleVaultSFData memory sfData =
                 abi.decode(_parseCallData(rebalanceToCallData), (SingleDirectSingleVaultStateReq)).superformData;
             amountIn = _takeAmountIn(sfData.liqRequest, sfData.amount);
-            _checkReceiverAddress(receiverAddressSP, sfData.receiverAddress, sfData.receiverAddressSP);
         } else if (rebalanceToSelector == IBaseRouter.singleXChainSingleVaultDeposit.selector) {
             SingleVaultSFData memory sfData =
                 abi.decode(_parseCallData(rebalanceToCallData), (SingleXChainSingleVaultStateReq)).superformData;
             amountIn = _takeAmountIn(sfData.liqRequest, sfData.amount);
-            _checkReceiverAddress(receiverAddressSP, sfData.receiverAddress, sfData.receiverAddressSP);
         } else if (rebalanceToSelector == IBaseRouter.singleDirectMultiVaultDeposit.selector) {
             MultiVaultSFData memory sfData =
                 abi.decode(_parseCallData(rebalanceToCallData), (SingleDirectMultiVaultStateReq)).superformData;
@@ -698,7 +690,6 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 amountInTemp = _takeAmountIn(sfData.liqRequests[i], sfData.amounts[i]);
                 amountIn += amountInTemp;
             }
-            _checkReceiverAddress(receiverAddressSP, sfData.receiverAddress, sfData.receiverAddressSP);
         } else if (rebalanceToSelector == IBaseRouter.singleXChainMultiVaultDeposit.selector) {
             MultiVaultSFData memory sfData =
                 abi.decode(_parseCallData(rebalanceToCallData), (SingleXChainMultiVaultStateReq)).superformsData;
@@ -707,7 +698,6 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 amountInTemp = _takeAmountIn(sfData.liqRequests[i], sfData.amounts[i]);
                 amountIn += amountInTemp;
             }
-            _checkReceiverAddress(receiverAddressSP, sfData.receiverAddress, sfData.receiverAddressSP);
         } else if (rebalanceToSelector == IBaseRouter.multiDstSingleVaultDeposit.selector) {
             SingleVaultSFData[] memory sfData =
                 abi.decode(_parseCallData(rebalanceToCallData), (MultiDstSingleVaultStateReq)).superformsData;
@@ -715,7 +705,6 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             for (uint256 i; i < lenDst; ++i) {
                 amountInTemp = _takeAmountIn(sfData[i].liqRequest, sfData[i].amount);
                 amountIn += amountInTemp;
-                _checkReceiverAddress(receiverAddressSP, sfData[i].receiverAddress, sfData[i].receiverAddressSP);
             }
         } else if (rebalanceToSelector == IBaseRouter.multiDstMultiVaultDeposit.selector) {
             MultiVaultSFData[] memory sfData =
@@ -727,7 +716,6 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                     amountInTemp = _takeAmountIn(sfData[i].liqRequests[j], sfData[i].amounts[j]);
                     amountIn += amountInTemp;
                 }
-                _checkReceiverAddress(receiverAddressSP, sfData[i].receiverAddress, sfData[i].receiverAddressSP);
             }
         }
 
@@ -739,23 +727,6 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         /// @dev malicious keeper from sending a low amountIn
         if (ENTIRE_SLIPPAGE * amountIn < ((availableBalanceToDeposit * (ENTIRE_SLIPPAGE - GLOBAL_SLIPPAGE)))) {
             revert ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
-        }
-    }
-
-    function _checkReceiverAddress(
-        address receiverAddressSP,
-        address callDataReceiverAddress,
-        address callDataReceiverAddressSP
-    )
-        internal
-        pure
-    {
-        /// @dev These checks below prevent a user approving funds to router plus while another user receives the
-        /// SuperPositions
-
-        /// @dev We force all receiver addresses to match
-        if (receiverAddressSP != callDataReceiverAddressSP || callDataReceiverAddressSP != callDataReceiverAddress) {
-            revert RECEIVER_ADDRESS_MISMATCH();
         }
     }
 }
