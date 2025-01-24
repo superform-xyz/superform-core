@@ -2747,6 +2747,73 @@ contract SuperformRouterPlusTest is ProtocolActions {
     //                 SAME_CHAIN REBALANCING TESTS             //
     //////////////////////////////////////////////////////////////
 
+    function _buildRebalanceSinglePositionToOneVaultArgsHack(address user)
+        internal
+        view
+        returns (ISuperformRouterPlus.RebalanceSinglePositionSyncArgs memory args)
+    {
+        args.id = superformId1;
+        args.sharesToRedeem = SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(user, superformId1);
+        args.rebalanceFromMsgValue = 1 ether;
+        args.rebalanceToMsgValue = 1 ether;
+        args.interimAsset = getContract(SOURCE_CHAIN, "USDC");
+        args.slippage = 100;
+        args.receiverAddressSP = user;
+        args.callData = _callDataRebalanceFrom(args.interimAsset);
+
+        uint256 decimal1 = MockERC20(getContract(SOURCE_CHAIN, "DAI")).decimals();
+        uint256 decimal2 = MockERC20(args.interimAsset).decimals();
+        uint256 previewRedeemAmount = IBaseForm(superform1).previewRedeemFrom(args.sharesToRedeem);
+
+        if (decimal1 > decimal2) {
+            args.expectedAmountToReceivePostRebalanceFrom = previewRedeemAmount / (10 ** (decimal1 - decimal2));
+        } else {
+            args.expectedAmountToReceivePostRebalanceFrom = previewRedeemAmount * 10 ** (decimal2 - decimal1);
+        }
+
+        args.rebalanceToCallData = _callDataRebalanceToOneVaultSameChainHack(
+            args.expectedAmountToReceivePostRebalanceFrom, args.interimAsset, user
+        );
+    }
+
+    function _callDataRebalanceToOneVaultSameChainHack(
+        uint256 amountToDeposit,
+        address interimToken,
+        address user
+    )
+        internal
+        view
+        returns (bytes memory)
+    {
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId2,
+            amountToDeposit,
+            IBaseForm(superform2).previewDepositTo(amountToDeposit),
+            100,
+            LiqRequest("", interimToken, address(0), 1, SOURCE_CHAIN, 0),
+            "",
+            false,
+            false,
+            address(0xDEAD),
+            address(0xDEAD),
+            ""
+        );
+        return abi.encodeCall(IBaseRouter.singleDirectSingleVaultDeposit, SingleDirectSingleVaultStateReq(data));
+    }
+
+    function test_rebalanceFromSinglePosition_toOneVault_hack() public {
+        vm.startPrank(deployer);
+
+        _directDeposit(superformId1, 1e18);
+
+        ISuperformRouterPlus.RebalanceSinglePositionSyncArgs memory args =
+            _buildRebalanceSinglePositionToOneVaultArgsHack(deployer);
+
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId1, args.sharesToRedeem);
+        vm.expectRevert(SuperformRouterPlus.RECEIVER_ADDRESS_MISMATCH.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceSinglePosition{ value: 2 ether }(args);
+    }
+
     /// @dev rebalance from a single position to a single vault
     function test_rebalanceFromSinglePosition_toOneVault() public {
         vm.startPrank(deployer);
@@ -5121,5 +5188,57 @@ contract SuperformRouterPlusTest is ProtocolActions {
         vm.startPrank(deployer);
         SuperformRouterPlus(getContract(SOURCE_CHAIN, "SuperformRouterPlus")).setGlobalSlippage(100);
         vm.stopPrank();
+    }
+
+    function test_deposit4626_maliciousReceiver() public {
+        // User approves router for vault tokens
+        vm.startPrank(deployer);
+        (address sfMigrateFrom,,) = superformId1.getSuperform();
+        address migrateFromVault = IBaseForm(sfMigrateFrom).getVaultAddress();
+        deal(migrateFromVault, deployer, 1e18);
+
+        // Approve and deposit DAI into the mock vault
+        MockERC20(getContract(SOURCE_CHAIN, "DAI")).approve(migrateFromVault, 1e18);
+        uint256 vaultTokenAmount = IERC4626(migrateFromVault).deposit(1e18, deployer);
+        IERC20(migrateFromVault).approve(getContract(SOURCE_CHAIN, "SuperformRouterPlus"), vaultTokenAmount);
+
+        vm.stopPrank();
+
+        address attacker = address(0x1337);
+        vm.deal(attacker, 1e18);
+        // Attacker prepares malicious deposit data
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId1,
+            1e18,
+            1,
+            10_000,
+            LiqRequest("", address(0), address(0), 0, SOURCE_CHAIN, 0),
+            "",
+            false,
+            false,
+            attacker, // Set attacker as receiver
+            attacker, // Set attacker as receiverSP
+            ""
+        );
+
+        bytes4 selector = IBaseRouter.singleDirectSingleVaultDeposit.selector;
+        bytes memory maliciousCallData = abi.encodePacked(selector, abi.encode(SingleDirectSingleVaultStateReq(data)));
+
+        address[] memory vaults = new address[](1);
+        vaults[0] = migrateFromVault;
+
+        ISuperformRouterPlus.Deposit4626Args[] memory args = new ISuperformRouterPlus.Deposit4626Args[](1);
+        args[0] = ISuperformRouterPlus.Deposit4626Args({
+            amount: 1e18,
+            expectedOutputAmount: 1,
+            maxSlippage: 9999,
+            receiverAddressSP: deployer,
+            depositCallData: maliciousCallData
+        });
+
+        // Attacker executes malicious deposit
+        vm.prank(attacker);
+        vm.expectRevert(SuperformRouterPlus.RECEIVER_ADDRESS_MISMATCH.selector);
+        SuperformRouterPlus(getContract(SOURCE_CHAIN, "SuperformRouterPlus")).deposit4626(vaults, args);
     }
 }

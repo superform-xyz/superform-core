@@ -34,6 +34,13 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     uint256 constant TOLERANCE_CONSTANT = 10 wei;
 
     //////////////////////////////////////////////////////////////
+    //                      ERRORS                               //
+    //////////////////////////////////////////////////////////////
+
+    /// @notice thrown if the receiver address is invalid
+    /// @dev notice this error was added to prevent malicious deposits
+    error RECEIVER_ADDRESS_MISMATCH();
+    //////////////////////////////////////////////////////////////
     //                      CONSTRUCTOR                         //
     //////////////////////////////////////////////////////////////
 
@@ -485,7 +492,8 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
 
-        uint256 amountIn = _validateAndGetAmountIn(rebalanceToCallData, availableBalanceToDeposit);
+        uint256 amountIn =
+            _validateAndGetAmountIn(rebalanceToCallData, args.receiverAddressSP, availableBalanceToDeposit);
 
         _deposit(router_, interimAsset, amountIn, args.rebalanceToMsgValue, rebalanceToCallData);
     }
@@ -643,7 +651,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
         uint256 amountRedeemed = _redeemShare(vault, assetAdr, args.amount, args.expectedOutputAmount, args.maxSlippage);
 
-        uint256 amountIn = _validateAndGetAmountIn(args.depositCallData, amountRedeemed);
+        uint256 amountIn = _validateAndGetAmountIn(args.depositCallData, args.receiverAddressSP, amountRedeemed);
 
         address router = _getAddress(keccak256("SUPERFORM_ROUTER"));
 
@@ -656,6 +664,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
     function _validateAndGetAmountIn(
         bytes calldata rebalanceToCallData,
+        address receiverAddressSP,
         uint256 availableBalanceToDeposit
     )
         internal
@@ -674,10 +683,12 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             SingleVaultSFData memory sfData =
                 abi.decode(_parseCallData(rebalanceToCallData), (SingleDirectSingleVaultStateReq)).superformData;
             amountIn = _takeAmountIn(sfData.liqRequest, sfData.amount);
+            _checkReceiverAddress(receiverAddressSP, sfData.receiverAddress, sfData.receiverAddressSP);
         } else if (rebalanceToSelector == IBaseRouter.singleXChainSingleVaultDeposit.selector) {
             SingleVaultSFData memory sfData =
                 abi.decode(_parseCallData(rebalanceToCallData), (SingleXChainSingleVaultStateReq)).superformData;
             amountIn = _takeAmountIn(sfData.liqRequest, sfData.amount);
+            _checkReceiverAddress(receiverAddressSP, sfData.receiverAddress, sfData.receiverAddressSP);
         } else if (rebalanceToSelector == IBaseRouter.singleDirectMultiVaultDeposit.selector) {
             MultiVaultSFData memory sfData =
                 abi.decode(_parseCallData(rebalanceToCallData), (SingleDirectMultiVaultStateReq)).superformData;
@@ -687,6 +698,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 amountInTemp = _takeAmountIn(sfData.liqRequests[i], sfData.amounts[i]);
                 amountIn += amountInTemp;
             }
+            _checkReceiverAddress(receiverAddressSP, sfData.receiverAddress, sfData.receiverAddressSP);
         } else if (rebalanceToSelector == IBaseRouter.singleXChainMultiVaultDeposit.selector) {
             MultiVaultSFData memory sfData =
                 abi.decode(_parseCallData(rebalanceToCallData), (SingleXChainMultiVaultStateReq)).superformsData;
@@ -695,6 +707,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                 amountInTemp = _takeAmountIn(sfData.liqRequests[i], sfData.amounts[i]);
                 amountIn += amountInTemp;
             }
+            _checkReceiverAddress(receiverAddressSP, sfData.receiverAddress, sfData.receiverAddressSP);
         } else if (rebalanceToSelector == IBaseRouter.multiDstSingleVaultDeposit.selector) {
             SingleVaultSFData[] memory sfData =
                 abi.decode(_parseCallData(rebalanceToCallData), (MultiDstSingleVaultStateReq)).superformsData;
@@ -702,6 +715,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             for (uint256 i; i < lenDst; ++i) {
                 amountInTemp = _takeAmountIn(sfData[i].liqRequest, sfData[i].amount);
                 amountIn += amountInTemp;
+                _checkReceiverAddress(receiverAddressSP, sfData[i].receiverAddress, sfData[i].receiverAddressSP);
             }
         } else if (rebalanceToSelector == IBaseRouter.multiDstMultiVaultDeposit.selector) {
             MultiVaultSFData[] memory sfData =
@@ -713,6 +727,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
                     amountInTemp = _takeAmountIn(sfData[i].liqRequests[j], sfData[i].amounts[j]);
                     amountIn += amountInTemp;
                 }
+                _checkReceiverAddress(receiverAddressSP, sfData[i].receiverAddress, sfData[i].receiverAddressSP);
             }
         }
 
@@ -724,6 +739,23 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         /// @dev malicious keeper from sending a low amountIn
         if (ENTIRE_SLIPPAGE * amountIn < ((availableBalanceToDeposit * (ENTIRE_SLIPPAGE - GLOBAL_SLIPPAGE)))) {
             revert ASSETS_RECEIVED_OUT_OF_SLIPPAGE();
+        }
+    }
+
+    function _checkReceiverAddress(
+        address receiverAddressSP,
+        address callDataReceiverAddress,
+        address callDataReceiverAddressSP
+    )
+        internal
+        pure
+    {
+        /// @dev These checks below prevent a user approving funds to router plus while another user receives the
+        /// SuperPositions
+
+        /// @dev We force all receiver addresses to match
+        if (receiverAddressSP != callDataReceiverAddressSP || callDataReceiverAddressSP != callDataReceiverAddress) {
+            revert RECEIVER_ADDRESS_MISMATCH();
         }
     }
 }
