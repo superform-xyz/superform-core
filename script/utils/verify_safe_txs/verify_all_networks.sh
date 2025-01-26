@@ -9,7 +9,6 @@ NETWORKS=(
     "arbitrum"
     "optimism"
     "base"
-    "fantom"
     "linea"
     "blast"
 )
@@ -23,26 +22,24 @@ declare -A NETWORK_ADDRESSES=(
     ["arbitrum"]="0x7Fc07cAFb65d1552849BcF151F7035C5210B76f4"
     ["optimism"]="0x99620a926D68746D5F085B3f7cD62F4fFB71f0C1"
     ["base"]="0x2F973806f8863E860A553d4F2E7c2AB4A9F3b87C"
-    ["fantom"]="0xe6ca8aC2D27A1bAd2Ab6b136Eab87488c3c98Fd1"
     ["linea"]="0x62Bbfe3ef3faAb7045d29bC388E5A0c5033D8b77"
     ["blast"]="0x95B5837CF46E6ab340fFf3844ca5e7d8ead5B8AF"
 )
 
 declare -A NETWORK_NONCES=(
-    ["ethereum"]="22"
-    ["bsc"]="22"
-    ["avalanche"]="22"
-    ["polygon"]="22"
-    ["arbitrum"]="21"
-    ["optimism"]="21"
-    ["base"]="20"
-    ["fantom"]="9"
-    ["linea"]="3"
-    ["blast"]="2"
+    ["ethereum"]="24"
+    ["bsc"]="24"
+    ["avalanche"]="24"
+    ["polygon"]="24"
+    ["arbitrum"]="23"
+    ["optimism"]="23"
+    ["base"]="22"
+    ["linea"]="6"
+    ["blast"]="5"
 )
 
 # Path to the verification script
-VERIFY_SCRIPT="./script/utils/verify_safe_txs/verify_dvn_config.sh"
+VERIFY_SCRIPT="./script/utils/verify_safe_txs/verify_network.sh"
 
 # Check if the verification script exists
 if [ ! -f "$VERIFY_SCRIPT" ]; then
