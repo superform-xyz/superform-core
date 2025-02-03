@@ -18,6 +18,9 @@ import "forge-std/console2.sol";
 
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 
+import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
+import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+
 contract RejectEther {
     // This function will revert when called, simulating a contract that can't receive native tokens
     receive() external payable {
@@ -2764,6 +2767,24 @@ contract SuperformRouterPlusTest is ProtocolActions {
         assertGt(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId2), 0);
     }
 
+    /// @dev attempt to use the approval of someone else
+    function test_rebalanceFromSinglePosition_toOneVault_hack() public {
+        vm.startPrank(deployer);
+
+        _directDeposit(superformId1, 1e18);
+
+        ISuperformRouterPlus.RebalanceSinglePositionSyncArgs memory args =
+            _buildRebalanceSinglePositionToOneVaultArgs(deployer);
+
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(ROUTER_PLUS_SOURCE, superformId1, args.sharesToRedeem);
+        vm.stopPrank();
+        deal(getContract(SOURCE_CHAIN, "DAI"), users[2], 100e18);
+        vm.deal(users[2], 2 ether);
+        vm.prank(users[2]);
+        vm.expectRevert(IERC1155A.DECREASED_ALLOWANCE_BELOW_ZERO.selector);
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceSinglePosition{ value: 2 ether }(args);
+    }
+
     /// @dev rebalance from a single position to two vaults
     function test_rebalanceFromSinglePosition_toTwoVaults() public {
         vm.startPrank(deployer);
@@ -2810,6 +2831,33 @@ contract SuperformRouterPlusTest is ProtocolActions {
         );
 
         assertGt(SuperPositions(SUPER_POSITIONS_SOURCE).balanceOf(deployer, superformId4OP), 0);
+    }
+
+    function test_rebalanceFromTwoPositions_toOneXChainVault_hack() public {
+        vm.startPrank(deployer);
+
+        _directDeposit(superformId1, 1e18);
+        _directDeposit(superformId2, 1e6);
+
+        (ISuperformRouterPlus.RebalanceMultiPositionsSyncArgs memory args,) =
+            _buildRebalanceTwoPositionsToOneVaultXChainArgs();
+
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(
+            ROUTER_PLUS_SOURCE, superformId1, args.sharesToRedeem[0]
+        );
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(
+            ROUTER_PLUS_SOURCE, superformId2, args.sharesToRedeem[1]
+        );
+
+        vm.stopPrank();
+
+        vm.recordLogs();
+        deal(getContract(SOURCE_CHAIN, "DAI"), users[2], 100e18);
+        vm.deal(users[2], 2 ether);
+        vm.prank(users[2]);
+        vm.expectRevert(IERC1155A.DECREASED_ALLOWANCE_BELOW_ZERO.selector);
+
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).rebalanceMultiPositions{ value: 2 ether }(args);
     }
 
     //////////////////////////////////////////////////////////////
@@ -2896,6 +2944,36 @@ contract SuperformRouterPlusTest is ProtocolActions {
             0,
             "Destination superform balance should be greater than 0"
         );
+    }
+
+    function test_crossChainRebalanceSinglePosition_toOneVaultXChain_hack() public {
+        vm.startPrank(deployer);
+
+        uint64 REBALANCE_FROM = ETH;
+        uint64 REBALANCE_TO = OP;
+
+        // Step 1: Initial XCHAIN Deposit
+        _xChainDeposit(superformId5ETH, REBALANCE_FROM, 1);
+
+        // Step 2: Start cross-chain rebalance
+        vm.selectFork(FORKS[SOURCE_CHAIN]);
+        ISuperformRouterPlus.InitiateXChainRebalanceArgs memory args =
+            _buildInitiateXChainRebalanceArgs(REBALANCE_FROM, REBALANCE_TO, deployer);
+
+        vm.startPrank(deployer);
+
+        SuperPositions(SUPER_POSITIONS_SOURCE).increaseAllowance(
+            ROUTER_PLUS_SOURCE, superformId5ETH, args.sharesToRedeem
+        );
+        vm.stopPrank();
+
+        vm.recordLogs();
+        deal(getContract(SOURCE_CHAIN, "DAI"), users[2], 100e18);
+        vm.deal(users[2], 2 ether);
+        vm.prank(users[2]);
+        vm.expectRevert(IERC1155A.DECREASED_ALLOWANCE_BELOW_ZERO.selector);
+
+        SuperformRouterPlus(ROUTER_PLUS_SOURCE).startCrossChainRebalance{ value: 2 ether }(args);
     }
 
     /// @dev rebalance from two positions to one vault
@@ -3222,6 +3300,61 @@ contract SuperformRouterPlusTest is ProtocolActions {
             0,
             "RouterPlus should not hold any DAI"
         );
+    }
+
+    function test_deposit4626_hack() public {
+        // User approves router for vault tokens
+        vm.startPrank(deployer);
+        (address sfMigrateFrom,,) = superformId1.getSuperform();
+        address migrateFromVault = IBaseForm(sfMigrateFrom).getVaultAddress();
+        deal(migrateFromVault, deployer, 1e18);
+
+        // Approve and deposit DAI into the mock vault
+        MockERC20(getContract(SOURCE_CHAIN, "DAI")).approve(migrateFromVault, 1e18);
+        uint256 vaultTokenAmount = IERC4626(migrateFromVault).deposit(1e18, deployer);
+        IERC20(migrateFromVault).approve(getContract(SOURCE_CHAIN, "SuperformRouterPlus"), vaultTokenAmount);
+
+        vm.stopPrank();
+
+        address attacker = address(0x1337);
+        vm.deal(attacker, 1e18);
+        // Attacker prepares malicious deposit data
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId1,
+            1e18,
+            1,
+            10_000,
+            LiqRequest("", address(0), address(0), 0, SOURCE_CHAIN, 0),
+            "",
+            false,
+            false,
+            attacker, // Set attacker as receiver
+            attacker, // Set attacker as receiverSP
+            ""
+        );
+
+        bytes4 selector = IBaseRouter.singleDirectSingleVaultDeposit.selector;
+        bytes memory maliciousCallData = abi.encodePacked(selector, abi.encode(SingleDirectSingleVaultStateReq(data)));
+
+        address[] memory vaults = new address[](1);
+        vaults[0] = migrateFromVault;
+
+        ISuperformRouterPlus.Deposit4626Args[] memory args = new ISuperformRouterPlus.Deposit4626Args[](1);
+        args[0] = ISuperformRouterPlus.Deposit4626Args({
+            amount: 1e18,
+            expectedOutputAmount: 1,
+            maxSlippage: 9999,
+            receiverAddressSP: deployer,
+            depositCallData: maliciousCallData
+        });
+
+        // Attacker executes malicious deposit
+        vm.prank(attacker);
+
+        vm.expectRevert();
+        // this should fail with IERC20Errors.ERC20InsufficientAllowance.selector, but we can't use
+        // vm.expectPartialRevert
+        SuperformRouterPlus(getContract(SOURCE_CHAIN, "SuperformRouterPlus")).deposit4626(vaults, args);
     }
 
     //////////////////////////////////////////////////////////////

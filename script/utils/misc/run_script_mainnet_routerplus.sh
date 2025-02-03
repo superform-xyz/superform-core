@@ -12,43 +12,62 @@ export FANTOM_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/FANTOM_RPC_URL/c
 export LINEA_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/LINEA_RPC_URL/credential)
 export BLAST_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/BLAST_RPC_URL/credential)
 
+
+# echo Deploying Router Plus on staging: ...
+
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusStaging(uint256,uint256,uint256)" 1 0 0 --rpc-url $BSC_RPC_URL --broadcast --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92  --legacy
+# wait
+
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusStaging(uint256,uint256,uint256)" 1 1 0 --rpc-url $ARBITRUM_RPC_URL --broadcast  --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# wait
+
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusStaging(uint256,uint256,uint256)" 1 2 0 --rpc-url $OPTIMISM_RPC_URL --broadcast --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+# wait
+
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusStaging(uint256,uint256,uint256)" 1 3 0 --rpc-url $BASE_RPC_URL --broadcast --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+# wait
+
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusStaging(uint256,uint256,uint256)" 1 5 0 --rpc-url $LINEA_RPC_URL --broadcast --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+# wait
+
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusStaging(uint256,uint256,uint256)" 1 6 0 --rpc-url $BLAST_RPC_URL --broadcast --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+# wait
+
+
 # Run the script
-echo Deploying Router Plus on prod: ...
+# echo Deploying Router Plus on prod: ...
 
-# # FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusProd(uint256,uint256,uint256)" 0 0 0 --rpc-url $ETHEREUM_RPC_URL --slow --account default --broadcast --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92  --legacy
-# # wait
-
-# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusProd(uint256,uint256,uint256)" 0 1 0 --rpc-url $BSC_RPC_URL --broadcast --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92  --legacy
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusProd(uint256,uint256,uint256)" 0 0 0 --rpc-url $ETHEREUM_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92  --legacy
 # wait
 
-# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusProd(uint256,uint256,uint256)" 0 2 0 --rpc-url $AVALANCHE_RPC_URL --broadcast --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92  --legacy
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusProd(uint256,uint256,uint256)" 0 1 0 --rpc-url $BSC_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92  --legacy
 # wait
 
-# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusProd(uint256,uint256,uint256)" 0 3 0 --rpc-url $POLYGON_RPC_URL --broadcast --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92  --legacy
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusProd(uint256,uint256,uint256)" 0 2 0 --rpc-url $AVALANCHE_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92  --legacy
 # wait
 
-# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusProd(uint256,uint256,uint256)" 0 4 0 --rpc-url $ARBITRUM_RPC_URL --broadcast --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusProd(uint256,uint256,uint256)" 0 3 0 --rpc-url $POLYGON_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92  --legacy
 # wait
 
-# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusProd(uint256,uint256,uint256)" 0 5 0 --rpc-url $OPTIMISM_RPC_URL --broadcast --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusProd(uint256,uint256,uint256)" 0 4 0 --rpc-url $ARBITRUM_RPC_URL  --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92
 # wait
 
-# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusProd(uint256,uint256,uint256)" 0 6 0 --rpc-url $BASE_RPC_URL --broadcast --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusProd(uint256,uint256,uint256)" 0 5 0 --rpc-url $OPTIMISM_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 # wait
 
-# # FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusProd(uint256,uint256,uint256)" 0 7 0 --rpc-url $FANTOM_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
-# # wait
-
-# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusProd(uint256,uint256,uint256)" 0 8 0 --rpc-url $LINEA_RPC_URL --broadcast --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusProd(uint256,uint256,uint256)" 0 6 0 --rpc-url $BASE_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 # wait
 
-# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusProd(uint256,uint256,uint256)" 0 9 0 --rpc-url $BLAST_RPC_URL --broadcast --slow --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusProd(uint256,uint256,uint256)" 0 8 0 --rpc-url $LINEA_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
+# wait
+
+# FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "deployRouterPlusProd(uint256,uint256,uint256)" 0 9 0 --rpc-url $BLAST_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
 # wait
 
 echo Configuring Router Plus on prod: ...
 
-# # //FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "configureRouterPlusProd(uint256,uint256,uint256)" 0 0 0 --rpc-url $ETHEREUM_RPC_URL --slow --sender 0x1985df46791BEBb1e3ed9Ec60417F38CECc1D349
-# #  // wait
+FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "configureRouterPlusProd(uint256,uint256,uint256)" 0 0 0 --rpc-url $ETHEREUM_RPC_URL --slow --sender 0x1985df46791BEBb1e3ed9Ec60417F38CECc1D349
+wait
 
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "configureRouterPlusProd(uint256,uint256,uint256)" 0 1 0 --rpc-url $BSC_RPC_URL --slow --sender 0x1985df46791BEBb1e3ed9Ec60417F38CECc1D349
 wait
@@ -68,15 +87,8 @@ wait
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "configureRouterPlusProd(uint256,uint256,uint256)" 0 6 0 --rpc-url $BASE_RPC_URL --slow --sender 0x1985df46791BEBb1e3ed9Ec60417F38CECc1D349
 wait
 
-# // FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "configureRouterPlusProd(uint256,uint256,uint256)" 0 7 0 --rpc-url $FANTOM_RPC_URL --slow --broadcast --account default --sender 0x48aB8AdF869Ba9902Ad483FB1Ca2eFDAb6eabe92 --legacy
-# // wait
-
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "configureRouterPlusProd(uint256,uint256,uint256)" 0 8 0 --rpc-url $LINEA_RPC_URL --slow --sender 0x1985df46791BEBb1e3ed9Ec60417F38CECc1D349 
 wait
 
 FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "configureRouterPlusProd(uint256,uint256,uint256)" 0 9 0 --rpc-url $BLAST_RPC_URL --slow --sender 0x1985df46791BEBb1e3ed9Ec60417F38CECc1D349
-wait
-
-echo disable ftm cross chain
-FOUNDRY_PROFILE=production forge script script/forge-scripts/misc/Mainnet.Deploy.SuperformRouterPlus.s.sol:MainnetDeployRouterPlus --sig "disableFTMCrossChain(uint256,uint256,uint256)" 0 7 1 --rpc-url $FANTOM_RPC_URL  --slow --sender 0x1985df46791BEBb1e3ed9Ec60417F38CECc1D349
 wait

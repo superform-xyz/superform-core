@@ -59,7 +59,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         );
 
         /// @dev transfers a single superPosition to this contract and approves router
-        _transferSuperPositions(superPositions, router, args.receiverAddressSP, args.id, args.sharesToRedeem);
+        _transferSuperPositions(superPositions, router, msg.sender, args.id, args.sharesToRedeem);
 
         uint256[] memory sharesToRedeem = new uint256[](1);
 
@@ -82,9 +82,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             args.rebalanceToCallData
         );
 
-        _refundUnusedAndResetApprovals(
-            superPositions, router, args.interimAsset, args.receiverAddressSP, balanceBefore, totalFee
-        );
+        _refundUnusedAndResetApprovals(superPositions, router, args.interimAsset, msg.sender, balanceBefore, totalFee);
 
         emit RebalanceSyncCompleted(args.receiverAddressSP, args.id, args.sharesToRedeem);
     }
@@ -107,7 +105,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         }
 
         /// @dev transfers multiple superPositions to this contract and approves router
-        _transferBatchSuperPositions(superPositions, router, args.receiverAddressSP, args.ids, args.sharesToRedeem);
+        _transferBatchSuperPositions(superPositions, router, msg.sender, args.ids, args.sharesToRedeem);
 
         _rebalancePositionsSync(
             router,
@@ -126,9 +124,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
             args.rebalanceToCallData
         );
 
-        _refundUnusedAndResetApprovals(
-            superPositions, router, args.interimAsset, args.receiverAddressSP, balanceBefore, totalFee
-        );
+        _refundUnusedAndResetApprovals(superPositions, router, args.interimAsset, msg.sender, balanceBefore, totalFee);
 
         emit RebalanceMultiSyncCompleted(args.receiverAddressSP, args.ids, args.sharesToRedeem);
     }
@@ -147,7 +143,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         }
 
         /// @dev transfers a single superPosition to this contract and approves router
-        _transferSuperPositions(superPositions, router, args.receiverAddressSP, args.id, args.sharesToRedeem);
+        _transferSuperPositions(superPositions, router, msg.sender, args.id, args.sharesToRedeem);
 
         /// @dev this can only be IBaseRouter.singleXChainSingleVaultWithdraw.selector due to the whitelist in
         /// BaseSuperformRouterPlus
@@ -190,6 +186,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
         ISuperformRouterPlusAsync(ROUTER_PLUS_ASYNC).setXChainRebalanceCallData(
             args.receiverAddressSP,
+            /// @dev user must send an address that controls on the destination chain
             routerPlusPayloadId,
             XChainRebalanceData({
                 rebalanceSelector: args.rebalanceToSelector,
@@ -232,7 +229,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         }
 
         /// @dev transfers multiple superPositions to this contract and approves router
-        _transferBatchSuperPositions(superPositions, router, args.receiverAddressSP, args.ids, args.sharesToRedeem);
+        _transferBatchSuperPositions(superPositions, router, msg.sender, args.ids, args.sharesToRedeem);
 
         /// @dev validate the call data
         bytes4 selector = _parseSelectorMem(args.callData);
@@ -337,6 +334,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
         /// @dev in multiDst multiple payloads ids will be generated on source chain
         ISuperformRouterPlusAsync(ROUTER_PLUS_ASYNC).setXChainRebalanceCallData(
             args.receiverAddressSP,
+            /// @dev user must send an address that controls on the destination chain
             routerPlusPayloadId,
             XChainRebalanceData({
                 rebalanceSelector: args.rebalanceToSelector,
@@ -363,6 +361,7 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
     /// @inheritdoc ISuperformRouterPlus
     function deposit4626(address[] calldata vaults_, Deposit4626Args[] calldata args) external payable {
+        /// @notice: args.receiverAddress SP is purely ignored now (not added in natspec to preserve the interface)
         uint256 length = vaults_.length;
 
         if (length != args.length) {
@@ -425,6 +424,8 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     )
         internal
     {
+        /// @notice: args.receiverAddress SP is purely ignored now (not added in natspec to preserve the interface)
+
         IERC20 interimAsset = IERC20(args.interimAsset);
 
         /// @dev validate the call dataREBALANCE_SINGLE_POSITIONS_DIFFERENT_AMOUNT
@@ -634,7 +635,9 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
     /// @param args Rest of the arguments to deposit 4626
     /// @param valueToPass The value to pass to the deposit function
     function _deposit4626(address vault_, Deposit4626Args calldata args, uint256 valueToPass) internal {
-        _transferERC20In(IERC20(vault_), args.receiverAddressSP, args.amount);
+        address user = msg.sender;
+        _transferERC20In(IERC20(vault_), user, args.amount);
+
         IERC4626 vault = IERC4626(vault_);
         address assetAdr = vault.asset();
         IERC20 asset = IERC20(assetAdr);
@@ -649,9 +652,9 @@ contract SuperformRouterPlus is ISuperformRouterPlus, BaseSuperformRouterPlus {
 
         _deposit(router, asset, amountIn, valueToPass, args.depositCallData);
 
-        _tokenRefunds(router, assetAdr, args.receiverAddressSP, balanceBefore);
+        _tokenRefunds(router, assetAdr, user, balanceBefore);
 
-        emit Deposit4626Completed(args.receiverAddressSP, vault_);
+        emit Deposit4626Completed(user, vault_);
     }
 
     function _validateAndGetAmountIn(
