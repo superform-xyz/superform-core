@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+sudo su && ./#!/usr/bin/env bash
 # Note: How to set defaultKey - https://www.youtube.com/watch?v=VQe7cIpaE54
 
 export ETHEREUM_RPC_URL=$(op read op://5ylebqljbh3x6zomdxi3qd7tsa/ETHEREUM_RPC_URL/credential)
