@@ -158,3 +158,11 @@ forge install
 ```sh
 $ make ftest
 ```
+
+## 💰 Bounty Contribution
+
+- **Task:** SuperformRouter._directSingleVaultDeposit lacks minSharesOut — downstream vault 
+- **Reward:** $1500
+- **Source:** GitHub-Paid
+- **Date:** 2026-04-27
+
