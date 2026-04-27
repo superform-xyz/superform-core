@@ -158,3 +158,11 @@ forge install
 ```sh
 $ make ftest
 ```
+
+## 💰 Bounty Contribution
+
+- **Task:** Pre-Audit Triage: Wormhole VAA verification surface in cross-chain receivers
+- **Reward:** $1500
+- **Source:** GitHub-Paid
+- **Date:** 2026-04-27
+
