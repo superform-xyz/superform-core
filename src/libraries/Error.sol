@@ -458,6 +458,9 @@ library Error {
     /// @dev thrown when redeeming from vault yields zero collateral
     error WITHDRAW_ZERO_COLLATERAL();
 
+    /// @dev thrown when depositing into vault yields zero shares (e.g. ERC-4626 inflation attack)
+    error DEPOSIT_ZERO_SHARES();
+
     /// PAYMENT HELPER EXECUTION ERRORS
     /// ---------------------------------------------------------
 

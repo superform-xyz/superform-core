@@ -424,6 +424,10 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         ) {
             revert Error.VAULT_IMPLEMENTATION_FAILED();
         }
+
+        /// @dev hard floor against ERC-4626 inflation attacks where rounding can drive shares to 0
+        /// @dev catches the case where maxSlippage == ENTIRE_SLIPPAGE (100%) makes the slippage bound a no-op
+        if (shares == 0) revert Error.DEPOSIT_ZERO_SHARES();
     }
 
     function _withdrawAndValidate(
