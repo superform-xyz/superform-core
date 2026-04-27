@@ -158,3 +158,11 @@ forge install
 ```sh
 $ make ftest
 ```
+
+## 💰 Bounty Contribution
+
+- **Task:** Pre-contest audit triage: ERC-4626 vault inflation surfaces in ERC4626Form wrapp
+- **Reward:** $1500
+- **Source:** GitHub-Paid
+- **Date:** 2026-04-27
+
