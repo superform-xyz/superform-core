@@ -49,7 +49,7 @@ jobs:
     runs-on: SuperformCore3
     steps:
       - name: "Check out the repo"
-        uses: "actions/checkout@v4"
+        uses: "actions/checkout@v7"
         with:
           submodules: "recursive"
 
@@ -89,7 +89,7 @@ jobs:
     runs-on: SuperformCore3
     steps:
       - name: "Check out the repo"
-        uses: "actions/checkout@v4"
+        uses: "actions/checkout@v7"
         with:
           submodules: "recursive"
 
@@ -129,7 +129,7 @@ jobs:
     runs-on: SuperformCore3
     steps:
       - name: "Check out the repo"
-        uses: "actions/checkout@v4"
+        uses: "actions/checkout@v7"
         with:
           submodules: "recursive"
       - name: "Install Foundry"
@@ -162,7 +162,7 @@ jobs:
     needs: ["test"]
     steps:
       - name: "Check out the repo"
-        uses: "actions/checkout@v4"
+        uses: "actions/checkout@v7"
         with:
           submodules: "recursive"
 
